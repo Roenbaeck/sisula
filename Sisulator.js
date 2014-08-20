@@ -1,6 +1,6 @@
 // helper functions
 function alert(str) {
-   WScript.Echo(str);
+    WScript.Echo(str);
 }
 function exit(code) {
     WScript.Quit(code);
@@ -13,6 +13,8 @@ VALID = 0;
 var MAP = {
     Anchor: {
         description: 'models from Anchor Modeling, http://www.anchormodeling.com',
+        // name of the root element and resulting JSON object
+        root: 'schema',
         // define 'keys' for elements that may occur more than once
         // on the same level in the XML document
         key: {
@@ -53,6 +55,21 @@ var MAP = {
                     return name;
             }
         }
+    },
+    Job: {
+        description: 'workflow for SQL Server Job Agent',
+        root: 'workflow',
+        key: { 
+            job: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            },
+            jobstep: function(xml, fragment) {
+                return fragment.getAttribute('id');
+            },
+            variable: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            }
+        }
     }
 }
  
@@ -75,9 +92,8 @@ var Sisulator = {
                         if(key) {
                             partialObject = partialObject[key] = new Object();
                             partialObject.id = key;
-                            var name = map.replacer(
-                                    xmlFragment.nodeName + listSuffix
-                            );
+                            var name = xmlFragment.nodeName + listSuffix;
+                            name = map.replacer ? map.replacer(name) : name;
                             // reference the object from the array
                             if(!object[name])
                                 object[name] = [];
@@ -112,7 +128,8 @@ var Sisulator = {
     },
     sisulate: function(xml, map, directive) {
         // objectify the xml
-        var schema = Sisulator.objectify(xml, map).schema;
+        var jsonObject = Sisulator.objectify(xml, map);
+        eval("var " + map.root + " = jsonObject." + map.root);
         // this variable holds the result
         var _sisula_ = '';
         // process and evaluate all sisulas in the directive
@@ -123,44 +140,46 @@ var Sisulator = {
         scripts = scripts.replace(/\r/g, ''); // unify line breaks
         // only non-empty lines that are not comments (starts with #)
         scripts = scripts.match(/^[^#].+/gm);
-        var script;
-        var splitter = /\/\*~|~\*\//g; // split JS /*~ sisula template ~*/ JS
-        // process every sisula
-        for(var s = 0; script = scripts[s]; s++) {
-            script = script.replace(/^\s+/,'').replace(/\s+$/,''); // trim
-            file = reader.OpenTextFile(script);
-            var sisula = file.ReadAll();
-            file.Close();
-            // make sure everything starts with JavaScript (empty row)
-            sisula = '\n' + sisula;
-            // split language into JavaScript and SQL template components
-            var sisulets = sisula.split(splitter);
-            // substitute from SQL template to JavaScript
-            for(var i = 1; i < sisulets.length; i+=2) {
-                // honor escaped dollar signs
-                sisulets[i] = sisulets[i].replace(/[$]{2}/g, 'Â§DOLLARÂ§'); // escaping dollar signs
-                sisulets[i] = sisulets[i].replace(/["]{2}/g, 'Â§QUOTEDÂ§'); // escaping double quotes
-                sisulets[i] = sisulets[i].replace(/[$]{([\S\s]*?)}[$]/g, '" + $1 + "'); // multi-expression
-                sisulets[i] = sisulets[i].replace(/[$]\(([\S\s]*?)\)\?[^\S\n]*([^:\n]*)[:]?[^\S\n]*(.*)/g, '" + ($1 ? "$2" : "$3") + "'); // conditional
-                sisulets[i] = sisulets[i].replace(/[\$]([\w.]*?)(?:([\$])|([^\w.]|$))/g, '" + ($1 ? $1 : "") + "$3'); // single
-                sisulets[i] = sisulets[i].replace(/(\r\n|\n|\r)/g, '\\n" +\n'); // line breaks
-                sisulets[i] = sisulets[i].replace(/^/gm, '"'); // start of line
-                sisulets[i] = '_sisula_+=' + sisulets[i] + '";'; // variable assignment
+        if(scripts) {
+            var script;
+            var splitter = /\/\*~|~\*\//g; // split JS /*~ sisula template ~*/ JS
+            // process every sisula
+            for(var s = 0; script = scripts[s]; s++) {
+                script = script.replace(/^\s+/,'').replace(/\s+$/,''); // trim
+                file = reader.OpenTextFile(script);
+                var sisula = file.ReadAll();
+                file.Close();
+                // make sure everything starts with JavaScript (empty row)
+                sisula = '\n' + sisula;
+                // split language into JavaScript and SQL template components
+                var sisulets = sisula.split(splitter);
+                // substitute from SQL template to JavaScript
+                for(var i = 1; i < sisulets.length; i+=2) {
+                    // honor escaped dollar signs
+                    sisulets[i] = sisulets[i].replace(/[$]{2}/g, 'Â§DOLLARÂ§'); // escaping dollar signs
+                    sisulets[i] = sisulets[i].replace(/["]{2}/g, 'Â§QUOTEDÂ§'); // escaping double quotes
+                    sisulets[i] = sisulets[i].replace(/[$]{([\S\s]*?)}[$]/g, '" + $1 + "'); // multi-expression
+                    sisulets[i] = sisulets[i].replace(/[$]\(([\S\s]*?)\)\?[^\S\n]*([^:\n]*)[:]?[^\S\n]*(.*)/g, '" + ($1 ? "$2" : "$3") + "'); // conditional
+                    sisulets[i] = sisulets[i].replace(/[\$]([\w.]*?)(?:([\$])|([^\w.]|$))/g, '" + ($1 ? $1 : "") + "$3'); // single
+                    sisulets[i] = sisulets[i].replace(/(\r\n|\n|\r)/g, '\\n" +\n'); // line breaks
+                    sisulets[i] = sisulets[i].replace(/^/gm, '"'); // start of line
+                    sisulets[i] = '_sisula_+=' + sisulets[i] + '";'; // variable assignment
+                }
+                // join the parts together again (now all JavaScript)
+                sisula = sisulets.join('');
+                try {
+                    // this eval needs schema and _sisula_ to be defined
+                    eval(sisula);
+                }
+                catch(e) {
+                    throw e;
+                }
             }
-            // join the parts together again (now all JavaScript)
-            sisula = sisulets.join('');
-            try {
-                // this eval needs schema and _sisula_ to be defined
-                eval(sisula);
-            }
-            catch(e) {
-                throw e;
-            }
+            _sisula_ = _sisula_.replace(/Â§DOLLARÂ§/g, '$'); // unescaping dollar signs
+            _sisula_ = _sisula_.replace(/Â§QUOTEDÂ§/g, '"'); // unescaping double quotes
+            _sisula_ = _sisula_.replace(/^\s*[\r\n]/gm, ''); // remove empty lines
+            _sisula_ = _sisula_.replace(/(\S+[^\S\n])(?:[^\S\n]+)/gm, '$1'); // consume multiple spaces, but not indentation
         }
-        _sisula_ = _sisula_.replace(/Â§DOLLARÂ§/g, '$'); // unescaping dollar signs
-        _sisula_ = _sisula_.replace(/Â§QUOTEDÂ§/g, '"'); // unescaping double quotes
-        _sisula_ = _sisula_.replace(/^\s*[\r\n]/gm, ''); // remove empty lines
-        _sisula_ = _sisula_.replace(/(\S+[^\S\n])(?:[^\S\n]+)/gm, '$1'); // consume multiple spaces, but not indentation
         return _sisula_;
     }
 };

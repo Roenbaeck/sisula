@@ -1,0 +1,4 @@
+# These are the sisulets that create the SQL Server Agent jobs.
+sisulets/Helpers.js
+sisulets/Variables.js
+sisulets/CreateJobs.js

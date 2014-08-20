@@ -1,0 +1,27 @@
+<workflow name="Load DW">
+    <variable name="tableName" value="NothingAtAll"/>
+    <job name="Staging">
+        This is the staging job.
+        <variable name="tableName" value="MyTable"/>
+        <jobstep id="1" name="Load Eco files" subsystem="TSQL" on_success_action="3">
+          SELECT 
+            %USERNAME%
+          FROM
+            %tableName%
+        </jobstep>
+        <jobstep id="2" name="Transform Eco data" database_name="MyDB" subsystem="TSQL">
+          SELECT 
+            *
+          FROM
+            MyTable
+        </jobstep>
+    </job>
+    <job name="Loading">
+        <jobstep id="1" name="Load DW tables" subsystem="TSQL">
+          SELECT 
+            *
+          FROM
+            %MyOwnEnvVar%
+        </jobstep>
+    </job>
+</workflow>
