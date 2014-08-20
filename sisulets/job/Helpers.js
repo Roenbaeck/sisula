@@ -3,7 +3,7 @@ workflow._iterator = {};
 workflow._iterator.job = 0;
 workflow._iterator.jobstep = 0;
 
-// set up helpers for knots
+// set up helpers for jobs
 workflow.nextJob = function() {
     if(!this.jobs) return null;
     if(workflow._iterator.job == this.jobs.length) {

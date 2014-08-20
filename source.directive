@@ -1,0 +1,6 @@
+# These are the sisulets that create transformations in the ETL flow.
+sisulets/work/Helpers.js
+sisulets/work/Variables.js
+sisulets/work/Naming.js
+sisulets/work/CreateRawTables.js
+sisulets/work/CreateTypedTables.js

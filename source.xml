@@ -1,0 +1,52 @@
+<source directory="#SourceData#" name="Weather" pattern="Weat?er*.txt" characterMap="ACP" characterType="char">
+	<description>http://www.slb.mf.stockholm.se</description>
+    <part name="Temperature" nulls=""> 
+        SELECT * FROM %table% WHERE row LIKE 'TEMP%'
+        <term name="date" size="6" format="datetime">
+            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
+        </term>
+        <term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+        <term name="centigrade" size="10" format="decimal(19,10)"/>
+        <calculation name="fahrenheit" format="decimal(19,10)">
+            9 / 5 * [centigrade] + 32
+        </calculation>
+        <calculation name="freezing" format="char(1)">
+            CASE WHEN [centigrade] &gt; 0 THEN 'A' WHEN [centigrade] &lt; 0 THEN 'B' ELSE 'Z' END
+        </calculation>
+        <key name="measureTime" type="primary">
+            <component of="date"/>
+            <component of="hour"/>
+        </key>
+    </part>
+    <part name="Pressure" nulls="">
+        SELECT * FROM %table% WHERE row LIKE 'PRSR%'
+        <term name="date" size="6" format="datetime">
+            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
+        </term>
+        <term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+        <term name="pressure" size="10" format="decimal(19,10)"/>
+        <key name="measureTime" type="primary">
+            <component of="date"/>
+            <component of="hour"/>
+        </key>        
+    </part>
+    <part name="Wind" nulls="">
+        SELECT * FROM %table% WHERE row LIKE 'WNDS%'
+        <term name="date" size="6" format="datetime">
+            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
+        </term>
+        <term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+        <term name="direction" size="10" format="int"/>
+        <term name="speed" size="10" format="decimal(19,10)"/>
+        <key name="measureTime" type="primary">
+            <component of="date"/>
+            <component of="hour"/>
+        </key>
+    </part>
+</source>

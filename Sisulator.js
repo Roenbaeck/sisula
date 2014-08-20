@@ -70,6 +70,27 @@ var MAP = {
                 return fragment.getAttribute('name');
             }
         }
+    },
+    Source: {
+        description: 'source data format description',
+        root: 'source',
+        key: { 
+            part: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            },
+            term: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            },
+            key: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            },
+            component: function(xml, fragment) {
+                return fragment.getAttribute('of');
+            },            
+            calculation: function(xml, fragment) {
+                return fragment.getAttribute('name');
+            }
+        }
     }
 }
  

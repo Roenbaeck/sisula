@@ -55,7 +55,7 @@ sp_add_jobstep
           SELECT 
             *
           FROM
-            Hello World
+            Hello World!
         ',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'Loading', 
