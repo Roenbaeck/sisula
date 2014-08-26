@@ -3,6 +3,7 @@
 USE msdb;
 GO
 ~*/
+
 var job, step;
 while(job = workflow.nextJob()) {
 /*~
@@ -16,7 +17,6 @@ sp_add_job
     $(job.start_step_id)?           @start_step_id          = $job.start_step_id,
     $(job.category_name)?           @category_name          = '$job.category_name',
     $(job.category_id)?             @category_id            = $job.category_id,
-    $(job.owner_login_name)?        @owner_login_name       = '$job.owner_login_name',
     $(job.notify_level_eventlog)?   @notify_level_eventlog  = $job.notify_level_eventlog,
     $(job.notify_level_email)?      @notify_level_email     = $job.notify_level_email,
     $(job.notify_level_netsend)?    @notify_level_netsend   = $job.notify_level_netsend,
@@ -25,6 +25,11 @@ sp_add_job
     $(job.notify_netsend_operator_name)?    @notify_netsend_operator_name   = '$job.notify_netsend_operator_name',
     $(job.notify_page_operator_name)?       @notify_page_operator_name      = '$job.notify_page_operator_name',
     $(job.delete_level)?            @delete_level           = $job.delete_level,
+    -- mandatory parameters below and optional ones above this line
+    @owner_login_name = 'NT SERVICE\\SQLSERVERAGENT', -- remove hard coding later
+    @job_name   = '$job.name';
+GO
+sp_add_jobserver 
     -- mandatory parameters below and optional ones above this line
     @job_name   = '$job.name';
 GO

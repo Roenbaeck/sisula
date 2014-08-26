@@ -1,21 +1,17 @@
-<workflow name="Load DW">
-    <variable name="tableName" value="LocallyNamedTable"/>
-    <job name="Staging">
+<workflow name="%System%_%Source%_Workflow">
+    <variable name="database" value="Test"/>
+    <job name="%System%_%Source%_Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
-        <jobstep id="1" name="Create raw table" subsystem="TSQL" on_success_action="3">
+        <jobstep id="1" name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
           EXEC sp_%System%_%Source%_CreateRawTable
         </jobstep>
-        <jobstep id="2" name="Create typed tables" database_name="MyDB" subsystem="TSQL">
+        <jobstep id="2" name="Create typed tables" database_name="%database%" subsystem="TSQL">
           EXEC sp_%System%_%Source%_CreateTypedTables
         </jobstep>
     </job>
-    <job name="Loading">
+    <job name="%System%_%Source%_Loading">
         <jobstep id="1" name="Load DW tables" subsystem="TSQL">
-          SELECT 
-            *
-          FROM
-            %tableName%
         </jobstep>
     </job>
 </workflow>
