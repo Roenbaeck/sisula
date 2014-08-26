@@ -52,7 +52,7 @@ function replaceVariables(variables, obj) {
     for(var p in obj) {
         switch(typeof obj[p]) {
             case 'string':
-                var match = obj[p].match(/%(.*)%/g);
+                var match = obj[p].match(/%(.*?)%/g);
                 // check if string contains variable substitutions
                 if(match) {
                     for(var i = 0; i < match.length; i++) {

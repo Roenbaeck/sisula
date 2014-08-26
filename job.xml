@@ -1,19 +1,13 @@
 <workflow name="Load DW">
-    <variable name="tableName" value="NothingAtAll"/>
+    <variable name="tableName" value="LocallyNamedTable"/>
     <job name="Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
-        <jobstep id="1" name="Load Eco files" subsystem="TSQL" on_success_action="3">
-          SELECT 
-            %USERNAME%
-          FROM
-            %tableName%
+        <jobstep id="1" name="Create raw table" subsystem="TSQL" on_success_action="3">
+          EXEC sp_%System%_%Source%_CreateRawTable
         </jobstep>
-        <jobstep id="2" name="Transform Eco data" database_name="MyDB" subsystem="TSQL">
-          SELECT 
-            *
-          FROM
-            MyTable
+        <jobstep id="2" name="Create typed tables" database_name="MyDB" subsystem="TSQL">
+          EXEC sp_%System%_%Source%_CreateTypedTables
         </jobstep>
     </job>
     <job name="Loading">
@@ -21,7 +15,7 @@
           SELECT 
             *
           FROM
-            %MyOwnEnvVar%
+            %tableName%
         </jobstep>
     </job>
 </workflow>

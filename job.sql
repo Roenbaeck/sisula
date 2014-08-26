@@ -16,29 +16,23 @@ sp_add_jobstep
     @step_id = 1, 
     @subsystem = 'TSQL', 
     @command = '
-          SELECT 
-            e-lronnback
-          FROM
-            MyTable
+          EXEC sp_SMHI_Weather_CreateRawTable
         ',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
     @job_name = 'Staging', 
-    @step_name = 'Load Eco files'; 
+    @step_name = 'Create raw table'; 
 GO
 sp_add_jobstep 
     @step_id = 2, 
     @subsystem = 'TSQL', 
     @command = '
-          SELECT 
-            *
-          FROM
-            MyTable
+          EXEC sp_SMHI_Weather_CreateTypedTables
         ',
     @database_name = 'MyDB',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'Staging', 
-    @step_name = 'Transform Eco data'; 
+    @step_name = 'Create typed tables'; 
 GO
 sp_delete_job
     -- mandatory parameters below and optional ones above this line
@@ -55,7 +49,7 @@ sp_add_jobstep
           SELECT 
             *
           FROM
-            Hello World!
+            LocallyNamedTable
         ',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'Loading', 
