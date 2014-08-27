@@ -38,7 +38,7 @@ GO
 /*~
 sp_add_jobstep 
     $(step.job_id)?                 @job_id                 = $step.job_id,
-    $(step.id)?                     @step_id                = $step.id, 
+    $(step.step_id)?                @step_id                = $step.step_id, 
     $(step.subsystem)?              @subsystem              = '$step.subsystem', 
     $(step._jobstep)?               @command                = '$step._jobstep',
     $(step.additional_parameters)?  @additional_parameters  = '$step.additional_parameters',

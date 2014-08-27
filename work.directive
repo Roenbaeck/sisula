@@ -3,5 +3,8 @@ sisulets/Variables.js
 sisulets/work/Variables.js
 sisulets/work/Helpers.js
 sisulets/work/Naming.js
-sisulets/work/CreateRawTables.js
+sisulets/work/UseDatabase.js
+sisulets/work/CreateRawTable.js
+sisulets/work/BulkInsert.js
+sisulets/work/AddKeyToRawTable.js
 sisulets/work/CreateTypedTables.js

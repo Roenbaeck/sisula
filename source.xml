@@ -1,4 +1,4 @@
-<source directory="#SourceData#" name="Weather" pattern="Weat?er*.txt" characterMap="ACP" characterType="char">
+<source name="Weather" directory="%SourceData%" pattern="Weat?er*.txt" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
 	<description>http://www.slb.mf.stockholm.se</description>
     <part name="Temperature" nulls=""> 
         SELECT * FROM %table% WHERE row LIKE 'TEMP%'

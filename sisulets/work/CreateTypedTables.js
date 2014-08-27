@@ -1,10 +1,10 @@
 // Create a typed table suitable for bulk insert
 /*~
-IF Object_ID('sp_$source.qualified$_CreateTypedTables', 'P') IS NOT NULL
-DROP PROCEDURE [sp_$source.qualified$_CreateTypedTables];
+IF Object_ID('$source.qualified$_CreateTypedTables', 'P') IS NOT NULL
+DROP PROCEDURE [$source.qualified$_CreateTypedTables];
 GO
 
-CREATE PROCEDURE [sp_$source.qualified$_CreateTypedTables] 
+CREATE PROCEDURE [$source.qualified$_CreateTypedTables] 
 AS
 BEGIN
 ~*/

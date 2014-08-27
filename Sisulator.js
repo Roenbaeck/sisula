@@ -64,14 +64,14 @@ var MAP = {
                 return fragment.getAttribute('name');
             },
             jobstep: function(xml, fragment) {
-                return fragment.getAttribute('id');
+                return fragment.getAttribute('name');
             },
             variable: function(xml, fragment) {
                 return fragment.getAttribute('name');
             }
         }
     },
-    Source: {
+    Source: { // change to Work
         description: 'source data format description',
         root: 'source',
         key: { 

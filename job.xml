@@ -1,13 +1,19 @@
 <workflow name="%System%_%Source%_Workflow">
-    <variable name="database" value="Test"/>
+    <variable name="database" value="%Database%"/>
     <job name="%System%_%Source%_Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
-        <jobstep id="1" name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
-          EXEC sp_%System%_%Source%_CreateRawTable
+        <jobstep name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
+          EXEC %System%_%Source%_CreateRawTable
         </jobstep>
-        <jobstep id="2" name="Create typed tables" database_name="%database%" subsystem="TSQL">
-          EXEC sp_%System%_%Source%_CreateTypedTables
+        <jobstep name="Bulk insert" database_name="%database%" subsystem="TSQL" on_success_action="3">
+          EXEC %System%_%Source%_CreateBulkInsert
+        </jobstep>
+        <jobstep name="Add key to raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
+          EXEC %System%_%Source%_AddKeyToRawTable
+        </jobstep>
+        <jobstep name="Create typed tables" database_name="%database%" subsystem="TSQL">
+          EXEC %System%_%Source%_CreateTypedTables
         </jobstep>
     </job>
     <job name="%System%_%Source%_Loading">
