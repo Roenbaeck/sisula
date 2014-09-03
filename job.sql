@@ -29,9 +29,13 @@ sp_add_jobstep
     @step_name = 'Create raw table'; 
 GO
 sp_add_jobstep 
-    @subsystem = 'TSQL', 
+    @subsystem = 'PowerShell', 
     @command = '
-          EXEC SMHI_Weather_CreateBulkInsert
+          $files = Get-ChildItem FileSystem::\\localhost\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"}
+          ForEach ($file in $files) {
+            $returnValue = Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert ''\\localhost\sisula\data\$file''" -Database "Test"
+            If($returnValue) { Write-Host "$returnValue" }
+          }
         ',
     @on_success_action = 3,
     @database_name = 'Test',

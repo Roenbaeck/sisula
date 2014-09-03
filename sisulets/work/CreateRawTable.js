@@ -7,6 +7,8 @@ GO
 CREATE PROCEDURE [$source.qualified$_CreateRawTable] 
 AS
 BEGIN
+    SET NOCOUNT ON;
+    
     IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
     DROP TABLE [$source.qualified$_Raw];
 

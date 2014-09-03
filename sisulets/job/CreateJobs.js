@@ -40,7 +40,7 @@ sp_add_jobstep
     $(step.job_id)?                 @job_id                 = $step.job_id,
     $(step.step_id)?                @step_id                = $step.step_id, 
     $(step.subsystem)?              @subsystem              = '$step.subsystem', 
-    $(step._jobstep)?               @command                = '$step._jobstep',
+    $(step._jobstep)?               @command                = '${step._jobstep.replace(/'/g, '\'\'')}$',
     $(step.additional_parameters)?  @additional_parameters  = '$step.additional_parameters',
     $(step.cmdexec_success_code)?   @cmdexec_success_code   = $step.cmdexec_success_code,
     $(step.on_success_action)?      @on_success_action      = $step.on_success_action,

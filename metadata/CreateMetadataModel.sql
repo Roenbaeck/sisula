@@ -7,6 +7,21 @@
 -- Knots should have values that are mutually exclusive and exhaustive.
 -- Knots are unfolded when using equivalence.
 --
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- TYP_Type table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.TYP_Type', 'U') IS NULL
+CREATE TABLE [metadata].[TYP_Type] (
+    TYP_ID tinyint not null,
+    TYP_Type varchar(42) not null,
+    constraint pkTYP_Type primary key (
+        TYP_ID asc
+    ),
+    constraint uqTYP_Type unique (
+        TYP_Type
+    )
+);
+GO
 -- ANCHORS AND ATTRIBUTES ---------------------------------------------------------------------------------------------
 --
 -- Anchors are used to store the identities of entities.
@@ -17,71 +32,326 @@
 -- Anchors may have zero or more adjoined attributes.
 --
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- BA_Batch table (with 2 attributes)
+-- JB_Job table (with 3 attributes)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.BA_Batch', 'U') IS NULL
-CREATE TABLE [metadata].[BA_Batch] (
-    BA_ID int IDENTITY(1,1) not null,
-    BA_Dummy bit null,
-    constraint pkBA_Batch primary key (
-        BA_ID asc
+IF Object_ID('metadata.JB_Job', 'U') IS NULL
+CREATE TABLE [metadata].[JB_Job] (
+    JB_ID int IDENTITY(1,1) not null,
+    JB_Dummy bit null,
+    constraint pkJB_Job primary key (
+        JB_ID asc
     )
 );
 GO
 -- Static attribute table ---------------------------------------------------------------------------------------------
--- BA_STA_Batch_Start table (on BA_Batch)
+-- JB_STA_Job_Start table (on JB_Job)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.BA_STA_Batch_Start', 'U') IS NULL
-CREATE TABLE [metadata].[BA_STA_Batch_Start] (
-    BA_STA_BA_ID int not null,
-    BA_STA_Batch_Start datetime not null,
-    constraint fkBA_STA_Batch_Start foreign key (
-        BA_STA_BA_ID
-    ) references [metadata].[BA_Batch](BA_ID),
-    constraint pkBA_STA_Batch_Start primary key (
-        BA_STA_BA_ID asc
+IF Object_ID('metadata.JB_STA_Job_Start', 'U') IS NULL
+CREATE TABLE [metadata].[JB_STA_Job_Start] (
+    JB_STA_JB_ID int not null,
+    JB_STA_Job_Start datetime not null,
+    constraint fkJB_STA_Job_Start foreign key (
+        JB_STA_JB_ID
+    ) references [metadata].[JB_Job](JB_ID),
+    constraint pkJB_STA_Job_Start primary key (
+        JB_STA_JB_ID asc
     )
 );
 GO
 -- Static attribute table ---------------------------------------------------------------------------------------------
--- BA_END_Batch_End table (on BA_Batch)
+-- JB_END_Job_End table (on JB_Job)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.BA_END_Batch_End', 'U') IS NULL
-CREATE TABLE [metadata].[BA_END_Batch_End] (
-    BA_END_BA_ID int not null,
-    BA_END_Batch_End datetime not null,
-    constraint fkBA_END_Batch_End foreign key (
-        BA_END_BA_ID
-    ) references [metadata].[BA_Batch](BA_ID),
-    constraint pkBA_END_Batch_End primary key (
-        BA_END_BA_ID asc
+IF Object_ID('metadata.JB_END_Job_End', 'U') IS NULL
+CREATE TABLE [metadata].[JB_END_Job_End] (
+    JB_END_JB_ID int not null,
+    JB_END_Job_End datetime not null,
+    constraint fkJB_END_Job_End foreign key (
+        JB_END_JB_ID
+    ) references [metadata].[JB_Job](JB_ID),
+    constraint pkJB_END_Job_End primary key (
+        JB_END_JB_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- JB_NAM_Job_Name table (on JB_Job)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.JB_NAM_Job_Name', 'U') IS NULL
+CREATE TABLE [metadata].[JB_NAM_Job_Name] (
+    JB_NAM_JB_ID int not null,
+    JB_NAM_Job_Name varchar(255) not null,
+    constraint fkJB_NAM_Job_Name foreign key (
+        JB_NAM_JB_ID
+    ) references [metadata].[JB_Job](JB_ID),
+    constraint pkJB_NAM_Job_Name primary key (
+        JB_NAM_JB_ID asc
     )
 );
 GO
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- FI_File table (with 1 attributes)
+-- SR_Source table (with 2 attributes)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.FI_File', 'U') IS NULL
-CREATE TABLE [metadata].[FI_File] (
-    FI_ID int IDENTITY(1,1) not null,
-    FI_Dummy bit null,
-    constraint pkFI_File primary key (
-        FI_ID asc
+IF Object_ID('metadata.SR_Source', 'U') IS NULL
+CREATE TABLE [metadata].[SR_Source] (
+    SR_ID int IDENTITY(1,1) not null,
+    SR_Dummy bit null,
+    constraint pkSR_Source primary key (
+        SR_ID asc
     )
 );
 GO
 -- Static attribute table ---------------------------------------------------------------------------------------------
--- FI_NAM_File_Name table (on FI_File)
+-- SR_NAM_Source_Name table (on SR_Source)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.FI_NAM_File_Name', 'U') IS NULL
-CREATE TABLE [metadata].[FI_NAM_File_Name] (
-    FI_NAM_FI_ID int not null,
-    FI_NAM_File_Name varchar(2000) not null,
-    constraint fkFI_NAM_File_Name foreign key (
-        FI_NAM_FI_ID
-    ) references [metadata].[FI_File](FI_ID),
-    constraint pkFI_NAM_File_Name primary key (
-        FI_NAM_FI_ID asc
+IF Object_ID('metadata.SR_NAM_Source_Name', 'U') IS NULL
+CREATE TABLE [metadata].[SR_NAM_Source_Name] (
+    SR_NAM_SR_ID int not null,
+    SR_NAM_Source_Name varchar(2000) not null,
+    constraint fkSR_NAM_Source_Name foreign key (
+        SR_NAM_SR_ID
+    ) references [metadata].[SR_Source](SR_ID),
+    constraint pkSR_NAM_Source_Name primary key (
+        SR_NAM_SR_ID asc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- SR_CFG_Source_Configuration table (on SR_Source)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.SR_CFG_Source_Configuration', 'U') IS NULL
+CREATE TABLE [metadata].[SR_CFG_Source_Configuration] (
+    SR_CFG_SR_ID int not null,
+    SR_CFG_Source_Configuration xml not null,
+    SR_CFG_Checksum as cast(HashBytes('MD5', cast(SR_CFG_Source_Configuration as varbinary(max))) as varbinary(16)) PERSISTED,
+    SR_CFG_ChangedAt datetime not null,
+    constraint fkSR_CFG_Source_Configuration foreign key (
+        SR_CFG_SR_ID
+    ) references [metadata].[SR_Source](SR_ID),
+    constraint pkSR_CFG_Source_Configuration primary key (
+        SR_CFG_SR_ID asc,
+        SR_CFG_ChangedAt desc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- CO_Container table (with 4 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_Container', 'U') IS NULL
+CREATE TABLE [metadata].[CO_Container] (
+    CO_ID int IDENTITY(1,1) not null,
+    CO_Dummy bit null,
+    constraint pkCO_Container primary key (
+        CO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- CO_NAM_Container_Name table (on CO_Container)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_NAM_Container_Name', 'U') IS NULL
+CREATE TABLE [metadata].[CO_NAM_Container_Name] (
+    CO_NAM_CO_ID int not null,
+    CO_NAM_Container_Name varchar(2000) not null,
+    constraint fkCO_NAM_Container_Name foreign key (
+        CO_NAM_CO_ID
+    ) references [metadata].[CO_Container](CO_ID),
+    constraint pkCO_NAM_Container_Name primary key (
+        CO_NAM_CO_ID asc
+    )
+);
+GO
+-- Knotted static attribute table -------------------------------------------------------------------------------------
+-- CO_TYP_Container_Type table (on CO_Container)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_TYP_Container_Type', 'U') IS NULL
+CREATE TABLE [metadata].[CO_TYP_Container_Type] (
+    CO_TYP_CO_ID int not null,
+    CO_TYP_TYP_ID tinyint not null,
+    constraint fk_A_CO_TYP_Container_Type foreign key (
+        CO_TYP_CO_ID
+    ) references [metadata].[CO_Container](CO_ID),
+    constraint fk_K_CO_TYP_Container_Type foreign key (
+        CO_TYP_TYP_ID
+    ) references [metadata].[TYP_Type](TYP_ID),
+    constraint pkCO_TYP_Container_Type primary key (
+        CO_TYP_CO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- CO_PTH_Container_Path table (on CO_Container)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_PTH_Container_Path', 'U') IS NULL
+CREATE TABLE [metadata].[CO_PTH_Container_Path] (
+    CO_PTH_CO_ID int not null,
+    CO_PTH_Container_Path varchar(2000) not null,
+    constraint fkCO_PTH_Container_Path foreign key (
+        CO_PTH_CO_ID
+    ) references [metadata].[CO_Container](CO_ID),
+    constraint pkCO_PTH_Container_Path primary key (
+        CO_PTH_CO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- CO_DSC_Container_Discovered table (on CO_Container)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_DSC_Container_Discovered', 'U') IS NULL
+CREATE TABLE [metadata].[CO_DSC_Container_Discovered] (
+    CO_DSC_CO_ID int not null,
+    CO_DSC_Container_Discovered datetime not null,
+    constraint fkCO_DSC_Container_Discovered foreign key (
+        CO_DSC_CO_ID
+    ) references [metadata].[CO_Container](CO_ID),
+    constraint pkCO_DSC_Container_Discovered primary key (
+        CO_DSC_CO_ID asc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- WO_Work table (with 6 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_Work', 'U') IS NULL
+CREATE TABLE [metadata].[WO_Work] (
+    WO_ID int IDENTITY(1,1) not null,
+    WO_Dummy bit null,
+    constraint pkWO_Work primary key (
+        WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_STA_Work_Start table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_STA_Work_Start', 'U') IS NULL
+CREATE TABLE [metadata].[WO_STA_Work_Start] (
+    WO_STA_WO_ID int not null,
+    WO_STA_Work_Start datetime not null,
+    constraint fkWO_STA_Work_Start foreign key (
+        WO_STA_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_STA_Work_Start primary key (
+        WO_STA_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_END_Work_End table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_END_Work_End', 'U') IS NULL
+CREATE TABLE [metadata].[WO_END_Work_End] (
+    WO_END_WO_ID int not null,
+    WO_END_Work_End datetime not null,
+    constraint fkWO_END_Work_End foreign key (
+        WO_END_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_END_Work_End primary key (
+        WO_END_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_UPD_Work_Updates table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_UPD_Work_Updates', 'U') IS NULL
+CREATE TABLE [metadata].[WO_UPD_Work_Updates] (
+    WO_UPD_WO_ID int not null,
+    WO_UPD_Work_Updates int not null,
+    constraint fkWO_UPD_Work_Updates foreign key (
+        WO_UPD_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_UPD_Work_Updates primary key (
+        WO_UPD_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_NAM_Work_Name table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_NAM_Work_Name', 'U') IS NULL
+CREATE TABLE [metadata].[WO_NAM_Work_Name] (
+    WO_NAM_WO_ID int not null,
+    WO_NAM_Work_Name varchar(255) not null,
+    constraint fkWO_NAM_Work_Name foreign key (
+        WO_NAM_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_NAM_Work_Name primary key (
+        WO_NAM_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_INS_Work_Inserts table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_INS_Work_Inserts', 'U') IS NULL
+CREATE TABLE [metadata].[WO_INS_Work_Inserts] (
+    WO_INS_WO_ID int not null,
+    WO_INS_Work_Inserts int not null,
+    constraint fkWO_INS_Work_Inserts foreign key (
+        WO_INS_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_INS_Work_Inserts primary key (
+        WO_INS_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_DEL_Work_Deletes table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_DEL_Work_Deletes', 'U') IS NULL
+CREATE TABLE [metadata].[WO_DEL_Work_Deletes] (
+    WO_DEL_WO_ID int not null,
+    WO_DEL_Work_Deletes int not null,
+    constraint fkWO_DEL_Work_Deletes foreign key (
+        WO_DEL_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_DEL_Work_Deletes primary key (
+        WO_DEL_WO_ID asc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- WF_Workflow table (with 2 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WF_Workflow', 'U') IS NULL
+CREATE TABLE [metadata].[WF_Workflow] (
+    WF_ID int IDENTITY(1,1) not null,
+    WF_Dummy bit null,
+    constraint pkWF_Workflow primary key (
+        WF_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WF_NAM_Workflow_Name table (on WF_Workflow)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WF_NAM_Workflow_Name', 'U') IS NULL
+CREATE TABLE [metadata].[WF_NAM_Workflow_Name] (
+    WF_NAM_WF_ID int not null,
+    WF_NAM_Workflow_Name varchar(255) not null,
+    constraint fkWF_NAM_Workflow_Name foreign key (
+        WF_NAM_WF_ID
+    ) references [metadata].[WF_Workflow](WF_ID),
+    constraint pkWF_NAM_Workflow_Name primary key (
+        WF_NAM_WF_ID asc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- WF_CFG_Workflow_Configuration table (on WF_Workflow)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WF_CFG_Workflow_Configuration', 'U') IS NULL
+CREATE TABLE [metadata].[WF_CFG_Workflow_Configuration] (
+    WF_CFG_WF_ID int not null,
+    WF_CFG_Workflow_Configuration xml not null,
+    WF_CFG_Checksum as cast(HashBytes('MD5', cast(WF_CFG_Workflow_Configuration as varbinary(max))) as varbinary(16)) PERSISTED,
+    WF_CFG_ChangedAt datetime not null,
+    constraint fkWF_CFG_Workflow_Configuration foreign key (
+        WF_CFG_WF_ID
+    ) references [metadata].[WF_Workflow](WF_ID),
+    constraint pkWF_CFG_Workflow_Configuration primary key (
+        WF_CFG_WF_ID asc,
+        WF_CFG_ChangedAt desc
     )
 );
 GO
@@ -94,21 +364,80 @@ GO
 -- Ties must have at least two anchor roles and zero or more knot roles.
 --
 -- Static tie table ---------------------------------------------------------------------------------------------------
--- BA_uses_FI_the table (having 2 roles)
+-- JB_of_WO_part table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.BA_uses_FI_the', 'U') IS NULL
-CREATE TABLE [metadata].[BA_uses_FI_the] (
-    BA_ID_uses int not null, 
-    FI_ID_the int not null, 
-    constraint BA_uses_FI_the_fkBA_uses foreign key (
-        BA_ID_uses
-    ) references [metadata].[BA_Batch](BA_ID), 
-    constraint BA_uses_FI_the_fkFI_the foreign key (
-        FI_ID_the
-    ) references [metadata].[FI_File](FI_ID), 
-    constraint pkBA_uses_FI_the primary key (
-        BA_ID_uses asc,
-        FI_ID_the asc
+IF Object_ID('metadata.JB_of_WO_part', 'U') IS NULL
+CREATE TABLE [metadata].[JB_of_WO_part] (
+    JB_ID_of int not null, 
+    WO_ID_part int not null, 
+    constraint JB_of_WO_part_fkJB_of foreign key (
+        JB_ID_of
+    ) references [metadata].[JB_Job](JB_ID), 
+    constraint JB_of_WO_part_fkWO_part foreign key (
+        WO_ID_part
+    ) references [metadata].[WO_Work](WO_ID), 
+    constraint pkJB_of_WO_part primary key (
+        JB_ID_of asc,
+        WO_ID_part asc
+    )
+);
+GO
+-- Static tie table ---------------------------------------------------------------------------------------------------
+-- JB_formed_WF_from table (having 2 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.JB_formed_WF_from', 'U') IS NULL
+CREATE TABLE [metadata].[JB_formed_WF_from] (
+    JB_ID_formed int not null, 
+    WF_ID_from int not null, 
+    constraint JB_formed_WF_from_fkJB_formed foreign key (
+        JB_ID_formed
+    ) references [metadata].[JB_Job](JB_ID), 
+    constraint JB_formed_WF_from_fkWF_from foreign key (
+        WF_ID_from
+    ) references [metadata].[WF_Workflow](WF_ID), 
+    constraint pkJB_formed_WF_from primary key (
+        JB_ID_formed asc
+    )
+);
+GO
+-- Static tie table ---------------------------------------------------------------------------------------------------
+-- WO_formed_SR_from table (having 2 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_formed_SR_from', 'U') IS NULL
+CREATE TABLE [metadata].[WO_formed_SR_from] (
+    WO_ID_formed int not null, 
+    SR_ID_from int not null, 
+    constraint WO_formed_SR_from_fkWO_formed foreign key (
+        WO_ID_formed
+    ) references [metadata].[WO_Work](WO_ID), 
+    constraint WO_formed_SR_from_fkSR_from foreign key (
+        SR_ID_from
+    ) references [metadata].[SR_Source](SR_ID), 
+    constraint pkWO_formed_SR_from primary key (
+        WO_ID_formed asc
+    )
+);
+GO
+-- Static tie table ---------------------------------------------------------------------------------------------------
+-- CO_target_CO_source_WO_involves table (having 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_target_CO_source_WO_involves', 'U') IS NULL
+CREATE TABLE [metadata].[CO_target_CO_source_WO_involves] (
+    CO_ID_target int not null, 
+    CO_ID_source int not null, 
+    WO_ID_involves int not null, 
+    constraint CO_target_CO_source_WO_involves_fkCO_target foreign key (
+        CO_ID_target
+    ) references [metadata].[CO_Container](CO_ID), 
+    constraint CO_target_CO_source_WO_involves_fkCO_source foreign key (
+        CO_ID_source
+    ) references [metadata].[CO_Container](CO_ID), 
+    constraint CO_target_CO_source_WO_involves_fkWO_involves foreign key (
+        WO_ID_involves
+    ) references [metadata].[WO_Work](WO_ID), 
+    constraint pkCO_target_CO_source_WO_involves primary key (
+        CO_ID_target asc,
+        CO_ID_source asc
     )
 );
 GO
@@ -126,18 +455,157 @@ GO
 --
 -- @equivalent the equivalent that you want to retrieve data for
 --
+-- ATTRIBUTE RESTATEMENT CONSTRAINTS ----------------------------------------------------------------------------------
+--
+-- Attributes may be prevented from storing restatements.
+-- A restatement is when the same value occurs for two adjacent points
+-- in changing time.
+--
+-- returns 1 for at least one equal surrounding value, 0 for different surrounding values
+--
+-- @id the identity of the anchored entity
+-- @eq the equivalent (when applicable)
+-- @value the value of the attribute
+-- @changed the point in time from which this value shall represent a change
+--
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfSR_CFG_Source_Configuration restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcSR_CFG_Source_Configuration restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfSR_CFG_Source_Configuration', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfSR_CFG_Source_Configuration] (
+        @id int,
+        @value varbinary(16),
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.SR_CFG_Checksum
+                    FROM
+                        [metadata].[SR_CFG_Source_Configuration] pre
+                    WHERE
+                        pre.SR_CFG_SR_ID = @id
+                    AND
+                        pre.SR_CFG_ChangedAt < @changed
+                    ORDER BY
+                        pre.SR_CFG_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.SR_CFG_Checksum
+                    FROM
+                        [metadata].[SR_CFG_Source_Configuration] fol
+                    WHERE
+                        fol.SR_CFG_SR_ID = @id
+                    AND
+                        fol.SR_CFG_ChangedAt > @changed
+                    ORDER BY
+                        fol.SR_CFG_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[SR_CFG_Source_Configuration]
+    ADD CONSTRAINT [rcSR_CFG_Source_Configuration] CHECK (
+        [metadata].[rfSR_CFG_Source_Configuration] (
+            SR_CFG_SR_ID,
+            SR_CFG_Checksum,
+            SR_CFG_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfWF_CFG_Workflow_Configuration restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcWF_CFG_Workflow_Configuration restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfWF_CFG_Workflow_Configuration', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfWF_CFG_Workflow_Configuration] (
+        @id int,
+        @value varbinary(16),
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.WF_CFG_Checksum
+                    FROM
+                        [metadata].[WF_CFG_Workflow_Configuration] pre
+                    WHERE
+                        pre.WF_CFG_WF_ID = @id
+                    AND
+                        pre.WF_CFG_ChangedAt < @changed
+                    ORDER BY
+                        pre.WF_CFG_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.WF_CFG_Checksum
+                    FROM
+                        [metadata].[WF_CFG_Workflow_Configuration] fol
+                    WHERE
+                        fol.WF_CFG_WF_ID = @id
+                    AND
+                        fol.WF_CFG_ChangedAt > @changed
+                    ORDER BY
+                        fol.WF_CFG_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[WF_CFG_Workflow_Configuration]
+    ADD CONSTRAINT [rcWF_CFG_Workflow_Configuration] CHECK (
+        [metadata].[rfWF_CFG_Workflow_Configuration] (
+            WF_CFG_WF_ID,
+            WF_CFG_Checksum,
+            WF_CFG_ChangedAt
+        ) = 0
+    );
+END
+GO
 -- KEY GENERATORS -----------------------------------------------------------------------------------------------------
 --
 -- These stored procedures can be used to generate identities of entities.
 -- Corresponding anchors must have an incrementing identity column.
 --
 -- Key Generation Stored Procedure ------------------------------------------------------------------------------------
--- kBA_Batch identity by surrogate key generation stored procedure
+-- kJB_Job identity by surrogate key generation stored procedure
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.kBA_Batch', 'P') IS NULL
+IF Object_ID('metadata.kJB_Job', 'P') IS NULL
 BEGIN
     EXEC('
-    CREATE PROCEDURE [metadata].[kBA_Batch] (
+    CREATE PROCEDURE [metadata].[kJB_Job] (
         @requestedNumberOfIdentities bigint
     ) AS
     BEGIN
@@ -155,11 +623,11 @@ BEGIN
                 WHERE
                     idNumber < @requestedNumberOfIdentities
             )
-            INSERT INTO [metadata].[BA_Batch] (
-                BA_Dummy
+            INSERT INTO [metadata].[JB_Job] (
+                JB_Dummy
             )
             OUTPUT
-                inserted.BA_ID
+                inserted.JB_ID
             SELECT
                 null
             FROM
@@ -171,12 +639,12 @@ BEGIN
 END
 GO
 -- Key Generation Stored Procedure ------------------------------------------------------------------------------------
--- kFI_File identity by surrogate key generation stored procedure
+-- kSR_Source identity by surrogate key generation stored procedure
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.kFI_File', 'P') IS NULL
+IF Object_ID('metadata.kSR_Source', 'P') IS NULL
 BEGIN
     EXEC('
-    CREATE PROCEDURE [metadata].[kFI_File] (
+    CREATE PROCEDURE [metadata].[kSR_Source] (
         @requestedNumberOfIdentities bigint
     ) AS
     BEGIN
@@ -194,11 +662,128 @@ BEGIN
                 WHERE
                     idNumber < @requestedNumberOfIdentities
             )
-            INSERT INTO [metadata].[FI_File] (
-                FI_Dummy
+            INSERT INTO [metadata].[SR_Source] (
+                SR_Dummy
             )
             OUTPUT
-                inserted.FI_ID
+                inserted.SR_ID
+            SELECT
+                null
+            FROM
+                idGenerator
+            OPTION (maxrecursion 0);
+        END
+    END
+    ');
+END
+GO
+-- Key Generation Stored Procedure ------------------------------------------------------------------------------------
+-- kCO_Container identity by surrogate key generation stored procedure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.kCO_Container', 'P') IS NULL
+BEGIN
+    EXEC('
+    CREATE PROCEDURE [metadata].[kCO_Container] (
+        @requestedNumberOfIdentities bigint
+    ) AS
+    BEGIN
+        SET NOCOUNT ON;
+        IF @requestedNumberOfIdentities > 0
+        BEGIN
+            WITH idGenerator (idNumber) AS (
+                SELECT
+                    1
+                UNION ALL
+                SELECT
+                    idNumber + 1
+                FROM
+                    idGenerator
+                WHERE
+                    idNumber < @requestedNumberOfIdentities
+            )
+            INSERT INTO [metadata].[CO_Container] (
+                CO_Dummy
+            )
+            OUTPUT
+                inserted.CO_ID
+            SELECT
+                null
+            FROM
+                idGenerator
+            OPTION (maxrecursion 0);
+        END
+    END
+    ');
+END
+GO
+-- Key Generation Stored Procedure ------------------------------------------------------------------------------------
+-- kWO_Work identity by surrogate key generation stored procedure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.kWO_Work', 'P') IS NULL
+BEGIN
+    EXEC('
+    CREATE PROCEDURE [metadata].[kWO_Work] (
+        @requestedNumberOfIdentities bigint
+    ) AS
+    BEGIN
+        SET NOCOUNT ON;
+        IF @requestedNumberOfIdentities > 0
+        BEGIN
+            WITH idGenerator (idNumber) AS (
+                SELECT
+                    1
+                UNION ALL
+                SELECT
+                    idNumber + 1
+                FROM
+                    idGenerator
+                WHERE
+                    idNumber < @requestedNumberOfIdentities
+            )
+            INSERT INTO [metadata].[WO_Work] (
+                WO_Dummy
+            )
+            OUTPUT
+                inserted.WO_ID
+            SELECT
+                null
+            FROM
+                idGenerator
+            OPTION (maxrecursion 0);
+        END
+    END
+    ');
+END
+GO
+-- Key Generation Stored Procedure ------------------------------------------------------------------------------------
+-- kWF_Workflow identity by surrogate key generation stored procedure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.kWF_Workflow', 'P') IS NULL
+BEGIN
+    EXEC('
+    CREATE PROCEDURE [metadata].[kWF_Workflow] (
+        @requestedNumberOfIdentities bigint
+    ) AS
+    BEGIN
+        SET NOCOUNT ON;
+        IF @requestedNumberOfIdentities > 0
+        BEGIN
+            WITH idGenerator (idNumber) AS (
+                SELECT
+                    1
+                UNION ALL
+                SELECT
+                    idNumber + 1
+                FROM
+                    idGenerator
+                WHERE
+                    idNumber < @requestedNumberOfIdentities
+            )
+            INSERT INTO [metadata].[WF_Workflow] (
+                WF_Dummy
+            )
+            OUTPUT
+                inserted.WF_ID
             SELECT
                 null
             FROM
@@ -218,6 +803,50 @@ GO
 --
 -- @changingTimepoint the point in changing time to rewind to
 --
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rSR_CFG_Source_Configuration rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rSR_CFG_Source_Configuration','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rSR_CFG_Source_Configuration] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        SR_CFG_SR_ID,
+        SR_CFG_Checksum,
+        SR_CFG_Source_Configuration,
+        SR_CFG_ChangedAt
+    FROM
+        [metadata].[SR_CFG_Source_Configuration]
+    WHERE
+        SR_CFG_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rWF_CFG_Workflow_Configuration rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rWF_CFG_Workflow_Configuration','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rWF_CFG_Workflow_Configuration] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        WF_CFG_WF_ID,
+        WF_CFG_Checksum,
+        WF_CFG_Workflow_Configuration,
+        WF_CFG_ChangedAt
+    FROM
+        [metadata].[WF_CFG_Workflow_Configuration]
+    WHERE
+        WF_CFG_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
 -- ANCHOR TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
 --
 -- These table valued functions simplify temporal querying by providing a temporal
@@ -244,122 +873,527 @@ GO
 -- @equivalent the equivalent for which to retrieve data
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.dBA_Batch', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[dBA_Batch];
-IF Object_ID('metadata.nBA_Batch', 'V') IS NOT NULL
-DROP VIEW [metadata].[nBA_Batch];
-IF Object_ID('metadata.pBA_Batch', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[pBA_Batch];
-IF Object_ID('metadata.lBA_Batch', 'V') IS NOT NULL
-DROP VIEW [metadata].[lBA_Batch];
+IF Object_ID('metadata.dJB_Job', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dJB_Job];
+IF Object_ID('metadata.nJB_Job', 'V') IS NOT NULL
+DROP VIEW [metadata].[nJB_Job];
+IF Object_ID('metadata.pJB_Job', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pJB_Job];
+IF Object_ID('metadata.lJB_Job', 'V') IS NOT NULL
+DROP VIEW [metadata].[lJB_Job];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lBA_Batch viewed by the latest available information (may include future versions)
+-- lJB_Job viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[lBA_Batch] WITH SCHEMABINDING AS
+CREATE VIEW [metadata].[lJB_Job] WITH SCHEMABINDING AS
 SELECT
-    [BA].BA_ID,
-    [STA].BA_STA_BA_ID,
-    [STA].BA_STA_Batch_Start,
-    [END].BA_END_BA_ID,
-    [END].BA_END_Batch_End
+    [JB].JB_ID,
+    [STA].JB_STA_JB_ID,
+    [STA].JB_STA_Job_Start,
+    [END].JB_END_JB_ID,
+    [END].JB_END_Job_End,
+    [NAM].JB_NAM_JB_ID,
+    [NAM].JB_NAM_Job_Name
 FROM
-    [metadata].[BA_Batch] [BA]
+    [metadata].[JB_Job] [JB]
 LEFT JOIN
-    [metadata].[BA_STA_Batch_Start] [STA]
+    [metadata].[JB_STA_Job_Start] [STA]
 ON
-    [STA].BA_STA_BA_ID = [BA].BA_ID
+    [STA].JB_STA_JB_ID = [JB].JB_ID
 LEFT JOIN
-    [metadata].[BA_END_Batch_End] [END]
+    [metadata].[JB_END_Job_End] [END]
 ON
-    [END].BA_END_BA_ID = [BA].BA_ID;
+    [END].JB_END_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[JB_NAM_Job_Name] [NAM]
+ON
+    [NAM].JB_NAM_JB_ID = [JB].JB_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pBA_Batch viewed as it was on the given timepoint
+-- pJB_Job viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [metadata].[pBA_Batch] (
+CREATE FUNCTION [metadata].[pJB_Job] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    [BA].BA_ID,
-    [STA].BA_STA_BA_ID,
-    [STA].BA_STA_Batch_Start,
-    [END].BA_END_BA_ID,
-    [END].BA_END_Batch_End
+    [JB].JB_ID,
+    [STA].JB_STA_JB_ID,
+    [STA].JB_STA_Job_Start,
+    [END].JB_END_JB_ID,
+    [END].JB_END_Job_End,
+    [NAM].JB_NAM_JB_ID,
+    [NAM].JB_NAM_Job_Name
 FROM
-    [metadata].[BA_Batch] [BA]
+    [metadata].[JB_Job] [JB]
 LEFT JOIN
-    [metadata].[BA_STA_Batch_Start] [STA]
+    [metadata].[JB_STA_Job_Start] [STA]
 ON
-    [STA].BA_STA_BA_ID = [BA].BA_ID
+    [STA].JB_STA_JB_ID = [JB].JB_ID
 LEFT JOIN
-    [metadata].[BA_END_Batch_End] [END]
+    [metadata].[JB_END_Job_End] [END]
 ON
-    [END].BA_END_BA_ID = [BA].BA_ID;
+    [END].JB_END_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[JB_NAM_Job_Name] [NAM]
+ON
+    [NAM].JB_NAM_JB_ID = [JB].JB_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nBA_Batch viewed as it currently is (cannot include future versions)
+-- nJB_Job viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[nBA_Batch]
+CREATE VIEW [metadata].[nJB_Job]
 AS
 SELECT
     *
 FROM
-    [metadata].[pBA_Batch](sysdatetime());
+    [metadata].[pJB_Job](sysdatetime());
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.dFI_File', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[dFI_File];
-IF Object_ID('metadata.nFI_File', 'V') IS NOT NULL
-DROP VIEW [metadata].[nFI_File];
-IF Object_ID('metadata.pFI_File', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[pFI_File];
-IF Object_ID('metadata.lFI_File', 'V') IS NOT NULL
-DROP VIEW [metadata].[lFI_File];
+IF Object_ID('metadata.dSR_Source', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dSR_Source];
+IF Object_ID('metadata.nSR_Source', 'V') IS NOT NULL
+DROP VIEW [metadata].[nSR_Source];
+IF Object_ID('metadata.pSR_Source', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pSR_Source];
+IF Object_ID('metadata.lSR_Source', 'V') IS NOT NULL
+DROP VIEW [metadata].[lSR_Source];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lFI_File viewed by the latest available information (may include future versions)
+-- lSR_Source viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[lFI_File] WITH SCHEMABINDING AS
+CREATE VIEW [metadata].[lSR_Source] WITH SCHEMABINDING AS
 SELECT
-    [FI].FI_ID,
-    [NAM].FI_NAM_FI_ID,
-    [NAM].FI_NAM_File_Name
+    [SR].SR_ID,
+    [NAM].SR_NAM_SR_ID,
+    [NAM].SR_NAM_Source_Name,
+    [CFG].SR_CFG_SR_ID,
+    [CFG].SR_CFG_ChangedAt,
+    [CFG].SR_CFG_Checksum,
+    [CFG].SR_CFG_Source_Configuration
 FROM
-    [metadata].[FI_File] [FI]
+    [metadata].[SR_Source] [SR]
 LEFT JOIN
-    [metadata].[FI_NAM_File_Name] [NAM]
+    [metadata].[SR_NAM_Source_Name] [NAM]
 ON
-    [NAM].FI_NAM_FI_ID = [FI].FI_ID;
+    [NAM].SR_NAM_SR_ID = [SR].SR_ID
+LEFT JOIN
+    [metadata].[SR_CFG_Source_Configuration] [CFG]
+ON
+    [CFG].SR_CFG_SR_ID = [SR].SR_ID
+AND
+    [CFG].SR_CFG_ChangedAt = (
+        SELECT
+            max(sub.SR_CFG_ChangedAt)
+        FROM
+            [metadata].[SR_CFG_Source_Configuration] sub
+        WHERE
+            sub.SR_CFG_SR_ID = [SR].SR_ID
+   );
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pFI_File viewed as it was on the given timepoint
+-- pSR_Source viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [metadata].[pFI_File] (
+CREATE FUNCTION [metadata].[pSR_Source] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    [FI].FI_ID,
-    [NAM].FI_NAM_FI_ID,
-    [NAM].FI_NAM_File_Name
+    [SR].SR_ID,
+    [NAM].SR_NAM_SR_ID,
+    [NAM].SR_NAM_Source_Name,
+    [CFG].SR_CFG_SR_ID,
+    [CFG].SR_CFG_ChangedAt,
+    [CFG].SR_CFG_Checksum,
+    [CFG].SR_CFG_Source_Configuration
 FROM
-    [metadata].[FI_File] [FI]
+    [metadata].[SR_Source] [SR]
 LEFT JOIN
-    [metadata].[FI_NAM_File_Name] [NAM]
+    [metadata].[SR_NAM_Source_Name] [NAM]
 ON
-    [NAM].FI_NAM_FI_ID = [FI].FI_ID;
+    [NAM].SR_NAM_SR_ID = [SR].SR_ID
+LEFT JOIN
+    [metadata].[rSR_CFG_Source_Configuration](@changingTimepoint) [CFG]
+ON
+    [CFG].SR_CFG_SR_ID = [SR].SR_ID
+AND
+    [CFG].SR_CFG_ChangedAt = (
+        SELECT
+            max(sub.SR_CFG_ChangedAt)
+        FROM
+            [metadata].[rSR_CFG_Source_Configuration](@changingTimepoint) sub
+        WHERE
+            sub.SR_CFG_SR_ID = [SR].SR_ID
+   );
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nFI_File viewed as it currently is (cannot include future versions)
+-- nSR_Source viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[nFI_File]
+CREATE VIEW [metadata].[nSR_Source]
 AS
 SELECT
     *
 FROM
-    [metadata].[pFI_File](sysdatetime());
+    [metadata].[pSR_Source](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dSR_Source showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[dSR_Source] (
+    @intervalStart datetime2(7),
+    @intervalEnd datetime2(7),
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pSR].*
+FROM (
+    SELECT DISTINCT
+        SR_CFG_SR_ID AS SR_ID,
+        SR_CFG_ChangedAt AS inspectedTimepoint,
+        'CFG' AS mnemonic
+    FROM
+        [metadata].[SR_CFG_Source_Configuration]
+    WHERE
+        (@selection is null OR @selection like '%CFG%')
+    AND
+        SR_CFG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [metadata].[pSR_Source](timepoints.inspectedTimepoint) [pSR]
+WHERE
+    [pSR].SR_ID = timepoints.SR_ID;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dCO_Container', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dCO_Container];
+IF Object_ID('metadata.nCO_Container', 'V') IS NOT NULL
+DROP VIEW [metadata].[nCO_Container];
+IF Object_ID('metadata.pCO_Container', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pCO_Container];
+IF Object_ID('metadata.lCO_Container', 'V') IS NOT NULL
+DROP VIEW [metadata].[lCO_Container];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lCO_Container viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lCO_Container] WITH SCHEMABINDING AS
+SELECT
+    [CO].CO_ID,
+    [NAM].CO_NAM_CO_ID,
+    [NAM].CO_NAM_Container_Name,
+    [TYP].CO_TYP_CO_ID,
+    [kTYP].TYP_Type AS CO_TYP_TYP_Type,
+    [TYP].CO_TYP_TYP_ID,
+    [PTH].CO_PTH_CO_ID,
+    [PTH].CO_PTH_Container_Path,
+    [DSC].CO_DSC_CO_ID,
+    [DSC].CO_DSC_Container_Discovered
+FROM
+    [metadata].[CO_Container] [CO]
+LEFT JOIN
+    [metadata].[CO_NAM_Container_Name] [NAM]
+ON
+    [NAM].CO_NAM_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[CO_TYP_Container_Type] [TYP]
+ON
+    [TYP].CO_TYP_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[TYP_Type] [kTYP]
+ON
+    [kTYP].TYP_ID = [TYP].CO_TYP_TYP_ID
+LEFT JOIN
+    [metadata].[CO_PTH_Container_Path] [PTH]
+ON
+    [PTH].CO_PTH_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[CO_DSC_Container_Discovered] [DSC]
+ON
+    [DSC].CO_DSC_CO_ID = [CO].CO_ID;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pCO_Container viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pCO_Container] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [CO].CO_ID,
+    [NAM].CO_NAM_CO_ID,
+    [NAM].CO_NAM_Container_Name,
+    [TYP].CO_TYP_CO_ID,
+    [kTYP].TYP_Type AS CO_TYP_TYP_Type,
+    [TYP].CO_TYP_TYP_ID,
+    [PTH].CO_PTH_CO_ID,
+    [PTH].CO_PTH_Container_Path,
+    [DSC].CO_DSC_CO_ID,
+    [DSC].CO_DSC_Container_Discovered
+FROM
+    [metadata].[CO_Container] [CO]
+LEFT JOIN
+    [metadata].[CO_NAM_Container_Name] [NAM]
+ON
+    [NAM].CO_NAM_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[CO_TYP_Container_Type] [TYP]
+ON
+    [TYP].CO_TYP_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[TYP_Type] [kTYP]
+ON
+    [kTYP].TYP_ID = [TYP].CO_TYP_TYP_ID
+LEFT JOIN
+    [metadata].[CO_PTH_Container_Path] [PTH]
+ON
+    [PTH].CO_PTH_CO_ID = [CO].CO_ID
+LEFT JOIN
+    [metadata].[CO_DSC_Container_Discovered] [DSC]
+ON
+    [DSC].CO_DSC_CO_ID = [CO].CO_ID;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nCO_Container viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nCO_Container]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pCO_Container](sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dWO_Work', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dWO_Work];
+IF Object_ID('metadata.nWO_Work', 'V') IS NOT NULL
+DROP VIEW [metadata].[nWO_Work];
+IF Object_ID('metadata.pWO_Work', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pWO_Work];
+IF Object_ID('metadata.lWO_Work', 'V') IS NOT NULL
+DROP VIEW [metadata].[lWO_Work];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lWO_Work viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lWO_Work] WITH SCHEMABINDING AS
+SELECT
+    [WO].WO_ID,
+    [STA].WO_STA_WO_ID,
+    [STA].WO_STA_Work_Start,
+    [END].WO_END_WO_ID,
+    [END].WO_END_Work_End,
+    [UPD].WO_UPD_WO_ID,
+    [UPD].WO_UPD_Work_Updates,
+    [NAM].WO_NAM_WO_ID,
+    [NAM].WO_NAM_Work_Name,
+    [INS].WO_INS_WO_ID,
+    [INS].WO_INS_Work_Inserts,
+    [DEL].WO_DEL_WO_ID,
+    [DEL].WO_DEL_Work_Deletes
+FROM
+    [metadata].[WO_Work] [WO]
+LEFT JOIN
+    [metadata].[WO_STA_Work_Start] [STA]
+ON
+    [STA].WO_STA_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_END_Work_End] [END]
+ON
+    [END].WO_END_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_UPD_Work_Updates] [UPD]
+ON
+    [UPD].WO_UPD_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_NAM_Work_Name] [NAM]
+ON
+    [NAM].WO_NAM_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_INS_Work_Inserts] [INS]
+ON
+    [INS].WO_INS_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_DEL_Work_Deletes] [DEL]
+ON
+    [DEL].WO_DEL_WO_ID = [WO].WO_ID;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pWO_Work viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pWO_Work] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [WO].WO_ID,
+    [STA].WO_STA_WO_ID,
+    [STA].WO_STA_Work_Start,
+    [END].WO_END_WO_ID,
+    [END].WO_END_Work_End,
+    [UPD].WO_UPD_WO_ID,
+    [UPD].WO_UPD_Work_Updates,
+    [NAM].WO_NAM_WO_ID,
+    [NAM].WO_NAM_Work_Name,
+    [INS].WO_INS_WO_ID,
+    [INS].WO_INS_Work_Inserts,
+    [DEL].WO_DEL_WO_ID,
+    [DEL].WO_DEL_Work_Deletes
+FROM
+    [metadata].[WO_Work] [WO]
+LEFT JOIN
+    [metadata].[WO_STA_Work_Start] [STA]
+ON
+    [STA].WO_STA_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_END_Work_End] [END]
+ON
+    [END].WO_END_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_UPD_Work_Updates] [UPD]
+ON
+    [UPD].WO_UPD_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_NAM_Work_Name] [NAM]
+ON
+    [NAM].WO_NAM_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_INS_Work_Inserts] [INS]
+ON
+    [INS].WO_INS_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_DEL_Work_Deletes] [DEL]
+ON
+    [DEL].WO_DEL_WO_ID = [WO].WO_ID;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nWO_Work viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nWO_Work]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pWO_Work](sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dWF_Workflow', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dWF_Workflow];
+IF Object_ID('metadata.nWF_Workflow', 'V') IS NOT NULL
+DROP VIEW [metadata].[nWF_Workflow];
+IF Object_ID('metadata.pWF_Workflow', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pWF_Workflow];
+IF Object_ID('metadata.lWF_Workflow', 'V') IS NOT NULL
+DROP VIEW [metadata].[lWF_Workflow];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lWF_Workflow viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lWF_Workflow] WITH SCHEMABINDING AS
+SELECT
+    [WF].WF_ID,
+    [NAM].WF_NAM_WF_ID,
+    [NAM].WF_NAM_Workflow_Name,
+    [CFG].WF_CFG_WF_ID,
+    [CFG].WF_CFG_ChangedAt,
+    [CFG].WF_CFG_Checksum,
+    [CFG].WF_CFG_Workflow_Configuration
+FROM
+    [metadata].[WF_Workflow] [WF]
+LEFT JOIN
+    [metadata].[WF_NAM_Workflow_Name] [NAM]
+ON
+    [NAM].WF_NAM_WF_ID = [WF].WF_ID
+LEFT JOIN
+    [metadata].[WF_CFG_Workflow_Configuration] [CFG]
+ON
+    [CFG].WF_CFG_WF_ID = [WF].WF_ID
+AND
+    [CFG].WF_CFG_ChangedAt = (
+        SELECT
+            max(sub.WF_CFG_ChangedAt)
+        FROM
+            [metadata].[WF_CFG_Workflow_Configuration] sub
+        WHERE
+            sub.WF_CFG_WF_ID = [WF].WF_ID
+   );
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pWF_Workflow viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pWF_Workflow] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [WF].WF_ID,
+    [NAM].WF_NAM_WF_ID,
+    [NAM].WF_NAM_Workflow_Name,
+    [CFG].WF_CFG_WF_ID,
+    [CFG].WF_CFG_ChangedAt,
+    [CFG].WF_CFG_Checksum,
+    [CFG].WF_CFG_Workflow_Configuration
+FROM
+    [metadata].[WF_Workflow] [WF]
+LEFT JOIN
+    [metadata].[WF_NAM_Workflow_Name] [NAM]
+ON
+    [NAM].WF_NAM_WF_ID = [WF].WF_ID
+LEFT JOIN
+    [metadata].[rWF_CFG_Workflow_Configuration](@changingTimepoint) [CFG]
+ON
+    [CFG].WF_CFG_WF_ID = [WF].WF_ID
+AND
+    [CFG].WF_CFG_ChangedAt = (
+        SELECT
+            max(sub.WF_CFG_ChangedAt)
+        FROM
+            [metadata].[rWF_CFG_Workflow_Configuration](@changingTimepoint) sub
+        WHERE
+            sub.WF_CFG_WF_ID = [WF].WF_ID
+   );
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nWF_Workflow viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nWF_Workflow]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pWF_Workflow](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dWF_Workflow showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[dWF_Workflow] (
+    @intervalStart datetime2(7),
+    @intervalEnd datetime2(7),
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pWF].*
+FROM (
+    SELECT DISTINCT
+        WF_CFG_WF_ID AS WF_ID,
+        WF_CFG_ChangedAt AS inspectedTimepoint,
+        'CFG' AS mnemonic
+    FROM
+        [metadata].[WF_CFG_Workflow_Configuration]
+    WHERE
+        (@selection is null OR @selection like '%CFG%')
+    AND
+        WF_CFG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [metadata].[pWF_Workflow](timepoints.inspectedTimepoint) [pWF]
+WHERE
+    [pWF].WF_ID = timepoints.WF_ID;
 GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
@@ -374,9 +1408,9 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itBA_Batch instead of INSERT trigger on lBA_Batch
+-- itJB_Job instead of INSERT trigger on lJB_Job
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itBA_Batch] ON [metadata].[lBA_Batch]
+CREATE TRIGGER [metadata].[itJB_Job] ON [metadata].[lJB_Job]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -384,132 +1418,168 @@ BEGIN
     DECLARE @now datetime2(7) = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @BA TABLE (
+    DECLARE @JB TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
-        BA_ID int not null
+        JB_ID int not null
     );
-    INSERT INTO [metadata].[BA_Batch] (
-        BA_Dummy
+    INSERT INTO [metadata].[JB_Job] (
+        JB_Dummy
     )
     OUTPUT
-        inserted.BA_ID
+        inserted.JB_ID
     INTO
-        @BA
+        @JB
     SELECT
         null
     FROM
         inserted
     WHERE
-        inserted.BA_ID is null;
+        inserted.JB_ID is null;
     DECLARE @inserted TABLE (
-        BA_ID int not null,
-        BA_STA_BA_ID int null,
-        BA_STA_Batch_Start datetime null,
-        BA_END_BA_ID int null,
-        BA_END_Batch_End datetime null
+        JB_ID int not null,
+        JB_STA_JB_ID int null,
+        JB_STA_Job_Start datetime null,
+        JB_END_JB_ID int null,
+        JB_END_Job_End datetime null,
+        JB_NAM_JB_ID int null,
+        JB_NAM_Job_Name varchar(255) null
     );
     INSERT INTO @inserted
     SELECT
-        ISNULL(i.BA_ID, a.BA_ID),
-        ISNULL(ISNULL(i.BA_STA_BA_ID, i.BA_ID), a.BA_ID),
-        i.BA_STA_Batch_Start,
-        ISNULL(ISNULL(i.BA_END_BA_ID, i.BA_ID), a.BA_ID),
-        i.BA_END_Batch_End
+        ISNULL(i.JB_ID, a.JB_ID),
+        ISNULL(ISNULL(i.JB_STA_JB_ID, i.JB_ID), a.JB_ID),
+        i.JB_STA_Job_Start,
+        ISNULL(ISNULL(i.JB_END_JB_ID, i.JB_ID), a.JB_ID),
+        i.JB_END_Job_End,
+        ISNULL(ISNULL(i.JB_NAM_JB_ID, i.JB_ID), a.JB_ID),
+        i.JB_NAM_Job_Name
     FROM (
         SELECT
-            BA_ID,
-            BA_STA_BA_ID,
-            BA_STA_Batch_Start,
-            BA_END_BA_ID,
-            BA_END_Batch_End,
-            ROW_NUMBER() OVER (PARTITION BY BA_ID ORDER BY BA_ID) AS Row
+            JB_ID,
+            JB_STA_JB_ID,
+            JB_STA_Job_Start,
+            JB_END_JB_ID,
+            JB_END_Job_End,
+            JB_NAM_JB_ID,
+            JB_NAM_Job_Name,
+            ROW_NUMBER() OVER (PARTITION BY JB_ID ORDER BY JB_ID) AS Row
         FROM
             inserted
     ) i
     LEFT JOIN
-        @BA a
+        @JB a
     ON
         a.Row = i.Row;
-    INSERT INTO [metadata].[BA_STA_Batch_Start] (
-        BA_STA_BA_ID,
-        BA_STA_Batch_Start
+    INSERT INTO [metadata].[JB_STA_Job_Start] (
+        JB_STA_JB_ID,
+        JB_STA_Job_Start
     )
     SELECT
-        i.BA_STA_BA_ID,
-        i.BA_STA_Batch_Start
+        i.JB_STA_JB_ID,
+        i.JB_STA_Job_Start
     FROM
         @inserted i
     LEFT JOIN
-        [metadata].[BA_STA_Batch_Start] [STA]
+        [metadata].[JB_STA_Job_Start] [STA]
     ON
-        [STA].BA_STA_BA_ID = i.BA_STA_BA_ID
+        [STA].JB_STA_JB_ID = i.JB_STA_JB_ID
     WHERE
-        [STA].BA_STA_BA_ID is null
+        [STA].JB_STA_JB_ID is null
     AND
-        i.BA_STA_Batch_Start is not null;
-    INSERT INTO [metadata].[BA_END_Batch_End] (
-        BA_END_BA_ID,
-        BA_END_Batch_End
+        i.JB_STA_Job_Start is not null;
+    INSERT INTO [metadata].[JB_END_Job_End] (
+        JB_END_JB_ID,
+        JB_END_Job_End
     )
     SELECT
-        i.BA_END_BA_ID,
-        i.BA_END_Batch_End
+        i.JB_END_JB_ID,
+        i.JB_END_Job_End
     FROM
         @inserted i
     LEFT JOIN
-        [metadata].[BA_END_Batch_End] [END]
+        [metadata].[JB_END_Job_End] [END]
     ON
-        [END].BA_END_BA_ID = i.BA_END_BA_ID
+        [END].JB_END_JB_ID = i.JB_END_JB_ID
     WHERE
-        [END].BA_END_BA_ID is null
+        [END].JB_END_JB_ID is null
     AND
-        i.BA_END_Batch_End is not null;
+        i.JB_END_Job_End is not null;
+    INSERT INTO [metadata].[JB_NAM_Job_Name] (
+        JB_NAM_JB_ID,
+        JB_NAM_Job_Name
+    )
+    SELECT
+        i.JB_NAM_JB_ID,
+        i.JB_NAM_Job_Name
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[JB_NAM_Job_Name] [NAM]
+    ON
+        [NAM].JB_NAM_JB_ID = i.JB_NAM_JB_ID
+    WHERE
+        [NAM].JB_NAM_JB_ID is null
+    AND
+        i.JB_NAM_Job_Name is not null;
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtBA_Batch instead of DELETE trigger on lBA_Batch
+-- dtJB_Job instead of DELETE trigger on lJB_Job
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtBA_Batch] ON [metadata].[lBA_Batch]
+CREATE TRIGGER [metadata].[dtJB_Job] ON [metadata].[lJB_Job]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
     DELETE [STA]
     FROM
-        [metadata].[BA_STA_Batch_Start] [STA]
+        [metadata].[JB_STA_Job_Start] [STA]
     JOIN
         deleted d
     ON
-        d.BA_STA_BA_ID = [STA].BA_STA_BA_ID
+        d.JB_STA_JB_ID = [STA].JB_STA_JB_ID
     DELETE [END]
     FROM
-        [metadata].[BA_END_Batch_End] [END]
+        [metadata].[JB_END_Job_End] [END]
     JOIN
         deleted d
     ON
-        d.BA_END_BA_ID = [END].BA_END_BA_ID
-        ;
-    DELETE [BA]
+        d.JB_END_JB_ID = [END].JB_END_JB_ID
+    DELETE [NAM]
     FROM
-        [metadata].[BA_Batch] [BA]
-    LEFT JOIN
-        [metadata].[BA_STA_Batch_Start] [STA]
+        [metadata].[JB_NAM_Job_Name] [NAM]
+    JOIN
+        deleted d
     ON
-        [STA].BA_STA_BA_ID = [BA].BA_ID
+        d.JB_NAM_JB_ID = [NAM].JB_NAM_JB_ID
+        ;
+    DELETE [JB]
+    FROM
+        [metadata].[JB_Job] [JB]
     LEFT JOIN
-        [metadata].[BA_END_Batch_End] [END]
+        [metadata].[JB_STA_Job_Start] [STA]
     ON
-        [END].BA_END_BA_ID = [BA].BA_ID
+        [STA].JB_STA_JB_ID = [JB].JB_ID
+    LEFT JOIN
+        [metadata].[JB_END_Job_End] [END]
+    ON
+        [END].JB_END_JB_ID = [JB].JB_ID
+    LEFT JOIN
+        [metadata].[JB_NAM_Job_Name] [NAM]
+    ON
+        [NAM].JB_NAM_JB_ID = [JB].JB_ID
     WHERE
-        [STA].BA_STA_BA_ID is null
+        [STA].JB_STA_JB_ID is null
     AND
-        [END].BA_END_BA_ID is null;
+        [END].JB_END_JB_ID is null
+    AND
+        [NAM].JB_NAM_JB_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itFI_File instead of INSERT trigger on lFI_File
+-- itSR_Source instead of INSERT trigger on lSR_Source
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itFI_File] ON [metadata].[lFI_File]
+CREATE TRIGGER [metadata].[itSR_Source] ON [metadata].[lSR_Source]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -517,90 +1587,986 @@ BEGIN
     DECLARE @now datetime2(7) = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @FI TABLE (
+    DECLARE @SR TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
-        FI_ID int not null
+        SR_ID int not null
     );
-    INSERT INTO [metadata].[FI_File] (
-        FI_Dummy
+    INSERT INTO [metadata].[SR_Source] (
+        SR_Dummy
     )
     OUTPUT
-        inserted.FI_ID
+        inserted.SR_ID
     INTO
-        @FI
+        @SR
     SELECT
         null
     FROM
         inserted
     WHERE
-        inserted.FI_ID is null;
+        inserted.SR_ID is null;
     DECLARE @inserted TABLE (
-        FI_ID int not null,
-        FI_NAM_FI_ID int null,
-        FI_NAM_File_Name varchar(2000) null
+        SR_ID int not null,
+        SR_NAM_SR_ID int null,
+        SR_NAM_Source_Name varchar(2000) null,
+        SR_CFG_SR_ID int null,
+        SR_CFG_ChangedAt datetime null,
+        SR_CFG_Checksum varbinary(16) null,
+        SR_CFG_Source_Configuration xml null
     );
     INSERT INTO @inserted
     SELECT
-        ISNULL(i.FI_ID, a.FI_ID),
-        ISNULL(ISNULL(i.FI_NAM_FI_ID, i.FI_ID), a.FI_ID),
-        i.FI_NAM_File_Name
+        ISNULL(i.SR_ID, a.SR_ID),
+        ISNULL(ISNULL(i.SR_NAM_SR_ID, i.SR_ID), a.SR_ID),
+        i.SR_NAM_Source_Name,
+        ISNULL(ISNULL(i.SR_CFG_SR_ID, i.SR_ID), a.SR_ID),
+        ISNULL(i.SR_CFG_ChangedAt, @now),
+        ISNULL(i.SR_CFG_Checksum, HashBytes('MD5', cast(i.SR_CFG_Source_Configuration as varbinary(max)))),
+        i.SR_CFG_Source_Configuration
     FROM (
         SELECT
-            FI_ID,
-            FI_NAM_FI_ID,
-            FI_NAM_File_Name,
-            ROW_NUMBER() OVER (PARTITION BY FI_ID ORDER BY FI_ID) AS Row
+            SR_ID,
+            SR_NAM_SR_ID,
+            SR_NAM_Source_Name,
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Checksum,
+            SR_CFG_Source_Configuration,
+            ROW_NUMBER() OVER (PARTITION BY SR_ID ORDER BY SR_ID) AS Row
         FROM
             inserted
     ) i
     LEFT JOIN
-        @FI a
+        @SR a
     ON
         a.Row = i.Row;
-    INSERT INTO [metadata].[FI_NAM_File_Name] (
-        FI_NAM_FI_ID,
-        FI_NAM_File_Name
+    INSERT INTO [metadata].[SR_NAM_Source_Name] (
+        SR_NAM_SR_ID,
+        SR_NAM_Source_Name
     )
     SELECT
-        i.FI_NAM_FI_ID,
-        i.FI_NAM_File_Name
+        i.SR_NAM_SR_ID,
+        i.SR_NAM_Source_Name
     FROM
         @inserted i
     LEFT JOIN
-        [metadata].[FI_NAM_File_Name] [NAM]
+        [metadata].[SR_NAM_Source_Name] [NAM]
     ON
-        [NAM].FI_NAM_FI_ID = i.FI_NAM_FI_ID
+        [NAM].SR_NAM_SR_ID = i.SR_NAM_SR_ID
     WHERE
-        [NAM].FI_NAM_FI_ID is null
+        [NAM].SR_NAM_SR_ID is null
     AND
-        i.FI_NAM_File_Name is not null;
+        i.SR_NAM_Source_Name is not null;
+    DECLARE @SR_CFG_Source_Configuration TABLE (
+        SR_CFG_SR_ID int not null,
+        SR_CFG_ChangedAt datetime not null,
+        SR_CFG_Source_Configuration xml not null,
+        SR_CFG_Checksum varbinary(16) not null,
+        SR_CFG_Version bigint not null,
+        SR_CFG_StatementType char(1) not null,
+        primary key(
+            SR_CFG_Version,
+            SR_CFG_SR_ID
+        )
+    );
+    INSERT INTO @SR_CFG_Source_Configuration
+    SELECT
+        i.SR_CFG_SR_ID,
+        i.SR_CFG_ChangedAt,
+        i.SR_CFG_Source_Configuration,
+        i.SR_CFG_Checksum,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.SR_CFG_SR_ID
+            ORDER BY
+                i.SR_CFG_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        @inserted i
+    WHERE
+        i.SR_CFG_Source_Configuration is not null;
+    SELECT
+        @maxVersion = max(SR_CFG_Version),
+        @currentVersion = 0
+    FROM
+        @SR_CFG_Source_Configuration;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.SR_CFG_StatementType =
+                CASE
+                    WHEN [CFG].SR_CFG_SR_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [metadata].[rfSR_CFG_Source_Configuration](
+                        v.SR_CFG_SR_ID,
+                        v.SR_CFG_Checksum, 
+                        v.SR_CFG_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @SR_CFG_Source_Configuration v
+        LEFT JOIN
+            [metadata].[SR_CFG_Source_Configuration] [CFG]
+        ON
+            [CFG].SR_CFG_SR_ID = v.SR_CFG_SR_ID
+        AND
+            [CFG].SR_CFG_ChangedAt = v.SR_CFG_ChangedAt
+        AND
+            [CFG].SR_CFG_Checksum = v.SR_CFG_Checksum 
+        WHERE
+            v.SR_CFG_Version = @currentVersion;
+        INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Source_Configuration
+        )
+        SELECT
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Source_Configuration
+        FROM
+            @SR_CFG_Source_Configuration
+        WHERE
+            SR_CFG_Version = @currentVersion
+        AND
+            SR_CFG_StatementType in ('N');
+    END
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- utSR_Source instead of UPDATE trigger on lSR_Source
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[utSR_Source] ON [metadata].[lSR_Source]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    IF(UPDATE(SR_ID))
+        RAISERROR('The identity column SR_ID is not updatable.', 16, 1);
+    IF(UPDATE(SR_CFG_Source_Configuration))
+    INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
+        SR_CFG_SR_ID,
+        SR_CFG_ChangedAt,
+        SR_CFG_Source_Configuration
+    )
+    SELECT
+        u.SR_CFG_SR_ID,
+        u.SR_CFG_ChangedAt,
+        i.SR_CFG_Source_Configuration
+    FROM
+        inserted i
+    CROSS APPLY (
+        SELECT
+            ISNULL(i.SR_CFG_SR_ID, i.SR_ID),
+            cast(CASE WHEN UPDATE(SR_CFG_ChangedAt) THEN i.SR_CFG_ChangedAt ELSE @now END as datetime)
+    ) u (
+        SR_CFG_SR_ID,
+        SR_CFG_ChangedAt
+    )
+    LEFT JOIN
+        [metadata].[SR_CFG_Source_Configuration] b
+    ON
+        b.SR_CFG_SR_ID = u.SR_CFG_SR_ID
+    AND
+        b.SR_CFG_Checksum = i.SR_CFG_Checksum 
+    AND
+        b.SR_CFG_ChangedAt = u.SR_CFG_ChangedAt
+    WHERE
+        b.SR_CFG_SR_ID is null
+    AND
+        [metadata].[rfSR_CFG_Source_Configuration] (
+            u.SR_CFG_SR_ID,
+            i.SR_CFG_Checksum, 
+            u.SR_CFG_ChangedAt
+        ) = 0;
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtFI_File instead of DELETE trigger on lFI_File
+-- dtSR_Source instead of DELETE trigger on lSR_Source
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtFI_File] ON [metadata].[lFI_File]
+CREATE TRIGGER [metadata].[dtSR_Source] ON [metadata].[lSR_Source]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
     DELETE [NAM]
     FROM
-        [metadata].[FI_NAM_File_Name] [NAM]
+        [metadata].[SR_NAM_Source_Name] [NAM]
     JOIN
         deleted d
     ON
-        d.FI_NAM_FI_ID = [NAM].FI_NAM_FI_ID
-        ;
-    DELETE [FI]
+        d.SR_NAM_SR_ID = [NAM].SR_NAM_SR_ID
+    DELETE [CFG]
     FROM
-        [metadata].[FI_File] [FI]
-    LEFT JOIN
-        [metadata].[FI_NAM_File_Name] [NAM]
+        [metadata].[SR_CFG_Source_Configuration] [CFG]
+    JOIN
+        deleted d
     ON
-        [NAM].FI_NAM_FI_ID = [FI].FI_ID
+        d.SR_CFG_SR_ID = [CFG].SR_CFG_SR_ID
+    AND
+        d.SR_CFG_ChangedAt = [CFG].SR_CFG_ChangedAt;
+    DELETE [SR]
+    FROM
+        [metadata].[SR_Source] [SR]
+    LEFT JOIN
+        [metadata].[SR_NAM_Source_Name] [NAM]
+    ON
+        [NAM].SR_NAM_SR_ID = [SR].SR_ID
+    LEFT JOIN
+        [metadata].[SR_CFG_Source_Configuration] [CFG]
+    ON
+        [CFG].SR_CFG_SR_ID = [SR].SR_ID
     WHERE
-        [NAM].FI_NAM_FI_ID is null;
+        [NAM].SR_NAM_SR_ID is null
+    AND
+        [CFG].SR_CFG_SR_ID is null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itCO_Container instead of INSERT trigger on lCO_Container
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itCO_Container] ON [metadata].[lCO_Container]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        CO_ID int not null
+    );
+    INSERT INTO [metadata].[CO_Container] (
+        CO_Dummy
+    )
+    OUTPUT
+        inserted.CO_ID
+    INTO
+        @CO
+    SELECT
+        null
+    FROM
+        inserted
+    WHERE
+        inserted.CO_ID is null;
+    DECLARE @inserted TABLE (
+        CO_ID int not null,
+        CO_NAM_CO_ID int null,
+        CO_NAM_Container_Name varchar(2000) null,
+        CO_TYP_CO_ID int null,
+        CO_TYP_TYP_Type varchar(42) null,
+        CO_TYP_TYP_ID tinyint null,
+        CO_PTH_CO_ID int null,
+        CO_PTH_Container_Path varchar(2000) null,
+        CO_DSC_CO_ID int null,
+        CO_DSC_Container_Discovered datetime null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.CO_ID, a.CO_ID),
+        ISNULL(ISNULL(i.CO_NAM_CO_ID, i.CO_ID), a.CO_ID),
+        i.CO_NAM_Container_Name,
+        ISNULL(ISNULL(i.CO_TYP_CO_ID, i.CO_ID), a.CO_ID),
+        i.CO_TYP_TYP_Type,
+        i.CO_TYP_TYP_ID,
+        ISNULL(ISNULL(i.CO_PTH_CO_ID, i.CO_ID), a.CO_ID),
+        i.CO_PTH_Container_Path,
+        ISNULL(ISNULL(i.CO_DSC_CO_ID, i.CO_ID), a.CO_ID),
+        i.CO_DSC_Container_Discovered
+    FROM (
+        SELECT
+            CO_ID,
+            CO_NAM_CO_ID,
+            CO_NAM_Container_Name,
+            CO_TYP_CO_ID,
+            CO_TYP_TYP_Type,
+            CO_TYP_TYP_ID,
+            CO_PTH_CO_ID,
+            CO_PTH_Container_Path,
+            CO_DSC_CO_ID,
+            CO_DSC_Container_Discovered,
+            ROW_NUMBER() OVER (PARTITION BY CO_ID ORDER BY CO_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @CO a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [metadata].[CO_NAM_Container_Name] (
+        CO_NAM_CO_ID,
+        CO_NAM_Container_Name
+    )
+    SELECT
+        i.CO_NAM_CO_ID,
+        i.CO_NAM_Container_Name
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[CO_NAM_Container_Name] [NAM]
+    ON
+        [NAM].CO_NAM_CO_ID = i.CO_NAM_CO_ID
+    WHERE
+        [NAM].CO_NAM_CO_ID is null
+    AND
+        i.CO_NAM_Container_Name is not null;
+    INSERT INTO [metadata].[CO_TYP_Container_Type] (
+        CO_TYP_CO_ID,
+        CO_TYP_TYP_ID
+    )
+    SELECT
+        i.CO_TYP_CO_ID,
+        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) 
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[CO_TYP_Container_Type] [TYP]
+    ON
+        [TYP].CO_TYP_CO_ID = i.CO_TYP_CO_ID
+    LEFT JOIN
+        [metadata].[TYP_Type] [kTYP]
+    ON
+        [kTYP].TYP_Type = i.CO_TYP_TYP_Type
+    WHERE
+        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null
+    AND 
+        [TYP].CO_TYP_CO_ID is null
+    AND
+        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null; 
+    INSERT INTO [metadata].[CO_PTH_Container_Path] (
+        CO_PTH_CO_ID,
+        CO_PTH_Container_Path
+    )
+    SELECT
+        i.CO_PTH_CO_ID,
+        i.CO_PTH_Container_Path
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[CO_PTH_Container_Path] [PTH]
+    ON
+        [PTH].CO_PTH_CO_ID = i.CO_PTH_CO_ID
+    WHERE
+        [PTH].CO_PTH_CO_ID is null
+    AND
+        i.CO_PTH_Container_Path is not null;
+    INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
+        CO_DSC_CO_ID,
+        CO_DSC_Container_Discovered
+    )
+    SELECT
+        i.CO_DSC_CO_ID,
+        i.CO_DSC_Container_Discovered
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[CO_DSC_Container_Discovered] [DSC]
+    ON
+        [DSC].CO_DSC_CO_ID = i.CO_DSC_CO_ID
+    WHERE
+        [DSC].CO_DSC_CO_ID is null
+    AND
+        i.CO_DSC_Container_Discovered is not null;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtCO_Container instead of DELETE trigger on lCO_Container
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtCO_Container] ON [metadata].[lCO_Container]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE [NAM]
+    FROM
+        [metadata].[CO_NAM_Container_Name] [NAM]
+    JOIN
+        deleted d
+    ON
+        d.CO_NAM_CO_ID = [NAM].CO_NAM_CO_ID
+    DELETE [TYP]
+    FROM
+        [metadata].[CO_TYP_Container_Type] [TYP]
+    JOIN
+        deleted d
+    ON
+        d.CO_TYP_CO_ID = [TYP].CO_TYP_CO_ID
+    DELETE [PTH]
+    FROM
+        [metadata].[CO_PTH_Container_Path] [PTH]
+    JOIN
+        deleted d
+    ON
+        d.CO_PTH_CO_ID = [PTH].CO_PTH_CO_ID
+    DELETE [DSC]
+    FROM
+        [metadata].[CO_DSC_Container_Discovered] [DSC]
+    JOIN
+        deleted d
+    ON
+        d.CO_DSC_CO_ID = [DSC].CO_DSC_CO_ID
+        ;
+    DELETE [CO]
+    FROM
+        [metadata].[CO_Container] [CO]
+    LEFT JOIN
+        [metadata].[CO_NAM_Container_Name] [NAM]
+    ON
+        [NAM].CO_NAM_CO_ID = [CO].CO_ID
+    LEFT JOIN
+        [metadata].[CO_TYP_Container_Type] [TYP]
+    ON
+        [TYP].CO_TYP_CO_ID = [CO].CO_ID
+    LEFT JOIN
+        [metadata].[CO_PTH_Container_Path] [PTH]
+    ON
+        [PTH].CO_PTH_CO_ID = [CO].CO_ID
+    LEFT JOIN
+        [metadata].[CO_DSC_Container_Discovered] [DSC]
+    ON
+        [DSC].CO_DSC_CO_ID = [CO].CO_ID
+    WHERE
+        [NAM].CO_NAM_CO_ID is null
+    AND
+        [TYP].CO_TYP_CO_ID is null
+    AND
+        [PTH].CO_PTH_CO_ID is null
+    AND
+        [DSC].CO_DSC_CO_ID is null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itWO_Work instead of INSERT trigger on lWO_Work
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itWO_Work] ON [metadata].[lWO_Work]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        WO_ID int not null
+    );
+    INSERT INTO [metadata].[WO_Work] (
+        WO_Dummy
+    )
+    OUTPUT
+        inserted.WO_ID
+    INTO
+        @WO
+    SELECT
+        null
+    FROM
+        inserted
+    WHERE
+        inserted.WO_ID is null;
+    DECLARE @inserted TABLE (
+        WO_ID int not null,
+        WO_STA_WO_ID int null,
+        WO_STA_Work_Start datetime null,
+        WO_END_WO_ID int null,
+        WO_END_Work_End datetime null,
+        WO_UPD_WO_ID int null,
+        WO_UPD_Work_Updates int null,
+        WO_NAM_WO_ID int null,
+        WO_NAM_Work_Name varchar(255) null,
+        WO_INS_WO_ID int null,
+        WO_INS_Work_Inserts int null,
+        WO_DEL_WO_ID int null,
+        WO_DEL_Work_Deletes int null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.WO_ID, a.WO_ID),
+        ISNULL(ISNULL(i.WO_STA_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_STA_Work_Start,
+        ISNULL(ISNULL(i.WO_END_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_END_Work_End,
+        ISNULL(ISNULL(i.WO_UPD_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_UPD_Work_Updates,
+        ISNULL(ISNULL(i.WO_NAM_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_NAM_Work_Name,
+        ISNULL(ISNULL(i.WO_INS_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_INS_Work_Inserts,
+        ISNULL(ISNULL(i.WO_DEL_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_DEL_Work_Deletes
+    FROM (
+        SELECT
+            WO_ID,
+            WO_STA_WO_ID,
+            WO_STA_Work_Start,
+            WO_END_WO_ID,
+            WO_END_Work_End,
+            WO_UPD_WO_ID,
+            WO_UPD_Work_Updates,
+            WO_NAM_WO_ID,
+            WO_NAM_Work_Name,
+            WO_INS_WO_ID,
+            WO_INS_Work_Inserts,
+            WO_DEL_WO_ID,
+            WO_DEL_Work_Deletes,
+            ROW_NUMBER() OVER (PARTITION BY WO_ID ORDER BY WO_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @WO a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [metadata].[WO_STA_Work_Start] (
+        WO_STA_WO_ID,
+        WO_STA_Work_Start
+    )
+    SELECT
+        i.WO_STA_WO_ID,
+        i.WO_STA_Work_Start
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_STA_Work_Start] [STA]
+    ON
+        [STA].WO_STA_WO_ID = i.WO_STA_WO_ID
+    WHERE
+        [STA].WO_STA_WO_ID is null
+    AND
+        i.WO_STA_Work_Start is not null;
+    INSERT INTO [metadata].[WO_END_Work_End] (
+        WO_END_WO_ID,
+        WO_END_Work_End
+    )
+    SELECT
+        i.WO_END_WO_ID,
+        i.WO_END_Work_End
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_END_Work_End] [END]
+    ON
+        [END].WO_END_WO_ID = i.WO_END_WO_ID
+    WHERE
+        [END].WO_END_WO_ID is null
+    AND
+        i.WO_END_Work_End is not null;
+    INSERT INTO [metadata].[WO_UPD_Work_Updates] (
+        WO_UPD_WO_ID,
+        WO_UPD_Work_Updates
+    )
+    SELECT
+        i.WO_UPD_WO_ID,
+        i.WO_UPD_Work_Updates
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_UPD_Work_Updates] [UPD]
+    ON
+        [UPD].WO_UPD_WO_ID = i.WO_UPD_WO_ID
+    WHERE
+        [UPD].WO_UPD_WO_ID is null
+    AND
+        i.WO_UPD_Work_Updates is not null;
+    INSERT INTO [metadata].[WO_NAM_Work_Name] (
+        WO_NAM_WO_ID,
+        WO_NAM_Work_Name
+    )
+    SELECT
+        i.WO_NAM_WO_ID,
+        i.WO_NAM_Work_Name
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_NAM_Work_Name] [NAM]
+    ON
+        [NAM].WO_NAM_WO_ID = i.WO_NAM_WO_ID
+    WHERE
+        [NAM].WO_NAM_WO_ID is null
+    AND
+        i.WO_NAM_Work_Name is not null;
+    INSERT INTO [metadata].[WO_INS_Work_Inserts] (
+        WO_INS_WO_ID,
+        WO_INS_Work_Inserts
+    )
+    SELECT
+        i.WO_INS_WO_ID,
+        i.WO_INS_Work_Inserts
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_INS_Work_Inserts] [INS]
+    ON
+        [INS].WO_INS_WO_ID = i.WO_INS_WO_ID
+    WHERE
+        [INS].WO_INS_WO_ID is null
+    AND
+        i.WO_INS_Work_Inserts is not null;
+    INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
+        WO_DEL_WO_ID,
+        WO_DEL_Work_Deletes
+    )
+    SELECT
+        i.WO_DEL_WO_ID,
+        i.WO_DEL_Work_Deletes
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_DEL_Work_Deletes] [DEL]
+    ON
+        [DEL].WO_DEL_WO_ID = i.WO_DEL_WO_ID
+    WHERE
+        [DEL].WO_DEL_WO_ID is null
+    AND
+        i.WO_DEL_Work_Deletes is not null;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtWO_Work instead of DELETE trigger on lWO_Work
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtWO_Work] ON [metadata].[lWO_Work]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE [STA]
+    FROM
+        [metadata].[WO_STA_Work_Start] [STA]
+    JOIN
+        deleted d
+    ON
+        d.WO_STA_WO_ID = [STA].WO_STA_WO_ID
+    DELETE [END]
+    FROM
+        [metadata].[WO_END_Work_End] [END]
+    JOIN
+        deleted d
+    ON
+        d.WO_END_WO_ID = [END].WO_END_WO_ID
+    DELETE [UPD]
+    FROM
+        [metadata].[WO_UPD_Work_Updates] [UPD]
+    JOIN
+        deleted d
+    ON
+        d.WO_UPD_WO_ID = [UPD].WO_UPD_WO_ID
+    DELETE [NAM]
+    FROM
+        [metadata].[WO_NAM_Work_Name] [NAM]
+    JOIN
+        deleted d
+    ON
+        d.WO_NAM_WO_ID = [NAM].WO_NAM_WO_ID
+    DELETE [INS]
+    FROM
+        [metadata].[WO_INS_Work_Inserts] [INS]
+    JOIN
+        deleted d
+    ON
+        d.WO_INS_WO_ID = [INS].WO_INS_WO_ID
+    DELETE [DEL]
+    FROM
+        [metadata].[WO_DEL_Work_Deletes] [DEL]
+    JOIN
+        deleted d
+    ON
+        d.WO_DEL_WO_ID = [DEL].WO_DEL_WO_ID
+        ;
+    DELETE [WO]
+    FROM
+        [metadata].[WO_Work] [WO]
+    LEFT JOIN
+        [metadata].[WO_STA_Work_Start] [STA]
+    ON
+        [STA].WO_STA_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_END_Work_End] [END]
+    ON
+        [END].WO_END_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_UPD_Work_Updates] [UPD]
+    ON
+        [UPD].WO_UPD_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_NAM_Work_Name] [NAM]
+    ON
+        [NAM].WO_NAM_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_INS_Work_Inserts] [INS]
+    ON
+        [INS].WO_INS_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_DEL_Work_Deletes] [DEL]
+    ON
+        [DEL].WO_DEL_WO_ID = [WO].WO_ID
+    WHERE
+        [STA].WO_STA_WO_ID is null
+    AND
+        [END].WO_END_WO_ID is null
+    AND
+        [UPD].WO_UPD_WO_ID is null
+    AND
+        [NAM].WO_NAM_WO_ID is null
+    AND
+        [INS].WO_INS_WO_ID is null
+    AND
+        [DEL].WO_DEL_WO_ID is null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itWF_Workflow instead of INSERT trigger on lWF_Workflow
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itWF_Workflow] ON [metadata].[lWF_Workflow]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WF TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        WF_ID int not null
+    );
+    INSERT INTO [metadata].[WF_Workflow] (
+        WF_Dummy
+    )
+    OUTPUT
+        inserted.WF_ID
+    INTO
+        @WF
+    SELECT
+        null
+    FROM
+        inserted
+    WHERE
+        inserted.WF_ID is null;
+    DECLARE @inserted TABLE (
+        WF_ID int not null,
+        WF_NAM_WF_ID int null,
+        WF_NAM_Workflow_Name varchar(255) null,
+        WF_CFG_WF_ID int null,
+        WF_CFG_ChangedAt datetime null,
+        WF_CFG_Checksum varbinary(16) null,
+        WF_CFG_Workflow_Configuration xml null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.WF_ID, a.WF_ID),
+        ISNULL(ISNULL(i.WF_NAM_WF_ID, i.WF_ID), a.WF_ID),
+        i.WF_NAM_Workflow_Name,
+        ISNULL(ISNULL(i.WF_CFG_WF_ID, i.WF_ID), a.WF_ID),
+        ISNULL(i.WF_CFG_ChangedAt, @now),
+        ISNULL(i.WF_CFG_Checksum, HashBytes('MD5', cast(i.WF_CFG_Workflow_Configuration as varbinary(max)))),
+        i.WF_CFG_Workflow_Configuration
+    FROM (
+        SELECT
+            WF_ID,
+            WF_NAM_WF_ID,
+            WF_NAM_Workflow_Name,
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Checksum,
+            WF_CFG_Workflow_Configuration,
+            ROW_NUMBER() OVER (PARTITION BY WF_ID ORDER BY WF_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @WF a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [metadata].[WF_NAM_Workflow_Name] (
+        WF_NAM_WF_ID,
+        WF_NAM_Workflow_Name
+    )
+    SELECT
+        i.WF_NAM_WF_ID,
+        i.WF_NAM_Workflow_Name
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WF_NAM_Workflow_Name] [NAM]
+    ON
+        [NAM].WF_NAM_WF_ID = i.WF_NAM_WF_ID
+    WHERE
+        [NAM].WF_NAM_WF_ID is null
+    AND
+        i.WF_NAM_Workflow_Name is not null;
+    DECLARE @WF_CFG_Workflow_Configuration TABLE (
+        WF_CFG_WF_ID int not null,
+        WF_CFG_ChangedAt datetime not null,
+        WF_CFG_Workflow_Configuration xml not null,
+        WF_CFG_Checksum varbinary(16) not null,
+        WF_CFG_Version bigint not null,
+        WF_CFG_StatementType char(1) not null,
+        primary key(
+            WF_CFG_Version,
+            WF_CFG_WF_ID
+        )
+    );
+    INSERT INTO @WF_CFG_Workflow_Configuration
+    SELECT
+        i.WF_CFG_WF_ID,
+        i.WF_CFG_ChangedAt,
+        i.WF_CFG_Workflow_Configuration,
+        i.WF_CFG_Checksum,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WF_CFG_WF_ID
+            ORDER BY
+                i.WF_CFG_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        @inserted i
+    WHERE
+        i.WF_CFG_Workflow_Configuration is not null;
+    SELECT
+        @maxVersion = max(WF_CFG_Version),
+        @currentVersion = 0
+    FROM
+        @WF_CFG_Workflow_Configuration;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WF_CFG_StatementType =
+                CASE
+                    WHEN [CFG].WF_CFG_WF_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWF_CFG_Workflow_Configuration](
+                        v.WF_CFG_WF_ID,
+                        v.WF_CFG_Checksum, 
+                        v.WF_CFG_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WF_CFG_Workflow_Configuration v
+        LEFT JOIN
+            [metadata].[WF_CFG_Workflow_Configuration] [CFG]
+        ON
+            [CFG].WF_CFG_WF_ID = v.WF_CFG_WF_ID
+        AND
+            [CFG].WF_CFG_ChangedAt = v.WF_CFG_ChangedAt
+        AND
+            [CFG].WF_CFG_Checksum = v.WF_CFG_Checksum 
+        WHERE
+            v.WF_CFG_Version = @currentVersion;
+        INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Workflow_Configuration
+        )
+        SELECT
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Workflow_Configuration
+        FROM
+            @WF_CFG_Workflow_Configuration
+        WHERE
+            WF_CFG_Version = @currentVersion
+        AND
+            WF_CFG_StatementType in ('N');
+    END
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- utWF_Workflow instead of UPDATE trigger on lWF_Workflow
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[utWF_Workflow] ON [metadata].[lWF_Workflow]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    IF(UPDATE(WF_ID))
+        RAISERROR('The identity column WF_ID is not updatable.', 16, 1);
+    IF(UPDATE(WF_CFG_Workflow_Configuration))
+    INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
+        WF_CFG_WF_ID,
+        WF_CFG_ChangedAt,
+        WF_CFG_Workflow_Configuration
+    )
+    SELECT
+        u.WF_CFG_WF_ID,
+        u.WF_CFG_ChangedAt,
+        i.WF_CFG_Workflow_Configuration
+    FROM
+        inserted i
+    CROSS APPLY (
+        SELECT
+            ISNULL(i.WF_CFG_WF_ID, i.WF_ID),
+            cast(CASE WHEN UPDATE(WF_CFG_ChangedAt) THEN i.WF_CFG_ChangedAt ELSE @now END as datetime)
+    ) u (
+        WF_CFG_WF_ID,
+        WF_CFG_ChangedAt
+    )
+    LEFT JOIN
+        [metadata].[WF_CFG_Workflow_Configuration] b
+    ON
+        b.WF_CFG_WF_ID = u.WF_CFG_WF_ID
+    AND
+        b.WF_CFG_Checksum = i.WF_CFG_Checksum 
+    AND
+        b.WF_CFG_ChangedAt = u.WF_CFG_ChangedAt
+    WHERE
+        b.WF_CFG_WF_ID is null
+    AND
+        [metadata].[rfWF_CFG_Workflow_Configuration] (
+            u.WF_CFG_WF_ID,
+            i.WF_CFG_Checksum, 
+            u.WF_CFG_ChangedAt
+        ) = 0;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtWF_Workflow instead of DELETE trigger on lWF_Workflow
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtWF_Workflow] ON [metadata].[lWF_Workflow]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE [NAM]
+    FROM
+        [metadata].[WF_NAM_Workflow_Name] [NAM]
+    JOIN
+        deleted d
+    ON
+        d.WF_NAM_WF_ID = [NAM].WF_NAM_WF_ID
+    DELETE [CFG]
+    FROM
+        [metadata].[WF_CFG_Workflow_Configuration] [CFG]
+    JOIN
+        deleted d
+    ON
+        d.WF_CFG_WF_ID = [CFG].WF_CFG_WF_ID
+    AND
+        d.WF_CFG_ChangedAt = [CFG].WF_CFG_ChangedAt;
+    DELETE [WF]
+    FROM
+        [metadata].[WF_Workflow] [WF]
+    LEFT JOIN
+        [metadata].[WF_NAM_Workflow_Name] [NAM]
+    ON
+        [NAM].WF_NAM_WF_ID = [WF].WF_ID
+    LEFT JOIN
+        [metadata].[WF_CFG_Workflow_Configuration] [CFG]
+    ON
+        [CFG].WF_CFG_WF_ID = [WF].WF_ID
+    WHERE
+        [NAM].WF_NAM_WF_ID is null
+    AND
+        [CFG].WF_CFG_WF_ID is null;
 END
 GO
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
@@ -626,47 +2592,178 @@ GO
 -- @equivalent the equivalent for which to retrieve data
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('metadata.dBA_uses_FI_the', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[dBA_uses_FI_the];
-IF Object_ID('metadata.nBA_uses_FI_the', 'V') IS NOT NULL
-DROP VIEW [metadata].[nBA_uses_FI_the];
-IF Object_ID('metadata.pBA_uses_FI_the', 'IF') IS NOT NULL
-DROP FUNCTION [metadata].[pBA_uses_FI_the];
-IF Object_ID('metadata.lBA_uses_FI_the', 'V') IS NOT NULL
-DROP VIEW [metadata].[lBA_uses_FI_the];
+IF Object_ID('metadata.dJB_of_WO_part', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dJB_of_WO_part];
+IF Object_ID('metadata.nJB_of_WO_part', 'V') IS NOT NULL
+DROP VIEW [metadata].[nJB_of_WO_part];
+IF Object_ID('metadata.pJB_of_WO_part', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pJB_of_WO_part];
+IF Object_ID('metadata.lJB_of_WO_part', 'V') IS NOT NULL
+DROP VIEW [metadata].[lJB_of_WO_part];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lBA_uses_FI_the viewed by the latest available information (may include future versions)
+-- lJB_of_WO_part viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[lBA_uses_FI_the] WITH SCHEMABINDING AS
+CREATE VIEW [metadata].[lJB_of_WO_part] WITH SCHEMABINDING AS
 SELECT
-    tie.BA_ID_uses,
-    tie.FI_ID_the
+    tie.JB_ID_of,
+    tie.WO_ID_part
 FROM
-    [metadata].[BA_uses_FI_the] tie;
+    [metadata].[JB_of_WO_part] tie;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pBA_uses_FI_the viewed by the latest available information (may include future versions)
+-- pJB_of_WO_part viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [metadata].[pBA_uses_FI_the] (
+CREATE FUNCTION [metadata].[pJB_of_WO_part] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    tie.BA_ID_uses,
-    tie.FI_ID_the
+    tie.JB_ID_of,
+    tie.WO_ID_part
 FROM
-    [metadata].[BA_uses_FI_the] tie;
+    [metadata].[JB_of_WO_part] tie;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nBA_uses_FI_the viewed as it currently is (cannot include future versions)
+-- nJB_of_WO_part viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [metadata].[nBA_uses_FI_the]
+CREATE VIEW [metadata].[nJB_of_WO_part]
 AS
 SELECT
     *
 FROM
-    [metadata].[pBA_uses_FI_the](sysdatetime());
+    [metadata].[pJB_of_WO_part](sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dJB_formed_WF_from', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dJB_formed_WF_from];
+IF Object_ID('metadata.nJB_formed_WF_from', 'V') IS NOT NULL
+DROP VIEW [metadata].[nJB_formed_WF_from];
+IF Object_ID('metadata.pJB_formed_WF_from', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pJB_formed_WF_from];
+IF Object_ID('metadata.lJB_formed_WF_from', 'V') IS NOT NULL
+DROP VIEW [metadata].[lJB_formed_WF_from];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lJB_formed_WF_from viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lJB_formed_WF_from] WITH SCHEMABINDING AS
+SELECT
+    tie.JB_ID_formed,
+    tie.WF_ID_from
+FROM
+    [metadata].[JB_formed_WF_from] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pJB_formed_WF_from viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pJB_formed_WF_from] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.JB_ID_formed,
+    tie.WF_ID_from
+FROM
+    [metadata].[JB_formed_WF_from] tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nJB_formed_WF_from viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nJB_formed_WF_from]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pJB_formed_WF_from](sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dWO_formed_SR_from', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dWO_formed_SR_from];
+IF Object_ID('metadata.nWO_formed_SR_from', 'V') IS NOT NULL
+DROP VIEW [metadata].[nWO_formed_SR_from];
+IF Object_ID('metadata.pWO_formed_SR_from', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pWO_formed_SR_from];
+IF Object_ID('metadata.lWO_formed_SR_from', 'V') IS NOT NULL
+DROP VIEW [metadata].[lWO_formed_SR_from];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lWO_formed_SR_from viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lWO_formed_SR_from] WITH SCHEMABINDING AS
+SELECT
+    tie.WO_ID_formed,
+    tie.SR_ID_from
+FROM
+    [metadata].[WO_formed_SR_from] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pWO_formed_SR_from viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pWO_formed_SR_from] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.WO_ID_formed,
+    tie.SR_ID_from
+FROM
+    [metadata].[WO_formed_SR_from] tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nWO_formed_SR_from viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nWO_formed_SR_from]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pWO_formed_SR_from](sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.dCO_target_CO_source_WO_involves', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[dCO_target_CO_source_WO_involves];
+IF Object_ID('metadata.nCO_target_CO_source_WO_involves', 'V') IS NOT NULL
+DROP VIEW [metadata].[nCO_target_CO_source_WO_involves];
+IF Object_ID('metadata.pCO_target_CO_source_WO_involves', 'IF') IS NOT NULL
+DROP FUNCTION [metadata].[pCO_target_CO_source_WO_involves];
+IF Object_ID('metadata.lCO_target_CO_source_WO_involves', 'V') IS NOT NULL
+DROP VIEW [metadata].[lCO_target_CO_source_WO_involves];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lCO_target_CO_source_WO_involves viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[lCO_target_CO_source_WO_involves] WITH SCHEMABINDING AS
+SELECT
+    tie.CO_ID_target,
+    tie.CO_ID_source,
+    tie.WO_ID_involves
+FROM
+    [metadata].[CO_target_CO_source_WO_involves] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pCO_target_CO_source_WO_involves viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[pCO_target_CO_source_WO_involves] (
+    @changingTimepoint datetime2(7)
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.CO_ID_target,
+    tie.CO_ID_source,
+    tie.WO_ID_involves
+FROM
+    [metadata].[CO_target_CO_source_WO_involves] tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nCO_target_CO_source_WO_involves viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [metadata].[nCO_target_CO_source_WO_involves]
+AS
+SELECT
+    *
+FROM
+    [metadata].[pCO_target_CO_source_WO_involves](sysdatetime());
 GO
 -- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
 --
@@ -681,9 +2778,9 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itBA_uses_FI_the instead of INSERT trigger on lBA_uses_FI_the
+-- itJB_of_WO_part instead of INSERT trigger on lJB_of_WO_part
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itBA_uses_FI_the] ON [metadata].[lBA_uses_FI_the]
+CREATE TRIGGER [metadata].[itJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -692,59 +2789,250 @@ BEGIN
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
-        BA_ID_uses int not null,
-        FI_ID_the int not null,
+        JB_ID_of int not null,
+        WO_ID_part int not null,
         primary key (
-            BA_ID_uses,
-            FI_ID_the
+            JB_ID_of,
+            WO_ID_part
         )
     );
     INSERT INTO @inserted
     SELECT
-        i.BA_ID_uses,
-        i.FI_ID_the
+        i.JB_ID_of,
+        i.WO_ID_part
     FROM
         inserted i
     WHERE
-        i.BA_ID_uses is not null
+        i.JB_ID_of is not null
     AND
-        i.FI_ID_the is not null;
-    INSERT INTO [metadata].[BA_uses_FI_the] (
-        BA_ID_uses,
-        FI_ID_the
+        i.WO_ID_part is not null;
+    INSERT INTO [metadata].[JB_of_WO_part] (
+        JB_ID_of,
+        WO_ID_part
     )
     SELECT
-        i.BA_ID_uses,
-        i.FI_ID_the
+        i.JB_ID_of,
+        i.WO_ID_part
     FROM
         @inserted i
     LEFT JOIN
-        [metadata].[BA_uses_FI_the] tie
+        [metadata].[JB_of_WO_part] tie
     ON
-        tie.BA_ID_uses = i.BA_ID_uses
+        tie.JB_ID_of = i.JB_ID_of
     AND
-        tie.FI_ID_the = i.FI_ID_the
+        tie.WO_ID_part = i.WO_ID_part
     WHERE
-        tie.FI_ID_the is null;
+        tie.WO_ID_part is null;
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtBA_uses_FI_the instead of DELETE trigger on lBA_uses_FI_the
+-- dtJB_of_WO_part instead of DELETE trigger on lJB_of_WO_part
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtBA_uses_FI_the] ON [metadata].[lBA_uses_FI_the]
+CREATE TRIGGER [metadata].[dtJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
     DELETE tie
     FROM
-        [metadata].[BA_uses_FI_the] tie
+        [metadata].[JB_of_WO_part] tie
     JOIN
         deleted d
     ON
-        d.BA_ID_uses = tie.BA_ID_uses
+        d.JB_ID_of = tie.JB_ID_of
     AND
-        d.FI_ID_the = tie.FI_ID_the;
+        d.WO_ID_part = tie.WO_ID_part;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itJB_formed_WF_from instead of INSERT trigger on lJB_formed_WF_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        JB_ID_formed int not null,
+        WF_ID_from int not null,
+        primary key (
+            JB_ID_formed
+        )
+    );
+    INSERT INTO @inserted
+    SELECT
+        i.JB_ID_formed,
+        i.WF_ID_from
+    FROM
+        inserted i
+    WHERE
+        i.JB_ID_formed is not null;
+    INSERT INTO [metadata].[JB_formed_WF_from] (
+        JB_ID_formed,
+        WF_ID_from
+    )
+    SELECT
+        i.JB_ID_formed,
+        i.WF_ID_from
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[JB_formed_WF_from] tie
+    ON
+        tie.JB_ID_formed = i.JB_ID_formed
+    WHERE
+        tie.JB_ID_formed is null;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtJB_formed_WF_from instead of DELETE trigger on lJB_formed_WF_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE tie
+    FROM
+        [metadata].[JB_formed_WF_from] tie
+    JOIN
+        deleted d
+    ON
+        d.JB_ID_formed = tie.JB_ID_formed;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itWO_formed_SR_from instead of INSERT trigger on lWO_formed_SR_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        WO_ID_formed int not null,
+        SR_ID_from int not null,
+        primary key (
+            WO_ID_formed
+        )
+    );
+    INSERT INTO @inserted
+    SELECT
+        i.WO_ID_formed,
+        i.SR_ID_from
+    FROM
+        inserted i
+    WHERE
+        i.WO_ID_formed is not null;
+    INSERT INTO [metadata].[WO_formed_SR_from] (
+        WO_ID_formed,
+        SR_ID_from
+    )
+    SELECT
+        i.WO_ID_formed,
+        i.SR_ID_from
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[WO_formed_SR_from] tie
+    ON
+        tie.WO_ID_formed = i.WO_ID_formed
+    WHERE
+        tie.WO_ID_formed is null;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtWO_formed_SR_from instead of DELETE trigger on lWO_formed_SR_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE tie
+    FROM
+        [metadata].[WO_formed_SR_from] tie
+    JOIN
+        deleted d
+    ON
+        d.WO_ID_formed = tie.WO_ID_formed;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itCO_target_CO_source_WO_involves instead of INSERT trigger on lCO_target_CO_source_WO_involves
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[itCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        CO_ID_target int not null,
+        CO_ID_source int not null,
+        WO_ID_involves int not null,
+        primary key (
+            CO_ID_target,
+            CO_ID_source
+        )
+    );
+    INSERT INTO @inserted
+    SELECT
+        i.CO_ID_target,
+        i.CO_ID_source,
+        i.WO_ID_involves
+    FROM
+        inserted i
+    WHERE
+        i.CO_ID_target is not null
+    AND
+        i.CO_ID_source is not null;
+    INSERT INTO [metadata].[CO_target_CO_source_WO_involves] (
+        CO_ID_target,
+        CO_ID_source,
+        WO_ID_involves
+    )
+    SELECT
+        i.CO_ID_target,
+        i.CO_ID_source,
+        i.WO_ID_involves
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[CO_target_CO_source_WO_involves] tie
+    ON
+        tie.CO_ID_target = i.CO_ID_target
+    AND
+        tie.CO_ID_source = i.CO_ID_source
+    WHERE
+        tie.CO_ID_source is null;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dtCO_target_CO_source_WO_involves instead of DELETE trigger on lCO_target_CO_source_WO_involves
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dtCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE tie
+    FROM
+        [metadata].[CO_target_CO_source_WO_involves] tie
+    JOIN
+        deleted d
+    ON
+        d.CO_ID_target = tie.CO_ID_target
+    AND
+        d.CO_ID_source = tie.CO_ID_source;
 END
 GO
 -- SCHEMA EVOLUTION ---------------------------------------------------------------------------------------------------
@@ -770,7 +3058,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-08-27" time="16:14:05"><metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="BA" descriptor="Batch" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="737.80" y="542.14" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="709.57" y="551.64" fixed="false"/></attribute><layout x="705.11" y="492.40" fixed="false"/></anchor><anchor mnemonic="FI" descriptor="File" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="822.00" y="241.00" fixed="true"/></attribute><layout x="788.00" y="317.00" fixed="true"/></anchor><tie><anchorRole role="uses" type="BA" identifier="true"/><anchorRole role="the" type="FI" identifier="true"/><metadata capsule="metadata"/><layout x="744.73" y="406.96" fixed="false"/></tie></schema>';
+   N'<schema format="0.98" date="2014-09-03" time="11:21:17"><metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="TYP" descriptor="Type" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="676.28" y="887.24" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="774.27" y="157.76" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="808.72" y="118.11" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="837.04" y="264.77" fixed="false"/></attribute><layout x="810.67" y="210.93" fixed="false"/></anchor><anchor mnemonic="SR" descriptor="Source" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="432.83" y="235.37" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="424.30" y="313.03" fixed="false"/></attribute><layout x="486.07" y="284.35" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="784.94" y="677.40" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata capsule="metadata"/><layout x="686.53" y="802.66" fixed="false"/></attribute><attribute mnemonic="PTH" descriptor="Path" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="734.97" y="727.62" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="618.97" y="680.41" fixed="false"/></attribute><layout x="704.54" y="660.10" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="731.96" y="406.31" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="723.51" y="444.19" fixed="true"/></attribute><attribute mnemonic="UPD" descriptor="Updates" dataRange="int"><metadata capsule="metadata"/><layout x="573.47" y="457.43" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="718.22" y="473.64" fixed="true"/></attribute><attribute mnemonic="INS" descriptor="Inserts" dataRange="int"><metadata capsule="metadata"/><layout x="531.72" y="440.42" fixed="true"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" dataRange="int"><metadata capsule="metadata"/><layout x="580.05" y="487.99" fixed="true"/></attribute><layout x="638.61" y="420.02" fixed="false"/></anchor><anchor mnemonic="WF" descriptor="Workflow" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="875.45" y="-3.10" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="933.60" y="-0.03" fixed="false"/></attribute><layout x="887.35" y="37.98" fixed="true"/></anchor><tie><anchorRole role="of" type="JB" identifier="true"/><anchorRole role="part" type="WO" identifier="true"/><metadata capsule="metadata"/><layout x="721.24" y="329.12" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="WF" identifier="false"/><metadata capsule="metadata"/><layout x="866.17" y="118.41" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="SR" identifier="false"/><metadata capsule="metadata"/><layout x="547.73" y="353.65" fixed="false"/></tie><tie><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="involves" type="WO" identifier="false"/><metadata capsule="metadata"/><layout x="669.80" y="553.13" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

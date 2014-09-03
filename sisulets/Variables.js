@@ -1,5 +1,7 @@
-// global variable
+// global variables are stored in the VARIABLE hash map
 var VARIABLES = {};
+// in case we ever need to change the schema used for the metadata model it should be changed here (and only here)
+var METADATA_SCHEMA = "metadata";
 
 // fetch environment variables
 var oWshShell = new ActiveXObject ("WScript.Shell");

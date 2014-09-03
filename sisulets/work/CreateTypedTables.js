@@ -7,6 +7,7 @@ GO
 CREATE PROCEDURE [$source.qualified$_CreateTypedTables] 
 AS
 BEGIN
+    SET NOCOUNT ON;
 ~*/
 var part, term;
 while(part = source.nextPart()) {
@@ -17,9 +18,17 @@ while(part = source.nextPart()) {
     CREATE TABLE $part.qualified$_Typed (
         _id int not null,
 ~*/
+    var k, key, c, component;
     while(term = part.nextTerm()) {
+        var nullable = 'null';
+        for(k = 0; key = part.key[part.keys[k]]; k++) {
+            if(key.components.indexOf(term.name) >= 0) {
+                nullable = 'not null';
+                break;
+            }
+        }
 /*~
-        [$term.name] $term.format null$(part.hasMoreTerms())?, 
+        [$term.name] $term.format $nullable$(part.hasMoreTerms())?, 
 ~*/
     }
 /*~

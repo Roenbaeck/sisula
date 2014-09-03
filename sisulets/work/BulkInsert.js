@@ -8,6 +8,8 @@ CREATE PROCEDURE [$source.qualified$_BulkInsert] (
 )
 AS
 BEGIN
+    SET NOCOUNT ON;
+    
     IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
 	EXEC('
 		BULK INSERT [$source.qualified$_Raw]

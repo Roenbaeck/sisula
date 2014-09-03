@@ -1,14 +1,15 @@
-<source name="Weather" directory="%SourceData%" pattern="Weat?er*.txt" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
+<source name="Weather" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
 	<description>http://www.slb.mf.stockholm.se</description>
-    <part name="Temperature" nulls=""> 
-        SELECT * FROM %table% WHERE row LIKE 'TEMP%'
+    <part name="Temperature" nulls="" charskip="4"> 
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'TEMP%'
         <term name="date" size="6" format="datetime">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
         <term name="hour" size="4" format="char(2)">
             LEFT([hour], 2)
         </term>
-        <term name="centigrade" size="10" format="decimal(19,10)"/>
+        <term name="degrees" delimiter="," format="int"/>
+        <term name="fraction" delimiter=" " format="int"/>
         <calculation name="fahrenheit" format="decimal(19,10)">
             9 / 5 * [centigrade] + 32
         </calculation>
@@ -21,7 +22,7 @@
         </key>
     </part>
     <part name="Pressure" nulls="">
-        SELECT * FROM %table% WHERE row LIKE 'PRSR%'
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'PRSR%'
         <term name="date" size="6" format="datetime">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
@@ -35,7 +36,7 @@
         </key>        
     </part>
     <part name="Wind" nulls="">
-        SELECT * FROM %table% WHERE row LIKE 'WNDS%'
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'WNDS%'
         <term name="date" size="6" format="datetime">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>

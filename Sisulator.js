@@ -193,6 +193,7 @@ var Sisulator = {
                     eval(sisula);
                 }
                 catch(e) {
+                    // alert(sisula); // alert was used for debugging sisula code
                     throw e;
                 }
             }
