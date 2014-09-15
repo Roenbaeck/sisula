@@ -9,7 +9,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 ~*/
-var part, term;
+var part, term, calculation;
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
@@ -18,17 +18,22 @@ while(part = source.nextPart()) {
     CREATE TABLE $part.qualified$_Typed (
         _id int not null,
 ~*/
-    var k, key, c, component;
+    var key;
     while(term = part.nextTerm()) {
         var nullable = 'null';
-        for(k = 0; key = part.key[part.keys[k]]; k++) {
-            if(key.components.indexOf(term.name) >= 0) {
+        while(key = part.nextKey()) {
+            if(key.hasComponent(term)) {
                 nullable = 'not null';
                 break;
             }
         }
 /*~
-        [$term.name] $term.format $nullable$(part.hasMoreTerms())?, 
+        [$term.name] $term.format $nullable$(part.hasMoreTerms() | part.hasMoreCalculations())?, 
+~*/
+    }
+    while(calculation = part.nextCalculation()) {
+/*~
+        [$calculation.name] as CAST(${calculation._calculation.trim()}$ AS $calculation.format) PERSISTED$(part.hasMoreCalculations())?, 
 ~*/
     }
 /*~

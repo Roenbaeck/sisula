@@ -71,7 +71,7 @@ var MAP = {
             }
         }
     },
-    Source: { // change to Work
+    Source: { 
         description: 'source data format description',
         root: 'source',
         key: { 
@@ -165,7 +165,7 @@ var Sisulator = {
             var script;
             var splitter = /\/\*~|~\*\//g; // split JS /*~ sisula template ~*/ JS
             // process every sisula
-            for(var s = 0; script = scripts[s]; s++) {
+            for(var scriptIndex = 0; script = scripts[scriptIndex]; scriptIndex++) {
                 script = script.replace(/^\s+/,'').replace(/\s+$/,''); // trim
                 file = reader.OpenTextFile(script);
                 var sisula = file.ReadAll();
@@ -193,6 +193,7 @@ var Sisulator = {
                     eval(sisula);
                 }
                 catch(e) {
+                    alert('Error in script: ' + script);
                     // alert(sisula); // alert was used for debugging sisula code
                     throw e;
                 }

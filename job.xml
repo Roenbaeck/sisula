@@ -2,24 +2,35 @@
     <variable name="database" value="%Database%"/>
     <variable name="path" value="\\localhost\sisula\data"/>
     <variable name="pattern" value="%Source%.*\.txt"/>
+    <!-- enumeration of on_success_action codes -->
+    <variable name="quitWithSuccess" value="1"/>
+    <variable name="quitWithFailure" value="2"/>
+    <variable name="goToTheNextStep" value="3"/>
+    <variable name="goToStepWithId" value="4"/>    
     <job name="%System%_%Source%_Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
-        <jobstep name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
+        <jobstep name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_CreateRawTable
         </jobstep>
-        <jobstep name="Bulk insert" database_name="%database%" subsystem="PowerShell" on_success_action="3">
+        <jobstep name="Bulk insert" database_name="%database%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
           $files = Get-ChildItem FileSystem::%path% | Where-Object {$_.Name -match "%pattern%"}
           ForEach ($file in $files) {
             $returnValue = Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert '%path%\$file'" -Database "%database%"
             If($returnValue) { Write-Host "$returnValue" }
           }
         </jobstep>
-        <jobstep name="Add key to raw table" database_name="%database%" subsystem="TSQL" on_success_action="3">
+        <jobstep name="Add key to raw table" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_AddKeyToRawTable
         </jobstep>
-        <jobstep name="Create typed tables" database_name="%database%" subsystem="TSQL">
+        <jobstep name="Create split view" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+          EXEC %System%_%Source%_CreateSplitView
+        </jobstep>
+        <jobstep name="Create typed tables" database_name="%database%" subsystem="TSQL"  on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_CreateTypedTables
+        </jobstep>
+        <jobstep name="Split raw into typed" database_name="%database%" subsystem="TSQL">
+          EXEC %System%_%Source%_SplitRawIntoTyped
         </jobstep>
     </job>
     <job name="%System%_%Source%_Loading">

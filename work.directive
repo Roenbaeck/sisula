@@ -1,4 +1,5 @@
 # These are the sisulets that create transformations in the ETL flow.
+sisulets/Polyfills.js
 sisulets/Variables.js
 sisulets/work/Variables.js
 sisulets/work/Helpers.js
@@ -7,6 +8,7 @@ sisulets/work/UseDatabase.js
 sisulets/work/CreateRawTable.js
 sisulets/work/BulkInsert.js
 sisulets/work/AddKeyToRawTable.js
+sisulets/work/CreateSplitView.js
 sisulets/work/CreateTypedTables.js
 sisulets/work/SplitRawIntoTyped.js
 # TODO add key to typed here

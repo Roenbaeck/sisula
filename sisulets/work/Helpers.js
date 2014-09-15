@@ -22,8 +22,11 @@ source.hasMoreParts = function() {
 source.isFirstPart = function() {
     return source._iterator.part == 1;
 };
+source.hasPart = function(part) {
+    return this.parts.indexOf(part.name) >= 0;
+};
 
-var part;
+var part, term, key;
 while(part = source.nextPart()) {
     part.nextTerm = function() {
         if(!this.terms) return null;
@@ -40,74 +43,65 @@ while(part = source.nextPart()) {
     part.isFirstTerm = function() {
         return source._iterator.term == 1;
     };
-}
-
-// TODO: add helpers for keys and components in keys
-
-
-// --------------------- MOZILLA POLYFILL ------------------------
-if (!Array.prototype.indexOf) {
-  Array.prototype.indexOf = function (searchElement, fromIndex) {
-
-    var k;
-
-    // 1. Let O be the result of calling ToObject passing
-    //    the this value as the argument.
-    if (this == null) {
-      throw new TypeError('"this" is null or not defined');
+    part.hasTerm = function(term) {
+        return this.terms.indexOf(term.name) >= 0;
+    };
+    part.nextCalculation = function() {
+        if(!this.calculations) return null;
+        if(source._iterator.calculation == this.calculations.length) {
+            source._iterator.calculation = 0;
+            return null;
+        }
+        return this.calculation[this.calculations[source._iterator.calculation++]];
+    };
+    part.hasMoreCalculations = function() {
+        if(!this.calculations) return false;
+        return source._iterator.calculation < this.calculations.length;
+    };
+    part.isFirstCalculation = function() {
+        return source._iterator.term == 1;
+    };
+    part.hasCalculation = function(calculation) {
+        return this.calculations.indexOf(calculation.name) >= 0;
+    };
+    part.nextKey = function() {
+        if(!this.keys) return null;
+        if(source._iterator.key == this.keys.length) {
+            source._iterator.key = 0;
+            return null;
+        }
+        return this.key[this.keys[source._iterator.key++]];
+    };
+    part.hasMoreKeys = function() {
+        if(!this.keys) return false;
+        return source._iterator.key < this.keys.length;
+    };
+    part.isFirstKey = function() {
+        return source._iterator.key == 1;
+    };
+    part.hasKey = function(key) {
+        return this.keys.indexOf(key.name) >= 0;
+    };
+    while(key = part.nextKey()) {
+        key.nextComponent = function() {
+            if(!this.components) return null;
+            if(source._iterator.component == this.components.length) {
+                source._iterator.component = 0;
+                return null;
+            }
+            return this.component[this.components[source._iterator.component++]];
+        };
+        key.hasMoreComponents = function() {
+            if(!this.components) return false;
+            return source._iterator.component < this.components.length;
+        };
+        key.isFirstComponent = function() {
+            return source._iterator.component == 1;
+        };
+        key.hasComponent = function(component) {
+            return this.components.indexOf(component.name) >= 0;
+        };
     }
-
-    var O = Object(this);
-
-    // 2. Let lenValue be the result of calling the Get
-    //    internal method of O with the argument "length".
-    // 3. Let len be ToUint32(lenValue).
-    var len = O.length >>> 0;
-
-    // 4. If len is 0, return -1.
-    if (len === 0) {
-      return -1;
-    }
-
-    // 5. If argument fromIndex was passed let n be
-    //    ToInteger(fromIndex); else let n be 0.
-    var n = +fromIndex || 0;
-
-    if (Math.abs(n) === Infinity) {
-      n = 0;
-    }
-
-    // 6. If n >= len, return -1.
-    if (n >= len) {
-      return -1;
-    }
-
-    // 7. If n >= 0, then Let k be n.
-    // 8. Else, n<0, Let k be len - abs(n).
-    //    If k is less than 0, then let k be 0.
-    k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
-
-    // 9. Repeat, while k < len
-    while (k < len) {
-      // a. Let Pk be ToString(k).
-      //   This is implicit for LHS operands of the in operator
-      // b. Let kPresent be the result of calling the
-      //    HasProperty internal method of O with argument Pk.
-      //   This step can be combined with c
-      // c. If kPresent is true, then
-      //    i.  Let elementK be the result of calling the Get
-      //        internal method of O with the argument ToString(k).
-      //   ii.  Let same be the result of applying the
-      //        Strict Equality Comparison Algorithm to
-      //        searchElement and elementK.
-      //  iii.  If same is true, return k.
-      if (k in O && O[k] === searchElement) {
-        return k;
-      }
-      k++;
-    }
-    return -1;
-  };
 }
 
 

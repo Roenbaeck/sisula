@@ -57,12 +57,34 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
+          EXEC SMHI_Weather_CreateSplitView
+        ',
+    @on_success_action = 3,
+    @database_name = 'Test',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Staging', 
+    @step_name = 'Create split view'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
           EXEC SMHI_Weather_CreateTypedTables
         ',
+    @on_success_action = 3,
     @database_name = 'Test',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create typed tables'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+          EXEC SMHI_Weather_SplitRawIntoTyped
+        ',
+    @database_name = 'Test',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Staging', 
+    @step_name = 'Split raw into typed'; 
 GO
 sp_delete_job
     -- mandatory parameters below and optional ones above this line

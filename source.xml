@@ -2,19 +2,23 @@
 	<description>http://www.slb.mf.stockholm.se</description>
     <part name="Temperature" nulls="" charskip="4"> 
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'TEMP%'
-        <term name="date" size="6" format="datetime">
+        <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
         <term name="hour" size="4" format="char(2)">
             LEFT([hour], 2)
         </term>
-        <term name="degrees" delimiter="," format="int"/>
-        <term name="fraction" delimiter=" " format="int"/>
+        <term name="celsius" delimiter=" " format="decimal(19,10)"/>
         <calculation name="fahrenheit" format="decimal(19,10)">
-            9 / 5 * [centigrade] + 32
+            9 / 5 * [celsius] + 32
         </calculation>
         <calculation name="freezing" format="char(1)">
-            CASE WHEN [centigrade] &gt; 0 THEN 'A' WHEN [centigrade] &lt; 0 THEN 'B' ELSE 'Z' END
+            CASE 
+                WHEN [celsius] &gt; 0 THEN 'A' 
+                WHEN [celsius] &lt; 0 THEN 'B' 
+                WHEN [celsius] = 0 THEN 'Z' 
+                ELSE '?' 
+            END
         </calculation>
         <key name="measureTime" type="primary">
             <component of="date"/>
@@ -23,7 +27,7 @@
     </part>
     <part name="Pressure" nulls="">
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'PRSR%'
-        <term name="date" size="6" format="datetime">
+        <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
         <term name="hour" size="4" format="char(2)">
@@ -37,7 +41,7 @@
     </part>
     <part name="Wind" nulls="">
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'WNDS%'
-        <term name="date" size="6" format="datetime">
+        <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
         <term name="hour" size="4" format="char(2)">
