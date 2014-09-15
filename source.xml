@@ -8,7 +8,9 @@
         <term name="hour" size="4" format="char(2)">
             LEFT([hour], 2)
         </term>
-        <term name="celsius" delimiter=" " format="decimal(19,10)"/>
+        <term name="celsius" delimiter=" " format="decimal(19,10)">
+            REPLACE([celsius], ',', '.')
+        </term>
         <calculation name="fahrenheit" format="decimal(19,10)">
             9 / 5 * [celsius] + 32
         </calculation>
@@ -25,7 +27,7 @@
             <component of="hour"/>
         </key>
     </part>
-    <part name="Pressure" nulls="">
+    <part name="Pressure" nulls="" charskip="4">
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'PRSR%'
         <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
@@ -33,13 +35,15 @@
         <term name="hour" size="4" format="char(2)">
             LEFT([hour], 2)
         </term>
-        <term name="pressure" size="10" format="decimal(19,10)"/>
+        <term name="pressure" size="10" format="decimal(19,10)">
+            REPLACE([pressure], ',', '.')
+        </term>
         <key name="measureTime" type="primary">
             <component of="date"/>
             <component of="hour"/>
         </key>        
     </part>
-    <part name="Wind" nulls="">
+    <part name="Wind" nulls="" charskip="4">
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'WNDS%'
         <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
@@ -47,8 +51,12 @@
         <term name="hour" size="4" format="char(2)">
             LEFT([hour], 2)
         </term>
-        <term name="direction" size="10" format="int"/>
-        <term name="speed" size="10" format="decimal(19,10)"/>
+        <term name="direction" size="10" format="decimal(5,2)">
+            REPLACE([direction], ',', '.')
+        </term>
+        <term name="speed" size="10" format="decimal(19,10)">
+            REPLACE([speed], ',', '.')
+        </term>
         <key name="measureTime" type="primary">
             <component of="date"/>
             <component of="hour"/>

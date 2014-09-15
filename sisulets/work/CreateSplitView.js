@@ -34,19 +34,39 @@ while(part = source.nextPart()) {
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
             WHEN t.[$term.name] is not null AND TRY_CAST(t.[$term.name] AS $term.format) is null THEN ''Conversion to $term.format failed''
-        END AS [$term.name$_Error]$(part.hasMoreTerms())?,
+        END AS [$term.name$_Error]$(part.hasMoreTerms() || part.hasMoreKeys())?,
 ~*/
     }
-    if(part._part) {
+    var component;
+    if(part.hasMoreKeys()) {
+        while(key = part.nextKey()) {
 /*~
-    FROM (
+        ROW_NUMBER() OVER (
+            PARTITION BY
+~*/
+            while(component = key.nextComponent()) {
+/*~
+                t.[$component.of]$(key.hasMoreComponents())?,
+~*/
+            }
+/*~
+            ORDER BY
+                _id
+        ) - 1 as $key.name$_Duplicate$(part.hasMoreKeys())?,
+~*/
+        }
+    }
+/*~        
+    FROM~*/
+    if(part._part) {
+
+/*~ (
         ${part._part.trim().escape()}$
     ) src
 ~*/
     }
     else {
 /*~
-    FROM 
         $source.qualified$_Raw src
 ~*/
     }

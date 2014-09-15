@@ -74,7 +74,14 @@ BEGIN
         t.[celsius], 
         CASE
             WHEN t.[celsius] is not null AND TRY_CAST(t.[celsius] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius_Error]
+        END AS [celsius_Error],
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                t.[date],
+                t.[hour]
+            ORDER BY
+                _id
+        ) - 1 as measureTime_Duplicate
     FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''TEMP%''
     ) src
@@ -87,7 +94,7 @@ BEGIN
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
             LEFT([hour], 2) AS [hour], 
-            [celsius] AS [celsius]
+            REPLACE([celsius], '','', ''.'') AS [celsius]
     ) t;
     ');
     IF Object_ID('SMHI_Weather_Pressure_Split', 'V') IS NOT NULL
@@ -109,11 +116,18 @@ BEGIN
         t.[pressure], 
         CASE
             WHEN t.[pressure] is not null AND TRY_CAST(t.[pressure] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [pressure_Error]
+        END AS [pressure_Error],
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                t.[date],
+                t.[hour]
+            ORDER BY
+                _id
+        ) - 1 as measureTime_Duplicate
     FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''PRSR%''
     ) src
-    CROSS APPLY (SELECT [row]) c0 ([row])
+    CROSS APPLY (SELECT SUBSTRING(src.[row], 5, 2147483647)) c0 ([row])
     CROSS APPLY (SELECT NULLIF(LEFT(c0.[row], 6), ''''), SUBSTRING(c0.[row], 7, 2147483647)) c1 ([date], [row])
     CROSS APPLY (SELECT NULLIF(LEFT(c1.[row], 4), ''''), SUBSTRING(c1.[row], 5, 2147483647)) c2 ([hour], [row])
     CROSS APPLY (SELECT NULLIF(LEFT(c2.[row], 10), ''''), SUBSTRING(c2.[row], 11, 2147483647)) c3 ([pressure], [row])
@@ -121,7 +135,7 @@ BEGIN
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
             LEFT([hour], 2) AS [hour], 
-            [pressure] AS [pressure]
+            REPLACE([pressure], '','', ''.'') AS [pressure]
     ) t;
     ');
     IF Object_ID('SMHI_Weather_Wind_Split', 'V') IS NOT NULL
@@ -142,16 +156,23 @@ BEGIN
         END AS [hour_Error],
         t.[direction], 
         CASE
-            WHEN t.[direction] is not null AND TRY_CAST(t.[direction] AS int) is null THEN ''Conversion to int failed''
+            WHEN t.[direction] is not null AND TRY_CAST(t.[direction] AS decimal(5,2)) is null THEN ''Conversion to decimal(5,2) failed''
         END AS [direction_Error],
         t.[speed], 
         CASE
             WHEN t.[speed] is not null AND TRY_CAST(t.[speed] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [speed_Error]
+        END AS [speed_Error],
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                t.[date],
+                t.[hour]
+            ORDER BY
+                _id
+        ) - 1 as measureTime_Duplicate
     FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''WNDS%''
     ) src
-    CROSS APPLY (SELECT [row]) c0 ([row])
+    CROSS APPLY (SELECT SUBSTRING(src.[row], 5, 2147483647)) c0 ([row])
     CROSS APPLY (SELECT NULLIF(LEFT(c0.[row], 6), ''''), SUBSTRING(c0.[row], 7, 2147483647)) c1 ([date], [row])
     CROSS APPLY (SELECT NULLIF(LEFT(c1.[row], 4), ''''), SUBSTRING(c1.[row], 5, 2147483647)) c2 ([hour], [row])
     CROSS APPLY (SELECT NULLIF(LEFT(c2.[row], 10), ''''), SUBSTRING(c2.[row], 11, 2147483647)) c3 ([direction], [row])
@@ -160,8 +181,8 @@ BEGIN
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
             LEFT([hour], 2) AS [hour], 
-            [direction] AS [direction], 
-            [speed] AS [speed]
+            REPLACE([direction], '','', ''.'') AS [direction], 
+            REPLACE([speed], '','', ''.'') AS [speed]
     ) t;
     ');
 END
@@ -202,7 +223,7 @@ BEGIN
         _id int not null,
         [date] date not null, 
         [hour] char(2) null, 
-        [direction] int null, 
+        [direction] decimal(5,2) null, 
         [speed] decimal(19,10) null
     );
 END
@@ -229,6 +250,8 @@ BEGIN
     FROM 
         [SMHI_Weather_Temperature_Split]
     WHERE
+        measureTime_Duplicate = 0
+    AND
         [date_Error] is null
     AND
         [hour_Error] is null
@@ -249,6 +272,8 @@ BEGIN
     FROM 
         [SMHI_Weather_Pressure_Split]
     WHERE
+        measureTime_Duplicate = 0
+    AND
         [date_Error] is null
     AND
         [hour_Error] is null
@@ -271,6 +296,8 @@ BEGIN
     FROM 
         [SMHI_Weather_Wind_Split]
     WHERE
+        measureTime_Duplicate = 0
+    AND
         [date_Error] is null
     AND
         [hour_Error] is null

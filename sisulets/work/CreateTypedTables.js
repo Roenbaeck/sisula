@@ -28,7 +28,7 @@ while(part = source.nextPart()) {
             }
         }
 /*~
-        [$term.name] $term.format $nullable$(part.hasMoreTerms() | part.hasMoreCalculations())?, 
+        [$term.name] $term.format $nullable$(part.hasMoreTerms() || part.hasMoreCalculations())?, 
 ~*/
     }
     while(calculation = part.nextCalculation()) {

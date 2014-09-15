@@ -36,6 +36,15 @@ while(part = source.nextPart()) {
         [$part.qualified$_Split]
     WHERE
 ~*/
+    var key;
+    if(part.hasMoreKeys()) {
+        while(key = part.nextKey()) {
+/*~
+        $key.name$_Duplicate = 0
+    AND
+~*/
+        }
+    }
     while(term = part.nextTerm()) {
 /*~
         [$term.name$_Error] is null$(!part.hasMoreTerms())?;

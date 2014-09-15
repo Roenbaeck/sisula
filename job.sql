@@ -34,7 +34,8 @@ sp_add_jobstep
           $files = Get-ChildItem FileSystem::\\localhost\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"}
           ForEach ($file in $files) {
             $returnValue = Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert ''\\localhost\sisula\data\$file''" -Database "Test"
-            If($returnValue) { Write-Host "$returnValue" }
+            If($returnValue) { Write-Output "$returnValue" }
+            Write-Output "Loaded file: \\localhost\sisula\data\$file"
           }
         ',
     @on_success_action = 3,
