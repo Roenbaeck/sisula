@@ -1,7 +1,20 @@
 <source name="Weather" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
 	<description>http://www.slb.mf.stockholm.se</description>
+    <part name="TemperatureNew" nulls="">
+        SELECT * from %System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9][0-9][0-9][0-9],%'
+        <term name="date" delimiter="," format="date">
+            '20' + [date]
+        </term>
+        <term name="hour" delimiter="," format="char(2)">
+            LEFT([hour], 2)
+        </term>
+        <term name="celsius1" delimiter="," format="decimal(19,10)"/>
+        <term name="celsius2" delimiter="," format="decimal(19,10)"/>
+        <term name="celsius3" delimiter="," format="decimal(19,10)"/>
+        <term name="celsius4" delimiter="," format="decimal(19,10)"/>
+    </part>
     <part name="Temperature" nulls="" charskip="4"> 
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'TEMP%'
+        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'TEMP%'
         <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
@@ -22,13 +35,13 @@
                 ELSE '?' 
             END
         </calculation>
-        <key name="measureTime" type="primary">
+        <key name="measureTime" type="primary key">
             <component of="date"/>
             <component of="hour"/>
         </key>
     </part>
     <part name="Pressure" nulls="" charskip="4">
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'PRSR%'
+        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'PRSR%'
         <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
@@ -38,13 +51,13 @@
         <term name="pressure" size="10" format="decimal(19,10)">
             REPLACE([pressure], ',', '.')
         </term>
-        <key name="measureTime" type="primary">
+        <key name="measureTime" type="primary key">
             <component of="date"/>
             <component of="hour"/>
         </key>        
     </part>
     <part name="Wind" nulls="" charskip="4">
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE 'WNDS%'
+        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'WNDS%'
         <term name="date" size="6" format="date">
             CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
         </term>
@@ -57,7 +70,7 @@
         <term name="speed" size="10" format="decimal(19,10)">
             REPLACE([speed], ',', '.')
         </term>
-        <key name="measureTime" type="primary">
+        <key name="measureTime" type="primary key">
             <component of="date"/>
             <component of="hour"/>
         </key>

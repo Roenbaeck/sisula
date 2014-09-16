@@ -6,9 +6,10 @@ sisulets/work/Helpers.js
 sisulets/work/Naming.js
 sisulets/work/UseDatabase.js
 sisulets/work/CreateRawTable.js
+sisulets/work/CreateInsertView.js
 sisulets/work/BulkInsert.js
-sisulets/work/AddKeyToRawTable.js
-sisulets/work/CreateSplitView.js
+sisulets/work/CreateSplitViews.js
+sisulets/work/CreateErrorViews.js
 sisulets/work/CreateTypedTables.js
 sisulets/work/SplitRawIntoTyped.js
-# TODO add key to typed here
+sisulets/work/AddKeysToTyped.js

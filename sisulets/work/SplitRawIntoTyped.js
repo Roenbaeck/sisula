@@ -15,6 +15,7 @@ while(part = source.nextPart()) {
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
     INSERT INTO [$part.qualified$_Typed] (
         _id,
+        _file,
 ~*/
     while(term = part.nextTerm()) {
 /*~
@@ -25,6 +26,7 @@ while(part = source.nextPart()) {
     )
     SELECT
         _id,
+        _file,
 ~*/
     while(term = part.nextTerm()) {
 /*~

@@ -1,10 +1,10 @@
 // Create a columnar split view
 /*~
-IF Object_ID('$source.qualified$_CreateSplitView', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_CreateSplitView];
+IF Object_ID('$source.qualified$_CreateSplitViews', 'P') IS NOT NULL
+DROP PROCEDURE [$source.qualified$_CreateSplitViews];
 GO
 
-CREATE PROCEDURE [$source.qualified$_CreateSplitView] 
+CREATE PROCEDURE [$source.qualified$_CreateSplitViews] 
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -19,8 +19,10 @@ while(part = source.nextPart()) {
     AS
     SELECT
         _id,
+        _file,
 ~*/
     var key;
+    var i = 1;
     while(term = part.nextTerm()) {
         var isKeyConstituent = false;
         while(key = part.nextKey()) {
@@ -30,12 +32,14 @@ while(part = source.nextPart()) {
             }
         }        
 /*~
+        c${i}$.[$term.name] as [$term.name$_Raw],
         t.[$term.name], 
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
             WHEN t.[$term.name] is not null AND TRY_CAST(t.[$term.name] AS $term.format) is null THEN ''Conversion to $term.format failed''
         END AS [$term.name$_Error]$(part.hasMoreTerms() || part.hasMoreKeys())?,
 ~*/
+        i++;
     }
     var component;
     if(part.hasMoreKeys()) {
@@ -70,32 +74,26 @@ while(part = source.nextPart()) {
         $source.qualified$_Raw src
 ~*/
     }
-    if(part.charskip) {
-        var skip = parseInt(part.charskip);
+    var skip = part.charskip ? part.charskip : '0';
 /*~
-    CROSS APPLY (SELECT SUBSTRING(src.[row], ${(skip + 1)}$, $MAXLEN)) c0 ([row])
+    CROSS APPLY (SELECT $skip) d0 (p)
 ~*/
-    }
-    else {
-/*~
-    CROSS APPLY (SELECT [row]) c0 ([row])
-~*/
-    }
-    var i = 0;
+    i = 1;
     while(term = part.nextTerm()) {
         if(term.size) {
             var s = parseInt(term.size);
             var nulls = term.nulls | part.nulls;
             nulls = nulls ? nulls.escape() : '';
 /*~
-    CROSS APPLY (SELECT NULLIF(LEFT(c${i}$.[row], $s), ''$nulls''), SUBSTRING(c${i}$.[row], ${(s + 1)}$, $MAXLEN)) c${(i + 1)}$ ([$term.name], [row])
+    CROSS APPLY (SELECT d${(i - 1)}$.p + $s) d${i}$ (p)
+    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d${(i - 1)}$.p + 1, $s)), ''$nulls'')) c${i}$ ([$term.name$])
 ~*/
         }
         else if(term.delimiter) {
             var delim = term.delimiter.escape();
 /*~
-    CROSS APPLY (SELECT NULLIF(CHARINDEX(''$delim'', c${i}$.[row]), 0)) d${i}$ (p)
-    CROSS APPLY (SELECT NULLIF(LEFT(c${i}$.[row], d${i}$.p - 1), ''''), SUBSTRING(c${i}$.[row], d${i}$.p + 1, $MAXLEN)) c${(i + 1)}$ ([$term.name], [row])
+    CROSS APPLY (SELECT NULLIF(CHARINDEX(''$delim'', [row], d${(i - 1)}$.p + 1), 0)) d${i}$ (p)
+    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d${(i - 1)}$.p + 1, d${i}$.p - d${(i - 1)}$.p - 1)), ''$nulls'')) c${i}$ ([$term.name$])
 ~*/
         }
         i++;

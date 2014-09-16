@@ -10,9 +10,10 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
+    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
+    BEGIN
 	EXEC('
-		BULK INSERT [$source.qualified$_Raw]
+		BULK INSERT [$source.qualified$_Insert]
 		FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
@@ -22,6 +23,24 @@ BEGIN
             TABLOCK   
         );
 	');
+    
+    DECLARE @file int = 1 + (
+        SELECT TOP 1
+            _file
+        FROM
+            [$source.qualified$_Raw]
+        ORDER BY
+            _file
+        DESC
+    );
+    
+    UPDATE [$source.qualified$_Raw]
+    SET
+        _file = @file
+    WHERE
+        _file = 0;
+    
+    END    
 END
 GO
 ~*/

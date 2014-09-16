@@ -1,7 +1,7 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="database" value="%Database%"/>
-    <variable name="path" value="\\localhost\sisula\data"/>
-    <variable name="pattern" value="%Source%.*\.txt"/>
+    <variable name="path" value="C:\sisula\data"/>
+    <variable name="filenamePattern" value="%Source%.*\.txt"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>
     <variable name="quitWithFailure" value="2"/>
@@ -13,25 +13,34 @@
         <jobstep name="Create raw table" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_CreateRawTable
         </jobstep>
+        <jobstep name="Create insert view" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+          EXEC %System%_%Source%_CreateInsertView
+        </jobstep>
         <jobstep name="Bulk insert" database_name="%database%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
-          $files = Get-ChildItem FileSystem::%path% | Where-Object {$_.Name -match "%pattern%"}
-          ForEach ($file in $files) {
-            $returnValue = Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert '%path%\$file'" -Database "%database%"
-            If($returnValue) { Write-Output "$returnValue" }
-            Write-Output "Loaded file: %path%\$file"
-          }
+            $files = @(Get-ChildItem FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in %path%:"
+            } Else {
+                ForEach ($file in $files) {
+                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '%path%\$file'" -Database "%database%" -ErrorAction Stop
+                    Write-Output "Loaded file: %path%\$file"
+                }
+            }
         </jobstep>
-        <jobstep name="Add key to raw table" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-          EXEC %System%_%Source%_AddKeyToRawTable
+        <jobstep name="Create split views" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+          EXEC %System%_%Source%_CreateSplitViews
         </jobstep>
-        <jobstep name="Create split view" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-          EXEC %System%_%Source%_CreateSplitView
+        <jobstep name="Create error views" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+          EXEC %System%_%Source%_CreateErrorViews
         </jobstep>
-        <jobstep name="Create typed tables" database_name="%database%" subsystem="TSQL"  on_success_action="%goToTheNextStep%">
+        <jobstep name="Create typed tables" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_CreateTypedTables
         </jobstep>
-        <jobstep name="Split raw into typed" database_name="%database%" subsystem="TSQL">
+        <jobstep name="Split raw into typed" database_name="%database%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
           EXEC %System%_%Source%_SplitRawIntoTyped
+        </jobstep>
+        <jobstep name="Add keys to typed" database_name="%database%" subsystem="TSQL">
+          EXEC %System%_%Source%_AddKeysToTyped
         </jobstep>
     </job>
     <job name="%System%_%Source%_Loading">

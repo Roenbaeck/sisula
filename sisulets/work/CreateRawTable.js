@@ -13,7 +13,13 @@ BEGIN
     DROP TABLE [$source.qualified$_Raw];
 
     CREATE TABLE [$source.qualified$_Raw] (
-        [row] $(source.characterType == 'char')? varchar(max) : nvarchar(max)
+        _id int identity(1,1) not null,
+        _file int not null default 0,
+        _timestamp datetime2(2) not null default sysdatetime(),
+        [row] $(source.characterType == 'char')? varchar(max), : nvarchar(max),
+        constraint [pk$source.qualified$_Raw] primary key(
+            _id asc
+        )
     );
 END
 GO
