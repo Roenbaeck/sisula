@@ -61,21 +61,27 @@ while(part = source.nextPart()) {
         }
     }
 /*~        
-    FROM~*/
+    FROM (
+        SELECT TOP($MAXLEN) 
+            * 
+        FROM ~*/
     if(part._part) {
 
 /*~ (
         ${part._part.trim().escape()}$
-    ) src
+        ) src
 ~*/
     }
     else {
 /*~
-        $source.qualified$_Raw src
+            $source.qualified$_Raw src
 ~*/
     }
     var skip = part.charskip ? part.charskip : '0';
 /*~
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
     CROSS APPLY (SELECT $skip) d0 (p)
 ~*/
     i = 1;
@@ -92,7 +98,7 @@ while(part = source.nextPart()) {
         else if(term.delimiter) {
             var delim = term.delimiter.escape();
 /*~
-    CROSS APPLY (SELECT NULLIF(CHARINDEX(''$delim'', [row], d${(i - 1)}$.p + 1), 0)) d${i}$ (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX(''$delim'', [row], d${(i - 1)}$.p + 1), 0), $MAXLEN)) d${i}$ (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d${(i - 1)}$.p + 1, d${i}$.p - d${(i - 1)}$.p - 1)), ''$nulls'')) c${i}$ ([$term.name$])
 ~*/
         }

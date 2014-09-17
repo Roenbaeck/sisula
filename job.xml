@@ -7,6 +7,8 @@
     <variable name="quitWithFailure" value="2"/>
     <variable name="goToTheNextStep" value="3"/>
     <variable name="goToStepWithId" value="4"/>    
+    <!-- recurse directories when searching for files, blank out if no extra options are needed -->
+    <variable name="extraOptions" value="-Recurse"/>
     <job name="%System%_%Source%_Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
@@ -17,13 +19,13 @@
           EXEC %System%_%Source%_CreateInsertView
         </jobstep>
         <jobstep name="Bulk insert" database_name="%database%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
-            $files = @(Get-ChildItem FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"})
+            $files = @(Get-ChildItem %extraOptions% FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"} | % { $_.FullName })
             If ($files.length -eq 0) {
               Throw "No matching files were found in %path%:"
             } Else {
-                ForEach ($file in $files) {
-                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '%path%\$file'" -Database "%database%" -ErrorAction Stop
-                    Write-Output "Loaded file: %path%\$file"
+                ForEach ($fullFilename in $files) {
+                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename'" -Database "%database%" -ErrorAction Stop
+                    Write-Output "Loaded file: $fullFilename"
                 }
             }
         </jobstep>
