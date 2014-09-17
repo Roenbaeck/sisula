@@ -13,7 +13,6 @@ Public Class Splitter
         Dim groups As GroupCollection = Regex.Match(row, pattern, RegexOptions.IgnorePatternWhitespace).Groups
         Return groups
     End Function
-
     Public Shared Sub FillRow(ByVal obj As Object, ByRef match As SqlChars)
         Dim group As Group = CType(obj, Group)
         match = New SqlChars(group.Value)

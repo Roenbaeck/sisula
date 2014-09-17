@@ -23,7 +23,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_CreateRawTable
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create raw table'; 
@@ -34,7 +34,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_CreateInsertView
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create insert view'; 
@@ -42,18 +42,18 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem FileSystem::C:\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"})
+            $files = @(Get-ChildItem -Recurse FileSystem::C:\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"} | % { $_.FullName })
             If ($files.length -eq 0) {
               Throw "No matching files were found in C:\sisula\data:"
             } Else {
-                ForEach ($file in $files) {
-                    Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert ''C:\sisula\data\$file''" -Database "Test" -ErrorAction Stop
-                    Write-Output "Loaded file: C:\sisula\data\$file"
+                ForEach ($fullFilename in $files) {
+                    Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert ''$fullFilename''" -Database "Stage" -ErrorAction Stop
+                    Write-Output "Loaded file: $fullFilename"
                 }
             }
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Bulk insert'; 
@@ -64,7 +64,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_CreateSplitViews
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create split views'; 
@@ -75,7 +75,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_CreateErrorViews
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create error views'; 
@@ -86,7 +86,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_CreateTypedTables
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Create typed tables'; 
@@ -97,7 +97,7 @@ sp_add_jobstep
           EXEC SMHI_Weather_SplitRawIntoTyped
         ',
     @on_success_action = 3,
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Split raw into typed'; 
@@ -107,7 +107,7 @@ sp_add_jobstep
     @command = '
           EXEC SMHI_Weather_AddKeysToTyped
         ',
-    @database_name = 'Test',
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Staging', 
     @step_name = 'Add keys to typed'; 

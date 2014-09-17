@@ -1,4 +1,4 @@
-USE Test;
+USE Stage;
 GO
 IF Object_ID('SMHI_Weather_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateRawTable];
@@ -123,20 +123,26 @@ BEGIN
             WHEN t.[celsius4] is not null AND TRY_CAST(t.[celsius4] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
         END AS [celsius4_Error]
     FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
         SELECT * from SMHI_Weather_Raw WHERE [row] LIKE ''[0-9][0-9][0-9][0-9][0-9][0-9],%''
-    ) src
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
     CROSS APPLY (SELECT 0) d0 (p)
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d0.p + 1), 0)) d1 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d0.p + 1), 0), 2147483647)) d1 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, d1.p - d0.p - 1)), '''')) c1 ([date])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d1.p + 1), 0)) d2 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d1.p + 1), 0), 2147483647)) d2 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, d2.p - d1.p - 1)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d2.p + 1), 0)) d3 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d2.p + 1), 0), 2147483647)) d3 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, d3.p - d2.p - 1)), '''')) c3 ([celsius1])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d3.p + 1), 0)) d4 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d3.p + 1), 0), 2147483647)) d4 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d3.p + 1, d4.p - d3.p - 1)), '''')) c4 ([celsius2])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d4.p + 1), 0)) d5 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d4.p + 1), 0), 2147483647)) d5 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d4.p + 1, d5.p - d4.p - 1)), '''')) c5 ([celsius3])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('','', [row], d5.p + 1), 0)) d6 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d5.p + 1), 0), 2147483647)) d6 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d5.p + 1, d6.p - d5.p - 1)), '''')) c6 ([celsius4])
     CROSS APPLY (
         SELECT 
@@ -180,14 +186,20 @@ BEGIN
                 _id
         ) - 1 as measureTime_Duplicate
     FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''TEMP%''
-    ) src
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
     CROSS APPLY (SELECT 4) d0 (p)
     CROSS APPLY (SELECT d0.p + 6) d1 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
     CROSS APPLY (SELECT d1.p + 4) d2 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, 4)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT NULLIF(CHARINDEX('' '', [row], d2.p + 1), 0)) d3 (p)
+    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('' '', [row], d2.p + 1), 0), 2147483647)) d3 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, d3.p - d2.p - 1)), '''')) c3 ([celsius])
     CROSS APPLY (
         SELECT 
@@ -228,8 +240,14 @@ BEGIN
                 _id
         ) - 1 as measureTime_Duplicate
     FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''PRSR%''
-    ) src
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
     CROSS APPLY (SELECT 4) d0 (p)
     CROSS APPLY (SELECT d0.p + 6) d1 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
@@ -281,8 +299,14 @@ BEGIN
                 _id
         ) - 1 as measureTime_Duplicate
     FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
         SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''WNDS%''
-    ) src
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
     CROSS APPLY (SELECT 4) d0 (p)
     CROSS APPLY (SELECT d0.p + 6) d1 (p)
     CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
