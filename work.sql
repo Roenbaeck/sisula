@@ -92,32 +92,32 @@ BEGIN
     SELECT
         _id,
         _file,
-        c1.[date] as [date_Raw],
+        m.[date] as [date_Match],
         t.[date], 
         CASE
             WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
         END AS [date_Error],
-        c2.[hour] as [hour_Raw],
+        m.[hour] as [hour_Match],
         t.[hour], 
         CASE
             WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
         END AS [hour_Error],
-        c3.[celsius1] as [celsius1_Raw],
+        m.[celsius1] as [celsius1_Match],
         t.[celsius1], 
         CASE
             WHEN t.[celsius1] is not null AND TRY_CAST(t.[celsius1] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
         END AS [celsius1_Error],
-        c4.[celsius2] as [celsius2_Raw],
+        m.[celsius2] as [celsius2_Match],
         t.[celsius2], 
         CASE
             WHEN t.[celsius2] is not null AND TRY_CAST(t.[celsius2] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
         END AS [celsius2_Error],
-        c5.[celsius3] as [celsius3_Raw],
+        m.[celsius3] as [celsius3_Match],
         t.[celsius3], 
         CASE
             WHEN t.[celsius3] is not null AND TRY_CAST(t.[celsius3] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
         END AS [celsius3_Error],
-        c6.[celsius4] as [celsius4_Raw],
+        m.[celsius4] as [celsius4_Match],
         t.[celsius4], 
         CASE
             WHEN t.[celsius4] is not null AND TRY_CAST(t.[celsius4] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
@@ -131,23 +131,29 @@ BEGIN
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
-    CROSS APPLY (SELECT 0) d0 (p)
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d0.p + 1), 0), 2147483647)) d1 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, d1.p - d0.p - 1)), '''')) c1 ([date])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d1.p + 1), 0), 2147483647)) d2 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, d2.p - d1.p - 1)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d2.p + 1), 0), 2147483647)) d3 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, d3.p - d2.p - 1)), '''')) c3 ([celsius1])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d3.p + 1), 0), 2147483647)) d4 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d3.p + 1, d4.p - d3.p - 1)), '''')) c4 ([celsius2])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d4.p + 1), 0), 2147483647)) d5 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d4.p + 1, d5.p - d4.p - 1)), '''')) c5 ([celsius3])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('','', [row], d5.p + 1), 0), 2147483647)) d6 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d5.p + 1, d6.p - d5.p - 1)), '''')) c6 ([celsius4])
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [date],
+			NULLIF(LTRIM([3]), '''') AS [hour],
+			NULLIF(LTRIM([4]), '''') AS [celsius1],
+			NULLIF(LTRIM([5]), '''') AS [celsius2],
+			NULLIF(LTRIM([6]), '''') AS [celsius3],
+			NULLIF(LTRIM([7]), '''') AS [celsius4]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''(.*?),\s*([0-9]{2})[0-9]{2},(.*?),(.*?),(.*?),(.*?),'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7])
+        ) p
+    ) m
     CROSS APPLY (
         SELECT 
             ''20'' + [date] AS [date], 
-            LEFT([hour], 2) AS [hour], 
+            [hour] AS [hour], 
             [celsius1] AS [celsius1], 
             [celsius2] AS [celsius2], 
             [celsius3] AS [celsius3], 
@@ -162,18 +168,18 @@ BEGIN
     SELECT
         _id,
         _file,
-        c1.[date] as [date_Raw],
+        m.[date] as [date_Match],
         t.[date], 
         CASE
             WHEN t.[date] is null THEN ''Null value not allowed''
             WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
         END AS [date_Error],
-        c2.[hour] as [hour_Raw],
+        m.[hour] as [hour_Match],
         t.[hour], 
         CASE
             WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
         END AS [hour_Error],
-        c3.[celsius] as [celsius_Raw],
+        m.[celsius] as [celsius_Match],
         t.[celsius], 
         CASE
             WHEN t.[celsius] is not null AND TRY_CAST(t.[celsius] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
@@ -194,13 +200,22 @@ BEGIN
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
-    CROSS APPLY (SELECT 4) d0 (p)
-    CROSS APPLY (SELECT d0.p + 6) d1 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
-    CROSS APPLY (SELECT d1.p + 4) d2 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, 4)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX('' '', [row], d2.p + 1), 0), 2147483647)) d3 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, d3.p - d2.p - 1)), '''')) c3 ([celsius])
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [date],
+			NULLIF(LTRIM([3]), '''') AS [hour],
+			NULLIF(LTRIM([4]), '''') AS [celsius]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.*?) '')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4])
+        ) p
+    ) m
     CROSS APPLY (
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
@@ -216,18 +231,18 @@ BEGIN
     SELECT
         _id,
         _file,
-        c1.[date] as [date_Raw],
+        m.[date] as [date_Match],
         t.[date], 
         CASE
             WHEN t.[date] is null THEN ''Null value not allowed''
             WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
         END AS [date_Error],
-        c2.[hour] as [hour_Raw],
+        m.[hour] as [hour_Match],
         t.[hour], 
         CASE
             WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
         END AS [hour_Error],
-        c3.[pressure] as [pressure_Raw],
+        m.[pressure] as [pressure_Match],
         t.[pressure], 
         CASE
             WHEN t.[pressure] is not null AND TRY_CAST(t.[pressure] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
@@ -248,13 +263,22 @@ BEGIN
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
-    CROSS APPLY (SELECT 4) d0 (p)
-    CROSS APPLY (SELECT d0.p + 6) d1 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
-    CROSS APPLY (SELECT d1.p + 4) d2 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, 4)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT d2.p + 10) d3 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, 10)), '''')) c3 ([pressure])
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [date],
+			NULLIF(LTRIM([3]), '''') AS [hour],
+			NULLIF(LTRIM([4]), '''') AS [pressure]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.{10})'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4])
+        ) p
+    ) m
     CROSS APPLY (
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
@@ -270,23 +294,23 @@ BEGIN
     SELECT
         _id,
         _file,
-        c1.[date] as [date_Raw],
+        m.[date] as [date_Match],
         t.[date], 
         CASE
             WHEN t.[date] is null THEN ''Null value not allowed''
             WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
         END AS [date_Error],
-        c2.[hour] as [hour_Raw],
+        m.[hour] as [hour_Match],
         t.[hour], 
         CASE
             WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
         END AS [hour_Error],
-        c3.[direction] as [direction_Raw],
+        m.[direction] as [direction_Match],
         t.[direction], 
         CASE
             WHEN t.[direction] is not null AND TRY_CAST(t.[direction] AS decimal(5,2)) is null THEN ''Conversion to decimal(5,2) failed''
         END AS [direction_Error],
-        c4.[speed] as [speed_Raw],
+        m.[speed] as [speed_Match],
         t.[speed], 
         CASE
             WHEN t.[speed] is not null AND TRY_CAST(t.[speed] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
@@ -307,15 +331,23 @@ BEGIN
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
-    CROSS APPLY (SELECT 4) d0 (p)
-    CROSS APPLY (SELECT d0.p + 6) d1 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d0.p + 1, 6)), '''')) c1 ([date])
-    CROSS APPLY (SELECT d1.p + 4) d2 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d1.p + 1, 4)), '''')) c2 ([hour])
-    CROSS APPLY (SELECT d2.p + 10) d3 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d2.p + 1, 10)), '''')) c3 ([direction])
-    CROSS APPLY (SELECT d3.p + 10) d4 (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d3.p + 1, 10)), '''')) c4 ([speed])
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [date],
+			NULLIF(LTRIM([3]), '''') AS [hour],
+			NULLIF(LTRIM([4]), '''') AS [direction],
+			NULLIF(LTRIM([5]), '''') AS [speed]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.{10})(.{10})'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4], [5])
+        ) p
+    ) m
     CROSS APPLY (
         SELECT 
             CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 

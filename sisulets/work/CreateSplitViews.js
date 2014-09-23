@@ -22,7 +22,7 @@ while(part = source.nextPart()) {
         _file,
 ~*/
     var key;
-    var i = 1;
+    var i = 2;
     while(term = part.nextTerm()) {
         var isKeyConstituent = false;
         while(key = part.nextKey()) {
@@ -32,7 +32,7 @@ while(part = source.nextPart()) {
             }
         }        
 /*~
-        c${i}$.[$term.name] as [$term.name$_Raw],
+        m.[$term.name] as [$term.name$_Match],
         t.[$term.name], 
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
@@ -77,34 +77,61 @@ while(part = source.nextPart()) {
             $source.qualified$_Raw src
 ~*/
     }
-    var skip = part.charskip ? part.charskip : '0';
 /*~
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
-    CROSS APPLY (SELECT $skip) d0 (p)
 ~*/
-    i = 1;
+    var regex = '', pivots = '';
+    if(part.charskip)
+        regex += '.{' + part.charskip + '}';
+    else if (part.pattern)
+        regex += part.pattern;
+
+    i = 2;
     while(term = part.nextTerm()) {
-        if(term.size) {
-            var s = parseInt(term.size);
-            var nulls = term.nulls | part.nulls;
-            nulls = nulls ? nulls.escape() : '';
-/*~
-    CROSS APPLY (SELECT d${(i - 1)}$.p + $s) d${i}$ (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d${(i - 1)}$.p + 1, $s)), ''$nulls'')) c${i}$ ([$term.name$])
-~*/
-        }
-        else if(term.delimiter) {
-            var delim = term.delimiter.escape();
-/*~
-    CROSS APPLY (SELECT ISNULL(NULLIF(CHARINDEX(''$delim'', [row], d${(i - 1)}$.p + 1), 0), $MAXLEN)) d${i}$ (p)
-    CROSS APPLY (SELECT NULLIF(LTRIM(SUBSTRING([row], d${(i - 1)}$.p + 1, d${i}$.p - d${(i - 1)}$.p - 1)), ''$nulls'')) c${i}$ ([$term.name$])
-~*/
-        }
+        pivots += '[' + i + ']';
+        if(part.hasMoreTerms())
+            pivots += ', ';
+        if(term.pattern) 
+            regex += term.pattern.escape();
+        else if(term.size) 
+            regex += '(.{' + term.size + '})';
+        else if(term.delimiter) 
+            regex += '(.*?)' + term.delimiter.escape();
+        else // capture to the end of the line if nothing is specified
+            regex += '(.*)'
         i++;
     }
 /*~
+    CROSS APPLY (
+		SELECT
+~*/
+    i = 2;
+    while(term = part.nextTerm()) {
+        var nulls = '';
+        if(part.nulls)
+            nulls = part.nulls.escape();
+        else if(term.nulls) 
+            nulls = term.nulls.escape();
+/*~    
+			NULLIF(LTRIM([${i}$]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+~*/
+        i++;
+    }
+/*~            
+		FROM (
+
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''$regex'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ($pivots)
+        ) p
+    ) m
     CROSS APPLY (
         SELECT 
 ~*/
