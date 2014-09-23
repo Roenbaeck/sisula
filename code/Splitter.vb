@@ -10,11 +10,15 @@ Imports System.Text.RegularExpressions
 Public Class Splitter
     <SqlFunction(FillRowMethodName:="FillRow", IsDeterministic:=True, IsPrecise:=True)> _
     Public Shared Function InitMethod(ByVal row As String, ByVal pattern As String) As IEnumerable
-        Dim groups As GroupCollection = Regex.Match(row, pattern, RegexOptions.IgnorePatternWhitespace).Groups
-        Return groups
+        ' Returns a GroupCollection which implements IEnumerable
+        Return Regex.Match(row, pattern, RegexOptions.None).Groups
     End Function
     Public Shared Sub FillRow(ByVal obj As Object, ByRef match As SqlChars)
         Dim group As Group = CType(obj, Group)
-        match = New SqlChars(group.Value)
+        If group.Success Then
+        	match = New SqlChars(group.Value)
+        Else
+        	match = New SqlChars(Nothing)
+        End If
     End Sub
 End Class
