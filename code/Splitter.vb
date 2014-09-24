@@ -15,10 +15,12 @@ Public Class Splitter
     End Function
     Public Shared Sub FillRow(ByVal obj As Object, ByRef match As SqlChars)
         Dim group As Group = CType(obj, Group)
-        If group.Success Then
-        	match = New SqlChars(group.Value)
-        Else
+		' group.Success can apparently be true even if the match is empty
+		' so we check for an empty value instead
+        If group.Value = String.Empty Then
         	match = New SqlChars(Nothing)
+        Else
+        	match = New SqlChars(group.Value)
         End If
     End Sub
 End Class
