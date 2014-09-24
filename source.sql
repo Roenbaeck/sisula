@@ -160,6 +160,86 @@ BEGIN
             [celsius4] AS [celsius4]
     ) t;
     ');
+    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Split', 'V') IS NOT NULL
+    DROP VIEW [SMHI_Weather_TemperatureNewMetadata_Split];
+    EXEC('
+    CREATE VIEW [SMHI_Weather_TemperatureNewMetadata_Split] 
+    AS
+    SELECT
+        _id,
+        _file,
+        m.[graphType] as [graphType_Match],
+        t.[graphType], 
+        CASE
+            WHEN t.[graphType] is not null AND TRY_CAST(t.[graphType] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
+        END AS [graphType_Error],
+        m.[weekday] as [weekday_Match],
+        t.[weekday], 
+        CASE
+            WHEN t.[weekday] is not null AND TRY_CAST(t.[weekday] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
+        END AS [weekday_Error]
+    FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
+        SELECT
+			*
+		FROM (
+			SELECT 
+				_file,
+				MIN(_id) as _id,
+				MIN(_timestamp) as _timestamp
+			FROM (
+                SELECT
+                    *
+                FROM
+                    SMHI_Weather_Raw
+                WHERE 
+                    [row] LIKE ''#%''
+		    ) src
+			GROUP BY
+				_file
+		) f
+		CROSS APPLY (
+			SELECT
+				[row] + CHAR(183) AS [text()]
+			FROM (
+                SELECT
+                    *
+                FROM
+                    SMHI_Weather_Raw
+                WHERE 
+					[row] LIKE ''#%''
+		    ) src
+			WHERE
+				src._file = f._file
+			FOR XML PATH('''')
+		) c ([row])
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [graphType],
+			NULLIF(LTRIM([3]), '''') AS [weekday]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(forcedMaterializationTrick.[row], N''(?=.*?Graftyp[^:]*:\s*([^·]*))?(?=.*?Veckodag[^:]*:\s*([^·]*))?'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3])
+        ) p
+    ) m
+    CROSS APPLY (
+        SELECT 
+            [graphType] AS [graphType], 
+            [weekday] AS [weekday]
+    ) t;
+    ');
     IF Object_ID('SMHI_Weather_Temperature_Split', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_Temperature_Split];
     EXEC('
@@ -387,6 +467,20 @@ BEGIN
     OR
         [celsius4_Error] is not null;
     ');
+    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Error', 'V') IS NOT NULL
+    DROP VIEW [SMHI_Weather_TemperatureNewMetadata_Error];
+    EXEC('
+    CREATE VIEW [SMHI_Weather_TemperatureNewMetadata_Error] 
+    AS
+    SELECT
+        *
+    FROM
+        [SMHI_Weather_TemperatureNewMetadata_Split]
+    WHERE
+        [graphType_Error] is not null
+    OR
+        [weekday_Error] is not null;
+    ');
     IF Object_ID('SMHI_Weather_Temperature_Error', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_Temperature_Error];
     EXEC('
@@ -464,6 +558,15 @@ BEGIN
         [celsius2] decimal(19,10) null, 
         [celsius3] decimal(19,10) null, 
         [celsius4] decimal(19,10) null
+    );
+    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Typed', 'U') IS NOT NULL
+    DROP TABLE [SMHI_Weather_TemperatureNewMetadata_Typed];
+    CREATE TABLE [SMHI_Weather_TemperatureNewMetadata_Typed] (
+        _id int not null,
+        _file int not null,
+        _timestamp datetime2(2) not null default sysdatetime(),
+        [graphType] varchar(42) null, 
+        [weekday] varchar(42) null
     );
     IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
     DROP TABLE [SMHI_Weather_Temperature_Typed];
@@ -546,6 +649,24 @@ BEGIN
         [celsius3_Error] is null
     AND
         [celsius4_Error] is null;
+    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Typed', 'U') IS NOT NULL
+    INSERT INTO [SMHI_Weather_TemperatureNewMetadata_Typed] (
+        _id,
+        _file,
+        [graphType], 
+        [weekday]
+    )
+    SELECT
+        _id,
+        _file,
+        [graphType], 
+        [weekday]
+    FROM 
+        [SMHI_Weather_TemperatureNewMetadata_Split]
+    WHERE
+        [graphType_Error] is null
+    AND
+        [weekday_Error] is null;
     IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
     INSERT INTO [SMHI_Weather_Temperature_Typed] (
         _id,

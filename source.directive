@@ -1,0 +1,15 @@
+# These are the sisulets that create transformations in the ETL flow.
+sisulets/Polyfills.js
+sisulets/Variables.js
+sisulets/source/Variables.js
+sisulets/source/Helpers.js
+sisulets/source/Naming.js
+sisulets/source/UseDatabase.js
+sisulets/source/CreateRawTable.js
+sisulets/source/CreateInsertView.js
+sisulets/source/BulkInsert.js
+sisulets/source/CreateSplitViews.js
+sisulets/source/CreateErrorViews.js
+sisulets/source/CreateTypedTables.js
+sisulets/source/SplitRawIntoTyped.js
+sisulets/source/AddKeysToTyped.js

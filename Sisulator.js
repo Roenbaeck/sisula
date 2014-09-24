@@ -56,7 +56,7 @@ var MAP = {
             }
         }
     },
-    Job: {
+    Workflow: {
         description: 'workflow for SQL Server Job Agent',
         root: 'workflow',
         key: { 
@@ -89,6 +89,18 @@ var MAP = {
             },            
             calculation: function(xml, fragment) {
                 return fragment.getAttribute('name');
+            }
+        }
+    },
+    Target: {
+        description: 'target loading description',
+        root: 'target',
+        key: { 
+            map: function(xml, fragment) {
+                return fragment.getAttribute('source');
+            },
+            load: function(xml, fragment) {
+                return fragment.getAttribute('source');
             }
         }
     }

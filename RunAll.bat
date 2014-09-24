@@ -9,15 +9,20 @@ REM   Change the following variables to reflect your desired settings
 REM -------------------------------------------------------------------
 set System=SMHI
 set Source=Weather
-set Database=Stage
+set TargetDatabase=Meteo
+set SourceDatabase=Stage
 REM -------------------------------------------------------------------
 
-echo Running the Sisulator for work generation...
-Sisulator.js -x source.xml -m Source -d work.directive -o work.sql
-echo Done, and the result is in work.sql.
+echo Running the Sisulator for source generation...
+Sisulator.js -x source.xml -m Source -d source.directive -o source.sql
+echo Done, and the result is in source.sql.
 
-echo Running the Sisulator for job generation...
-Sisulator.js -x job.xml -m Job -d job.directive -o job.sql
-echo Done, and the result is in job.sql.
+echo Running the Sisulator for target generation...
+Sisulator.js -x target.xml -m Target -d target.directive -o target.sql
+echo Done, and the result is in target.sql.
+
+echo Running the Sisulator for workflow generation...
+Sisulator.js -x workflow.xml -m Workflow -d workflow.directive -o workflow.sql
+echo Done, and the result is in workflow.sql.
 
 chcp %DEFAULT_CODEPAGE%>NUL

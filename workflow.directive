@@ -1,6 +1,6 @@
 # These are the sisulets that create the SQL Server Agent jobs.
 sisulets/Polyfills.js
 sisulets/Variables.js
-sisulets/job/Variables.js
-sisulets/job/Helpers.js
-sisulets/job/CreateJobs.js
+sisulets/workflow/Variables.js
+sisulets/workflow/Helpers.js
+sisulets/workflow/CreateJobs.js

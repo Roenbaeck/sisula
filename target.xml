@@ -1,0 +1,23 @@
+<target database="%TargetDatabase%">
+    <load source="SMHI_Weather_TemperatureNew_Typed" target="MM_Measurement">
+        select
+            _id, 
+            _file, 
+            _timestamp, 
+            [date],
+            [hour], 
+            [celsius1] as temperature
+        from
+            SMHI_Weather_TemperatureNew_Typed        
+        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="temperature" target="MM_TMP_Measurement_Temperature"/>
+        <map source="_file" target="Metadata_MM" as="metadata"/>
+    </load>
+    <load source="SMHI_Weather_Temperature_Typed" target="MM_Measurement">
+        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="celsius" target="MM_TMP_Measurement_Temperature"/>
+        <map source="_file" target="Metadata_MM" as="metadata"/>
+    </load>
+</target>

@@ -11,6 +11,55 @@
         <term name="celsius3" delimiter="," format="decimal(19,10)"/>
         <term name="celsius4" delimiter="," format="decimal(19,10)"/>
     </part>
+    <part name="TemperatureNewMetadata">
+        <!-- 
+            CHAR(183) is · (small bullet), which is rarely used so we can use it as our own 
+            internal delimiter for the regex matching later. The select below builds a 
+            concatenation of a number of rows.
+        -->
+        SELECT
+			*
+		FROM (
+			SELECT 
+				_file,
+				MIN(_id) as _id,
+				MIN(_timestamp) as _timestamp
+			FROM (
+                SELECT
+                    *
+                FROM
+                    %System%_%Source%_Raw
+                WHERE 
+                    [row] LIKE '#%'
+		    ) src
+			GROUP BY
+				_file
+		) f
+		CROSS APPLY (
+			SELECT
+				[row] + CHAR(183) AS [text()]
+			FROM (
+                SELECT
+                    *
+                FROM
+                    %System%_%Source%_Raw
+                WHERE 
+					[row] LIKE '#%'
+		    ) src
+			WHERE
+				src._file = f._file
+			FOR XML PATH('')
+		) c ([row])        
+        <!-- 
+            on the format (?=.*?KeyName[^:]*:\s*([^·]*))?
+            positive lookahead with an optional number of preceeding characters leading 
+            up to the string to match, after which we capture everything leading up to the
+            next delimiter, and the whole non-capturing group is optional in case the 
+            string is not present at all.
+        -->
+        <term name="graphType" pattern="(?=.*?Graftyp[^:]*:\s*([^·]*))?" format="varchar(42)"/>
+        <term name="weekday" pattern="(?=.*?Veckodag[^:]*:\s*([^·]*))?" format="varchar(42)"/>
+    </part>
     <part name="Temperature" nulls="" charskip="4"> 
         SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'TEMP%'
         <term name="date" size="6" format="date">
