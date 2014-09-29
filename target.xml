@@ -1,5 +1,6 @@
 <target database="%TargetDatabase%">
     <load source="SMHI_Weather_TemperatureNew_Typed" target="MM_Measurement">
+        <!-- simple test that a query can be provided -->
         select
             _id, 
             _file, 
@@ -18,6 +19,18 @@
         <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
         <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
         <map source="celsius" target="MM_TMP_Measurement_Temperature"/>
+        <map source="_file" target="Metadata_MM" as="metadata"/>
+    </load>
+    <load source="SMHI_Weather_Pressure_Typed" target="MM_Measurement">
+        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="pressure" target="MM_PRS_Measurement_Pressure"/>
+        <map source="_file" target="Metadata_MM" as="metadata"/>
+    </load>
+    <load source="SMHI_Weather_Wind_Typed" target="MM_Measurement">
+        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="speed" target="MM_WND_Measurement_WindSpeed"/>
         <map source="_file" target="Metadata_MM" as="metadata"/>
     </load>
 </target>

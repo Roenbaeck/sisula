@@ -20,7 +20,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_CreateRawTable
+            EXEC SMHI_Weather_CreateRawTable
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -31,7 +31,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_CreateInsertView
+            EXEC SMHI_Weather_CreateInsertView
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -61,7 +61,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_CreateSplitViews
+            EXEC SMHI_Weather_CreateSplitViews
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -72,7 +72,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_CreateErrorViews
+            EXEC SMHI_Weather_CreateErrorViews
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -83,7 +83,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_CreateTypedTables
+            EXEC SMHI_Weather_CreateTypedTables
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -94,7 +94,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_SplitRawIntoTyped
+            EXEC SMHI_Weather_SplitRawIntoTyped
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -105,7 +105,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-          EXEC SMHI_Weather_AddKeysToTyped
+            EXEC SMHI_Weather_AddKeysToTyped
         ',
     @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
@@ -127,7 +127,44 @@ sp_add_jobserver
 GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[MM_Measurement__SMHI_Weather_Temperature_Typed]
+        ',
+    @on_success_action = 3,
+    @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Loading', 
-    @step_name = 'Load DW tables'; 
+    @step_name = 'Load temperature'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[MM_Measurement__SMHI_Weather_TemperatureNew_Typed]
+        ',
+    @on_success_action = 3,
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Loading', 
+    @step_name = 'Load temperature (new format)'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[MM_Measurement__SMHI_Weather_Pressure_Typed]
+        ',
+    @on_success_action = 3,
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Loading', 
+    @step_name = 'Load pressure'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[MM_Measurement__SMHI_Weather_Wind_Typed]
+        ',
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Loading', 
+    @step_name = 'Load wind'; 
 GO

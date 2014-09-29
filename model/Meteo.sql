@@ -1,3 +1,7 @@
+/*
+	This code was generated with the Anchor Modeler http://www.anchormodeling.com. 
+	Version 0.98 test (rev: 665, release: Monday the 29th, September, 2014).
+*/
 -- KNOTS --------------------------------------------------------------------------------------------------------------
 --
 -- Knots are used to store finite sets of values, normally used to describe states
@@ -92,21 +96,19 @@ CREATE TABLE [dbo].[MM_PRS_Measurement_Pressure] (
     )
 );
 GO
--- Historized attribute table -----------------------------------------------------------------------------------------
+-- Static attribute table ---------------------------------------------------------------------------------------------
 -- MM_WND_Measurement_WindSpeed table (on MM_Measurement)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.MM_WND_Measurement_WindSpeed', 'U') IS NULL
 CREATE TABLE [dbo].[MM_WND_Measurement_WindSpeed] (
     MM_WND_MM_ID int not null,
     MM_WND_Measurement_WindSpeed decimal(19,10) not null,
-    MM_WND_ChangedAt datetime not null,
     Metadata_MM_WND int not null,
     constraint fkMM_WND_Measurement_WindSpeed foreign key (
         MM_WND_MM_ID
     ) references [dbo].[MM_Measurement](MM_ID),
     constraint pkMM_WND_Measurement_WindSpeed primary key (
-        MM_WND_MM_ID asc,
-        MM_WND_ChangedAt desc
+        MM_WND_MM_ID asc
     )
 );
 GO
@@ -196,74 +198,6 @@ GO
 --
 -- @equivalent the equivalent that you want to retrieve data for
 --
--- ATTRIBUTE RESTATEMENT CONSTRAINTS ----------------------------------------------------------------------------------
---
--- Attributes may be prevented from storing restatements.
--- A restatement is when the same value occurs for two adjacent points
--- in changing time.
---
--- returns 1 for at least one equal surrounding value, 0 for different surrounding values
---
--- @id the identity of the anchored entity
--- @eq the equivalent (when applicable)
--- @value the value of the attribute
--- @changed the point in time from which this value shall represent a change
---
--- Restatement Finder Function and Constraint -------------------------------------------------------------------------
--- rfMM_WND_Measurement_WindSpeed restatement finder, also used by the insert and update triggers for idempotent attributes
--- rcMM_WND_Measurement_WindSpeed restatement constraint (available only in attributes that cannot have restatements)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.rfMM_WND_Measurement_WindSpeed', 'FN') IS NULL
-BEGIN
-    EXEC('
-    CREATE FUNCTION [dbo].[rfMM_WND_Measurement_WindSpeed] (
-        @id int,
-        @value decimal(19,10),
-        @changed datetime
-    )
-    RETURNS tinyint AS
-    BEGIN RETURN (
-        CASE WHEN EXISTS (
-            SELECT
-                @value 
-            WHERE
-                @value = (
-                    SELECT TOP 1
-                        pre.MM_WND_Measurement_WindSpeed
-                    FROM
-                        [dbo].[MM_WND_Measurement_WindSpeed] pre
-                    WHERE
-                        pre.MM_WND_MM_ID = @id
-                    AND
-                        pre.MM_WND_ChangedAt < @changed
-                    ORDER BY
-                        pre.MM_WND_ChangedAt DESC
-                )
-        ) OR EXISTS (
-            SELECT
-                @value 
-            WHERE
-                @value = (
-                    SELECT TOP 1
-                        fol.MM_WND_Measurement_WindSpeed
-                    FROM
-                        [dbo].[MM_WND_Measurement_WindSpeed] fol
-                    WHERE
-                        fol.MM_WND_MM_ID = @id
-                    AND
-                        fol.MM_WND_ChangedAt > @changed
-                    ORDER BY
-                        fol.MM_WND_ChangedAt ASC
-                )
-        )
-        THEN 1
-        ELSE 0
-        END
-    );
-    END
-    ');
-END
-GO
 -- KEY GENERATORS -----------------------------------------------------------------------------------------------------
 --
 -- These stored procedures can be used to generate identities of entities.
@@ -358,28 +292,6 @@ GO
 --
 -- @changingTimepoint the point in changing time to rewind to
 --
--- Attribute rewinder -------------------------------------------------------------------------------------------------
--- rMM_WND_Measurement_WindSpeed rewinding over changing time function
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.rMM_WND_Measurement_WindSpeed','IF') IS NULL
-BEGIN
-    EXEC('
-    CREATE FUNCTION [dbo].[rMM_WND_Measurement_WindSpeed] (
-        @changingTimepoint datetime
-    )
-    RETURNS TABLE WITH SCHEMABINDING AS RETURN
-    SELECT
-        Metadata_MM_WND,
-        MM_WND_MM_ID,
-        MM_WND_Measurement_WindSpeed,
-        MM_WND_ChangedAt
-    FROM
-        [dbo].[MM_WND_Measurement_WindSpeed]
-    WHERE
-        MM_WND_ChangedAt <= @changingTimepoint;
-    ');
-END
-GO
 -- ANCHOR TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
 --
 -- These table valued functions simplify temporal querying by providing a temporal
@@ -436,7 +348,6 @@ SELECT
     [PRS].MM_PRS_Measurement_Pressure,
     [WND].MM_WND_MM_ID,
     [WND].Metadata_MM_WND,
-    [WND].MM_WND_ChangedAt,
     [WND].MM_WND_Measurement_WindSpeed
 FROM
     [dbo].[MM_Measurement] [MM]
@@ -459,16 +370,7 @@ ON
 LEFT JOIN
     [dbo].[MM_WND_Measurement_WindSpeed] [WND]
 ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID
-AND
-    [WND].MM_WND_ChangedAt = (
-        SELECT
-            max(sub.MM_WND_ChangedAt)
-        FROM
-            [dbo].[MM_WND_Measurement_WindSpeed] sub
-        WHERE
-            sub.MM_WND_MM_ID = [MM].MM_ID
-   );
+    [WND].MM_WND_MM_ID = [MM].MM_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pMM_Measurement viewed as it was on the given timepoint
@@ -494,7 +396,6 @@ SELECT
     [PRS].MM_PRS_Measurement_Pressure,
     [WND].MM_WND_MM_ID,
     [WND].Metadata_MM_WND,
-    [WND].MM_WND_ChangedAt,
     [WND].MM_WND_Measurement_WindSpeed
 FROM
     [dbo].[MM_Measurement] [MM]
@@ -515,18 +416,9 @@ LEFT JOIN
 ON
     [PRS].MM_PRS_MM_ID = [MM].MM_ID
 LEFT JOIN
-    [dbo].[rMM_WND_Measurement_WindSpeed](@changingTimepoint) [WND]
+    [dbo].[MM_WND_Measurement_WindSpeed] [WND]
 ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID
-AND
-    [WND].MM_WND_ChangedAt = (
-        SELECT
-            max(sub.MM_WND_ChangedAt)
-        FROM
-            [dbo].[rMM_WND_Measurement_WindSpeed](@changingTimepoint) sub
-        WHERE
-            sub.MM_WND_MM_ID = [MM].MM_ID
-   );
+    [WND].MM_WND_MM_ID = [MM].MM_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nMM_Measurement viewed as it currently is (cannot include future versions)
@@ -537,36 +429,6 @@ SELECT
     *
 FROM
     [dbo].[pMM_Measurement](sysdatetime());
-GO
--- Difference perspective ---------------------------------------------------------------------------------------------
--- dMM_Measurement showing all differences between the given timepoints and optionally for a subset of attributes
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].[dMM_Measurement] (
-    @intervalStart datetime2(7),
-    @intervalEnd datetime2(7),
-    @selection varchar(max) = null
-)
-RETURNS TABLE AS RETURN
-SELECT
-    timepoints.inspectedTimepoint,
-    timepoints.mnemonic,
-    [pMM].*
-FROM (
-    SELECT DISTINCT
-        MM_WND_MM_ID AS MM_ID,
-        MM_WND_ChangedAt AS inspectedTimepoint,
-        'WND' AS mnemonic
-    FROM
-        [dbo].[MM_WND_Measurement_WindSpeed]
-    WHERE
-        (@selection is null OR @selection like '%WND%')
-    AND
-        MM_WND_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-) timepoints
-CROSS APPLY
-    [dbo].[pMM_Measurement](timepoints.inspectedTimepoint) [pMM]
-WHERE
-    [pMM].MM_ID = timepoints.MM_ID;
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.dOC_Occasion', 'IF') IS NOT NULL
@@ -639,6 +501,557 @@ SELECT
 FROM
     [dbo].[pOC_Occasion](sysdatetime());
 GO
+-- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the attributes make them behave like tables.
+-- There is one 'instead of' trigger for: insert.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_DAT_Measurement_Date instead of INSERT trigger on MM_DAT_Measurement_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_DAT_Measurement_Date', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_DAT_Measurement_Date];
+GO
+CREATE TRIGGER [dbo].[itMM_DAT_Measurement_Date] ON [dbo].[MM_DAT_Measurement_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_DAT_Measurement_Date TABLE (
+        MM_DAT_MM_ID int not null,
+        Metadata_MM_DAT int not null,
+        MM_DAT_Measurement_Date date not null,
+        MM_DAT_Version bigint not null,
+        MM_DAT_StatementType char(1) not null,
+        primary key(
+            MM_DAT_Version,
+            MM_DAT_MM_ID
+        )
+    );
+    INSERT INTO @MM_DAT_Measurement_Date
+    SELECT
+        i.MM_DAT_MM_ID,
+        i.Metadata_MM_DAT,
+        i.MM_DAT_Measurement_Date,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_DAT_Version),
+        @currentVersion = 0
+    FROM
+        @MM_DAT_Measurement_Date;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_DAT_StatementType =
+                CASE
+                    WHEN [DAT].MM_DAT_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_DAT_Measurement_Date v
+        LEFT JOIN
+            [dbo].[MM_DAT_Measurement_Date] [DAT]
+        ON
+            [DAT].MM_DAT_MM_ID = v.MM_DAT_MM_ID
+        AND
+            [DAT].MM_DAT_Measurement_Date = v.MM_DAT_Measurement_Date
+        WHERE
+            v.MM_DAT_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
+            MM_DAT_MM_ID,
+            Metadata_MM_DAT,
+            MM_DAT_Measurement_Date
+        )
+        SELECT
+            MM_DAT_MM_ID,
+            Metadata_MM_DAT,
+            MM_DAT_Measurement_Date
+        FROM
+            @MM_DAT_Measurement_Date
+        WHERE
+            MM_DAT_Version = @currentVersion
+        AND
+            MM_DAT_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_HOU_Measurement_Hour instead of INSERT trigger on MM_HOU_Measurement_Hour
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_HOU_Measurement_Hour', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_HOU_Measurement_Hour];
+GO
+CREATE TRIGGER [dbo].[itMM_HOU_Measurement_Hour] ON [dbo].[MM_HOU_Measurement_Hour]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_HOU_Measurement_Hour TABLE (
+        MM_HOU_MM_ID int not null,
+        Metadata_MM_HOU int not null,
+        MM_HOU_Measurement_Hour char(2) not null,
+        MM_HOU_Version bigint not null,
+        MM_HOU_StatementType char(1) not null,
+        primary key(
+            MM_HOU_Version,
+            MM_HOU_MM_ID
+        )
+    );
+    INSERT INTO @MM_HOU_Measurement_Hour
+    SELECT
+        i.MM_HOU_MM_ID,
+        i.Metadata_MM_HOU,
+        i.MM_HOU_Measurement_Hour,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_HOU_Version),
+        @currentVersion = 0
+    FROM
+        @MM_HOU_Measurement_Hour;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_HOU_StatementType =
+                CASE
+                    WHEN [HOU].MM_HOU_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_HOU_Measurement_Hour v
+        LEFT JOIN
+            [dbo].[MM_HOU_Measurement_Hour] [HOU]
+        ON
+            [HOU].MM_HOU_MM_ID = v.MM_HOU_MM_ID
+        AND
+            [HOU].MM_HOU_Measurement_Hour = v.MM_HOU_Measurement_Hour
+        WHERE
+            v.MM_HOU_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
+            MM_HOU_MM_ID,
+            Metadata_MM_HOU,
+            MM_HOU_Measurement_Hour
+        )
+        SELECT
+            MM_HOU_MM_ID,
+            Metadata_MM_HOU,
+            MM_HOU_Measurement_Hour
+        FROM
+            @MM_HOU_Measurement_Hour
+        WHERE
+            MM_HOU_Version = @currentVersion
+        AND
+            MM_HOU_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_TMP_Measurement_Temperature instead of INSERT trigger on MM_TMP_Measurement_Temperature
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_TMP_Measurement_Temperature', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_TMP_Measurement_Temperature];
+GO
+CREATE TRIGGER [dbo].[itMM_TMP_Measurement_Temperature] ON [dbo].[MM_TMP_Measurement_Temperature]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_TMP_Measurement_Temperature TABLE (
+        MM_TMP_MM_ID int not null,
+        Metadata_MM_TMP int not null,
+        MM_TMP_Measurement_Temperature decimal(19,10) not null,
+        MM_TMP_Version bigint not null,
+        MM_TMP_StatementType char(1) not null,
+        primary key(
+            MM_TMP_Version,
+            MM_TMP_MM_ID
+        )
+    );
+    INSERT INTO @MM_TMP_Measurement_Temperature
+    SELECT
+        i.MM_TMP_MM_ID,
+        i.Metadata_MM_TMP,
+        i.MM_TMP_Measurement_Temperature,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_TMP_Version),
+        @currentVersion = 0
+    FROM
+        @MM_TMP_Measurement_Temperature;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_TMP_StatementType =
+                CASE
+                    WHEN [TMP].MM_TMP_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_TMP_Measurement_Temperature v
+        LEFT JOIN
+            [dbo].[MM_TMP_Measurement_Temperature] [TMP]
+        ON
+            [TMP].MM_TMP_MM_ID = v.MM_TMP_MM_ID
+        AND
+            [TMP].MM_TMP_Measurement_Temperature = v.MM_TMP_Measurement_Temperature
+        WHERE
+            v.MM_TMP_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
+            MM_TMP_MM_ID,
+            Metadata_MM_TMP,
+            MM_TMP_Measurement_Temperature
+        )
+        SELECT
+            MM_TMP_MM_ID,
+            Metadata_MM_TMP,
+            MM_TMP_Measurement_Temperature
+        FROM
+            @MM_TMP_Measurement_Temperature
+        WHERE
+            MM_TMP_Version = @currentVersion
+        AND
+            MM_TMP_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_PRS_Measurement_Pressure instead of INSERT trigger on MM_PRS_Measurement_Pressure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_PRS_Measurement_Pressure', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_PRS_Measurement_Pressure];
+GO
+CREATE TRIGGER [dbo].[itMM_PRS_Measurement_Pressure] ON [dbo].[MM_PRS_Measurement_Pressure]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_PRS_Measurement_Pressure TABLE (
+        MM_PRS_MM_ID int not null,
+        Metadata_MM_PRS int not null,
+        MM_PRS_Measurement_Pressure decimal(19,10) not null,
+        MM_PRS_Version bigint not null,
+        MM_PRS_StatementType char(1) not null,
+        primary key(
+            MM_PRS_Version,
+            MM_PRS_MM_ID
+        )
+    );
+    INSERT INTO @MM_PRS_Measurement_Pressure
+    SELECT
+        i.MM_PRS_MM_ID,
+        i.Metadata_MM_PRS,
+        i.MM_PRS_Measurement_Pressure,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_PRS_Version),
+        @currentVersion = 0
+    FROM
+        @MM_PRS_Measurement_Pressure;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_PRS_StatementType =
+                CASE
+                    WHEN [PRS].MM_PRS_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_PRS_Measurement_Pressure v
+        LEFT JOIN
+            [dbo].[MM_PRS_Measurement_Pressure] [PRS]
+        ON
+            [PRS].MM_PRS_MM_ID = v.MM_PRS_MM_ID
+        AND
+            [PRS].MM_PRS_Measurement_Pressure = v.MM_PRS_Measurement_Pressure
+        WHERE
+            v.MM_PRS_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
+            MM_PRS_MM_ID,
+            Metadata_MM_PRS,
+            MM_PRS_Measurement_Pressure
+        )
+        SELECT
+            MM_PRS_MM_ID,
+            Metadata_MM_PRS,
+            MM_PRS_Measurement_Pressure
+        FROM
+            @MM_PRS_Measurement_Pressure
+        WHERE
+            MM_PRS_Version = @currentVersion
+        AND
+            MM_PRS_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_WND_Measurement_WindSpeed instead of INSERT trigger on MM_WND_Measurement_WindSpeed
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_WND_Measurement_WindSpeed', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_WND_Measurement_WindSpeed];
+GO
+CREATE TRIGGER [dbo].[itMM_WND_Measurement_WindSpeed] ON [dbo].[MM_WND_Measurement_WindSpeed]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_WND_Measurement_WindSpeed TABLE (
+        MM_WND_MM_ID int not null,
+        Metadata_MM_WND int not null,
+        MM_WND_Measurement_WindSpeed decimal(19,10) not null,
+        MM_WND_Version bigint not null,
+        MM_WND_StatementType char(1) not null,
+        primary key(
+            MM_WND_Version,
+            MM_WND_MM_ID
+        )
+    );
+    INSERT INTO @MM_WND_Measurement_WindSpeed
+    SELECT
+        i.MM_WND_MM_ID,
+        i.Metadata_MM_WND,
+        i.MM_WND_Measurement_WindSpeed,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_WND_Version),
+        @currentVersion = 0
+    FROM
+        @MM_WND_Measurement_WindSpeed;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_WND_StatementType =
+                CASE
+                    WHEN [WND].MM_WND_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_WND_Measurement_WindSpeed v
+        LEFT JOIN
+            [dbo].[MM_WND_Measurement_WindSpeed] [WND]
+        ON
+            [WND].MM_WND_MM_ID = v.MM_WND_MM_ID
+        AND
+            [WND].MM_WND_Measurement_WindSpeed = v.MM_WND_Measurement_WindSpeed
+        WHERE
+            v.MM_WND_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
+            MM_WND_MM_ID,
+            Metadata_MM_WND,
+            MM_WND_Measurement_WindSpeed
+        )
+        SELECT
+            MM_WND_MM_ID,
+            Metadata_MM_WND,
+            MM_WND_Measurement_WindSpeed
+        FROM
+            @MM_WND_Measurement_WindSpeed
+        WHERE
+            MM_WND_Version = @currentVersion
+        AND
+            MM_WND_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itOC_TYP_Occasion_Type instead of INSERT trigger on OC_TYP_Occasion_Type
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itOC_TYP_Occasion_Type', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itOC_TYP_Occasion_Type];
+GO
+CREATE TRIGGER [dbo].[itOC_TYP_Occasion_Type] ON [dbo].[OC_TYP_Occasion_Type]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @OC_TYP_Occasion_Type TABLE (
+        OC_TYP_OC_ID int not null,
+        Metadata_OC_TYP int not null,
+        OC_TYP_Occasion_Type varchar(42) not null,
+        OC_TYP_Version bigint not null,
+        OC_TYP_StatementType char(1) not null,
+        primary key(
+            OC_TYP_Version,
+            OC_TYP_OC_ID
+        )
+    );
+    INSERT INTO @OC_TYP_Occasion_Type
+    SELECT
+        i.OC_TYP_OC_ID,
+        i.Metadata_OC_TYP,
+        i.OC_TYP_Occasion_Type,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(OC_TYP_Version),
+        @currentVersion = 0
+    FROM
+        @OC_TYP_Occasion_Type;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.OC_TYP_StatementType =
+                CASE
+                    WHEN [TYP].OC_TYP_OC_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @OC_TYP_Occasion_Type v
+        LEFT JOIN
+            [dbo].[OC_TYP_Occasion_Type] [TYP]
+        ON
+            [TYP].OC_TYP_OC_ID = v.OC_TYP_OC_ID
+        AND
+            [TYP].OC_TYP_Occasion_Type = v.OC_TYP_Occasion_Type
+        WHERE
+            v.OC_TYP_Version = @currentVersion;
+        INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
+            OC_TYP_OC_ID,
+            Metadata_OC_TYP,
+            OC_TYP_Occasion_Type
+        )
+        SELECT
+            OC_TYP_OC_ID,
+            Metadata_OC_TYP,
+            OC_TYP_Occasion_Type
+        FROM
+            @OC_TYP_Occasion_Type
+        WHERE
+            OC_TYP_Version = @currentVersion
+        AND
+            OC_TYP_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itOC_WDY_Occasion_Weekday instead of INSERT trigger on OC_WDY_Occasion_Weekday
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itOC_WDY_Occasion_Weekday', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itOC_WDY_Occasion_Weekday];
+GO
+CREATE TRIGGER [dbo].[itOC_WDY_Occasion_Weekday] ON [dbo].[OC_WDY_Occasion_Weekday]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @OC_WDY_Occasion_Weekday TABLE (
+        OC_WDY_OC_ID int not null,
+        Metadata_OC_WDY int not null,
+        OC_WDY_Occasion_Weekday varchar(42) not null,
+        OC_WDY_Version bigint not null,
+        OC_WDY_StatementType char(1) not null,
+        primary key(
+            OC_WDY_Version,
+            OC_WDY_OC_ID
+        )
+    );
+    INSERT INTO @OC_WDY_Occasion_Weekday
+    SELECT
+        i.OC_WDY_OC_ID,
+        i.Metadata_OC_WDY,
+        i.OC_WDY_Occasion_Weekday,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(OC_WDY_Version),
+        @currentVersion = 0
+    FROM
+        @OC_WDY_Occasion_Weekday;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.OC_WDY_StatementType =
+                CASE
+                    WHEN [WDY].OC_WDY_OC_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @OC_WDY_Occasion_Weekday v
+        LEFT JOIN
+            [dbo].[OC_WDY_Occasion_Weekday] [WDY]
+        ON
+            [WDY].OC_WDY_OC_ID = v.OC_WDY_OC_ID
+        AND
+            [WDY].OC_WDY_Occasion_Weekday = v.OC_WDY_Occasion_Weekday
+        WHERE
+            v.OC_WDY_Version = @currentVersion;
+        INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
+            OC_WDY_OC_ID,
+            Metadata_OC_WDY,
+            OC_WDY_Occasion_Weekday
+        )
+        SELECT
+            OC_WDY_OC_ID,
+            Metadata_OC_WDY,
+            OC_WDY_Occasion_Weekday
+        FROM
+            @OC_WDY_Occasion_Weekday
+        WHERE
+            OC_WDY_Version = @currentVersion
+        AND
+            OC_WDY_StatementType in ('N');
+    END
+END
+GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
 -- The following triggers on the latest view make it behave like a table.
@@ -661,8 +1074,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
     DECLARE @MM TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         MM_ID int not null
@@ -697,7 +1108,6 @@ BEGIN
         MM_PRS_Measurement_Pressure decimal(19,10) null,
         MM_WND_MM_ID int null,
         Metadata_MM_WND int null,
-        MM_WND_ChangedAt datetime null,
         MM_WND_Measurement_WindSpeed decimal(19,10) null
     );
     INSERT INTO @inserted
@@ -718,7 +1128,6 @@ BEGIN
         i.MM_PRS_Measurement_Pressure,
         ISNULL(ISNULL(i.MM_WND_MM_ID, i.MM_ID), a.MM_ID),
         ISNULL(i.Metadata_MM_WND, i.Metadata_MM),
-        ISNULL(i.MM_WND_ChangedAt, @now),
         i.MM_WND_Measurement_WindSpeed
     FROM (
         SELECT
@@ -738,7 +1147,6 @@ BEGIN
             MM_PRS_Measurement_Pressure,
             MM_WND_MM_ID,
             Metadata_MM_WND,
-            MM_WND_ChangedAt,
             MM_WND_Measurement_WindSpeed,
             ROW_NUMBER() OVER (PARTITION BY MM_ID ORDER BY MM_ID) AS Row
         FROM
@@ -749,162 +1157,70 @@ BEGIN
     ON
         a.Row = i.Row;
     INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
-        MM_DAT_MM_ID,
         Metadata_MM_DAT,
+        MM_DAT_MM_ID,
         MM_DAT_Measurement_Date
     )
     SELECT
-        i.MM_DAT_MM_ID,
         i.Metadata_MM_DAT,
+        i.MM_DAT_MM_ID,
         i.MM_DAT_Measurement_Date
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[MM_DAT_Measurement_Date] [DAT]
-    ON
-        [DAT].MM_DAT_MM_ID = i.MM_DAT_MM_ID
     WHERE
-        [DAT].MM_DAT_MM_ID is null
-    AND
         i.MM_DAT_Measurement_Date is not null;
     INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
-        MM_HOU_MM_ID,
         Metadata_MM_HOU,
+        MM_HOU_MM_ID,
         MM_HOU_Measurement_Hour
     )
     SELECT
-        i.MM_HOU_MM_ID,
         i.Metadata_MM_HOU,
+        i.MM_HOU_MM_ID,
         i.MM_HOU_Measurement_Hour
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[MM_HOU_Measurement_Hour] [HOU]
-    ON
-        [HOU].MM_HOU_MM_ID = i.MM_HOU_MM_ID
     WHERE
-        [HOU].MM_HOU_MM_ID is null
-    AND
         i.MM_HOU_Measurement_Hour is not null;
     INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
-        MM_TMP_MM_ID,
         Metadata_MM_TMP,
+        MM_TMP_MM_ID,
         MM_TMP_Measurement_Temperature
     )
     SELECT
-        i.MM_TMP_MM_ID,
         i.Metadata_MM_TMP,
+        i.MM_TMP_MM_ID,
         i.MM_TMP_Measurement_Temperature
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[MM_TMP_Measurement_Temperature] [TMP]
-    ON
-        [TMP].MM_TMP_MM_ID = i.MM_TMP_MM_ID
     WHERE
-        [TMP].MM_TMP_MM_ID is null
-    AND
         i.MM_TMP_Measurement_Temperature is not null;
     INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
-        MM_PRS_MM_ID,
         Metadata_MM_PRS,
+        MM_PRS_MM_ID,
         MM_PRS_Measurement_Pressure
     )
     SELECT
-        i.MM_PRS_MM_ID,
         i.Metadata_MM_PRS,
+        i.MM_PRS_MM_ID,
         i.MM_PRS_Measurement_Pressure
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[MM_PRS_Measurement_Pressure] [PRS]
-    ON
-        [PRS].MM_PRS_MM_ID = i.MM_PRS_MM_ID
     WHERE
-        [PRS].MM_PRS_MM_ID is null
-    AND
         i.MM_PRS_Measurement_Pressure is not null;
-    DECLARE @MM_WND_Measurement_WindSpeed TABLE (
-        MM_WND_MM_ID int not null,
-        Metadata_MM_WND int not null,
-        MM_WND_ChangedAt datetime not null,
-        MM_WND_Measurement_WindSpeed decimal(19,10) not null,
-        MM_WND_Version bigint not null,
-        MM_WND_StatementType char(1) not null,
-        primary key(
-            MM_WND_Version,
-            MM_WND_MM_ID
-        )
-    );
-    INSERT INTO @MM_WND_Measurement_WindSpeed
+    INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
+        Metadata_MM_WND,
+        MM_WND_MM_ID,
+        MM_WND_Measurement_WindSpeed
+    )
     SELECT
-        i.MM_WND_MM_ID,
         i.Metadata_MM_WND,
-        i.MM_WND_ChangedAt,
-        i.MM_WND_Measurement_WindSpeed,
-        DENSE_RANK() OVER (
-            PARTITION BY
-                i.MM_WND_MM_ID
-            ORDER BY
-                i.MM_WND_ChangedAt ASC
-        ),
-        'X'
+        i.MM_WND_MM_ID,
+        i.MM_WND_Measurement_WindSpeed
     FROM
         @inserted i
     WHERE
         i.MM_WND_Measurement_WindSpeed is not null;
-    SELECT
-        @maxVersion = max(MM_WND_Version),
-        @currentVersion = 0
-    FROM
-        @MM_WND_Measurement_WindSpeed;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.MM_WND_StatementType =
-                CASE
-                    WHEN [WND].MM_WND_MM_ID is not null
-                    THEN 'D' -- duplicate
-                    WHEN [dbo].[rfMM_WND_Measurement_WindSpeed](
-                        v.MM_WND_MM_ID,
-                        v.MM_WND_Measurement_WindSpeed,
-                        v.MM_WND_ChangedAt
-                    ) = 1
-                    THEN 'R' -- restatement
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @MM_WND_Measurement_WindSpeed v
-        LEFT JOIN
-            [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-        ON
-            [WND].MM_WND_MM_ID = v.MM_WND_MM_ID
-        AND
-            [WND].MM_WND_ChangedAt = v.MM_WND_ChangedAt
-        AND
-            [WND].MM_WND_Measurement_WindSpeed = v.MM_WND_Measurement_WindSpeed
-        WHERE
-            v.MM_WND_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
-            MM_WND_MM_ID,
-            Metadata_MM_WND,
-            MM_WND_ChangedAt,
-            MM_WND_Measurement_WindSpeed
-        )
-        SELECT
-            MM_WND_MM_ID,
-            Metadata_MM_WND,
-            MM_WND_ChangedAt,
-            MM_WND_Measurement_WindSpeed
-        FROM
-            @MM_WND_Measurement_WindSpeed
-        WHERE
-            MM_WND_Version = @currentVersion
-        AND
-            MM_WND_StatementType in ('N','R');
-    END
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -919,28 +1235,96 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(MM_ID))
         RAISERROR('The identity column MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_WND_Measurement_WindSpeed))
-    INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
-        MM_WND_MM_ID,
-        Metadata_MM_WND,
-        MM_WND_ChangedAt,
-        MM_WND_Measurement_WindSpeed
-    )
-    SELECT
-        u.MM_WND_MM_ID,
-        CASE WHEN UPDATE(Metadata_MM_WND) THEN i.Metadata_MM_WND ELSE 0 END,
-        u.MM_WND_ChangedAt,
-        i.MM_WND_Measurement_WindSpeed
-    FROM
-        inserted i
-    CROSS APPLY (
+    IF(UPDATE(MM_DAT_MM_ID))
+        RAISERROR('The foreign key column MM_DAT_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_DAT_Measurement_Date))
+    BEGIN
+        INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
+            Metadata_MM_DAT,
+            MM_DAT_MM_ID,
+            MM_DAT_Measurement_Date
+        )
         SELECT
+            ISNULL(i.Metadata_MM_DAT, i.Metadata_MM),
+            ISNULL(i.MM_DAT_MM_ID, i.MM_ID),
+            i.MM_DAT_Measurement_Date
+        FROM
+            inserted i
+        WHERE
+            i.MM_DAT_Measurement_Date is not null;
+    END
+    IF(UPDATE(MM_HOU_MM_ID))
+        RAISERROR('The foreign key column MM_HOU_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_HOU_Measurement_Hour))
+    BEGIN
+        INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
+            Metadata_MM_HOU,
+            MM_HOU_MM_ID,
+            MM_HOU_Measurement_Hour
+        )
+        SELECT
+            ISNULL(i.Metadata_MM_HOU, i.Metadata_MM),
+            ISNULL(i.MM_HOU_MM_ID, i.MM_ID),
+            i.MM_HOU_Measurement_Hour
+        FROM
+            inserted i
+        WHERE
+            i.MM_HOU_Measurement_Hour is not null;
+    END
+    IF(UPDATE(MM_TMP_MM_ID))
+        RAISERROR('The foreign key column MM_TMP_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_TMP_Measurement_Temperature))
+    BEGIN
+        INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
+            Metadata_MM_TMP,
+            MM_TMP_MM_ID,
+            MM_TMP_Measurement_Temperature
+        )
+        SELECT
+            ISNULL(i.Metadata_MM_TMP, i.Metadata_MM),
+            ISNULL(i.MM_TMP_MM_ID, i.MM_ID),
+            i.MM_TMP_Measurement_Temperature
+        FROM
+            inserted i
+        WHERE
+            i.MM_TMP_Measurement_Temperature is not null;
+    END
+    IF(UPDATE(MM_PRS_MM_ID))
+        RAISERROR('The foreign key column MM_PRS_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_PRS_Measurement_Pressure))
+    BEGIN
+        INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
+            Metadata_MM_PRS,
+            MM_PRS_MM_ID,
+            MM_PRS_Measurement_Pressure
+        )
+        SELECT
+            ISNULL(i.Metadata_MM_PRS, i.Metadata_MM),
+            ISNULL(i.MM_PRS_MM_ID, i.MM_ID),
+            i.MM_PRS_Measurement_Pressure
+        FROM
+            inserted i
+        WHERE
+            i.MM_PRS_Measurement_Pressure is not null;
+    END
+    IF(UPDATE(MM_WND_MM_ID))
+        RAISERROR('The foreign key column MM_WND_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_WND_Measurement_WindSpeed))
+    BEGIN
+        INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
+            Metadata_MM_WND,
+            MM_WND_MM_ID,
+            MM_WND_Measurement_WindSpeed
+        )
+        SELECT
+            ISNULL(i.Metadata_MM_WND, i.Metadata_MM),
             ISNULL(i.MM_WND_MM_ID, i.MM_ID),
-            cast(CASE WHEN UPDATE(MM_WND_ChangedAt) THEN i.MM_WND_ChangedAt ELSE @now END as datetime)
-    ) u (
-        MM_WND_MM_ID,
-        MM_WND_ChangedAt
-    );
+            i.MM_WND_Measurement_WindSpeed
+        FROM
+            inserted i
+        WHERE
+            i.MM_WND_Measurement_WindSpeed is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -957,37 +1341,35 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.MM_DAT_MM_ID = [DAT].MM_DAT_MM_ID
+        d.MM_DAT_MM_ID = [DAT].MM_DAT_MM_ID;
     DELETE [HOU]
     FROM
         [dbo].[MM_HOU_Measurement_Hour] [HOU]
     JOIN
         deleted d
     ON
-        d.MM_HOU_MM_ID = [HOU].MM_HOU_MM_ID
+        d.MM_HOU_MM_ID = [HOU].MM_HOU_MM_ID;
     DELETE [TMP]
     FROM
         [dbo].[MM_TMP_Measurement_Temperature] [TMP]
     JOIN
         deleted d
     ON
-        d.MM_TMP_MM_ID = [TMP].MM_TMP_MM_ID
+        d.MM_TMP_MM_ID = [TMP].MM_TMP_MM_ID;
     DELETE [PRS]
     FROM
         [dbo].[MM_PRS_Measurement_Pressure] [PRS]
     JOIN
         deleted d
     ON
-        d.MM_PRS_MM_ID = [PRS].MM_PRS_MM_ID
+        d.MM_PRS_MM_ID = [PRS].MM_PRS_MM_ID;
     DELETE [WND]
     FROM
         [dbo].[MM_WND_Measurement_WindSpeed] [WND]
     JOIN
         deleted d
     ON
-        d.MM_WND_MM_ID = [WND].MM_WND_MM_ID
-    AND
-        d.MM_WND_ChangedAt = [WND].MM_WND_ChangedAt;
+        d.MM_WND_MM_ID = [WND].MM_WND_MM_ID;
     DELETE [MM]
     FROM
         [dbo].[MM_Measurement] [MM]
@@ -1033,8 +1415,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
     DECLARE @OC TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         OC_ID int not null
@@ -1091,43 +1471,81 @@ BEGIN
     ON
         a.Row = i.Row;
     INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
-        OC_TYP_OC_ID,
         Metadata_OC_TYP,
+        OC_TYP_OC_ID,
         OC_TYP_Occasion_Type
     )
     SELECT
-        i.OC_TYP_OC_ID,
         i.Metadata_OC_TYP,
+        i.OC_TYP_OC_ID,
         i.OC_TYP_Occasion_Type
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[OC_TYP_Occasion_Type] [TYP]
-    ON
-        [TYP].OC_TYP_OC_ID = i.OC_TYP_OC_ID
     WHERE
-        [TYP].OC_TYP_OC_ID is null
-    AND
         i.OC_TYP_Occasion_Type is not null;
     INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
-        OC_WDY_OC_ID,
         Metadata_OC_WDY,
+        OC_WDY_OC_ID,
         OC_WDY_Occasion_Weekday
     )
     SELECT
-        i.OC_WDY_OC_ID,
         i.Metadata_OC_WDY,
+        i.OC_WDY_OC_ID,
         i.OC_WDY_Occasion_Weekday
     FROM
         @inserted i
-    LEFT JOIN
-        [dbo].[OC_WDY_Occasion_Weekday] [WDY]
-    ON
-        [WDY].OC_WDY_OC_ID = i.OC_WDY_OC_ID
     WHERE
-        [WDY].OC_WDY_OC_ID is null
-    AND
         i.OC_WDY_Occasion_Weekday is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- utOC_Occasion instead of UPDATE trigger on lOC_Occasion
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [dbo].[utOC_Occasion] ON [dbo].[lOC_Occasion]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(OC_ID))
+        RAISERROR('The identity column OC_ID is not updatable.', 16, 1);
+    IF(UPDATE(OC_TYP_OC_ID))
+        RAISERROR('The foreign key column OC_TYP_OC_ID is not updatable.', 16, 1);
+    IF(UPDATE(OC_TYP_Occasion_Type))
+    BEGIN
+        INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
+            Metadata_OC_TYP,
+            OC_TYP_OC_ID,
+            OC_TYP_Occasion_Type
+        )
+        SELECT
+            ISNULL(i.Metadata_OC_TYP, i.Metadata_OC),
+            ISNULL(i.OC_TYP_OC_ID, i.OC_ID),
+            i.OC_TYP_Occasion_Type
+        FROM
+            inserted i
+        WHERE
+            i.OC_TYP_Occasion_Type is not null;
+    END
+    IF(UPDATE(OC_WDY_OC_ID))
+        RAISERROR('The foreign key column OC_WDY_OC_ID is not updatable.', 16, 1);
+    IF(UPDATE(OC_WDY_Occasion_Weekday))
+    BEGIN
+        INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
+            Metadata_OC_WDY,
+            OC_WDY_OC_ID,
+            OC_WDY_Occasion_Weekday
+        )
+        SELECT
+            ISNULL(i.Metadata_OC_WDY, i.Metadata_OC),
+            ISNULL(i.OC_WDY_OC_ID, i.OC_ID),
+            i.OC_WDY_Occasion_Weekday
+        FROM
+            inserted i
+        WHERE
+            i.OC_WDY_Occasion_Weekday is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1144,15 +1562,14 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.OC_TYP_OC_ID = [TYP].OC_TYP_OC_ID
+        d.OC_TYP_OC_ID = [TYP].OC_TYP_OC_ID;
     DELETE [WDY]
     FROM
         [dbo].[OC_WDY_Occasion_Weekday] [WDY]
     JOIN
         deleted d
     ON
-        d.OC_WDY_OC_ID = [WDY].OC_WDY_OC_ID
-        ;
+        d.OC_WDY_OC_ID = [WDY].OC_WDY_OC_ID;
     DELETE [OC]
     FROM
         [dbo].[OC_Occasion] [OC]
@@ -1344,7 +1761,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-24" time="15:06:59"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" timeRange="datetime" dataRange="decimal(19,10)"><metadata capsule="dbo" restatable="true" idempotent="false"/><layout x="986.48" y="458.75" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="true"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor></schema>';
+   N'<schema format="0.98" date="2014-09-29" time="10:55:13"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="true"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
