@@ -2,6 +2,8 @@
 	This code was generated with the Anchor Modeler http://www.anchormodeling.com. 
 	Version 0.98 test (rev: 665, release: Monday the 29th, September, 2014).
 */
+USE Meteo;
+GO
 -- KNOTS --------------------------------------------------------------------------------------------------------------
 --
 -- Knots are used to store finite sets of values, normally used to describe states
@@ -21,7 +23,7 @@
 -- Anchors may have zero or more adjoined attributes.
 --
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- MM_Measurement table (with 5 attributes)
+-- MM_Measurement table (with 6 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.MM_Measurement', 'U') IS NULL
 CREATE TABLE [dbo].[MM_Measurement] (
@@ -109,6 +111,22 @@ CREATE TABLE [dbo].[MM_WND_Measurement_WindSpeed] (
     ) references [dbo].[MM_Measurement](MM_ID),
     constraint pkMM_WND_Measurement_WindSpeed primary key (
         MM_WND_MM_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- MM_DIR_Measurement_Direction table (on MM_Measurement)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.MM_DIR_Measurement_Direction', 'U') IS NULL
+CREATE TABLE [dbo].[MM_DIR_Measurement_Direction] (
+    MM_DIR_MM_ID int not null,
+    MM_DIR_Measurement_Direction decimal(5,2) not null,
+    Metadata_MM_DIR int not null,
+    constraint fkMM_DIR_Measurement_Direction foreign key (
+        MM_DIR_MM_ID
+    ) references [dbo].[MM_Measurement](MM_ID),
+    constraint pkMM_DIR_Measurement_Direction primary key (
+        MM_DIR_MM_ID asc
     )
 );
 GO
@@ -348,7 +366,10 @@ SELECT
     [PRS].MM_PRS_Measurement_Pressure,
     [WND].MM_WND_MM_ID,
     [WND].Metadata_MM_WND,
-    [WND].MM_WND_Measurement_WindSpeed
+    [WND].MM_WND_Measurement_WindSpeed,
+    [DIR].MM_DIR_MM_ID,
+    [DIR].Metadata_MM_DIR,
+    [DIR].MM_DIR_Measurement_Direction
 FROM
     [dbo].[MM_Measurement] [MM]
 LEFT JOIN
@@ -370,7 +391,11 @@ ON
 LEFT JOIN
     [dbo].[MM_WND_Measurement_WindSpeed] [WND]
 ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID;
+    [WND].MM_WND_MM_ID = [MM].MM_ID
+LEFT JOIN
+    [dbo].[MM_DIR_Measurement_Direction] [DIR]
+ON
+    [DIR].MM_DIR_MM_ID = [MM].MM_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pMM_Measurement viewed as it was on the given timepoint
@@ -396,7 +421,10 @@ SELECT
     [PRS].MM_PRS_Measurement_Pressure,
     [WND].MM_WND_MM_ID,
     [WND].Metadata_MM_WND,
-    [WND].MM_WND_Measurement_WindSpeed
+    [WND].MM_WND_Measurement_WindSpeed,
+    [DIR].MM_DIR_MM_ID,
+    [DIR].Metadata_MM_DIR,
+    [DIR].MM_DIR_Measurement_Direction
 FROM
     [dbo].[MM_Measurement] [MM]
 LEFT JOIN
@@ -418,7 +446,11 @@ ON
 LEFT JOIN
     [dbo].[MM_WND_Measurement_WindSpeed] [WND]
 ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID;
+    [WND].MM_WND_MM_ID = [MM].MM_ID
+LEFT JOIN
+    [dbo].[MM_DIR_Measurement_Direction] [DIR]
+ON
+    [DIR].MM_DIR_MM_ID = [MM].MM_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nMM_Measurement viewed as it currently is (cannot include future versions)
@@ -899,6 +931,83 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itMM_DIR_Measurement_Direction instead of INSERT trigger on MM_DIR_Measurement_Direction
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.itMM_DIR_Measurement_Direction', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[itMM_DIR_Measurement_Direction];
+GO
+CREATE TRIGGER [dbo].[itMM_DIR_Measurement_Direction] ON [dbo].[MM_DIR_Measurement_Direction]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @MM_DIR_Measurement_Direction TABLE (
+        MM_DIR_MM_ID int not null,
+        Metadata_MM_DIR int not null,
+        MM_DIR_Measurement_Direction decimal(5,2) not null,
+        MM_DIR_Version bigint not null,
+        MM_DIR_StatementType char(1) not null,
+        primary key(
+            MM_DIR_Version,
+            MM_DIR_MM_ID
+        )
+    );
+    INSERT INTO @MM_DIR_Measurement_Direction
+    SELECT
+        i.MM_DIR_MM_ID,
+        i.Metadata_MM_DIR,
+        i.MM_DIR_Measurement_Direction,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(MM_DIR_Version),
+        @currentVersion = 0
+    FROM
+        @MM_DIR_Measurement_Direction;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.MM_DIR_StatementType =
+                CASE
+                    WHEN [DIR].MM_DIR_MM_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @MM_DIR_Measurement_Direction v
+        LEFT JOIN
+            [dbo].[MM_DIR_Measurement_Direction] [DIR]
+        ON
+            [DIR].MM_DIR_MM_ID = v.MM_DIR_MM_ID
+        AND
+            [DIR].MM_DIR_Measurement_Direction = v.MM_DIR_Measurement_Direction
+        WHERE
+            v.MM_DIR_Version = @currentVersion;
+        INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
+            MM_DIR_MM_ID,
+            Metadata_MM_DIR,
+            MM_DIR_Measurement_Direction
+        )
+        SELECT
+            MM_DIR_MM_ID,
+            Metadata_MM_DIR,
+            MM_DIR_Measurement_Direction
+        FROM
+            @MM_DIR_Measurement_Direction
+        WHERE
+            MM_DIR_Version = @currentVersion
+        AND
+            MM_DIR_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- itOC_TYP_Occasion_Type instead of INSERT trigger on OC_TYP_Occasion_Type
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.itOC_TYP_Occasion_Type', 'TR') IS NOT NULL
@@ -1108,7 +1217,10 @@ BEGIN
         MM_PRS_Measurement_Pressure decimal(19,10) null,
         MM_WND_MM_ID int null,
         Metadata_MM_WND int null,
-        MM_WND_Measurement_WindSpeed decimal(19,10) null
+        MM_WND_Measurement_WindSpeed decimal(19,10) null,
+        MM_DIR_MM_ID int null,
+        Metadata_MM_DIR int null,
+        MM_DIR_Measurement_Direction decimal(5,2) null
     );
     INSERT INTO @inserted
     SELECT
@@ -1128,7 +1240,10 @@ BEGIN
         i.MM_PRS_Measurement_Pressure,
         ISNULL(ISNULL(i.MM_WND_MM_ID, i.MM_ID), a.MM_ID),
         ISNULL(i.Metadata_MM_WND, i.Metadata_MM),
-        i.MM_WND_Measurement_WindSpeed
+        i.MM_WND_Measurement_WindSpeed,
+        ISNULL(ISNULL(i.MM_DIR_MM_ID, i.MM_ID), a.MM_ID),
+        ISNULL(i.Metadata_MM_DIR, i.Metadata_MM),
+        i.MM_DIR_Measurement_Direction
     FROM (
         SELECT
             MM_ID,
@@ -1148,6 +1263,9 @@ BEGIN
             MM_WND_MM_ID,
             Metadata_MM_WND,
             MM_WND_Measurement_WindSpeed,
+            MM_DIR_MM_ID,
+            Metadata_MM_DIR,
+            MM_DIR_Measurement_Direction,
             ROW_NUMBER() OVER (PARTITION BY MM_ID ORDER BY MM_ID) AS Row
         FROM
             inserted
@@ -1221,6 +1339,19 @@ BEGIN
         @inserted i
     WHERE
         i.MM_WND_Measurement_WindSpeed is not null;
+    INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
+        Metadata_MM_DIR,
+        MM_DIR_MM_ID,
+        MM_DIR_Measurement_Direction
+    )
+    SELECT
+        i.Metadata_MM_DIR,
+        i.MM_DIR_MM_ID,
+        i.MM_DIR_Measurement_Direction
+    FROM
+        @inserted i
+    WHERE
+        i.MM_DIR_Measurement_Direction is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -1325,6 +1456,24 @@ BEGIN
         WHERE
             i.MM_WND_Measurement_WindSpeed is not null;
     END
+    IF(UPDATE(MM_DIR_MM_ID))
+        RAISERROR('The foreign key column MM_DIR_MM_ID is not updatable.', 16, 1);
+    IF(UPDATE(MM_DIR_Measurement_Direction))
+    BEGIN
+        INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
+            Metadata_MM_DIR,
+            MM_DIR_MM_ID,
+            MM_DIR_Measurement_Direction
+        )
+        SELECT
+            ISNULL(i.Metadata_MM_DIR, i.Metadata_MM),
+            ISNULL(i.MM_DIR_MM_ID, i.MM_ID),
+            i.MM_DIR_Measurement_Direction
+        FROM
+            inserted i
+        WHERE
+            i.MM_DIR_Measurement_Direction is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1370,6 +1519,13 @@ BEGIN
         deleted d
     ON
         d.MM_WND_MM_ID = [WND].MM_WND_MM_ID;
+    DELETE [DIR]
+    FROM
+        [dbo].[MM_DIR_Measurement_Direction] [DIR]
+    JOIN
+        deleted d
+    ON
+        d.MM_DIR_MM_ID = [DIR].MM_DIR_MM_ID;
     DELETE [MM]
     FROM
         [dbo].[MM_Measurement] [MM]
@@ -1393,6 +1549,10 @@ BEGIN
         [dbo].[MM_WND_Measurement_WindSpeed] [WND]
     ON
         [WND].MM_WND_MM_ID = [MM].MM_ID
+    LEFT JOIN
+        [dbo].[MM_DIR_Measurement_Direction] [DIR]
+    ON
+        [DIR].MM_DIR_MM_ID = [MM].MM_ID
     WHERE
         [DAT].MM_DAT_MM_ID is null
     AND
@@ -1402,7 +1562,9 @@ BEGIN
     AND
         [PRS].MM_PRS_MM_ID is null
     AND
-        [WND].MM_WND_MM_ID is null;
+        [WND].MM_WND_MM_ID is null
+    AND
+        [DIR].MM_DIR_MM_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1761,7 +1923,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-29" time="10:55:13"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="true"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
+   N'<schema format="0.98" date="2014-09-29" time="11:23:34"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><attribute mnemonic="DIR" descriptor="Direction" dataRange="decimal(5,2)"><metadata capsule="dbo"/><layout x="994.00" y="530.00" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="true"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

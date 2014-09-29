@@ -163,8 +163,19 @@ sp_add_jobstep
     @command = '
             EXEC [dbo].[MM_Measurement__SMHI_Weather_Wind_Typed]
         ',
+    @on_success_action = 3,
     @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Loading', 
     @step_name = 'Load wind'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[OC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed]
+        ',
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Loading', 
+    @step_name = 'Load occasion'; 
 GO
