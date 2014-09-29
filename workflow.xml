@@ -48,20 +48,24 @@
     <job name="%System%_%Source%_Loading">
         <!-- MM_Measurement -->
         <jobstep name="Load temperature" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[MM_Measurement__%System%_%Source%_Temperature_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Temperature_Typed]
         </jobstep>
         <jobstep name="Load temperature (new format)" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[MM_Measurement__%System%_%Source%_TemperatureNew_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_TemperatureNew_Typed]
         </jobstep>
         <jobstep name="Load pressure" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[MM_Measurement__%System%_%Source%_Pressure_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Pressure_Typed]
         </jobstep>
         <jobstep name="Load wind" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[MM_Measurement__%System%_%Source%_Wind_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Wind_Typed]
         </jobstep>
         <!-- OC_Occasion -->
-        <jobstep name="Load occasion" database_name="%stage%" subsystem="TSQL">
-            EXEC [dbo].[OC_Occasion__%System%_%Source%_TemperatureNewMetadata_Typed]
+        <jobstep name="Load occasion" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC [dbo].[lOC_Occasion__%System%_%Source%_TemperatureNewMetadata_Typed]
+        </jobstep>
+        <!-- MM_taken_OC_on -->
+        <jobstep name="Load measurement relationship with occasion" database_name="%stage%" subsystem="TSQL">
+            EXEC [dbo].[lMM_taken_OC_on__%System%_%Source%_TemperatureNew_Typed]
         </jobstep>
     </job>
 </workflow>

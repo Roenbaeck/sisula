@@ -10,7 +10,7 @@ CREATE PROCEDURE [$load.qualified]
 AS
 BEGIN
     SET NOCOUNT ON;
-    MERGE INTO [$target.database]..[l$load.target] AS t
+    MERGE INTO [$target.database]..[$load.target] AS t
     USING~*/
     if(load._load) {
 /*~ (

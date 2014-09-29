@@ -128,7 +128,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-            EXEC [dbo].[MM_Measurement__SMHI_Weather_Temperature_Typed]
+            EXEC [dbo].[lMM_Measurement__SMHI_Weather_Temperature_Typed]
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -139,7 +139,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-            EXEC [dbo].[MM_Measurement__SMHI_Weather_TemperatureNew_Typed]
+            EXEC [dbo].[lMM_Measurement__SMHI_Weather_TemperatureNew_Typed]
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -150,7 +150,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-            EXEC [dbo].[MM_Measurement__SMHI_Weather_Pressure_Typed]
+            EXEC [dbo].[lMM_Measurement__SMHI_Weather_Pressure_Typed]
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -161,7 +161,7 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-            EXEC [dbo].[MM_Measurement__SMHI_Weather_Wind_Typed]
+            EXEC [dbo].[lMM_Measurement__SMHI_Weather_Wind_Typed]
         ',
     @on_success_action = 3,
     @database_name = 'Stage',
@@ -172,10 +172,21 @@ GO
 sp_add_jobstep 
     @subsystem = 'TSQL', 
     @command = '
-            EXEC [dbo].[OC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed]
+            EXEC [dbo].[lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed]
         ',
+    @on_success_action = 3,
     @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
     @job_name = 'SMHI_Weather_Loading', 
     @step_name = 'Load occasion'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed]
+        ',
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'SMHI_Weather_Loading', 
+    @step_name = 'Load measurement relationship with occasion'; 
 GO

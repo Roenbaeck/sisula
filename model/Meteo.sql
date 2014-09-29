@@ -1,6 +1,6 @@
 /*
 	This code was generated with the Anchor Modeler http://www.anchormodeling.com. 
-	Version 0.98 test (rev: 665, release: Monday the 29th, September, 2014).
+	Version 0.98 test (rev: 666, release: Monday the 29th, September, 2014).
 */
 USE Meteo;
 GO
@@ -197,8 +197,7 @@ CREATE TABLE [dbo].[MM_taken_OC_on] (
         OC_ID_on
     ) references [dbo].[OC_Occasion](OC_ID), 
     constraint pkMM_taken_OC_on primary key (
-        MM_ID_taken asc,
-        OC_ID_on asc
+        MM_ID_taken asc
     )
 );
 GO
@@ -546,12 +545,12 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_DAT_Measurement_Date instead of INSERT trigger on MM_DAT_Measurement_Date
+-- it_MM_DAT_Measurement_Date instead of INSERT trigger on MM_DAT_Measurement_Date
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_DAT_Measurement_Date', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_DAT_Measurement_Date];
+IF Object_ID('dbo.it_MM_DAT_Measurement_Date', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_DAT_Measurement_Date];
 GO
-CREATE TRIGGER [dbo].[itMM_DAT_Measurement_Date] ON [dbo].[MM_DAT_Measurement_Date]
+CREATE TRIGGER [dbo].[it_MM_DAT_Measurement_Date] ON [dbo].[MM_DAT_Measurement_Date]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -623,12 +622,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_HOU_Measurement_Hour instead of INSERT trigger on MM_HOU_Measurement_Hour
+-- it_MM_HOU_Measurement_Hour instead of INSERT trigger on MM_HOU_Measurement_Hour
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_HOU_Measurement_Hour', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_HOU_Measurement_Hour];
+IF Object_ID('dbo.it_MM_HOU_Measurement_Hour', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_HOU_Measurement_Hour];
 GO
-CREATE TRIGGER [dbo].[itMM_HOU_Measurement_Hour] ON [dbo].[MM_HOU_Measurement_Hour]
+CREATE TRIGGER [dbo].[it_MM_HOU_Measurement_Hour] ON [dbo].[MM_HOU_Measurement_Hour]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -700,12 +699,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_TMP_Measurement_Temperature instead of INSERT trigger on MM_TMP_Measurement_Temperature
+-- it_MM_TMP_Measurement_Temperature instead of INSERT trigger on MM_TMP_Measurement_Temperature
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_TMP_Measurement_Temperature', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_TMP_Measurement_Temperature];
+IF Object_ID('dbo.it_MM_TMP_Measurement_Temperature', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_TMP_Measurement_Temperature];
 GO
-CREATE TRIGGER [dbo].[itMM_TMP_Measurement_Temperature] ON [dbo].[MM_TMP_Measurement_Temperature]
+CREATE TRIGGER [dbo].[it_MM_TMP_Measurement_Temperature] ON [dbo].[MM_TMP_Measurement_Temperature]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -777,12 +776,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_PRS_Measurement_Pressure instead of INSERT trigger on MM_PRS_Measurement_Pressure
+-- it_MM_PRS_Measurement_Pressure instead of INSERT trigger on MM_PRS_Measurement_Pressure
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_PRS_Measurement_Pressure', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_PRS_Measurement_Pressure];
+IF Object_ID('dbo.it_MM_PRS_Measurement_Pressure', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_PRS_Measurement_Pressure];
 GO
-CREATE TRIGGER [dbo].[itMM_PRS_Measurement_Pressure] ON [dbo].[MM_PRS_Measurement_Pressure]
+CREATE TRIGGER [dbo].[it_MM_PRS_Measurement_Pressure] ON [dbo].[MM_PRS_Measurement_Pressure]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -854,12 +853,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_WND_Measurement_WindSpeed instead of INSERT trigger on MM_WND_Measurement_WindSpeed
+-- it_MM_WND_Measurement_WindSpeed instead of INSERT trigger on MM_WND_Measurement_WindSpeed
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_WND_Measurement_WindSpeed', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_WND_Measurement_WindSpeed];
+IF Object_ID('dbo.it_MM_WND_Measurement_WindSpeed', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_WND_Measurement_WindSpeed];
 GO
-CREATE TRIGGER [dbo].[itMM_WND_Measurement_WindSpeed] ON [dbo].[MM_WND_Measurement_WindSpeed]
+CREATE TRIGGER [dbo].[it_MM_WND_Measurement_WindSpeed] ON [dbo].[MM_WND_Measurement_WindSpeed]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -931,12 +930,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_DIR_Measurement_Direction instead of INSERT trigger on MM_DIR_Measurement_Direction
+-- it_MM_DIR_Measurement_Direction instead of INSERT trigger on MM_DIR_Measurement_Direction
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itMM_DIR_Measurement_Direction', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itMM_DIR_Measurement_Direction];
+IF Object_ID('dbo.it_MM_DIR_Measurement_Direction', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_DIR_Measurement_Direction];
 GO
-CREATE TRIGGER [dbo].[itMM_DIR_Measurement_Direction] ON [dbo].[MM_DIR_Measurement_Direction]
+CREATE TRIGGER [dbo].[it_MM_DIR_Measurement_Direction] ON [dbo].[MM_DIR_Measurement_Direction]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1008,12 +1007,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itOC_TYP_Occasion_Type instead of INSERT trigger on OC_TYP_Occasion_Type
+-- it_OC_TYP_Occasion_Type instead of INSERT trigger on OC_TYP_Occasion_Type
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itOC_TYP_Occasion_Type', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itOC_TYP_Occasion_Type];
+IF Object_ID('dbo.it_OC_TYP_Occasion_Type', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_OC_TYP_Occasion_Type];
 GO
-CREATE TRIGGER [dbo].[itOC_TYP_Occasion_Type] ON [dbo].[OC_TYP_Occasion_Type]
+CREATE TRIGGER [dbo].[it_OC_TYP_Occasion_Type] ON [dbo].[OC_TYP_Occasion_Type]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1085,12 +1084,12 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itOC_WDY_Occasion_Weekday instead of INSERT trigger on OC_WDY_Occasion_Weekday
+-- it_OC_WDY_Occasion_Weekday instead of INSERT trigger on OC_WDY_Occasion_Weekday
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.itOC_WDY_Occasion_Weekday', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[itOC_WDY_Occasion_Weekday];
+IF Object_ID('dbo.it_OC_WDY_Occasion_Weekday', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_OC_WDY_Occasion_Weekday];
 GO
-CREATE TRIGGER [dbo].[itOC_WDY_Occasion_Weekday] ON [dbo].[OC_WDY_Occasion_Weekday]
+CREATE TRIGGER [dbo].[it_OC_WDY_Occasion_Weekday] ON [dbo].[OC_WDY_Occasion_Weekday]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1174,9 +1173,9 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_Measurement instead of INSERT trigger on lMM_Measurement
+-- it_lMM_Measurement instead of INSERT trigger on lMM_Measurement
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[itMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[it_lMM_Measurement] ON [dbo].[lMM_Measurement]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1355,9 +1354,9 @@ BEGIN
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- utMM_Measurement instead of UPDATE trigger on lMM_Measurement
+-- ut_lMM_Measurement instead of UPDATE trigger on lMM_Measurement
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[utMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[ut_lMM_Measurement] ON [dbo].[lMM_Measurement]
 INSTEAD OF UPDATE
 AS
 BEGIN
@@ -1477,9 +1476,9 @@ BEGIN
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtMM_Measurement instead of DELETE trigger on lMM_Measurement
+-- dt_lMM_Measurement instead of DELETE trigger on lMM_Measurement
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dtMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[dt_lMM_Measurement] ON [dbo].[lMM_Measurement]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1568,9 +1567,9 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itOC_Occasion instead of INSERT trigger on lOC_Occasion
+-- it_lOC_Occasion instead of INSERT trigger on lOC_Occasion
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[itOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[it_lOC_Occasion] ON [dbo].[lOC_Occasion]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1661,9 +1660,9 @@ BEGIN
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- utOC_Occasion instead of UPDATE trigger on lOC_Occasion
+-- ut_lOC_Occasion instead of UPDATE trigger on lOC_Occasion
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[utOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[ut_lOC_Occasion] ON [dbo].[lOC_Occasion]
 INSTEAD OF UPDATE
 AS
 BEGIN
@@ -1711,9 +1710,9 @@ BEGIN
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtOC_Occasion instead of DELETE trigger on lOC_Occasion
+-- dt_lOC_Occasion instead of DELETE trigger on lOC_Occasion
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dtOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[dt_lOC_Occasion] ON [dbo].[lOC_Occasion]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1829,9 +1828,12 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itMM_taken_OC_on instead of INSERT trigger on lMM_taken_OC_on
+-- it_MM_taken_OC_on instead of INSERT trigger on MM_taken_OC_on
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[itMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+IF Object_ID('dbo.it_MM_taken_OC_on', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_MM_taken_OC_on];
+GO
+CREATE TRIGGER [dbo].[it_MM_taken_OC_on] ON [dbo].[MM_taken_OC_on]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1845,8 +1847,7 @@ BEGIN
         MM_ID_taken int not null,
         OC_ID_on int not null,
         primary key (
-            MM_ID_taken,
-            OC_ID_on
+            MM_ID_taken
         )
     );
     INSERT INTO @inserted
@@ -1857,9 +1858,7 @@ BEGIN
     FROM
         inserted i
     WHERE
-        i.MM_ID_taken is not null
-    AND
-        i.OC_ID_on is not null;
+        i.MM_ID_taken is not null;
     INSERT INTO [dbo].[MM_taken_OC_on] (
         Metadata_MM_taken_OC_on,
         MM_ID_taken,
@@ -1875,16 +1874,62 @@ BEGIN
         [dbo].[MM_taken_OC_on] tie
     ON
         tie.MM_ID_taken = i.MM_ID_taken
-    AND
-        tie.OC_ID_on = i.OC_ID_on
     WHERE
-        tie.OC_ID_on is null;
+        tie.MM_ID_taken is null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lMM_taken_OC_on instead of INSERT trigger on lMM_taken_OC_on
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [dbo].[it_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    INSERT INTO [dbo].[MM_taken_OC_on] (
+        Metadata_MM_taken_OC_on,
+        MM_ID_taken,
+        OC_ID_on
+    )
+    SELECT
+        i.Metadata_MM_taken_OC_on,
+        i.MM_ID_taken,
+        i.OC_ID_on
+    FROM
+        inserted i; 
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lMM_taken_OC_on instead of UPDATE trigger on lMM_taken_OC_on
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [dbo].[ut_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(MM_ID_taken))
+        RAISERROR('The identity column MM_ID_taken is not updatable.', 16, 1);
+    INSERT INTO [dbo].[MM_taken_OC_on] (
+        Metadata_MM_taken_OC_on,
+        MM_ID_taken,
+        OC_ID_on
+    )
+    SELECT
+        i.Metadata_MM_taken_OC_on,
+        i.MM_ID_taken,
+        i.OC_ID_on
+    FROM
+        inserted i; 
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtMM_taken_OC_on instead of DELETE trigger on lMM_taken_OC_on
+-- dt_lMM_taken_OC_on instead of DELETE trigger on lMM_taken_OC_on
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dtMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+CREATE TRIGGER [dbo].[dt_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1895,9 +1940,7 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.MM_ID_taken = tie.MM_ID_taken
-    AND
-        d.OC_ID_on = tie.OC_ID_on;
+        d.MM_ID_taken = tie.MM_ID_taken;
 END
 GO
 -- SCHEMA EVOLUTION ---------------------------------------------------------------------------------------------------
@@ -1923,7 +1966,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-29" time="11:23:34"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><attribute mnemonic="DIR" descriptor="Direction" dataRange="decimal(5,2)"><metadata capsule="dbo"/><layout x="994.00" y="530.00" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="true"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
+   N'<schema format="0.98" date="2014-09-29" time="14:18:46"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><attribute mnemonic="DIR" descriptor="Direction" dataRange="decimal(5,2)"><metadata capsule="dbo"/><layout x="994.00" y="530.00" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="false"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
