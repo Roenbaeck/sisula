@@ -9,13 +9,13 @@ go
 create procedure metadata._StartingWork (
 	@WO_ID int output,
 	@name varchar(255),
-	@start datetime = null,
+	@start datetime2(7) = null,
 	@user varchar(555) = null,
 	@role varchar(42) = null
 )
 as
 begin
-	set @start = isnull(@start, getdate());
+	set @start = isnull(@start, SYSDATETIME());
 	set @user = isnull(@user, SYSTEM_USER);
 	set @role = isnull(@role, USER);
 
@@ -70,14 +70,12 @@ create procedure metadata._StoppingWork (
 	@status varchar(42) = 'Success',
 	@errorLine int = null,
 	@errorMessage varchar(555) = null,
-	@stop datetime = null
+	@stop datetime2(7) = null
 )
 as
 begin
-	set @stop = isnull(@stop, getdate());
+	set @stop = isnull(@stop, SYSDATETIME());
 	set @status = isnull(@status, 'Success');
-
-	select 'Before', @WO_ID;
 
 	-- ensure this work is running!
 	select
@@ -88,8 +86,6 @@ begin
 		WO_ID = @WO_ID
 	and
 		WO_EST_EST_ExecutionStatus = 'Running';
-
-	select 'After', @WO_ID;
 
 	if(@WO_ID is not null)
 	begin

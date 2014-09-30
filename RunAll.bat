@@ -12,7 +12,9 @@ set Source=Weather
 set TargetDatabase=Meteo
 set SourceDatabase=Stage
 set MetaDatabase=Stage
+set SisulaPath=%CD%
 REM -------------------------------------------------------------------
+echo Using %SisulaPath% as path to the Sisulator.
 
 echo Running the Sisulator for source generation...
 Sisulator.js -x source.xml -m Source -d source.directive -o source.sql

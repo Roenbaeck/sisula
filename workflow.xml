@@ -1,6 +1,6 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="stage" value="%SourceDatabase%"/>
-    <variable name="path" value="C:\sisula\data"/>
+    <variable name="path" value="%SisulaPath%\data"/>
     <variable name="filenamePattern" value="%Source%.*\.txt"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>

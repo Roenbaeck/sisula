@@ -30,6 +30,8 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    
+    THROW; -- Propagate the error
 END CATCH
 ~*/
     }    

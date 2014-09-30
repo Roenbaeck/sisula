@@ -14,7 +14,7 @@ DROP ASSEMBLY StringUtilities;
 
 CREATE ASSEMBLY StringUtilities 
 AUTHORIZATION dbo 
-FROM 'C:\sisula\code\Splitter.dll'
+FROM 'G:\sisula\code\Splitter.dll' -- SUBSTITUTE WITH YOUR PATH!
 WITH PERMISSION_SET = SAFE;
 GO
 

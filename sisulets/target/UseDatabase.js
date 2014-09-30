@@ -1,6 +1,6 @@
-if(VARIABLES.Database) {
+if(VARIABLES.SourceDatabase) {
 /*~
-USE $VARIABLES.Database;
+USE $VARIABLES.SourceDatabase;
 GO
 ~*/
 }

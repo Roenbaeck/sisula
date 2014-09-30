@@ -6,8 +6,8 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SMHI_Weather_CreateRawTable
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] 
 AS
@@ -42,6 +42,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -55,8 +56,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] 
 AS
@@ -90,6 +91,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -107,8 +109,8 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
 	@filename varchar(2000)
@@ -161,6 +163,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -176,8 +179,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] 
 AS
@@ -553,6 +556,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -579,8 +583,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] 
 AS
@@ -696,6 +700,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -711,8 +716,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] 
 AS
@@ -796,6 +801,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -811,8 +817,8 @@ GO
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] 
 AS
@@ -964,6 +970,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO
@@ -989,8 +996,8 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in CORPNET
+-- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
+-- From: WARP in WARP
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] 
 AS
@@ -1035,6 +1042,7 @@ BEGIN CATCH
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
+    THROW; -- Propagate the error
 END CATCH
 END
 GO

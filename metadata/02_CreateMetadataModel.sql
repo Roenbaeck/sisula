@@ -241,7 +241,7 @@ GO
 IF Object_ID('metadata.WO_STA_Work_Start', 'U') IS NULL
 CREATE TABLE [metadata].[WO_STA_Work_Start] (
     WO_STA_WO_ID int not null,
-    WO_STA_Work_Start datetime not null,
+    WO_STA_Work_Start datetime2(7) not null,
     constraint fkWO_STA_Work_Start foreign key (
         WO_STA_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
@@ -256,7 +256,7 @@ GO
 IF Object_ID('metadata.WO_END_Work_End', 'U') IS NULL
 CREATE TABLE [metadata].[WO_END_Work_End] (
     WO_END_WO_ID int not null,
-    WO_END_Work_End datetime not null,
+    WO_END_Work_End datetime2(7) not null,
     constraint fkWO_END_Work_End foreign key (
         WO_END_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
@@ -265,18 +265,20 @@ CREATE TABLE [metadata].[WO_END_Work_End] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Historized attribute table -----------------------------------------------------------------------------------------
 -- WO_UPD_Work_Updates table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_UPD_Work_Updates', 'U') IS NULL
 CREATE TABLE [metadata].[WO_UPD_Work_Updates] (
     WO_UPD_WO_ID int not null,
     WO_UPD_Work_Updates int not null,
+    WO_UPD_ChangedAt datetime2(7) not null,
     constraint fkWO_UPD_Work_Updates foreign key (
         WO_UPD_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
     constraint pkWO_UPD_Work_Updates primary key (
-        WO_UPD_WO_ID asc
+        WO_UPD_WO_ID asc,
+        WO_UPD_ChangedAt desc
     )
 );
 GO
@@ -295,33 +297,37 @@ CREATE TABLE [metadata].[WO_NAM_Work_Name] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Historized attribute table -----------------------------------------------------------------------------------------
 -- WO_INS_Work_Inserts table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_INS_Work_Inserts', 'U') IS NULL
 CREATE TABLE [metadata].[WO_INS_Work_Inserts] (
     WO_INS_WO_ID int not null,
     WO_INS_Work_Inserts int not null,
+    WO_INS_ChangedAt datetime2(7) not null,
     constraint fkWO_INS_Work_Inserts foreign key (
         WO_INS_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
     constraint pkWO_INS_Work_Inserts primary key (
-        WO_INS_WO_ID asc
+        WO_INS_WO_ID asc,
+        WO_INS_ChangedAt desc
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Historized attribute table -----------------------------------------------------------------------------------------
 -- WO_DEL_Work_Deletes table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_DEL_Work_Deletes', 'U') IS NULL
 CREATE TABLE [metadata].[WO_DEL_Work_Deletes] (
     WO_DEL_WO_ID int not null,
     WO_DEL_Work_Deletes int not null,
+    WO_DEL_ChangedAt datetime2(7) not null,
     constraint fkWO_DEL_Work_Deletes foreign key (
         WO_DEL_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
     constraint pkWO_DEL_Work_Deletes primary key (
-        WO_DEL_WO_ID asc
+        WO_DEL_WO_ID asc,
+        WO_DEL_ChangedAt desc
     )
 );
 GO
@@ -362,7 +368,7 @@ IF Object_ID('metadata.WO_EST_Work_ExecutionStatus', 'U') IS NULL
 CREATE TABLE [metadata].[WO_EST_Work_ExecutionStatus] (
     WO_EST_WO_ID int not null,
     WO_EST_EST_ID tinyint not null,
-    WO_EST_ChangedAt datetime not null,
+    WO_EST_ChangedAt datetime2(7) not null,
     constraint fk_A_WO_EST_Work_ExecutionStatus foreign key (
         WO_EST_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
@@ -627,6 +633,195 @@ BEGIN
 END
 GO
 -- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfWO_UPD_Work_Updates restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcWO_UPD_Work_Updates restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfWO_UPD_Work_Updates', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfWO_UPD_Work_Updates] (
+        @id int,
+        @value int,
+        @changed datetime2(7)
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.WO_UPD_Work_Updates
+                    FROM
+                        [metadata].[WO_UPD_Work_Updates] pre
+                    WHERE
+                        pre.WO_UPD_WO_ID = @id
+                    AND
+                        pre.WO_UPD_ChangedAt < @changed
+                    ORDER BY
+                        pre.WO_UPD_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.WO_UPD_Work_Updates
+                    FROM
+                        [metadata].[WO_UPD_Work_Updates] fol
+                    WHERE
+                        fol.WO_UPD_WO_ID = @id
+                    AND
+                        fol.WO_UPD_ChangedAt > @changed
+                    ORDER BY
+                        fol.WO_UPD_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[WO_UPD_Work_Updates]
+    ADD CONSTRAINT [rcWO_UPD_Work_Updates] CHECK (
+        [metadata].[rfWO_UPD_Work_Updates] (
+            WO_UPD_WO_ID,
+            WO_UPD_Work_Updates,
+            WO_UPD_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfWO_INS_Work_Inserts restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcWO_INS_Work_Inserts restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfWO_INS_Work_Inserts', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfWO_INS_Work_Inserts] (
+        @id int,
+        @value int,
+        @changed datetime2(7)
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.WO_INS_Work_Inserts
+                    FROM
+                        [metadata].[WO_INS_Work_Inserts] pre
+                    WHERE
+                        pre.WO_INS_WO_ID = @id
+                    AND
+                        pre.WO_INS_ChangedAt < @changed
+                    ORDER BY
+                        pre.WO_INS_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.WO_INS_Work_Inserts
+                    FROM
+                        [metadata].[WO_INS_Work_Inserts] fol
+                    WHERE
+                        fol.WO_INS_WO_ID = @id
+                    AND
+                        fol.WO_INS_ChangedAt > @changed
+                    ORDER BY
+                        fol.WO_INS_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[WO_INS_Work_Inserts]
+    ADD CONSTRAINT [rcWO_INS_Work_Inserts] CHECK (
+        [metadata].[rfWO_INS_Work_Inserts] (
+            WO_INS_WO_ID,
+            WO_INS_Work_Inserts,
+            WO_INS_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfWO_DEL_Work_Deletes restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcWO_DEL_Work_Deletes restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfWO_DEL_Work_Deletes', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfWO_DEL_Work_Deletes] (
+        @id int,
+        @value int,
+        @changed datetime2(7)
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.WO_DEL_Work_Deletes
+                    FROM
+                        [metadata].[WO_DEL_Work_Deletes] pre
+                    WHERE
+                        pre.WO_DEL_WO_ID = @id
+                    AND
+                        pre.WO_DEL_ChangedAt < @changed
+                    ORDER BY
+                        pre.WO_DEL_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.WO_DEL_Work_Deletes
+                    FROM
+                        [metadata].[WO_DEL_Work_Deletes] fol
+                    WHERE
+                        fol.WO_DEL_WO_ID = @id
+                    AND
+                        fol.WO_DEL_ChangedAt > @changed
+                    ORDER BY
+                        fol.WO_DEL_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[WO_DEL_Work_Deletes]
+    ADD CONSTRAINT [rcWO_DEL_Work_Deletes] CHECK (
+        [metadata].[rfWO_DEL_Work_Deletes] (
+            WO_DEL_WO_ID,
+            WO_DEL_Work_Deletes,
+            WO_DEL_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
 -- rfWO_EST_Work_ExecutionStatus restatement finder, also used by the insert and update triggers for idempotent attributes
 -- rcWO_EST_Work_ExecutionStatus restatement constraint (available only in attributes that cannot have restatements)
 -----------------------------------------------------------------------------------------------------------------------
@@ -636,7 +831,7 @@ BEGIN
     CREATE FUNCTION [metadata].[rfWO_EST_Work_ExecutionStatus] (
         @id int,
         @value tinyint,
-        @changed datetime
+        @changed datetime2(7)
     )
     RETURNS tinyint AS
     BEGIN RETURN (
@@ -984,13 +1179,76 @@ BEGIN
 END
 GO
 -- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rWO_UPD_Work_Updates rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rWO_UPD_Work_Updates','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rWO_UPD_Work_Updates] (
+        @changingTimepoint datetime2(7)
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        WO_UPD_WO_ID,
+        WO_UPD_Work_Updates,
+        WO_UPD_ChangedAt
+    FROM
+        [metadata].[WO_UPD_Work_Updates]
+    WHERE
+        WO_UPD_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rWO_INS_Work_Inserts rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rWO_INS_Work_Inserts','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rWO_INS_Work_Inserts] (
+        @changingTimepoint datetime2(7)
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        WO_INS_WO_ID,
+        WO_INS_Work_Inserts,
+        WO_INS_ChangedAt
+    FROM
+        [metadata].[WO_INS_Work_Inserts]
+    WHERE
+        WO_INS_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rWO_DEL_Work_Deletes rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rWO_DEL_Work_Deletes','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rWO_DEL_Work_Deletes] (
+        @changingTimepoint datetime2(7)
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        WO_DEL_WO_ID,
+        WO_DEL_Work_Deletes,
+        WO_DEL_ChangedAt
+    FROM
+        [metadata].[WO_DEL_Work_Deletes]
+    WHERE
+        WO_DEL_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
 -- rWO_EST_Work_ExecutionStatus rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.rWO_EST_Work_ExecutionStatus','IF') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [metadata].[rWO_EST_Work_ExecutionStatus] (
-        @changingTimepoint datetime
+        @changingTimepoint datetime2(7)
     )
     RETURNS TABLE WITH SCHEMABINDING AS RETURN
     SELECT
@@ -1365,12 +1623,15 @@ SELECT
     [END].WO_END_WO_ID,
     [END].WO_END_Work_End,
     [UPD].WO_UPD_WO_ID,
+    [UPD].WO_UPD_ChangedAt,
     [UPD].WO_UPD_Work_Updates,
     [NAM].WO_NAM_WO_ID,
     [NAM].WO_NAM_Work_Name,
     [INS].WO_INS_WO_ID,
+    [INS].WO_INS_ChangedAt,
     [INS].WO_INS_Work_Inserts,
     [DEL].WO_DEL_WO_ID,
+    [DEL].WO_DEL_ChangedAt,
     [DEL].WO_DEL_Work_Deletes,
     [USR].WO_USR_WO_ID,
     [USR].WO_USR_Work_InvocationUser,
@@ -1398,6 +1659,15 @@ LEFT JOIN
     [metadata].[WO_UPD_Work_Updates] [UPD]
 ON
     [UPD].WO_UPD_WO_ID = [WO].WO_ID
+AND
+    [UPD].WO_UPD_ChangedAt = (
+        SELECT
+            max(sub.WO_UPD_ChangedAt)
+        FROM
+            [metadata].[WO_UPD_Work_Updates] sub
+        WHERE
+            sub.WO_UPD_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
     [metadata].[WO_NAM_Work_Name] [NAM]
 ON
@@ -1406,10 +1676,28 @@ LEFT JOIN
     [metadata].[WO_INS_Work_Inserts] [INS]
 ON
     [INS].WO_INS_WO_ID = [WO].WO_ID
+AND
+    [INS].WO_INS_ChangedAt = (
+        SELECT
+            max(sub.WO_INS_ChangedAt)
+        FROM
+            [metadata].[WO_INS_Work_Inserts] sub
+        WHERE
+            sub.WO_INS_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
     [metadata].[WO_DEL_Work_Deletes] [DEL]
 ON
     [DEL].WO_DEL_WO_ID = [WO].WO_ID
+AND
+    [DEL].WO_DEL_ChangedAt = (
+        SELECT
+            max(sub.WO_DEL_ChangedAt)
+        FROM
+            [metadata].[WO_DEL_Work_Deletes] sub
+        WHERE
+            sub.WO_DEL_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
     [metadata].[WO_USR_Work_InvocationUser] [USR]
 ON
@@ -1458,12 +1746,15 @@ SELECT
     [END].WO_END_WO_ID,
     [END].WO_END_Work_End,
     [UPD].WO_UPD_WO_ID,
+    [UPD].WO_UPD_ChangedAt,
     [UPD].WO_UPD_Work_Updates,
     [NAM].WO_NAM_WO_ID,
     [NAM].WO_NAM_Work_Name,
     [INS].WO_INS_WO_ID,
+    [INS].WO_INS_ChangedAt,
     [INS].WO_INS_Work_Inserts,
     [DEL].WO_DEL_WO_ID,
+    [DEL].WO_DEL_ChangedAt,
     [DEL].WO_DEL_Work_Deletes,
     [USR].WO_USR_WO_ID,
     [USR].WO_USR_Work_InvocationUser,
@@ -1488,21 +1779,48 @@ LEFT JOIN
 ON
     [END].WO_END_WO_ID = [WO].WO_ID
 LEFT JOIN
-    [metadata].[WO_UPD_Work_Updates] [UPD]
+    [metadata].[rWO_UPD_Work_Updates](@changingTimepoint) [UPD]
 ON
     [UPD].WO_UPD_WO_ID = [WO].WO_ID
+AND
+    [UPD].WO_UPD_ChangedAt = (
+        SELECT
+            max(sub.WO_UPD_ChangedAt)
+        FROM
+            [metadata].[rWO_UPD_Work_Updates](@changingTimepoint) sub
+        WHERE
+            sub.WO_UPD_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
     [metadata].[WO_NAM_Work_Name] [NAM]
 ON
     [NAM].WO_NAM_WO_ID = [WO].WO_ID
 LEFT JOIN
-    [metadata].[WO_INS_Work_Inserts] [INS]
+    [metadata].[rWO_INS_Work_Inserts](@changingTimepoint) [INS]
 ON
     [INS].WO_INS_WO_ID = [WO].WO_ID
+AND
+    [INS].WO_INS_ChangedAt = (
+        SELECT
+            max(sub.WO_INS_ChangedAt)
+        FROM
+            [metadata].[rWO_INS_Work_Inserts](@changingTimepoint) sub
+        WHERE
+            sub.WO_INS_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
-    [metadata].[WO_DEL_Work_Deletes] [DEL]
+    [metadata].[rWO_DEL_Work_Deletes](@changingTimepoint) [DEL]
 ON
     [DEL].WO_DEL_WO_ID = [WO].WO_ID
+AND
+    [DEL].WO_DEL_ChangedAt = (
+        SELECT
+            max(sub.WO_DEL_ChangedAt)
+        FROM
+            [metadata].[rWO_DEL_Work_Deletes](@changingTimepoint) sub
+        WHERE
+            sub.WO_DEL_WO_ID = [WO].WO_ID
+   )
 LEFT JOIN
     [metadata].[WO_USR_Work_InvocationUser] [USR]
 ON
@@ -1561,6 +1879,39 @@ SELECT
     timepoints.mnemonic,
     [pWO].*
 FROM (
+    SELECT DISTINCT
+        WO_UPD_WO_ID AS WO_ID,
+        WO_UPD_ChangedAt AS inspectedTimepoint,
+        'UPD' AS mnemonic
+    FROM
+        [metadata].[WO_UPD_Work_Updates]
+    WHERE
+        (@selection is null OR @selection like '%UPD%')
+    AND
+        WO_UPD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        WO_INS_WO_ID AS WO_ID,
+        WO_INS_ChangedAt AS inspectedTimepoint,
+        'INS' AS mnemonic
+    FROM
+        [metadata].[WO_INS_Work_Inserts]
+    WHERE
+        (@selection is null OR @selection like '%INS%')
+    AND
+        WO_INS_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        WO_DEL_WO_ID AS WO_ID,
+        WO_DEL_ChangedAt AS inspectedTimepoint,
+        'DEL' AS mnemonic
+    FROM
+        [metadata].[WO_DEL_Work_Deletes]
+    WHERE
+        (@selection is null OR @selection like '%DEL%')
+    AND
+        WO_DEL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
     SELECT DISTINCT
         WO_EST_WO_ID AS WO_ID,
         WO_EST_ChangedAt AS inspectedTimepoint,
@@ -2397,7 +2748,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_STA_Work_Start TABLE (
         WO_STA_WO_ID int not null,
-        WO_STA_Work_Start datetime not null,
+        WO_STA_Work_Start datetime2(7) not null,
         WO_STA_Version bigint not null,
         WO_STA_StatementType char(1) not null,
         primary key(
@@ -2470,7 +2821,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_END_Work_End TABLE (
         WO_END_WO_ID int not null,
-        WO_END_Work_End datetime not null,
+        WO_END_Work_End datetime2(7) not null,
         WO_END_Version bigint not null,
         WO_END_StatementType char(1) not null,
         primary key(
@@ -2543,6 +2894,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_UPD_Work_Updates TABLE (
         WO_UPD_WO_ID int not null,
+        WO_UPD_ChangedAt datetime2(7) not null,
         WO_UPD_Work_Updates int not null,
         WO_UPD_Version bigint not null,
         WO_UPD_StatementType char(1) not null,
@@ -2554,8 +2906,14 @@ BEGIN
     INSERT INTO @WO_UPD_Work_Updates
     SELECT
         i.WO_UPD_WO_ID,
+        i.WO_UPD_ChangedAt,
         i.WO_UPD_Work_Updates,
-        1,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WO_UPD_WO_ID
+            ORDER BY
+                i.WO_UPD_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
@@ -2573,6 +2931,12 @@ BEGIN
                 CASE
                     WHEN [UPD].WO_UPD_WO_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWO_UPD_Work_Updates](
+                        v.WO_UPD_WO_ID,
+                        v.WO_UPD_Work_Updates,
+                        v.WO_UPD_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -2582,15 +2946,19 @@ BEGIN
         ON
             [UPD].WO_UPD_WO_ID = v.WO_UPD_WO_ID
         AND
+            [UPD].WO_UPD_ChangedAt = v.WO_UPD_ChangedAt
+        AND
             [UPD].WO_UPD_Work_Updates = v.WO_UPD_Work_Updates
         WHERE
             v.WO_UPD_Version = @currentVersion;
         INSERT INTO [metadata].[WO_UPD_Work_Updates] (
             WO_UPD_WO_ID,
+            WO_UPD_ChangedAt,
             WO_UPD_Work_Updates
         )
         SELECT
             WO_UPD_WO_ID,
+            WO_UPD_ChangedAt,
             WO_UPD_Work_Updates
         FROM
             @WO_UPD_Work_Updates
@@ -2689,6 +3057,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_INS_Work_Inserts TABLE (
         WO_INS_WO_ID int not null,
+        WO_INS_ChangedAt datetime2(7) not null,
         WO_INS_Work_Inserts int not null,
         WO_INS_Version bigint not null,
         WO_INS_StatementType char(1) not null,
@@ -2700,8 +3069,14 @@ BEGIN
     INSERT INTO @WO_INS_Work_Inserts
     SELECT
         i.WO_INS_WO_ID,
+        i.WO_INS_ChangedAt,
         i.WO_INS_Work_Inserts,
-        1,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WO_INS_WO_ID
+            ORDER BY
+                i.WO_INS_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
@@ -2719,6 +3094,12 @@ BEGIN
                 CASE
                     WHEN [INS].WO_INS_WO_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWO_INS_Work_Inserts](
+                        v.WO_INS_WO_ID,
+                        v.WO_INS_Work_Inserts,
+                        v.WO_INS_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -2728,15 +3109,19 @@ BEGIN
         ON
             [INS].WO_INS_WO_ID = v.WO_INS_WO_ID
         AND
+            [INS].WO_INS_ChangedAt = v.WO_INS_ChangedAt
+        AND
             [INS].WO_INS_Work_Inserts = v.WO_INS_Work_Inserts
         WHERE
             v.WO_INS_Version = @currentVersion;
         INSERT INTO [metadata].[WO_INS_Work_Inserts] (
             WO_INS_WO_ID,
+            WO_INS_ChangedAt,
             WO_INS_Work_Inserts
         )
         SELECT
             WO_INS_WO_ID,
+            WO_INS_ChangedAt,
             WO_INS_Work_Inserts
         FROM
             @WO_INS_Work_Inserts
@@ -2762,6 +3147,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_DEL_Work_Deletes TABLE (
         WO_DEL_WO_ID int not null,
+        WO_DEL_ChangedAt datetime2(7) not null,
         WO_DEL_Work_Deletes int not null,
         WO_DEL_Version bigint not null,
         WO_DEL_StatementType char(1) not null,
@@ -2773,8 +3159,14 @@ BEGIN
     INSERT INTO @WO_DEL_Work_Deletes
     SELECT
         i.WO_DEL_WO_ID,
+        i.WO_DEL_ChangedAt,
         i.WO_DEL_Work_Deletes,
-        1,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WO_DEL_WO_ID
+            ORDER BY
+                i.WO_DEL_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
@@ -2792,6 +3184,12 @@ BEGIN
                 CASE
                     WHEN [DEL].WO_DEL_WO_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWO_DEL_Work_Deletes](
+                        v.WO_DEL_WO_ID,
+                        v.WO_DEL_Work_Deletes,
+                        v.WO_DEL_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -2801,15 +3199,19 @@ BEGIN
         ON
             [DEL].WO_DEL_WO_ID = v.WO_DEL_WO_ID
         AND
+            [DEL].WO_DEL_ChangedAt = v.WO_DEL_ChangedAt
+        AND
             [DEL].WO_DEL_Work_Deletes = v.WO_DEL_Work_Deletes
         WHERE
             v.WO_DEL_Version = @currentVersion;
         INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
             WO_DEL_WO_ID,
+            WO_DEL_ChangedAt,
             WO_DEL_Work_Deletes
         )
         SELECT
             WO_DEL_WO_ID,
+            WO_DEL_ChangedAt,
             WO_DEL_Work_Deletes
         FROM
             @WO_DEL_Work_Deletes
@@ -2981,7 +3383,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_EST_Work_ExecutionStatus TABLE (
         WO_EST_WO_ID int not null,
-        WO_EST_ChangedAt datetime not null,
+        WO_EST_ChangedAt datetime2(7) not null,
         WO_EST_EST_ID tinyint not null, 
         WO_EST_Version bigint not null,
         WO_EST_StatementType char(1) not null,
@@ -4066,23 +4468,26 @@ BEGIN
     DECLARE @inserted TABLE (
         WO_ID int not null,
         WO_STA_WO_ID int null,
-        WO_STA_Work_Start datetime null,
+        WO_STA_Work_Start datetime2(7) null,
         WO_END_WO_ID int null,
-        WO_END_Work_End datetime null,
+        WO_END_Work_End datetime2(7) null,
         WO_UPD_WO_ID int null,
+        WO_UPD_ChangedAt datetime2(7) null,
         WO_UPD_Work_Updates int null,
         WO_NAM_WO_ID int null,
         WO_NAM_Work_Name varchar(255) null,
         WO_INS_WO_ID int null,
+        WO_INS_ChangedAt datetime2(7) null,
         WO_INS_Work_Inserts int null,
         WO_DEL_WO_ID int null,
+        WO_DEL_ChangedAt datetime2(7) null,
         WO_DEL_Work_Deletes int null,
         WO_USR_WO_ID int null,
         WO_USR_Work_InvocationUser varchar(555) null,
         WO_ROL_WO_ID int null,
         WO_ROL_Work_InvocationRole varchar(42) null,
         WO_EST_WO_ID int null,
-        WO_EST_ChangedAt datetime null,
+        WO_EST_ChangedAt datetime2(7) null,
         WO_EST_EST_ExecutionStatus varchar(42) null,
         WO_EST_EST_ID tinyint null,
         WO_ERL_WO_ID int null,
@@ -4098,12 +4503,15 @@ BEGIN
         ISNULL(ISNULL(i.WO_END_WO_ID, i.WO_ID), a.WO_ID),
         i.WO_END_Work_End,
         ISNULL(ISNULL(i.WO_UPD_WO_ID, i.WO_ID), a.WO_ID),
+        ISNULL(i.WO_UPD_ChangedAt, @now),
         i.WO_UPD_Work_Updates,
         ISNULL(ISNULL(i.WO_NAM_WO_ID, i.WO_ID), a.WO_ID),
         i.WO_NAM_Work_Name,
         ISNULL(ISNULL(i.WO_INS_WO_ID, i.WO_ID), a.WO_ID),
+        ISNULL(i.WO_INS_ChangedAt, @now),
         i.WO_INS_Work_Inserts,
         ISNULL(ISNULL(i.WO_DEL_WO_ID, i.WO_ID), a.WO_ID),
+        ISNULL(i.WO_DEL_ChangedAt, @now),
         i.WO_DEL_Work_Deletes,
         ISNULL(ISNULL(i.WO_USR_WO_ID, i.WO_ID), a.WO_ID),
         i.WO_USR_Work_InvocationUser,
@@ -4125,12 +4533,15 @@ BEGIN
             WO_END_WO_ID,
             WO_END_Work_End,
             WO_UPD_WO_ID,
+            WO_UPD_ChangedAt,
             WO_UPD_Work_Updates,
             WO_NAM_WO_ID,
             WO_NAM_Work_Name,
             WO_INS_WO_ID,
+            WO_INS_ChangedAt,
             WO_INS_Work_Inserts,
             WO_DEL_WO_ID,
+            WO_DEL_ChangedAt,
             WO_DEL_Work_Deletes,
             WO_USR_WO_ID,
             WO_USR_Work_InvocationUser,
@@ -4176,10 +4587,12 @@ BEGIN
         i.WO_END_Work_End is not null;
     INSERT INTO [metadata].[WO_UPD_Work_Updates] (
         WO_UPD_WO_ID,
+        WO_UPD_ChangedAt,
         WO_UPD_Work_Updates
     )
     SELECT
         i.WO_UPD_WO_ID,
+        i.WO_UPD_ChangedAt,
         i.WO_UPD_Work_Updates
     FROM
         @inserted i
@@ -4198,10 +4611,12 @@ BEGIN
         i.WO_NAM_Work_Name is not null;
     INSERT INTO [metadata].[WO_INS_Work_Inserts] (
         WO_INS_WO_ID,
+        WO_INS_ChangedAt,
         WO_INS_Work_Inserts
     )
     SELECT
         i.WO_INS_WO_ID,
+        i.WO_INS_ChangedAt,
         i.WO_INS_Work_Inserts
     FROM
         @inserted i
@@ -4209,10 +4624,12 @@ BEGIN
         i.WO_INS_Work_Inserts is not null;
     INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
         WO_DEL_WO_ID,
+        WO_DEL_ChangedAt,
         WO_DEL_Work_Deletes
     )
     SELECT
         i.WO_DEL_WO_ID,
+        i.WO_DEL_ChangedAt,
         i.WO_DEL_Work_Deletes
     FROM
         @inserted i
@@ -4331,10 +4748,16 @@ BEGIN
     BEGIN
         INSERT INTO [metadata].[WO_UPD_Work_Updates] (
             WO_UPD_WO_ID,
+            WO_UPD_ChangedAt,
             WO_UPD_Work_Updates
         )
         SELECT
             ISNULL(i.WO_UPD_WO_ID, i.WO_ID),
+            cast(CASE
+                WHEN i.WO_UPD_Work_Updates is null THEN i.WO_UPD_ChangedAt
+                WHEN UPDATE(WO_UPD_ChangedAt) THEN i.WO_UPD_ChangedAt
+                ELSE @now
+            END as datetime2(7)),
             i.WO_UPD_Work_Updates
         FROM
             inserted i
@@ -4363,10 +4786,16 @@ BEGIN
     BEGIN
         INSERT INTO [metadata].[WO_INS_Work_Inserts] (
             WO_INS_WO_ID,
+            WO_INS_ChangedAt,
             WO_INS_Work_Inserts
         )
         SELECT
             ISNULL(i.WO_INS_WO_ID, i.WO_ID),
+            cast(CASE
+                WHEN i.WO_INS_Work_Inserts is null THEN i.WO_INS_ChangedAt
+                WHEN UPDATE(WO_INS_ChangedAt) THEN i.WO_INS_ChangedAt
+                ELSE @now
+            END as datetime2(7)),
             i.WO_INS_Work_Inserts
         FROM
             inserted i
@@ -4379,10 +4808,16 @@ BEGIN
     BEGIN
         INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
             WO_DEL_WO_ID,
+            WO_DEL_ChangedAt,
             WO_DEL_Work_Deletes
         )
         SELECT
             ISNULL(i.WO_DEL_WO_ID, i.WO_ID),
+            cast(CASE
+                WHEN i.WO_DEL_Work_Deletes is null THEN i.WO_DEL_ChangedAt
+                WHEN UPDATE(WO_DEL_ChangedAt) THEN i.WO_DEL_ChangedAt
+                ELSE @now
+            END as datetime2(7)),
             i.WO_DEL_Work_Deletes
         FROM
             inserted i
@@ -4436,7 +4871,7 @@ BEGIN
                 WHEN i.WO_EST_EST_ID is null AND [kEST].EST_ID is null THEN i.WO_EST_ChangedAt
                 WHEN UPDATE(WO_EST_ChangedAt) THEN i.WO_EST_ChangedAt
                 ELSE @now
-            END as datetime),
+            END as datetime2(7)),
             CASE WHEN UPDATE(WO_EST_EST_ID) THEN i.WO_EST_EST_ID ELSE [kEST].EST_ID END
         FROM
             inserted i
@@ -4509,6 +4944,8 @@ BEGIN
     JOIN
         deleted d
     ON
+        d.WO_UPD_ChangedAt = [UPD].WO_UPD_ChangedAt
+    AND
         d.WO_UPD_WO_ID = [UPD].WO_UPD_WO_ID;
     DELETE [NAM]
     FROM
@@ -4523,6 +4960,8 @@ BEGIN
     JOIN
         deleted d
     ON
+        d.WO_INS_ChangedAt = [INS].WO_INS_ChangedAt
+    AND
         d.WO_INS_WO_ID = [INS].WO_INS_WO_ID;
     DELETE [DEL]
     FROM
@@ -4530,6 +4969,8 @@ BEGIN
     JOIN
         deleted d
     ON
+        d.WO_DEL_ChangedAt = [DEL].WO_DEL_ChangedAt
+    AND
         d.WO_DEL_WO_ID = [DEL].WO_DEL_WO_ID;
     DELETE [USR]
     FROM
@@ -5481,7 +5922,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-30" time="12:57:19"><metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="TYP" descriptor="Type" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="774.27" y="157.76" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="808.72" y="118.11" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="837.04" y="264.77" fixed="false"/></attribute><layout x="810.67" y="210.93" fixed="false"/></anchor><anchor mnemonic="SR" descriptor="Source" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="432.83" y="235.37" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="424.30" y="313.03" fixed="false"/></attribute><layout x="486.07" y="284.35" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata capsule="metadata"/><layout x="668.40" y="877.83" fixed="false"/></attribute><attribute mnemonic="PTH" descriptor="Path" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="614.67" y="771.79" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="642.12" y="806.96" fixed="false"/></attribute><layout x="688.82" y="736.06" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="727.57" y="408.40" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="723.51" y="444.19" fixed="true"/></attribute><attribute mnemonic="UPD" descriptor="Updates" dataRange="int"><metadata capsule="metadata"/><layout x="530.34" y="449.87" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="718.22" y="473.64" fixed="true"/></attribute><attribute mnemonic="INS" descriptor="Inserts" dataRange="int"><metadata capsule="metadata"/><layout x="502.03" y="422.82" fixed="true"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" dataRange="int"><metadata capsule="metadata"/><layout x="580.05" y="487.99" fixed="true"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="717.12" y="512.74" fixed="true"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata"/><layout x="722.74" y="552.04" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="581.43" y="537.07" fixed="true"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata"/><layout x="753.90" y="365.32" fixed="true"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="759.07" y="338.76" fixed="true"/></attribute><layout x="645.14" y="439.29" fixed="false"/></anchor><anchor mnemonic="WF" descriptor="Workflow" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="875.45" y="-3.10" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="933.60" y="-0.03" fixed="false"/></attribute><layout x="887.35" y="37.98" fixed="true"/></anchor><tie><anchorRole role="of" type="JB" identifier="true"/><anchorRole role="part" type="WO" identifier="true"/><metadata capsule="metadata"/><layout x="732.11" y="303.88" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="WF" identifier="false"/><metadata capsule="metadata"/><layout x="866.17" y="118.41" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="SR" identifier="false"/><metadata capsule="metadata"/><layout x="547.73" y="353.65" fixed="false"/></tie><tie><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="involves" type="WO" identifier="false"/><metadata capsule="metadata"/><layout x="661.91" y="609.13" fixed="true"/></tie><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="496.45" y="562.96" fixed="false"/></knot></schema>';
+   N'<schema format="0.98" date="2014-09-30" time="16:23:27"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="TYP" descriptor="Type" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="496.45" y="562.96" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="774.27" y="157.76" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="808.72" y="118.11" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="837.04" y="264.77" fixed="false"/></attribute><layout x="810.67" y="210.93" fixed="false"/></anchor><anchor mnemonic="SR" descriptor="Source" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="386.50" y="291.18" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="430.51" y="233.04" fixed="false"/></attribute><layout x="463.95" y="297.35" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata capsule="metadata"/><layout x="668.40" y="877.83" fixed="false"/></attribute><attribute mnemonic="PTH" descriptor="Path" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="614.67" y="771.79" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="642.12" y="806.96" fixed="false"/></attribute><layout x="688.82" y="736.06" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="615.51" y="379.44" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="723.51" y="444.19" fixed="true"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="553.66" y="448.19" fixed="true"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="718.22" y="473.64" fixed="true"/></attribute><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="502.03" y="422.82" fixed="true"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="580.05" y="487.99" fixed="true"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="717.12" y="512.74" fixed="true"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata"/><layout x="722.74" y="552.04" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="581.43" y="537.07" fixed="true"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata"/><layout x="728.13" y="366.89" fixed="true"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="725.89" y="404.15" fixed="true"/></attribute><layout x="653.73" y="447.97" fixed="false"/></anchor><anchor mnemonic="WF" descriptor="Workflow" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="875.45" y="-3.10" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="933.60" y="-0.03" fixed="false"/></attribute><layout x="887.35" y="37.98" fixed="true"/></anchor><tie><anchorRole role="of" type="JB" identifier="true"/><anchorRole role="part" type="WO" identifier="true"/><metadata capsule="metadata"/><layout x="732.11" y="303.88" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="WF" identifier="false"/><metadata capsule="metadata"/><layout x="866.17" y="118.41" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="SR" identifier="false"/><metadata capsule="metadata"/><layout x="547.73" y="353.65" fixed="false"/></tie><tie><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="involves" type="WO" identifier="false"/><metadata capsule="metadata"/><layout x="661.91" y="609.13" fixed="true"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

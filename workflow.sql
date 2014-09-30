@@ -42,9 +42,9 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::C:\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"} | % { $_.FullName })
+            $files = @(Get-ChildItem -Recurse FileSystem::G:\sisula\data | Where-Object {$_.Name -match "Weather.*\.txt"} | % { $_.FullName })
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\sisula\data:"
+              Throw "No matching files were found in G:\sisula\data:"
             } Else {
                 ForEach ($fullFilename in $files) {
                     Invoke-Sqlcmd "EXEC SMHI_Weather_BulkInsert ''$fullFilename''" -Database "Stage" -ErrorAction Stop
