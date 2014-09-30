@@ -8,6 +8,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_CreateTypedTables
 --
+-- The typed tables hold the data that make it through the process 
+-- without errors. Columns here have the data types defined in the 
+-- source XML definition. 
+--
+-- Metadata columns, such as _id, can be used to backtrack from 
+-- a value to the actual row from where it came.
+--
 ~*/
 while(part = source.nextPart()) {
 /*~
@@ -17,7 +24,7 @@ while(part = source.nextPart()) {
 /*~
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
--- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+-- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_CreateTypedTables] 
 AS

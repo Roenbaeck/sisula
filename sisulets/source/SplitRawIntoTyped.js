@@ -8,6 +8,10 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_SplitRawIntoTyped
 --
+-- This procedure loads data from the 'Split' views into the 'Typed'
+-- tables, with the condition that data must conform to the given
+-- data types and have no duplicates for defined keys.
+--
 ~*/
 while(part = source.nextPart()) {
 /*~
@@ -17,7 +21,7 @@ while(part = source.nextPart()) {
 /*~
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
--- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+-- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] 
 AS

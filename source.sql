@@ -6,8 +6,25 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SMHI_Weather_CreateRawTable
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- This table holds the 'raw' loaded data.
+--
+-- row
+-- Holds a row loaded from a file.
+--
+-- _id
+-- This sequence is generated in order to keep a lineage through the 
+-- staging process. If a single file has been loaded, this corresponds
+-- to the row number in the file.
+--
+-- _file
+-- A number containing the file id, which either points to metadata
+-- if its used or is otherwise an incremented number per file.
+--
+-- _timestamp
+-- The time the row was created.
+-- 
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] 
 AS
@@ -56,8 +73,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] 
 AS
@@ -109,8 +126,8 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
 	@filename varchar(2000)
@@ -173,14 +190,25 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SMHI_Weather_CreateSplitViews
 --
+-- The split view uses a CLR called the Splitter to split rows in the
+-- 'raw' table into columns. The Splitter uses a regular expression in
+-- which groups indicate which parts should be cut out as columns.
+--
+-- The view also checks data types and provide the results as well as 
+-- show the 'raw' cut column value, before any given transformations
+-- have taken place.
+-- 
+-- If keys are defined, these keys are checked for duplicates and the 
+-- duplicate number can be found through the view.
+--
 -- Create: SMHI_Weather_TemperatureNew_Split
 -- Create: SMHI_Weather_TemperatureNewMetadata_Split
 -- Create: SMHI_Weather_Temperature_Split
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] 
 AS
@@ -583,8 +611,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] 
 AS
@@ -710,14 +738,21 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SMHI_Weather_CreateTypedTables
 --
+-- The typed tables hold the data that make it through the process 
+-- without errors. Columns here have the data types defined in the 
+-- source XML definition. 
+--
+-- Metadata columns, such as _id, can be used to backtrack from 
+-- a value to the actual row from where it came.
+--
 -- Create: SMHI_Weather_TemperatureNew_Typed
 -- Create: SMHI_Weather_TemperatureNewMetadata_Typed
 -- Create: SMHI_Weather_Temperature_Typed
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] 
 AS
@@ -811,14 +846,18 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SMHI_Weather_SplitRawIntoTyped
 --
+-- This procedure loads data from the 'Split' views into the 'Typed'
+-- tables, with the condition that data must conform to the given
+-- data types and have no duplicates for defined keys.
+--
 -- Load: SMHI_Weather_TemperatureNew_Split into SMHI_Weather_TemperatureNew_Typed
 -- Load: SMHI_Weather_TemperatureNewMetadata_Split into SMHI_Weather_TemperatureNewMetadata_Typed
 -- Load: SMHI_Weather_Temperature_Split into SMHI_Weather_Temperature_Typed
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] 
 AS
@@ -996,8 +1035,8 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] 
 AS

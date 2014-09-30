@@ -8,6 +8,17 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_CreateSplitViews
 --
+-- The split view uses a CLR called the Splitter to split rows in the
+-- 'raw' table into columns. The Splitter uses a regular expression in
+-- which groups indicate which parts should be cut out as columns.
+--
+-- The view also checks data types and provide the results as well as 
+-- show the 'raw' cut column value, before any given transformations
+-- have taken place.
+-- 
+-- If keys are defined, these keys are checked for duplicates and the 
+-- duplicate number can be found through the view.
+--
 ~*/
 while(part = source.nextPart()) {
 /*~
@@ -17,7 +28,7 @@ while(part = source.nextPart()) {
 /*~
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
--- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+-- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_CreateSplitViews] 
 AS

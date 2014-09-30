@@ -13,8 +13,8 @@ GO
 -- Map: temperature to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] 
 AS
@@ -91,8 +91,8 @@ GO
 -- Map: celsius to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] 
 AS
@@ -160,8 +160,8 @@ GO
 -- Map: pressure to MM_PRS_Measurement_Pressure 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] 
 AS
@@ -230,8 +230,8 @@ GO
 -- Map: direction to MM_DIR_Measurement_Direction 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] 
 AS
@@ -303,8 +303,8 @@ GO
 -- Map: graphType to OC_TYP_Occasion_Type (as natural key)
 -- Map: _file to Metadata_OC (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] 
 AS
@@ -362,8 +362,8 @@ GO
 -- Map: OC_ID to OC_ID_on 
 -- Map: _file to Metadata_MM_taken_OC_on (as metadata)
 --
--- Generated: Tue Sep 30 16:32:16 UTC+0200 2014 by Lars
--- From: WARP in WARP
+-- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] 
 AS

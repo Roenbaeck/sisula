@@ -19,7 +19,7 @@ GO
 /*~
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
--- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+-- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$load.qualified] 
 AS

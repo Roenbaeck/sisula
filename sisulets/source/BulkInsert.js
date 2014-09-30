@@ -15,7 +15,7 @@ GO
 -- one file matching a given filename pattern is found.
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
--- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+-- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_BulkInsert] (
 	@filename varchar(2000)
