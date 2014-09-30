@@ -22,6 +22,21 @@ CREATE TABLE [metadata].[TYP_Type] (
     )
 );
 GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- EST_ExecutionStatus table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.EST_ExecutionStatus', 'U') IS NULL
+CREATE TABLE [metadata].[EST_ExecutionStatus] (
+    EST_ID tinyint not null,
+    EST_ExecutionStatus varchar(42) not null,
+    constraint pkEST_ExecutionStatus primary key (
+        EST_ID asc
+    ),
+    constraint uqEST_ExecutionStatus unique (
+        EST_ExecutionStatus
+    )
+);
+GO
 -- ANCHORS AND ATTRIBUTES ---------------------------------------------------------------------------------------------
 --
 -- Anchors are used to store the identities of entities.
@@ -209,7 +224,7 @@ CREATE TABLE [metadata].[CO_DSC_Container_Discovered] (
 );
 GO
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- WO_Work table (with 6 attributes)
+-- WO_Work table (with 11 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_Work', 'U') IS NULL
 CREATE TABLE [metadata].[WO_Work] (
@@ -307,6 +322,86 @@ CREATE TABLE [metadata].[WO_DEL_Work_Deletes] (
     ) references [metadata].[WO_Work](WO_ID),
     constraint pkWO_DEL_Work_Deletes primary key (
         WO_DEL_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_USR_Work_InvocationUser table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_USR_Work_InvocationUser', 'U') IS NULL
+CREATE TABLE [metadata].[WO_USR_Work_InvocationUser] (
+    WO_USR_WO_ID int not null,
+    WO_USR_Work_InvocationUser varchar(555) not null,
+    constraint fkWO_USR_Work_InvocationUser foreign key (
+        WO_USR_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_USR_Work_InvocationUser primary key (
+        WO_USR_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_ROL_Work_InvocationRole table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_ROL_Work_InvocationRole', 'U') IS NULL
+CREATE TABLE [metadata].[WO_ROL_Work_InvocationRole] (
+    WO_ROL_WO_ID int not null,
+    WO_ROL_Work_InvocationRole varchar(42) not null,
+    constraint fkWO_ROL_Work_InvocationRole foreign key (
+        WO_ROL_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_ROL_Work_InvocationRole primary key (
+        WO_ROL_WO_ID asc
+    )
+);
+GO
+-- Knotted historized attribute table ---------------------------------------------------------------------------------
+-- WO_EST_Work_ExecutionStatus table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_EST_Work_ExecutionStatus', 'U') IS NULL
+CREATE TABLE [metadata].[WO_EST_Work_ExecutionStatus] (
+    WO_EST_WO_ID int not null,
+    WO_EST_EST_ID tinyint not null,
+    WO_EST_ChangedAt datetime not null,
+    constraint fk_A_WO_EST_Work_ExecutionStatus foreign key (
+        WO_EST_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint fk_K_WO_EST_Work_ExecutionStatus foreign key (
+        WO_EST_EST_ID
+    ) references [metadata].[EST_ExecutionStatus](EST_ID),
+    constraint pkWO_EST_Work_ExecutionStatus primary key (
+        WO_EST_WO_ID asc,
+        WO_EST_ChangedAt desc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_ERL_Work_ErrorLine table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_ERL_Work_ErrorLine', 'U') IS NULL
+CREATE TABLE [metadata].[WO_ERL_Work_ErrorLine] (
+    WO_ERL_WO_ID int not null,
+    WO_ERL_Work_ErrorLine int not null,
+    constraint fkWO_ERL_Work_ErrorLine foreign key (
+        WO_ERL_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_ERL_Work_ErrorLine primary key (
+        WO_ERL_WO_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- WO_ERM_Work_ErrorMessage table (on WO_Work)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WO_ERM_Work_ErrorMessage', 'U') IS NULL
+CREATE TABLE [metadata].[WO_ERM_Work_ErrorMessage] (
+    WO_ERM_WO_ID int not null,
+    WO_ERM_Work_ErrorMessage varchar(555) not null,
+    constraint fkWO_ERM_Work_ErrorMessage foreign key (
+        WO_ERM_WO_ID
+    ) references [metadata].[WO_Work](WO_ID),
+    constraint pkWO_ERM_Work_ErrorMessage primary key (
+        WO_ERM_WO_ID asc
     )
 );
 GO
@@ -527,6 +622,69 @@ BEGIN
             SR_CFG_SR_ID,
             SR_CFG_Checksum,
             SR_CFG_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfWO_EST_Work_ExecutionStatus restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcWO_EST_Work_ExecutionStatus restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfWO_EST_Work_ExecutionStatus', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfWO_EST_Work_ExecutionStatus] (
+        @id int,
+        @value tinyint,
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.WO_EST_EST_ID
+                    FROM
+                        [metadata].[WO_EST_Work_ExecutionStatus] pre
+                    WHERE
+                        pre.WO_EST_WO_ID = @id
+                    AND
+                        pre.WO_EST_ChangedAt < @changed
+                    ORDER BY
+                        pre.WO_EST_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.WO_EST_EST_ID
+                    FROM
+                        [metadata].[WO_EST_Work_ExecutionStatus] fol
+                    WHERE
+                        fol.WO_EST_WO_ID = @id
+                    AND
+                        fol.WO_EST_ChangedAt > @changed
+                    ORDER BY
+                        fol.WO_EST_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[WO_EST_Work_ExecutionStatus]
+    ADD CONSTRAINT [rcWO_EST_Work_ExecutionStatus] CHECK (
+        [metadata].[rfWO_EST_Work_ExecutionStatus] (
+            WO_EST_WO_ID,
+            WO_EST_EST_ID,
+            WO_EST_ChangedAt
         ) = 0
     );
 END
@@ -822,6 +980,27 @@ BEGIN
         [metadata].[SR_CFG_Source_Configuration]
     WHERE
         SR_CFG_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rWO_EST_Work_ExecutionStatus rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rWO_EST_Work_ExecutionStatus','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rWO_EST_Work_ExecutionStatus] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        WO_EST_WO_ID,
+        WO_EST_EST_ID,
+        WO_EST_ChangedAt
+    FROM
+        [metadata].[WO_EST_Work_ExecutionStatus]
+    WHERE
+        WO_EST_ChangedAt <= @changingTimepoint;
     ');
 END
 GO
@@ -1192,7 +1371,19 @@ SELECT
     [INS].WO_INS_WO_ID,
     [INS].WO_INS_Work_Inserts,
     [DEL].WO_DEL_WO_ID,
-    [DEL].WO_DEL_Work_Deletes
+    [DEL].WO_DEL_Work_Deletes,
+    [USR].WO_USR_WO_ID,
+    [USR].WO_USR_Work_InvocationUser,
+    [ROL].WO_ROL_WO_ID,
+    [ROL].WO_ROL_Work_InvocationRole,
+    [EST].WO_EST_WO_ID,
+    [EST].WO_EST_ChangedAt,
+    [kEST].EST_ExecutionStatus AS WO_EST_EST_ExecutionStatus,
+    [EST].WO_EST_EST_ID,
+    [ERL].WO_ERL_WO_ID,
+    [ERL].WO_ERL_Work_ErrorLine,
+    [ERM].WO_ERM_WO_ID,
+    [ERM].WO_ERM_Work_ErrorMessage
 FROM
     [metadata].[WO_Work] [WO]
 LEFT JOIN
@@ -1218,7 +1409,40 @@ ON
 LEFT JOIN
     [metadata].[WO_DEL_Work_Deletes] [DEL]
 ON
-    [DEL].WO_DEL_WO_ID = [WO].WO_ID;
+    [DEL].WO_DEL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_USR_Work_InvocationUser] [USR]
+ON
+    [USR].WO_USR_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_ROL_Work_InvocationRole] [ROL]
+ON
+    [ROL].WO_ROL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_EST_Work_ExecutionStatus] [EST]
+ON
+    [EST].WO_EST_WO_ID = [WO].WO_ID
+AND
+    [EST].WO_EST_ChangedAt = (
+        SELECT
+            max(sub.WO_EST_ChangedAt)
+        FROM
+            [metadata].[WO_EST_Work_ExecutionStatus] sub
+        WHERE
+            sub.WO_EST_WO_ID = [WO].WO_ID
+   )
+LEFT JOIN
+    [metadata].[EST_ExecutionStatus] [kEST]
+ON
+    [kEST].EST_ID = [EST].WO_EST_EST_ID
+LEFT JOIN
+    [metadata].[WO_ERL_Work_ErrorLine] [ERL]
+ON
+    [ERL].WO_ERL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_ERM_Work_ErrorMessage] [ERM]
+ON
+    [ERM].WO_ERM_WO_ID = [WO].WO_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pWO_Work viewed as it was on the given timepoint
@@ -1240,7 +1464,19 @@ SELECT
     [INS].WO_INS_WO_ID,
     [INS].WO_INS_Work_Inserts,
     [DEL].WO_DEL_WO_ID,
-    [DEL].WO_DEL_Work_Deletes
+    [DEL].WO_DEL_Work_Deletes,
+    [USR].WO_USR_WO_ID,
+    [USR].WO_USR_Work_InvocationUser,
+    [ROL].WO_ROL_WO_ID,
+    [ROL].WO_ROL_Work_InvocationRole,
+    [EST].WO_EST_WO_ID,
+    [EST].WO_EST_ChangedAt,
+    [kEST].EST_ExecutionStatus AS WO_EST_EST_ExecutionStatus,
+    [EST].WO_EST_EST_ID,
+    [ERL].WO_ERL_WO_ID,
+    [ERL].WO_ERL_Work_ErrorLine,
+    [ERM].WO_ERM_WO_ID,
+    [ERM].WO_ERM_Work_ErrorMessage
 FROM
     [metadata].[WO_Work] [WO]
 LEFT JOIN
@@ -1266,7 +1502,40 @@ ON
 LEFT JOIN
     [metadata].[WO_DEL_Work_Deletes] [DEL]
 ON
-    [DEL].WO_DEL_WO_ID = [WO].WO_ID;
+    [DEL].WO_DEL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_USR_Work_InvocationUser] [USR]
+ON
+    [USR].WO_USR_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_ROL_Work_InvocationRole] [ROL]
+ON
+    [ROL].WO_ROL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[rWO_EST_Work_ExecutionStatus](@changingTimepoint) [EST]
+ON
+    [EST].WO_EST_WO_ID = [WO].WO_ID
+AND
+    [EST].WO_EST_ChangedAt = (
+        SELECT
+            max(sub.WO_EST_ChangedAt)
+        FROM
+            [metadata].[rWO_EST_Work_ExecutionStatus](@changingTimepoint) sub
+        WHERE
+            sub.WO_EST_WO_ID = [WO].WO_ID
+   )
+LEFT JOIN
+    [metadata].[EST_ExecutionStatus] [kEST]
+ON
+    [kEST].EST_ID = [EST].WO_EST_EST_ID
+LEFT JOIN
+    [metadata].[WO_ERL_Work_ErrorLine] [ERL]
+ON
+    [ERL].WO_ERL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WO_ERM_Work_ErrorMessage] [ERM]
+ON
+    [ERM].WO_ERM_WO_ID = [WO].WO_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nWO_Work viewed as it currently is (cannot include future versions)
@@ -1277,6 +1546,36 @@ SELECT
     *
 FROM
     [metadata].[pWO_Work](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dWO_Work showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[dWO_Work] (
+    @intervalStart datetime2(7),
+    @intervalEnd datetime2(7),
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pWO].*
+FROM (
+    SELECT DISTINCT
+        WO_EST_WO_ID AS WO_ID,
+        WO_EST_ChangedAt AS inspectedTimepoint,
+        'EST' AS mnemonic
+    FROM
+        [metadata].[WO_EST_Work_ExecutionStatus]
+    WHERE
+        (@selection is null OR @selection like '%EST%')
+    AND
+        WO_EST_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [metadata].[pWO_Work](timepoints.inspectedTimepoint) [pWO]
+WHERE
+    [pWO].WO_ID = timepoints.WO_ID;
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.dWF_Workflow', 'IF') IS NOT NULL
@@ -1395,6 +1694,1679 @@ CROSS APPLY
 WHERE
     [pWF].WF_ID = timepoints.WF_ID;
 GO
+-- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the attributes make them behave like tables.
+-- There is one 'instead of' trigger for: insert.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_JB_STA_Job_Start instead of INSERT trigger on JB_STA_Job_Start
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_JB_STA_Job_Start', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_JB_STA_Job_Start];
+GO
+CREATE TRIGGER [metadata].[it_JB_STA_Job_Start] ON [metadata].[JB_STA_Job_Start]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @JB_STA_Job_Start TABLE (
+        JB_STA_JB_ID int not null,
+        JB_STA_Job_Start datetime not null,
+        JB_STA_Version bigint not null,
+        JB_STA_StatementType char(1) not null,
+        primary key(
+            JB_STA_Version,
+            JB_STA_JB_ID
+        )
+    );
+    INSERT INTO @JB_STA_Job_Start
+    SELECT
+        i.JB_STA_JB_ID,
+        i.JB_STA_Job_Start,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(JB_STA_Version),
+        @currentVersion = 0
+    FROM
+        @JB_STA_Job_Start;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.JB_STA_StatementType =
+                CASE
+                    WHEN [STA].JB_STA_JB_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @JB_STA_Job_Start v
+        LEFT JOIN
+            [metadata].[JB_STA_Job_Start] [STA]
+        ON
+            [STA].JB_STA_JB_ID = v.JB_STA_JB_ID
+        AND
+            [STA].JB_STA_Job_Start = v.JB_STA_Job_Start
+        WHERE
+            v.JB_STA_Version = @currentVersion;
+        INSERT INTO [metadata].[JB_STA_Job_Start] (
+            JB_STA_JB_ID,
+            JB_STA_Job_Start
+        )
+        SELECT
+            JB_STA_JB_ID,
+            JB_STA_Job_Start
+        FROM
+            @JB_STA_Job_Start
+        WHERE
+            JB_STA_Version = @currentVersion
+        AND
+            JB_STA_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_JB_END_Job_End instead of INSERT trigger on JB_END_Job_End
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_JB_END_Job_End', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_JB_END_Job_End];
+GO
+CREATE TRIGGER [metadata].[it_JB_END_Job_End] ON [metadata].[JB_END_Job_End]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @JB_END_Job_End TABLE (
+        JB_END_JB_ID int not null,
+        JB_END_Job_End datetime not null,
+        JB_END_Version bigint not null,
+        JB_END_StatementType char(1) not null,
+        primary key(
+            JB_END_Version,
+            JB_END_JB_ID
+        )
+    );
+    INSERT INTO @JB_END_Job_End
+    SELECT
+        i.JB_END_JB_ID,
+        i.JB_END_Job_End,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(JB_END_Version),
+        @currentVersion = 0
+    FROM
+        @JB_END_Job_End;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.JB_END_StatementType =
+                CASE
+                    WHEN [END].JB_END_JB_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @JB_END_Job_End v
+        LEFT JOIN
+            [metadata].[JB_END_Job_End] [END]
+        ON
+            [END].JB_END_JB_ID = v.JB_END_JB_ID
+        AND
+            [END].JB_END_Job_End = v.JB_END_Job_End
+        WHERE
+            v.JB_END_Version = @currentVersion;
+        INSERT INTO [metadata].[JB_END_Job_End] (
+            JB_END_JB_ID,
+            JB_END_Job_End
+        )
+        SELECT
+            JB_END_JB_ID,
+            JB_END_Job_End
+        FROM
+            @JB_END_Job_End
+        WHERE
+            JB_END_Version = @currentVersion
+        AND
+            JB_END_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_JB_NAM_Job_Name instead of INSERT trigger on JB_NAM_Job_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_JB_NAM_Job_Name', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_JB_NAM_Job_Name];
+GO
+CREATE TRIGGER [metadata].[it_JB_NAM_Job_Name] ON [metadata].[JB_NAM_Job_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @JB_NAM_Job_Name TABLE (
+        JB_NAM_JB_ID int not null,
+        JB_NAM_Job_Name varchar(255) not null,
+        JB_NAM_Version bigint not null,
+        JB_NAM_StatementType char(1) not null,
+        primary key(
+            JB_NAM_Version,
+            JB_NAM_JB_ID
+        )
+    );
+    INSERT INTO @JB_NAM_Job_Name
+    SELECT
+        i.JB_NAM_JB_ID,
+        i.JB_NAM_Job_Name,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(JB_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @JB_NAM_Job_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.JB_NAM_StatementType =
+                CASE
+                    WHEN [NAM].JB_NAM_JB_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @JB_NAM_Job_Name v
+        LEFT JOIN
+            [metadata].[JB_NAM_Job_Name] [NAM]
+        ON
+            [NAM].JB_NAM_JB_ID = v.JB_NAM_JB_ID
+        AND
+            [NAM].JB_NAM_Job_Name = v.JB_NAM_Job_Name
+        WHERE
+            v.JB_NAM_Version = @currentVersion;
+        INSERT INTO [metadata].[JB_NAM_Job_Name] (
+            JB_NAM_JB_ID,
+            JB_NAM_Job_Name
+        )
+        SELECT
+            JB_NAM_JB_ID,
+            JB_NAM_Job_Name
+        FROM
+            @JB_NAM_Job_Name
+        WHERE
+            JB_NAM_Version = @currentVersion
+        AND
+            JB_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_SR_NAM_Source_Name instead of INSERT trigger on SR_NAM_Source_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_SR_NAM_Source_Name', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_SR_NAM_Source_Name];
+GO
+CREATE TRIGGER [metadata].[it_SR_NAM_Source_Name] ON [metadata].[SR_NAM_Source_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @SR_NAM_Source_Name TABLE (
+        SR_NAM_SR_ID int not null,
+        SR_NAM_Source_Name varchar(2000) not null,
+        SR_NAM_Version bigint not null,
+        SR_NAM_StatementType char(1) not null,
+        primary key(
+            SR_NAM_Version,
+            SR_NAM_SR_ID
+        )
+    );
+    INSERT INTO @SR_NAM_Source_Name
+    SELECT
+        i.SR_NAM_SR_ID,
+        i.SR_NAM_Source_Name,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(SR_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @SR_NAM_Source_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.SR_NAM_StatementType =
+                CASE
+                    WHEN [NAM].SR_NAM_SR_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @SR_NAM_Source_Name v
+        LEFT JOIN
+            [metadata].[SR_NAM_Source_Name] [NAM]
+        ON
+            [NAM].SR_NAM_SR_ID = v.SR_NAM_SR_ID
+        AND
+            [NAM].SR_NAM_Source_Name = v.SR_NAM_Source_Name
+        WHERE
+            v.SR_NAM_Version = @currentVersion;
+        INSERT INTO [metadata].[SR_NAM_Source_Name] (
+            SR_NAM_SR_ID,
+            SR_NAM_Source_Name
+        )
+        SELECT
+            SR_NAM_SR_ID,
+            SR_NAM_Source_Name
+        FROM
+            @SR_NAM_Source_Name
+        WHERE
+            SR_NAM_Version = @currentVersion
+        AND
+            SR_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_SR_CFG_Source_Configuration instead of INSERT trigger on SR_CFG_Source_Configuration
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_SR_CFG_Source_Configuration', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_SR_CFG_Source_Configuration];
+GO
+CREATE TRIGGER [metadata].[it_SR_CFG_Source_Configuration] ON [metadata].[SR_CFG_Source_Configuration]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @SR_CFG_Source_Configuration TABLE (
+        SR_CFG_SR_ID int not null,
+        SR_CFG_ChangedAt datetime not null,
+        SR_CFG_Source_Configuration xml not null,
+        SR_CFG_Checksum varbinary(16) not null,
+        SR_CFG_Version bigint not null,
+        SR_CFG_StatementType char(1) not null,
+        primary key(
+            SR_CFG_Version,
+            SR_CFG_SR_ID
+        )
+    );
+    INSERT INTO @SR_CFG_Source_Configuration
+    SELECT
+        i.SR_CFG_SR_ID,
+        i.SR_CFG_ChangedAt,
+        i.SR_CFG_Source_Configuration,
+        ISNULL(i.SR_CFG_Checksum, HashBytes('MD5', cast(i.SR_CFG_Source_Configuration as varbinary(max)))),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.SR_CFG_SR_ID
+            ORDER BY
+                i.SR_CFG_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(SR_CFG_Version),
+        @currentVersion = 0
+    FROM
+        @SR_CFG_Source_Configuration;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.SR_CFG_StatementType =
+                CASE
+                    WHEN [CFG].SR_CFG_SR_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [metadata].[rfSR_CFG_Source_Configuration](
+                        v.SR_CFG_SR_ID,
+                        v.SR_CFG_Checksum, 
+                        v.SR_CFG_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @SR_CFG_Source_Configuration v
+        LEFT JOIN
+            [metadata].[SR_CFG_Source_Configuration] [CFG]
+        ON
+            [CFG].SR_CFG_SR_ID = v.SR_CFG_SR_ID
+        AND
+            [CFG].SR_CFG_ChangedAt = v.SR_CFG_ChangedAt
+        AND
+            [CFG].SR_CFG_Checksum = v.SR_CFG_Checksum 
+        WHERE
+            v.SR_CFG_Version = @currentVersion;
+        INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Source_Configuration
+        )
+        SELECT
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Source_Configuration
+        FROM
+            @SR_CFG_Source_Configuration
+        WHERE
+            SR_CFG_Version = @currentVersion
+        AND
+            SR_CFG_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_CO_NAM_Container_Name instead of INSERT trigger on CO_NAM_Container_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_CO_NAM_Container_Name', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_NAM_Container_Name];
+GO
+CREATE TRIGGER [metadata].[it_CO_NAM_Container_Name] ON [metadata].[CO_NAM_Container_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO_NAM_Container_Name TABLE (
+        CO_NAM_CO_ID int not null,
+        CO_NAM_Container_Name varchar(2000) not null,
+        CO_NAM_Version bigint not null,
+        CO_NAM_StatementType char(1) not null,
+        primary key(
+            CO_NAM_Version,
+            CO_NAM_CO_ID
+        )
+    );
+    INSERT INTO @CO_NAM_Container_Name
+    SELECT
+        i.CO_NAM_CO_ID,
+        i.CO_NAM_Container_Name,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(CO_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @CO_NAM_Container_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.CO_NAM_StatementType =
+                CASE
+                    WHEN [NAM].CO_NAM_CO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @CO_NAM_Container_Name v
+        LEFT JOIN
+            [metadata].[CO_NAM_Container_Name] [NAM]
+        ON
+            [NAM].CO_NAM_CO_ID = v.CO_NAM_CO_ID
+        AND
+            [NAM].CO_NAM_Container_Name = v.CO_NAM_Container_Name
+        WHERE
+            v.CO_NAM_Version = @currentVersion;
+        INSERT INTO [metadata].[CO_NAM_Container_Name] (
+            CO_NAM_CO_ID,
+            CO_NAM_Container_Name
+        )
+        SELECT
+            CO_NAM_CO_ID,
+            CO_NAM_Container_Name
+        FROM
+            @CO_NAM_Container_Name
+        WHERE
+            CO_NAM_Version = @currentVersion
+        AND
+            CO_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_CO_TYP_Container_Type instead of INSERT trigger on CO_TYP_Container_Type
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_CO_TYP_Container_Type', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_TYP_Container_Type];
+GO
+CREATE TRIGGER [metadata].[it_CO_TYP_Container_Type] ON [metadata].[CO_TYP_Container_Type]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO_TYP_Container_Type TABLE (
+        CO_TYP_CO_ID int not null,
+        CO_TYP_TYP_ID tinyint not null, 
+        CO_TYP_Version bigint not null,
+        CO_TYP_StatementType char(1) not null,
+        primary key(
+            CO_TYP_Version,
+            CO_TYP_CO_ID
+        )
+    );
+    INSERT INTO @CO_TYP_Container_Type
+    SELECT
+        i.CO_TYP_CO_ID,
+        i.CO_TYP_TYP_ID,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(CO_TYP_Version),
+        @currentVersion = 0
+    FROM
+        @CO_TYP_Container_Type;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.CO_TYP_StatementType =
+                CASE
+                    WHEN [TYP].CO_TYP_CO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @CO_TYP_Container_Type v
+        LEFT JOIN
+            [metadata].[CO_TYP_Container_Type] [TYP]
+        ON
+            [TYP].CO_TYP_CO_ID = v.CO_TYP_CO_ID
+        AND
+            [TYP].CO_TYP_TYP_ID = v.CO_TYP_TYP_ID
+        WHERE
+            v.CO_TYP_Version = @currentVersion;
+        INSERT INTO [metadata].[CO_TYP_Container_Type] (
+            CO_TYP_CO_ID,
+            CO_TYP_TYP_ID
+        )
+        SELECT
+            CO_TYP_CO_ID,
+            CO_TYP_TYP_ID
+        FROM
+            @CO_TYP_Container_Type
+        WHERE
+            CO_TYP_Version = @currentVersion
+        AND
+            CO_TYP_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_CO_PTH_Container_Path instead of INSERT trigger on CO_PTH_Container_Path
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_CO_PTH_Container_Path', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_PTH_Container_Path];
+GO
+CREATE TRIGGER [metadata].[it_CO_PTH_Container_Path] ON [metadata].[CO_PTH_Container_Path]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO_PTH_Container_Path TABLE (
+        CO_PTH_CO_ID int not null,
+        CO_PTH_Container_Path varchar(2000) not null,
+        CO_PTH_Version bigint not null,
+        CO_PTH_StatementType char(1) not null,
+        primary key(
+            CO_PTH_Version,
+            CO_PTH_CO_ID
+        )
+    );
+    INSERT INTO @CO_PTH_Container_Path
+    SELECT
+        i.CO_PTH_CO_ID,
+        i.CO_PTH_Container_Path,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(CO_PTH_Version),
+        @currentVersion = 0
+    FROM
+        @CO_PTH_Container_Path;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.CO_PTH_StatementType =
+                CASE
+                    WHEN [PTH].CO_PTH_CO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @CO_PTH_Container_Path v
+        LEFT JOIN
+            [metadata].[CO_PTH_Container_Path] [PTH]
+        ON
+            [PTH].CO_PTH_CO_ID = v.CO_PTH_CO_ID
+        AND
+            [PTH].CO_PTH_Container_Path = v.CO_PTH_Container_Path
+        WHERE
+            v.CO_PTH_Version = @currentVersion;
+        INSERT INTO [metadata].[CO_PTH_Container_Path] (
+            CO_PTH_CO_ID,
+            CO_PTH_Container_Path
+        )
+        SELECT
+            CO_PTH_CO_ID,
+            CO_PTH_Container_Path
+        FROM
+            @CO_PTH_Container_Path
+        WHERE
+            CO_PTH_Version = @currentVersion
+        AND
+            CO_PTH_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_CO_DSC_Container_Discovered instead of INSERT trigger on CO_DSC_Container_Discovered
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_CO_DSC_Container_Discovered', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_DSC_Container_Discovered];
+GO
+CREATE TRIGGER [metadata].[it_CO_DSC_Container_Discovered] ON [metadata].[CO_DSC_Container_Discovered]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO_DSC_Container_Discovered TABLE (
+        CO_DSC_CO_ID int not null,
+        CO_DSC_Container_Discovered datetime not null,
+        CO_DSC_Version bigint not null,
+        CO_DSC_StatementType char(1) not null,
+        primary key(
+            CO_DSC_Version,
+            CO_DSC_CO_ID
+        )
+    );
+    INSERT INTO @CO_DSC_Container_Discovered
+    SELECT
+        i.CO_DSC_CO_ID,
+        i.CO_DSC_Container_Discovered,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(CO_DSC_Version),
+        @currentVersion = 0
+    FROM
+        @CO_DSC_Container_Discovered;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.CO_DSC_StatementType =
+                CASE
+                    WHEN [DSC].CO_DSC_CO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @CO_DSC_Container_Discovered v
+        LEFT JOIN
+            [metadata].[CO_DSC_Container_Discovered] [DSC]
+        ON
+            [DSC].CO_DSC_CO_ID = v.CO_DSC_CO_ID
+        AND
+            [DSC].CO_DSC_Container_Discovered = v.CO_DSC_Container_Discovered
+        WHERE
+            v.CO_DSC_Version = @currentVersion;
+        INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
+            CO_DSC_CO_ID,
+            CO_DSC_Container_Discovered
+        )
+        SELECT
+            CO_DSC_CO_ID,
+            CO_DSC_Container_Discovered
+        FROM
+            @CO_DSC_Container_Discovered
+        WHERE
+            CO_DSC_Version = @currentVersion
+        AND
+            CO_DSC_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_STA_Work_Start instead of INSERT trigger on WO_STA_Work_Start
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_STA_Work_Start', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_STA_Work_Start];
+GO
+CREATE TRIGGER [metadata].[it_WO_STA_Work_Start] ON [metadata].[WO_STA_Work_Start]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_STA_Work_Start TABLE (
+        WO_STA_WO_ID int not null,
+        WO_STA_Work_Start datetime not null,
+        WO_STA_Version bigint not null,
+        WO_STA_StatementType char(1) not null,
+        primary key(
+            WO_STA_Version,
+            WO_STA_WO_ID
+        )
+    );
+    INSERT INTO @WO_STA_Work_Start
+    SELECT
+        i.WO_STA_WO_ID,
+        i.WO_STA_Work_Start,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_STA_Version),
+        @currentVersion = 0
+    FROM
+        @WO_STA_Work_Start;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_STA_StatementType =
+                CASE
+                    WHEN [STA].WO_STA_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_STA_Work_Start v
+        LEFT JOIN
+            [metadata].[WO_STA_Work_Start] [STA]
+        ON
+            [STA].WO_STA_WO_ID = v.WO_STA_WO_ID
+        AND
+            [STA].WO_STA_Work_Start = v.WO_STA_Work_Start
+        WHERE
+            v.WO_STA_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_STA_Work_Start] (
+            WO_STA_WO_ID,
+            WO_STA_Work_Start
+        )
+        SELECT
+            WO_STA_WO_ID,
+            WO_STA_Work_Start
+        FROM
+            @WO_STA_Work_Start
+        WHERE
+            WO_STA_Version = @currentVersion
+        AND
+            WO_STA_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_END_Work_End instead of INSERT trigger on WO_END_Work_End
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_END_Work_End', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_END_Work_End];
+GO
+CREATE TRIGGER [metadata].[it_WO_END_Work_End] ON [metadata].[WO_END_Work_End]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_END_Work_End TABLE (
+        WO_END_WO_ID int not null,
+        WO_END_Work_End datetime not null,
+        WO_END_Version bigint not null,
+        WO_END_StatementType char(1) not null,
+        primary key(
+            WO_END_Version,
+            WO_END_WO_ID
+        )
+    );
+    INSERT INTO @WO_END_Work_End
+    SELECT
+        i.WO_END_WO_ID,
+        i.WO_END_Work_End,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_END_Version),
+        @currentVersion = 0
+    FROM
+        @WO_END_Work_End;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_END_StatementType =
+                CASE
+                    WHEN [END].WO_END_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_END_Work_End v
+        LEFT JOIN
+            [metadata].[WO_END_Work_End] [END]
+        ON
+            [END].WO_END_WO_ID = v.WO_END_WO_ID
+        AND
+            [END].WO_END_Work_End = v.WO_END_Work_End
+        WHERE
+            v.WO_END_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_END_Work_End] (
+            WO_END_WO_ID,
+            WO_END_Work_End
+        )
+        SELECT
+            WO_END_WO_ID,
+            WO_END_Work_End
+        FROM
+            @WO_END_Work_End
+        WHERE
+            WO_END_Version = @currentVersion
+        AND
+            WO_END_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_UPD_Work_Updates instead of INSERT trigger on WO_UPD_Work_Updates
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_UPD_Work_Updates', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_UPD_Work_Updates];
+GO
+CREATE TRIGGER [metadata].[it_WO_UPD_Work_Updates] ON [metadata].[WO_UPD_Work_Updates]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_UPD_Work_Updates TABLE (
+        WO_UPD_WO_ID int not null,
+        WO_UPD_Work_Updates int not null,
+        WO_UPD_Version bigint not null,
+        WO_UPD_StatementType char(1) not null,
+        primary key(
+            WO_UPD_Version,
+            WO_UPD_WO_ID
+        )
+    );
+    INSERT INTO @WO_UPD_Work_Updates
+    SELECT
+        i.WO_UPD_WO_ID,
+        i.WO_UPD_Work_Updates,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_UPD_Version),
+        @currentVersion = 0
+    FROM
+        @WO_UPD_Work_Updates;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_UPD_StatementType =
+                CASE
+                    WHEN [UPD].WO_UPD_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_UPD_Work_Updates v
+        LEFT JOIN
+            [metadata].[WO_UPD_Work_Updates] [UPD]
+        ON
+            [UPD].WO_UPD_WO_ID = v.WO_UPD_WO_ID
+        AND
+            [UPD].WO_UPD_Work_Updates = v.WO_UPD_Work_Updates
+        WHERE
+            v.WO_UPD_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_UPD_Work_Updates] (
+            WO_UPD_WO_ID,
+            WO_UPD_Work_Updates
+        )
+        SELECT
+            WO_UPD_WO_ID,
+            WO_UPD_Work_Updates
+        FROM
+            @WO_UPD_Work_Updates
+        WHERE
+            WO_UPD_Version = @currentVersion
+        AND
+            WO_UPD_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_NAM_Work_Name instead of INSERT trigger on WO_NAM_Work_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_NAM_Work_Name', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_NAM_Work_Name];
+GO
+CREATE TRIGGER [metadata].[it_WO_NAM_Work_Name] ON [metadata].[WO_NAM_Work_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_NAM_Work_Name TABLE (
+        WO_NAM_WO_ID int not null,
+        WO_NAM_Work_Name varchar(255) not null,
+        WO_NAM_Version bigint not null,
+        WO_NAM_StatementType char(1) not null,
+        primary key(
+            WO_NAM_Version,
+            WO_NAM_WO_ID
+        )
+    );
+    INSERT INTO @WO_NAM_Work_Name
+    SELECT
+        i.WO_NAM_WO_ID,
+        i.WO_NAM_Work_Name,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @WO_NAM_Work_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_NAM_StatementType =
+                CASE
+                    WHEN [NAM].WO_NAM_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_NAM_Work_Name v
+        LEFT JOIN
+            [metadata].[WO_NAM_Work_Name] [NAM]
+        ON
+            [NAM].WO_NAM_WO_ID = v.WO_NAM_WO_ID
+        AND
+            [NAM].WO_NAM_Work_Name = v.WO_NAM_Work_Name
+        WHERE
+            v.WO_NAM_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_NAM_Work_Name] (
+            WO_NAM_WO_ID,
+            WO_NAM_Work_Name
+        )
+        SELECT
+            WO_NAM_WO_ID,
+            WO_NAM_Work_Name
+        FROM
+            @WO_NAM_Work_Name
+        WHERE
+            WO_NAM_Version = @currentVersion
+        AND
+            WO_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_INS_Work_Inserts instead of INSERT trigger on WO_INS_Work_Inserts
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_INS_Work_Inserts', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_INS_Work_Inserts];
+GO
+CREATE TRIGGER [metadata].[it_WO_INS_Work_Inserts] ON [metadata].[WO_INS_Work_Inserts]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_INS_Work_Inserts TABLE (
+        WO_INS_WO_ID int not null,
+        WO_INS_Work_Inserts int not null,
+        WO_INS_Version bigint not null,
+        WO_INS_StatementType char(1) not null,
+        primary key(
+            WO_INS_Version,
+            WO_INS_WO_ID
+        )
+    );
+    INSERT INTO @WO_INS_Work_Inserts
+    SELECT
+        i.WO_INS_WO_ID,
+        i.WO_INS_Work_Inserts,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_INS_Version),
+        @currentVersion = 0
+    FROM
+        @WO_INS_Work_Inserts;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_INS_StatementType =
+                CASE
+                    WHEN [INS].WO_INS_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_INS_Work_Inserts v
+        LEFT JOIN
+            [metadata].[WO_INS_Work_Inserts] [INS]
+        ON
+            [INS].WO_INS_WO_ID = v.WO_INS_WO_ID
+        AND
+            [INS].WO_INS_Work_Inserts = v.WO_INS_Work_Inserts
+        WHERE
+            v.WO_INS_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_INS_Work_Inserts] (
+            WO_INS_WO_ID,
+            WO_INS_Work_Inserts
+        )
+        SELECT
+            WO_INS_WO_ID,
+            WO_INS_Work_Inserts
+        FROM
+            @WO_INS_Work_Inserts
+        WHERE
+            WO_INS_Version = @currentVersion
+        AND
+            WO_INS_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_DEL_Work_Deletes instead of INSERT trigger on WO_DEL_Work_Deletes
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_DEL_Work_Deletes', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_DEL_Work_Deletes];
+GO
+CREATE TRIGGER [metadata].[it_WO_DEL_Work_Deletes] ON [metadata].[WO_DEL_Work_Deletes]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_DEL_Work_Deletes TABLE (
+        WO_DEL_WO_ID int not null,
+        WO_DEL_Work_Deletes int not null,
+        WO_DEL_Version bigint not null,
+        WO_DEL_StatementType char(1) not null,
+        primary key(
+            WO_DEL_Version,
+            WO_DEL_WO_ID
+        )
+    );
+    INSERT INTO @WO_DEL_Work_Deletes
+    SELECT
+        i.WO_DEL_WO_ID,
+        i.WO_DEL_Work_Deletes,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_DEL_Version),
+        @currentVersion = 0
+    FROM
+        @WO_DEL_Work_Deletes;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_DEL_StatementType =
+                CASE
+                    WHEN [DEL].WO_DEL_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_DEL_Work_Deletes v
+        LEFT JOIN
+            [metadata].[WO_DEL_Work_Deletes] [DEL]
+        ON
+            [DEL].WO_DEL_WO_ID = v.WO_DEL_WO_ID
+        AND
+            [DEL].WO_DEL_Work_Deletes = v.WO_DEL_Work_Deletes
+        WHERE
+            v.WO_DEL_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
+            WO_DEL_WO_ID,
+            WO_DEL_Work_Deletes
+        )
+        SELECT
+            WO_DEL_WO_ID,
+            WO_DEL_Work_Deletes
+        FROM
+            @WO_DEL_Work_Deletes
+        WHERE
+            WO_DEL_Version = @currentVersion
+        AND
+            WO_DEL_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_USR_Work_InvocationUser instead of INSERT trigger on WO_USR_Work_InvocationUser
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_USR_Work_InvocationUser', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_USR_Work_InvocationUser];
+GO
+CREATE TRIGGER [metadata].[it_WO_USR_Work_InvocationUser] ON [metadata].[WO_USR_Work_InvocationUser]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_USR_Work_InvocationUser TABLE (
+        WO_USR_WO_ID int not null,
+        WO_USR_Work_InvocationUser varchar(555) not null,
+        WO_USR_Version bigint not null,
+        WO_USR_StatementType char(1) not null,
+        primary key(
+            WO_USR_Version,
+            WO_USR_WO_ID
+        )
+    );
+    INSERT INTO @WO_USR_Work_InvocationUser
+    SELECT
+        i.WO_USR_WO_ID,
+        i.WO_USR_Work_InvocationUser,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_USR_Version),
+        @currentVersion = 0
+    FROM
+        @WO_USR_Work_InvocationUser;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_USR_StatementType =
+                CASE
+                    WHEN [USR].WO_USR_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_USR_Work_InvocationUser v
+        LEFT JOIN
+            [metadata].[WO_USR_Work_InvocationUser] [USR]
+        ON
+            [USR].WO_USR_WO_ID = v.WO_USR_WO_ID
+        AND
+            [USR].WO_USR_Work_InvocationUser = v.WO_USR_Work_InvocationUser
+        WHERE
+            v.WO_USR_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
+            WO_USR_WO_ID,
+            WO_USR_Work_InvocationUser
+        )
+        SELECT
+            WO_USR_WO_ID,
+            WO_USR_Work_InvocationUser
+        FROM
+            @WO_USR_Work_InvocationUser
+        WHERE
+            WO_USR_Version = @currentVersion
+        AND
+            WO_USR_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_ROL_Work_InvocationRole instead of INSERT trigger on WO_ROL_Work_InvocationRole
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_ROL_Work_InvocationRole', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_ROL_Work_InvocationRole];
+GO
+CREATE TRIGGER [metadata].[it_WO_ROL_Work_InvocationRole] ON [metadata].[WO_ROL_Work_InvocationRole]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_ROL_Work_InvocationRole TABLE (
+        WO_ROL_WO_ID int not null,
+        WO_ROL_Work_InvocationRole varchar(42) not null,
+        WO_ROL_Version bigint not null,
+        WO_ROL_StatementType char(1) not null,
+        primary key(
+            WO_ROL_Version,
+            WO_ROL_WO_ID
+        )
+    );
+    INSERT INTO @WO_ROL_Work_InvocationRole
+    SELECT
+        i.WO_ROL_WO_ID,
+        i.WO_ROL_Work_InvocationRole,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_ROL_Version),
+        @currentVersion = 0
+    FROM
+        @WO_ROL_Work_InvocationRole;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_ROL_StatementType =
+                CASE
+                    WHEN [ROL].WO_ROL_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_ROL_Work_InvocationRole v
+        LEFT JOIN
+            [metadata].[WO_ROL_Work_InvocationRole] [ROL]
+        ON
+            [ROL].WO_ROL_WO_ID = v.WO_ROL_WO_ID
+        AND
+            [ROL].WO_ROL_Work_InvocationRole = v.WO_ROL_Work_InvocationRole
+        WHERE
+            v.WO_ROL_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
+            WO_ROL_WO_ID,
+            WO_ROL_Work_InvocationRole
+        )
+        SELECT
+            WO_ROL_WO_ID,
+            WO_ROL_Work_InvocationRole
+        FROM
+            @WO_ROL_Work_InvocationRole
+        WHERE
+            WO_ROL_Version = @currentVersion
+        AND
+            WO_ROL_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_EST_Work_ExecutionStatus instead of INSERT trigger on WO_EST_Work_ExecutionStatus
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_EST_Work_ExecutionStatus', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_EST_Work_ExecutionStatus];
+GO
+CREATE TRIGGER [metadata].[it_WO_EST_Work_ExecutionStatus] ON [metadata].[WO_EST_Work_ExecutionStatus]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_EST_Work_ExecutionStatus TABLE (
+        WO_EST_WO_ID int not null,
+        WO_EST_ChangedAt datetime not null,
+        WO_EST_EST_ID tinyint not null, 
+        WO_EST_Version bigint not null,
+        WO_EST_StatementType char(1) not null,
+        primary key(
+            WO_EST_Version,
+            WO_EST_WO_ID
+        )
+    );
+    INSERT INTO @WO_EST_Work_ExecutionStatus
+    SELECT
+        i.WO_EST_WO_ID,
+        i.WO_EST_ChangedAt,
+        i.WO_EST_EST_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WO_EST_WO_ID
+            ORDER BY
+                i.WO_EST_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_EST_Version),
+        @currentVersion = 0
+    FROM
+        @WO_EST_Work_ExecutionStatus;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_EST_StatementType =
+                CASE
+                    WHEN [EST].WO_EST_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWO_EST_Work_ExecutionStatus](
+                        v.WO_EST_WO_ID,
+                        v.WO_EST_EST_ID,
+                        v.WO_EST_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_EST_Work_ExecutionStatus v
+        LEFT JOIN
+            [metadata].[WO_EST_Work_ExecutionStatus] [EST]
+        ON
+            [EST].WO_EST_WO_ID = v.WO_EST_WO_ID
+        AND
+            [EST].WO_EST_ChangedAt = v.WO_EST_ChangedAt
+        AND
+            [EST].WO_EST_EST_ID = v.WO_EST_EST_ID
+        WHERE
+            v.WO_EST_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_EST_Work_ExecutionStatus] (
+            WO_EST_WO_ID,
+            WO_EST_ChangedAt,
+            WO_EST_EST_ID
+        )
+        SELECT
+            WO_EST_WO_ID,
+            WO_EST_ChangedAt,
+            WO_EST_EST_ID
+        FROM
+            @WO_EST_Work_ExecutionStatus
+        WHERE
+            WO_EST_Version = @currentVersion
+        AND
+            WO_EST_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_ERL_Work_ErrorLine instead of INSERT trigger on WO_ERL_Work_ErrorLine
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_ERL_Work_ErrorLine', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_ERL_Work_ErrorLine];
+GO
+CREATE TRIGGER [metadata].[it_WO_ERL_Work_ErrorLine] ON [metadata].[WO_ERL_Work_ErrorLine]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_ERL_Work_ErrorLine TABLE (
+        WO_ERL_WO_ID int not null,
+        WO_ERL_Work_ErrorLine int not null,
+        WO_ERL_Version bigint not null,
+        WO_ERL_StatementType char(1) not null,
+        primary key(
+            WO_ERL_Version,
+            WO_ERL_WO_ID
+        )
+    );
+    INSERT INTO @WO_ERL_Work_ErrorLine
+    SELECT
+        i.WO_ERL_WO_ID,
+        i.WO_ERL_Work_ErrorLine,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_ERL_Version),
+        @currentVersion = 0
+    FROM
+        @WO_ERL_Work_ErrorLine;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_ERL_StatementType =
+                CASE
+                    WHEN [ERL].WO_ERL_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_ERL_Work_ErrorLine v
+        LEFT JOIN
+            [metadata].[WO_ERL_Work_ErrorLine] [ERL]
+        ON
+            [ERL].WO_ERL_WO_ID = v.WO_ERL_WO_ID
+        AND
+            [ERL].WO_ERL_Work_ErrorLine = v.WO_ERL_Work_ErrorLine
+        WHERE
+            v.WO_ERL_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_ERL_Work_ErrorLine] (
+            WO_ERL_WO_ID,
+            WO_ERL_Work_ErrorLine
+        )
+        SELECT
+            WO_ERL_WO_ID,
+            WO_ERL_Work_ErrorLine
+        FROM
+            @WO_ERL_Work_ErrorLine
+        WHERE
+            WO_ERL_Version = @currentVersion
+        AND
+            WO_ERL_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WO_ERM_Work_ErrorMessage instead of INSERT trigger on WO_ERM_Work_ErrorMessage
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WO_ERM_Work_ErrorMessage', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_ERM_Work_ErrorMessage];
+GO
+CREATE TRIGGER [metadata].[it_WO_ERM_Work_ErrorMessage] ON [metadata].[WO_ERM_Work_ErrorMessage]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WO_ERM_Work_ErrorMessage TABLE (
+        WO_ERM_WO_ID int not null,
+        WO_ERM_Work_ErrorMessage varchar(555) not null,
+        WO_ERM_Version bigint not null,
+        WO_ERM_StatementType char(1) not null,
+        primary key(
+            WO_ERM_Version,
+            WO_ERM_WO_ID
+        )
+    );
+    INSERT INTO @WO_ERM_Work_ErrorMessage
+    SELECT
+        i.WO_ERM_WO_ID,
+        i.WO_ERM_Work_ErrorMessage,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WO_ERM_Version),
+        @currentVersion = 0
+    FROM
+        @WO_ERM_Work_ErrorMessage;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WO_ERM_StatementType =
+                CASE
+                    WHEN [ERM].WO_ERM_WO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WO_ERM_Work_ErrorMessage v
+        LEFT JOIN
+            [metadata].[WO_ERM_Work_ErrorMessage] [ERM]
+        ON
+            [ERM].WO_ERM_WO_ID = v.WO_ERM_WO_ID
+        AND
+            [ERM].WO_ERM_Work_ErrorMessage = v.WO_ERM_Work_ErrorMessage
+        WHERE
+            v.WO_ERM_Version = @currentVersion;
+        INSERT INTO [metadata].[WO_ERM_Work_ErrorMessage] (
+            WO_ERM_WO_ID,
+            WO_ERM_Work_ErrorMessage
+        )
+        SELECT
+            WO_ERM_WO_ID,
+            WO_ERM_Work_ErrorMessage
+        FROM
+            @WO_ERM_Work_ErrorMessage
+        WHERE
+            WO_ERM_Version = @currentVersion
+        AND
+            WO_ERM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WF_NAM_Workflow_Name instead of INSERT trigger on WF_NAM_Workflow_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WF_NAM_Workflow_Name', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WF_NAM_Workflow_Name];
+GO
+CREATE TRIGGER [metadata].[it_WF_NAM_Workflow_Name] ON [metadata].[WF_NAM_Workflow_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WF_NAM_Workflow_Name TABLE (
+        WF_NAM_WF_ID int not null,
+        WF_NAM_Workflow_Name varchar(255) not null,
+        WF_NAM_Version bigint not null,
+        WF_NAM_StatementType char(1) not null,
+        primary key(
+            WF_NAM_Version,
+            WF_NAM_WF_ID
+        )
+    );
+    INSERT INTO @WF_NAM_Workflow_Name
+    SELECT
+        i.WF_NAM_WF_ID,
+        i.WF_NAM_Workflow_Name,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WF_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @WF_NAM_Workflow_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WF_NAM_StatementType =
+                CASE
+                    WHEN [NAM].WF_NAM_WF_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WF_NAM_Workflow_Name v
+        LEFT JOIN
+            [metadata].[WF_NAM_Workflow_Name] [NAM]
+        ON
+            [NAM].WF_NAM_WF_ID = v.WF_NAM_WF_ID
+        AND
+            [NAM].WF_NAM_Workflow_Name = v.WF_NAM_Workflow_Name
+        WHERE
+            v.WF_NAM_Version = @currentVersion;
+        INSERT INTO [metadata].[WF_NAM_Workflow_Name] (
+            WF_NAM_WF_ID,
+            WF_NAM_Workflow_Name
+        )
+        SELECT
+            WF_NAM_WF_ID,
+            WF_NAM_Workflow_Name
+        FROM
+            @WF_NAM_Workflow_Name
+        WHERE
+            WF_NAM_Version = @currentVersion
+        AND
+            WF_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_WF_CFG_Workflow_Configuration instead of INSERT trigger on WF_CFG_Workflow_Configuration
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_WF_CFG_Workflow_Configuration', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WF_CFG_Workflow_Configuration];
+GO
+CREATE TRIGGER [metadata].[it_WF_CFG_Workflow_Configuration] ON [metadata].[WF_CFG_Workflow_Configuration]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @WF_CFG_Workflow_Configuration TABLE (
+        WF_CFG_WF_ID int not null,
+        WF_CFG_ChangedAt datetime not null,
+        WF_CFG_Workflow_Configuration xml not null,
+        WF_CFG_Checksum varbinary(16) not null,
+        WF_CFG_Version bigint not null,
+        WF_CFG_StatementType char(1) not null,
+        primary key(
+            WF_CFG_Version,
+            WF_CFG_WF_ID
+        )
+    );
+    INSERT INTO @WF_CFG_Workflow_Configuration
+    SELECT
+        i.WF_CFG_WF_ID,
+        i.WF_CFG_ChangedAt,
+        i.WF_CFG_Workflow_Configuration,
+        ISNULL(i.WF_CFG_Checksum, HashBytes('MD5', cast(i.WF_CFG_Workflow_Configuration as varbinary(max)))),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.WF_CFG_WF_ID
+            ORDER BY
+                i.WF_CFG_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(WF_CFG_Version),
+        @currentVersion = 0
+    FROM
+        @WF_CFG_Workflow_Configuration;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.WF_CFG_StatementType =
+                CASE
+                    WHEN [CFG].WF_CFG_WF_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [metadata].[rfWF_CFG_Workflow_Configuration](
+                        v.WF_CFG_WF_ID,
+                        v.WF_CFG_Checksum, 
+                        v.WF_CFG_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @WF_CFG_Workflow_Configuration v
+        LEFT JOIN
+            [metadata].[WF_CFG_Workflow_Configuration] [CFG]
+        ON
+            [CFG].WF_CFG_WF_ID = v.WF_CFG_WF_ID
+        AND
+            [CFG].WF_CFG_ChangedAt = v.WF_CFG_ChangedAt
+        AND
+            [CFG].WF_CFG_Checksum = v.WF_CFG_Checksum 
+        WHERE
+            v.WF_CFG_Version = @currentVersion;
+        INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Workflow_Configuration
+        )
+        SELECT
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Workflow_Configuration
+        FROM
+            @WF_CFG_Workflow_Configuration
+        WHERE
+            WF_CFG_Version = @currentVersion
+        AND
+            WF_CFG_StatementType in ('N');
+    END
+END
+GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
 -- The following triggers on the latest view make it behave like a table.
@@ -1408,16 +3380,15 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itJB_Job instead of INSERT trigger on lJB_Job
+-- it_lJB_Job instead of INSERT trigger on lJB_Job
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itJB_Job] ON [metadata].[lJB_Job]
+CREATE TRIGGER [metadata].[it_lJB_Job] ON [metadata].[lJB_Job]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @JB TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         JB_ID int not null
@@ -1479,13 +3450,7 @@ BEGIN
         i.JB_STA_Job_Start
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[JB_STA_Job_Start] [STA]
-    ON
-        [STA].JB_STA_JB_ID = i.JB_STA_JB_ID
     WHERE
-        [STA].JB_STA_JB_ID is null
-    AND
         i.JB_STA_Job_Start is not null;
     INSERT INTO [metadata].[JB_END_Job_End] (
         JB_END_JB_ID,
@@ -1496,13 +3461,7 @@ BEGIN
         i.JB_END_Job_End
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[JB_END_Job_End] [END]
-    ON
-        [END].JB_END_JB_ID = i.JB_END_JB_ID
     WHERE
-        [END].JB_END_JB_ID is null
-    AND
         i.JB_END_Job_End is not null;
     INSERT INTO [metadata].[JB_NAM_Job_Name] (
         JB_NAM_JB_ID,
@@ -1513,20 +3472,76 @@ BEGIN
         i.JB_NAM_Job_Name
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[JB_NAM_Job_Name] [NAM]
-    ON
-        [NAM].JB_NAM_JB_ID = i.JB_NAM_JB_ID
     WHERE
-        [NAM].JB_NAM_JB_ID is null
-    AND
         i.JB_NAM_Job_Name is not null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtJB_Job instead of DELETE trigger on lJB_Job
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lJB_Job instead of UPDATE trigger on lJB_Job
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtJB_Job] ON [metadata].[lJB_Job]
+CREATE TRIGGER [metadata].[ut_lJB_Job] ON [metadata].[lJB_Job]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(JB_ID))
+        RAISERROR('The identity column JB_ID is not updatable.', 16, 1);
+    IF(UPDATE(JB_STA_JB_ID))
+        RAISERROR('The foreign key column JB_STA_JB_ID is not updatable.', 16, 1);
+    IF(UPDATE(JB_STA_Job_Start))
+    BEGIN
+        INSERT INTO [metadata].[JB_STA_Job_Start] (
+            JB_STA_JB_ID,
+            JB_STA_Job_Start
+        )
+        SELECT
+            ISNULL(i.JB_STA_JB_ID, i.JB_ID),
+            i.JB_STA_Job_Start
+        FROM
+            inserted i
+        WHERE
+            i.JB_STA_Job_Start is not null;
+    END
+    IF(UPDATE(JB_END_JB_ID))
+        RAISERROR('The foreign key column JB_END_JB_ID is not updatable.', 16, 1);
+    IF(UPDATE(JB_END_Job_End))
+    BEGIN
+        INSERT INTO [metadata].[JB_END_Job_End] (
+            JB_END_JB_ID,
+            JB_END_Job_End
+        )
+        SELECT
+            ISNULL(i.JB_END_JB_ID, i.JB_ID),
+            i.JB_END_Job_End
+        FROM
+            inserted i
+        WHERE
+            i.JB_END_Job_End is not null;
+    END
+    IF(UPDATE(JB_NAM_JB_ID))
+        RAISERROR('The foreign key column JB_NAM_JB_ID is not updatable.', 16, 1);
+    IF(UPDATE(JB_NAM_Job_Name))
+    BEGIN
+        INSERT INTO [metadata].[JB_NAM_Job_Name] (
+            JB_NAM_JB_ID,
+            JB_NAM_Job_Name
+        )
+        SELECT
+            ISNULL(i.JB_NAM_JB_ID, i.JB_ID),
+            i.JB_NAM_Job_Name
+        FROM
+            inserted i
+        WHERE
+            i.JB_NAM_Job_Name is not null;
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lJB_Job instead of DELETE trigger on lJB_Job
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lJB_Job] ON [metadata].[lJB_Job]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1537,22 +3552,21 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.JB_STA_JB_ID = [STA].JB_STA_JB_ID
+        d.JB_STA_JB_ID = [STA].JB_STA_JB_ID;
     DELETE [END]
     FROM
         [metadata].[JB_END_Job_End] [END]
     JOIN
         deleted d
     ON
-        d.JB_END_JB_ID = [END].JB_END_JB_ID
+        d.JB_END_JB_ID = [END].JB_END_JB_ID;
     DELETE [NAM]
     FROM
         [metadata].[JB_NAM_Job_Name] [NAM]
     JOIN
         deleted d
     ON
-        d.JB_NAM_JB_ID = [NAM].JB_NAM_JB_ID
-        ;
+        d.JB_NAM_JB_ID = [NAM].JB_NAM_JB_ID;
     DELETE [JB]
     FROM
         [metadata].[JB_Job] [JB]
@@ -1577,16 +3591,15 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itSR_Source instead of INSERT trigger on lSR_Source
+-- it_lSR_Source instead of INSERT trigger on lSR_Source
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itSR_Source] ON [metadata].[lSR_Source]
+CREATE TRIGGER [metadata].[it_lSR_Source] ON [metadata].[lSR_Source]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @SR TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         SR_ID int not null
@@ -1610,7 +3623,6 @@ BEGIN
         SR_NAM_Source_Name varchar(2000) null,
         SR_CFG_SR_ID int null,
         SR_CFG_ChangedAt datetime null,
-        SR_CFG_Checksum varbinary(16) null,
         SR_CFG_Source_Configuration xml null
     );
     INSERT INTO @inserted
@@ -1620,7 +3632,6 @@ BEGIN
         i.SR_NAM_Source_Name,
         ISNULL(ISNULL(i.SR_CFG_SR_ID, i.SR_ID), a.SR_ID),
         ISNULL(i.SR_CFG_ChangedAt, @now),
-        ISNULL(i.SR_CFG_Checksum, HashBytes('MD5', cast(i.SR_CFG_Source_Configuration as varbinary(max)))),
         i.SR_CFG_Source_Configuration
     FROM (
         SELECT
@@ -1629,7 +3640,6 @@ BEGIN
             SR_NAM_Source_Name,
             SR_CFG_SR_ID,
             SR_CFG_ChangedAt,
-            SR_CFG_Checksum,
             SR_CFG_Source_Configuration,
             ROW_NUMBER() OVER (PARTITION BY SR_ID ORDER BY SR_ID) AS Row
         FROM
@@ -1648,148 +3658,79 @@ BEGIN
         i.SR_NAM_Source_Name
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[SR_NAM_Source_Name] [NAM]
-    ON
-        [NAM].SR_NAM_SR_ID = i.SR_NAM_SR_ID
     WHERE
-        [NAM].SR_NAM_SR_ID is null
-    AND
         i.SR_NAM_Source_Name is not null;
-    DECLARE @SR_CFG_Source_Configuration TABLE (
-        SR_CFG_SR_ID int not null,
-        SR_CFG_ChangedAt datetime not null,
-        SR_CFG_Source_Configuration xml not null,
-        SR_CFG_Checksum varbinary(16) not null,
-        SR_CFG_Version bigint not null,
-        SR_CFG_StatementType char(1) not null,
-        primary key(
-            SR_CFG_Version,
-            SR_CFG_SR_ID
-        )
-    );
-    INSERT INTO @SR_CFG_Source_Configuration
-    SELECT
-        i.SR_CFG_SR_ID,
-        i.SR_CFG_ChangedAt,
-        i.SR_CFG_Source_Configuration,
-        i.SR_CFG_Checksum,
-        DENSE_RANK() OVER (
-            PARTITION BY
-                i.SR_CFG_SR_ID
-            ORDER BY
-                i.SR_CFG_ChangedAt ASC
-        ),
-        'X'
-    FROM
-        @inserted i
-    WHERE
-        i.SR_CFG_Source_Configuration is not null;
-    SELECT
-        @maxVersion = max(SR_CFG_Version),
-        @currentVersion = 0
-    FROM
-        @SR_CFG_Source_Configuration;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.SR_CFG_StatementType =
-                CASE
-                    WHEN [CFG].SR_CFG_SR_ID is not null
-                    THEN 'D' -- duplicate
-                    WHEN [metadata].[rfSR_CFG_Source_Configuration](
-                        v.SR_CFG_SR_ID,
-                        v.SR_CFG_Checksum, 
-                        v.SR_CFG_ChangedAt
-                    ) = 1
-                    THEN 'R' -- restatement
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @SR_CFG_Source_Configuration v
-        LEFT JOIN
-            [metadata].[SR_CFG_Source_Configuration] [CFG]
-        ON
-            [CFG].SR_CFG_SR_ID = v.SR_CFG_SR_ID
-        AND
-            [CFG].SR_CFG_ChangedAt = v.SR_CFG_ChangedAt
-        AND
-            [CFG].SR_CFG_Checksum = v.SR_CFG_Checksum 
-        WHERE
-            v.SR_CFG_Version = @currentVersion;
-        INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
-            SR_CFG_SR_ID,
-            SR_CFG_ChangedAt,
-            SR_CFG_Source_Configuration
-        )
-        SELECT
-            SR_CFG_SR_ID,
-            SR_CFG_ChangedAt,
-            SR_CFG_Source_Configuration
-        FROM
-            @SR_CFG_Source_Configuration
-        WHERE
-            SR_CFG_Version = @currentVersion
-        AND
-            SR_CFG_StatementType in ('N');
-    END
-END
-GO
--- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- utSR_Source instead of UPDATE trigger on lSR_Source
------------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[utSR_Source] ON [metadata].[lSR_Source]
-INSTEAD OF UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    IF(UPDATE(SR_ID))
-        RAISERROR('The identity column SR_ID is not updatable.', 16, 1);
-    IF(UPDATE(SR_CFG_Source_Configuration))
     INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
         SR_CFG_SR_ID,
         SR_CFG_ChangedAt,
         SR_CFG_Source_Configuration
     )
     SELECT
-        u.SR_CFG_SR_ID,
-        u.SR_CFG_ChangedAt,
+        i.SR_CFG_SR_ID,
+        i.SR_CFG_ChangedAt,
         i.SR_CFG_Source_Configuration
     FROM
-        inserted i
-    CROSS APPLY (
+        @inserted i
+    WHERE
+        i.SR_CFG_Source_Configuration is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lSR_Source instead of UPDATE trigger on lSR_Source
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lSR_Source] ON [metadata].[lSR_Source]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(SR_ID))
+        RAISERROR('The identity column SR_ID is not updatable.', 16, 1);
+    IF(UPDATE(SR_NAM_SR_ID))
+        RAISERROR('The foreign key column SR_NAM_SR_ID is not updatable.', 16, 1);
+    IF(UPDATE(SR_NAM_Source_Name))
+    BEGIN
+        INSERT INTO [metadata].[SR_NAM_Source_Name] (
+            SR_NAM_SR_ID,
+            SR_NAM_Source_Name
+        )
+        SELECT
+            ISNULL(i.SR_NAM_SR_ID, i.SR_ID),
+            i.SR_NAM_Source_Name
+        FROM
+            inserted i
+        WHERE
+            i.SR_NAM_Source_Name is not null;
+    END
+    IF(UPDATE(SR_CFG_SR_ID))
+        RAISERROR('The foreign key column SR_CFG_SR_ID is not updatable.', 16, 1);
+    IF(UPDATE(SR_CFG_Source_Configuration))
+    BEGIN
+        INSERT INTO [metadata].[SR_CFG_Source_Configuration] (
+            SR_CFG_SR_ID,
+            SR_CFG_ChangedAt,
+            SR_CFG_Source_Configuration
+        )
         SELECT
             ISNULL(i.SR_CFG_SR_ID, i.SR_ID),
-            cast(CASE WHEN UPDATE(SR_CFG_ChangedAt) THEN i.SR_CFG_ChangedAt ELSE @now END as datetime)
-    ) u (
-        SR_CFG_SR_ID,
-        SR_CFG_ChangedAt
-    )
-    LEFT JOIN
-        [metadata].[SR_CFG_Source_Configuration] b
-    ON
-        b.SR_CFG_SR_ID = u.SR_CFG_SR_ID
-    AND
-        b.SR_CFG_Checksum = i.SR_CFG_Checksum 
-    AND
-        b.SR_CFG_ChangedAt = u.SR_CFG_ChangedAt
-    WHERE
-        b.SR_CFG_SR_ID is null
-    AND
-        [metadata].[rfSR_CFG_Source_Configuration] (
-            u.SR_CFG_SR_ID,
-            i.SR_CFG_Checksum, 
-            u.SR_CFG_ChangedAt
-        ) = 0;
+            cast(CASE
+                WHEN i.SR_CFG_Source_Configuration is null THEN i.SR_CFG_ChangedAt
+                WHEN UPDATE(SR_CFG_ChangedAt) THEN i.SR_CFG_ChangedAt
+                ELSE @now
+            END as datetime),
+            i.SR_CFG_Source_Configuration
+        FROM
+            inserted i
+        WHERE
+            i.SR_CFG_Source_Configuration is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtSR_Source instead of DELETE trigger on lSR_Source
+-- dt_lSR_Source instead of DELETE trigger on lSR_Source
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtSR_Source] ON [metadata].[lSR_Source]
+CREATE TRIGGER [metadata].[dt_lSR_Source] ON [metadata].[lSR_Source]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1800,16 +3741,16 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.SR_NAM_SR_ID = [NAM].SR_NAM_SR_ID
+        d.SR_NAM_SR_ID = [NAM].SR_NAM_SR_ID;
     DELETE [CFG]
     FROM
         [metadata].[SR_CFG_Source_Configuration] [CFG]
     JOIN
         deleted d
     ON
-        d.SR_CFG_SR_ID = [CFG].SR_CFG_SR_ID
+        d.SR_CFG_ChangedAt = [CFG].SR_CFG_ChangedAt
     AND
-        d.SR_CFG_ChangedAt = [CFG].SR_CFG_ChangedAt;
+        d.SR_CFG_SR_ID = [CFG].SR_CFG_SR_ID;
     DELETE [SR]
     FROM
         [metadata].[SR_Source] [SR]
@@ -1828,16 +3769,15 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itCO_Container instead of INSERT trigger on lCO_Container
+-- it_lCO_Container instead of INSERT trigger on lCO_Container
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itCO_Container] ON [metadata].[lCO_Container]
+CREATE TRIGGER [metadata].[it_lCO_Container] ON [metadata].[lCO_Container]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @CO TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         CO_ID int not null
@@ -1908,13 +3848,7 @@ BEGIN
         i.CO_NAM_Container_Name
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[CO_NAM_Container_Name] [NAM]
-    ON
-        [NAM].CO_NAM_CO_ID = i.CO_NAM_CO_ID
     WHERE
-        [NAM].CO_NAM_CO_ID is null
-    AND
         i.CO_NAM_Container_Name is not null;
     INSERT INTO [metadata].[CO_TYP_Container_Type] (
         CO_TYP_CO_ID,
@@ -1926,19 +3860,11 @@ BEGIN
     FROM
         @inserted i
     LEFT JOIN
-        [metadata].[CO_TYP_Container_Type] [TYP]
-    ON
-        [TYP].CO_TYP_CO_ID = i.CO_TYP_CO_ID
-    LEFT JOIN
         [metadata].[TYP_Type] [kTYP]
     ON
         [kTYP].TYP_Type = i.CO_TYP_TYP_Type
     WHERE
-        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null
-    AND 
-        [TYP].CO_TYP_CO_ID is null
-    AND
-        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null; 
+        ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null;
     INSERT INTO [metadata].[CO_PTH_Container_Path] (
         CO_PTH_CO_ID,
         CO_PTH_Container_Path
@@ -1948,13 +3874,7 @@ BEGIN
         i.CO_PTH_Container_Path
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[CO_PTH_Container_Path] [PTH]
-    ON
-        [PTH].CO_PTH_CO_ID = i.CO_PTH_CO_ID
     WHERE
-        [PTH].CO_PTH_CO_ID is null
-    AND
         i.CO_PTH_Container_Path is not null;
     INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
         CO_DSC_CO_ID,
@@ -1965,20 +3885,96 @@ BEGIN
         i.CO_DSC_Container_Discovered
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[CO_DSC_Container_Discovered] [DSC]
-    ON
-        [DSC].CO_DSC_CO_ID = i.CO_DSC_CO_ID
     WHERE
-        [DSC].CO_DSC_CO_ID is null
-    AND
         i.CO_DSC_Container_Discovered is not null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtCO_Container instead of DELETE trigger on lCO_Container
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lCO_Container instead of UPDATE trigger on lCO_Container
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtCO_Container] ON [metadata].[lCO_Container]
+CREATE TRIGGER [metadata].[ut_lCO_Container] ON [metadata].[lCO_Container]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(CO_ID))
+        RAISERROR('The identity column CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_NAM_CO_ID))
+        RAISERROR('The foreign key column CO_NAM_CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_NAM_Container_Name))
+    BEGIN
+        INSERT INTO [metadata].[CO_NAM_Container_Name] (
+            CO_NAM_CO_ID,
+            CO_NAM_Container_Name
+        )
+        SELECT
+            ISNULL(i.CO_NAM_CO_ID, i.CO_ID),
+            i.CO_NAM_Container_Name
+        FROM
+            inserted i
+        WHERE
+            i.CO_NAM_Container_Name is not null;
+    END
+    IF(UPDATE(CO_TYP_CO_ID))
+        RAISERROR('The foreign key column CO_TYP_CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_TYP_TYP_ID) OR UPDATE(CO_TYP_TYP_Type))
+    BEGIN
+        INSERT INTO [metadata].[CO_TYP_Container_Type] (
+            CO_TYP_CO_ID,
+            CO_TYP_TYP_ID
+        )
+        SELECT
+            ISNULL(i.CO_TYP_CO_ID, i.CO_ID),
+            CASE WHEN UPDATE(CO_TYP_TYP_ID) THEN i.CO_TYP_TYP_ID ELSE [kTYP].TYP_ID END
+        FROM
+            inserted i
+        LEFT JOIN
+            [metadata].[TYP_Type] [kTYP]
+        ON
+            [kTYP].TYP_Type = i.CO_TYP_TYP_Type
+        WHERE
+            ISNULL(i.CO_TYP_TYP_ID, [kTYP].TYP_ID) is not null;
+    END
+    IF(UPDATE(CO_PTH_CO_ID))
+        RAISERROR('The foreign key column CO_PTH_CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_PTH_Container_Path))
+    BEGIN
+        INSERT INTO [metadata].[CO_PTH_Container_Path] (
+            CO_PTH_CO_ID,
+            CO_PTH_Container_Path
+        )
+        SELECT
+            ISNULL(i.CO_PTH_CO_ID, i.CO_ID),
+            i.CO_PTH_Container_Path
+        FROM
+            inserted i
+        WHERE
+            i.CO_PTH_Container_Path is not null;
+    END
+    IF(UPDATE(CO_DSC_CO_ID))
+        RAISERROR('The foreign key column CO_DSC_CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_DSC_Container_Discovered))
+    BEGIN
+        INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
+            CO_DSC_CO_ID,
+            CO_DSC_Container_Discovered
+        )
+        SELECT
+            ISNULL(i.CO_DSC_CO_ID, i.CO_ID),
+            i.CO_DSC_Container_Discovered
+        FROM
+            inserted i
+        WHERE
+            i.CO_DSC_Container_Discovered is not null;
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lCO_Container instead of DELETE trigger on lCO_Container
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lCO_Container] ON [metadata].[lCO_Container]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -1989,29 +3985,28 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.CO_NAM_CO_ID = [NAM].CO_NAM_CO_ID
+        d.CO_NAM_CO_ID = [NAM].CO_NAM_CO_ID;
     DELETE [TYP]
     FROM
         [metadata].[CO_TYP_Container_Type] [TYP]
     JOIN
         deleted d
     ON
-        d.CO_TYP_CO_ID = [TYP].CO_TYP_CO_ID
+        d.CO_TYP_CO_ID = [TYP].CO_TYP_CO_ID;
     DELETE [PTH]
     FROM
         [metadata].[CO_PTH_Container_Path] [PTH]
     JOIN
         deleted d
     ON
-        d.CO_PTH_CO_ID = [PTH].CO_PTH_CO_ID
+        d.CO_PTH_CO_ID = [PTH].CO_PTH_CO_ID;
     DELETE [DSC]
     FROM
         [metadata].[CO_DSC_Container_Discovered] [DSC]
     JOIN
         deleted d
     ON
-        d.CO_DSC_CO_ID = [DSC].CO_DSC_CO_ID
-        ;
+        d.CO_DSC_CO_ID = [DSC].CO_DSC_CO_ID;
     DELETE [CO]
     FROM
         [metadata].[CO_Container] [CO]
@@ -2042,16 +4037,15 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itWO_Work instead of INSERT trigger on lWO_Work
+-- it_lWO_Work instead of INSERT trigger on lWO_Work
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itWO_Work] ON [metadata].[lWO_Work]
+CREATE TRIGGER [metadata].[it_lWO_Work] ON [metadata].[lWO_Work]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @WO TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         WO_ID int not null
@@ -2082,7 +4076,19 @@ BEGIN
         WO_INS_WO_ID int null,
         WO_INS_Work_Inserts int null,
         WO_DEL_WO_ID int null,
-        WO_DEL_Work_Deletes int null
+        WO_DEL_Work_Deletes int null,
+        WO_USR_WO_ID int null,
+        WO_USR_Work_InvocationUser varchar(555) null,
+        WO_ROL_WO_ID int null,
+        WO_ROL_Work_InvocationRole varchar(42) null,
+        WO_EST_WO_ID int null,
+        WO_EST_ChangedAt datetime null,
+        WO_EST_EST_ExecutionStatus varchar(42) null,
+        WO_EST_EST_ID tinyint null,
+        WO_ERL_WO_ID int null,
+        WO_ERL_Work_ErrorLine int null,
+        WO_ERM_WO_ID int null,
+        WO_ERM_Work_ErrorMessage varchar(555) null
     );
     INSERT INTO @inserted
     SELECT
@@ -2098,7 +4104,19 @@ BEGIN
         ISNULL(ISNULL(i.WO_INS_WO_ID, i.WO_ID), a.WO_ID),
         i.WO_INS_Work_Inserts,
         ISNULL(ISNULL(i.WO_DEL_WO_ID, i.WO_ID), a.WO_ID),
-        i.WO_DEL_Work_Deletes
+        i.WO_DEL_Work_Deletes,
+        ISNULL(ISNULL(i.WO_USR_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_USR_Work_InvocationUser,
+        ISNULL(ISNULL(i.WO_ROL_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_ROL_Work_InvocationRole,
+        ISNULL(ISNULL(i.WO_EST_WO_ID, i.WO_ID), a.WO_ID),
+        ISNULL(i.WO_EST_ChangedAt, @now),
+        i.WO_EST_EST_ExecutionStatus,
+        i.WO_EST_EST_ID,
+        ISNULL(ISNULL(i.WO_ERL_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_ERL_Work_ErrorLine,
+        ISNULL(ISNULL(i.WO_ERM_WO_ID, i.WO_ID), a.WO_ID),
+        i.WO_ERM_Work_ErrorMessage
     FROM (
         SELECT
             WO_ID,
@@ -2114,6 +4132,18 @@ BEGIN
             WO_INS_Work_Inserts,
             WO_DEL_WO_ID,
             WO_DEL_Work_Deletes,
+            WO_USR_WO_ID,
+            WO_USR_Work_InvocationUser,
+            WO_ROL_WO_ID,
+            WO_ROL_Work_InvocationRole,
+            WO_EST_WO_ID,
+            WO_EST_ChangedAt,
+            WO_EST_EST_ExecutionStatus,
+            WO_EST_EST_ID,
+            WO_ERL_WO_ID,
+            WO_ERL_Work_ErrorLine,
+            WO_ERM_WO_ID,
+            WO_ERM_Work_ErrorMessage,
             ROW_NUMBER() OVER (PARTITION BY WO_ID ORDER BY WO_ID) AS Row
         FROM
             inserted
@@ -2131,13 +4161,7 @@ BEGIN
         i.WO_STA_Work_Start
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_STA_Work_Start] [STA]
-    ON
-        [STA].WO_STA_WO_ID = i.WO_STA_WO_ID
     WHERE
-        [STA].WO_STA_WO_ID is null
-    AND
         i.WO_STA_Work_Start is not null;
     INSERT INTO [metadata].[WO_END_Work_End] (
         WO_END_WO_ID,
@@ -2148,13 +4172,7 @@ BEGIN
         i.WO_END_Work_End
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_END_Work_End] [END]
-    ON
-        [END].WO_END_WO_ID = i.WO_END_WO_ID
     WHERE
-        [END].WO_END_WO_ID is null
-    AND
         i.WO_END_Work_End is not null;
     INSERT INTO [metadata].[WO_UPD_Work_Updates] (
         WO_UPD_WO_ID,
@@ -2165,13 +4183,7 @@ BEGIN
         i.WO_UPD_Work_Updates
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_UPD_Work_Updates] [UPD]
-    ON
-        [UPD].WO_UPD_WO_ID = i.WO_UPD_WO_ID
     WHERE
-        [UPD].WO_UPD_WO_ID is null
-    AND
         i.WO_UPD_Work_Updates is not null;
     INSERT INTO [metadata].[WO_NAM_Work_Name] (
         WO_NAM_WO_ID,
@@ -2182,13 +4194,7 @@ BEGIN
         i.WO_NAM_Work_Name
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_NAM_Work_Name] [NAM]
-    ON
-        [NAM].WO_NAM_WO_ID = i.WO_NAM_WO_ID
     WHERE
-        [NAM].WO_NAM_WO_ID is null
-    AND
         i.WO_NAM_Work_Name is not null;
     INSERT INTO [metadata].[WO_INS_Work_Inserts] (
         WO_INS_WO_ID,
@@ -2199,13 +4205,7 @@ BEGIN
         i.WO_INS_Work_Inserts
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_INS_Work_Inserts] [INS]
-    ON
-        [INS].WO_INS_WO_ID = i.WO_INS_WO_ID
     WHERE
-        [INS].WO_INS_WO_ID is null
-    AND
         i.WO_INS_Work_Inserts is not null;
     INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
         WO_DEL_WO_ID,
@@ -2216,20 +4216,275 @@ BEGIN
         i.WO_DEL_Work_Deletes
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WO_DEL_Work_Deletes] [DEL]
-    ON
-        [DEL].WO_DEL_WO_ID = i.WO_DEL_WO_ID
     WHERE
-        [DEL].WO_DEL_WO_ID is null
-    AND
         i.WO_DEL_Work_Deletes is not null;
+    INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
+        WO_USR_WO_ID,
+        WO_USR_Work_InvocationUser
+    )
+    SELECT
+        i.WO_USR_WO_ID,
+        i.WO_USR_Work_InvocationUser
+    FROM
+        @inserted i
+    WHERE
+        i.WO_USR_Work_InvocationUser is not null;
+    INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
+        WO_ROL_WO_ID,
+        WO_ROL_Work_InvocationRole
+    )
+    SELECT
+        i.WO_ROL_WO_ID,
+        i.WO_ROL_Work_InvocationRole
+    FROM
+        @inserted i
+    WHERE
+        i.WO_ROL_Work_InvocationRole is not null;
+    INSERT INTO [metadata].[WO_EST_Work_ExecutionStatus] (
+        WO_EST_WO_ID,
+        WO_EST_ChangedAt,
+        WO_EST_EST_ID
+    )
+    SELECT
+        i.WO_EST_WO_ID,
+        i.WO_EST_ChangedAt,
+        ISNULL(i.WO_EST_EST_ID, [kEST].EST_ID) 
+    FROM
+        @inserted i
+    LEFT JOIN
+        [metadata].[EST_ExecutionStatus] [kEST]
+    ON
+        [kEST].EST_ExecutionStatus = i.WO_EST_EST_ExecutionStatus
+    WHERE
+        ISNULL(i.WO_EST_EST_ID, [kEST].EST_ID) is not null;
+    INSERT INTO [metadata].[WO_ERL_Work_ErrorLine] (
+        WO_ERL_WO_ID,
+        WO_ERL_Work_ErrorLine
+    )
+    SELECT
+        i.WO_ERL_WO_ID,
+        i.WO_ERL_Work_ErrorLine
+    FROM
+        @inserted i
+    WHERE
+        i.WO_ERL_Work_ErrorLine is not null;
+    INSERT INTO [metadata].[WO_ERM_Work_ErrorMessage] (
+        WO_ERM_WO_ID,
+        WO_ERM_Work_ErrorMessage
+    )
+    SELECT
+        i.WO_ERM_WO_ID,
+        i.WO_ERM_Work_ErrorMessage
+    FROM
+        @inserted i
+    WHERE
+        i.WO_ERM_Work_ErrorMessage is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lWO_Work instead of UPDATE trigger on lWO_Work
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lWO_Work] ON [metadata].[lWO_Work]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(WO_ID))
+        RAISERROR('The identity column WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_STA_WO_ID))
+        RAISERROR('The foreign key column WO_STA_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_STA_Work_Start))
+    BEGIN
+        INSERT INTO [metadata].[WO_STA_Work_Start] (
+            WO_STA_WO_ID,
+            WO_STA_Work_Start
+        )
+        SELECT
+            ISNULL(i.WO_STA_WO_ID, i.WO_ID),
+            i.WO_STA_Work_Start
+        FROM
+            inserted i
+        WHERE
+            i.WO_STA_Work_Start is not null;
+    END
+    IF(UPDATE(WO_END_WO_ID))
+        RAISERROR('The foreign key column WO_END_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_END_Work_End))
+    BEGIN
+        INSERT INTO [metadata].[WO_END_Work_End] (
+            WO_END_WO_ID,
+            WO_END_Work_End
+        )
+        SELECT
+            ISNULL(i.WO_END_WO_ID, i.WO_ID),
+            i.WO_END_Work_End
+        FROM
+            inserted i
+        WHERE
+            i.WO_END_Work_End is not null;
+    END
+    IF(UPDATE(WO_UPD_WO_ID))
+        RAISERROR('The foreign key column WO_UPD_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_UPD_Work_Updates))
+    BEGIN
+        INSERT INTO [metadata].[WO_UPD_Work_Updates] (
+            WO_UPD_WO_ID,
+            WO_UPD_Work_Updates
+        )
+        SELECT
+            ISNULL(i.WO_UPD_WO_ID, i.WO_ID),
+            i.WO_UPD_Work_Updates
+        FROM
+            inserted i
+        WHERE
+            i.WO_UPD_Work_Updates is not null;
+    END
+    IF(UPDATE(WO_NAM_WO_ID))
+        RAISERROR('The foreign key column WO_NAM_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_NAM_Work_Name))
+    BEGIN
+        INSERT INTO [metadata].[WO_NAM_Work_Name] (
+            WO_NAM_WO_ID,
+            WO_NAM_Work_Name
+        )
+        SELECT
+            ISNULL(i.WO_NAM_WO_ID, i.WO_ID),
+            i.WO_NAM_Work_Name
+        FROM
+            inserted i
+        WHERE
+            i.WO_NAM_Work_Name is not null;
+    END
+    IF(UPDATE(WO_INS_WO_ID))
+        RAISERROR('The foreign key column WO_INS_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_INS_Work_Inserts))
+    BEGIN
+        INSERT INTO [metadata].[WO_INS_Work_Inserts] (
+            WO_INS_WO_ID,
+            WO_INS_Work_Inserts
+        )
+        SELECT
+            ISNULL(i.WO_INS_WO_ID, i.WO_ID),
+            i.WO_INS_Work_Inserts
+        FROM
+            inserted i
+        WHERE
+            i.WO_INS_Work_Inserts is not null;
+    END
+    IF(UPDATE(WO_DEL_WO_ID))
+        RAISERROR('The foreign key column WO_DEL_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_DEL_Work_Deletes))
+    BEGIN
+        INSERT INTO [metadata].[WO_DEL_Work_Deletes] (
+            WO_DEL_WO_ID,
+            WO_DEL_Work_Deletes
+        )
+        SELECT
+            ISNULL(i.WO_DEL_WO_ID, i.WO_ID),
+            i.WO_DEL_Work_Deletes
+        FROM
+            inserted i
+        WHERE
+            i.WO_DEL_Work_Deletes is not null;
+    END
+    IF(UPDATE(WO_USR_WO_ID))
+        RAISERROR('The foreign key column WO_USR_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_USR_Work_InvocationUser))
+    BEGIN
+        INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
+            WO_USR_WO_ID,
+            WO_USR_Work_InvocationUser
+        )
+        SELECT
+            ISNULL(i.WO_USR_WO_ID, i.WO_ID),
+            i.WO_USR_Work_InvocationUser
+        FROM
+            inserted i
+        WHERE
+            i.WO_USR_Work_InvocationUser is not null;
+    END
+    IF(UPDATE(WO_ROL_WO_ID))
+        RAISERROR('The foreign key column WO_ROL_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_ROL_Work_InvocationRole))
+    BEGIN
+        INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
+            WO_ROL_WO_ID,
+            WO_ROL_Work_InvocationRole
+        )
+        SELECT
+            ISNULL(i.WO_ROL_WO_ID, i.WO_ID),
+            i.WO_ROL_Work_InvocationRole
+        FROM
+            inserted i
+        WHERE
+            i.WO_ROL_Work_InvocationRole is not null;
+    END
+    IF(UPDATE(WO_EST_WO_ID))
+        RAISERROR('The foreign key column WO_EST_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_EST_EST_ID) OR UPDATE(WO_EST_EST_ExecutionStatus))
+    BEGIN
+        INSERT INTO [metadata].[WO_EST_Work_ExecutionStatus] (
+            WO_EST_WO_ID,
+            WO_EST_ChangedAt,
+            WO_EST_EST_ID
+        )
+        SELECT
+            ISNULL(i.WO_EST_WO_ID, i.WO_ID),
+            cast(CASE
+                WHEN i.WO_EST_EST_ID is null AND [kEST].EST_ID is null THEN i.WO_EST_ChangedAt
+                WHEN UPDATE(WO_EST_ChangedAt) THEN i.WO_EST_ChangedAt
+                ELSE @now
+            END as datetime),
+            CASE WHEN UPDATE(WO_EST_EST_ID) THEN i.WO_EST_EST_ID ELSE [kEST].EST_ID END
+        FROM
+            inserted i
+        LEFT JOIN
+            [metadata].[EST_ExecutionStatus] [kEST]
+        ON
+            [kEST].EST_ExecutionStatus = i.WO_EST_EST_ExecutionStatus
+        WHERE
+            ISNULL(i.WO_EST_EST_ID, [kEST].EST_ID) is not null;
+    END
+    IF(UPDATE(WO_ERL_WO_ID))
+        RAISERROR('The foreign key column WO_ERL_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_ERL_Work_ErrorLine))
+    BEGIN
+        INSERT INTO [metadata].[WO_ERL_Work_ErrorLine] (
+            WO_ERL_WO_ID,
+            WO_ERL_Work_ErrorLine
+        )
+        SELECT
+            ISNULL(i.WO_ERL_WO_ID, i.WO_ID),
+            i.WO_ERL_Work_ErrorLine
+        FROM
+            inserted i
+        WHERE
+            i.WO_ERL_Work_ErrorLine is not null;
+    END
+    IF(UPDATE(WO_ERM_WO_ID))
+        RAISERROR('The foreign key column WO_ERM_WO_ID is not updatable.', 16, 1);
+    IF(UPDATE(WO_ERM_Work_ErrorMessage))
+    BEGIN
+        INSERT INTO [metadata].[WO_ERM_Work_ErrorMessage] (
+            WO_ERM_WO_ID,
+            WO_ERM_Work_ErrorMessage
+        )
+        SELECT
+            ISNULL(i.WO_ERM_WO_ID, i.WO_ID),
+            i.WO_ERM_Work_ErrorMessage
+        FROM
+            inserted i
+        WHERE
+            i.WO_ERM_Work_ErrorMessage is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtWO_Work instead of DELETE trigger on lWO_Work
+-- dt_lWO_Work instead of DELETE trigger on lWO_Work
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtWO_Work] ON [metadata].[lWO_Work]
+CREATE TRIGGER [metadata].[dt_lWO_Work] ON [metadata].[lWO_Work]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -2240,43 +4495,79 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.WO_STA_WO_ID = [STA].WO_STA_WO_ID
+        d.WO_STA_WO_ID = [STA].WO_STA_WO_ID;
     DELETE [END]
     FROM
         [metadata].[WO_END_Work_End] [END]
     JOIN
         deleted d
     ON
-        d.WO_END_WO_ID = [END].WO_END_WO_ID
+        d.WO_END_WO_ID = [END].WO_END_WO_ID;
     DELETE [UPD]
     FROM
         [metadata].[WO_UPD_Work_Updates] [UPD]
     JOIN
         deleted d
     ON
-        d.WO_UPD_WO_ID = [UPD].WO_UPD_WO_ID
+        d.WO_UPD_WO_ID = [UPD].WO_UPD_WO_ID;
     DELETE [NAM]
     FROM
         [metadata].[WO_NAM_Work_Name] [NAM]
     JOIN
         deleted d
     ON
-        d.WO_NAM_WO_ID = [NAM].WO_NAM_WO_ID
+        d.WO_NAM_WO_ID = [NAM].WO_NAM_WO_ID;
     DELETE [INS]
     FROM
         [metadata].[WO_INS_Work_Inserts] [INS]
     JOIN
         deleted d
     ON
-        d.WO_INS_WO_ID = [INS].WO_INS_WO_ID
+        d.WO_INS_WO_ID = [INS].WO_INS_WO_ID;
     DELETE [DEL]
     FROM
         [metadata].[WO_DEL_Work_Deletes] [DEL]
     JOIN
         deleted d
     ON
-        d.WO_DEL_WO_ID = [DEL].WO_DEL_WO_ID
-        ;
+        d.WO_DEL_WO_ID = [DEL].WO_DEL_WO_ID;
+    DELETE [USR]
+    FROM
+        [metadata].[WO_USR_Work_InvocationUser] [USR]
+    JOIN
+        deleted d
+    ON
+        d.WO_USR_WO_ID = [USR].WO_USR_WO_ID;
+    DELETE [ROL]
+    FROM
+        [metadata].[WO_ROL_Work_InvocationRole] [ROL]
+    JOIN
+        deleted d
+    ON
+        d.WO_ROL_WO_ID = [ROL].WO_ROL_WO_ID;
+    DELETE [EST]
+    FROM
+        [metadata].[WO_EST_Work_ExecutionStatus] [EST]
+    JOIN
+        deleted d
+    ON
+        d.WO_EST_ChangedAt = [EST].WO_EST_ChangedAt
+    AND
+        d.WO_EST_WO_ID = [EST].WO_EST_WO_ID;
+    DELETE [ERL]
+    FROM
+        [metadata].[WO_ERL_Work_ErrorLine] [ERL]
+    JOIN
+        deleted d
+    ON
+        d.WO_ERL_WO_ID = [ERL].WO_ERL_WO_ID;
+    DELETE [ERM]
+    FROM
+        [metadata].[WO_ERM_Work_ErrorMessage] [ERM]
+    JOIN
+        deleted d
+    ON
+        d.WO_ERM_WO_ID = [ERM].WO_ERM_WO_ID;
     DELETE [WO]
     FROM
         [metadata].[WO_Work] [WO]
@@ -2304,6 +4595,26 @@ BEGIN
         [metadata].[WO_DEL_Work_Deletes] [DEL]
     ON
         [DEL].WO_DEL_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_USR_Work_InvocationUser] [USR]
+    ON
+        [USR].WO_USR_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_ROL_Work_InvocationRole] [ROL]
+    ON
+        [ROL].WO_ROL_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_EST_Work_ExecutionStatus] [EST]
+    ON
+        [EST].WO_EST_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_ERL_Work_ErrorLine] [ERL]
+    ON
+        [ERL].WO_ERL_WO_ID = [WO].WO_ID
+    LEFT JOIN
+        [metadata].[WO_ERM_Work_ErrorMessage] [ERM]
+    ON
+        [ERM].WO_ERM_WO_ID = [WO].WO_ID
     WHERE
         [STA].WO_STA_WO_ID is null
     AND
@@ -2315,20 +4626,29 @@ BEGIN
     AND
         [INS].WO_INS_WO_ID is null
     AND
-        [DEL].WO_DEL_WO_ID is null;
+        [DEL].WO_DEL_WO_ID is null
+    AND
+        [USR].WO_USR_WO_ID is null
+    AND
+        [ROL].WO_ROL_WO_ID is null
+    AND
+        [EST].WO_EST_WO_ID is null
+    AND
+        [ERL].WO_ERL_WO_ID is null
+    AND
+        [ERM].WO_ERM_WO_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itWF_Workflow instead of INSERT trigger on lWF_Workflow
+-- it_lWF_Workflow instead of INSERT trigger on lWF_Workflow
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itWF_Workflow] ON [metadata].[lWF_Workflow]
+CREATE TRIGGER [metadata].[it_lWF_Workflow] ON [metadata].[lWF_Workflow]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @WF TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
         WF_ID int not null
@@ -2352,7 +4672,6 @@ BEGIN
         WF_NAM_Workflow_Name varchar(255) null,
         WF_CFG_WF_ID int null,
         WF_CFG_ChangedAt datetime null,
-        WF_CFG_Checksum varbinary(16) null,
         WF_CFG_Workflow_Configuration xml null
     );
     INSERT INTO @inserted
@@ -2362,7 +4681,6 @@ BEGIN
         i.WF_NAM_Workflow_Name,
         ISNULL(ISNULL(i.WF_CFG_WF_ID, i.WF_ID), a.WF_ID),
         ISNULL(i.WF_CFG_ChangedAt, @now),
-        ISNULL(i.WF_CFG_Checksum, HashBytes('MD5', cast(i.WF_CFG_Workflow_Configuration as varbinary(max)))),
         i.WF_CFG_Workflow_Configuration
     FROM (
         SELECT
@@ -2371,7 +4689,6 @@ BEGIN
             WF_NAM_Workflow_Name,
             WF_CFG_WF_ID,
             WF_CFG_ChangedAt,
-            WF_CFG_Checksum,
             WF_CFG_Workflow_Configuration,
             ROW_NUMBER() OVER (PARTITION BY WF_ID ORDER BY WF_ID) AS Row
         FROM
@@ -2390,148 +4707,79 @@ BEGIN
         i.WF_NAM_Workflow_Name
     FROM
         @inserted i
-    LEFT JOIN
-        [metadata].[WF_NAM_Workflow_Name] [NAM]
-    ON
-        [NAM].WF_NAM_WF_ID = i.WF_NAM_WF_ID
     WHERE
-        [NAM].WF_NAM_WF_ID is null
-    AND
         i.WF_NAM_Workflow_Name is not null;
-    DECLARE @WF_CFG_Workflow_Configuration TABLE (
-        WF_CFG_WF_ID int not null,
-        WF_CFG_ChangedAt datetime not null,
-        WF_CFG_Workflow_Configuration xml not null,
-        WF_CFG_Checksum varbinary(16) not null,
-        WF_CFG_Version bigint not null,
-        WF_CFG_StatementType char(1) not null,
-        primary key(
-            WF_CFG_Version,
-            WF_CFG_WF_ID
-        )
-    );
-    INSERT INTO @WF_CFG_Workflow_Configuration
-    SELECT
-        i.WF_CFG_WF_ID,
-        i.WF_CFG_ChangedAt,
-        i.WF_CFG_Workflow_Configuration,
-        i.WF_CFG_Checksum,
-        DENSE_RANK() OVER (
-            PARTITION BY
-                i.WF_CFG_WF_ID
-            ORDER BY
-                i.WF_CFG_ChangedAt ASC
-        ),
-        'X'
-    FROM
-        @inserted i
-    WHERE
-        i.WF_CFG_Workflow_Configuration is not null;
-    SELECT
-        @maxVersion = max(WF_CFG_Version),
-        @currentVersion = 0
-    FROM
-        @WF_CFG_Workflow_Configuration;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.WF_CFG_StatementType =
-                CASE
-                    WHEN [CFG].WF_CFG_WF_ID is not null
-                    THEN 'D' -- duplicate
-                    WHEN [metadata].[rfWF_CFG_Workflow_Configuration](
-                        v.WF_CFG_WF_ID,
-                        v.WF_CFG_Checksum, 
-                        v.WF_CFG_ChangedAt
-                    ) = 1
-                    THEN 'R' -- restatement
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @WF_CFG_Workflow_Configuration v
-        LEFT JOIN
-            [metadata].[WF_CFG_Workflow_Configuration] [CFG]
-        ON
-            [CFG].WF_CFG_WF_ID = v.WF_CFG_WF_ID
-        AND
-            [CFG].WF_CFG_ChangedAt = v.WF_CFG_ChangedAt
-        AND
-            [CFG].WF_CFG_Checksum = v.WF_CFG_Checksum 
-        WHERE
-            v.WF_CFG_Version = @currentVersion;
-        INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
-            WF_CFG_WF_ID,
-            WF_CFG_ChangedAt,
-            WF_CFG_Workflow_Configuration
-        )
-        SELECT
-            WF_CFG_WF_ID,
-            WF_CFG_ChangedAt,
-            WF_CFG_Workflow_Configuration
-        FROM
-            @WF_CFG_Workflow_Configuration
-        WHERE
-            WF_CFG_Version = @currentVersion
-        AND
-            WF_CFG_StatementType in ('N');
-    END
-END
-GO
--- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- utWF_Workflow instead of UPDATE trigger on lWF_Workflow
------------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[utWF_Workflow] ON [metadata].[lWF_Workflow]
-INSTEAD OF UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
-    IF(UPDATE(WF_ID))
-        RAISERROR('The identity column WF_ID is not updatable.', 16, 1);
-    IF(UPDATE(WF_CFG_Workflow_Configuration))
     INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
         WF_CFG_WF_ID,
         WF_CFG_ChangedAt,
         WF_CFG_Workflow_Configuration
     )
     SELECT
-        u.WF_CFG_WF_ID,
-        u.WF_CFG_ChangedAt,
+        i.WF_CFG_WF_ID,
+        i.WF_CFG_ChangedAt,
         i.WF_CFG_Workflow_Configuration
     FROM
-        inserted i
-    CROSS APPLY (
+        @inserted i
+    WHERE
+        i.WF_CFG_Workflow_Configuration is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lWF_Workflow instead of UPDATE trigger on lWF_Workflow
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lWF_Workflow] ON [metadata].[lWF_Workflow]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(WF_ID))
+        RAISERROR('The identity column WF_ID is not updatable.', 16, 1);
+    IF(UPDATE(WF_NAM_WF_ID))
+        RAISERROR('The foreign key column WF_NAM_WF_ID is not updatable.', 16, 1);
+    IF(UPDATE(WF_NAM_Workflow_Name))
+    BEGIN
+        INSERT INTO [metadata].[WF_NAM_Workflow_Name] (
+            WF_NAM_WF_ID,
+            WF_NAM_Workflow_Name
+        )
+        SELECT
+            ISNULL(i.WF_NAM_WF_ID, i.WF_ID),
+            i.WF_NAM_Workflow_Name
+        FROM
+            inserted i
+        WHERE
+            i.WF_NAM_Workflow_Name is not null;
+    END
+    IF(UPDATE(WF_CFG_WF_ID))
+        RAISERROR('The foreign key column WF_CFG_WF_ID is not updatable.', 16, 1);
+    IF(UPDATE(WF_CFG_Workflow_Configuration))
+    BEGIN
+        INSERT INTO [metadata].[WF_CFG_Workflow_Configuration] (
+            WF_CFG_WF_ID,
+            WF_CFG_ChangedAt,
+            WF_CFG_Workflow_Configuration
+        )
         SELECT
             ISNULL(i.WF_CFG_WF_ID, i.WF_ID),
-            cast(CASE WHEN UPDATE(WF_CFG_ChangedAt) THEN i.WF_CFG_ChangedAt ELSE @now END as datetime)
-    ) u (
-        WF_CFG_WF_ID,
-        WF_CFG_ChangedAt
-    )
-    LEFT JOIN
-        [metadata].[WF_CFG_Workflow_Configuration] b
-    ON
-        b.WF_CFG_WF_ID = u.WF_CFG_WF_ID
-    AND
-        b.WF_CFG_Checksum = i.WF_CFG_Checksum 
-    AND
-        b.WF_CFG_ChangedAt = u.WF_CFG_ChangedAt
-    WHERE
-        b.WF_CFG_WF_ID is null
-    AND
-        [metadata].[rfWF_CFG_Workflow_Configuration] (
-            u.WF_CFG_WF_ID,
-            i.WF_CFG_Checksum, 
-            u.WF_CFG_ChangedAt
-        ) = 0;
+            cast(CASE
+                WHEN i.WF_CFG_Workflow_Configuration is null THEN i.WF_CFG_ChangedAt
+                WHEN UPDATE(WF_CFG_ChangedAt) THEN i.WF_CFG_ChangedAt
+                ELSE @now
+            END as datetime),
+            i.WF_CFG_Workflow_Configuration
+        FROM
+            inserted i
+        WHERE
+            i.WF_CFG_Workflow_Configuration is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtWF_Workflow instead of DELETE trigger on lWF_Workflow
+-- dt_lWF_Workflow instead of DELETE trigger on lWF_Workflow
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtWF_Workflow] ON [metadata].[lWF_Workflow]
+CREATE TRIGGER [metadata].[dt_lWF_Workflow] ON [metadata].[lWF_Workflow]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -2542,16 +4790,16 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.WF_NAM_WF_ID = [NAM].WF_NAM_WF_ID
+        d.WF_NAM_WF_ID = [NAM].WF_NAM_WF_ID;
     DELETE [CFG]
     FROM
         [metadata].[WF_CFG_Workflow_Configuration] [CFG]
     JOIN
         deleted d
     ON
-        d.WF_CFG_WF_ID = [CFG].WF_CFG_WF_ID
+        d.WF_CFG_ChangedAt = [CFG].WF_CFG_ChangedAt
     AND
-        d.WF_CFG_ChangedAt = [CFG].WF_CFG_ChangedAt;
+        d.WF_CFG_WF_ID = [CFG].WF_CFG_WF_ID;
     DELETE [WF]
     FROM
         [metadata].[WF_Workflow] [WF]
@@ -2778,14 +5026,18 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itJB_of_WO_part instead of INSERT trigger on lJB_of_WO_part
+-- it_JB_of_WO_part instead of INSERT trigger on JB_of_WO_part
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
+IF Object_ID('metadata.it_JB_of_WO_part', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_JB_of_WO_part];
+GO
+CREATE TRIGGER [metadata].[it_JB_of_WO_part] ON [metadata].[JB_of_WO_part]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
@@ -2825,10 +5077,31 @@ BEGIN
         tie.WO_ID_part is null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtJB_of_WO_part instead of DELETE trigger on lJB_of_WO_part
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lJB_of_WO_part instead of INSERT trigger on lJB_of_WO_part
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
+CREATE TRIGGER [metadata].[it_lJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    INSERT INTO [metadata].[JB_of_WO_part] (
+        JB_ID_of,
+        WO_ID_part
+    )
+    SELECT
+        i.JB_ID_of,
+        i.WO_ID_part
+    FROM
+        inserted i; 
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lJB_of_WO_part instead of DELETE trigger on lJB_of_WO_part
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lJB_of_WO_part] ON [metadata].[lJB_of_WO_part]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -2845,14 +5118,18 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itJB_formed_WF_from instead of INSERT trigger on lJB_formed_WF_from
+-- it_JB_formed_WF_from instead of INSERT trigger on JB_formed_WF_from
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+IF Object_ID('metadata.it_JB_formed_WF_from', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_JB_formed_WF_from];
+GO
+CREATE TRIGGER [metadata].[it_JB_formed_WF_from] ON [metadata].[JB_formed_WF_from]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
@@ -2887,10 +5164,54 @@ BEGIN
         tie.JB_ID_formed is null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtJB_formed_WF_from instead of DELETE trigger on lJB_formed_WF_from
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lJB_formed_WF_from instead of INSERT trigger on lJB_formed_WF_from
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+CREATE TRIGGER [metadata].[it_lJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    INSERT INTO [metadata].[JB_formed_WF_from] (
+        JB_ID_formed,
+        WF_ID_from
+    )
+    SELECT
+        i.JB_ID_formed,
+        i.WF_ID_from
+    FROM
+        inserted i; 
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lJB_formed_WF_from instead of UPDATE trigger on lJB_formed_WF_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(JB_ID_formed))
+        RAISERROR('The identity column JB_ID_formed is not updatable.', 16, 1);
+    INSERT INTO [metadata].[JB_formed_WF_from] (
+        JB_ID_formed,
+        WF_ID_from
+    )
+    SELECT
+        i.JB_ID_formed,
+        i.WF_ID_from
+    FROM
+        inserted i; 
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lJB_formed_WF_from instead of DELETE trigger on lJB_formed_WF_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lJB_formed_WF_from] ON [metadata].[lJB_formed_WF_from]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -2905,14 +5226,18 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itWO_formed_SR_from instead of INSERT trigger on lWO_formed_SR_from
+-- it_WO_formed_SR_from instead of INSERT trigger on WO_formed_SR_from
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+IF Object_ID('metadata.it_WO_formed_SR_from', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_WO_formed_SR_from];
+GO
+CREATE TRIGGER [metadata].[it_WO_formed_SR_from] ON [metadata].[WO_formed_SR_from]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
@@ -2947,10 +5272,54 @@ BEGIN
         tie.WO_ID_formed is null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtWO_formed_SR_from instead of DELETE trigger on lWO_formed_SR_from
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lWO_formed_SR_from instead of INSERT trigger on lWO_formed_SR_from
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+CREATE TRIGGER [metadata].[it_lWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    INSERT INTO [metadata].[WO_formed_SR_from] (
+        WO_ID_formed,
+        SR_ID_from
+    )
+    SELECT
+        i.WO_ID_formed,
+        i.SR_ID_from
+    FROM
+        inserted i; 
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lWO_formed_SR_from instead of UPDATE trigger on lWO_formed_SR_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(WO_ID_formed))
+        RAISERROR('The identity column WO_ID_formed is not updatable.', 16, 1);
+    INSERT INTO [metadata].[WO_formed_SR_from] (
+        WO_ID_formed,
+        SR_ID_from
+    )
+    SELECT
+        i.WO_ID_formed,
+        i.SR_ID_from
+    FROM
+        inserted i; 
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lWO_formed_SR_from instead of DELETE trigger on lWO_formed_SR_from
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lWO_formed_SR_from] ON [metadata].[lWO_formed_SR_from]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -2965,14 +5334,18 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- itCO_target_CO_source_WO_involves instead of INSERT trigger on lCO_target_CO_source_WO_involves
+-- it_CO_target_CO_source_WO_involves instead of INSERT trigger on CO_target_CO_source_WO_involves
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[itCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+IF Object_ID('metadata.it_CO_target_CO_source_WO_involves', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_target_CO_source_WO_involves];
+GO
+CREATE TRIGGER [metadata].[it_CO_target_CO_source_WO_involves] ON [metadata].[CO_target_CO_source_WO_involves]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
-    DECLARE @now datetime2(7) = sysdatetime();
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
@@ -3016,10 +5389,60 @@ BEGIN
         tie.CO_ID_source is null;
 END
 GO
--- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dtCO_target_CO_source_WO_involves instead of DELETE trigger on lCO_target_CO_source_WO_involves
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lCO_target_CO_source_WO_involves instead of INSERT trigger on lCO_target_CO_source_WO_involves
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [metadata].[dtCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+CREATE TRIGGER [metadata].[it_lCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    INSERT INTO [metadata].[CO_target_CO_source_WO_involves] (
+        CO_ID_target,
+        CO_ID_source,
+        WO_ID_involves
+    )
+    SELECT
+        i.CO_ID_target,
+        i.CO_ID_source,
+        i.WO_ID_involves
+    FROM
+        inserted i; 
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lCO_target_CO_source_WO_involves instead of UPDATE trigger on lCO_target_CO_source_WO_involves
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[ut_lCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2(7);
+    SET @now = sysdatetime();
+    IF(UPDATE(CO_ID_target))
+        RAISERROR('The identity column CO_ID_target is not updatable.', 16, 1);
+    IF(UPDATE(CO_ID_source))
+        RAISERROR('The identity column CO_ID_source is not updatable.', 16, 1);
+    INSERT INTO [metadata].[CO_target_CO_source_WO_involves] (
+        CO_ID_target,
+        CO_ID_source,
+        WO_ID_involves
+    )
+    SELECT
+        i.CO_ID_target,
+        i.CO_ID_source,
+        i.WO_ID_involves
+    FROM
+        inserted i; 
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lCO_target_CO_source_WO_involves instead of DELETE trigger on lCO_target_CO_source_WO_involves
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [metadata].[dt_lCO_target_CO_source_WO_involves] ON [metadata].[lCO_target_CO_source_WO_involves]
 INSTEAD OF DELETE
 AS
 BEGIN
@@ -3058,7 +5481,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-03" time="11:21:17"><metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="TYP" descriptor="Type" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="676.28" y="887.24" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="774.27" y="157.76" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="808.72" y="118.11" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="837.04" y="264.77" fixed="false"/></attribute><layout x="810.67" y="210.93" fixed="false"/></anchor><anchor mnemonic="SR" descriptor="Source" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="432.83" y="235.37" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="424.30" y="313.03" fixed="false"/></attribute><layout x="486.07" y="284.35" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="784.94" y="677.40" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata capsule="metadata"/><layout x="686.53" y="802.66" fixed="false"/></attribute><attribute mnemonic="PTH" descriptor="Path" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="734.97" y="727.62" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="618.97" y="680.41" fixed="false"/></attribute><layout x="704.54" y="660.10" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="731.96" y="406.31" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="723.51" y="444.19" fixed="true"/></attribute><attribute mnemonic="UPD" descriptor="Updates" dataRange="int"><metadata capsule="metadata"/><layout x="573.47" y="457.43" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="718.22" y="473.64" fixed="true"/></attribute><attribute mnemonic="INS" descriptor="Inserts" dataRange="int"><metadata capsule="metadata"/><layout x="531.72" y="440.42" fixed="true"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" dataRange="int"><metadata capsule="metadata"/><layout x="580.05" y="487.99" fixed="true"/></attribute><layout x="638.61" y="420.02" fixed="false"/></anchor><anchor mnemonic="WF" descriptor="Workflow" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="875.45" y="-3.10" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="933.60" y="-0.03" fixed="false"/></attribute><layout x="887.35" y="37.98" fixed="true"/></anchor><tie><anchorRole role="of" type="JB" identifier="true"/><anchorRole role="part" type="WO" identifier="true"/><metadata capsule="metadata"/><layout x="721.24" y="329.12" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="WF" identifier="false"/><metadata capsule="metadata"/><layout x="866.17" y="118.41" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="SR" identifier="false"/><metadata capsule="metadata"/><layout x="547.73" y="353.65" fixed="false"/></tie><tie><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="involves" type="WO" identifier="false"/><metadata capsule="metadata"/><layout x="669.80" y="553.13" fixed="false"/></tie></schema>';
+   N'<schema format="0.98" date="2014-09-30" time="12:57:19"><metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="TYP" descriptor="Type" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="774.27" y="157.76" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="808.72" y="118.11" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="837.04" y="264.77" fixed="false"/></attribute><layout x="810.67" y="210.93" fixed="false"/></anchor><anchor mnemonic="SR" descriptor="Source" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="432.83" y="235.37" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="424.30" y="313.03" fixed="false"/></attribute><layout x="486.07" y="284.35" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata capsule="metadata"/><layout x="668.40" y="877.83" fixed="false"/></attribute><attribute mnemonic="PTH" descriptor="Path" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="614.67" y="771.79" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="642.12" y="806.96" fixed="false"/></attribute><layout x="688.82" y="736.06" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="727.57" y="408.40" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="723.51" y="444.19" fixed="true"/></attribute><attribute mnemonic="UPD" descriptor="Updates" dataRange="int"><metadata capsule="metadata"/><layout x="530.34" y="449.87" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="718.22" y="473.64" fixed="true"/></attribute><attribute mnemonic="INS" descriptor="Inserts" dataRange="int"><metadata capsule="metadata"/><layout x="502.03" y="422.82" fixed="true"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" dataRange="int"><metadata capsule="metadata"/><layout x="580.05" y="487.99" fixed="true"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="717.12" y="512.74" fixed="true"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata"/><layout x="722.74" y="552.04" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="581.43" y="537.07" fixed="true"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata"/><layout x="753.90" y="365.32" fixed="true"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="759.07" y="338.76" fixed="true"/></attribute><layout x="645.14" y="439.29" fixed="false"/></anchor><anchor mnemonic="WF" descriptor="Workflow" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="875.45" y="-3.10" fixed="false"/></attribute><attribute mnemonic="CFG" descriptor="Configuration" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="933.60" y="-0.03" fixed="false"/></attribute><layout x="887.35" y="37.98" fixed="true"/></anchor><tie><anchorRole role="of" type="JB" identifier="true"/><anchorRole role="part" type="WO" identifier="true"/><metadata capsule="metadata"/><layout x="732.11" y="303.88" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="WF" identifier="false"/><metadata capsule="metadata"/><layout x="866.17" y="118.41" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="SR" identifier="false"/><metadata capsule="metadata"/><layout x="547.73" y="353.65" fixed="false"/></tie><tie><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="involves" type="WO" identifier="false"/><metadata capsule="metadata"/><layout x="661.91" y="609.13" fixed="true"/></tie><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="496.45" y="562.96" fixed="false"/></knot></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
@@ -3340,7 +5763,8 @@ IF Object_ID('metadata._GenerateDropScript', 'P') IS NOT NULL
 DROP PROCEDURE [metadata].[_GenerateDropScript];
 GO
 CREATE PROCEDURE [metadata]._GenerateDropScript (
-   @exclusionPattern varchar(42) = '[_]%' -- exclude Metadata by default
+   @exclusionPattern varchar(42) = '[_]%', -- exclude Metadata by default
+   @inclusionPattern varchar(42) = '%' -- include everything by default
 )
 AS
 BEGIN
@@ -3476,6 +5900,8 @@ BEGIN
          o.[type] IN ('P', 'IF', 'FN', 'V', 'U')
       AND
          o.[name] NOT LIKE ISNULL(@exclusionPattern, '')
+      AND
+         o.[name] LIKE ISNULL(@inclusionPattern, '%')
    )
    SELECT @xml = (
        SELECT

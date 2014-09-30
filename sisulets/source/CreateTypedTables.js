@@ -1,15 +1,30 @@
 // Create typed tables corresponding to parts
+var part, term, calculation;
 /*~
 IF Object_ID('$source.qualified$_CreateTypedTables', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateTypedTables];
 GO
 
+--------------------------------------------------------------------------
+-- Procedure: $source.qualified$_CreateTypedTables
+--
+~*/
+while(part = source.nextPart()) {
+/*~
+-- Create: $part.qualified$_Typed
+~*/
+}
+/*~
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_CreateTypedTables] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
 ~*/
-var part, term, calculation;
+beginMetadata(source.qualified + '_CreateTypedTables');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
@@ -40,7 +55,8 @@ while(part = source.nextPart()) {
 /*~
     );
 ~*/
-}    
+}  
+endMetadata();
 /*~
 END
 GO

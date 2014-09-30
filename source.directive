@@ -1,6 +1,7 @@
 # These are the sisulets that create transformations in the ETL flow.
 sisulets/Polyfills.js
 sisulets/Variables.js
+sisulets/Metadata.js
 sisulets/source/Variables.js
 sisulets/source/Helpers.js
 sisulets/source/Naming.js

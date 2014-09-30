@@ -1,15 +1,30 @@
 // Create a columnar split view
+var part, term;
 /*~
 IF Object_ID('$source.qualified$_CreateSplitViews', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateSplitViews];
 GO
 
+--------------------------------------------------------------------------
+-- Procedure: $source.qualified$_CreateSplitViews
+--
+~*/
+while(part = source.nextPart()) {
+/*~
+-- Create: $part.qualified$_Split
+~*/
+}
+/*~
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_CreateSplitViews] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
 ~*/
-var part, term;
+beginMetadata(source.qualified + '_CreateSplitViews');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Split', 'V') IS NOT NULL
@@ -150,6 +165,7 @@ while(part = source.nextPart()) {
     ');
 ~*/
 }
+endMetadata();
 /*~
 END
 GO

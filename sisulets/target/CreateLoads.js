@@ -5,11 +5,30 @@ while(load = target.nextLoad()) {
 IF Object_ID('$load.qualified', 'P') IS NOT NULL
 DROP PROCEDURE [$load.qualified];
 GO
-
+--------------------------------------------------------------------------
+-- Procedure: $load.qualified
+-- Source:    $load.source
+-- Target:    $load.target
+--
+~*/
+    while(map = load.nextMap()) {
+/*~
+-- Map: $map.source to $map.target $(map.as)? (as $map.as)
+~*/
+    }
+/*~
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$load.qualified] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+
+SET NOCOUNT ON;
+~*/
+    beginMetadata(load.qualified);
+/*~    
     MERGE INTO [$target.database]..[$load.target] AS t
     USING~*/
     if(load._load) {
@@ -28,7 +47,7 @@ BEGIN
 ~*/
     var keys = [], nonkeys = [], nonkeysAndMetadata = [];
     while(map = load.nextMap()) {
-        if(map.as == 'key') {
+        if(map.as == 'natural key') {
             keys.push(map);
         }
         else {
@@ -85,6 +104,7 @@ BEGIN
 ~*/
         }    
     } // end of if nonkeys
+    endMetadata();
 /*~
 END
 GO

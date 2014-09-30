@@ -1,14 +1,44 @@
+var part, term, calculation, key, component;
 /*~
 IF Object_ID('$source.qualified$_AddKeysToTyped', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_AddKeysToTyped];
 GO
 
+--------------------------------------------------------------------------
+-- Procedure: $source.qualified$_AddKeysToTyped
+--
+-- This procedure adds keys defined in the source xml definition to the 
+-- typed staging tables. Keys boost performance when loading is made 
+-- using MERGE statements on the target with a search condition that 
+-- matches the key composition. Primary keys also guarantee uniquness
+-- among its values.
+--
+~*/
+while(part = source.nextPart()) {
+    if(part.hasMoreKeys()) {
+/*~
+-- Table: $part.qualified$_Typed
+~*/
+        while(key = part.nextKey()) {
+            while(component = key.nextComponent()) {
+/*~
+-- Key: $component.of (as $key.type)
+~*/
+            }
+        }
+    }
+}
+/*~
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_AddKeysToTyped] 
 AS
 BEGIN
     SET NOCOUNT ON;
 ~*/
-var part, term, calculation;
+beginMetadata(source.qualified + '_AddKeysToTyped');
 while(part = source.nextPart()) {
     if(part.hasMoreKeys()) {
 /*~
@@ -16,7 +46,6 @@ while(part = source.nextPart()) {
     ALTER TABLE [$part.qualified$_Typed]
     ADD
 ~*/
-        var key, component;
         while(key = part.nextKey()) {
 /*~
         CONSTRAINT [$key.name$_$part.qualified$_Typed] $key.type (
@@ -32,6 +61,7 @@ while(part = source.nextPart()) {
         }
     }
 }    
+endMetadata();
 /*~
 END
 GO

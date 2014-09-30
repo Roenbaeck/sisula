@@ -4,11 +4,19 @@ IF Object_ID('$source.qualified$_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateRawTable];
 GO
 
+--------------------------------------------------------------------------
+-- Procedure: $source.qualified$_CreateRawTable
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_CreateRawTable] 
 AS
 BEGIN
-    SET NOCOUNT ON;
-    
+SET NOCOUNT ON;
+~*/
+beginMetadata(source.qualified + '_CreateRawTable');
+/*~
     IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
     DROP TABLE [$source.qualified$_Raw];
 
@@ -21,6 +29,9 @@ BEGIN
             _id asc
         )
     );
+~*/
+endMetadata();
+/*~
 END
 GO
 ~*/

@@ -1,15 +1,30 @@
 // Create a custom splitter 
+var part, term;
 /*~
 IF Object_ID('$source.qualified$_SplitRawIntoTyped', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_SplitRawIntoTyped];
 GO
 
+--------------------------------------------------------------------------
+-- Procedure: $source.qualified$_SplitRawIntoTyped
+--
+~*/
+while(part = source.nextPart()) {
+/*~
+-- Load: $part.qualified$_Split into $part.qualified$_Typed
+~*/
+}
+/*~
+--
+-- Generated: ${new Date()}$ by $VARIABLES.USERNAME
+-- From: $VARIABLES.COMPUTERNAME in $VARIABLES.USERDOMAIN
+--------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
 ~*/
-var part, term;
+beginMetadata(source.qualified + '_SplitRawIntoTyped');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
@@ -54,6 +69,7 @@ while(part = source.nextPart()) {
 ~*/
     }
 }
+endMetadata();
 /*~
 END
 GO

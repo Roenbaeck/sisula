@@ -11,6 +11,7 @@ set System=SMHI
 set Source=Weather
 set TargetDatabase=Meteo
 set SourceDatabase=Stage
+set MetaDatabase=Stage
 REM -------------------------------------------------------------------
 
 echo Running the Sisulator for source generation...

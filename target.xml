@@ -10,33 +10,33 @@
             [celsius1] as temperature
         from
             SMHI_Weather_TemperatureNew_Typed        
-        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
         <map source="temperature" target="MM_TMP_Measurement_Temperature"/>
         <map source="_file" target="Metadata_MM" as="metadata"/>
     </load>
     <load source="SMHI_Weather_Temperature_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
         <map source="celsius" target="MM_TMP_Measurement_Temperature"/>
         <map source="_file" target="Metadata_MM" as="metadata"/>
     </load>
     <load source="SMHI_Weather_Pressure_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
         <map source="pressure" target="MM_PRS_Measurement_Pressure"/>
         <map source="_file" target="Metadata_MM" as="metadata"/>
     </load>
     <load source="SMHI_Weather_Wind_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="key"/>
+        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
         <map source="speed" target="MM_WND_Measurement_WindSpeed"/>
         <map source="direction" target="MM_DIR_Measurement_Direction"/>
         <map source="_file" target="Metadata_MM" as="metadata"/>
     </load>
     <load source="SMHI_Weather_TemperatureNewMetadata_Typed" target="lOC_Occasion">
-        <map source="weekday" target="OC_WDY_Occasion_Weekday" as="key"/>
-        <map source="graphType" target="OC_TYP_Occasion_Type" as="key"/>
+        <map source="weekday" target="OC_WDY_Occasion_Weekday" as="natural key"/>
+        <map source="graphType" target="OC_TYP_Occasion_Type" as="natural key"/>
         <map source="_file" target="Metadata_OC" as="metadata"/>
     </load>
     <load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_taken_OC_on">
@@ -56,7 +56,7 @@
             %TargetDatabase%..lOC_Occasion oc 
         on 
             oc.Metadata_OC = src._file
-        <map source="MM_ID" target="MM_ID_taken" as="key"/>
+        <map source="MM_ID" target="MM_ID_taken" as="natural key"/>
         <map source="OC_ID" target="OC_ID_on"/>
         <map source="_file" target="Metadata_MM_taken_OC_on" as="metadata"/>
     </load>

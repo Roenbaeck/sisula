@@ -3,10 +3,23 @@ GO
 IF Object_ID('SMHI_Weather_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateRawTable];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_CreateRawTable
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_CreateRawTable';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_Raw', 'U') IS NOT NULL
     DROP TABLE [SMHI_Weather_Raw];
     CREATE TABLE [SMHI_Weather_Raw] (
@@ -18,15 +31,44 @@ BEGIN
             _id asc
         )
     );
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateInsertView];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_CreateInsertView
+--
+-- This view is created as exposing the single column that will be 
+-- the target of the BULK INSERT operation, since it cannot insert
+-- into a table with multiple columns without a format file.
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_CreateInsertView';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_Insert];
     EXEC('
@@ -37,17 +79,50 @@ BEGIN
     FROM
         [SMHI_Weather_Raw];
     ');
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_BulkInsert', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_BulkInsert];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_BulkInsert
+--
+-- This procedure performs a BULK INSERT of the given filename into 
+-- the SMHI_Weather_Insert view. The file is loaded row by row
+-- into a single column holding the entire row. This ensures that no 
+-- data is lost when loading.
+--
+-- This job may called multiple times in a workflow when more than 
+-- one file matching a given filename pattern is found.
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
 	@filename varchar(2000)
 )
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_BulkInsert';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     BEGIN
 	EXEC('
@@ -75,15 +150,46 @@ BEGIN
     WHERE
         _file = 0;
     END 
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_CreateSplitViews', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateSplitViews];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_CreateSplitViews
+--
+-- Create: SMHI_Weather_TemperatureNew_Split
+-- Create: SMHI_Weather_TemperatureNewMetadata_Split
+-- Create: SMHI_Weather_Temperature_Split
+-- Create: SMHI_Weather_Pressure_Split
+-- Create: SMHI_Weather_Wind_Split
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_CreateSplitViews';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Split', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_TemperatureNew_Split];
     EXEC('
@@ -436,15 +542,57 @@ BEGIN
             REPLACE([speed], '','', ''.'') AS [speed]
     ) t;
     ');
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_CreateErrorViews', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateErrorViews];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_CreateErrorViews
+--
+-- The created error views can be used to find rows that have errors of
+-- the following kinds: 
+-- 
+-- Type casting errors
+-- These errors occur when a value cannot be cast to its designated 
+-- datatype, for example when trying to cast 'A' to an int.
+--
+-- Key duplicate errors
+-- These errors occur when a primary key is defined and duplicates of
+-- that key is found in the tables.
+--
+-- Create: SMHI_Weather_TemperatureNew_Error
+-- Create: SMHI_Weather_TemperatureNewMetadata_Error
+-- Create: SMHI_Weather_Temperature_Error
+-- Create: SMHI_Weather_Pressure_Error
+-- Create: SMHI_Weather_Wind_Error
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_CreateInsertView';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Error', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_TemperatureNew_Error];
     EXEC('
@@ -537,15 +685,46 @@ BEGIN
     OR
         [speed_Error] is not null;
     ');
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_CreateTypedTables', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_CreateTypedTables];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_CreateTypedTables
+--
+-- Create: SMHI_Weather_TemperatureNew_Typed
+-- Create: SMHI_Weather_TemperatureNewMetadata_Typed
+-- Create: SMHI_Weather_Temperature_Typed
+-- Create: SMHI_Weather_Pressure_Typed
+-- Create: SMHI_Weather_Wind_Typed
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_CreateTypedTables';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
     DROP TABLE [SMHI_Weather_TemperatureNew_Typed];
     CREATE TABLE [SMHI_Weather_TemperatureNew_Typed] (
@@ -606,15 +785,46 @@ BEGIN
         [direction] decimal(5,2) null, 
         [speed] decimal(19,10) null
     );
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_SplitRawIntoTyped', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_SplitRawIntoTyped];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_SplitRawIntoTyped
+--
+-- Load: SMHI_Weather_TemperatureNew_Split into SMHI_Weather_TemperatureNew_Typed
+-- Load: SMHI_Weather_TemperatureNewMetadata_Split into SMHI_Weather_TemperatureNewMetadata_Typed
+-- Load: SMHI_Weather_Temperature_Split into SMHI_Weather_Temperature_Typed
+-- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
+-- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] 
 AS
 BEGIN
-    SET NOCOUNT ON;
+SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_SplitRawIntoTyped';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
     INSERT INTO [SMHI_Weather_TemperatureNew_Typed] (
         _id,
@@ -743,15 +953,56 @@ BEGIN
         [direction_Error] is null
     AND
         [speed_Error] is null;
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
 IF Object_ID('SMHI_Weather_AddKeysToTyped', 'P') IS NOT NULL
 DROP PROCEDURE [SMHI_Weather_AddKeysToTyped];
 GO
+--------------------------------------------------------------------------
+-- Procedure: SMHI_Weather_AddKeysToTyped
+--
+-- This procedure adds keys defined in the source xml definition to the 
+-- typed staging tables. Keys boost performance when loading is made 
+-- using MERGE statements on the target with a search condition that 
+-- matches the key composition. Primary keys also guarantee uniquness
+-- among its values.
+--
+-- Table: SMHI_Weather_Temperature_Typed
+-- Key: date (as primary key)
+-- Key: hour (as primary key)
+-- Table: SMHI_Weather_Pressure_Typed
+-- Key: date (as primary key)
+-- Key: hour (as primary key)
+-- Table: SMHI_Weather_Wind_Typed
+-- Key: date (as primary key)
+-- Key: hour (as primary key)
+--
+-- Generated: Tue Sep 30 15:06:38 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in CORPNET
+--------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] 
 AS
 BEGIN
     SET NOCOUNT ON;
+DECLARE @metadataId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+EXEC Stage.metadata._StartingWork 
+    @WO_ID = @metadataId OUTPUT, 
+    @name = 'SMHI_Weather_AddKeysToTyped';
+BEGIN TRY
     IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
     ALTER TABLE [SMHI_Weather_Temperature_Typed]
     ADD
@@ -773,5 +1024,17 @@ BEGIN
             [date],
             [hour]
         );
+    EXEC metadata._StoppingWork @metadataId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE();
+    EXEC Stage.metadata._StoppingWork 
+        @WO_ID = @metadataId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+END CATCH
 END
 GO
