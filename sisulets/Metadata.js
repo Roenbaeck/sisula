@@ -4,12 +4,13 @@ var METADATABASE = VARIABLES.MetaDatabase;
 function beginMetadata(workName) {
     if(METADATA) {
 /*~
-DECLARE @metadataId int;
+DECLARE @workId int;
+DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 
 EXEC ${METADATABASE}$.metadata._WorkStarting
-    @WO_ID = @metadataId OUTPUT, 
+    @WO_ID = @workId OUTPUT, 
     @name  = '$workName',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
@@ -21,7 +22,7 @@ BEGIN TRY
 function endMetadata() {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkStopping @metadataId, 'Success';
+    EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -29,7 +30,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE();
         
     EXEC ${METADATABASE}$.metadata._WorkStopping
-        @WO_ID = @metadataId, 
+        @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
@@ -38,4 +39,28 @@ BEGIN CATCH
 END CATCH
 ~*/
     }    
+}
+
+// TODO: Create sourceToTargetMetadata here!
+
+function setInsertsMetadata(sqlVariable) {
+    if(METADATA) {
+/*~
+    EXEC metadata._WorkSetInserts @workId, @operationsId, $sqlVariable;
+~*/
+    }
+}
+function setUpdatesMetadata(sqlVariable) {
+    if(METADATA) {
+/*~
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, $sqlVariable;
+~*/
+    }
+}
+function setDeletesMetadata(sqlVariable) {
+    if(METADATA) {
+/*~
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, $sqlVariable;
+~*/
+    }
 }

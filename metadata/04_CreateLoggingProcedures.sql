@@ -238,3 +238,274 @@ begin
 	end
 end
 go
+
+--------------------------- Source to Target ---------------------------
+if Object_Id('metadata._WorkSourceToTarget', 'P') is not null
+drop procedure metadata._WorkSourceToTarget;
+go
+ 
+create procedure metadata._WorkSourceToTarget (
+	@OP_ID int output,
+	@WO_ID int,
+	@source varchar(555),
+	@target varchar(555),
+	@sourceType varchar(42) = 'Table',
+	@targetType varchar(42) = 'Table',
+	@sourceDiscovered datetime = null,
+	@targetDiscovered datetime = null
+)
+as
+begin
+	set @sourceType = isnull(@sourceType, 'Table');
+	set @targetType = isnull(@targetType, 'Table');
+	set @sourceDiscovered = isnull(@sourceDiscovered, SYSDATETIME());
+	set @targetDiscovered = isnull(@targetDiscovered, SYSDATETIME());
+
+	-- ensure this work is running!
+	select
+		@WO_ID = WO_ID
+	from
+		metadata.lWO_Work
+	where
+		WO_ID = @WO_ID
+	and
+		WO_EST_EST_ExecutionStatus = 'Running';
+
+	if(@WO_ID is not null)
+	begin
+		declare @CO_ID_source int;
+		select
+			@CO_ID_source = CO_ID
+		from
+			lCO_Container
+		where
+			CO_NAM_Container_Name = @source
+		and
+			CO_TYP_COT_ContainerType = @sourceType
+		and
+			-- files are new containers even if they have the same name
+			case 
+				when @sourceType = 'File' and CO_DSC_Container_Discovered <> @sourceDiscovered
+				then 0
+				else 1
+			end = 1;
+
+		-- create the container if it does not exist
+		if(@CO_ID_source is null)
+		begin
+			insert into lCO_Container (
+				CO_NAM_Container_Name, 
+				CO_TYP_COT_ContainerType, 
+				CO_DSC_Container_Discovered
+			)
+			values (
+				@source,
+				@sourceType,
+				@sourceDiscovered
+			);
+
+			select
+				@CO_ID_source = CO_ID
+			from
+				lCO_Container
+			where
+				CO_NAM_Container_Name = @source
+			and
+				CO_TYP_COT_ContainerType = @sourceType
+			and
+				CO_DSC_Container_Discovered = @sourceDiscovered
+		end
+
+		declare @CO_ID_target int;
+		select
+			@CO_ID_target = CO_ID
+		from
+			lCO_Container
+		where
+			CO_NAM_Container_Name = @target
+		and
+			CO_TYP_COT_ContainerType = @targetType
+		and
+			-- files are new containers even if they have the same name
+			case 
+				when @targetType = 'File' and CO_DSC_Container_Discovered <> @targetDiscovered
+				then 0
+				else 1
+			end = 1;
+
+		-- create the container if it does not exist
+		if(@CO_ID_target is null)
+		begin
+			insert into lCO_Container (
+				CO_NAM_Container_Name, 
+				CO_TYP_COT_ContainerType, 
+				CO_DSC_Container_Discovered
+			)
+			values (
+				@target,
+				@targetType,
+				@targetDiscovered
+			);
+
+			select
+				@CO_ID_target = CO_ID
+			from
+				lCO_Container
+			where
+				CO_NAM_Container_Name = @target
+			and
+				CO_TYP_COT_ContainerType = @targetType
+			and
+				CO_DSC_Container_Discovered = @targetDiscovered
+		end
+
+		select
+			@OP_ID = OP_ID_with
+		from
+			lWO_operates_CO_source_CO_target_OP_with
+		where
+			WO_ID_operates = @WO_ID
+		and
+			CO_ID_source = @CO_ID_source
+		and
+			CO_ID_target = @CO_ID_target;
+
+		if(@OP_ID is null) 
+		begin
+			declare @keys table (
+				OP_ID int not null
+			);
+
+			insert @keys 
+			exec metadata.kOP_Operations 1;
+
+			set	@OP_ID = (select top 1 OP_ID from @keys);
+
+			insert into lWO_operates_CO_source_CO_target_OP_with (
+				WO_ID_operates,
+				CO_ID_source,
+				CO_ID_target,
+				OP_ID_with
+			)
+			values (
+				@WO_ID,
+				@CO_ID_source,
+				@CO_ID_target,
+				@OP_ID
+			);
+		end
+	end
+end
+go
+
+
+--------------------------- Inserted by Work ---------------------------
+if Object_Id('metadata._WorkSetInserts', 'P') is not null
+drop procedure metadata._WorkSetInserts;
+go
+ 
+create procedure metadata._WorkSetInserts (
+	@WO_ID int,
+	@OP_ID int,
+	@numberOfRows int,
+	@at datetime2(7) = null
+)
+as
+begin
+	set @at = isnull(@at, SYSDATETIME());
+
+	-- ensure this work is running!
+	select
+		@WO_ID = WO_ID
+	from
+		metadata.lWO_Work
+	where
+		WO_ID = @WO_ID
+	and
+		WO_EST_EST_ExecutionStatus = 'Running';
+
+	if(@WO_ID is not null and @OP_ID is not null)
+	begin
+		update metadata.lOP_Operations
+		set
+			OP_INS_ChangedAt = @at,
+			OP_INS_Operations_Inserts = @numberOfRows
+		where
+			OP_ID = @OP_ID;
+	end
+end
+go
+
+--------------------------- Updated by Work ---------------------------
+if Object_Id('metadata._WorkSetUpdates', 'P') is not null
+drop procedure metadata._WorkSetUpdates;
+go
+ 
+create procedure metadata._WorkSetUpdates (
+	@WO_ID int,
+	@OP_ID int,
+	@numberOfRows int,
+	@at datetime2(7) = null
+)
+as
+begin
+	set @at = isnull(@at, SYSDATETIME());
+
+	-- ensure this work is running!
+	select
+		@WO_ID = WO_ID
+	from
+		metadata.lWO_Work
+	where
+		WO_ID = @WO_ID
+	and
+		WO_EST_EST_ExecutionStatus = 'Running';
+
+	if(@WO_ID is not null and @OP_ID is not null)
+	begin
+		update metadata.lOP_Operations
+		set
+			OP_UPD_ChangedAt = @at,
+			OP_UPD_Operations_Updates = @numberOfRows
+		where
+			OP_ID = @OP_ID;
+	end
+end
+go
+
+--------------------------- Deleted by Work ---------------------------
+if Object_Id('metadata._WorkSetDeletes', 'P') is not null
+drop procedure metadata._WorkSetDeletes;
+go
+ 
+create procedure metadata._WorkSetDeletes (
+	@WO_ID int,
+	@OP_ID int,
+	@numberOfRows int,
+	@at datetime2(7) = null
+)
+as
+begin
+	set @at = isnull(@at, SYSDATETIME());
+
+	-- ensure this work is running!
+	select
+		@WO_ID = WO_ID
+	from
+		metadata.lWO_Work
+	where
+		WO_ID = @WO_ID
+	and
+		WO_EST_EST_ExecutionStatus = 'Running';
+
+	if(@WO_ID is not null and @OP_ID is not null)
+	begin
+		update metadata.lOP_Operations
+		set
+			OP_DEL_ChangedAt = @at,
+			OP_DEL_Operations_Deletes = @numberOfRows
+		where
+			OP_ID = @OP_ID;
+	end
+end
+go

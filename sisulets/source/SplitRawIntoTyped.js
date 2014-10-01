@@ -30,11 +30,13 @@ CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] (
 AS
 BEGIN
 SET NOCOUNT ON;
+DECLARE @insert int = 0;
 ~*/
 beginMetadata(source.qualified + '_SplitRawIntoTyped');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
+    BEGIN
     INSERT INTO [$part.qualified$_Typed] (
         _id,
         _file,
@@ -75,6 +77,13 @@ while(part = source.nextPart()) {
     $(part.hasMoreTerms())? AND
 ~*/
     }
+/*~
+    SET @insert = @insert + @@ROWCOUNT;
+~*/
+    setInsertsMetadata('@insert');
+/*~
+    END
+~*/
 }
 endMetadata();
 /*~

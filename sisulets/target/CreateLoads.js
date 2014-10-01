@@ -29,6 +29,12 @@ AS
 BEGIN
 
 SET NOCOUNT ON;
+DECLARE @insert int;
+DECLARE @update int;
+DECLARE @delete int;
+DECLARE @actions TABLE (
+    [action] char(1) not null
+);
 ~*/
     beginMetadata(load.qualified);
 /*~    
@@ -84,7 +90,7 @@ SET NOCOUNT ON;
 ~*/
     }    
 /*~
-    )$(nonkeys.length == 0)?;
+    )
 ~*/
     if(nonkeys.length > 0) {
 /*~
@@ -103,10 +109,24 @@ SET NOCOUNT ON;
 ~*/
         for(k = 0; map = nonkeysAndMetadata[k]; k++) {
 /*~
-        t.[$map.target] = s.[$map.source]$(k < nonkeysAndMetadata.length - 1)? , : ;
+        t.[$map.target] = s.[$map.source]$(k < nonkeysAndMetadata.length - 1)?,
 ~*/
         }    
     } // end of if nonkeys
+/*~
+    OUTPUT
+        LEFT($$action, 1) INTO @actions;
+
+    SELECT
+        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+    FROM
+        @actions;
+~*/
+    setInsertsMetadata('@insert');
+    setUpdatesMetadata('@update');
+    setDeletesMetadata('@delete');
     endMetadata();
 /*~
 END
