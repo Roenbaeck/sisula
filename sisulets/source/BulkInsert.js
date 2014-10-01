@@ -18,7 +18,9 @@ GO
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_BulkInsert] (
-	@filename varchar(2000)
+	@filename varchar(2000),
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
 )
 AS
 BEGIN

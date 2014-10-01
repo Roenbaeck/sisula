@@ -9,9 +9,17 @@ INSERT INTO metadata.EST_ExecutionStatus (
 (2, 'Failure'),
 (3, 'Running');
 
-INSERT INTO metadata.TYP_Type (
-	TYP_ID, 
-	TYP_Type
+INSERT INTO metadata.COT_ContainerType (
+	COT_ID, 
+	COT_ContainerType
 ) VALUES 
 (1, 'File'),
 (2, 'Table');
+
+INSERT INTO metadata.CFT_ConfigurationType (
+	CFT_ID,
+	CFT_ConfigurationType
+) VALUES 
+(1, 'Workflow'),
+(2, 'Source'),
+(3, 'Target');

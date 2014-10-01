@@ -21,7 +21,10 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$load.qualified] 
+CREATE PROCEDURE [$load.qualified] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 

@@ -26,7 +26,10 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateTypedTables] 
+CREATE PROCEDURE [$source.qualified$_CreateTypedTables] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;

@@ -1,15 +1,18 @@
 var METADATA = VARIABLES.MetaDatabase ? true : false;
 var METADATABASE = VARIABLES.MetaDatabase;
 
-function beginMetadata(name) {
+function beginMetadata(workName) {
     if(METADATA) {
 /*~
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC ${METADATABASE}$.metadata._StartingWork 
+
+EXEC ${METADATABASE}$.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name  = '$name';
+    @name  = '$workName',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 
 BEGIN TRY
 ~*/
@@ -18,14 +21,14 @@ BEGIN TRY
 function endMetadata() {
     if(METADATA) {
 /*~
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
         
-    EXEC ${METADATABASE}$.metadata._StoppingWork 
+    EXEC ${METADATABASE}$.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 

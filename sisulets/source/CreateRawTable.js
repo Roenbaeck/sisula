@@ -27,7 +27,10 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateRawTable] 
+CREATE PROCEDURE [$source.qualified$_CreateRawTable] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;

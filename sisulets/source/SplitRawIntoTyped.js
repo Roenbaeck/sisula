@@ -23,7 +23,10 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] 
+CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;

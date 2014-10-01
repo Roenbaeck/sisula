@@ -14,7 +14,10 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateInsertView] 
+CREATE PROCEDURE [$source.qualified$_CreateInsertView] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;

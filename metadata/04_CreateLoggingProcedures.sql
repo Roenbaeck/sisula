@@ -1,14 +1,113 @@
 /*
              CREATE PROCEDURES FOR LOGGING 
 */
+--------------------------- Starting Job ----------------------------
+if Object_Id('metadata._JobStarting', 'P') is not null
+drop procedure metadata._JobStarting;
+go
+
+create procedure metadata._JobStarting (
+	@name varchar(255),
+	@agentJobId uniqueidentifier,
+	@start datetime2(7) = null
+)
+as
+begin
+	set @start = isnull(@start, SYSDATETIME());
+	declare @JB_ID int;
+
+	-- is this job already started?
+	select
+		@JB_ID = JB_ID
+	from
+		metadata.lJB_Job
+	where
+		JB_NAM_Job_Name = @name
+	and
+		JB_EST_EST_ExecutionStatus = 'Running';
+
+	if(@JB_ID is null)
+	begin
+		insert into metadata.lJB_Job (
+			JB_NAM_Job_Name, 
+			JB_STA_Job_Start,
+			JB_AID_Job_AgentJobId, 
+			JB_EST_ChangedAt, 
+			JB_EST_EST_ExecutionStatus
+		)
+		values ( 
+			@name,
+			@start,
+			@agentJobId,
+			@start, -- same as job start
+			'Running'
+		);
+	end	
+end
+go
+
+--------------------------- Stopping Job ----------------------------
+if Object_Id('metadata._JobStopping', 'P') is not null
+drop procedure metadata._JobStopping;
+go
+
+create procedure metadata._JobStopping (
+	@name varchar(255),
+	@status varchar(42) = 'Success',
+	@stop datetime2(7) = null
+)
+as
+begin
+	set @stop = isnull(@stop, SYSDATETIME());
+	set @status = isnull(@status, 'Success');
+	declare @JB_ID int;
+
+	-- ensure this job is running!
+	select
+		@JB_ID = JB_ID
+	from
+		metadata.lJB_Job
+	where
+		JB_NAM_Job_Name = @name
+	and
+		JB_EST_EST_ExecutionStatus = 'Running';
+
+	if(@JB_ID is not null)
+	begin
+		if(@status = 'Success')
+		begin
+			update metadata.lJB_Job
+			set
+				JB_END_Job_End = @stop,
+				JB_EST_ChangedAt = @stop, -- same as job stop
+				JB_EST_EST_ExecutionStatus = 'Success'
+			where
+				JB_ID = @JB_ID;
+		end
+		if(@status = 'Failure')
+		begin
+			update metadata.lJB_Job 
+			set
+				JB_END_Job_End = @stop,
+				JB_EST_ChangedAt = @stop, -- same as job stop
+				JB_EST_EST_ExecutionStatus = 'Failure'
+			where
+				JB_ID = @JB_ID;
+		end
+	end
+end
+go
+
 --------------------------- Starting Work ---------------------------
-if Object_Id('metadata._StartingWork', 'P') is not null
-drop procedure metadata._StartingWork;
+if Object_Id('metadata._WorkStarting', 'P') is not null
+drop procedure metadata._WorkStarting;
 go
  
-create procedure metadata._StartingWork (
+create procedure metadata._WorkStarting (
 	@WO_ID int output,
 	@name varchar(255),
+	@agentStepId smallint = null,
+	@agentJobId uniqueidentifier = null,
 	@start datetime2(7) = null,
 	@user varchar(555) = null,
 	@role varchar(42) = null
@@ -23,7 +122,7 @@ begin
 	select
 		@WO_ID = WO_ID
 	from
-		lWO_Work
+		metadata.lWO_Work
 	where
 		WO_NAM_Work_Name = @name
 	and
@@ -31,11 +130,12 @@ begin
 
 	if(@WO_ID is null)
 	begin
-		insert into lWO_Work (
+		insert into metadata.lWO_Work (
 			WO_NAM_Work_Name, 
 			WO_STA_Work_Start, 
 			WO_USR_Work_InvocationUser, 
 			WO_ROL_Work_InvocationRole, 
+			WO_AID_Work_AgentStepId,
 			WO_EST_ChangedAt, 
 			WO_EST_EST_ExecutionStatus
 		)
@@ -44,6 +144,7 @@ begin
 			@start,
 			@user,
 			@role,
+			@agentStepId,
 			@start, -- same as job start
 			'Running'
 		);
@@ -51,21 +152,44 @@ begin
 		select
 			@WO_ID = WO_ID
 		from
-			lWO_Work
+			metadata.lWO_Work
 		where
 			WO_NAM_Work_Name = @name
 		and
 			WO_STA_Work_Start = @start;
+
+		-- try to find job id
+		declare @JB_ID int;
+		select
+			@JB_ID = JB_ID
+		from
+			metadata.lJB_Job
+		where
+			JB_AID_Job_AgentJobId = @agentJobId
+		and
+			JB_EST_EST_ExecutionStatus = 'Running';
+
+		if(@JB_ID is not null)
+		begin
+			insert into metadata.lWO_part_JB_of (
+				WO_ID_part, 
+				JB_ID_of
+			)
+			values (
+				@WO_ID,
+				@JB_ID
+			);
+		end
 	end
 end
 go
 
 --------------------------- Stopping Work ---------------------------
-if Object_Id('metadata._StoppingWork', 'P') is not null
-drop procedure metadata._StoppingWork;
+if Object_Id('metadata._WorkStopping', 'P') is not null
+drop procedure metadata._WorkStopping;
 go
  
-create procedure metadata._StoppingWork (
+create procedure metadata._WorkStopping (
 	@WO_ID int,
 	@status varchar(42) = 'Success',
 	@errorLine int = null,
@@ -81,7 +205,7 @@ begin
 	select
 		@WO_ID = WO_ID
 	from
-		lWO_Work
+		metadata.lWO_Work
 	where
 		WO_ID = @WO_ID
 	and
@@ -91,7 +215,7 @@ begin
 	begin
 		if(@status = 'Success')
 		begin
-			update lWO_Work 
+			update metadata.lWO_Work 
 			set
 				WO_END_Work_End = @stop,
 				WO_EST_ChangedAt = @stop, -- same as job stop
@@ -101,7 +225,7 @@ begin
 		end
 		if(@status = 'Failure')
 		begin
-			update lWO_Work 
+			update metadata.lWO_Work 
 			set
 				WO_END_Work_End = @stop,
 				WO_EST_ChangedAt = @stop, -- same as job stop

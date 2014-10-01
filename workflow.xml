@@ -9,14 +9,16 @@
     <variable name="goToStepWithId" value="4"/>    
     <!-- recurse directories when searching for files, blank out if no extra options are needed -->
     <variable name="extraOptions" value="-Recurse"/>
+    <!-- common parameters that all jobs need for logging to metadata -->
+    <variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
     <job name="%System%_%Source%_Staging">
         This is the staging job.
         <variable name="tableName" value="MyTable"/>
         <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateRawTable
+            EXEC %System%_%Source%_CreateRawTable %parameters%
         </jobstep>
         <jobstep name="Create insert view" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateInsertView
+            EXEC %System%_%Source%_CreateInsertView %parameters%
         </jobstep>
         <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
             $files = @(Get-ChildItem %extraOptions% FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"} | % { $_.FullName })
@@ -24,48 +26,48 @@
               Throw "No matching files were found in %path%:"
             } Else {
                 ForEach ($fullFilename in $files) {
-                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename'" -Database "%stage%" -ErrorAction Stop
+                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename', %parameters%" -Database "%stage%" -ErrorAction Stop
                     Write-Output "Loaded file: $fullFilename"
                 }
             }
         </jobstep>
         <jobstep name="Create split views" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateSplitViews
+            EXEC %System%_%Source%_CreateSplitViews %parameters%
         </jobstep>
         <jobstep name="Create error views" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateErrorViews
+            EXEC %System%_%Source%_CreateErrorViews %parameters%
         </jobstep>
         <jobstep name="Create typed tables" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateTypedTables
+            EXEC %System%_%Source%_CreateTypedTables %parameters%
         </jobstep>
         <jobstep name="Split raw into typed" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_SplitRawIntoTyped
+            EXEC %System%_%Source%_SplitRawIntoTyped %parameters%
         </jobstep>
         <jobstep name="Add keys to typed" database_name="%stage%" subsystem="TSQL">
-            EXEC %System%_%Source%_AddKeysToTyped
+            EXEC %System%_%Source%_AddKeysToTyped %parameters%
         </jobstep>
     </job>
     <job name="%System%_%Source%_Loading">
         <!-- MM_Measurement -->
         <jobstep name="Load temperature" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Temperature_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Temperature_Typed] %parameters%
         </jobstep>
         <jobstep name="Load temperature (new format)" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[lMM_Measurement__%System%_%Source%_TemperatureNew_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_TemperatureNew_Typed] %parameters%
         </jobstep>
         <jobstep name="Load pressure" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Pressure_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Pressure_Typed] %parameters%
         </jobstep>
         <jobstep name="Load wind" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Wind_Typed]
+            EXEC [dbo].[lMM_Measurement__%System%_%Source%_Wind_Typed] %parameters%
         </jobstep>
         <!-- OC_Occasion -->
         <jobstep name="Load occasion" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC [dbo].[lOC_Occasion__%System%_%Source%_TemperatureNewMetadata_Typed]
+            EXEC [dbo].[lOC_Occasion__%System%_%Source%_TemperatureNewMetadata_Typed] %parameters%
         </jobstep>
         <!-- MM_taken_OC_on -->
         <jobstep name="Load measurement relationship with occasion" database_name="%stage%" subsystem="TSQL">
-            EXEC [dbo].[lMM_taken_OC_on__%System%_%Source%_TemperatureNew_Typed]
+            EXEC [dbo].[lMM_taken_OC_on__%System%_%Source%_TemperatureNew_Typed] %parameters%
         </jobstep>
     </job>
 </workflow>

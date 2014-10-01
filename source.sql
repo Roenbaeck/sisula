@@ -23,19 +23,24 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateRawTable] 
+CREATE PROCEDURE [SMHI_Weather_CreateRawTable] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_CreateRawTable';
+    @name = 'SMHI_Weather_CreateRawTable',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_Raw', 'U') IS NOT NULL
     DROP TABLE [SMHI_Weather_Raw];
@@ -48,13 +53,13 @@ BEGIN TRY
             _id asc
         )
     );
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -73,19 +78,24 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateInsertView] 
+CREATE PROCEDURE [SMHI_Weather_CreateInsertView] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_CreateInsertView';
+    @name = 'SMHI_Weather_CreateInsertView',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_Insert];
@@ -97,13 +107,13 @@ BEGIN TRY
     FROM
         [SMHI_Weather_Raw];
     ');
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -126,11 +136,13 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
-	@filename varchar(2000)
+	@filename varchar(2000),
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
 )
 AS
 BEGIN
@@ -138,9 +150,11 @@ SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_BulkInsert';
+    @name = 'SMHI_Weather_BulkInsert',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     BEGIN
@@ -169,13 +183,13 @@ BEGIN TRY
     WHERE
         _file = 0;
     END 
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -207,19 +221,24 @@ GO
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] 
+CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_CreateSplitViews';
+    @name = 'SMHI_Weather_CreateSplitViews',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Split', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_TemperatureNew_Split];
@@ -573,13 +592,13 @@ BEGIN TRY
             REPLACE([speed], '','', ''.'') AS [speed]
     ) t;
     ');
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -611,19 +630,24 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] 
+CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_CreateInsertView';
+    @name = 'SMHI_Weather_CreateInsertView',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Error', 'V') IS NOT NULL
     DROP VIEW [SMHI_Weather_TemperatureNew_Error];
@@ -717,13 +741,13 @@ BEGIN TRY
     OR
         [speed_Error] is not null;
     ');
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -751,19 +775,24 @@ GO
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] 
+CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_CreateTypedTables';
+    @name = 'SMHI_Weather_CreateTypedTables',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
     DROP TABLE [SMHI_Weather_TemperatureNew_Typed];
@@ -825,13 +854,13 @@ BEGIN TRY
         [direction] decimal(5,2) null, 
         [speed] decimal(19,10) null
     );
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -856,19 +885,24 @@ GO
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] 
+CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_SplitRawIntoTyped';
+    @name = 'SMHI_Weather_SplitRawIntoTyped',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
     INSERT INTO [SMHI_Weather_TemperatureNew_Typed] (
@@ -998,13 +1032,13 @@ BEGIN TRY
         [direction_Error] is null
     AND
         [speed_Error] is null;
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -1035,19 +1069,24 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Tue Sep 30 16:51:05 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] 
+CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
     SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'SMHI_Weather_AddKeysToTyped';
+    @name = 'SMHI_Weather_AddKeysToTyped',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
     ALTER TABLE [SMHI_Weather_Temperature_Typed]
@@ -1070,13 +1109,13 @@ BEGIN TRY
             [date],
             [hour]
         );
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 

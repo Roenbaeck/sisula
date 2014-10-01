@@ -13,19 +13,24 @@ GO
 -- Map: temperature to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] 
+CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lMM_Measurement__SMHI_Weather_TemperatureNew_Typed';
+    @name = 'lMM_Measurement__SMHI_Weather_TemperatureNew_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING (
@@ -63,13 +68,13 @@ BEGIN TRY
     SET
         t.[MM_TMP_Measurement_Temperature] = s.[temperature], 
         t.[Metadata_MM] = s.[_file];
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -91,19 +96,24 @@ GO
 -- Map: celsius to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] 
+CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lMM_Measurement__SMHI_Weather_Temperature_Typed';
+    @name = 'lMM_Measurement__SMHI_Weather_Temperature_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
@@ -132,13 +142,13 @@ BEGIN TRY
     SET
         t.[MM_TMP_Measurement_Temperature] = s.[celsius], 
         t.[Metadata_MM] = s.[_file];
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -160,19 +170,24 @@ GO
 -- Map: pressure to MM_PRS_Measurement_Pressure 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] 
+CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lMM_Measurement__SMHI_Weather_Pressure_Typed';
+    @name = 'lMM_Measurement__SMHI_Weather_Pressure_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
@@ -201,13 +216,13 @@ BEGIN TRY
     SET
         t.[MM_PRS_Measurement_Pressure] = s.[pressure], 
         t.[Metadata_MM] = s.[_file];
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -230,19 +245,24 @@ GO
 -- Map: direction to MM_DIR_Measurement_Direction 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] 
+CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lMM_Measurement__SMHI_Weather_Wind_Typed';
+    @name = 'lMM_Measurement__SMHI_Weather_Wind_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
@@ -276,13 +296,13 @@ BEGIN TRY
         t.[MM_WND_Measurement_WindSpeed] = s.[speed], 
         t.[MM_DIR_Measurement_Direction] = s.[direction], 
         t.[Metadata_MM] = s.[_file];
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -303,19 +323,24 @@ GO
 -- Map: graphType to OC_TYP_Occasion_Type (as natural key)
 -- Map: _file to Metadata_OC (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] 
+CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed';
+    @name = 'lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lOC_Occasion] AS t
     USING
@@ -335,13 +360,13 @@ BEGIN TRY
         s.[graphType],
         s.[_file]
     );
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -362,19 +387,24 @@ GO
 -- Map: OC_ID to OC_ID_on 
 -- Map: _file to Metadata_MM_taken_OC_on (as metadata)
 --
--- Generated: Tue Sep 30 16:51:06 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 1 15:17:52 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] 
+CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
 AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @metadataId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._StartingWork 
+EXEC Stage.metadata._WorkStarting
     @WO_ID = @metadataId OUTPUT, 
-    @name = 'lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed';
+    @name = 'lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
 BEGIN TRY
     MERGE INTO [Meteo]..[lMM_taken_OC_on] AS t
     USING (
@@ -415,13 +445,13 @@ BEGIN TRY
     SET
         t.[OC_ID_on] = s.[OC_ID], 
         t.[Metadata_MM_taken_OC_on] = s.[_file];
-    EXEC metadata._StoppingWork @metadataId, 'Success';
+    EXEC metadata._WorkStopping @metadataId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
 		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._StoppingWork 
+    EXEC Stage.metadata._WorkStopping
         @WO_ID = @metadataId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
