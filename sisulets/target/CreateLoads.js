@@ -37,6 +37,14 @@ DECLARE @actions TABLE (
 );
 ~*/
     beginMetadata(load.qualified);
+    setSourceToTargetMetadata(
+        "'" + load.source + "'",        // sourceName
+        "'Table'",                      // sourceType
+        null,                           // sourceCreated
+        "'" + load.target + "'",        // targetName
+        "'Table'",                      // targetType
+        null                            // targetCreated
+    ); 
 /*~    
     MERGE INTO [$target.database]..[$load.target] AS t
     USING~*/

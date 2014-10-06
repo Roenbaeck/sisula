@@ -154,7 +154,7 @@ CREATE TABLE [metadata].[JB_AID_Job_AgentJobId] (
 );
 GO
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- CO_Container table (with 3 attributes)
+-- CO_Container table (with 4 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.CO_Container', 'U') IS NULL
 CREATE TABLE [metadata].[CO_Container] (
@@ -198,18 +198,35 @@ CREATE TABLE [metadata].[CO_TYP_Container_Type] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Historized attribute table -----------------------------------------------------------------------------------------
 -- CO_DSC_Container_Discovered table (on CO_Container)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.CO_DSC_Container_Discovered', 'U') IS NULL
 CREATE TABLE [metadata].[CO_DSC_Container_Discovered] (
     CO_DSC_CO_ID int not null,
     CO_DSC_Container_Discovered datetime not null,
+    CO_DSC_ChangedAt datetime2(7) not null,
     constraint fkCO_DSC_Container_Discovered foreign key (
         CO_DSC_CO_ID
     ) references [metadata].[CO_Container](CO_ID),
     constraint pkCO_DSC_Container_Discovered primary key (
-        CO_DSC_CO_ID asc
+        CO_DSC_CO_ID asc,
+        CO_DSC_ChangedAt desc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- CO_CRE_Container_Created table (on CO_Container)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.CO_CRE_Container_Created', 'U') IS NULL
+CREATE TABLE [metadata].[CO_CRE_Container_Created] (
+    CO_CRE_CO_ID int not null,
+    CO_CRE_Container_Created datetime not null,
+    constraint fkCO_CRE_Container_Created foreign key (
+        CO_CRE_CO_ID
+    ) references [metadata].[CO_Container](CO_ID),
+    constraint pkCO_CRE_Container_Created primary key (
+        CO_CRE_CO_ID asc
     )
 );
 GO
@@ -669,6 +686,69 @@ BEGIN
             JB_EST_JB_ID,
             JB_EST_EST_ID,
             JB_EST_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfCO_DSC_Container_Discovered restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcCO_DSC_Container_Discovered restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rfCO_DSC_Container_Discovered', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rfCO_DSC_Container_Discovered] (
+        @id int,
+        @value datetime,
+        @changed datetime2(7)
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.CO_DSC_Container_Discovered
+                    FROM
+                        [metadata].[CO_DSC_Container_Discovered] pre
+                    WHERE
+                        pre.CO_DSC_CO_ID = @id
+                    AND
+                        pre.CO_DSC_ChangedAt < @changed
+                    ORDER BY
+                        pre.CO_DSC_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.CO_DSC_Container_Discovered
+                    FROM
+                        [metadata].[CO_DSC_Container_Discovered] fol
+                    WHERE
+                        fol.CO_DSC_CO_ID = @id
+                    AND
+                        fol.CO_DSC_ChangedAt > @changed
+                    ORDER BY
+                        fol.CO_DSC_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [metadata].[CO_DSC_Container_Discovered]
+    ADD CONSTRAINT [rcCO_DSC_Container_Discovered] CHECK (
+        [metadata].[rfCO_DSC_Container_Discovered] (
+            CO_DSC_CO_ID,
+            CO_DSC_Container_Discovered,
+            CO_DSC_ChangedAt
         ) = 0
     );
 END
@@ -1219,6 +1299,27 @@ BEGIN
 END
 GO
 -- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rCO_DSC_Container_Discovered rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.rCO_DSC_Container_Discovered','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [metadata].[rCO_DSC_Container_Discovered] (
+        @changingTimepoint datetime2(7)
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        CO_DSC_CO_ID,
+        CO_DSC_Container_Discovered,
+        CO_DSC_ChangedAt
+    FROM
+        [metadata].[CO_DSC_Container_Discovered]
+    WHERE
+        CO_DSC_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
 -- rWO_EST_Work_ExecutionStatus rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.rWO_EST_Work_ExecutionStatus','IF') IS NULL
@@ -1532,7 +1633,10 @@ SELECT
     [kTYP].COT_ContainerType AS CO_TYP_COT_ContainerType,
     [TYP].CO_TYP_COT_ID,
     [DSC].CO_DSC_CO_ID,
-    [DSC].CO_DSC_Container_Discovered
+    [DSC].CO_DSC_ChangedAt,
+    [DSC].CO_DSC_Container_Discovered,
+    [CRE].CO_CRE_CO_ID,
+    [CRE].CO_CRE_Container_Created
 FROM
     [metadata].[CO_Container] [CO]
 LEFT JOIN
@@ -1550,7 +1654,20 @@ ON
 LEFT JOIN
     [metadata].[CO_DSC_Container_Discovered] [DSC]
 ON
-    [DSC].CO_DSC_CO_ID = [CO].CO_ID;
+    [DSC].CO_DSC_CO_ID = [CO].CO_ID
+AND
+    [DSC].CO_DSC_ChangedAt = (
+        SELECT
+            max(sub.CO_DSC_ChangedAt)
+        FROM
+            [metadata].[CO_DSC_Container_Discovered] sub
+        WHERE
+            sub.CO_DSC_CO_ID = [CO].CO_ID
+   )
+LEFT JOIN
+    [metadata].[CO_CRE_Container_Created] [CRE]
+ON
+    [CRE].CO_CRE_CO_ID = [CO].CO_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pCO_Container viewed as it was on the given timepoint
@@ -1567,7 +1684,10 @@ SELECT
     [kTYP].COT_ContainerType AS CO_TYP_COT_ContainerType,
     [TYP].CO_TYP_COT_ID,
     [DSC].CO_DSC_CO_ID,
-    [DSC].CO_DSC_Container_Discovered
+    [DSC].CO_DSC_ChangedAt,
+    [DSC].CO_DSC_Container_Discovered,
+    [CRE].CO_CRE_CO_ID,
+    [CRE].CO_CRE_Container_Created
 FROM
     [metadata].[CO_Container] [CO]
 LEFT JOIN
@@ -1583,9 +1703,22 @@ LEFT JOIN
 ON
     [kTYP].COT_ID = [TYP].CO_TYP_COT_ID
 LEFT JOIN
-    [metadata].[CO_DSC_Container_Discovered] [DSC]
+    [metadata].[rCO_DSC_Container_Discovered](@changingTimepoint) [DSC]
 ON
-    [DSC].CO_DSC_CO_ID = [CO].CO_ID;
+    [DSC].CO_DSC_CO_ID = [CO].CO_ID
+AND
+    [DSC].CO_DSC_ChangedAt = (
+        SELECT
+            max(sub.CO_DSC_ChangedAt)
+        FROM
+            [metadata].[rCO_DSC_Container_Discovered](@changingTimepoint) sub
+        WHERE
+            sub.CO_DSC_CO_ID = [CO].CO_ID
+   )
+LEFT JOIN
+    [metadata].[CO_CRE_Container_Created] [CRE]
+ON
+    [CRE].CO_CRE_CO_ID = [CO].CO_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nCO_Container viewed as it currently is (cannot include future versions)
@@ -1596,6 +1729,36 @@ SELECT
     *
 FROM
     [metadata].[pCO_Container](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dCO_Container showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [metadata].[dCO_Container] (
+    @intervalStart datetime2(7),
+    @intervalEnd datetime2(7),
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pCO].*
+FROM (
+    SELECT DISTINCT
+        CO_DSC_CO_ID AS CO_ID,
+        CO_DSC_ChangedAt AS inspectedTimepoint,
+        'DSC' AS mnemonic
+    FROM
+        [metadata].[CO_DSC_Container_Discovered]
+    WHERE
+        (@selection is null OR @selection like '%DSC%')
+    AND
+        CO_DSC_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [metadata].[pCO_Container](timepoints.inspectedTimepoint) [pCO]
+WHERE
+    [pCO].CO_ID = timepoints.CO_ID;
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.dWO_Work', 'IF') IS NOT NULL
@@ -2689,6 +2852,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @CO_DSC_Container_Discovered TABLE (
         CO_DSC_CO_ID int not null,
+        CO_DSC_ChangedAt datetime2(7) not null,
         CO_DSC_Container_Discovered datetime not null,
         CO_DSC_Version bigint not null,
         CO_DSC_StatementType char(1) not null,
@@ -2700,8 +2864,14 @@ BEGIN
     INSERT INTO @CO_DSC_Container_Discovered
     SELECT
         i.CO_DSC_CO_ID,
+        i.CO_DSC_ChangedAt,
         i.CO_DSC_Container_Discovered,
-        1,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.CO_DSC_CO_ID
+            ORDER BY
+                i.CO_DSC_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
@@ -2719,6 +2889,12 @@ BEGIN
                 CASE
                     WHEN [DSC].CO_DSC_CO_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [metadata].[rfCO_DSC_Container_Discovered](
+                        v.CO_DSC_CO_ID,
+                        v.CO_DSC_Container_Discovered,
+                        v.CO_DSC_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -2728,15 +2904,19 @@ BEGIN
         ON
             [DSC].CO_DSC_CO_ID = v.CO_DSC_CO_ID
         AND
+            [DSC].CO_DSC_ChangedAt = v.CO_DSC_ChangedAt
+        AND
             [DSC].CO_DSC_Container_Discovered = v.CO_DSC_Container_Discovered
         WHERE
             v.CO_DSC_Version = @currentVersion;
         INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
             CO_DSC_CO_ID,
+            CO_DSC_ChangedAt,
             CO_DSC_Container_Discovered
         )
         SELECT
             CO_DSC_CO_ID,
+            CO_DSC_ChangedAt,
             CO_DSC_Container_Discovered
         FROM
             @CO_DSC_Container_Discovered
@@ -2744,6 +2924,79 @@ BEGIN
             CO_DSC_Version = @currentVersion
         AND
             CO_DSC_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_CO_CRE_Container_Created instead of INSERT trigger on CO_CRE_Container_Created
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.it_CO_CRE_Container_Created', 'TR') IS NOT NULL
+DROP TRIGGER [metadata].[it_CO_CRE_Container_Created];
+GO
+CREATE TRIGGER [metadata].[it_CO_CRE_Container_Created] ON [metadata].[CO_CRE_Container_Created]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @CO_CRE_Container_Created TABLE (
+        CO_CRE_CO_ID int not null,
+        CO_CRE_Container_Created datetime not null,
+        CO_CRE_Version bigint not null,
+        CO_CRE_StatementType char(1) not null,
+        primary key(
+            CO_CRE_Version,
+            CO_CRE_CO_ID
+        )
+    );
+    INSERT INTO @CO_CRE_Container_Created
+    SELECT
+        i.CO_CRE_CO_ID,
+        i.CO_CRE_Container_Created,
+        1,
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(CO_CRE_Version),
+        @currentVersion = 0
+    FROM
+        @CO_CRE_Container_Created;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.CO_CRE_StatementType =
+                CASE
+                    WHEN [CRE].CO_CRE_CO_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @CO_CRE_Container_Created v
+        LEFT JOIN
+            [metadata].[CO_CRE_Container_Created] [CRE]
+        ON
+            [CRE].CO_CRE_CO_ID = v.CO_CRE_CO_ID
+        AND
+            [CRE].CO_CRE_Container_Created = v.CO_CRE_Container_Created
+        WHERE
+            v.CO_CRE_Version = @currentVersion;
+        INSERT INTO [metadata].[CO_CRE_Container_Created] (
+            CO_CRE_CO_ID,
+            CO_CRE_Container_Created
+        )
+        SELECT
+            CO_CRE_CO_ID,
+            CO_CRE_Container_Created
+        FROM
+            @CO_CRE_Container_Created
+        WHERE
+            CO_CRE_Version = @currentVersion
+        AND
+            CO_CRE_StatementType in ('N');
     END
 END
 GO
@@ -4303,7 +4556,10 @@ BEGIN
         CO_TYP_COT_ContainerType varchar(42) null,
         CO_TYP_COT_ID tinyint null,
         CO_DSC_CO_ID int null,
-        CO_DSC_Container_Discovered datetime null
+        CO_DSC_ChangedAt datetime2(7) null,
+        CO_DSC_Container_Discovered datetime null,
+        CO_CRE_CO_ID int null,
+        CO_CRE_Container_Created datetime null
     );
     INSERT INTO @inserted
     SELECT
@@ -4314,7 +4570,10 @@ BEGIN
         i.CO_TYP_COT_ContainerType,
         i.CO_TYP_COT_ID,
         ISNULL(ISNULL(i.CO_DSC_CO_ID, i.CO_ID), a.CO_ID),
-        i.CO_DSC_Container_Discovered
+        ISNULL(i.CO_DSC_ChangedAt, @now),
+        i.CO_DSC_Container_Discovered,
+        ISNULL(ISNULL(i.CO_CRE_CO_ID, i.CO_ID), a.CO_ID),
+        i.CO_CRE_Container_Created
     FROM (
         SELECT
             CO_ID,
@@ -4324,7 +4583,10 @@ BEGIN
             CO_TYP_COT_ContainerType,
             CO_TYP_COT_ID,
             CO_DSC_CO_ID,
+            CO_DSC_ChangedAt,
             CO_DSC_Container_Discovered,
+            CO_CRE_CO_ID,
+            CO_CRE_Container_Created,
             ROW_NUMBER() OVER (PARTITION BY CO_ID ORDER BY CO_ID) AS Row
         FROM
             inserted
@@ -4361,15 +4623,28 @@ BEGIN
         ISNULL(i.CO_TYP_COT_ID, [kCOT].COT_ID) is not null;
     INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
         CO_DSC_CO_ID,
+        CO_DSC_ChangedAt,
         CO_DSC_Container_Discovered
     )
     SELECT
         i.CO_DSC_CO_ID,
+        i.CO_DSC_ChangedAt,
         i.CO_DSC_Container_Discovered
     FROM
         @inserted i
     WHERE
         i.CO_DSC_Container_Discovered is not null;
+    INSERT INTO [metadata].[CO_CRE_Container_Created] (
+        CO_CRE_CO_ID,
+        CO_CRE_Container_Created
+    )
+    SELECT
+        i.CO_CRE_CO_ID,
+        i.CO_CRE_Container_Created
+    FROM
+        @inserted i
+    WHERE
+        i.CO_CRE_Container_Created is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -4426,15 +4701,37 @@ BEGIN
     BEGIN
         INSERT INTO [metadata].[CO_DSC_Container_Discovered] (
             CO_DSC_CO_ID,
+            CO_DSC_ChangedAt,
             CO_DSC_Container_Discovered
         )
         SELECT
             ISNULL(i.CO_DSC_CO_ID, i.CO_ID),
+            cast(CASE
+                WHEN i.CO_DSC_Container_Discovered is null THEN i.CO_DSC_ChangedAt
+                WHEN UPDATE(CO_DSC_ChangedAt) THEN i.CO_DSC_ChangedAt
+                ELSE @now
+            END as datetime2(7)),
             i.CO_DSC_Container_Discovered
         FROM
             inserted i
         WHERE
             i.CO_DSC_Container_Discovered is not null;
+    END
+    IF(UPDATE(CO_CRE_CO_ID))
+        RAISERROR('The foreign key column CO_CRE_CO_ID is not updatable.', 16, 1);
+    IF(UPDATE(CO_CRE_Container_Created))
+    BEGIN
+        INSERT INTO [metadata].[CO_CRE_Container_Created] (
+            CO_CRE_CO_ID,
+            CO_CRE_Container_Created
+        )
+        SELECT
+            ISNULL(i.CO_CRE_CO_ID, i.CO_ID),
+            i.CO_CRE_Container_Created
+        FROM
+            inserted i
+        WHERE
+            i.CO_CRE_Container_Created is not null;
     END
 END
 GO
@@ -4466,7 +4763,16 @@ BEGIN
     JOIN
         deleted d
     ON
+        d.CO_DSC_ChangedAt = [DSC].CO_DSC_ChangedAt
+    AND
         d.CO_DSC_CO_ID = [DSC].CO_DSC_CO_ID;
+    DELETE [CRE]
+    FROM
+        [metadata].[CO_CRE_Container_Created] [CRE]
+    JOIN
+        deleted d
+    ON
+        d.CO_CRE_CO_ID = [CRE].CO_CRE_CO_ID;
     DELETE [CO]
     FROM
         [metadata].[CO_Container] [CO]
@@ -4482,12 +4788,18 @@ BEGIN
         [metadata].[CO_DSC_Container_Discovered] [DSC]
     ON
         [DSC].CO_DSC_CO_ID = [CO].CO_ID
+    LEFT JOIN
+        [metadata].[CO_CRE_Container_Created] [CRE]
+    ON
+        [CRE].CO_CRE_CO_ID = [CO].CO_ID
     WHERE
         [NAM].CO_NAM_CO_ID is null
     AND
         [TYP].CO_TYP_CO_ID is null
     AND
-        [DSC].CO_DSC_CO_ID is null;
+        [DSC].CO_DSC_CO_ID is null
+    AND
+        [CRE].CO_CRE_CO_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -6153,7 +6465,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-10-01" time="16:57:03"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="506.11" y="200.89" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1074.66" y="42.09" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="583.58" y="50.36" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="629.12" y="0.74" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="666.58" y="-5.61" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="496.35" y="81.94" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" dataRange="uniqueidentifier"><metadata capsule="metadata"/><layout x="710.50" y="0.21" fixed="false"/></attribute><layout x="668.10" y="75.12" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata capsule="metadata"/><layout x="705.73" y="924.86" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" dataRange="datetime"><metadata capsule="metadata"/><layout x="644.06" y="863.43" fixed="false"/></attribute><layout x="696.11" y="803.70" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="548.26" y="459.23" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="734.29" y="457.30" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="682.13" y="495.28" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="546.47" y="428.86" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata"/><layout x="582.41" y="477.14" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="546.36" y="335.79" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata"/><layout x="636.81" y="495.87" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="756.10" y="429.34" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata capsule="metadata"/><layout x="698.71" y="398.67" fixed="false"/></attribute><layout x="649.90" y="429.97" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="956.01" y="224.55" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="986.18" y="189.11" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata capsule="metadata"/><layout x="1014.93" y="99.34" fixed="false"/></attribute><layout x="909.39" y="168.61" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata"/><layout x="647.76" y="256.91" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata"/><layout x="805.97" y="109.80" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata"/><layout x="680.32" y="652.93" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="true"/><metadata capsule="metadata"/><layout x="806.06" y="311.23" fixed="false"/></tie><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="923.44" y="697.54" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="976.39" y="650.76" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="938.91" y="583.32" fixed="false"/></attribute><layout x="892.32" y="626.46" fixed="true"/></anchor></schema>';
+   N'<schema format="0.98" date="2014-10-06" time="12:24:13"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="506.11" y="200.89" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1074.66" y="42.09" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime"><metadata capsule="metadata"/><layout x="583.58" y="50.36" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime"><metadata capsule="metadata"/><layout x="629.12" y="0.74" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="666.58" y="-5.61" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="496.35" y="81.94" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" dataRange="uniqueidentifier"><metadata capsule="metadata"/><layout x="710.50" y="0.21" fixed="false"/></attribute><layout x="668.10" y="75.12" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata capsule="metadata"/><layout x="705.73" y="924.86" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime2(7)" dataRange="datetime"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="644.06" y="863.43" fixed="false"/></attribute><attribute mnemonic="CRE" descriptor="Created" dataRange="datetime"><metadata capsule="metadata"/><layout x="762.78" y="850.76" fixed="false"/></attribute><layout x="696.11" y="803.70" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="548.26" y="459.23" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata capsule="metadata"/><layout x="734.29" y="457.30" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="682.12" y="495.19" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="546.47" y="428.86" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata"/><layout x="582.41" y="477.14" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="546.36" y="335.79" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata"/><layout x="636.78" y="495.80" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata"/><layout x="756.10" y="429.34" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata capsule="metadata"/><layout x="698.71" y="398.67" fixed="false"/></attribute><layout x="649.90" y="429.97" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata"/><layout x="956.01" y="224.55" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/><layout x="986.18" y="189.11" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata capsule="metadata"/><layout x="1014.93" y="99.34" fixed="false"/></attribute><layout x="909.39" y="168.61" fixed="false"/></anchor><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="923.44" y="697.54" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="976.39" y="650.76" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true"/><layout x="938.91" y="583.32" fixed="false"/></attribute><layout x="870.40" y="651.21" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata"/><layout x="647.76" y="256.91" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata"/><layout x="805.97" y="109.80" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata"/><layout x="714.10" y="646.65" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="true"/><metadata capsule="metadata"/><layout x="806.06" y="311.23" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

@@ -14,7 +14,8 @@ INSERT INTO metadata.COT_ContainerType (
 	COT_ContainerType
 ) VALUES 
 (1, 'File'),
-(2, 'Table');
+(2, 'Table'),
+(3, 'View');
 
 INSERT INTO metadata.CFT_ConfigurationType (
 	CFT_ID,

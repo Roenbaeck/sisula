@@ -13,8 +13,8 @@ GO
 -- Map: temperature to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -39,6 +39,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_TemperatureNew_Typed', 
+    @targetName = 'lMM_Measurement', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING (
         select
@@ -114,8 +123,8 @@ GO
 -- Map: celsius to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -140,6 +149,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Temperature_Typed', 
+    @targetName = 'lMM_Measurement', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
         SMHI_Weather_Temperature_Typed AS s
@@ -206,8 +224,8 @@ GO
 -- Map: pressure to MM_PRS_Measurement_Pressure 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -232,6 +250,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Pressure_Typed', 
+    @targetName = 'lMM_Measurement', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
         SMHI_Weather_Pressure_Typed AS s
@@ -299,8 +326,8 @@ GO
 -- Map: direction to MM_DIR_Measurement_Direction 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -325,6 +352,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Wind_Typed', 
+    @targetName = 'lMM_Measurement', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lMM_Measurement] AS t
     USING
         SMHI_Weather_Wind_Typed AS s
@@ -395,8 +431,8 @@ GO
 -- Map: graphType to OC_TYP_Occasion_Type (as natural key)
 -- Map: _file to Metadata_OC (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -421,6 +457,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_TemperatureNewMetadata_Typed', 
+    @targetName = 'lOC_Occasion', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lOC_Occasion] AS t
     USING
         SMHI_Weather_TemperatureNewMetadata_Typed AS s
@@ -477,8 +522,8 @@ GO
 -- Map: OC_ID to OC_ID_on 
 -- Map: _file to Metadata_MM_taken_OC_on (as metadata)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -503,6 +548,15 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_TemperatureNew_Typed', 
+    @targetName = 'lMM_taken_OC_on', 
+    @sourceType = 'Table', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     MERGE INTO [Meteo]..[lMM_taken_OC_on] AS t
     USING (
         select

@@ -23,8 +23,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -79,8 +79,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -138,17 +138,19 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
 	@filename varchar(2000),
+    @lastModified datetime,
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
 AS
 BEGIN
 SET NOCOUNT ON;
+DECLARE @file int;
 DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
@@ -159,32 +161,42 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = @filename, 
+    @targetName = 'SMHI_Weather_Insert', 
+    @sourceType = 'File', 
+    @targetType = 'View', 
+    @sourceCreated = @lastModified, 
+    @targetCreated = DEFAULT;
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     BEGIN
-	EXEC('
-		BULK INSERT [SMHI_Weather_Insert]
-		FROM ''' + @filename + '''
-        WITH (
-            CODEPAGE = ''ACP'',
-            DATAFILETYPE = ''char'',
-            FIELDTERMINATOR = ''\r\n'',
-            TABLOCK 
+        EXEC('
+            BULK INSERT [SMHI_Weather_Insert]
+            FROM ''' + @filename + '''
+            WITH (
+                CODEPAGE = ''ACP'',
+                DATAFILETYPE = ''char'',
+                FIELDTERMINATOR = ''\r\n'',
+                TABLOCK 
+            );
+        ');
+        SET @file = (
+            SELECT
+                CO_ID
+            FROM
+                metadata.lCO_Container
+            WHERE
+                CO_NAM_Container_Name = @filename
+            AND
+                CO_CRE_Container_Created = @lastModified
         );
-	');
-    DECLARE @file int = 1 + (
-        SELECT TOP 1
-            _file
-        FROM
-            [SMHI_Weather_Raw]
-        ORDER BY
-            _file
-        DESC
-    );
-    UPDATE [SMHI_Weather_Raw]
-    SET
-        _file = @file
-    WHERE
-        _file = 0;
+        UPDATE [SMHI_Weather_Raw]
+        SET
+            _file = @file
+        WHERE
+            _file = 0;
     END 
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -224,8 +236,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -634,8 +646,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -780,8 +792,8 @@ GO
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -891,8 +903,8 @@ GO
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -914,6 +926,15 @@ EXEC Stage.metadata._WorkStarting
 BEGIN TRY
     IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
     BEGIN
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_TemperatureNew_Split', 
+    @targetName = 'SMHI_Weather_TemperatureNew_Typed', 
+    @sourceType = 'View', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     INSERT INTO [SMHI_Weather_TemperatureNew_Typed] (
         _id,
         _file,
@@ -952,6 +973,15 @@ BEGIN TRY
     END
     IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Typed', 'U') IS NOT NULL
     BEGIN
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_TemperatureNewMetadata_Split', 
+    @targetName = 'SMHI_Weather_TemperatureNewMetadata_Typed', 
+    @sourceType = 'View', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     INSERT INTO [SMHI_Weather_TemperatureNewMetadata_Typed] (
         _id,
         _file,
@@ -974,6 +1004,15 @@ BEGIN TRY
     END
     IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
     BEGIN
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Temperature_Split', 
+    @targetName = 'SMHI_Weather_Temperature_Typed', 
+    @sourceType = 'View', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     INSERT INTO [SMHI_Weather_Temperature_Typed] (
         _id,
         _file,
@@ -1002,6 +1041,15 @@ BEGIN TRY
     END
     IF Object_ID('SMHI_Weather_Pressure_Typed', 'U') IS NOT NULL
     BEGIN
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Pressure_Split', 
+    @targetName = 'SMHI_Weather_Pressure_Typed', 
+    @sourceType = 'View', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     INSERT INTO [SMHI_Weather_Pressure_Typed] (
         _id,
         _file,
@@ -1030,6 +1078,15 @@ BEGIN TRY
     END
     IF Object_ID('SMHI_Weather_Wind_Typed', 'U') IS NOT NULL
     BEGIN
+EXEC Stage.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = 'SMHI_Weather_Wind_Split', 
+    @targetName = 'SMHI_Weather_Wind_Typed', 
+    @sourceType = 'View', 
+    @targetType = 'Table', 
+    @sourceCreated = DEFAULT,
+    @targetCreated = DEFAULT;
     INSERT INTO [SMHI_Weather_Wind_Typed] (
         _id,
         _file,
@@ -1097,8 +1154,8 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Wed Oct 1 17:16:49 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,

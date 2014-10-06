@@ -21,12 +21,14 @@
             EXEC %System%_%Source%_CreateInsertView %parameters%
         </jobstep>
         <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
-            $files = @(Get-ChildItem %extraOptions% FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"} | % { $_.FullName })
+            $files = @(Get-ChildItem %extraOptions% FileSystem::%path% | Where-Object {$_.Name -match "%filenamePattern%"})
             If ($files.length -eq 0) {
               Throw "No matching files were found in %path%:"
             } Else {
-                ForEach ($fullFilename in $files) {
-                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename', %parameters%" -Database "%stage%" -ErrorAction Stop
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    $modifiedDate = $file.LastWriteTime
+                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename', '$modifiedDate', %parameters%" -Database "%stage%" -ErrorAction Stop
                     Write-Output "Loaded file: $fullFilename"
                 }
             }

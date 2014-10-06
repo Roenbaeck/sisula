@@ -19,47 +19,78 @@ GO
 --------------------------------------------------------------------------
 CREATE PROCEDURE [$source.qualified$_BulkInsert] (
 	@filename varchar(2000),
+    @lastModified datetime,
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
 AS
 BEGIN
 SET NOCOUNT ON;
+DECLARE @file int;
 ~*/
 beginMetadata(source.qualified + '_BulkInsert');
+setSourceToTargetMetadata(
+    "@filename",                            // sourceName
+    "'File'",                               // sourceType
+    "@lastModified",                        // sourceCreated
+    "'" + source.qualified + "_Insert'",    // targetName
+    "'View'",                               // targetType
+    null                                    // targetCreated
+); 
+
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
-	EXEC('
-		BULK INSERT [$source.qualified$_Insert]
-		FROM ''' + @filename + '''
-        WITH (
-            $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
-            $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
-            $(source.fieldterminator)?  FIELDTERMINATOR = ''$source.fieldterminator'',
-            $(source.rowterminator)?    ROWTERMINATOR   = ''$source.rowterminator'',
-            TABLOCK   
+        EXEC('
+            BULK INSERT [$source.qualified$_Insert]
+            FROM ''' + @filename + '''
+            WITH (
+                $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
+                $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
+                $(source.fieldterminator)?  FIELDTERMINATOR = ''$source.fieldterminator'',
+                $(source.rowterminator)?    ROWTERMINATOR   = ''$source.rowterminator'',
+                TABLOCK   
+            );
+        ');
+~*/
+if(METADATA) {
+/*~
+        SET @file = (
+            SELECT
+                CO_ID
+            FROM
+                metadata.lCO_Container
+            WHERE
+                CO_NAM_Container_Name = @filename
+            AND
+                CO_CRE_Container_Created = @lastModified
         );
-	');
-    
-    DECLARE @file int = 1 + (
-        SELECT TOP 1
-            _file
-        FROM
-            [$source.qualified$_Raw]
-        ORDER BY
-            _file
-        DESC
-    );
-    
-    UPDATE [$source.qualified$_Raw]
-    SET
-        _file = @file
-    WHERE
-        _file = 0;
-    
+~*/
+}
+else {
+/*~
+        SET @file = 1 + (
+            SELECT TOP 1
+                _file
+            FROM
+                [$source.qualified$_Raw]
+            ORDER BY
+                _file
+            DESC
+        );    
+~*/
+}
+/*~    
+        UPDATE [$source.qualified$_Raw]
+        SET
+            _file = @file
+        WHERE
+            _file = 0;
+
     END    
 ~*/
+// TODO: Add inserted rows here!
+
 endMetadata();
 /*~
 END

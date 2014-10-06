@@ -247,19 +247,20 @@ go
 create procedure metadata._WorkSourceToTarget (
 	@OP_ID int output,
 	@WO_ID int,
-	@source varchar(555),
-	@target varchar(555),
+	@sourceName varchar(555),
+	@targetName varchar(555),
 	@sourceType varchar(42) = 'Table',
 	@targetType varchar(42) = 'Table',
-	@sourceDiscovered datetime = null,
-	@targetDiscovered datetime = null
+	@sourceCreated datetime = null,
+	@targetCreated datetime = null
 )
 as
 begin
+	declare @now datetime = SYSDATETIME();
 	set @sourceType = isnull(@sourceType, 'Table');
 	set @targetType = isnull(@targetType, 'Table');
-	set @sourceDiscovered = isnull(@sourceDiscovered, SYSDATETIME());
-	set @targetDiscovered = isnull(@targetDiscovered, SYSDATETIME());
+	set @sourceCreated = isnull(@sourceCreated, SYSDATETIME());
+	set @targetCreated = isnull(@targetCreated, SYSDATETIME());
 
 	-- ensure this work is running!
 	select
@@ -277,15 +278,15 @@ begin
 		select
 			@CO_ID_source = CO_ID
 		from
-			lCO_Container
+			metadata.lCO_Container
 		where
-			CO_NAM_Container_Name = @source
+			CO_NAM_Container_Name = @sourceName
 		and
 			CO_TYP_COT_ContainerType = @sourceType
 		and
-			-- files are new containers even if they have the same name
+			-- files are new containers if they have a different created date but same name
 			case 
-				when @sourceType = 'File' and CO_DSC_Container_Discovered <> @sourceDiscovered
+				when @sourceType = 'File' and CO_CRE_Container_Created <> @sourceCreated
 				then 0
 				else 1
 			end = 1;
@@ -296,12 +297,14 @@ begin
 			insert into lCO_Container (
 				CO_NAM_Container_Name, 
 				CO_TYP_COT_ContainerType, 
+				CO_CRE_Container_Created,
 				CO_DSC_Container_Discovered
 			)
 			values (
-				@source,
+				@sourceName,
 				@sourceType,
-				@sourceDiscovered
+				@sourceCreated,
+				@now
 			);
 
 			select
@@ -309,11 +312,20 @@ begin
 			from
 				lCO_Container
 			where
-				CO_NAM_Container_Name = @source
+				CO_NAM_Container_Name = @sourceName
 			and
 				CO_TYP_COT_ContainerType = @sourceType
 			and
-				CO_DSC_Container_Discovered = @sourceDiscovered
+				CO_CRE_Container_Created = @sourceCreated;
+		end
+		-- otherwise update the discovey
+		else
+		begin
+			update lCO_Container
+			set
+				CO_DSC_Container_Discovered = @now
+			where
+				CO_ID = @CO_ID_source;
 		end
 
 		declare @CO_ID_target int;
@@ -322,13 +334,13 @@ begin
 		from
 			lCO_Container
 		where
-			CO_NAM_Container_Name = @target
+			CO_NAM_Container_Name = @targetName
 		and
 			CO_TYP_COT_ContainerType = @targetType
 		and
 			-- files are new containers even if they have the same name
 			case 
-				when @targetType = 'File' and CO_DSC_Container_Discovered <> @targetDiscovered
+				when @targetType = 'File' and CO_CRE_Container_Created <> @targetCreated
 				then 0
 				else 1
 			end = 1;
@@ -339,12 +351,14 @@ begin
 			insert into lCO_Container (
 				CO_NAM_Container_Name, 
 				CO_TYP_COT_ContainerType, 
+				CO_CRE_Container_Created,
 				CO_DSC_Container_Discovered
 			)
 			values (
-				@target,
+				@targetName,
 				@targetType,
-				@targetDiscovered
+				@targetCreated,
+				@now
 			);
 
 			select
@@ -352,11 +366,20 @@ begin
 			from
 				lCO_Container
 			where
-				CO_NAM_Container_Name = @target
+				CO_NAM_Container_Name = @targetName
 			and
 				CO_TYP_COT_ContainerType = @targetType
 			and
-				CO_DSC_Container_Discovered = @targetDiscovered
+				CO_CRE_Container_Created = @targetCreated
+		end
+		-- otherwise update the discovey
+		else
+		begin
+			update lCO_Container
+			set
+				CO_DSC_Container_Discovered = @now
+			where
+				CO_ID = @CO_ID_target;
 		end
 
 		select

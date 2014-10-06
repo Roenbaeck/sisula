@@ -33,10 +33,21 @@ SET NOCOUNT ON;
 DECLARE @insert int = 0;
 ~*/
 beginMetadata(source.qualified + '_SplitRawIntoTyped');
+
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
     BEGIN
+~*/
+setSourceToTargetMetadata(
+    "'" + part.qualified + "_Split'",   // sourceName
+    "'View'",                           // sourceType
+    null,                               // sourceCreated
+    "'" + part.qualified + "_Typed'",   // targetName
+    "'Table'",                          // targetType
+    null                                // targetCreated
+);     
+/*~    
     INSERT INTO [$part.qualified$_Typed] (
         _id,
         _file,

@@ -41,26 +41,40 @@ END CATCH
     }    
 }
 
-// TODO: Create sourceToTargetMetadata here!
+function setSourceToTargetMetadata(sourceName, sourceType, sourceCreated, targetName, targetType, targetCreated) {
+    if(METADATA) {
+/*~
+EXEC ${METADATABASE}$.metadata._WorkSourceToTarget
+    @OP_ID = @operationsId OUTPUT,
+    @WO_ID = @workId, 
+    @sourceName = $(sourceName)? $sourceName, : DEFAULT,
+    @targetName = $(targetName)? $targetName, : DEFAULT,
+    @sourceType = $(sourceType)? $sourceType, : DEFAULT,
+    @targetType = $(targetType)? $targetType, : DEFAULT,
+    @sourceCreated = $(sourceCreated)? $sourceCreated, : DEFAULT,
+    @targetCreated = $(targetCreated)? $targetCreated; : DEFAULT;
+~*/
+    }
+}
 
-function setInsertsMetadata(sqlVariable) {
+function setInsertsMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetInserts @workId, @operationsId, $sqlVariable;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }
-function setUpdatesMetadata(sqlVariable) {
+function setUpdatesMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, $sqlVariable;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }
-function setDeletesMetadata(sqlVariable) {
+function setDeletesMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, $sqlVariable;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }
