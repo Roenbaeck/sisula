@@ -22,7 +22,7 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateInsertView');
+beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     DROP VIEW [$source.qualified$_Insert];

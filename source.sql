@@ -23,7 +23,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] (
@@ -38,6 +38,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_CreateRawTable',
     @agentStepId = @agentStepId,
@@ -79,7 +81,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] (
@@ -94,6 +96,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_CreateInsertView',
     @agentStepId = @agentStepId,
@@ -138,7 +142,7 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
@@ -158,6 +162,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_BulkInsert',
     @agentStepId = @agentStepId,
@@ -242,7 +248,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] (
@@ -257,6 +263,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_CreateSplitViews',
     @agentStepId = @agentStepId,
@@ -652,7 +660,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] (
@@ -667,6 +675,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_CreateInsertView',
     @agentStepId = @agentStepId,
@@ -798,7 +808,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] (
@@ -813,6 +823,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_CreateTypedTables',
     @agentStepId = @agentStepId,
@@ -909,7 +921,7 @@ GO
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] (
@@ -925,6 +937,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_SplitRawIntoTyped',
     @agentStepId = @agentStepId,
@@ -1160,7 +1174,7 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] (
@@ -1175,6 +1189,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Weather', 
+    @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
     @name = 'SMHI_Weather_AddKeysToTyped',
     @agentStepId = @agentStepId,
@@ -1216,3 +1232,147 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- The source definition used when generating the above
+DECLARE @xml XML = N'<source name="Weather" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
+	<description>http://www.slb.mf.stockholm.se</description>
+	<part name="TemperatureNew" nulls="">
+        SELECT * from SMHI_Weather_Raw WHERE [row] LIKE ''[0-9][0-9][0-9][0-9][0-9][0-9],%''
+        <term name="date" delimiter="," format="date">
+            ''20'' + [date]
+        </term>
+		<term name="hour" pattern="\s*([0-9]{2})[0-9]{2}," format="char(2)"/>
+		<term name="celsius1" delimiter="," format="decimal(19,10)"/>
+		<term name="celsius2" delimiter="," format="decimal(19,10)"/>
+		<term name="celsius3" delimiter="," format="decimal(19,10)"/>
+		<term name="celsius4" delimiter="," format="decimal(19,10)"/>
+	</part>
+	<part name="TemperatureNewMetadata">
+        SELECT
+			*
+		FROM (
+			SELECT 
+				_file,
+				MIN(_id) as _id,
+				MIN(_timestamp) as _timestamp
+			FROM (
+                SELECT
+                    *
+                FROM
+                    SMHI_Weather_Raw
+                WHERE 
+                    [row] LIKE ''#%''
+		    ) src
+			GROUP BY
+				_file
+		) f
+		CROSS APPLY (
+			SELECT
+				[row] + CHAR(183) AS [text()]
+			FROM (
+                SELECT
+                    *
+                FROM
+                    SMHI_Weather_Raw
+                WHERE 
+					[row] LIKE ''#%''
+		    ) src
+			WHERE
+				src._file = f._file
+			FOR XML PATH('''')
+		) c ([row])
+		<term name="graphType" pattern="(?=.*?Graftyp[^:]*:\s*([^·]*))?" format="varchar(42)"/>
+		<term name="weekday" pattern="(?=.*?Veckodag[^:]*:\s*([^·]*))?" format="varchar(42)"/>
+	</part>
+	<part name="Temperature" nulls="" charskip="4"> 
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''TEMP%''
+        <term name="date" size="6" format="date">
+            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
+        </term>
+		<term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+		<term name="celsius" delimiter=" " format="decimal(19,10)">
+            REPLACE([celsius], '','', ''.'')
+        </term>
+		<calculation name="fahrenheit" format="decimal(19,10)">
+            9 / 5 * [celsius] + 32
+        </calculation>
+		<calculation name="freezing" format="char(1)">
+            CASE 
+                WHEN [celsius] &gt; 0 THEN ''A'' 
+                WHEN [celsius] &lt; 0 THEN ''B'' 
+                WHEN [celsius] = 0 THEN ''Z'' 
+                ELSE ''?'' 
+            END
+        </calculation>
+		<key name="measureTime" type="primary key">
+			<component of="date"/>
+			<component of="hour"/>
+		</key>
+	</part>
+	<part name="Pressure" nulls="" charskip="4">
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''PRSR%''
+        <term name="date" size="6" format="date">
+            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
+        </term>
+		<term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+		<term name="pressure" size="10" format="decimal(19,10)">
+            REPLACE([pressure], '','', ''.'')
+        </term>
+		<key name="measureTime" type="primary key">
+			<component of="date"/>
+			<component of="hour"/>
+		</key>
+	</part>
+	<part name="Wind" nulls="" charskip="4">
+        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''WNDS%''
+        <term name="date" size="6" format="date">
+            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
+        </term>
+		<term name="hour" size="4" format="char(2)">
+            LEFT([hour], 2)
+        </term>
+		<term name="direction" size="10" format="decimal(5,2)">
+            REPLACE([direction], '','', ''.'')
+        </term>
+		<term name="speed" size="10" format="decimal(19,10)">
+            REPLACE([speed], '','', ''.'')
+        </term>
+		<key name="measureTime" type="primary key">
+			<component of="date"/>
+			<component of="hour"/>
+		</key>
+	</part>
+</source>
+';
+DECLARE @name varchar(255) = @xml.value('/source[1]/@name', 'varchar(255)');
+DECLARE @CF_ID int;
+SELECT
+    @CF_ID = CF_ID
+FROM
+    metadata.lCF_Configuration
+WHERE
+    CF_NAM_Configuration_Name = @name;
+IF(@CF_ID is null) 
+BEGIN
+    INSERT INTO metadata.lCF_Configuration (
+        CF_TYP_CFT_ConfigurationType,
+        CF_NAM_Configuration_Name,
+        CF_XML_Configuration_XMLDefinition
+    )
+    VALUES (
+        'Source',
+        @name,
+        @xml
+    );
+END
+ELSE
+BEGIN
+    UPDATE metadata.lCF_Configuration
+    SET
+        CF_XML_Configuration_XMLDefinition = @xml
+    WHERE
+        CF_NAM_Configuration_Name = @name;
+END

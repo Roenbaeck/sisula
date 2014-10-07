@@ -32,7 +32,7 @@ BEGIN
 SET NOCOUNT ON;
 DECLARE @insert int = 0;
 ~*/
-beginMetadata(source.qualified + '_SplitRawIntoTyped');
+beginMetadata(source.qualified + '_SplitRawIntoTyped', source.name, 'Source');
 
 while(part = source.nextPart()) {
 /*~

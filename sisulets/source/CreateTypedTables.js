@@ -34,7 +34,7 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateTypedTables');
+beginMetadata(source.qualified + '_CreateTypedTables', source.name, 'Source');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL

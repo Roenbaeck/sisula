@@ -38,7 +38,7 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateInsertView');
+beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Error', 'V') IS NOT NULL

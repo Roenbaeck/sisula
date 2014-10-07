@@ -6,4 +6,4 @@ sisulets/workflow/Variables.js
 sisulets/workflow/Helpers.js
 sisulets/workflow/CreateJobs.js
 # finally add the workflow xml provided that execution got this far
-#sisulets/workflow/AddWorkflowDefinition.js
+sisulets/workflow/AddWorkflowDefinition.js

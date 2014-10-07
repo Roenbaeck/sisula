@@ -41,7 +41,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_AddKeysToTyped');
+beginMetadata(source.qualified + '_AddKeysToTyped', source.name, 'Source');
 while(part = source.nextPart()) {
     if(part.hasMoreKeys()) {
 /*~

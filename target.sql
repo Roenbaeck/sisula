@@ -13,7 +13,7 @@ GO
 -- Map: temperature to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] (
@@ -34,6 +34,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lMM_Measurement__SMHI_Weather_TemperatureNew_Typed',
     @agentStepId = @agentStepId,
@@ -123,7 +125,7 @@ GO
 -- Map: celsius to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] (
@@ -144,6 +146,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lMM_Measurement__SMHI_Weather_Temperature_Typed',
     @agentStepId = @agentStepId,
@@ -224,7 +228,7 @@ GO
 -- Map: pressure to MM_PRS_Measurement_Pressure 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] (
@@ -245,6 +249,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lMM_Measurement__SMHI_Weather_Pressure_Typed',
     @agentStepId = @agentStepId,
@@ -326,7 +332,7 @@ GO
 -- Map: direction to MM_DIR_Measurement_Direction 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] (
@@ -347,6 +353,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lMM_Measurement__SMHI_Weather_Wind_Typed',
     @agentStepId = @agentStepId,
@@ -431,7 +439,7 @@ GO
 -- Map: graphType to OC_TYP_Occasion_Type (as natural key)
 -- Map: _file to Metadata_OC (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] (
@@ -452,6 +460,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed',
     @agentStepId = @agentStepId,
@@ -522,7 +532,7 @@ GO
 -- Map: OC_ID to OC_ID_on 
 -- Map: _file to Metadata_MM_taken_OC_on (as metadata)
 --
--- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] (
@@ -543,6 +553,8 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Meteo', 
+    @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
     @name = 'lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed',
     @agentStepId = @agentStepId,
@@ -622,3 +634,96 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- The target definition used when generating the above
+DECLARE @xml XML = N'<target name="Meteo" database="Meteo">
+	<load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_Measurement">
+        select
+            _id, 
+            _file, 
+            _timestamp, 
+            [date],
+            [hour], 
+            [celsius1] as temperature
+        from
+            SMHI_Weather_TemperatureNew_Typed 
+        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+		<map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
+		<map source="temperature" target="MM_TMP_Measurement_Temperature"/>
+		<map source="_file" target="Metadata_MM" as="metadata"/>
+	</load>
+	<load source="SMHI_Weather_Temperature_Typed" target="lMM_Measurement">
+		<map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+		<map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
+		<map source="celsius" target="MM_TMP_Measurement_Temperature"/>
+		<map source="_file" target="Metadata_MM" as="metadata"/>
+	</load>
+	<load source="SMHI_Weather_Pressure_Typed" target="lMM_Measurement">
+		<map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+		<map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
+		<map source="pressure" target="MM_PRS_Measurement_Pressure"/>
+		<map source="_file" target="Metadata_MM" as="metadata"/>
+	</load>
+	<load source="SMHI_Weather_Wind_Typed" target="lMM_Measurement">
+		<map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
+		<map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
+		<map source="speed" target="MM_WND_Measurement_WindSpeed"/>
+		<map source="direction" target="MM_DIR_Measurement_Direction"/>
+		<map source="_file" target="Metadata_MM" as="metadata"/>
+	</load>
+	<load source="SMHI_Weather_TemperatureNewMetadata_Typed" target="lOC_Occasion">
+		<map source="weekday" target="OC_WDY_Occasion_Weekday" as="natural key"/>
+		<map source="graphType" target="OC_TYP_Occasion_Type" as="natural key"/>
+		<map source="_file" target="Metadata_OC" as="metadata"/>
+	</load>
+	<load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_taken_OC_on">
+        select
+            mm.MM_ID,
+            oc.OC_ID,
+            src._file
+        from
+            SMHI_Weather_TemperatureNew_Typed src
+        join
+            Meteo..lMM_Measurement mm
+        on
+            mm.MM_DAT_Measurement_Date = src.date
+        and
+            mm.MM_HOU_Measurement_Hour = src.hour
+        join
+            Meteo..lOC_Occasion oc 
+        on 
+            oc.Metadata_OC = src._file
+        <map source="MM_ID" target="MM_ID_taken" as="natural key"/>
+		<map source="OC_ID" target="OC_ID_on"/>
+		<map source="_file" target="Metadata_MM_taken_OC_on" as="metadata"/>
+	</load>
+</target>
+';
+DECLARE @name varchar(255) = @xml.value('/target[1]/@name', 'varchar(255)');
+DECLARE @CF_ID int;
+SELECT
+    @CF_ID = CF_ID
+FROM
+    metadata.lCF_Configuration
+WHERE
+    CF_NAM_Configuration_Name = @name;
+IF(@CF_ID is null) 
+BEGIN
+    INSERT INTO metadata.lCF_Configuration (
+        CF_TYP_CFT_ConfigurationType,
+        CF_NAM_Configuration_Name,
+        CF_XML_Configuration_XMLDefinition
+    )
+    VALUES (
+        'Target',
+        @name,
+        @xml
+    );
+END
+ELSE
+BEGIN
+    UPDATE metadata.lCF_Configuration
+    SET
+        CF_XML_Configuration_XMLDefinition = @xml
+    WHERE
+        CF_NAM_Configuration_Name = @name;
+END

@@ -35,7 +35,7 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateRawTable');
+beginMetadata(source.qualified + '_CreateRawTable', source.name, 'Source');
 /*~
     IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
     DROP TABLE [$source.qualified$_Raw];

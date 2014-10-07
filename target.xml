@@ -1,4 +1,4 @@
-<target database="%TargetDatabase%">
+<target name="Meteo" database="%TargetDatabase%">
     <load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_Measurement">
         <!-- simple test that a query can be provided -->
         select

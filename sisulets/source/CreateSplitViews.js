@@ -38,7 +38,7 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateSplitViews');
+beginMetadata(source.qualified + '_CreateSplitViews', source.name, 'Source');
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_Split', 'V') IS NOT NULL

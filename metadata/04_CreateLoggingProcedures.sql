@@ -7,7 +7,8 @@ drop procedure metadata._JobStarting;
 go
 
 create procedure metadata._JobStarting (
-	@name varchar(255),
+	@workflowName varchar(255),
+	@jobName varchar(255),
 	@agentJobId uniqueidentifier,
 	@start datetime2(7) = null
 )
@@ -15,6 +16,7 @@ as
 begin
 	set @start = isnull(@start, SYSDATETIME());
 	declare @JB_ID int;
+	declare @CF_ID int;
 
 	-- is this job already started?
 	select
@@ -22,10 +24,11 @@ begin
 	from
 		metadata.lJB_Job
 	where
-		JB_NAM_Job_Name = @name
+		JB_NAM_Job_Name = @jobName
 	and
 		JB_EST_EST_ExecutionStatus = 'Running';
 
+	-- start it if it is not running
 	if(@JB_ID is null)
 	begin
 		insert into metadata.lJB_Job (
@@ -36,12 +39,45 @@ begin
 			JB_EST_EST_ExecutionStatus
 		)
 		values ( 
-			@name,
+			@jobName,
 			@start,
 			@agentJobId,
 			@start, -- same as job start
 			'Running'
 		);
+
+		-- get the created JB_ID
+		select
+			@JB_ID = JB_ID
+		from
+			metadata.lJB_Job
+		where
+			JB_NAM_Job_Name = @jobName
+		and
+			JB_STA_Job_Start = @start;
+
+		-- see if this job has a stored configuration
+		select
+			@CF_ID = CF_ID
+		from
+			metadata.lCF_Configuration
+		where
+			CF_NAM_Configuration_Name = @workflowName
+		and
+			CF_TYP_CFT_ConfigurationType = 'Workflow';
+
+		if(@CF_ID is not null)
+		begin
+			-- connect the job with the configuration
+			insert into metadata.lJB_formed_CF_from (
+				JB_ID_formed, 
+				CF_ID_from
+			)
+			values (
+				@JB_ID,
+				@CF_ID
+			);
+		end
 	end	
 end
 go
@@ -104,6 +140,8 @@ drop procedure metadata._WorkStarting;
 go
  
 create procedure metadata._WorkStarting (
+	@configurationName varchar(255),
+	@configurationType varchar(42),
 	@WO_ID int output,
 	@name varchar(255),
 	@agentStepId smallint = null,
@@ -117,6 +155,9 @@ begin
 	set @start = isnull(@start, SYSDATETIME());
 	set @user = isnull(@user, SYSTEM_USER);
 	set @role = isnull(@role, USER);
+
+	declare @JB_ID int;
+	declare @CF_ID int;
 
 	-- is this work already started?
 	select
@@ -159,7 +200,6 @@ begin
 			WO_STA_Work_Start = @start;
 
 		-- try to find job id
-		declare @JB_ID int;
 		select
 			@JB_ID = JB_ID
 		from
@@ -178,6 +218,29 @@ begin
 			values (
 				@WO_ID,
 				@JB_ID
+			);
+		end
+
+		-- see if this job has a stored configuration
+		select
+			@CF_ID = CF_ID
+		from
+			metadata.lCF_Configuration
+		where
+			CF_NAM_Configuration_Name = @configurationName
+		and
+			CF_TYP_CFT_ConfigurationType = @configurationType;
+
+		if(@CF_ID is not null)
+		begin
+			-- connect the job with the configuration
+			insert into metadata.lWO_formed_CF_from (
+				WO_ID_formed, 
+				CF_ID_from
+			)
+			values (
+				@WO_ID,
+				@CF_ID
 			);
 		end
 	end

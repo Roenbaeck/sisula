@@ -1,7 +1,7 @@
 var METADATA = VARIABLES.MetaDatabase ? true : false;
 var METADATABASE = VARIABLES.MetaDatabase;
 
-function beginMetadata(workName) {
+function beginMetadata(workName, configurationName, configurationType) {
     if(METADATA) {
 /*~
 DECLARE @workId int;
@@ -10,6 +10,8 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 
 EXEC ${METADATABASE}$.metadata._WorkStarting
+    @configurationName = $(configurationName)? '$configurationName', : null,
+    @configurationType = $(configurationType)? '$configurationType', : null,
     @WO_ID = @workId OUTPUT, 
     @name  = '$workName',
     @agentStepId = @agentStepId,

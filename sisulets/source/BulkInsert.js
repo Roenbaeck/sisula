@@ -30,7 +30,7 @@ DECLARE @file int;
 DECLARE @inserts int;
 DECLARE @updates int;
 ~*/
-beginMetadata(source.qualified + '_BulkInsert');
+beginMetadata(source.qualified + '_BulkInsert', source.name, 'Source');
 setSourceToTargetMetadata(
     "@filename",                            // sourceName
     "'File'",                               // sourceType

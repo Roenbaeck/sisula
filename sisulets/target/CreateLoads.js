@@ -36,7 +36,7 @@ DECLARE @actions TABLE (
     [action] char(1) not null
 );
 ~*/
-    beginMetadata(load.qualified);
+    beginMetadata(load.qualified, target.name, 'Target');
     setSourceToTargetMetadata(
         "'" + load.source + "'",        // sourceName
         "'Table'",                      // sourceType

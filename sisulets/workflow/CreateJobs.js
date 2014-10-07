@@ -42,7 +42,7 @@ sp_add_jobstep
     @step_id            = 1,
     @subsystem          = 'TSQL',
     @database_name      = '${METADATABASE}$',
-    @command            = 'EXEC metadata._JobStarting @name = ''$job.name'', @agentJobId = $$(ESCAPE_NONE(JOBID))',
+    @command            = 'EXEC metadata._JobStarting @workflowName = ''$workflow.name'', @jobName = ''$job.name'', @agentJobId = $$(ESCAPE_NONE(JOBID))',
     @on_success_action  = 3; -- go to the next step
 GO    
 ~*/
