@@ -49,7 +49,7 @@
 			WHERE
 				src._file = f._file
 			FOR XML PATH('')
-		) c ([row])        
+		) c ([row])
         <!-- 
             on the format (?=.*?KeyName[^:]*:\s*([^·]*))?
             positive lookahead with an optional number of preceeding characters leading 

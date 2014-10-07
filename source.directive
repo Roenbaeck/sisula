@@ -14,3 +14,5 @@ sisulets/source/CreateErrorViews.js
 sisulets/source/CreateTypedTables.js
 sisulets/source/SplitRawIntoTyped.js
 sisulets/source/AddKeysToTyped.js
+# finally add the source xml provided that execution got this far
+#sisulets/source/AddSourceDefinition.js

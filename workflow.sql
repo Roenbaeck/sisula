@@ -6,9 +6,6 @@ sp_delete_job
     @job_name = 'SMHI_Weather_Staging';
 GO
 sp_add_job 
-    @description = '
-        This is the staging job.
-        ',
     -- mandatory parameters below and optional ones above this line
     @owner_login_name = 'NT SERVICE\SQLSERVERAGENT', -- remove hard coding later
     @job_name = 'SMHI_Weather_Staging';

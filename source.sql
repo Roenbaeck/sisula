@@ -23,7 +23,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateRawTable] (
@@ -79,7 +79,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateInsertView] (
@@ -138,7 +138,7 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
@@ -151,6 +151,8 @@ AS
 BEGIN
 SET NOCOUNT ON;
 DECLARE @file int;
+DECLARE @inserts int;
+DECLARE @updates int;
 DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
@@ -172,31 +174,35 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetCreated = DEFAULT;
     IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
     BEGIN
-        EXEC('
-            BULK INSERT [SMHI_Weather_Insert]
-            FROM ''' + @filename + '''
-            WITH (
-                CODEPAGE = ''ACP'',
-                DATAFILETYPE = ''char'',
-                FIELDTERMINATOR = ''\r\n'',
-                TABLOCK 
-            );
-        ');
-        SET @file = (
-            SELECT
-                CO_ID
-            FROM
-                metadata.lCO_Container
-            WHERE
-                CO_NAM_Container_Name = @filename
-            AND
-                CO_CRE_Container_Created = @lastModified
+    EXEC('
+        BULK INSERT [SMHI_Weather_Insert]
+        FROM ''' + @filename + '''
+        WITH (
+            CODEPAGE = ''ACP'',
+            DATAFILETYPE = ''char'',
+            FIELDTERMINATOR = ''\r\n'',
+            TABLOCK 
         );
-        UPDATE [SMHI_Weather_Raw]
-        SET
-            _file = @file
+    ');
+    SET @inserts = @@ROWCOUNT;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    SET @file = (
+        SELECT
+            CO_ID
+        FROM
+            metadata.lCO_Container
         WHERE
-            _file = 0;
+            CO_NAM_Container_Name = @filename
+        AND
+            CO_CRE_Container_Created = @lastModified
+    );
+    UPDATE [SMHI_Weather_Raw]
+    SET
+        _file = @file
+    WHERE
+        _file = 0;
+    SET @updates = @@ROWCOUNT;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END 
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -236,7 +242,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Split
 -- Create: SMHI_Weather_Wind_Split
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] (
@@ -646,7 +652,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Error
 -- Create: SMHI_Weather_Wind_Error
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] (
@@ -792,7 +798,7 @@ GO
 -- Create: SMHI_Weather_Pressure_Typed
 -- Create: SMHI_Weather_Wind_Typed
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] (
@@ -903,7 +909,7 @@ GO
 -- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
 -- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] (
@@ -1154,7 +1160,7 @@ GO
 -- Key: date (as primary key)
 -- Key: hour (as primary key)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] (

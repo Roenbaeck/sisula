@@ -29,9 +29,9 @@ AS
 BEGIN
 
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -126,15 +126,15 @@ DECLARE @actions TABLE (
         LEFT($$action, 1) INTO @actions;
 
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
 ~*/
-    setInsertsMetadata('@insert');
-    setUpdatesMetadata('@update');
-    setDeletesMetadata('@delete');
+    setInsertsMetadata('@inserts');
+    setUpdatesMetadata('@updates');
+    setDeletesMetadata('@deletes');
     endMetadata();
 /*~
 END

@@ -12,7 +12,6 @@
     <!-- common parameters that all jobs need for logging to metadata -->
     <variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
     <job name="%System%_%Source%_Staging">
-        This is the staging job.
         <variable name="tableName" value="MyTable"/>
         <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC %System%_%Source%_CreateRawTable %parameters%

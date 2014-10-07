@@ -162,6 +162,8 @@ var Sisulator = {
     sisulate: function(xml, map, directive) {
         // objectify the xml
         var jsonObject = Sisulator.objectify(xml, map);
+        // consistent with other line breaks and without comments
+        jsonObject[map.root]._xml = xml.xml.replace(/(\r\n|\n|\r)/g, '\n').replace(/<!--[\s\S]*?-->/g, ''); 
         eval("var " + map.root + " = jsonObject." + map.root);
         // this variable holds the result
         var _sisula_ = '';
@@ -189,8 +191,8 @@ var Sisulator = {
                 // substitute from SQL template to JavaScript
                 for(var i = 1; i < sisulets.length; i+=2) {
                     // honor escaped dollar signs
-                    sisulets[i] = sisulets[i].replace(/[$]{2}/g, 'Â§DOLLARÂ§'); // escaping dollar signs
-                    sisulets[i] = sisulets[i].replace(/["]{2}/g, 'Â§QUOTEDÂ§'); // escaping double quotes
+                    sisulets[i] = sisulets[i].replace(/[$]{2}/g, '§DOLLAR§'); // escaping dollar signs
+                    sisulets[i] = sisulets[i].replace(/["]{2}/g, '§QUOTED§'); // escaping double quotes
                     sisulets[i] = sisulets[i].replace(/[$]{([\S\s]*?)}[$]/g, '" + $1 + "'); // multi-expression
                     sisulets[i] = sisulets[i].replace(/[$]\(([\S\s]*?)\)\?[^\S\n]*([^:\n]*)[:]?[^\S\n]*(.*)/g, '" + ($1 ? "$2" : "$3") + "'); // conditional
                     sisulets[i] = sisulets[i].replace(/[\$]([\w.]*?)(?:([\$])|([^\w.]|$))/g, '" + ($1 ? $1 : "") + "$3'); // single
@@ -210,8 +212,8 @@ var Sisulator = {
                     throw e;
                 }
             }
-            _sisula_ = _sisula_.replace(/Â§DOLLARÂ§/g, '$'); // unescaping dollar signs
-            _sisula_ = _sisula_.replace(/Â§QUOTEDÂ§/g, '"'); // unescaping double quotes
+            _sisula_ = _sisula_.replace(/§DOLLAR§/g, '$'); // unescaping dollar signs
+            _sisula_ = _sisula_.replace(/§QUOTED§/g, '"'); // unescaping double quotes
             _sisula_ = _sisula_.replace(/^\s*[\r\n]/gm, ''); // remove empty lines
             _sisula_ = _sisula_.replace(/(\S+[^\S\n])(?:[^\S\n]+)/gm, '$1'); // consume multiple spaces, but not indentation
         }

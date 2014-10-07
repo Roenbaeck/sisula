@@ -7,3 +7,5 @@ sisulets/target/Helpers.js
 sisulets/target/Naming.js
 sisulets/target/UseDatabase.js
 sisulets/target/CreateLoads.js
+# finally add the target xml provided that execution got this far
+#sisulets/target/AddTargetDefinition.js

@@ -13,7 +13,7 @@ GO
 -- Map: temperature to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] (
@@ -23,9 +23,9 @@ CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_TemperatureNew_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -87,14 +87,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -123,7 +123,7 @@ GO
 -- Map: celsius to MM_TMP_Measurement_Temperature 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] (
@@ -133,9 +133,9 @@ CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Temperature_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -188,14 +188,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -224,7 +224,7 @@ GO
 -- Map: pressure to MM_PRS_Measurement_Pressure 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] (
@@ -234,9 +234,9 @@ CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Pressure_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -289,14 +289,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -326,7 +326,7 @@ GO
 -- Map: direction to MM_DIR_Measurement_Direction 
 -- Map: _file to Metadata_MM (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] (
@@ -336,9 +336,9 @@ CREATE PROCEDURE [lMM_Measurement__SMHI_Weather_Wind_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -396,14 +396,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -431,7 +431,7 @@ GO
 -- Map: graphType to OC_TYP_Occasion_Type (as natural key)
 -- Map: _file to Metadata_OC (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] (
@@ -441,9 +441,9 @@ CREATE PROCEDURE [lOC_Occasion__SMHI_Weather_TemperatureNewMetadata_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -487,14 +487,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -522,7 +522,7 @@ GO
 -- Map: OC_ID to OC_ID_on 
 -- Map: _file to Metadata_MM_taken_OC_on (as metadata)
 --
--- Generated: Mon Oct 6 12:39:42 UTC+0200 2014 by Lars
+-- Generated: Tue Oct 7 08:44:10 UTC+0200 2014 by Lars
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] (
@@ -532,9 +532,9 @@ CREATE PROCEDURE [lMM_taken_OC_on__SMHI_Weather_TemperatureNew_Typed] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int;
-DECLARE @update int;
-DECLARE @delete int;
+DECLARE @inserts int;
+DECLARE @updates int;
+DECLARE @deletes int;
 DECLARE @actions TABLE (
     [action] char(1) not null
 );
@@ -599,14 +599,14 @@ EXEC Stage.metadata._WorkSourceToTarget
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
-        @insert = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @update = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @delete = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
+        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
+        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @update;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @delete;
+    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
