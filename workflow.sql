@@ -256,6 +256,16 @@ sp_add_jobstep
     @step_name = 'Load ST ST IS tie'; 
 GO
 sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        ',
+    @database_name = 'Stage',
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'NYPD_Vehicle_Loading', 
+    @step_name = 'Load intersection pass 2'; 
+GO
+sp_add_jobstep 
     @job_name = 'NYPD_Vehicle_Loading', 
     @step_name = 'Log success of job',
     @subsystem = 'TSQL',
@@ -276,7 +286,7 @@ sp_update_jobstep
     @step_id = 2,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 6,
+    @on_fail_step_id = 7,
     @on_success_action = 3; -- go to the next step
 GO
 sp_update_jobstep
@@ -284,7 +294,7 @@ sp_update_jobstep
     @step_id = 3,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 6,
+    @on_fail_step_id = 7,
     @on_success_action = 3; -- go to the next step
 GO
 sp_update_jobstep
@@ -292,7 +302,15 @@ sp_update_jobstep
     @step_id = 4,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 6,
+    @on_fail_step_id = 7,
+    @on_success_action = 3; -- go to the next step
+GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Loading',
+    @step_id = 5,
+    -- ensure logging when any step fails
+    @on_fail_action = 4, -- go to step with id
+    @on_fail_step_id = 7,
     @on_success_action = 3; -- go to the next step
 GO
 -- The workflow definition used when generating the above
@@ -352,6 +370,9 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
         </jobstep>
 		<jobstep name="Load ST ST IS tie" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
             EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        </jobstep>
+		<jobstep name="Load intersection pass 2" database_name="%SourceDatabase%" subsystem="TSQL">
+            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 	</job>
 </workflow>

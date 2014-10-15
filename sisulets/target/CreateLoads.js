@@ -131,7 +131,7 @@ DECLARE @actions TABLE (
     THEN UPDATE
     SET
 ~*/
-        var maps = other.concat(metadata);
+        var maps = others.concat(metadata);
         for(i = 0; map = maps[i]; i++) {
 /*~
         t.[$map.target] = s.[$map.source]$(i < maps.length - 1)?,

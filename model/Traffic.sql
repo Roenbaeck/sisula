@@ -45,7 +45,7 @@ CREATE TABLE [dbo].[ST_NAM_Street_Name] (
 );
 GO
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- IS_Intersection table (with 3 attributes)
+-- IS_Intersection table (with 4 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.IS_Intersection', 'U') IS NULL
 CREATE TABLE [dbo].[IS_Intersection] (
@@ -110,6 +110,24 @@ CREATE TABLE [dbo].[IS_KIL_Intersection_KilledCount] (
     )
 );
 GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- IS_VEH_Intersection_VehicleCount table (on IS_Intersection)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.IS_VEH_Intersection_VehicleCount', 'U') IS NULL
+CREATE TABLE [dbo].[IS_VEH_Intersection_VehicleCount] (
+    IS_VEH_IS_ID int not null,
+    IS_VEH_Intersection_VehicleCount smallint not null,
+    IS_VEH_ChangedAt date not null,
+    Metadata_IS_VEH int not null,
+    constraint fkIS_VEH_Intersection_VehicleCount foreign key (
+        IS_VEH_IS_ID
+    ) references [dbo].[IS_Intersection](IS_ID),
+    constraint pkIS_VEH_Intersection_VehicleCount primary key (
+        IS_VEH_IS_ID asc,
+        IS_VEH_ChangedAt desc
+    )
+);
+GO
 -- TIES ---------------------------------------------------------------------------------------------------------------
 --
 -- Ties are used to represent relationships between entities.
@@ -136,18 +154,8 @@ CREATE TABLE [dbo].[ST_intersecting_IS_of_ST_crossing] (
     constraint ST_intersecting_IS_of_ST_crossing_fkST_crossing foreign key (
         ST_ID_crossing
     ) references [dbo].[ST_Street](ST_ID), 
-    constraint ST_intersecting_IS_of_ST_crossing_uqST_intersecting unique (
-        ST_ID_intersecting
-    ),
-    constraint ST_intersecting_IS_of_ST_crossing_uqIS_of unique (
-        IS_ID_of
-    ),
-    constraint ST_intersecting_IS_of_ST_crossing_uqST_crossing unique (
-        ST_ID_crossing
-    ),
     constraint pkST_intersecting_IS_of_ST_crossing primary key (
         ST_ID_intersecting asc,
-        IS_ID_of asc,
         ST_ID_crossing asc
     )
 );
@@ -368,6 +376,69 @@ BEGIN
     );
 END
 GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfIS_VEH_Intersection_VehicleCount restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcIS_VEH_Intersection_VehicleCount restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rfIS_VEH_Intersection_VehicleCount', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rfIS_VEH_Intersection_VehicleCount] (
+        @id int,
+        @value smallint,
+        @changed date
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.IS_VEH_Intersection_VehicleCount
+                    FROM
+                        [dbo].[IS_VEH_Intersection_VehicleCount] pre
+                    WHERE
+                        pre.IS_VEH_IS_ID = @id
+                    AND
+                        pre.IS_VEH_ChangedAt < @changed
+                    ORDER BY
+                        pre.IS_VEH_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.IS_VEH_Intersection_VehicleCount
+                    FROM
+                        [dbo].[IS_VEH_Intersection_VehicleCount] fol
+                    WHERE
+                        fol.IS_VEH_IS_ID = @id
+                    AND
+                        fol.IS_VEH_ChangedAt > @changed
+                    ORDER BY
+                        fol.IS_VEH_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [dbo].[IS_VEH_Intersection_VehicleCount]
+    ADD CONSTRAINT [rcIS_VEH_Intersection_VehicleCount] CHECK (
+        [dbo].[rfIS_VEH_Intersection_VehicleCount] (
+            IS_VEH_IS_ID,
+            IS_VEH_Intersection_VehicleCount,
+            IS_VEH_ChangedAt
+        ) = 0
+    );
+END
+GO
 -- KEY GENERATORS -----------------------------------------------------------------------------------------------------
 --
 -- These stored procedures can be used to generate identities of entities.
@@ -528,6 +599,28 @@ BEGIN
     ');
 END
 GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rIS_VEH_Intersection_VehicleCount rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rIS_VEH_Intersection_VehicleCount','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rIS_VEH_Intersection_VehicleCount] (
+        @changingTimepoint date
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_IS_VEH,
+        IS_VEH_IS_ID,
+        IS_VEH_Intersection_VehicleCount,
+        IS_VEH_ChangedAt
+    FROM
+        [dbo].[IS_VEH_Intersection_VehicleCount]
+    WHERE
+        IS_VEH_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
 -- ANCHOR TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
 --
 -- These table valued functions simplify temporal querying by providing a temporal
@@ -638,7 +731,11 @@ SELECT
     [KIL].IS_KIL_IS_ID,
     [KIL].Metadata_IS_KIL,
     [KIL].IS_KIL_ChangedAt,
-    [KIL].IS_KIL_Intersection_KilledCount
+    [KIL].IS_KIL_Intersection_KilledCount,
+    [VEH].IS_VEH_IS_ID,
+    [VEH].Metadata_IS_VEH,
+    [VEH].IS_VEH_ChangedAt,
+    [VEH].IS_VEH_Intersection_VehicleCount
 FROM
     [dbo].[IS_Intersection] [IS]
 LEFT JOIN
@@ -679,6 +776,19 @@ AND
             [dbo].[IS_KIL_Intersection_KilledCount] sub
         WHERE
             sub.IS_KIL_IS_ID = [IS].IS_ID
+   )
+LEFT JOIN
+    [dbo].[IS_VEH_Intersection_VehicleCount] [VEH]
+ON
+    [VEH].IS_VEH_IS_ID = [IS].IS_ID
+AND
+    [VEH].IS_VEH_ChangedAt = (
+        SELECT
+            max(sub.IS_VEH_ChangedAt)
+        FROM
+            [dbo].[IS_VEH_Intersection_VehicleCount] sub
+        WHERE
+            sub.IS_VEH_IS_ID = [IS].IS_ID
    );
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -702,7 +812,11 @@ SELECT
     [KIL].IS_KIL_IS_ID,
     [KIL].Metadata_IS_KIL,
     [KIL].IS_KIL_ChangedAt,
-    [KIL].IS_KIL_Intersection_KilledCount
+    [KIL].IS_KIL_Intersection_KilledCount,
+    [VEH].IS_VEH_IS_ID,
+    [VEH].Metadata_IS_VEH,
+    [VEH].IS_VEH_ChangedAt,
+    [VEH].IS_VEH_Intersection_VehicleCount
 FROM
     [dbo].[IS_Intersection] [IS]
 LEFT JOIN
@@ -743,6 +857,19 @@ AND
             [dbo].[rIS_KIL_Intersection_KilledCount](@changingTimepoint) sub
         WHERE
             sub.IS_KIL_IS_ID = [IS].IS_ID
+   )
+LEFT JOIN
+    [dbo].[rIS_VEH_Intersection_VehicleCount](@changingTimepoint) [VEH]
+ON
+    [VEH].IS_VEH_IS_ID = [IS].IS_ID
+AND
+    [VEH].IS_VEH_ChangedAt = (
+        SELECT
+            max(sub.IS_VEH_ChangedAt)
+        FROM
+            [dbo].[rIS_VEH_Intersection_VehicleCount](@changingTimepoint) sub
+        WHERE
+            sub.IS_VEH_IS_ID = [IS].IS_ID
    );
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -801,6 +928,17 @@ FROM (
         (@selection is null OR @selection like '%KIL%')
     AND
         IS_KIL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        IS_VEH_IS_ID AS IS_ID,
+        IS_VEH_ChangedAt AS inspectedTimepoint,
+        'VEH' AS mnemonic
+    FROM
+        [dbo].[IS_VEH_Intersection_VehicleCount]
+    WHERE
+        (@selection is null OR @selection like '%VEH%')
+    AND
+        IS_VEH_ChangedAt BETWEEN @intervalStart AND @intervalEnd
 ) timepoints
 CROSS APPLY
     [dbo].[pIS_Intersection](timepoints.inspectedTimepoint) [pIS]
@@ -1178,6 +1316,100 @@ BEGIN
     END
 END
 GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_IS_VEH_Intersection_VehicleCount instead of INSERT trigger on IS_VEH_Intersection_VehicleCount
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_IS_VEH_Intersection_VehicleCount', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_IS_VEH_Intersection_VehicleCount];
+GO
+CREATE TRIGGER [dbo].[it_IS_VEH_Intersection_VehicleCount] ON [dbo].[IS_VEH_Intersection_VehicleCount]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @IS_VEH_Intersection_VehicleCount TABLE (
+        IS_VEH_IS_ID int not null,
+        Metadata_IS_VEH int not null,
+        IS_VEH_ChangedAt date not null,
+        IS_VEH_Intersection_VehicleCount smallint not null,
+        IS_VEH_Version bigint not null,
+        IS_VEH_StatementType char(1) not null,
+        primary key(
+            IS_VEH_Version,
+            IS_VEH_IS_ID
+        )
+    );
+    INSERT INTO @IS_VEH_Intersection_VehicleCount
+    SELECT
+        i.IS_VEH_IS_ID,
+        i.Metadata_IS_VEH,
+        i.IS_VEH_ChangedAt,
+        i.IS_VEH_Intersection_VehicleCount,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.IS_VEH_IS_ID
+            ORDER BY
+                i.IS_VEH_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(IS_VEH_Version),
+        @currentVersion = 0
+    FROM
+        @IS_VEH_Intersection_VehicleCount;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.IS_VEH_StatementType =
+                CASE
+                    WHEN [VEH].IS_VEH_IS_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN [dbo].[rfIS_VEH_Intersection_VehicleCount](
+                        v.IS_VEH_IS_ID,
+                        v.IS_VEH_Intersection_VehicleCount,
+                        v.IS_VEH_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @IS_VEH_Intersection_VehicleCount v
+        LEFT JOIN
+            [dbo].[IS_VEH_Intersection_VehicleCount] [VEH]
+        ON
+            [VEH].IS_VEH_IS_ID = v.IS_VEH_IS_ID
+        AND
+            [VEH].IS_VEH_ChangedAt = v.IS_VEH_ChangedAt
+        AND
+            [VEH].IS_VEH_Intersection_VehicleCount = v.IS_VEH_Intersection_VehicleCount
+        WHERE
+            v.IS_VEH_Version = @currentVersion;
+        INSERT INTO [dbo].[IS_VEH_Intersection_VehicleCount] (
+            IS_VEH_IS_ID,
+            Metadata_IS_VEH,
+            IS_VEH_ChangedAt,
+            IS_VEH_Intersection_VehicleCount
+        )
+        SELECT
+            IS_VEH_IS_ID,
+            Metadata_IS_VEH,
+            IS_VEH_ChangedAt,
+            IS_VEH_Intersection_VehicleCount
+        FROM
+            @IS_VEH_Intersection_VehicleCount
+        WHERE
+            IS_VEH_Version = @currentVersion
+        AND
+            IS_VEH_StatementType in ('N');
+    END
+END
+GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
 -- The following triggers on the latest view make it behave like a table.
@@ -1360,7 +1592,11 @@ BEGIN
         IS_KIL_IS_ID int null,
         Metadata_IS_KIL int null,
         IS_KIL_ChangedAt date null,
-        IS_KIL_Intersection_KilledCount int null
+        IS_KIL_Intersection_KilledCount int null,
+        IS_VEH_IS_ID int null,
+        Metadata_IS_VEH int null,
+        IS_VEH_ChangedAt date null,
+        IS_VEH_Intersection_VehicleCount smallint null
     );
     INSERT INTO @inserted
     SELECT
@@ -1377,7 +1613,11 @@ BEGIN
         ISNULL(ISNULL(i.IS_KIL_IS_ID, i.IS_ID), a.IS_ID),
         ISNULL(i.Metadata_IS_KIL, i.Metadata_IS),
         ISNULL(i.IS_KIL_ChangedAt, @now),
-        i.IS_KIL_Intersection_KilledCount
+        i.IS_KIL_Intersection_KilledCount,
+        ISNULL(ISNULL(i.IS_VEH_IS_ID, i.IS_ID), a.IS_ID),
+        ISNULL(i.Metadata_IS_VEH, i.Metadata_IS),
+        ISNULL(i.IS_VEH_ChangedAt, @now),
+        i.IS_VEH_Intersection_VehicleCount
     FROM (
         SELECT
             IS_ID,
@@ -1394,6 +1634,10 @@ BEGIN
             Metadata_IS_KIL,
             IS_KIL_ChangedAt,
             IS_KIL_Intersection_KilledCount,
+            IS_VEH_IS_ID,
+            Metadata_IS_VEH,
+            IS_VEH_ChangedAt,
+            IS_VEH_Intersection_VehicleCount,
             ROW_NUMBER() OVER (PARTITION BY IS_ID ORDER BY IS_ID) AS Row
         FROM
             inserted
@@ -1447,6 +1691,21 @@ BEGIN
         @inserted i
     WHERE
         i.IS_KIL_Intersection_KilledCount is not null;
+    INSERT INTO [dbo].[IS_VEH_Intersection_VehicleCount] (
+        Metadata_IS_VEH,
+        IS_VEH_IS_ID,
+        IS_VEH_ChangedAt,
+        IS_VEH_Intersection_VehicleCount
+    )
+    SELECT
+        i.Metadata_IS_VEH,
+        i.IS_VEH_IS_ID,
+        i.IS_VEH_ChangedAt,
+        i.IS_VEH_Intersection_VehicleCount
+    FROM
+        @inserted i
+    WHERE
+        i.IS_VEH_Intersection_VehicleCount is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -1533,6 +1792,30 @@ BEGIN
         WHERE
             i.IS_KIL_Intersection_KilledCount is not null;
     END
+    IF(UPDATE(IS_VEH_IS_ID))
+        RAISERROR('The foreign key column IS_VEH_IS_ID is not updatable.', 16, 1);
+    IF(UPDATE(IS_VEH_Intersection_VehicleCount))
+    BEGIN
+        INSERT INTO [dbo].[IS_VEH_Intersection_VehicleCount] (
+            Metadata_IS_VEH,
+            IS_VEH_IS_ID,
+            IS_VEH_ChangedAt,
+            IS_VEH_Intersection_VehicleCount
+        )
+        SELECT
+            ISNULL(i.Metadata_IS_VEH, i.Metadata_IS),
+            ISNULL(i.IS_VEH_IS_ID, i.IS_ID),
+            cast(CASE
+                WHEN i.IS_VEH_Intersection_VehicleCount is null THEN i.IS_VEH_ChangedAt
+                WHEN UPDATE(IS_VEH_ChangedAt) THEN i.IS_VEH_ChangedAt
+                ELSE @now
+            END as date),
+            i.IS_VEH_Intersection_VehicleCount
+        FROM
+            inserted i
+        WHERE
+            i.IS_VEH_Intersection_VehicleCount is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1570,6 +1853,15 @@ BEGIN
         d.IS_KIL_ChangedAt = [KIL].IS_KIL_ChangedAt
     AND
         d.IS_KIL_IS_ID = [KIL].IS_KIL_IS_ID;
+    DELETE [VEH]
+    FROM
+        [dbo].[IS_VEH_Intersection_VehicleCount] [VEH]
+    JOIN
+        deleted d
+    ON
+        d.IS_VEH_ChangedAt = [VEH].IS_VEH_ChangedAt
+    AND
+        d.IS_VEH_IS_ID = [VEH].IS_VEH_IS_ID;
     DELETE [IS]
     FROM
         [dbo].[IS_Intersection] [IS]
@@ -1585,12 +1877,18 @@ BEGIN
         [dbo].[IS_KIL_Intersection_KilledCount] [KIL]
     ON
         [KIL].IS_KIL_IS_ID = [IS].IS_ID
+    LEFT JOIN
+        [dbo].[IS_VEH_Intersection_VehicleCount] [VEH]
+    ON
+        [VEH].IS_VEH_IS_ID = [IS].IS_ID
     WHERE
         [COL].IS_COL_IS_ID is null
     AND
         [INJ].IS_INJ_IS_ID is null
     AND
-        [KIL].IS_KIL_IS_ID is null;
+        [KIL].IS_KIL_IS_ID is null
+    AND
+        [VEH].IS_VEH_IS_ID is null;
 END
 GO
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
@@ -1696,7 +1994,6 @@ BEGIN
         ST_ID_crossing int not null,
         primary key (
             ST_ID_intersecting,
-            IS_ID_of,
             ST_ID_crossing
         )
     );
@@ -1710,8 +2007,6 @@ BEGIN
         inserted i
     WHERE
         i.ST_ID_intersecting is not null
-    AND
-        i.IS_ID_of is not null
     AND
         i.ST_ID_crossing is not null;
     INSERT INTO [dbo].[ST_intersecting_IS_of_ST_crossing] (
@@ -1731,9 +2026,7 @@ BEGIN
         [dbo].[ST_intersecting_IS_of_ST_crossing] tie
     ON
         tie.ST_ID_intersecting = i.ST_ID_intersecting
-    OR
-        tie.IS_ID_of = i.IS_ID_of
-    OR
+    AND
         tie.ST_ID_crossing = i.ST_ID_crossing
     WHERE
         tie.ST_ID_crossing is null;
@@ -1774,6 +2067,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
+    IF(UPDATE(ST_ID_intersecting))
+        RAISERROR('The identity column ST_ID_intersecting is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID_crossing))
+        RAISERROR('The identity column ST_ID_crossing is not updatable.', 16, 1);
     INSERT INTO [dbo].[ST_intersecting_IS_of_ST_crossing] (
         Metadata_ST_intersecting_IS_of_ST_crossing,
         ST_ID_intersecting,
@@ -1803,13 +2100,9 @@ BEGIN
     JOIN
         deleted d
     ON
-       (
-            d.ST_ID_intersecting = tie.ST_ID_intersecting
-        OR
-            d.IS_ID_of = tie.IS_ID_of
-        OR
-            d.ST_ID_crossing = tie.ST_ID_crossing
-       );
+        d.ST_ID_intersecting = tie.ST_ID_intersecting
+    AND
+        d.ST_ID_crossing = tie.ST_ID_crossing;
 END
 GO
 -- SCHEMA EVOLUTION ---------------------------------------------------------------------------------------------------
@@ -1835,7 +2128,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-10-15" time="13:50:06"><metadata changingRange="date" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="ST" descriptor="Street" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata capsule="dbo"/><layout x="957.45" y="593.94" fixed="false"/></attribute><layout x="889.15" y="576.75" fixed="false"/></anchor><tie><anchorRole role="intersecting" type="ST" identifier="false"/><anchorRole role="of" type="IS" identifier="false"/><anchorRole role="crossing" type="ST" identifier="false"/><metadata capsule="dbo"/><layout x="885.25" y="482.57" fixed="false"/></tie><anchor mnemonic="IS" descriptor="Intersection" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="COL" descriptor="CollisionCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="868.55" y="368.42" fixed="false"/></attribute><attribute mnemonic="INJ" descriptor="InjuredCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="909.90" y="323.48" fixed="false"/></attribute><attribute mnemonic="KIL" descriptor="KilledCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="966.00" y="367.00" fixed="false"/></attribute><layout x="900.77" y="403.78" fixed="false"/></anchor></schema>';
+   N'<schema format="0.98" date="2014-10-15" time="19:43:59"><metadata changingRange="date" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="ST" descriptor="Street" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata capsule="dbo"/><layout x="811.12" y="627.80" fixed="false"/></attribute><layout x="833.28" y="572.21" fixed="true"/></anchor><anchor mnemonic="IS" descriptor="Intersection" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="COL" descriptor="CollisionCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="868.55" y="368.42" fixed="false"/></attribute><attribute mnemonic="INJ" descriptor="InjuredCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="909.90" y="323.48" fixed="false"/></attribute><attribute mnemonic="KIL" descriptor="KilledCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="966.00" y="367.00" fixed="false"/></attribute><attribute mnemonic="VEH" descriptor="VehicleCount" timeRange="date" dataRange="smallint"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="953.42" y="432.55" fixed="false"/></attribute><layout x="900.77" y="403.78" fixed="false"/></anchor><tie><anchorRole role="intersecting" type="ST" identifier="true"/><anchorRole role="of" type="IS" identifier="false"/><anchorRole role="crossing" type="ST" identifier="true"/><metadata capsule="dbo"/><layout x="857.65" y="494.83" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

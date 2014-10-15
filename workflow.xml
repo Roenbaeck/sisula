@@ -61,5 +61,9 @@
         <jobstep name="Load ST ST IS tie" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__%System%_%Source%_Collision_Typed] %parameters%
         </jobstep>
+        <!-- IS_Intersection pass 2 -->
+        <jobstep name="Load intersection pass 2" database_name="%stage%" subsystem="TSQL">
+            EXEC [dbo].[lIS_Intersection__%System%_%Source%_Collision_Typed__2] %parameters%
+        </jobstep>
     </job>
 </workflow>
