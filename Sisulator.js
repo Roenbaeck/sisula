@@ -100,7 +100,9 @@ var MAP = {
                 return fragment.getAttribute('source') + '__' + fragment.getAttribute('target');
             },
             load: function(xml, fragment) {
-                return fragment.getAttribute('source') + '__' + fragment.getAttribute('target');
+                var pass = fragment.getAttribute('pass');
+                pass = pass ? '__' + pass : '';
+                return fragment.getAttribute('source') + '__' + fragment.getAttribute('target') + pass;
             }
         }
     }

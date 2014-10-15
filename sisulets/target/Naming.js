@@ -1,5 +1,6 @@
 // create some qualified names
-var load;
+var load, pass;
 while(load = target.nextLoad()) {
-    load.qualified = load.target + '__' + load.source;
+    pass = load.pass ? '__' + load.pass : '';
+    load.qualified = load.target + '__' + load.source + pass;
 }

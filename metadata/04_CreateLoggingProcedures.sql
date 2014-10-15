@@ -94,7 +94,8 @@ create procedure metadata._JobStopping (
 )
 as
 begin
-	set @stop = isnull(@stop, SYSDATETIME());
+	-- add a chronon in order to guarantee uniqueness (if shorter duration)
+	set @stop = isnull(@stop, dateadd(nanosecond, 100, SYSDATETIME()));
 	set @status = isnull(@status, 'Success');
 	declare @JB_ID int;
 
@@ -261,7 +262,8 @@ create procedure metadata._WorkStopping (
 )
 as
 begin
-	set @stop = isnull(@stop, SYSDATETIME());
+	-- add a chronon in order to guarantee uniqueness (if shorter duration)
+	set @stop = isnull(@stop, dateadd(nanosecond, 100, SYSDATETIME()));
 	set @status = isnull(@status, 'Success');
 
 	-- ensure this work is running!

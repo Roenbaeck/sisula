@@ -22,7 +22,7 @@
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
         <map source="_file" target="Metadata_ST" as="metadata"/>
     </load>
-    <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection">
+    <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection" pass="1">
         <!-- create new identities for all intersections that haven't been seen before -->
         select 
             src.IntersectingStreet,
@@ -111,9 +111,9 @@
         ) t
         on
             t._rowId = i._rowId
-        <map source="IS_ID_of" target="IS_ID_of" as="surrogate key"/>
-        <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="surrogate key"/>
-        <map source="ST_ID_crossing" target="ST_ID_crossing" as="surrogate key"/>
+        <map source="IS_ID_of" target="IS_ID_of" as="natural key"/>
+        <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key"/>
+        <map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key"/>
         <map source="_file" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
     </load>
     <!--

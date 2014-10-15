@@ -58,8 +58,9 @@ while(part = source.nextPart()) {
 ~*/
     }
     while(calculation = part.nextCalculation()) {
+        var persisted = calculation.persisted == 'false' ? '' : 'PERSISTED';
 /*~
-        [$calculation.name] as CAST(${calculation._calculation.trim()}$ AS $calculation.format) PERSISTED$(part.hasMoreCalculations())?, 
+        [$calculation.name] as CAST(${calculation._calculation.trim()}$ AS $calculation.format) $persisted$(part.hasMoreCalculations())?, 
 ~*/
     }
 /*~

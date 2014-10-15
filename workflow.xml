@@ -53,5 +53,13 @@
         <jobstep name="Load streets" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC [dbo].[lST_Street__%System%_%Source%_Collision_Typed] %parameters%
         </jobstep>
+        <!-- IS_Intersection pass 1 -->
+        <jobstep name="Load intersection pass 1" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC [dbo].[lIS_Intersection__%System%_%Source%_Collision_Typed__1] %parameters%
+        </jobstep>
+        <!-- ST_intersecting_IS_of_ST_crossing -->
+        <jobstep name="Load ST ST IS tie" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__%System%_%Source%_Collision_Typed] %parameters%
+        </jobstep>
     </job>
 </workflow>

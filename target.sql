@@ -11,8 +11,8 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: _file to Metadata_ST (as metadata)
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -106,21 +106,21 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('lIS_Intersection__NYPD_Vehicle_Collision_Typed', 'P') IS NOT NULL
-DROP PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed];
+IF Object_ID('lIS_Intersection__NYPD_Vehicle_Collision_Typed__1', 'P') IS NOT NULL
+DROP PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1];
 GO
 --------------------------------------------------------------------------
--- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed
+-- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed__1
 -- Source: NYPD_Vehicle_Collision_Typed
 -- Target: lIS_Intersection
 --
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: _file to Metadata_IS (as metadata)
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed] (
+CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -141,7 +141,7 @@ EXEC Stage.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'lIS_Intersection__NYPD_Vehicle_Collision_Typed',
+    @name = 'lIS_Intersection__NYPD_Vehicle_Collision_Typed__1',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
@@ -230,13 +230,13 @@ GO
 -- Source: NYPD_Vehicle_Collision_Typed
 -- Target: lST_intersecting_IS_of_ST_crossing
 --
--- Map: IS_ID_of to IS_ID_of (as surrogate key)
--- Map: ST_ID_intersecting to ST_ID_intersecting (as surrogate key)
--- Map: ST_ID_crossing to ST_ID_crossing (as surrogate key)
+-- Map: IS_ID_of to IS_ID_of (as natural key)
+-- Map: ST_ID_intersecting to ST_ID_intersecting (as natural key)
+-- Map: ST_ID_crossing to ST_ID_crossing (as natural key)
 -- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -335,9 +335,15 @@ EXEC Stage.metadata._WorkSourceToTarget
         s.[ST_ID_crossing] = t.[ST_ID_crossing]
     )
     WHEN NOT MATCHED THEN INSERT (
+        [IS_ID_of],
+        [ST_ID_intersecting],
+        [ST_ID_crossing],
         [Metadata_ST_intersecting_IS_of_ST_crossing]
     )
     VALUES (
+        s.[IS_ID_of],
+        s.[ST_ID_intersecting],
+        s.[ST_ID_crossing],
         s.[_file]
     )
     OUTPUT
@@ -390,7 +396,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
 		<map source="_file" target="Metadata_ST" as="metadata"/>
 	</load>
-	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection">
+	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="1">
         select 
             src.IntersectingStreet,
             src.CrossStreet,
@@ -477,9 +483,9 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         ) t
         on
             t._rowId = i._rowId
-        <map source="IS_ID_of" target="IS_ID_of" as="surrogate key"/>
-		<map source="ST_ID_intersecting" target="ST_ID_intersecting" as="surrogate key"/>
-		<map source="ST_ID_crossing" target="ST_ID_crossing" as="surrogate key"/>
+        <map source="IS_ID_of" target="IS_ID_of" as="natural key"/>
+		<map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key"/>
+		<map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key"/>
 		<map source="_file" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
 	</load>
 </target>

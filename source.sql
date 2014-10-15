@@ -23,8 +23,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -81,8 +81,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -142,8 +142,8 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -245,8 +245,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -494,8 +494,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -593,8 +593,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -640,7 +640,25 @@ BEGIN TRY
         _timestamp datetime2(2) not null default sysdatetime(),
         [month] varchar(42) null, 
         [year] smallint null, 
-        [notes] varchar(max) null
+        [notes] varchar(max) null, 
+        [changedAt] as CAST(dateadd(day, -1, 
+            dateadd(month, 1, 
+            cast([year] as char(4)) + 
+            case left([month], 3)
+                when 'Jan' then '01'
+                when 'Feb' then '02'
+                when 'Mar' then '03'
+                when 'Apr' then '04'
+                when 'May' then '05'
+                when 'Jun' then '06'
+                when 'Jul' then '07'
+                when 'Aug' then '08'
+                when 'Sep' then '09'
+                when 'Okt' then '10'
+                when 'Nov' then '11'
+                when 'Dec' then '12'
+            end + 
+            '01')) AS date) 
     );
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -670,8 +688,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -819,8 +837,8 @@ GO
 -- among its values.
 --
 --
--- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Wed Oct 15 17:23:10 UTC+0200 2014 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
@@ -909,6 +927,26 @@ DECLARE @xml XML = N'<source name="Vehicle" codepage="ACP" datafiletype="char" f
 		) c ([row])
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
 		<term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
+		<calculation name="changedAt" format="date" persisted="false">
+            dateadd(day, -1, 
+            dateadd(month, 1, 
+            cast([year] as char(4)) + 
+            case left([month], 3)
+                when ''Jan'' then ''01''
+                when ''Feb'' then ''02''
+                when ''Mar'' then ''03''
+                when ''Apr'' then ''04''
+                when ''May'' then ''05''
+                when ''Jun'' then ''06''
+                when ''Jul'' then ''07''
+                when ''Aug'' then ''08''
+                when ''Sep'' then ''09''
+                when ''Okt'' then ''10''
+                when ''Nov'' then ''11''
+                when ''Dec'' then ''12''
+            end + 
+            ''01''))
+        </calculation>
 		<term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">
             LTRIM(REPLACE([notes], ''·'', '' ''))
         </term>

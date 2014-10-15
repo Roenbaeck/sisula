@@ -48,9 +48,9 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::C:\sisula\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::G:\sisula\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\sisula\data:"
+              Throw "No matching files were found in G:\sisula\data:"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
@@ -234,6 +234,28 @@ sp_add_jobstep
     @step_name = 'Load streets'; 
 GO
 sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        ',
+    @database_name = 'Stage',
+    @on_success_action = 3,
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'NYPD_Vehicle_Loading', 
+    @step_name = 'Load intersection pass 1'; 
+GO
+sp_add_jobstep 
+    @subsystem = 'TSQL', 
+    @command = '
+            EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        ',
+    @database_name = 'Stage',
+    @on_success_action = 3,
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'NYPD_Vehicle_Loading', 
+    @step_name = 'Load ST ST IS tie'; 
+GO
+sp_add_jobstep 
     @job_name = 'NYPD_Vehicle_Loading', 
     @step_name = 'Log success of job',
     @subsystem = 'TSQL',
@@ -254,13 +276,29 @@ sp_update_jobstep
     @step_id = 2,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 4,
+    @on_fail_step_id = 6,
+    @on_success_action = 3; -- go to the next step
+GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Loading',
+    @step_id = 3,
+    -- ensure logging when any step fails
+    @on_fail_action = 4, -- go to step with id
+    @on_fail_step_id = 6,
+    @on_success_action = 3; -- go to the next step
+GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Loading',
+    @step_id = 4,
+    -- ensure logging when any step fails
+    @on_fail_action = 4, -- go to step with id
+    @on_fail_step_id = 6,
     @on_success_action = 3; -- go to the next step
 GO
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="stage" value="Stage"/>
-	<variable name="path" value="C:\sisula\data"/>
+	<variable name="path" value="G:\sisula\data"/>
 	<variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>
@@ -308,6 +346,12 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<job name="NYPD_Vehicle_Loading">
 		<jobstep name="Load streets" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
             EXEC [dbo].[lST_Street__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        </jobstep>
+		<jobstep name="Load intersection pass 1" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+        </jobstep>
+		<jobstep name="Load ST ST IS tie" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+            EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 	</job>
 </workflow>

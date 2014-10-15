@@ -57,6 +57,30 @@
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
         <term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
         <!-- 
+            calculations are persisted by default so they can be used in keys,
+            but that is only possible for deterministic calculations
+        -->
+        <calculation name="changedAt" format="date" persisted="false">
+            dateadd(day, -1, 
+            dateadd(month, 1, 
+            cast([year] as char(4)) + 
+            case left([month], 3)
+                when 'Jan' then '01'
+                when 'Feb' then '02'
+                when 'Mar' then '03'
+                when 'Apr' then '04'
+                when 'May' then '05'
+                when 'Jun' then '06'
+                when 'Jul' then '07'
+                when 'Aug' then '08'
+                when 'Sep' then '09'
+                when 'Okt' then '10'
+                when 'Nov' then '11'
+                when 'Dec' then '12'
+            end + 
+            '01'))
+        </calculation>
+        <!-- 
             positive lookahead with an optional number of preceeding characters leading 
             up to the string to match, after which we capture everything. In the capture
             we replace small bullets (formerly line breaks) with spaces.
