@@ -1,17 +1,21 @@
 <source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
-	<description>http://www.slb.mf.stockholm.se</description>
-    <part name="TemperatureNew" nulls="">
-        SELECT * from %System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9][0-9][0-9][0-9],%'
-        <term name="date" delimiter="," format="date">
-            '20' + [date]
-        </term>
-        <term name="hour" pattern="\s*([0-9]{2})[0-9]{2}," format="char(2)"/>
-        <term name="celsius1" delimiter="," format="decimal(19,10)"/>
-        <term name="celsius2" delimiter="," format="decimal(19,10)"/>
-        <term name="celsius3" delimiter="," format="decimal(19,10)"/>
-        <term name="celsius4" delimiter="," format="decimal(19,10)"/>
+	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
+    <part name="Collision" nulls="">
+        -- this matches the data rows
+        SELECT * from %System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9];%'
+        <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
+        <!-- only capture a part of the string -->
+        <term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
+        <term name="CollisionKey" delimiter=";" format="int"/>
+        <term name="CollisionOrder" delimiter=";" format="tinyint"/>
+        <term name="IntersectionAddress" delimiter=";" format="varchar(555)"/>
+        <term name="IntersectingStreet" delimiter=";" format="varchar(555)"/>
+        <term name="CrossStreet" delimiter=";" format="varchar(555)"/>
+        <term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
+        <term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
+        <term name="CollisionKilledCount" delimiter=";" format="tinyint"/>
     </part>
-    <part name="TemperatureNewMetadata">
+    <part name="CollisionMetadata">
         <!-- 
             CHAR(183) is · (small bullet), which is rarely used so we can use it as our own 
             internal delimiter for the regex matching later. The select below builds a 
@@ -30,7 +34,7 @@
                 FROM
                     %System%_%Source%_Raw
                 WHERE 
-                    [row] LIKE '#%'
+                    [row] NOT LIKE '[0-9][0-9][0-9];%'
 		    ) src
 			GROUP BY
 				_file
@@ -44,82 +48,21 @@
                 FROM
                     %System%_%Source%_Raw
                 WHERE 
-					[row] LIKE '#%'
+					[row] NOT LIKE '[0-9][0-9][0-9];%'
 		    ) src
 			WHERE
 				src._file = f._file
 			FOR XML PATH('')
 		) c ([row])
+        <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
+        <term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
         <!-- 
-            on the format (?=.*?KeyName[^:]*:\s*([^·]*))?
             positive lookahead with an optional number of preceeding characters leading 
-            up to the string to match, after which we capture everything leading up to the
-            next delimiter, and the whole non-capturing group is optional in case the 
-            string is not present at all.
+            up to the string to match, after which we capture everything. In the capture
+            we replace small bullets (formerly line breaks) with spaces.
         -->
-        <term name="graphType" pattern="(?=.*?Graftyp[^:]*:\s*([^·]*))?" format="varchar(42)"/>
-        <term name="weekday" pattern="(?=.*?Veckodag[^:]*:\s*([^·]*))?" format="varchar(42)"/>
-    </part>
-    <part name="Temperature" nulls="" charskip="4"> 
-        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'TEMP%'
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
+        <term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">
+            LTRIM(REPLACE([notes], '·', ' '))
         </term>
-        <term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-        <term name="celsius" delimiter=" " format="decimal(19,10)">
-            REPLACE([celsius], ',', '.')
-        </term>
-        <calculation name="fahrenheit" format="decimal(19,10)">
-            9 / 5 * [celsius] + 32
-        </calculation>
-        <calculation name="freezing" format="char(1)">
-            CASE 
-                WHEN [celsius] &gt; 0 THEN 'A' 
-                WHEN [celsius] &lt; 0 THEN 'B' 
-                WHEN [celsius] = 0 THEN 'Z' 
-                ELSE '?' 
-            END
-        </calculation>
-        <key name="measureTime" type="primary key">
-            <component of="date"/>
-            <component of="hour"/>
-        </key>
-    </part>
-    <part name="Pressure" nulls="" charskip="4">
-        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'PRSR%'
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
-        </term>
-        <term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-        <term name="pressure" size="10" format="decimal(19,10)">
-            REPLACE([pressure], ',', '.')
-        </term>
-        <key name="measureTime" type="primary key">
-            <component of="date"/>
-            <component of="hour"/>
-        </key>        
-    </part>
-    <part name="Wind" nulls="" charskip="4">
-        SELECT * FROM %System%_%Source%_Raw WHERE [row] LIKE 'WNDS%'
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN '0' THEN '20' + [date] ELSE '19' + [date] END
-        </term>
-        <term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-        <term name="direction" size="10" format="decimal(5,2)">
-            REPLACE([direction], ',', '.')
-        </term>
-        <term name="speed" size="10" format="decimal(19,10)">
-            REPLACE([speed], ',', '.')
-        </term>
-        <key name="measureTime" type="primary key">
-            <component of="date"/>
-            <component of="hour"/>
-        </key>
     </part>
 </source>

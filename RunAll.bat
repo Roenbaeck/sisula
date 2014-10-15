@@ -7,9 +7,9 @@ chcp 65001>NUL
 REM -------------------------------------------------------------------
 REM   Change the following variables to reflect your desired settings
 REM -------------------------------------------------------------------
-set System=SMHI
-set Source=Weather
-set TargetDatabase=Meteo
+set System=NYPD
+set Source=Vehicle
+set TargetDatabase=Traffic
 set SourceDatabase=Stage
 set MetaDatabase=Stage
 set SisulaPath=%CD%

@@ -1,5 +1,5 @@
 // Create loading logic
-var load, map, k;
+var load, map, i;
 while(load = target.nextLoad()) {
 /*~
 IF Object_ID('$load.qualified', 'P') IS NOT NULL
@@ -62,52 +62,68 @@ DECLARE @actions TABLE (
 /*~
     ON (
 ~*/
-    var keys = [], nonkeys = [], nonkeysAndMetadata = [];
+    var naturalKeys = [], 
+        surrogateKeys = [], 
+        metadata = [],
+        others = [];
+    
     while(map = load.nextMap()) {
-        if(map.as == 'natural key') {
-            keys.push(map);
-        }
-        else {
-            nonkeysAndMetadata.push(map);
-            if(!(map.as == 'metadata'))
-                nonkeys.push(map);
+        switch (map.as) {
+            case 'natural key':
+                naturalKeys.push(map);
+                break;
+            case 'surrogate key':
+                surrogateKeys.push(map);
+                break;
+            case 'metadata':
+                metadata.push(map);
+                break;
+            default:
+                others.push(map);
         }
     }
-    for(k = 0; map = keys[k]; k++) {
+    var maps = naturalKeys.concat(surrogateKeys);
+    for(i = 0; map = maps[i]; i++) {
 /*~
         s.[$map.source] = t.[$map.target]
-    $(k < keys.length - 1)? AND
+    $(i < maps.length - 1)? AND
 ~*/
     }
 /*~    
     )
+~*/
+    var maps = naturalKeys.concat(others, metadata);
+    if(maps.length > 0) {
+/*~        
     WHEN NOT MATCHED THEN INSERT (
 ~*/
-    while(map = load.nextMap()) {
+        for(i = 0; map = maps[i]; i++) {
 /*~
-        [$map.target]$(load.hasMoreMaps())?,
+        [$map.target]$(i < maps.length - 1)?,
 ~*/
-    }    
+        }    
 /*~    
     )
     VALUES (
-/*~
-    while(map = load.nextMap()) {
-/*~
-        s.[$map.source]$(load.hasMoreMaps())?,
 ~*/
-    }    
+        for(i = 0; map = maps[i]; i++) {
+/*~
+        s.[$map.source]$(i < maps.length - 1)?,
+~*/
+        }    
 /*~
     )
 ~*/
-    if(nonkeys.length > 0) {
+    }
+    var maps = others;
+    if(maps.length > 0) {
 /*~
     WHEN MATCHED AND (
 ~*/
-        for(k = 0; map = nonkeys[k]; k++) {
+        for(i = 0; map = maps[i]; i++) {
 /*~
         (t.[$map.target] is null OR s.[$map.source] <> t.[$map.target])
-    $(k < nonkeys.length - 1)? OR    
+    $(i < maps.length - 1)? OR    
 ~*/
         }    
 /*~
@@ -115,9 +131,10 @@ DECLARE @actions TABLE (
     THEN UPDATE
     SET
 ~*/
-        for(k = 0; map = nonkeysAndMetadata[k]; k++) {
+        var maps = other.concat(metadata);
+        for(i = 0; map = maps[i]; i++) {
 /*~
-        t.[$map.target] = s.[$map.source]$(k < nonkeysAndMetadata.length - 1)?,
+        t.[$map.target] = s.[$map.source]$(i < maps.length - 1)?,
 ~*/
         }    
     } // end of if nonkeys

@@ -1,44 +1,190 @@
-<target name="Meteo" database="%TargetDatabase%">
-    <load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_Measurement">
-        <!-- simple test that a query can be provided -->
+<target name="Traffic" database="%TargetDatabase%">
+    <load source="%System%_%Source%_Collision_Typed" target="lST_Street">
+        <!-- the query finds unique street names in each file -->
         select
-            _id, 
-            _file, 
-            _timestamp, 
-            [date],
-            [hour], 
-            [celsius1] as temperature
+            StreetName, 
+            min(_file) as _file
+        from (
+            select distinct
+                IntersectingStreet as StreetName,
+                _file
+            from        
+                %System%_%Source%_Collision_Typed
+            union 
+            select distinct
+                CrossStreet as StreetName,
+                _file
+            from
+                %System%_%Source%_Collision_Typed
+        ) s
+        group by
+            StreetName
+        <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
+        <map source="_file" target="Metadata_ST" as="metadata"/>
+    </load>
+    <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection">
+        <!-- create new identities for all intersections that haven't been seen before -->
+        select 
+            src.IntersectingStreet,
+            src.CrossStreet,
+            src._file,
+            stst.IS_ID_of
+        from (
+            select 
+                IntersectingStreet,
+                CrossStreet,
+                min(_file) as _file
+            from
+                %System%_%Source%_Collision_Typed 
+            group by
+                IntersectingStreet,
+                CrossStreet        
+        ) src
+        left join
+            [%TargetDatabase%]..lST_Street st_i
+        on
+            st_i.ST_NAM_Street_Name = src.IntersectingStreet
+        left join
+            [%TargetDatabase%]..lST_Street st_c
+        on
+            st_c.ST_NAM_Street_Name = src.CrossStreet
+        left join
+            [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+        on
+            stst.ST_ID_intersecting = st_i.ST_ID
+        and
+            stst.ST_ID_crossing = st_c.ST_ID        
+        <map source="IS_ID_of" target="IS_ID" as="surrogate key"/>
+        <map source="_file" target="Metadata_IS" as="metadata"/>
+    </load>
+    <load source="%System%_%Source%_Collision_Typed" target="lST_intersecting_IS_of_ST_crossing">
+        <!-- populate the tie -->
+        select
+            i.IS_ID_of,
+            t.ST_ID_intersecting,
+            t.ST_ID_crossing,
+            t._file
+        from (
+            select
+                i.IS_ID as IS_ID_of,
+                row_number() over (order by i.IS_ID) as _rowId
+            from
+                [%TargetDatabase%]..lIS_Intersection i
+            left join
+                [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+            on
+                stst.IS_ID_of = i.IS_ID
+        ) i
+        join (
+            select 
+                src._file,
+                st_i.ST_ID as ST_ID_intersecting,
+                st_c.ST_ID as ST_ID_crossing,
+                row_number() over (order by st_i.ST_ID, st_c.ST_ID) as _rowId
+            from (
+                select 
+                    IntersectingStreet,
+                    CrossStreet,
+                    min(_file) as _file
+                from
+                    %System%_%Source%_Collision_Typed 
+                group by
+                    IntersectingStreet,
+                    CrossStreet        
+            ) src
+            left join
+                [%TargetDatabase%]..lST_Street st_i
+            on
+                st_i.ST_NAM_Street_Name = src.IntersectingStreet
+            left join
+                [%TargetDatabase%]..lST_Street st_c
+            on
+                st_c.ST_NAM_Street_Name = src.CrossStreet
+            left join
+                [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+            on
+                stst.ST_ID_intersecting = st_i.ST_ID
+            and
+                stst.ST_ID_crossing = st_c.ST_ID    
+            where
+                stst.IS_ID_of is null
+        ) t
+        on
+            t._rowId = i._rowId
+        <map source="IS_ID_of" target="IS_ID_of" as="surrogate key"/>
+        <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="surrogate key"/>
+        <map source="ST_ID_crossing" target="ST_ID_crossing" as="surrogate key"/>
+        <map source="_file" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
+    </load>
+    <!--
+    <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection">
+        select
+            src._file,
+            ca.ChangedAt,
+            stst.IS_ID_of,
+            count(*) as CollisionCount,
+            sum(src.CollisionVehicleCount) as CollisionVehicleCount,
+            sum(src.CollisionInjuredCount) as CollisionInjuredCount,
+            sum(src.CollisionKilledCount) as CollisionKilledCount
         from
-            SMHI_Weather_TemperatureNew_Typed        
-        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
-        <map source="temperature" target="MM_TMP_Measurement_Temperature"/>
-        <map source="_file" target="Metadata_MM" as="metadata"/>
+            %System%_%Source%_Collision_Typed src
+        join
+            %System%_%Source%_CollisionMetadata_Typed md
+        on
+            md._file = src._file
+        cross apply (
+            select
+                cast(
+                    dateadd(day, -1, 
+                    dateadd(month, 1, 
+                    cast(md.[year] as char(4)) + 
+                    case left(md.[month], 3)
+                        when 'Jan' then '01'
+                        when 'Feb' then '02'
+                        when 'Mar' then '03'
+                        when 'Apr' then '04'
+                        when 'May' then '05'
+                        when 'Jun' then '06'
+                        when 'Jul' then '07'
+                        when 'Aug' then '08'
+                        when 'Sep' then '09'
+                        when 'Okt' then '10'
+                        when 'Nov' then '11'
+                        when 'Dec' then '12'
+                    end + 
+                    '01'))
+                as date)
+        ) ca (ChangedAt)
+        left join
+            [%TargetDatabase%]..lST_Street st_i
+        on
+            st_i.ST_NAM_Street_Name = src.IntersectingStreet
+        left join
+            [%TargetDatabase%]..lST_Street st_c
+        on
+            st_c.ST_NAM_Street_Name = src.CrossStreet
+        left join
+            [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+        on
+            stst.ST_ID_intersecting = st_i.ST_ID
+        and
+            stst.ST_ID_crossing = st_c.ST_ID
+        group by
+            src._file,
+            ca.ChangedAt,
+            stst.IS_ID_of
+        <map source="IS_ID_of" target="IS_ID" as="natural key"/>
+        <map source="CollisionCount" target="IS_COL_Intersection_CollisionCount"/>
+        <map source="ChangedAt" target="IS_COL_ChangedAt"/>
+        <map source="CollisionInjuredCount" target="IS_INJ_Intersection_InjuredCount"/>
+        <map source="ChangedAt" target="IS_INJ_ChangedAt"/>
+        <map source="CollisionKilledCount" target="IS_KIL_Intersection_KilledCount"/>
+        <map source="ChangedAt" target="IS_KIL_ChangedAt"/>
+        <map source="_file" target="Metadata_IS" as="metadata"/>
     </load>
-    <load source="SMHI_Weather_Temperature_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
-        <map source="celsius" target="MM_TMP_Measurement_Temperature"/>
-        <map source="_file" target="Metadata_MM" as="metadata"/>
-    </load>
-    <load source="SMHI_Weather_Pressure_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
-        <map source="pressure" target="MM_PRS_Measurement_Pressure"/>
-        <map source="_file" target="Metadata_MM" as="metadata"/>
-    </load>
-    <load source="SMHI_Weather_Wind_Typed" target="lMM_Measurement">
-        <map source="date" target="MM_DAT_Measurement_Date" as="natural key"/>
-        <map source="hour" target="MM_HOU_Measurement_Hour" as="natural key"/>
-        <map source="speed" target="MM_WND_Measurement_WindSpeed"/>
-        <map source="direction" target="MM_DIR_Measurement_Direction"/>
-        <map source="_file" target="Metadata_MM" as="metadata"/>
-    </load>
-    <load source="SMHI_Weather_TemperatureNewMetadata_Typed" target="lOC_Occasion">
-        <map source="weekday" target="OC_WDY_Occasion_Weekday" as="natural key"/>
-        <map source="graphType" target="OC_TYP_Occasion_Type" as="natural key"/>
-        <map source="_file" target="Metadata_OC" as="metadata"/>
-    </load>
+    -->
+    
+    <!--
     <load source="SMHI_Weather_TemperatureNew_Typed" target="lMM_taken_OC_on">
         select
             mm.MM_ID,
@@ -60,4 +206,5 @@
         <map source="OC_ID" target="OC_ID_on"/>
         <map source="_file" target="Metadata_MM_taken_OC_on" as="metadata"/>
     </load>
+    -->
 </target>

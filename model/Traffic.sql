@@ -1,9 +1,3 @@
-/*
-	This code was generated with the Anchor Modeler http://www.anchormodeling.com. 
-	Version 0.98 test (rev: 666, release: Monday the 29th, September, 2014).
-*/
-USE Meteo;
-GO
 -- KNOTS --------------------------------------------------------------------------------------------------------------
 --
 -- Knots are used to store finite sets of values, normally used to describe states
@@ -23,154 +17,96 @@ GO
 -- Anchors may have zero or more adjoined attributes.
 --
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- MM_Measurement table (with 6 attributes)
+-- ST_Street table (with 1 attributes)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_Measurement', 'U') IS NULL
-CREATE TABLE [dbo].[MM_Measurement] (
-    MM_ID int IDENTITY(1,1) not null,
-    Metadata_MM int not null, 
-    constraint pkMM_Measurement primary key (
-        MM_ID asc
+IF Object_ID('dbo.ST_Street', 'U') IS NULL
+CREATE TABLE [dbo].[ST_Street] (
+    ST_ID int IDENTITY(1,1) not null,
+    Metadata_ST int not null, 
+    constraint pkST_Street primary key (
+        ST_ID asc
     )
 );
 GO
 -- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_DAT_Measurement_Date table (on MM_Measurement)
+-- ST_NAM_Street_Name table (on ST_Street)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_DAT_Measurement_Date', 'U') IS NULL
-CREATE TABLE [dbo].[MM_DAT_Measurement_Date] (
-    MM_DAT_MM_ID int not null,
-    MM_DAT_Measurement_Date date not null,
-    Metadata_MM_DAT int not null,
-    constraint fkMM_DAT_Measurement_Date foreign key (
-        MM_DAT_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_DAT_Measurement_Date primary key (
-        MM_DAT_MM_ID asc
-    )
-);
-GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_HOU_Measurement_Hour table (on MM_Measurement)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_HOU_Measurement_Hour', 'U') IS NULL
-CREATE TABLE [dbo].[MM_HOU_Measurement_Hour] (
-    MM_HOU_MM_ID int not null,
-    MM_HOU_Measurement_Hour char(2) not null,
-    Metadata_MM_HOU int not null,
-    constraint fkMM_HOU_Measurement_Hour foreign key (
-        MM_HOU_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_HOU_Measurement_Hour primary key (
-        MM_HOU_MM_ID asc
-    )
-);
-GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_TMP_Measurement_Temperature table (on MM_Measurement)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_TMP_Measurement_Temperature', 'U') IS NULL
-CREATE TABLE [dbo].[MM_TMP_Measurement_Temperature] (
-    MM_TMP_MM_ID int not null,
-    MM_TMP_Measurement_Temperature decimal(19,10) not null,
-    Metadata_MM_TMP int not null,
-    constraint fkMM_TMP_Measurement_Temperature foreign key (
-        MM_TMP_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_TMP_Measurement_Temperature primary key (
-        MM_TMP_MM_ID asc
-    )
-);
-GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_PRS_Measurement_Pressure table (on MM_Measurement)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_PRS_Measurement_Pressure', 'U') IS NULL
-CREATE TABLE [dbo].[MM_PRS_Measurement_Pressure] (
-    MM_PRS_MM_ID int not null,
-    MM_PRS_Measurement_Pressure decimal(19,10) not null,
-    Metadata_MM_PRS int not null,
-    constraint fkMM_PRS_Measurement_Pressure foreign key (
-        MM_PRS_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_PRS_Measurement_Pressure primary key (
-        MM_PRS_MM_ID asc
-    )
-);
-GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_WND_Measurement_WindSpeed table (on MM_Measurement)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_WND_Measurement_WindSpeed', 'U') IS NULL
-CREATE TABLE [dbo].[MM_WND_Measurement_WindSpeed] (
-    MM_WND_MM_ID int not null,
-    MM_WND_Measurement_WindSpeed decimal(19,10) not null,
-    Metadata_MM_WND int not null,
-    constraint fkMM_WND_Measurement_WindSpeed foreign key (
-        MM_WND_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_WND_Measurement_WindSpeed primary key (
-        MM_WND_MM_ID asc
-    )
-);
-GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- MM_DIR_Measurement_Direction table (on MM_Measurement)
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_DIR_Measurement_Direction', 'U') IS NULL
-CREATE TABLE [dbo].[MM_DIR_Measurement_Direction] (
-    MM_DIR_MM_ID int not null,
-    MM_DIR_Measurement_Direction decimal(5,2) not null,
-    Metadata_MM_DIR int not null,
-    constraint fkMM_DIR_Measurement_Direction foreign key (
-        MM_DIR_MM_ID
-    ) references [dbo].[MM_Measurement](MM_ID),
-    constraint pkMM_DIR_Measurement_Direction primary key (
-        MM_DIR_MM_ID asc
+IF Object_ID('dbo.ST_NAM_Street_Name', 'U') IS NULL
+CREATE TABLE [dbo].[ST_NAM_Street_Name] (
+    ST_NAM_ST_ID int not null,
+    ST_NAM_Street_Name varchar(555) not null,
+    Metadata_ST_NAM int not null,
+    constraint fkST_NAM_Street_Name foreign key (
+        ST_NAM_ST_ID
+    ) references [dbo].[ST_Street](ST_ID),
+    constraint pkST_NAM_Street_Name primary key (
+        ST_NAM_ST_ID asc
     )
 );
 GO
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- OC_Occasion table (with 2 attributes)
+-- IS_Intersection table (with 3 attributes)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.OC_Occasion', 'U') IS NULL
-CREATE TABLE [dbo].[OC_Occasion] (
-    OC_ID int IDENTITY(1,1) not null,
-    Metadata_OC int not null, 
-    constraint pkOC_Occasion primary key (
-        OC_ID asc
+IF Object_ID('dbo.IS_Intersection', 'U') IS NULL
+CREATE TABLE [dbo].[IS_Intersection] (
+    IS_ID int IDENTITY(1,1) not null,
+    Metadata_IS int not null, 
+    constraint pkIS_Intersection primary key (
+        IS_ID asc
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- OC_TYP_Occasion_Type table (on OC_Occasion)
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- IS_COL_Intersection_CollisionCount table (on IS_Intersection)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.OC_TYP_Occasion_Type', 'U') IS NULL
-CREATE TABLE [dbo].[OC_TYP_Occasion_Type] (
-    OC_TYP_OC_ID int not null,
-    OC_TYP_Occasion_Type varchar(42) not null,
-    Metadata_OC_TYP int not null,
-    constraint fkOC_TYP_Occasion_Type foreign key (
-        OC_TYP_OC_ID
-    ) references [dbo].[OC_Occasion](OC_ID),
-    constraint pkOC_TYP_Occasion_Type primary key (
-        OC_TYP_OC_ID asc
+IF Object_ID('dbo.IS_COL_Intersection_CollisionCount', 'U') IS NULL
+CREATE TABLE [dbo].[IS_COL_Intersection_CollisionCount] (
+    IS_COL_IS_ID int not null,
+    IS_COL_Intersection_CollisionCount int not null,
+    IS_COL_ChangedAt date not null,
+    Metadata_IS_COL int not null,
+    constraint fkIS_COL_Intersection_CollisionCount foreign key (
+        IS_COL_IS_ID
+    ) references [dbo].[IS_Intersection](IS_ID),
+    constraint pkIS_COL_Intersection_CollisionCount primary key (
+        IS_COL_IS_ID asc,
+        IS_COL_ChangedAt desc
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
--- OC_WDY_Occasion_Weekday table (on OC_Occasion)
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- IS_INJ_Intersection_InjuredCount table (on IS_Intersection)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.OC_WDY_Occasion_Weekday', 'U') IS NULL
-CREATE TABLE [dbo].[OC_WDY_Occasion_Weekday] (
-    OC_WDY_OC_ID int not null,
-    OC_WDY_Occasion_Weekday varchar(42) not null,
-    Metadata_OC_WDY int not null,
-    constraint fkOC_WDY_Occasion_Weekday foreign key (
-        OC_WDY_OC_ID
-    ) references [dbo].[OC_Occasion](OC_ID),
-    constraint pkOC_WDY_Occasion_Weekday primary key (
-        OC_WDY_OC_ID asc
+IF Object_ID('dbo.IS_INJ_Intersection_InjuredCount', 'U') IS NULL
+CREATE TABLE [dbo].[IS_INJ_Intersection_InjuredCount] (
+    IS_INJ_IS_ID int not null,
+    IS_INJ_Intersection_InjuredCount int not null,
+    IS_INJ_ChangedAt date not null,
+    Metadata_IS_INJ int not null,
+    constraint fkIS_INJ_Intersection_InjuredCount foreign key (
+        IS_INJ_IS_ID
+    ) references [dbo].[IS_Intersection](IS_ID),
+    constraint pkIS_INJ_Intersection_InjuredCount primary key (
+        IS_INJ_IS_ID asc,
+        IS_INJ_ChangedAt desc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- IS_KIL_Intersection_KilledCount table (on IS_Intersection)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.IS_KIL_Intersection_KilledCount', 'U') IS NULL
+CREATE TABLE [dbo].[IS_KIL_Intersection_KilledCount] (
+    IS_KIL_IS_ID int not null,
+    IS_KIL_Intersection_KilledCount int not null,
+    IS_KIL_ChangedAt date not null,
+    Metadata_IS_KIL int not null,
+    constraint fkIS_KIL_Intersection_KilledCount foreign key (
+        IS_KIL_IS_ID
+    ) references [dbo].[IS_Intersection](IS_ID),
+    constraint pkIS_KIL_Intersection_KilledCount primary key (
+        IS_KIL_IS_ID asc,
+        IS_KIL_ChangedAt desc
     )
 );
 GO
@@ -183,21 +119,36 @@ GO
 -- Ties must have at least two anchor roles and zero or more knot roles.
 --
 -- Static tie table ---------------------------------------------------------------------------------------------------
--- MM_taken_OC_on table (having 2 roles)
+-- ST_intersecting_IS_of_ST_crossing table (having 3 roles)
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.MM_taken_OC_on', 'U') IS NULL
-CREATE TABLE [dbo].[MM_taken_OC_on] (
-    MM_ID_taken int not null, 
-    OC_ID_on int not null, 
-    Metadata_MM_taken_OC_on int not null,
-    constraint MM_taken_OC_on_fkMM_taken foreign key (
-        MM_ID_taken
-    ) references [dbo].[MM_Measurement](MM_ID), 
-    constraint MM_taken_OC_on_fkOC_on foreign key (
-        OC_ID_on
-    ) references [dbo].[OC_Occasion](OC_ID), 
-    constraint pkMM_taken_OC_on primary key (
-        MM_ID_taken asc
+IF Object_ID('dbo.ST_intersecting_IS_of_ST_crossing', 'U') IS NULL
+CREATE TABLE [dbo].[ST_intersecting_IS_of_ST_crossing] (
+    ST_ID_intersecting int not null, 
+    IS_ID_of int not null, 
+    ST_ID_crossing int not null, 
+    Metadata_ST_intersecting_IS_of_ST_crossing int not null,
+    constraint ST_intersecting_IS_of_ST_crossing_fkST_intersecting foreign key (
+        ST_ID_intersecting
+    ) references [dbo].[ST_Street](ST_ID), 
+    constraint ST_intersecting_IS_of_ST_crossing_fkIS_of foreign key (
+        IS_ID_of
+    ) references [dbo].[IS_Intersection](IS_ID), 
+    constraint ST_intersecting_IS_of_ST_crossing_fkST_crossing foreign key (
+        ST_ID_crossing
+    ) references [dbo].[ST_Street](ST_ID), 
+    constraint ST_intersecting_IS_of_ST_crossing_uqST_intersecting unique (
+        ST_ID_intersecting
+    ),
+    constraint ST_intersecting_IS_of_ST_crossing_uqIS_of unique (
+        IS_ID_of
+    ),
+    constraint ST_intersecting_IS_of_ST_crossing_uqST_crossing unique (
+        ST_ID_crossing
+    ),
+    constraint pkST_intersecting_IS_of_ST_crossing primary key (
+        ST_ID_intersecting asc,
+        IS_ID_of asc,
+        ST_ID_crossing asc
     )
 );
 GO
@@ -215,18 +166,220 @@ GO
 --
 -- @equivalent the equivalent that you want to retrieve data for
 --
+-- ATTRIBUTE RESTATEMENT CONSTRAINTS ----------------------------------------------------------------------------------
+--
+-- Attributes may be prevented from storing restatements.
+-- A restatement is when the same value occurs for two adjacent points
+-- in changing time.
+--
+-- returns 1 for at least one equal surrounding value, 0 for different surrounding values
+--
+-- @id the identity of the anchored entity
+-- @eq the equivalent (when applicable)
+-- @value the value of the attribute
+-- @changed the point in time from which this value shall represent a change
+--
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfIS_COL_Intersection_CollisionCount restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcIS_COL_Intersection_CollisionCount restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rfIS_COL_Intersection_CollisionCount', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rfIS_COL_Intersection_CollisionCount] (
+        @id int,
+        @value int,
+        @changed date
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.IS_COL_Intersection_CollisionCount
+                    FROM
+                        [dbo].[IS_COL_Intersection_CollisionCount] pre
+                    WHERE
+                        pre.IS_COL_IS_ID = @id
+                    AND
+                        pre.IS_COL_ChangedAt < @changed
+                    ORDER BY
+                        pre.IS_COL_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.IS_COL_Intersection_CollisionCount
+                    FROM
+                        [dbo].[IS_COL_Intersection_CollisionCount] fol
+                    WHERE
+                        fol.IS_COL_IS_ID = @id
+                    AND
+                        fol.IS_COL_ChangedAt > @changed
+                    ORDER BY
+                        fol.IS_COL_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [dbo].[IS_COL_Intersection_CollisionCount]
+    ADD CONSTRAINT [rcIS_COL_Intersection_CollisionCount] CHECK (
+        [dbo].[rfIS_COL_Intersection_CollisionCount] (
+            IS_COL_IS_ID,
+            IS_COL_Intersection_CollisionCount,
+            IS_COL_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfIS_INJ_Intersection_InjuredCount restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcIS_INJ_Intersection_InjuredCount restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rfIS_INJ_Intersection_InjuredCount', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rfIS_INJ_Intersection_InjuredCount] (
+        @id int,
+        @value int,
+        @changed date
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.IS_INJ_Intersection_InjuredCount
+                    FROM
+                        [dbo].[IS_INJ_Intersection_InjuredCount] pre
+                    WHERE
+                        pre.IS_INJ_IS_ID = @id
+                    AND
+                        pre.IS_INJ_ChangedAt < @changed
+                    ORDER BY
+                        pre.IS_INJ_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.IS_INJ_Intersection_InjuredCount
+                    FROM
+                        [dbo].[IS_INJ_Intersection_InjuredCount] fol
+                    WHERE
+                        fol.IS_INJ_IS_ID = @id
+                    AND
+                        fol.IS_INJ_ChangedAt > @changed
+                    ORDER BY
+                        fol.IS_INJ_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [dbo].[IS_INJ_Intersection_InjuredCount]
+    ADD CONSTRAINT [rcIS_INJ_Intersection_InjuredCount] CHECK (
+        [dbo].[rfIS_INJ_Intersection_InjuredCount] (
+            IS_INJ_IS_ID,
+            IS_INJ_Intersection_InjuredCount,
+            IS_INJ_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfIS_KIL_Intersection_KilledCount restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcIS_KIL_Intersection_KilledCount restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rfIS_KIL_Intersection_KilledCount', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rfIS_KIL_Intersection_KilledCount] (
+        @id int,
+        @value int,
+        @changed date
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.IS_KIL_Intersection_KilledCount
+                    FROM
+                        [dbo].[IS_KIL_Intersection_KilledCount] pre
+                    WHERE
+                        pre.IS_KIL_IS_ID = @id
+                    AND
+                        pre.IS_KIL_ChangedAt < @changed
+                    ORDER BY
+                        pre.IS_KIL_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.IS_KIL_Intersection_KilledCount
+                    FROM
+                        [dbo].[IS_KIL_Intersection_KilledCount] fol
+                    WHERE
+                        fol.IS_KIL_IS_ID = @id
+                    AND
+                        fol.IS_KIL_ChangedAt > @changed
+                    ORDER BY
+                        fol.IS_KIL_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [dbo].[IS_KIL_Intersection_KilledCount]
+    ADD CONSTRAINT [rcIS_KIL_Intersection_KilledCount] CHECK (
+        [dbo].[rfIS_KIL_Intersection_KilledCount] (
+            IS_KIL_IS_ID,
+            IS_KIL_Intersection_KilledCount,
+            IS_KIL_ChangedAt
+        ) = 0
+    );
+END
+GO
 -- KEY GENERATORS -----------------------------------------------------------------------------------------------------
 --
 -- These stored procedures can be used to generate identities of entities.
 -- Corresponding anchors must have an incrementing identity column.
 --
 -- Key Generation Stored Procedure ------------------------------------------------------------------------------------
--- kMM_Measurement identity by surrogate key generation stored procedure
+-- kST_Street identity by surrogate key generation stored procedure
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.kMM_Measurement', 'P') IS NULL
+IF Object_ID('dbo.kST_Street', 'P') IS NULL
 BEGIN
     EXEC('
-    CREATE PROCEDURE [dbo].[kMM_Measurement] (
+    CREATE PROCEDURE [dbo].[kST_Street] (
         @requestedNumberOfIdentities bigint,
         @metadata int
     ) AS
@@ -245,11 +398,11 @@ BEGIN
                 WHERE
                     idNumber < @requestedNumberOfIdentities
             )
-            INSERT INTO [dbo].[MM_Measurement] (
-                Metadata_MM
+            INSERT INTO [dbo].[ST_Street] (
+                Metadata_ST
             )
             OUTPUT
-                inserted.MM_ID
+                inserted.ST_ID
             SELECT
                 @metadata
             FROM
@@ -261,12 +414,12 @@ BEGIN
 END
 GO
 -- Key Generation Stored Procedure ------------------------------------------------------------------------------------
--- kOC_Occasion identity by surrogate key generation stored procedure
+-- kIS_Intersection identity by surrogate key generation stored procedure
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.kOC_Occasion', 'P') IS NULL
+IF Object_ID('dbo.kIS_Intersection', 'P') IS NULL
 BEGIN
     EXEC('
-    CREATE PROCEDURE [dbo].[kOC_Occasion] (
+    CREATE PROCEDURE [dbo].[kIS_Intersection] (
         @requestedNumberOfIdentities bigint,
         @metadata int
     ) AS
@@ -285,11 +438,11 @@ BEGIN
                 WHERE
                     idNumber < @requestedNumberOfIdentities
             )
-            INSERT INTO [dbo].[OC_Occasion] (
-                Metadata_OC
+            INSERT INTO [dbo].[IS_Intersection] (
+                Metadata_IS
             )
             OUTPUT
-                inserted.OC_ID
+                inserted.IS_ID
             SELECT
                 @metadata
             FROM
@@ -309,6 +462,72 @@ GO
 --
 -- @changingTimepoint the point in changing time to rewind to
 --
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rIS_COL_Intersection_CollisionCount rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rIS_COL_Intersection_CollisionCount','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rIS_COL_Intersection_CollisionCount] (
+        @changingTimepoint date
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_IS_COL,
+        IS_COL_IS_ID,
+        IS_COL_Intersection_CollisionCount,
+        IS_COL_ChangedAt
+    FROM
+        [dbo].[IS_COL_Intersection_CollisionCount]
+    WHERE
+        IS_COL_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rIS_INJ_Intersection_InjuredCount rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rIS_INJ_Intersection_InjuredCount','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rIS_INJ_Intersection_InjuredCount] (
+        @changingTimepoint date
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_IS_INJ,
+        IS_INJ_IS_ID,
+        IS_INJ_Intersection_InjuredCount,
+        IS_INJ_ChangedAt
+    FROM
+        [dbo].[IS_INJ_Intersection_InjuredCount]
+    WHERE
+        IS_INJ_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rIS_KIL_Intersection_KilledCount rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rIS_KIL_Intersection_KilledCount','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rIS_KIL_Intersection_KilledCount] (
+        @changingTimepoint date
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_IS_KIL,
+        IS_KIL_IS_ID,
+        IS_KIL_Intersection_KilledCount,
+        IS_KIL_ChangedAt
+    FROM
+        [dbo].[IS_KIL_Intersection_KilledCount]
+    WHERE
+        IS_KIL_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
 -- ANCHOR TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
 --
 -- These table valued functions simplify temporal querying by providing a temporal
@@ -335,202 +554,258 @@ GO
 -- @equivalent the equivalent for which to retrieve data
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.dMM_Measurement', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[dMM_Measurement];
-IF Object_ID('dbo.nMM_Measurement', 'V') IS NOT NULL
-DROP VIEW [dbo].[nMM_Measurement];
-IF Object_ID('dbo.pMM_Measurement', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[pMM_Measurement];
-IF Object_ID('dbo.lMM_Measurement', 'V') IS NOT NULL
-DROP VIEW [dbo].[lMM_Measurement];
+IF Object_ID('dbo.dST_Street', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[dST_Street];
+IF Object_ID('dbo.nST_Street', 'V') IS NOT NULL
+DROP VIEW [dbo].[nST_Street];
+IF Object_ID('dbo.pST_Street', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[pST_Street];
+IF Object_ID('dbo.lST_Street', 'V') IS NOT NULL
+DROP VIEW [dbo].[lST_Street];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lMM_Measurement viewed by the latest available information (may include future versions)
+-- lST_Street viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[lMM_Measurement] WITH SCHEMABINDING AS
+CREATE VIEW [dbo].[lST_Street] WITH SCHEMABINDING AS
 SELECT
-    [MM].MM_ID,
-    [MM].Metadata_MM,
-    [DAT].MM_DAT_MM_ID,
-    [DAT].Metadata_MM_DAT,
-    [DAT].MM_DAT_Measurement_Date,
-    [HOU].MM_HOU_MM_ID,
-    [HOU].Metadata_MM_HOU,
-    [HOU].MM_HOU_Measurement_Hour,
-    [TMP].MM_TMP_MM_ID,
-    [TMP].Metadata_MM_TMP,
-    [TMP].MM_TMP_Measurement_Temperature,
-    [PRS].MM_PRS_MM_ID,
-    [PRS].Metadata_MM_PRS,
-    [PRS].MM_PRS_Measurement_Pressure,
-    [WND].MM_WND_MM_ID,
-    [WND].Metadata_MM_WND,
-    [WND].MM_WND_Measurement_WindSpeed,
-    [DIR].MM_DIR_MM_ID,
-    [DIR].Metadata_MM_DIR,
-    [DIR].MM_DIR_Measurement_Direction
+    [ST].ST_ID,
+    [ST].Metadata_ST,
+    [NAM].ST_NAM_ST_ID,
+    [NAM].Metadata_ST_NAM,
+    [NAM].ST_NAM_Street_Name
 FROM
-    [dbo].[MM_Measurement] [MM]
+    [dbo].[ST_Street] [ST]
 LEFT JOIN
-    [dbo].[MM_DAT_Measurement_Date] [DAT]
+    [dbo].[ST_NAM_Street_Name] [NAM]
 ON
-    [DAT].MM_DAT_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_HOU_Measurement_Hour] [HOU]
-ON
-    [HOU].MM_HOU_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_TMP_Measurement_Temperature] [TMP]
-ON
-    [TMP].MM_TMP_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_PRS_Measurement_Pressure] [PRS]
-ON
-    [PRS].MM_PRS_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_DIR_Measurement_Direction] [DIR]
-ON
-    [DIR].MM_DIR_MM_ID = [MM].MM_ID;
+    [NAM].ST_NAM_ST_ID = [ST].ST_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pMM_Measurement viewed as it was on the given timepoint
+-- pST_Street viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].[pMM_Measurement] (
+CREATE FUNCTION [dbo].[pST_Street] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    [MM].MM_ID,
-    [MM].Metadata_MM,
-    [DAT].MM_DAT_MM_ID,
-    [DAT].Metadata_MM_DAT,
-    [DAT].MM_DAT_Measurement_Date,
-    [HOU].MM_HOU_MM_ID,
-    [HOU].Metadata_MM_HOU,
-    [HOU].MM_HOU_Measurement_Hour,
-    [TMP].MM_TMP_MM_ID,
-    [TMP].Metadata_MM_TMP,
-    [TMP].MM_TMP_Measurement_Temperature,
-    [PRS].MM_PRS_MM_ID,
-    [PRS].Metadata_MM_PRS,
-    [PRS].MM_PRS_Measurement_Pressure,
-    [WND].MM_WND_MM_ID,
-    [WND].Metadata_MM_WND,
-    [WND].MM_WND_Measurement_WindSpeed,
-    [DIR].MM_DIR_MM_ID,
-    [DIR].Metadata_MM_DIR,
-    [DIR].MM_DIR_Measurement_Direction
+    [ST].ST_ID,
+    [ST].Metadata_ST,
+    [NAM].ST_NAM_ST_ID,
+    [NAM].Metadata_ST_NAM,
+    [NAM].ST_NAM_Street_Name
 FROM
-    [dbo].[MM_Measurement] [MM]
+    [dbo].[ST_Street] [ST]
 LEFT JOIN
-    [dbo].[MM_DAT_Measurement_Date] [DAT]
+    [dbo].[ST_NAM_Street_Name] [NAM]
 ON
-    [DAT].MM_DAT_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_HOU_Measurement_Hour] [HOU]
-ON
-    [HOU].MM_HOU_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_TMP_Measurement_Temperature] [TMP]
-ON
-    [TMP].MM_TMP_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_PRS_Measurement_Pressure] [PRS]
-ON
-    [PRS].MM_PRS_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-ON
-    [WND].MM_WND_MM_ID = [MM].MM_ID
-LEFT JOIN
-    [dbo].[MM_DIR_Measurement_Direction] [DIR]
-ON
-    [DIR].MM_DIR_MM_ID = [MM].MM_ID;
+    [NAM].ST_NAM_ST_ID = [ST].ST_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nMM_Measurement viewed as it currently is (cannot include future versions)
+-- nST_Street viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[nMM_Measurement]
+CREATE VIEW [dbo].[nST_Street]
 AS
 SELECT
     *
 FROM
-    [dbo].[pMM_Measurement](sysdatetime());
+    [dbo].[pST_Street](sysdatetime());
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.dOC_Occasion', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[dOC_Occasion];
-IF Object_ID('dbo.nOC_Occasion', 'V') IS NOT NULL
-DROP VIEW [dbo].[nOC_Occasion];
-IF Object_ID('dbo.pOC_Occasion', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[pOC_Occasion];
-IF Object_ID('dbo.lOC_Occasion', 'V') IS NOT NULL
-DROP VIEW [dbo].[lOC_Occasion];
+IF Object_ID('dbo.dIS_Intersection', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[dIS_Intersection];
+IF Object_ID('dbo.nIS_Intersection', 'V') IS NOT NULL
+DROP VIEW [dbo].[nIS_Intersection];
+IF Object_ID('dbo.pIS_Intersection', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[pIS_Intersection];
+IF Object_ID('dbo.lIS_Intersection', 'V') IS NOT NULL
+DROP VIEW [dbo].[lIS_Intersection];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lOC_Occasion viewed by the latest available information (may include future versions)
+-- lIS_Intersection viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[lOC_Occasion] WITH SCHEMABINDING AS
+CREATE VIEW [dbo].[lIS_Intersection] WITH SCHEMABINDING AS
 SELECT
-    [OC].OC_ID,
-    [OC].Metadata_OC,
-    [TYP].OC_TYP_OC_ID,
-    [TYP].Metadata_OC_TYP,
-    [TYP].OC_TYP_Occasion_Type,
-    [WDY].OC_WDY_OC_ID,
-    [WDY].Metadata_OC_WDY,
-    [WDY].OC_WDY_Occasion_Weekday
+    [IS].IS_ID,
+    [IS].Metadata_IS,
+    [COL].IS_COL_IS_ID,
+    [COL].Metadata_IS_COL,
+    [COL].IS_COL_ChangedAt,
+    [COL].IS_COL_Intersection_CollisionCount,
+    [INJ].IS_INJ_IS_ID,
+    [INJ].Metadata_IS_INJ,
+    [INJ].IS_INJ_ChangedAt,
+    [INJ].IS_INJ_Intersection_InjuredCount,
+    [KIL].IS_KIL_IS_ID,
+    [KIL].Metadata_IS_KIL,
+    [KIL].IS_KIL_ChangedAt,
+    [KIL].IS_KIL_Intersection_KilledCount
 FROM
-    [dbo].[OC_Occasion] [OC]
+    [dbo].[IS_Intersection] [IS]
 LEFT JOIN
-    [dbo].[OC_TYP_Occasion_Type] [TYP]
+    [dbo].[IS_COL_Intersection_CollisionCount] [COL]
 ON
-    [TYP].OC_TYP_OC_ID = [OC].OC_ID
+    [COL].IS_COL_IS_ID = [IS].IS_ID
+AND
+    [COL].IS_COL_ChangedAt = (
+        SELECT
+            max(sub.IS_COL_ChangedAt)
+        FROM
+            [dbo].[IS_COL_Intersection_CollisionCount] sub
+        WHERE
+            sub.IS_COL_IS_ID = [IS].IS_ID
+   )
 LEFT JOIN
-    [dbo].[OC_WDY_Occasion_Weekday] [WDY]
+    [dbo].[IS_INJ_Intersection_InjuredCount] [INJ]
 ON
-    [WDY].OC_WDY_OC_ID = [OC].OC_ID;
+    [INJ].IS_INJ_IS_ID = [IS].IS_ID
+AND
+    [INJ].IS_INJ_ChangedAt = (
+        SELECT
+            max(sub.IS_INJ_ChangedAt)
+        FROM
+            [dbo].[IS_INJ_Intersection_InjuredCount] sub
+        WHERE
+            sub.IS_INJ_IS_ID = [IS].IS_ID
+   )
+LEFT JOIN
+    [dbo].[IS_KIL_Intersection_KilledCount] [KIL]
+ON
+    [KIL].IS_KIL_IS_ID = [IS].IS_ID
+AND
+    [KIL].IS_KIL_ChangedAt = (
+        SELECT
+            max(sub.IS_KIL_ChangedAt)
+        FROM
+            [dbo].[IS_KIL_Intersection_KilledCount] sub
+        WHERE
+            sub.IS_KIL_IS_ID = [IS].IS_ID
+   );
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pOC_Occasion viewed as it was on the given timepoint
+-- pIS_Intersection viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].[pOC_Occasion] (
+CREATE FUNCTION [dbo].[pIS_Intersection] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    [OC].OC_ID,
-    [OC].Metadata_OC,
-    [TYP].OC_TYP_OC_ID,
-    [TYP].Metadata_OC_TYP,
-    [TYP].OC_TYP_Occasion_Type,
-    [WDY].OC_WDY_OC_ID,
-    [WDY].Metadata_OC_WDY,
-    [WDY].OC_WDY_Occasion_Weekday
+    [IS].IS_ID,
+    [IS].Metadata_IS,
+    [COL].IS_COL_IS_ID,
+    [COL].Metadata_IS_COL,
+    [COL].IS_COL_ChangedAt,
+    [COL].IS_COL_Intersection_CollisionCount,
+    [INJ].IS_INJ_IS_ID,
+    [INJ].Metadata_IS_INJ,
+    [INJ].IS_INJ_ChangedAt,
+    [INJ].IS_INJ_Intersection_InjuredCount,
+    [KIL].IS_KIL_IS_ID,
+    [KIL].Metadata_IS_KIL,
+    [KIL].IS_KIL_ChangedAt,
+    [KIL].IS_KIL_Intersection_KilledCount
 FROM
-    [dbo].[OC_Occasion] [OC]
+    [dbo].[IS_Intersection] [IS]
 LEFT JOIN
-    [dbo].[OC_TYP_Occasion_Type] [TYP]
+    [dbo].[rIS_COL_Intersection_CollisionCount](@changingTimepoint) [COL]
 ON
-    [TYP].OC_TYP_OC_ID = [OC].OC_ID
+    [COL].IS_COL_IS_ID = [IS].IS_ID
+AND
+    [COL].IS_COL_ChangedAt = (
+        SELECT
+            max(sub.IS_COL_ChangedAt)
+        FROM
+            [dbo].[rIS_COL_Intersection_CollisionCount](@changingTimepoint) sub
+        WHERE
+            sub.IS_COL_IS_ID = [IS].IS_ID
+   )
 LEFT JOIN
-    [dbo].[OC_WDY_Occasion_Weekday] [WDY]
+    [dbo].[rIS_INJ_Intersection_InjuredCount](@changingTimepoint) [INJ]
 ON
-    [WDY].OC_WDY_OC_ID = [OC].OC_ID;
+    [INJ].IS_INJ_IS_ID = [IS].IS_ID
+AND
+    [INJ].IS_INJ_ChangedAt = (
+        SELECT
+            max(sub.IS_INJ_ChangedAt)
+        FROM
+            [dbo].[rIS_INJ_Intersection_InjuredCount](@changingTimepoint) sub
+        WHERE
+            sub.IS_INJ_IS_ID = [IS].IS_ID
+   )
+LEFT JOIN
+    [dbo].[rIS_KIL_Intersection_KilledCount](@changingTimepoint) [KIL]
+ON
+    [KIL].IS_KIL_IS_ID = [IS].IS_ID
+AND
+    [KIL].IS_KIL_ChangedAt = (
+        SELECT
+            max(sub.IS_KIL_ChangedAt)
+        FROM
+            [dbo].[rIS_KIL_Intersection_KilledCount](@changingTimepoint) sub
+        WHERE
+            sub.IS_KIL_IS_ID = [IS].IS_ID
+   );
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nOC_Occasion viewed as it currently is (cannot include future versions)
+-- nIS_Intersection viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[nOC_Occasion]
+CREATE VIEW [dbo].[nIS_Intersection]
 AS
 SELECT
     *
 FROM
-    [dbo].[pOC_Occasion](sysdatetime());
+    [dbo].[pIS_Intersection](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dIS_Intersection showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [dbo].[dIS_Intersection] (
+    @intervalStart datetime2(7),
+    @intervalEnd datetime2(7),
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pIS].*
+FROM (
+    SELECT DISTINCT
+        IS_COL_IS_ID AS IS_ID,
+        IS_COL_ChangedAt AS inspectedTimepoint,
+        'COL' AS mnemonic
+    FROM
+        [dbo].[IS_COL_Intersection_CollisionCount]
+    WHERE
+        (@selection is null OR @selection like '%COL%')
+    AND
+        IS_COL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        IS_INJ_IS_ID AS IS_ID,
+        IS_INJ_ChangedAt AS inspectedTimepoint,
+        'INJ' AS mnemonic
+    FROM
+        [dbo].[IS_INJ_Intersection_InjuredCount]
+    WHERE
+        (@selection is null OR @selection like '%INJ%')
+    AND
+        IS_INJ_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        IS_KIL_IS_ID AS IS_ID,
+        IS_KIL_ChangedAt AS inspectedTimepoint,
+        'KIL' AS mnemonic
+    FROM
+        [dbo].[IS_KIL_Intersection_KilledCount]
+    WHERE
+        (@selection is null OR @selection like '%KIL%')
+    AND
+        IS_KIL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [dbo].[pIS_Intersection](timepoints.inspectedTimepoint) [pIS]
+WHERE
+    [pIS].IS_ID = timepoints.IS_ID;
 GO
 -- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
 --
@@ -545,618 +820,361 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_DAT_Measurement_Date instead of INSERT trigger on MM_DAT_Measurement_Date
+-- it_ST_NAM_Street_Name instead of INSERT trigger on ST_NAM_Street_Name
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_DAT_Measurement_Date', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_DAT_Measurement_Date];
+IF Object_ID('dbo.it_ST_NAM_Street_Name', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_ST_NAM_Street_Name];
 GO
-CREATE TRIGGER [dbo].[it_MM_DAT_Measurement_Date] ON [dbo].[MM_DAT_Measurement_Date]
+CREATE TRIGGER [dbo].[it_ST_NAM_Street_Name] ON [dbo].[ST_NAM_Street_Name]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @MM_DAT_Measurement_Date TABLE (
-        MM_DAT_MM_ID int not null,
-        Metadata_MM_DAT int not null,
-        MM_DAT_Measurement_Date date not null,
-        MM_DAT_Version bigint not null,
-        MM_DAT_StatementType char(1) not null,
+    DECLARE @ST_NAM_Street_Name TABLE (
+        ST_NAM_ST_ID int not null,
+        Metadata_ST_NAM int not null,
+        ST_NAM_Street_Name varchar(555) not null,
+        ST_NAM_Version bigint not null,
+        ST_NAM_StatementType char(1) not null,
         primary key(
-            MM_DAT_Version,
-            MM_DAT_MM_ID
+            ST_NAM_Version,
+            ST_NAM_ST_ID
         )
     );
-    INSERT INTO @MM_DAT_Measurement_Date
+    INSERT INTO @ST_NAM_Street_Name
     SELECT
-        i.MM_DAT_MM_ID,
-        i.Metadata_MM_DAT,
-        i.MM_DAT_Measurement_Date,
+        i.ST_NAM_ST_ID,
+        i.Metadata_ST_NAM,
+        i.ST_NAM_Street_Name,
         1,
         'X'
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(MM_DAT_Version),
+        @maxVersion = max(ST_NAM_Version),
         @currentVersion = 0
     FROM
-        @MM_DAT_Measurement_Date;
+        @ST_NAM_Street_Name;
     WHILE (@currentVersion < @maxVersion)
     BEGIN
         SET @currentVersion = @currentVersion + 1;
         UPDATE v
         SET
-            v.MM_DAT_StatementType =
+            v.ST_NAM_StatementType =
                 CASE
-                    WHEN [DAT].MM_DAT_MM_ID is not null
+                    WHEN [NAM].ST_NAM_ST_ID is not null
                     THEN 'D' -- duplicate
                     ELSE 'N' -- new statement
                 END
         FROM
-            @MM_DAT_Measurement_Date v
+            @ST_NAM_Street_Name v
         LEFT JOIN
-            [dbo].[MM_DAT_Measurement_Date] [DAT]
+            [dbo].[ST_NAM_Street_Name] [NAM]
         ON
-            [DAT].MM_DAT_MM_ID = v.MM_DAT_MM_ID
+            [NAM].ST_NAM_ST_ID = v.ST_NAM_ST_ID
         AND
-            [DAT].MM_DAT_Measurement_Date = v.MM_DAT_Measurement_Date
+            [NAM].ST_NAM_Street_Name = v.ST_NAM_Street_Name
         WHERE
-            v.MM_DAT_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
-            MM_DAT_MM_ID,
-            Metadata_MM_DAT,
-            MM_DAT_Measurement_Date
+            v.ST_NAM_Version = @currentVersion;
+        INSERT INTO [dbo].[ST_NAM_Street_Name] (
+            ST_NAM_ST_ID,
+            Metadata_ST_NAM,
+            ST_NAM_Street_Name
         )
         SELECT
-            MM_DAT_MM_ID,
-            Metadata_MM_DAT,
-            MM_DAT_Measurement_Date
+            ST_NAM_ST_ID,
+            Metadata_ST_NAM,
+            ST_NAM_Street_Name
         FROM
-            @MM_DAT_Measurement_Date
+            @ST_NAM_Street_Name
         WHERE
-            MM_DAT_Version = @currentVersion
+            ST_NAM_Version = @currentVersion
         AND
-            MM_DAT_StatementType in ('N');
+            ST_NAM_StatementType in ('N');
     END
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_HOU_Measurement_Hour instead of INSERT trigger on MM_HOU_Measurement_Hour
+-- it_IS_COL_Intersection_CollisionCount instead of INSERT trigger on IS_COL_Intersection_CollisionCount
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_HOU_Measurement_Hour', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_HOU_Measurement_Hour];
+IF Object_ID('dbo.it_IS_COL_Intersection_CollisionCount', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_IS_COL_Intersection_CollisionCount];
 GO
-CREATE TRIGGER [dbo].[it_MM_HOU_Measurement_Hour] ON [dbo].[MM_HOU_Measurement_Hour]
+CREATE TRIGGER [dbo].[it_IS_COL_Intersection_CollisionCount] ON [dbo].[IS_COL_Intersection_CollisionCount]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @MM_HOU_Measurement_Hour TABLE (
-        MM_HOU_MM_ID int not null,
-        Metadata_MM_HOU int not null,
-        MM_HOU_Measurement_Hour char(2) not null,
-        MM_HOU_Version bigint not null,
-        MM_HOU_StatementType char(1) not null,
+    DECLARE @IS_COL_Intersection_CollisionCount TABLE (
+        IS_COL_IS_ID int not null,
+        Metadata_IS_COL int not null,
+        IS_COL_ChangedAt date not null,
+        IS_COL_Intersection_CollisionCount int not null,
+        IS_COL_Version bigint not null,
+        IS_COL_StatementType char(1) not null,
         primary key(
-            MM_HOU_Version,
-            MM_HOU_MM_ID
+            IS_COL_Version,
+            IS_COL_IS_ID
         )
     );
-    INSERT INTO @MM_HOU_Measurement_Hour
+    INSERT INTO @IS_COL_Intersection_CollisionCount
     SELECT
-        i.MM_HOU_MM_ID,
-        i.Metadata_MM_HOU,
-        i.MM_HOU_Measurement_Hour,
-        1,
+        i.IS_COL_IS_ID,
+        i.Metadata_IS_COL,
+        i.IS_COL_ChangedAt,
+        i.IS_COL_Intersection_CollisionCount,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.IS_COL_IS_ID
+            ORDER BY
+                i.IS_COL_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(MM_HOU_Version),
+        @maxVersion = max(IS_COL_Version),
         @currentVersion = 0
     FROM
-        @MM_HOU_Measurement_Hour;
+        @IS_COL_Intersection_CollisionCount;
     WHILE (@currentVersion < @maxVersion)
     BEGIN
         SET @currentVersion = @currentVersion + 1;
         UPDATE v
         SET
-            v.MM_HOU_StatementType =
+            v.IS_COL_StatementType =
                 CASE
-                    WHEN [HOU].MM_HOU_MM_ID is not null
+                    WHEN [COL].IS_COL_IS_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [dbo].[rfIS_COL_Intersection_CollisionCount](
+                        v.IS_COL_IS_ID,
+                        v.IS_COL_Intersection_CollisionCount,
+                        v.IS_COL_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
-            @MM_HOU_Measurement_Hour v
+            @IS_COL_Intersection_CollisionCount v
         LEFT JOIN
-            [dbo].[MM_HOU_Measurement_Hour] [HOU]
+            [dbo].[IS_COL_Intersection_CollisionCount] [COL]
         ON
-            [HOU].MM_HOU_MM_ID = v.MM_HOU_MM_ID
+            [COL].IS_COL_IS_ID = v.IS_COL_IS_ID
         AND
-            [HOU].MM_HOU_Measurement_Hour = v.MM_HOU_Measurement_Hour
+            [COL].IS_COL_ChangedAt = v.IS_COL_ChangedAt
+        AND
+            [COL].IS_COL_Intersection_CollisionCount = v.IS_COL_Intersection_CollisionCount
         WHERE
-            v.MM_HOU_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
-            MM_HOU_MM_ID,
-            Metadata_MM_HOU,
-            MM_HOU_Measurement_Hour
+            v.IS_COL_Version = @currentVersion;
+        INSERT INTO [dbo].[IS_COL_Intersection_CollisionCount] (
+            IS_COL_IS_ID,
+            Metadata_IS_COL,
+            IS_COL_ChangedAt,
+            IS_COL_Intersection_CollisionCount
         )
         SELECT
-            MM_HOU_MM_ID,
-            Metadata_MM_HOU,
-            MM_HOU_Measurement_Hour
+            IS_COL_IS_ID,
+            Metadata_IS_COL,
+            IS_COL_ChangedAt,
+            IS_COL_Intersection_CollisionCount
         FROM
-            @MM_HOU_Measurement_Hour
+            @IS_COL_Intersection_CollisionCount
         WHERE
-            MM_HOU_Version = @currentVersion
+            IS_COL_Version = @currentVersion
         AND
-            MM_HOU_StatementType in ('N');
+            IS_COL_StatementType in ('N');
     END
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_TMP_Measurement_Temperature instead of INSERT trigger on MM_TMP_Measurement_Temperature
+-- it_IS_INJ_Intersection_InjuredCount instead of INSERT trigger on IS_INJ_Intersection_InjuredCount
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_TMP_Measurement_Temperature', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_TMP_Measurement_Temperature];
+IF Object_ID('dbo.it_IS_INJ_Intersection_InjuredCount', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_IS_INJ_Intersection_InjuredCount];
 GO
-CREATE TRIGGER [dbo].[it_MM_TMP_Measurement_Temperature] ON [dbo].[MM_TMP_Measurement_Temperature]
+CREATE TRIGGER [dbo].[it_IS_INJ_Intersection_InjuredCount] ON [dbo].[IS_INJ_Intersection_InjuredCount]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @MM_TMP_Measurement_Temperature TABLE (
-        MM_TMP_MM_ID int not null,
-        Metadata_MM_TMP int not null,
-        MM_TMP_Measurement_Temperature decimal(19,10) not null,
-        MM_TMP_Version bigint not null,
-        MM_TMP_StatementType char(1) not null,
+    DECLARE @IS_INJ_Intersection_InjuredCount TABLE (
+        IS_INJ_IS_ID int not null,
+        Metadata_IS_INJ int not null,
+        IS_INJ_ChangedAt date not null,
+        IS_INJ_Intersection_InjuredCount int not null,
+        IS_INJ_Version bigint not null,
+        IS_INJ_StatementType char(1) not null,
         primary key(
-            MM_TMP_Version,
-            MM_TMP_MM_ID
+            IS_INJ_Version,
+            IS_INJ_IS_ID
         )
     );
-    INSERT INTO @MM_TMP_Measurement_Temperature
+    INSERT INTO @IS_INJ_Intersection_InjuredCount
     SELECT
-        i.MM_TMP_MM_ID,
-        i.Metadata_MM_TMP,
-        i.MM_TMP_Measurement_Temperature,
-        1,
+        i.IS_INJ_IS_ID,
+        i.Metadata_IS_INJ,
+        i.IS_INJ_ChangedAt,
+        i.IS_INJ_Intersection_InjuredCount,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.IS_INJ_IS_ID
+            ORDER BY
+                i.IS_INJ_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(MM_TMP_Version),
+        @maxVersion = max(IS_INJ_Version),
         @currentVersion = 0
     FROM
-        @MM_TMP_Measurement_Temperature;
+        @IS_INJ_Intersection_InjuredCount;
     WHILE (@currentVersion < @maxVersion)
     BEGIN
         SET @currentVersion = @currentVersion + 1;
         UPDATE v
         SET
-            v.MM_TMP_StatementType =
+            v.IS_INJ_StatementType =
                 CASE
-                    WHEN [TMP].MM_TMP_MM_ID is not null
+                    WHEN [INJ].IS_INJ_IS_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [dbo].[rfIS_INJ_Intersection_InjuredCount](
+                        v.IS_INJ_IS_ID,
+                        v.IS_INJ_Intersection_InjuredCount,
+                        v.IS_INJ_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
-            @MM_TMP_Measurement_Temperature v
+            @IS_INJ_Intersection_InjuredCount v
         LEFT JOIN
-            [dbo].[MM_TMP_Measurement_Temperature] [TMP]
+            [dbo].[IS_INJ_Intersection_InjuredCount] [INJ]
         ON
-            [TMP].MM_TMP_MM_ID = v.MM_TMP_MM_ID
+            [INJ].IS_INJ_IS_ID = v.IS_INJ_IS_ID
         AND
-            [TMP].MM_TMP_Measurement_Temperature = v.MM_TMP_Measurement_Temperature
+            [INJ].IS_INJ_ChangedAt = v.IS_INJ_ChangedAt
+        AND
+            [INJ].IS_INJ_Intersection_InjuredCount = v.IS_INJ_Intersection_InjuredCount
         WHERE
-            v.MM_TMP_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
-            MM_TMP_MM_ID,
-            Metadata_MM_TMP,
-            MM_TMP_Measurement_Temperature
+            v.IS_INJ_Version = @currentVersion;
+        INSERT INTO [dbo].[IS_INJ_Intersection_InjuredCount] (
+            IS_INJ_IS_ID,
+            Metadata_IS_INJ,
+            IS_INJ_ChangedAt,
+            IS_INJ_Intersection_InjuredCount
         )
         SELECT
-            MM_TMP_MM_ID,
-            Metadata_MM_TMP,
-            MM_TMP_Measurement_Temperature
+            IS_INJ_IS_ID,
+            Metadata_IS_INJ,
+            IS_INJ_ChangedAt,
+            IS_INJ_Intersection_InjuredCount
         FROM
-            @MM_TMP_Measurement_Temperature
+            @IS_INJ_Intersection_InjuredCount
         WHERE
-            MM_TMP_Version = @currentVersion
+            IS_INJ_Version = @currentVersion
         AND
-            MM_TMP_StatementType in ('N');
+            IS_INJ_StatementType in ('N');
     END
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_PRS_Measurement_Pressure instead of INSERT trigger on MM_PRS_Measurement_Pressure
+-- it_IS_KIL_Intersection_KilledCount instead of INSERT trigger on IS_KIL_Intersection_KilledCount
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_PRS_Measurement_Pressure', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_PRS_Measurement_Pressure];
+IF Object_ID('dbo.it_IS_KIL_Intersection_KilledCount', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_IS_KIL_Intersection_KilledCount];
 GO
-CREATE TRIGGER [dbo].[it_MM_PRS_Measurement_Pressure] ON [dbo].[MM_PRS_Measurement_Pressure]
+CREATE TRIGGER [dbo].[it_IS_KIL_Intersection_KilledCount] ON [dbo].[IS_KIL_Intersection_KilledCount]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
-    DECLARE @MM_PRS_Measurement_Pressure TABLE (
-        MM_PRS_MM_ID int not null,
-        Metadata_MM_PRS int not null,
-        MM_PRS_Measurement_Pressure decimal(19,10) not null,
-        MM_PRS_Version bigint not null,
-        MM_PRS_StatementType char(1) not null,
+    DECLARE @IS_KIL_Intersection_KilledCount TABLE (
+        IS_KIL_IS_ID int not null,
+        Metadata_IS_KIL int not null,
+        IS_KIL_ChangedAt date not null,
+        IS_KIL_Intersection_KilledCount int not null,
+        IS_KIL_Version bigint not null,
+        IS_KIL_StatementType char(1) not null,
         primary key(
-            MM_PRS_Version,
-            MM_PRS_MM_ID
+            IS_KIL_Version,
+            IS_KIL_IS_ID
         )
     );
-    INSERT INTO @MM_PRS_Measurement_Pressure
+    INSERT INTO @IS_KIL_Intersection_KilledCount
     SELECT
-        i.MM_PRS_MM_ID,
-        i.Metadata_MM_PRS,
-        i.MM_PRS_Measurement_Pressure,
-        1,
+        i.IS_KIL_IS_ID,
+        i.Metadata_IS_KIL,
+        i.IS_KIL_ChangedAt,
+        i.IS_KIL_Intersection_KilledCount,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.IS_KIL_IS_ID
+            ORDER BY
+                i.IS_KIL_ChangedAt ASC
+        ),
         'X'
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(MM_PRS_Version),
+        @maxVersion = max(IS_KIL_Version),
         @currentVersion = 0
     FROM
-        @MM_PRS_Measurement_Pressure;
+        @IS_KIL_Intersection_KilledCount;
     WHILE (@currentVersion < @maxVersion)
     BEGIN
         SET @currentVersion = @currentVersion + 1;
         UPDATE v
         SET
-            v.MM_PRS_StatementType =
+            v.IS_KIL_StatementType =
                 CASE
-                    WHEN [PRS].MM_PRS_MM_ID is not null
+                    WHEN [KIL].IS_KIL_IS_ID is not null
                     THEN 'D' -- duplicate
+                    WHEN [dbo].[rfIS_KIL_Intersection_KilledCount](
+                        v.IS_KIL_IS_ID,
+                        v.IS_KIL_Intersection_KilledCount,
+                        v.IS_KIL_ChangedAt
+                    ) = 1
+                    THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
         FROM
-            @MM_PRS_Measurement_Pressure v
+            @IS_KIL_Intersection_KilledCount v
         LEFT JOIN
-            [dbo].[MM_PRS_Measurement_Pressure] [PRS]
+            [dbo].[IS_KIL_Intersection_KilledCount] [KIL]
         ON
-            [PRS].MM_PRS_MM_ID = v.MM_PRS_MM_ID
+            [KIL].IS_KIL_IS_ID = v.IS_KIL_IS_ID
         AND
-            [PRS].MM_PRS_Measurement_Pressure = v.MM_PRS_Measurement_Pressure
+            [KIL].IS_KIL_ChangedAt = v.IS_KIL_ChangedAt
+        AND
+            [KIL].IS_KIL_Intersection_KilledCount = v.IS_KIL_Intersection_KilledCount
         WHERE
-            v.MM_PRS_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
-            MM_PRS_MM_ID,
-            Metadata_MM_PRS,
-            MM_PRS_Measurement_Pressure
+            v.IS_KIL_Version = @currentVersion;
+        INSERT INTO [dbo].[IS_KIL_Intersection_KilledCount] (
+            IS_KIL_IS_ID,
+            Metadata_IS_KIL,
+            IS_KIL_ChangedAt,
+            IS_KIL_Intersection_KilledCount
         )
         SELECT
-            MM_PRS_MM_ID,
-            Metadata_MM_PRS,
-            MM_PRS_Measurement_Pressure
+            IS_KIL_IS_ID,
+            Metadata_IS_KIL,
+            IS_KIL_ChangedAt,
+            IS_KIL_Intersection_KilledCount
         FROM
-            @MM_PRS_Measurement_Pressure
+            @IS_KIL_Intersection_KilledCount
         WHERE
-            MM_PRS_Version = @currentVersion
+            IS_KIL_Version = @currentVersion
         AND
-            MM_PRS_StatementType in ('N');
-    END
-END
-GO
--- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_WND_Measurement_WindSpeed instead of INSERT trigger on MM_WND_Measurement_WindSpeed
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_WND_Measurement_WindSpeed', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_WND_Measurement_WindSpeed];
-GO
-CREATE TRIGGER [dbo].[it_MM_WND_Measurement_WindSpeed] ON [dbo].[MM_WND_Measurement_WindSpeed]
-INSTEAD OF INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
-    DECLARE @MM_WND_Measurement_WindSpeed TABLE (
-        MM_WND_MM_ID int not null,
-        Metadata_MM_WND int not null,
-        MM_WND_Measurement_WindSpeed decimal(19,10) not null,
-        MM_WND_Version bigint not null,
-        MM_WND_StatementType char(1) not null,
-        primary key(
-            MM_WND_Version,
-            MM_WND_MM_ID
-        )
-    );
-    INSERT INTO @MM_WND_Measurement_WindSpeed
-    SELECT
-        i.MM_WND_MM_ID,
-        i.Metadata_MM_WND,
-        i.MM_WND_Measurement_WindSpeed,
-        1,
-        'X'
-    FROM
-        inserted i;
-    SELECT
-        @maxVersion = max(MM_WND_Version),
-        @currentVersion = 0
-    FROM
-        @MM_WND_Measurement_WindSpeed;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.MM_WND_StatementType =
-                CASE
-                    WHEN [WND].MM_WND_MM_ID is not null
-                    THEN 'D' -- duplicate
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @MM_WND_Measurement_WindSpeed v
-        LEFT JOIN
-            [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-        ON
-            [WND].MM_WND_MM_ID = v.MM_WND_MM_ID
-        AND
-            [WND].MM_WND_Measurement_WindSpeed = v.MM_WND_Measurement_WindSpeed
-        WHERE
-            v.MM_WND_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
-            MM_WND_MM_ID,
-            Metadata_MM_WND,
-            MM_WND_Measurement_WindSpeed
-        )
-        SELECT
-            MM_WND_MM_ID,
-            Metadata_MM_WND,
-            MM_WND_Measurement_WindSpeed
-        FROM
-            @MM_WND_Measurement_WindSpeed
-        WHERE
-            MM_WND_Version = @currentVersion
-        AND
-            MM_WND_StatementType in ('N');
-    END
-END
-GO
--- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_DIR_Measurement_Direction instead of INSERT trigger on MM_DIR_Measurement_Direction
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_DIR_Measurement_Direction', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_DIR_Measurement_Direction];
-GO
-CREATE TRIGGER [dbo].[it_MM_DIR_Measurement_Direction] ON [dbo].[MM_DIR_Measurement_Direction]
-INSTEAD OF INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
-    DECLARE @MM_DIR_Measurement_Direction TABLE (
-        MM_DIR_MM_ID int not null,
-        Metadata_MM_DIR int not null,
-        MM_DIR_Measurement_Direction decimal(5,2) not null,
-        MM_DIR_Version bigint not null,
-        MM_DIR_StatementType char(1) not null,
-        primary key(
-            MM_DIR_Version,
-            MM_DIR_MM_ID
-        )
-    );
-    INSERT INTO @MM_DIR_Measurement_Direction
-    SELECT
-        i.MM_DIR_MM_ID,
-        i.Metadata_MM_DIR,
-        i.MM_DIR_Measurement_Direction,
-        1,
-        'X'
-    FROM
-        inserted i;
-    SELECT
-        @maxVersion = max(MM_DIR_Version),
-        @currentVersion = 0
-    FROM
-        @MM_DIR_Measurement_Direction;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.MM_DIR_StatementType =
-                CASE
-                    WHEN [DIR].MM_DIR_MM_ID is not null
-                    THEN 'D' -- duplicate
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @MM_DIR_Measurement_Direction v
-        LEFT JOIN
-            [dbo].[MM_DIR_Measurement_Direction] [DIR]
-        ON
-            [DIR].MM_DIR_MM_ID = v.MM_DIR_MM_ID
-        AND
-            [DIR].MM_DIR_Measurement_Direction = v.MM_DIR_Measurement_Direction
-        WHERE
-            v.MM_DIR_Version = @currentVersion;
-        INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
-            MM_DIR_MM_ID,
-            Metadata_MM_DIR,
-            MM_DIR_Measurement_Direction
-        )
-        SELECT
-            MM_DIR_MM_ID,
-            Metadata_MM_DIR,
-            MM_DIR_Measurement_Direction
-        FROM
-            @MM_DIR_Measurement_Direction
-        WHERE
-            MM_DIR_Version = @currentVersion
-        AND
-            MM_DIR_StatementType in ('N');
-    END
-END
-GO
--- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_OC_TYP_Occasion_Type instead of INSERT trigger on OC_TYP_Occasion_Type
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_OC_TYP_Occasion_Type', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_OC_TYP_Occasion_Type];
-GO
-CREATE TRIGGER [dbo].[it_OC_TYP_Occasion_Type] ON [dbo].[OC_TYP_Occasion_Type]
-INSTEAD OF INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
-    DECLARE @OC_TYP_Occasion_Type TABLE (
-        OC_TYP_OC_ID int not null,
-        Metadata_OC_TYP int not null,
-        OC_TYP_Occasion_Type varchar(42) not null,
-        OC_TYP_Version bigint not null,
-        OC_TYP_StatementType char(1) not null,
-        primary key(
-            OC_TYP_Version,
-            OC_TYP_OC_ID
-        )
-    );
-    INSERT INTO @OC_TYP_Occasion_Type
-    SELECT
-        i.OC_TYP_OC_ID,
-        i.Metadata_OC_TYP,
-        i.OC_TYP_Occasion_Type,
-        1,
-        'X'
-    FROM
-        inserted i;
-    SELECT
-        @maxVersion = max(OC_TYP_Version),
-        @currentVersion = 0
-    FROM
-        @OC_TYP_Occasion_Type;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.OC_TYP_StatementType =
-                CASE
-                    WHEN [TYP].OC_TYP_OC_ID is not null
-                    THEN 'D' -- duplicate
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @OC_TYP_Occasion_Type v
-        LEFT JOIN
-            [dbo].[OC_TYP_Occasion_Type] [TYP]
-        ON
-            [TYP].OC_TYP_OC_ID = v.OC_TYP_OC_ID
-        AND
-            [TYP].OC_TYP_Occasion_Type = v.OC_TYP_Occasion_Type
-        WHERE
-            v.OC_TYP_Version = @currentVersion;
-        INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
-            OC_TYP_OC_ID,
-            Metadata_OC_TYP,
-            OC_TYP_Occasion_Type
-        )
-        SELECT
-            OC_TYP_OC_ID,
-            Metadata_OC_TYP,
-            OC_TYP_Occasion_Type
-        FROM
-            @OC_TYP_Occasion_Type
-        WHERE
-            OC_TYP_Version = @currentVersion
-        AND
-            OC_TYP_StatementType in ('N');
-    END
-END
-GO
--- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_OC_WDY_Occasion_Weekday instead of INSERT trigger on OC_WDY_Occasion_Weekday
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_OC_WDY_Occasion_Weekday', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_OC_WDY_Occasion_Weekday];
-GO
-CREATE TRIGGER [dbo].[it_OC_WDY_Occasion_Weekday] ON [dbo].[OC_WDY_Occasion_Weekday]
-INSTEAD OF INSERT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    DECLARE @maxVersion int;
-    DECLARE @currentVersion int;
-    DECLARE @OC_WDY_Occasion_Weekday TABLE (
-        OC_WDY_OC_ID int not null,
-        Metadata_OC_WDY int not null,
-        OC_WDY_Occasion_Weekday varchar(42) not null,
-        OC_WDY_Version bigint not null,
-        OC_WDY_StatementType char(1) not null,
-        primary key(
-            OC_WDY_Version,
-            OC_WDY_OC_ID
-        )
-    );
-    INSERT INTO @OC_WDY_Occasion_Weekday
-    SELECT
-        i.OC_WDY_OC_ID,
-        i.Metadata_OC_WDY,
-        i.OC_WDY_Occasion_Weekday,
-        1,
-        'X'
-    FROM
-        inserted i;
-    SELECT
-        @maxVersion = max(OC_WDY_Version),
-        @currentVersion = 0
-    FROM
-        @OC_WDY_Occasion_Weekday;
-    WHILE (@currentVersion < @maxVersion)
-    BEGIN
-        SET @currentVersion = @currentVersion + 1;
-        UPDATE v
-        SET
-            v.OC_WDY_StatementType =
-                CASE
-                    WHEN [WDY].OC_WDY_OC_ID is not null
-                    THEN 'D' -- duplicate
-                    ELSE 'N' -- new statement
-                END
-        FROM
-            @OC_WDY_Occasion_Weekday v
-        LEFT JOIN
-            [dbo].[OC_WDY_Occasion_Weekday] [WDY]
-        ON
-            [WDY].OC_WDY_OC_ID = v.OC_WDY_OC_ID
-        AND
-            [WDY].OC_WDY_Occasion_Weekday = v.OC_WDY_Occasion_Weekday
-        WHERE
-            v.OC_WDY_Version = @currentVersion;
-        INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
-            OC_WDY_OC_ID,
-            Metadata_OC_WDY,
-            OC_WDY_Occasion_Weekday
-        )
-        SELECT
-            OC_WDY_OC_ID,
-            Metadata_OC_WDY,
-            OC_WDY_Occasion_Weekday
-        FROM
-            @OC_WDY_Occasion_Weekday
-        WHERE
-            OC_WDY_Version = @currentVersion
-        AND
-            OC_WDY_StatementType in ('N');
+            IS_KIL_StatementType in ('N');
     END
 END
 GO
@@ -1173,579 +1191,406 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_lMM_Measurement instead of INSERT trigger on lMM_Measurement
+-- it_lST_Street instead of INSERT trigger on lST_Street
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[it_lMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[it_lST_Street] ON [dbo].[lST_Street]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    DECLARE @MM TABLE (
+    DECLARE @ST TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
-        MM_ID int not null
+        ST_ID int not null
     );
-    INSERT INTO [dbo].[MM_Measurement] (
-        Metadata_MM 
+    INSERT INTO [dbo].[ST_Street] (
+        Metadata_ST 
     )
     OUTPUT
-        inserted.MM_ID
+        inserted.ST_ID
     INTO
-        @MM
+        @ST
     SELECT
-        Metadata_MM 
+        Metadata_ST 
     FROM
         inserted
     WHERE
-        inserted.MM_ID is null;
+        inserted.ST_ID is null;
     DECLARE @inserted TABLE (
-        MM_ID int not null,
-        Metadata_MM int not null,
-        MM_DAT_MM_ID int null,
-        Metadata_MM_DAT int null,
-        MM_DAT_Measurement_Date date null,
-        MM_HOU_MM_ID int null,
-        Metadata_MM_HOU int null,
-        MM_HOU_Measurement_Hour char(2) null,
-        MM_TMP_MM_ID int null,
-        Metadata_MM_TMP int null,
-        MM_TMP_Measurement_Temperature decimal(19,10) null,
-        MM_PRS_MM_ID int null,
-        Metadata_MM_PRS int null,
-        MM_PRS_Measurement_Pressure decimal(19,10) null,
-        MM_WND_MM_ID int null,
-        Metadata_MM_WND int null,
-        MM_WND_Measurement_WindSpeed decimal(19,10) null,
-        MM_DIR_MM_ID int null,
-        Metadata_MM_DIR int null,
-        MM_DIR_Measurement_Direction decimal(5,2) null
+        ST_ID int not null,
+        Metadata_ST int not null,
+        ST_NAM_ST_ID int null,
+        Metadata_ST_NAM int null,
+        ST_NAM_Street_Name varchar(555) null
     );
     INSERT INTO @inserted
     SELECT
-        ISNULL(i.MM_ID, a.MM_ID),
-        i.Metadata_MM,
-        ISNULL(ISNULL(i.MM_DAT_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_DAT, i.Metadata_MM),
-        i.MM_DAT_Measurement_Date,
-        ISNULL(ISNULL(i.MM_HOU_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_HOU, i.Metadata_MM),
-        i.MM_HOU_Measurement_Hour,
-        ISNULL(ISNULL(i.MM_TMP_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_TMP, i.Metadata_MM),
-        i.MM_TMP_Measurement_Temperature,
-        ISNULL(ISNULL(i.MM_PRS_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_PRS, i.Metadata_MM),
-        i.MM_PRS_Measurement_Pressure,
-        ISNULL(ISNULL(i.MM_WND_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_WND, i.Metadata_MM),
-        i.MM_WND_Measurement_WindSpeed,
-        ISNULL(ISNULL(i.MM_DIR_MM_ID, i.MM_ID), a.MM_ID),
-        ISNULL(i.Metadata_MM_DIR, i.Metadata_MM),
-        i.MM_DIR_Measurement_Direction
+        ISNULL(i.ST_ID, a.ST_ID),
+        i.Metadata_ST,
+        ISNULL(ISNULL(i.ST_NAM_ST_ID, i.ST_ID), a.ST_ID),
+        ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
+        i.ST_NAM_Street_Name
     FROM (
         SELECT
-            MM_ID,
-            Metadata_MM,
-            MM_DAT_MM_ID,
-            Metadata_MM_DAT,
-            MM_DAT_Measurement_Date,
-            MM_HOU_MM_ID,
-            Metadata_MM_HOU,
-            MM_HOU_Measurement_Hour,
-            MM_TMP_MM_ID,
-            Metadata_MM_TMP,
-            MM_TMP_Measurement_Temperature,
-            MM_PRS_MM_ID,
-            Metadata_MM_PRS,
-            MM_PRS_Measurement_Pressure,
-            MM_WND_MM_ID,
-            Metadata_MM_WND,
-            MM_WND_Measurement_WindSpeed,
-            MM_DIR_MM_ID,
-            Metadata_MM_DIR,
-            MM_DIR_Measurement_Direction,
-            ROW_NUMBER() OVER (PARTITION BY MM_ID ORDER BY MM_ID) AS Row
+            ST_ID,
+            Metadata_ST,
+            ST_NAM_ST_ID,
+            Metadata_ST_NAM,
+            ST_NAM_Street_Name,
+            ROW_NUMBER() OVER (PARTITION BY ST_ID ORDER BY ST_ID) AS Row
         FROM
             inserted
     ) i
     LEFT JOIN
-        @MM a
+        @ST a
     ON
         a.Row = i.Row;
-    INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
-        Metadata_MM_DAT,
-        MM_DAT_MM_ID,
-        MM_DAT_Measurement_Date
+    INSERT INTO [dbo].[ST_NAM_Street_Name] (
+        Metadata_ST_NAM,
+        ST_NAM_ST_ID,
+        ST_NAM_Street_Name
     )
     SELECT
-        i.Metadata_MM_DAT,
-        i.MM_DAT_MM_ID,
-        i.MM_DAT_Measurement_Date
+        i.Metadata_ST_NAM,
+        i.ST_NAM_ST_ID,
+        i.ST_NAM_Street_Name
     FROM
         @inserted i
     WHERE
-        i.MM_DAT_Measurement_Date is not null;
-    INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
-        Metadata_MM_HOU,
-        MM_HOU_MM_ID,
-        MM_HOU_Measurement_Hour
-    )
-    SELECT
-        i.Metadata_MM_HOU,
-        i.MM_HOU_MM_ID,
-        i.MM_HOU_Measurement_Hour
-    FROM
-        @inserted i
-    WHERE
-        i.MM_HOU_Measurement_Hour is not null;
-    INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
-        Metadata_MM_TMP,
-        MM_TMP_MM_ID,
-        MM_TMP_Measurement_Temperature
-    )
-    SELECT
-        i.Metadata_MM_TMP,
-        i.MM_TMP_MM_ID,
-        i.MM_TMP_Measurement_Temperature
-    FROM
-        @inserted i
-    WHERE
-        i.MM_TMP_Measurement_Temperature is not null;
-    INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
-        Metadata_MM_PRS,
-        MM_PRS_MM_ID,
-        MM_PRS_Measurement_Pressure
-    )
-    SELECT
-        i.Metadata_MM_PRS,
-        i.MM_PRS_MM_ID,
-        i.MM_PRS_Measurement_Pressure
-    FROM
-        @inserted i
-    WHERE
-        i.MM_PRS_Measurement_Pressure is not null;
-    INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
-        Metadata_MM_WND,
-        MM_WND_MM_ID,
-        MM_WND_Measurement_WindSpeed
-    )
-    SELECT
-        i.Metadata_MM_WND,
-        i.MM_WND_MM_ID,
-        i.MM_WND_Measurement_WindSpeed
-    FROM
-        @inserted i
-    WHERE
-        i.MM_WND_Measurement_WindSpeed is not null;
-    INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
-        Metadata_MM_DIR,
-        MM_DIR_MM_ID,
-        MM_DIR_Measurement_Direction
-    )
-    SELECT
-        i.Metadata_MM_DIR,
-        i.MM_DIR_MM_ID,
-        i.MM_DIR_Measurement_Direction
-    FROM
-        @inserted i
-    WHERE
-        i.MM_DIR_Measurement_Direction is not null;
+        i.ST_NAM_Street_Name is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- ut_lMM_Measurement instead of UPDATE trigger on lMM_Measurement
+-- ut_lST_Street instead of UPDATE trigger on lST_Street
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[ut_lMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[ut_lST_Street] ON [dbo].[lST_Street]
 INSTEAD OF UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    IF(UPDATE(MM_ID))
-        RAISERROR('The identity column MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_DAT_MM_ID))
-        RAISERROR('The foreign key column MM_DAT_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_DAT_Measurement_Date))
+    IF(UPDATE(ST_ID))
+        RAISERROR('The identity column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_NAM_ST_ID))
+        RAISERROR('The foreign key column ST_NAM_ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_NAM_Street_Name))
     BEGIN
-        INSERT INTO [dbo].[MM_DAT_Measurement_Date] (
-            Metadata_MM_DAT,
-            MM_DAT_MM_ID,
-            MM_DAT_Measurement_Date
+        INSERT INTO [dbo].[ST_NAM_Street_Name] (
+            Metadata_ST_NAM,
+            ST_NAM_ST_ID,
+            ST_NAM_Street_Name
         )
         SELECT
-            ISNULL(i.Metadata_MM_DAT, i.Metadata_MM),
-            ISNULL(i.MM_DAT_MM_ID, i.MM_ID),
-            i.MM_DAT_Measurement_Date
+            ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
+            ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
+            i.ST_NAM_Street_Name
         FROM
             inserted i
         WHERE
-            i.MM_DAT_Measurement_Date is not null;
-    END
-    IF(UPDATE(MM_HOU_MM_ID))
-        RAISERROR('The foreign key column MM_HOU_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_HOU_Measurement_Hour))
-    BEGIN
-        INSERT INTO [dbo].[MM_HOU_Measurement_Hour] (
-            Metadata_MM_HOU,
-            MM_HOU_MM_ID,
-            MM_HOU_Measurement_Hour
-        )
-        SELECT
-            ISNULL(i.Metadata_MM_HOU, i.Metadata_MM),
-            ISNULL(i.MM_HOU_MM_ID, i.MM_ID),
-            i.MM_HOU_Measurement_Hour
-        FROM
-            inserted i
-        WHERE
-            i.MM_HOU_Measurement_Hour is not null;
-    END
-    IF(UPDATE(MM_TMP_MM_ID))
-        RAISERROR('The foreign key column MM_TMP_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_TMP_Measurement_Temperature))
-    BEGIN
-        INSERT INTO [dbo].[MM_TMP_Measurement_Temperature] (
-            Metadata_MM_TMP,
-            MM_TMP_MM_ID,
-            MM_TMP_Measurement_Temperature
-        )
-        SELECT
-            ISNULL(i.Metadata_MM_TMP, i.Metadata_MM),
-            ISNULL(i.MM_TMP_MM_ID, i.MM_ID),
-            i.MM_TMP_Measurement_Temperature
-        FROM
-            inserted i
-        WHERE
-            i.MM_TMP_Measurement_Temperature is not null;
-    END
-    IF(UPDATE(MM_PRS_MM_ID))
-        RAISERROR('The foreign key column MM_PRS_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_PRS_Measurement_Pressure))
-    BEGIN
-        INSERT INTO [dbo].[MM_PRS_Measurement_Pressure] (
-            Metadata_MM_PRS,
-            MM_PRS_MM_ID,
-            MM_PRS_Measurement_Pressure
-        )
-        SELECT
-            ISNULL(i.Metadata_MM_PRS, i.Metadata_MM),
-            ISNULL(i.MM_PRS_MM_ID, i.MM_ID),
-            i.MM_PRS_Measurement_Pressure
-        FROM
-            inserted i
-        WHERE
-            i.MM_PRS_Measurement_Pressure is not null;
-    END
-    IF(UPDATE(MM_WND_MM_ID))
-        RAISERROR('The foreign key column MM_WND_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_WND_Measurement_WindSpeed))
-    BEGIN
-        INSERT INTO [dbo].[MM_WND_Measurement_WindSpeed] (
-            Metadata_MM_WND,
-            MM_WND_MM_ID,
-            MM_WND_Measurement_WindSpeed
-        )
-        SELECT
-            ISNULL(i.Metadata_MM_WND, i.Metadata_MM),
-            ISNULL(i.MM_WND_MM_ID, i.MM_ID),
-            i.MM_WND_Measurement_WindSpeed
-        FROM
-            inserted i
-        WHERE
-            i.MM_WND_Measurement_WindSpeed is not null;
-    END
-    IF(UPDATE(MM_DIR_MM_ID))
-        RAISERROR('The foreign key column MM_DIR_MM_ID is not updatable.', 16, 1);
-    IF(UPDATE(MM_DIR_Measurement_Direction))
-    BEGIN
-        INSERT INTO [dbo].[MM_DIR_Measurement_Direction] (
-            Metadata_MM_DIR,
-            MM_DIR_MM_ID,
-            MM_DIR_Measurement_Direction
-        )
-        SELECT
-            ISNULL(i.Metadata_MM_DIR, i.Metadata_MM),
-            ISNULL(i.MM_DIR_MM_ID, i.MM_ID),
-            i.MM_DIR_Measurement_Direction
-        FROM
-            inserted i
-        WHERE
-            i.MM_DIR_Measurement_Direction is not null;
+            i.ST_NAM_Street_Name is not null;
     END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dt_lMM_Measurement instead of DELETE trigger on lMM_Measurement
+-- dt_lST_Street instead of DELETE trigger on lST_Street
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dt_lMM_Measurement] ON [dbo].[lMM_Measurement]
+CREATE TRIGGER [dbo].[dt_lST_Street] ON [dbo].[lST_Street]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE [DAT]
+    DELETE [NAM]
     FROM
-        [dbo].[MM_DAT_Measurement_Date] [DAT]
+        [dbo].[ST_NAM_Street_Name] [NAM]
     JOIN
         deleted d
     ON
-        d.MM_DAT_MM_ID = [DAT].MM_DAT_MM_ID;
-    DELETE [HOU]
+        d.ST_NAM_ST_ID = [NAM].ST_NAM_ST_ID;
+    DELETE [ST]
     FROM
-        [dbo].[MM_HOU_Measurement_Hour] [HOU]
-    JOIN
-        deleted d
-    ON
-        d.MM_HOU_MM_ID = [HOU].MM_HOU_MM_ID;
-    DELETE [TMP]
-    FROM
-        [dbo].[MM_TMP_Measurement_Temperature] [TMP]
-    JOIN
-        deleted d
-    ON
-        d.MM_TMP_MM_ID = [TMP].MM_TMP_MM_ID;
-    DELETE [PRS]
-    FROM
-        [dbo].[MM_PRS_Measurement_Pressure] [PRS]
-    JOIN
-        deleted d
-    ON
-        d.MM_PRS_MM_ID = [PRS].MM_PRS_MM_ID;
-    DELETE [WND]
-    FROM
-        [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-    JOIN
-        deleted d
-    ON
-        d.MM_WND_MM_ID = [WND].MM_WND_MM_ID;
-    DELETE [DIR]
-    FROM
-        [dbo].[MM_DIR_Measurement_Direction] [DIR]
-    JOIN
-        deleted d
-    ON
-        d.MM_DIR_MM_ID = [DIR].MM_DIR_MM_ID;
-    DELETE [MM]
-    FROM
-        [dbo].[MM_Measurement] [MM]
+        [dbo].[ST_Street] [ST]
     LEFT JOIN
-        [dbo].[MM_DAT_Measurement_Date] [DAT]
+        [dbo].[ST_NAM_Street_Name] [NAM]
     ON
-        [DAT].MM_DAT_MM_ID = [MM].MM_ID
-    LEFT JOIN
-        [dbo].[MM_HOU_Measurement_Hour] [HOU]
-    ON
-        [HOU].MM_HOU_MM_ID = [MM].MM_ID
-    LEFT JOIN
-        [dbo].[MM_TMP_Measurement_Temperature] [TMP]
-    ON
-        [TMP].MM_TMP_MM_ID = [MM].MM_ID
-    LEFT JOIN
-        [dbo].[MM_PRS_Measurement_Pressure] [PRS]
-    ON
-        [PRS].MM_PRS_MM_ID = [MM].MM_ID
-    LEFT JOIN
-        [dbo].[MM_WND_Measurement_WindSpeed] [WND]
-    ON
-        [WND].MM_WND_MM_ID = [MM].MM_ID
-    LEFT JOIN
-        [dbo].[MM_DIR_Measurement_Direction] [DIR]
-    ON
-        [DIR].MM_DIR_MM_ID = [MM].MM_ID
+        [NAM].ST_NAM_ST_ID = [ST].ST_ID
     WHERE
-        [DAT].MM_DAT_MM_ID is null
-    AND
-        [HOU].MM_HOU_MM_ID is null
-    AND
-        [TMP].MM_TMP_MM_ID is null
-    AND
-        [PRS].MM_PRS_MM_ID is null
-    AND
-        [WND].MM_WND_MM_ID is null
-    AND
-        [DIR].MM_DIR_MM_ID is null;
+        [NAM].ST_NAM_ST_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_lOC_Occasion instead of INSERT trigger on lOC_Occasion
+-- it_lIS_Intersection instead of INSERT trigger on lIS_Intersection
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[it_lOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[it_lIS_Intersection] ON [dbo].[lIS_Intersection]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    DECLARE @OC TABLE (
+    DECLARE @IS TABLE (
         Row bigint IDENTITY(1,1) not null primary key,
-        OC_ID int not null
+        IS_ID int not null
     );
-    INSERT INTO [dbo].[OC_Occasion] (
-        Metadata_OC 
+    INSERT INTO [dbo].[IS_Intersection] (
+        Metadata_IS 
     )
     OUTPUT
-        inserted.OC_ID
+        inserted.IS_ID
     INTO
-        @OC
+        @IS
     SELECT
-        Metadata_OC 
+        Metadata_IS 
     FROM
         inserted
     WHERE
-        inserted.OC_ID is null;
+        inserted.IS_ID is null;
     DECLARE @inserted TABLE (
-        OC_ID int not null,
-        Metadata_OC int not null,
-        OC_TYP_OC_ID int null,
-        Metadata_OC_TYP int null,
-        OC_TYP_Occasion_Type varchar(42) null,
-        OC_WDY_OC_ID int null,
-        Metadata_OC_WDY int null,
-        OC_WDY_Occasion_Weekday varchar(42) null
+        IS_ID int not null,
+        Metadata_IS int not null,
+        IS_COL_IS_ID int null,
+        Metadata_IS_COL int null,
+        IS_COL_ChangedAt date null,
+        IS_COL_Intersection_CollisionCount int null,
+        IS_INJ_IS_ID int null,
+        Metadata_IS_INJ int null,
+        IS_INJ_ChangedAt date null,
+        IS_INJ_Intersection_InjuredCount int null,
+        IS_KIL_IS_ID int null,
+        Metadata_IS_KIL int null,
+        IS_KIL_ChangedAt date null,
+        IS_KIL_Intersection_KilledCount int null
     );
     INSERT INTO @inserted
     SELECT
-        ISNULL(i.OC_ID, a.OC_ID),
-        i.Metadata_OC,
-        ISNULL(ISNULL(i.OC_TYP_OC_ID, i.OC_ID), a.OC_ID),
-        ISNULL(i.Metadata_OC_TYP, i.Metadata_OC),
-        i.OC_TYP_Occasion_Type,
-        ISNULL(ISNULL(i.OC_WDY_OC_ID, i.OC_ID), a.OC_ID),
-        ISNULL(i.Metadata_OC_WDY, i.Metadata_OC),
-        i.OC_WDY_Occasion_Weekday
+        ISNULL(i.IS_ID, a.IS_ID),
+        i.Metadata_IS,
+        ISNULL(ISNULL(i.IS_COL_IS_ID, i.IS_ID), a.IS_ID),
+        ISNULL(i.Metadata_IS_COL, i.Metadata_IS),
+        ISNULL(i.IS_COL_ChangedAt, @now),
+        i.IS_COL_Intersection_CollisionCount,
+        ISNULL(ISNULL(i.IS_INJ_IS_ID, i.IS_ID), a.IS_ID),
+        ISNULL(i.Metadata_IS_INJ, i.Metadata_IS),
+        ISNULL(i.IS_INJ_ChangedAt, @now),
+        i.IS_INJ_Intersection_InjuredCount,
+        ISNULL(ISNULL(i.IS_KIL_IS_ID, i.IS_ID), a.IS_ID),
+        ISNULL(i.Metadata_IS_KIL, i.Metadata_IS),
+        ISNULL(i.IS_KIL_ChangedAt, @now),
+        i.IS_KIL_Intersection_KilledCount
     FROM (
         SELECT
-            OC_ID,
-            Metadata_OC,
-            OC_TYP_OC_ID,
-            Metadata_OC_TYP,
-            OC_TYP_Occasion_Type,
-            OC_WDY_OC_ID,
-            Metadata_OC_WDY,
-            OC_WDY_Occasion_Weekday,
-            ROW_NUMBER() OVER (PARTITION BY OC_ID ORDER BY OC_ID) AS Row
+            IS_ID,
+            Metadata_IS,
+            IS_COL_IS_ID,
+            Metadata_IS_COL,
+            IS_COL_ChangedAt,
+            IS_COL_Intersection_CollisionCount,
+            IS_INJ_IS_ID,
+            Metadata_IS_INJ,
+            IS_INJ_ChangedAt,
+            IS_INJ_Intersection_InjuredCount,
+            IS_KIL_IS_ID,
+            Metadata_IS_KIL,
+            IS_KIL_ChangedAt,
+            IS_KIL_Intersection_KilledCount,
+            ROW_NUMBER() OVER (PARTITION BY IS_ID ORDER BY IS_ID) AS Row
         FROM
             inserted
     ) i
     LEFT JOIN
-        @OC a
+        @IS a
     ON
         a.Row = i.Row;
-    INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
-        Metadata_OC_TYP,
-        OC_TYP_OC_ID,
-        OC_TYP_Occasion_Type
+    INSERT INTO [dbo].[IS_COL_Intersection_CollisionCount] (
+        Metadata_IS_COL,
+        IS_COL_IS_ID,
+        IS_COL_ChangedAt,
+        IS_COL_Intersection_CollisionCount
     )
     SELECT
-        i.Metadata_OC_TYP,
-        i.OC_TYP_OC_ID,
-        i.OC_TYP_Occasion_Type
+        i.Metadata_IS_COL,
+        i.IS_COL_IS_ID,
+        i.IS_COL_ChangedAt,
+        i.IS_COL_Intersection_CollisionCount
     FROM
         @inserted i
     WHERE
-        i.OC_TYP_Occasion_Type is not null;
-    INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
-        Metadata_OC_WDY,
-        OC_WDY_OC_ID,
-        OC_WDY_Occasion_Weekday
+        i.IS_COL_Intersection_CollisionCount is not null;
+    INSERT INTO [dbo].[IS_INJ_Intersection_InjuredCount] (
+        Metadata_IS_INJ,
+        IS_INJ_IS_ID,
+        IS_INJ_ChangedAt,
+        IS_INJ_Intersection_InjuredCount
     )
     SELECT
-        i.Metadata_OC_WDY,
-        i.OC_WDY_OC_ID,
-        i.OC_WDY_Occasion_Weekday
+        i.Metadata_IS_INJ,
+        i.IS_INJ_IS_ID,
+        i.IS_INJ_ChangedAt,
+        i.IS_INJ_Intersection_InjuredCount
     FROM
         @inserted i
     WHERE
-        i.OC_WDY_Occasion_Weekday is not null;
+        i.IS_INJ_Intersection_InjuredCount is not null;
+    INSERT INTO [dbo].[IS_KIL_Intersection_KilledCount] (
+        Metadata_IS_KIL,
+        IS_KIL_IS_ID,
+        IS_KIL_ChangedAt,
+        IS_KIL_Intersection_KilledCount
+    )
+    SELECT
+        i.Metadata_IS_KIL,
+        i.IS_KIL_IS_ID,
+        i.IS_KIL_ChangedAt,
+        i.IS_KIL_Intersection_KilledCount
+    FROM
+        @inserted i
+    WHERE
+        i.IS_KIL_Intersection_KilledCount is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- ut_lOC_Occasion instead of UPDATE trigger on lOC_Occasion
+-- ut_lIS_Intersection instead of UPDATE trigger on lIS_Intersection
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[ut_lOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[ut_lIS_Intersection] ON [dbo].[lIS_Intersection]
 INSTEAD OF UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    IF(UPDATE(OC_ID))
-        RAISERROR('The identity column OC_ID is not updatable.', 16, 1);
-    IF(UPDATE(OC_TYP_OC_ID))
-        RAISERROR('The foreign key column OC_TYP_OC_ID is not updatable.', 16, 1);
-    IF(UPDATE(OC_TYP_Occasion_Type))
+    IF(UPDATE(IS_ID))
+        RAISERROR('The identity column IS_ID is not updatable.', 16, 1);
+    IF(UPDATE(IS_COL_IS_ID))
+        RAISERROR('The foreign key column IS_COL_IS_ID is not updatable.', 16, 1);
+    IF(UPDATE(IS_COL_Intersection_CollisionCount))
     BEGIN
-        INSERT INTO [dbo].[OC_TYP_Occasion_Type] (
-            Metadata_OC_TYP,
-            OC_TYP_OC_ID,
-            OC_TYP_Occasion_Type
+        INSERT INTO [dbo].[IS_COL_Intersection_CollisionCount] (
+            Metadata_IS_COL,
+            IS_COL_IS_ID,
+            IS_COL_ChangedAt,
+            IS_COL_Intersection_CollisionCount
         )
         SELECT
-            ISNULL(i.Metadata_OC_TYP, i.Metadata_OC),
-            ISNULL(i.OC_TYP_OC_ID, i.OC_ID),
-            i.OC_TYP_Occasion_Type
+            ISNULL(i.Metadata_IS_COL, i.Metadata_IS),
+            ISNULL(i.IS_COL_IS_ID, i.IS_ID),
+            cast(CASE
+                WHEN i.IS_COL_Intersection_CollisionCount is null THEN i.IS_COL_ChangedAt
+                WHEN UPDATE(IS_COL_ChangedAt) THEN i.IS_COL_ChangedAt
+                ELSE @now
+            END as date),
+            i.IS_COL_Intersection_CollisionCount
         FROM
             inserted i
         WHERE
-            i.OC_TYP_Occasion_Type is not null;
+            i.IS_COL_Intersection_CollisionCount is not null;
     END
-    IF(UPDATE(OC_WDY_OC_ID))
-        RAISERROR('The foreign key column OC_WDY_OC_ID is not updatable.', 16, 1);
-    IF(UPDATE(OC_WDY_Occasion_Weekday))
+    IF(UPDATE(IS_INJ_IS_ID))
+        RAISERROR('The foreign key column IS_INJ_IS_ID is not updatable.', 16, 1);
+    IF(UPDATE(IS_INJ_Intersection_InjuredCount))
     BEGIN
-        INSERT INTO [dbo].[OC_WDY_Occasion_Weekday] (
-            Metadata_OC_WDY,
-            OC_WDY_OC_ID,
-            OC_WDY_Occasion_Weekday
+        INSERT INTO [dbo].[IS_INJ_Intersection_InjuredCount] (
+            Metadata_IS_INJ,
+            IS_INJ_IS_ID,
+            IS_INJ_ChangedAt,
+            IS_INJ_Intersection_InjuredCount
         )
         SELECT
-            ISNULL(i.Metadata_OC_WDY, i.Metadata_OC),
-            ISNULL(i.OC_WDY_OC_ID, i.OC_ID),
-            i.OC_WDY_Occasion_Weekday
+            ISNULL(i.Metadata_IS_INJ, i.Metadata_IS),
+            ISNULL(i.IS_INJ_IS_ID, i.IS_ID),
+            cast(CASE
+                WHEN i.IS_INJ_Intersection_InjuredCount is null THEN i.IS_INJ_ChangedAt
+                WHEN UPDATE(IS_INJ_ChangedAt) THEN i.IS_INJ_ChangedAt
+                ELSE @now
+            END as date),
+            i.IS_INJ_Intersection_InjuredCount
         FROM
             inserted i
         WHERE
-            i.OC_WDY_Occasion_Weekday is not null;
+            i.IS_INJ_Intersection_InjuredCount is not null;
+    END
+    IF(UPDATE(IS_KIL_IS_ID))
+        RAISERROR('The foreign key column IS_KIL_IS_ID is not updatable.', 16, 1);
+    IF(UPDATE(IS_KIL_Intersection_KilledCount))
+    BEGIN
+        INSERT INTO [dbo].[IS_KIL_Intersection_KilledCount] (
+            Metadata_IS_KIL,
+            IS_KIL_IS_ID,
+            IS_KIL_ChangedAt,
+            IS_KIL_Intersection_KilledCount
+        )
+        SELECT
+            ISNULL(i.Metadata_IS_KIL, i.Metadata_IS),
+            ISNULL(i.IS_KIL_IS_ID, i.IS_ID),
+            cast(CASE
+                WHEN i.IS_KIL_Intersection_KilledCount is null THEN i.IS_KIL_ChangedAt
+                WHEN UPDATE(IS_KIL_ChangedAt) THEN i.IS_KIL_ChangedAt
+                ELSE @now
+            END as date),
+            i.IS_KIL_Intersection_KilledCount
+        FROM
+            inserted i
+        WHERE
+            i.IS_KIL_Intersection_KilledCount is not null;
     END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dt_lOC_Occasion instead of DELETE trigger on lOC_Occasion
+-- dt_lIS_Intersection instead of DELETE trigger on lIS_Intersection
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dt_lOC_Occasion] ON [dbo].[lOC_Occasion]
+CREATE TRIGGER [dbo].[dt_lIS_Intersection] ON [dbo].[lIS_Intersection]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
-    DELETE [TYP]
+    DELETE [COL]
     FROM
-        [dbo].[OC_TYP_Occasion_Type] [TYP]
+        [dbo].[IS_COL_Intersection_CollisionCount] [COL]
     JOIN
         deleted d
     ON
-        d.OC_TYP_OC_ID = [TYP].OC_TYP_OC_ID;
-    DELETE [WDY]
-    FROM
-        [dbo].[OC_WDY_Occasion_Weekday] [WDY]
-    JOIN
-        deleted d
-    ON
-        d.OC_WDY_OC_ID = [WDY].OC_WDY_OC_ID;
-    DELETE [OC]
-    FROM
-        [dbo].[OC_Occasion] [OC]
-    LEFT JOIN
-        [dbo].[OC_TYP_Occasion_Type] [TYP]
-    ON
-        [TYP].OC_TYP_OC_ID = [OC].OC_ID
-    LEFT JOIN
-        [dbo].[OC_WDY_Occasion_Weekday] [WDY]
-    ON
-        [WDY].OC_WDY_OC_ID = [OC].OC_ID
-    WHERE
-        [TYP].OC_TYP_OC_ID is null
+        d.IS_COL_ChangedAt = [COL].IS_COL_ChangedAt
     AND
-        [WDY].OC_WDY_OC_ID is null;
+        d.IS_COL_IS_ID = [COL].IS_COL_IS_ID;
+    DELETE [INJ]
+    FROM
+        [dbo].[IS_INJ_Intersection_InjuredCount] [INJ]
+    JOIN
+        deleted d
+    ON
+        d.IS_INJ_ChangedAt = [INJ].IS_INJ_ChangedAt
+    AND
+        d.IS_INJ_IS_ID = [INJ].IS_INJ_IS_ID;
+    DELETE [KIL]
+    FROM
+        [dbo].[IS_KIL_Intersection_KilledCount] [KIL]
+    JOIN
+        deleted d
+    ON
+        d.IS_KIL_ChangedAt = [KIL].IS_KIL_ChangedAt
+    AND
+        d.IS_KIL_IS_ID = [KIL].IS_KIL_IS_ID;
+    DELETE [IS]
+    FROM
+        [dbo].[IS_Intersection] [IS]
+    LEFT JOIN
+        [dbo].[IS_COL_Intersection_CollisionCount] [COL]
+    ON
+        [COL].IS_COL_IS_ID = [IS].IS_ID
+    LEFT JOIN
+        [dbo].[IS_INJ_Intersection_InjuredCount] [INJ]
+    ON
+        [INJ].IS_INJ_IS_ID = [IS].IS_ID
+    LEFT JOIN
+        [dbo].[IS_KIL_Intersection_KilledCount] [KIL]
+    ON
+        [KIL].IS_KIL_IS_ID = [IS].IS_ID
+    WHERE
+        [COL].IS_COL_IS_ID is null
+    AND
+        [INJ].IS_INJ_IS_ID is null
+    AND
+        [KIL].IS_KIL_IS_ID is null;
 END
 GO
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
@@ -1771,49 +1616,51 @@ GO
 -- @equivalent the equivalent for which to retrieve data
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.dMM_taken_OC_on', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[dMM_taken_OC_on];
-IF Object_ID('dbo.nMM_taken_OC_on', 'V') IS NOT NULL
-DROP VIEW [dbo].[nMM_taken_OC_on];
-IF Object_ID('dbo.pMM_taken_OC_on', 'IF') IS NOT NULL
-DROP FUNCTION [dbo].[pMM_taken_OC_on];
-IF Object_ID('dbo.lMM_taken_OC_on', 'V') IS NOT NULL
-DROP VIEW [dbo].[lMM_taken_OC_on];
+IF Object_ID('dbo.dST_intersecting_IS_of_ST_crossing', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[dST_intersecting_IS_of_ST_crossing];
+IF Object_ID('dbo.nST_intersecting_IS_of_ST_crossing', 'V') IS NOT NULL
+DROP VIEW [dbo].[nST_intersecting_IS_of_ST_crossing];
+IF Object_ID('dbo.pST_intersecting_IS_of_ST_crossing', 'IF') IS NOT NULL
+DROP FUNCTION [dbo].[pST_intersecting_IS_of_ST_crossing];
+IF Object_ID('dbo.lST_intersecting_IS_of_ST_crossing', 'V') IS NOT NULL
+DROP VIEW [dbo].[lST_intersecting_IS_of_ST_crossing];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
--- lMM_taken_OC_on viewed by the latest available information (may include future versions)
+-- lST_intersecting_IS_of_ST_crossing viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[lMM_taken_OC_on] WITH SCHEMABINDING AS
+CREATE VIEW [dbo].[lST_intersecting_IS_of_ST_crossing] WITH SCHEMABINDING AS
 SELECT
-    tie.Metadata_MM_taken_OC_on,
-    tie.MM_ID_taken,
-    tie.OC_ID_on
+    tie.Metadata_ST_intersecting_IS_of_ST_crossing,
+    tie.ST_ID_intersecting,
+    tie.IS_ID_of,
+    tie.ST_ID_crossing
 FROM
-    [dbo].[MM_taken_OC_on] tie;
+    [dbo].[ST_intersecting_IS_of_ST_crossing] tie;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
--- pMM_taken_OC_on viewed by the latest available information (may include future versions)
+-- pST_intersecting_IS_of_ST_crossing viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].[pMM_taken_OC_on] (
+CREATE FUNCTION [dbo].[pST_intersecting_IS_of_ST_crossing] (
     @changingTimepoint datetime2(7)
 )
 RETURNS TABLE WITH SCHEMABINDING AS RETURN
 SELECT
-    tie.Metadata_MM_taken_OC_on,
-    tie.MM_ID_taken,
-    tie.OC_ID_on
+    tie.Metadata_ST_intersecting_IS_of_ST_crossing,
+    tie.ST_ID_intersecting,
+    tie.IS_ID_of,
+    tie.ST_ID_crossing
 FROM
-    [dbo].[MM_taken_OC_on] tie;
+    [dbo].[ST_intersecting_IS_of_ST_crossing] tie;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
--- nMM_taken_OC_on viewed as it currently is (cannot include future versions)
+-- nST_intersecting_IS_of_ST_crossing viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].[nMM_taken_OC_on]
+CREATE VIEW [dbo].[nST_intersecting_IS_of_ST_crossing]
 AS
 SELECT
     *
 FROM
-    [dbo].[pMM_taken_OC_on](sysdatetime());
+    [dbo].[pST_intersecting_IS_of_ST_crossing](sysdatetime());
 GO
 -- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
 --
@@ -1828,12 +1675,12 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_MM_taken_OC_on instead of INSERT trigger on MM_taken_OC_on
+-- it_ST_intersecting_IS_of_ST_crossing instead of INSERT trigger on ST_intersecting_IS_of_ST_crossing
 -----------------------------------------------------------------------------------------------------------------------
-IF Object_ID('dbo.it_MM_taken_OC_on', 'TR') IS NOT NULL
-DROP TRIGGER [dbo].[it_MM_taken_OC_on];
+IF Object_ID('dbo.it_ST_intersecting_IS_of_ST_crossing', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_ST_intersecting_IS_of_ST_crossing];
 GO
-CREATE TRIGGER [dbo].[it_MM_taken_OC_on] ON [dbo].[MM_taken_OC_on]
+CREATE TRIGGER [dbo].[it_ST_intersecting_IS_of_ST_crossing] ON [dbo].[ST_intersecting_IS_of_ST_crossing]
 INSTEAD OF INSERT
 AS
 BEGIN
@@ -1843,104 +1690,126 @@ BEGIN
     DECLARE @maxVersion int;
     DECLARE @currentVersion int;
     DECLARE @inserted TABLE (
-        Metadata_MM_taken_OC_on int not null,
-        MM_ID_taken int not null,
-        OC_ID_on int not null,
+        Metadata_ST_intersecting_IS_of_ST_crossing int not null,
+        ST_ID_intersecting int not null,
+        IS_ID_of int not null,
+        ST_ID_crossing int not null,
         primary key (
-            MM_ID_taken
+            ST_ID_intersecting,
+            IS_ID_of,
+            ST_ID_crossing
         )
     );
     INSERT INTO @inserted
     SELECT
-        ISNULL(i.Metadata_MM_taken_OC_on, 0),
-        i.MM_ID_taken,
-        i.OC_ID_on
+        ISNULL(i.Metadata_ST_intersecting_IS_of_ST_crossing, 0),
+        i.ST_ID_intersecting,
+        i.IS_ID_of,
+        i.ST_ID_crossing
     FROM
         inserted i
     WHERE
-        i.MM_ID_taken is not null;
-    INSERT INTO [dbo].[MM_taken_OC_on] (
-        Metadata_MM_taken_OC_on,
-        MM_ID_taken,
-        OC_ID_on
+        i.ST_ID_intersecting is not null
+    AND
+        i.IS_ID_of is not null
+    AND
+        i.ST_ID_crossing is not null;
+    INSERT INTO [dbo].[ST_intersecting_IS_of_ST_crossing] (
+        Metadata_ST_intersecting_IS_of_ST_crossing,
+        ST_ID_intersecting,
+        IS_ID_of,
+        ST_ID_crossing
     )
     SELECT
-        i.Metadata_MM_taken_OC_on,
-        i.MM_ID_taken,
-        i.OC_ID_on
+        i.Metadata_ST_intersecting_IS_of_ST_crossing,
+        i.ST_ID_intersecting,
+        i.IS_ID_of,
+        i.ST_ID_crossing
     FROM
         @inserted i
     LEFT JOIN
-        [dbo].[MM_taken_OC_on] tie
+        [dbo].[ST_intersecting_IS_of_ST_crossing] tie
     ON
-        tie.MM_ID_taken = i.MM_ID_taken
+        tie.ST_ID_intersecting = i.ST_ID_intersecting
+    OR
+        tie.IS_ID_of = i.IS_ID_of
+    OR
+        tie.ST_ID_crossing = i.ST_ID_crossing
     WHERE
-        tie.MM_ID_taken is null;
+        tie.ST_ID_crossing is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
--- it_lMM_taken_OC_on instead of INSERT trigger on lMM_taken_OC_on
+-- it_lST_intersecting_IS_of_ST_crossing instead of INSERT trigger on lST_intersecting_IS_of_ST_crossing
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[it_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+CREATE TRIGGER [dbo].[it_lST_intersecting_IS_of_ST_crossing] ON [dbo].[lST_intersecting_IS_of_ST_crossing]
 INSTEAD OF INSERT
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    INSERT INTO [dbo].[MM_taken_OC_on] (
-        Metadata_MM_taken_OC_on,
-        MM_ID_taken,
-        OC_ID_on
+    INSERT INTO [dbo].[ST_intersecting_IS_of_ST_crossing] (
+        Metadata_ST_intersecting_IS_of_ST_crossing,
+        ST_ID_intersecting,
+        IS_ID_of,
+        ST_ID_crossing
     )
     SELECT
-        i.Metadata_MM_taken_OC_on,
-        i.MM_ID_taken,
-        i.OC_ID_on
+        i.Metadata_ST_intersecting_IS_of_ST_crossing,
+        i.ST_ID_intersecting,
+        i.IS_ID_of,
+        i.ST_ID_crossing
     FROM
         inserted i; 
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
--- ut_lMM_taken_OC_on instead of UPDATE trigger on lMM_taken_OC_on
+-- ut_lST_intersecting_IS_of_ST_crossing instead of UPDATE trigger on lST_intersecting_IS_of_ST_crossing
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[ut_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+CREATE TRIGGER [dbo].[ut_lST_intersecting_IS_of_ST_crossing] ON [dbo].[lST_intersecting_IS_of_ST_crossing]
 INSTEAD OF UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2(7);
     SET @now = sysdatetime();
-    IF(UPDATE(MM_ID_taken))
-        RAISERROR('The identity column MM_ID_taken is not updatable.', 16, 1);
-    INSERT INTO [dbo].[MM_taken_OC_on] (
-        Metadata_MM_taken_OC_on,
-        MM_ID_taken,
-        OC_ID_on
+    INSERT INTO [dbo].[ST_intersecting_IS_of_ST_crossing] (
+        Metadata_ST_intersecting_IS_of_ST_crossing,
+        ST_ID_intersecting,
+        IS_ID_of,
+        ST_ID_crossing
     )
     SELECT
-        i.Metadata_MM_taken_OC_on,
-        i.MM_ID_taken,
-        i.OC_ID_on
+        i.Metadata_ST_intersecting_IS_of_ST_crossing,
+        i.ST_ID_intersecting,
+        i.IS_ID_of,
+        i.ST_ID_crossing
     FROM
         inserted i; 
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
--- dt_lMM_taken_OC_on instead of DELETE trigger on lMM_taken_OC_on
+-- dt_lST_intersecting_IS_of_ST_crossing instead of DELETE trigger on lST_intersecting_IS_of_ST_crossing
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TRIGGER [dbo].[dt_lMM_taken_OC_on] ON [dbo].[lMM_taken_OC_on]
+CREATE TRIGGER [dbo].[dt_lST_intersecting_IS_of_ST_crossing] ON [dbo].[lST_intersecting_IS_of_ST_crossing]
 INSTEAD OF DELETE
 AS
 BEGIN
     SET NOCOUNT ON;
     DELETE tie
     FROM
-        [dbo].[MM_taken_OC_on] tie
+        [dbo].[ST_intersecting_IS_of_ST_crossing] tie
     JOIN
         deleted d
     ON
-        d.MM_ID_taken = tie.MM_ID_taken;
+       (
+            d.ST_ID_intersecting = tie.ST_ID_intersecting
+        OR
+            d.IS_ID_of = tie.IS_ID_of
+        OR
+            d.ST_ID_crossing = tie.ST_ID_crossing
+       );
 END
 GO
 -- SCHEMA EVOLUTION ---------------------------------------------------------------------------------------------------
@@ -1966,7 +1835,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-09-29" time="14:18:46"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="MM" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DAT" descriptor="Date" dataRange="date"><metadata capsule="dbo"/><layout x="917.44" y="495.28" fixed="false"/></attribute><attribute mnemonic="HOU" descriptor="Hour" dataRange="char(2)"><metadata capsule="dbo"/><layout x="984.49" y="422.10" fixed="false"/></attribute><attribute mnemonic="TMP" descriptor="Temperature" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="853.46" y="479.47" fixed="false"/></attribute><attribute mnemonic="PRS" descriptor="Pressure" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="814.50" y="420.82" fixed="false"/></attribute><attribute mnemonic="WND" descriptor="WindSpeed" dataRange="decimal(19,10)"><metadata capsule="dbo"/><layout x="986.48" y="458.75" fixed="false"/></attribute><attribute mnemonic="DIR" descriptor="Direction" dataRange="decimal(5,2)"><metadata capsule="dbo"/><layout x="994.00" y="530.00" fixed="false"/></attribute><layout x="900.39" y="422.86" fixed="false"/></anchor><anchor mnemonic="OC" descriptor="Occasion" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="TYP" descriptor="Type" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="951.81" y="249.95" fixed="false"/></attribute><attribute mnemonic="WDY" descriptor="Weekday" dataRange="varchar(42)"><metadata capsule="dbo"/><layout x="968.78" y="225.59" fixed="false"/></attribute><layout x="1008.00" y="271.00" fixed="true"/></anchor><tie><anchorRole role="taken" type="MM" identifier="true"/><anchorRole role="on" type="OC" identifier="false"/><metadata capsule="dbo"/><layout x="989.18" y="367.84" fixed="false"/></tie></schema>';
+   N'<schema format="0.98" date="2014-10-15" time="13:50:06"><metadata changingRange="date" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="ST" descriptor="Street" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata capsule="dbo"/><layout x="957.45" y="593.94" fixed="false"/></attribute><layout x="889.15" y="576.75" fixed="false"/></anchor><tie><anchorRole role="intersecting" type="ST" identifier="false"/><anchorRole role="of" type="IS" identifier="false"/><anchorRole role="crossing" type="ST" identifier="false"/><metadata capsule="dbo"/><layout x="885.25" y="482.57" fixed="false"/></tie><anchor mnemonic="IS" descriptor="Intersection" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="COL" descriptor="CollisionCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="868.55" y="368.42" fixed="false"/></attribute><attribute mnemonic="INJ" descriptor="InjuredCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="909.90" y="323.48" fixed="false"/></attribute><attribute mnemonic="KIL" descriptor="KilledCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="966.00" y="367.00" fixed="false"/></attribute><layout x="900.77" y="403.78" fixed="false"/></anchor></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

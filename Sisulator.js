@@ -97,7 +97,7 @@ var MAP = {
         root: 'target',
         key: { 
             map: function(xml, fragment) {
-                return fragment.getAttribute('source');
+                return fragment.getAttribute('source') + '__' + fragment.getAttribute('target');
             },
             load: function(xml, fragment) {
                 return fragment.getAttribute('source') + '__' + fragment.getAttribute('target');

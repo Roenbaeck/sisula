@@ -1,10 +1,10 @@
 USE Stage;
 GO
-IF Object_ID('SMHI_Weather_CreateRawTable', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_CreateRawTable];
+IF Object_ID('NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateRawTable];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_CreateRawTable
+-- Procedure: NYPD_Vehicle_CreateRawTable
 --
 -- This table holds the 'raw' loaded data.
 --
@@ -23,10 +23,10 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateRawTable] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -38,21 +38,21 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_CreateRawTable',
+    @name = 'NYPD_Vehicle_CreateRawTable',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_Raw', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_Raw];
-    CREATE TABLE [SMHI_Weather_Raw] (
+    IF Object_ID('NYPD_Vehicle_Raw', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_Raw];
+    CREATE TABLE [NYPD_Vehicle_Raw] (
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
         [row] nvarchar(max),
-        constraint [pkSMHI_Weather_Raw] primary key(
+        constraint [pkNYPD_Vehicle_Raw] primary key(
             _id asc
         )
     );
@@ -71,20 +71,20 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_CreateInsertView', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_CreateInsertView];
+IF Object_ID('NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateInsertView];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_CreateInsertView
+-- Procedure: NYPD_Vehicle_CreateInsertView
 --
 -- This view is created as exposing the single column that will be 
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateInsertView] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -96,22 +96,22 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_CreateInsertView',
+    @name = 'NYPD_Vehicle_CreateInsertView',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Insert];
+    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_Insert];
     EXEC('
-    CREATE VIEW [SMHI_Weather_Insert]
+    CREATE VIEW [NYPD_Vehicle_Insert]
     AS
     SELECT
         [row]
     FROM
-        [SMHI_Weather_Raw];
+        [NYPD_Vehicle_Raw];
     ');
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -128,24 +128,24 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_BulkInsert', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_BulkInsert];
+IF Object_ID('NYPD_Vehicle_BulkInsert', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_BulkInsert];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_BulkInsert
+-- Procedure: NYPD_Vehicle_BulkInsert
 --
 -- This procedure performs a BULK INSERT of the given filename into 
--- the SMHI_Weather_Insert view. The file is loaded row by row
+-- the NYPD_Vehicle_Insert view. The file is loaded row by row
 -- into a single column holding the entire row. This ensures that no 
 -- data is lost when loading.
 --
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_BulkInsert] (
+CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
     @lastModified datetime,
     @agentJobId uniqueidentifier = null,
@@ -162,10 +162,10 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_BulkInsert',
+    @name = 'NYPD_Vehicle_BulkInsert',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
@@ -173,15 +173,15 @@ EXEC Stage.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = @filename, 
-    @targetName = 'SMHI_Weather_Insert', 
+    @targetName = 'NYPD_Vehicle_Insert', 
     @sourceType = 'File', 
     @targetType = 'View', 
     @sourceCreated = @lastModified, 
     @targetCreated = DEFAULT;
-    IF Object_ID('SMHI_Weather_Insert', 'V') IS NOT NULL
+    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [SMHI_Weather_Insert]
+        BULK INSERT [NYPD_Vehicle_Insert]
         FROM ''' + @filename + '''
         WITH (
             CODEPAGE = ''ACP'',
@@ -202,7 +202,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         AND
             CO_CRE_Container_Created = @lastModified
     );
-    UPDATE [SMHI_Weather_Raw]
+    UPDATE [NYPD_Vehicle_Raw]
     SET
         _file = @file
     WHERE
@@ -225,11 +225,11 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_CreateSplitViews', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_CreateSplitViews];
+IF Object_ID('NYPD_Vehicle_CreateSplitViews', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateSplitViews];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_CreateSplitViews
+-- Procedure: NYPD_Vehicle_CreateSplitViews
 --
 -- The split view uses a CLR called the Splitter to split rows in the
 -- 'raw' table into columns. The Splitter uses a regular expression in
@@ -242,16 +242,13 @@ GO
 -- If keys are defined, these keys are checked for duplicates and the 
 -- duplicate number can be found through the view.
 --
--- Create: SMHI_Weather_TemperatureNew_Split
--- Create: SMHI_Weather_TemperatureNewMetadata_Split
--- Create: SMHI_Weather_Temperature_Split
--- Create: SMHI_Weather_Pressure_Split
--- Create: SMHI_Weather_Wind_Split
+-- Create: NYPD_Vehicle_Collision_Split
+-- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateSplitViews] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -263,107 +260,141 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_CreateSplitViews',
+    @name = 'NYPD_Vehicle_CreateSplitViews',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_TemperatureNew_Split', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_TemperatureNew_Split];
+    IF Object_ID('NYPD_Vehicle_Collision_Split', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_Collision_Split];
     EXEC('
-    CREATE VIEW [SMHI_Weather_TemperatureNew_Split] 
+    CREATE VIEW [NYPD_Vehicle_Collision_Split] 
     AS
     SELECT
         _id,
         _file,
-        m.[date] as [date_Match],
-        t.[date], 
+        m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
+        t.[OccurrencePrecinctCode], 
         CASE
-            WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
-        END AS [date_Error],
-        m.[hour] as [hour_Match],
-        t.[hour], 
+            WHEN t.[OccurrencePrecinctCode] is not null AND TRY_CAST(t.[OccurrencePrecinctCode] AS int) is null THEN ''Conversion to int failed''
+        END AS [OccurrencePrecinctCode_Error],
+        m.[CollisionID] as [CollisionID_Match],
+        t.[CollisionID], 
         CASE
-            WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
-        END AS [hour_Error],
-        m.[celsius1] as [celsius1_Match],
-        t.[celsius1], 
+            WHEN t.[CollisionID] is not null AND TRY_CAST(t.[CollisionID] AS int) is null THEN ''Conversion to int failed''
+        END AS [CollisionID_Error],
+        m.[CollisionKey] as [CollisionKey_Match],
+        t.[CollisionKey], 
         CASE
-            WHEN t.[celsius1] is not null AND TRY_CAST(t.[celsius1] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius1_Error],
-        m.[celsius2] as [celsius2_Match],
-        t.[celsius2], 
+            WHEN t.[CollisionKey] is not null AND TRY_CAST(t.[CollisionKey] AS int) is null THEN ''Conversion to int failed''
+        END AS [CollisionKey_Error],
+        m.[CollisionOrder] as [CollisionOrder_Match],
+        t.[CollisionOrder], 
         CASE
-            WHEN t.[celsius2] is not null AND TRY_CAST(t.[celsius2] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius2_Error],
-        m.[celsius3] as [celsius3_Match],
-        t.[celsius3], 
+            WHEN t.[CollisionOrder] is not null AND TRY_CAST(t.[CollisionOrder] AS tinyint) is null THEN ''Conversion to tinyint failed''
+        END AS [CollisionOrder_Error],
+        m.[IntersectionAddress] as [IntersectionAddress_Match],
+        t.[IntersectionAddress], 
         CASE
-            WHEN t.[celsius3] is not null AND TRY_CAST(t.[celsius3] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius3_Error],
-        m.[celsius4] as [celsius4_Match],
-        t.[celsius4], 
+            WHEN t.[IntersectionAddress] is not null AND TRY_CAST(t.[IntersectionAddress] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+        END AS [IntersectionAddress_Error],
+        m.[IntersectingStreet] as [IntersectingStreet_Match],
+        t.[IntersectingStreet], 
         CASE
-            WHEN t.[celsius4] is not null AND TRY_CAST(t.[celsius4] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius4_Error]
+            WHEN t.[IntersectingStreet] is not null AND TRY_CAST(t.[IntersectingStreet] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+        END AS [IntersectingStreet_Error],
+        m.[CrossStreet] as [CrossStreet_Match],
+        t.[CrossStreet], 
+        CASE
+            WHEN t.[CrossStreet] is not null AND TRY_CAST(t.[CrossStreet] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+        END AS [CrossStreet_Error],
+        m.[CollisionVehicleCount] as [CollisionVehicleCount_Match],
+        t.[CollisionVehicleCount], 
+        CASE
+            WHEN t.[CollisionVehicleCount] is not null AND TRY_CAST(t.[CollisionVehicleCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+        END AS [CollisionVehicleCount_Error],
+        m.[CollisionInjuredCount] as [CollisionInjuredCount_Match],
+        t.[CollisionInjuredCount], 
+        CASE
+            WHEN t.[CollisionInjuredCount] is not null AND TRY_CAST(t.[CollisionInjuredCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+        END AS [CollisionInjuredCount_Error],
+        m.[CollisionKilledCount] as [CollisionKilledCount_Match],
+        t.[CollisionKilledCount], 
+        CASE
+            WHEN t.[CollisionKilledCount] is not null AND TRY_CAST(t.[CollisionKilledCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+        END AS [CollisionKilledCount_Error]
     FROM (
         SELECT TOP(2147483647) 
             * 
         FROM (
-        SELECT * from SMHI_Weather_Raw WHERE [row] LIKE ''[0-9][0-9][0-9][0-9][0-9][0-9],%''
+        -- this matches the data rows
+        SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
         ) src
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF(LTRIM([2]), '''') AS [date],
-			NULLIF(LTRIM([3]), '''') AS [hour],
-			NULLIF(LTRIM([4]), '''') AS [celsius1],
-			NULLIF(LTRIM([5]), '''') AS [celsius2],
-			NULLIF(LTRIM([6]), '''') AS [celsius3],
-			NULLIF(LTRIM([7]), '''') AS [celsius4]
+			NULLIF(LTRIM([2]), '''') AS [OccurrencePrecinctCode],
+			NULLIF(LTRIM([3]), '''') AS [CollisionID],
+			NULLIF(LTRIM([4]), '''') AS [CollisionKey],
+			NULLIF(LTRIM([5]), '''') AS [CollisionOrder],
+			NULLIF(LTRIM([6]), '''') AS [IntersectionAddress],
+			NULLIF(LTRIM([7]), '''') AS [IntersectingStreet],
+			NULLIF(LTRIM([8]), '''') AS [CrossStreet],
+			NULLIF(LTRIM([9]), '''') AS [CollisionVehicleCount],
+			NULLIF(LTRIM([10]), '''') AS [CollisionInjuredCount],
+			NULLIF(LTRIM([11]), '''') AS [CollisionKilledCount]
 		FROM (
             SELECT 
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''(.*?),\s*([0-9]{2})[0-9]{2},(.*?),(.*?),(.*?),(.*?),'')
+                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(.*?);[0-9]{4}([0-9]{9})[^;]*;(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);'')
         ) s
         PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7])
+            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7], [8], [9], [10], [11])
         ) p
     ) m
     CROSS APPLY (
         SELECT 
-            ''20'' + [date] AS [date], 
-            [hour] AS [hour], 
-            [celsius1] AS [celsius1], 
-            [celsius2] AS [celsius2], 
-            [celsius3] AS [celsius3], 
-            [celsius4] AS [celsius4]
+            [OccurrencePrecinctCode] AS [OccurrencePrecinctCode], 
+            [CollisionID] AS [CollisionID], 
+            [CollisionKey] AS [CollisionKey], 
+            [CollisionOrder] AS [CollisionOrder], 
+            [IntersectionAddress] AS [IntersectionAddress], 
+            [IntersectingStreet] AS [IntersectingStreet], 
+            [CrossStreet] AS [CrossStreet], 
+            [CollisionVehicleCount] AS [CollisionVehicleCount], 
+            [CollisionInjuredCount] AS [CollisionInjuredCount], 
+            [CollisionKilledCount] AS [CollisionKilledCount]
     ) t;
     ');
-    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Split', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_TemperatureNewMetadata_Split];
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_Split', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_CollisionMetadata_Split];
     EXEC('
-    CREATE VIEW [SMHI_Weather_TemperatureNewMetadata_Split] 
+    CREATE VIEW [NYPD_Vehicle_CollisionMetadata_Split] 
     AS
     SELECT
         _id,
         _file,
-        m.[graphType] as [graphType_Match],
-        t.[graphType], 
+        m.[month] as [month_Match],
+        t.[month], 
         CASE
-            WHEN t.[graphType] is not null AND TRY_CAST(t.[graphType] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
-        END AS [graphType_Error],
-        m.[weekday] as [weekday_Match],
-        t.[weekday], 
+            WHEN t.[month] is not null AND TRY_CAST(t.[month] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
+        END AS [month_Error],
+        m.[year] as [year_Match],
+        t.[year], 
         CASE
-            WHEN t.[weekday] is not null AND TRY_CAST(t.[weekday] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
-        END AS [weekday_Error]
+            WHEN t.[year] is not null AND TRY_CAST(t.[year] AS smallint) is null THEN ''Conversion to smallint failed''
+        END AS [year_Error],
+        m.[notes] as [notes_Match],
+        t.[notes], 
+        CASE
+            WHEN t.[notes] is not null AND TRY_CAST(t.[notes] AS varchar(max)) is null THEN ''Conversion to varchar(max) failed''
+        END AS [notes_Error]
     FROM (
         SELECT TOP(2147483647) 
             * 
@@ -379,9 +410,9 @@ BEGIN TRY
                 SELECT
                     *
                 FROM
-                    SMHI_Weather_Raw
+                    NYPD_Vehicle_Raw
                 WHERE 
-                    [row] LIKE ''#%''
+                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
 		    ) src
 			GROUP BY
 				_file
@@ -393,9 +424,9 @@ BEGIN TRY
                 SELECT
                     *
                 FROM
-                    SMHI_Weather_Raw
+                    NYPD_Vehicle_Raw
                 WHERE 
-					[row] LIKE ''#%''
+					[row] NOT LIKE ''[0-9][0-9][0-9];%''
 		    ) src
 			WHERE
 				src._file = f._file
@@ -407,76 +438,15 @@ BEGIN TRY
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF(LTRIM([2]), '''') AS [graphType],
-			NULLIF(LTRIM([3]), '''') AS [weekday]
+			NULLIF(LTRIM([2]), '''') AS [month],
+			NULLIF(LTRIM([3]), '''') AS [year],
+			NULLIF(LTRIM([4]), '''') AS [notes]
 		FROM (
             SELECT 
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''(?=.*?Graftyp[^:]*:\s*([^·]*))?(?=.*?Veckodag[^:]*:\s*([^·]*))?'')
-        ) s
-        PIVOT (
-            MAX([match]) FOR idx IN ([2], [3])
-        ) p
-    ) m
-    CROSS APPLY (
-        SELECT 
-            [graphType] AS [graphType], 
-            [weekday] AS [weekday]
-    ) t;
-    ');
-    IF Object_ID('SMHI_Weather_Temperature_Split', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Temperature_Split];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Temperature_Split] 
-    AS
-    SELECT
-        _id,
-        _file,
-        m.[date] as [date_Match],
-        t.[date], 
-        CASE
-            WHEN t.[date] is null THEN ''Null value not allowed''
-            WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
-        END AS [date_Error],
-        m.[hour] as [hour_Match],
-        t.[hour], 
-        CASE
-            WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
-        END AS [hour_Error],
-        m.[celsius] as [celsius_Match],
-        t.[celsius], 
-        CASE
-            WHEN t.[celsius] is not null AND TRY_CAST(t.[celsius] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [celsius_Error],
-        ROW_NUMBER() OVER (
-            PARTITION BY
-                t.[date],
-                t.[hour]
-            ORDER BY
-                _id
-        ) - 1 as measureTime_Duplicate
-    FROM (
-        SELECT TOP(2147483647) 
-            * 
-        FROM (
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''TEMP%''
-        ) src
-        ORDER BY 
-            _id ASC 
-    ) forcedMaterializationTrick
-    CROSS APPLY (
-		SELECT
-			NULLIF(LTRIM([2]), '''') AS [date],
-			NULLIF(LTRIM([3]), '''') AS [hour],
-			NULLIF(LTRIM([4]), '''') AS [celsius]
-		FROM (
-            SELECT 
-                [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
-            FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.*?) '')
+                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(?=.*?(\w+)\s+[0-9]{4})?(?=.*?\w+\s+([0-9]{4}))?(?=.*?NOTES[^:]*:(.*))?'')
         ) s
         PIVOT (
             MAX([match]) FOR idx IN ([2], [3], [4])
@@ -484,142 +454,9 @@ BEGIN TRY
     ) m
     CROSS APPLY (
         SELECT 
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
-            LEFT([hour], 2) AS [hour], 
-            REPLACE([celsius], '','', ''.'') AS [celsius]
-    ) t;
-    ');
-    IF Object_ID('SMHI_Weather_Pressure_Split', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Pressure_Split];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Pressure_Split] 
-    AS
-    SELECT
-        _id,
-        _file,
-        m.[date] as [date_Match],
-        t.[date], 
-        CASE
-            WHEN t.[date] is null THEN ''Null value not allowed''
-            WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
-        END AS [date_Error],
-        m.[hour] as [hour_Match],
-        t.[hour], 
-        CASE
-            WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
-        END AS [hour_Error],
-        m.[pressure] as [pressure_Match],
-        t.[pressure], 
-        CASE
-            WHEN t.[pressure] is not null AND TRY_CAST(t.[pressure] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [pressure_Error],
-        ROW_NUMBER() OVER (
-            PARTITION BY
-                t.[date],
-                t.[hour]
-            ORDER BY
-                _id
-        ) - 1 as measureTime_Duplicate
-    FROM (
-        SELECT TOP(2147483647) 
-            * 
-        FROM (
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''PRSR%''
-        ) src
-        ORDER BY 
-            _id ASC 
-    ) forcedMaterializationTrick
-    CROSS APPLY (
-		SELECT
-			NULLIF(LTRIM([2]), '''') AS [date],
-			NULLIF(LTRIM([3]), '''') AS [hour],
-			NULLIF(LTRIM([4]), '''') AS [pressure]
-		FROM (
-            SELECT 
-                [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
-            FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.{10})'')
-        ) s
-        PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4])
-        ) p
-    ) m
-    CROSS APPLY (
-        SELECT 
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
-            LEFT([hour], 2) AS [hour], 
-            REPLACE([pressure], '','', ''.'') AS [pressure]
-    ) t;
-    ');
-    IF Object_ID('SMHI_Weather_Wind_Split', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Wind_Split];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Wind_Split] 
-    AS
-    SELECT
-        _id,
-        _file,
-        m.[date] as [date_Match],
-        t.[date], 
-        CASE
-            WHEN t.[date] is null THEN ''Null value not allowed''
-            WHEN t.[date] is not null AND TRY_CAST(t.[date] AS date) is null THEN ''Conversion to date failed''
-        END AS [date_Error],
-        m.[hour] as [hour_Match],
-        t.[hour], 
-        CASE
-            WHEN t.[hour] is not null AND TRY_CAST(t.[hour] AS char(2)) is null THEN ''Conversion to char(2) failed''
-        END AS [hour_Error],
-        m.[direction] as [direction_Match],
-        t.[direction], 
-        CASE
-            WHEN t.[direction] is not null AND TRY_CAST(t.[direction] AS decimal(5,2)) is null THEN ''Conversion to decimal(5,2) failed''
-        END AS [direction_Error],
-        m.[speed] as [speed_Match],
-        t.[speed], 
-        CASE
-            WHEN t.[speed] is not null AND TRY_CAST(t.[speed] AS decimal(19,10)) is null THEN ''Conversion to decimal(19,10) failed''
-        END AS [speed_Error],
-        ROW_NUMBER() OVER (
-            PARTITION BY
-                t.[date],
-                t.[hour]
-            ORDER BY
-                _id
-        ) - 1 as measureTime_Duplicate
-    FROM (
-        SELECT TOP(2147483647) 
-            * 
-        FROM (
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''WNDS%''
-        ) src
-        ORDER BY 
-            _id ASC 
-    ) forcedMaterializationTrick
-    CROSS APPLY (
-		SELECT
-			NULLIF(LTRIM([2]), '''') AS [date],
-			NULLIF(LTRIM([3]), '''') AS [hour],
-			NULLIF(LTRIM([4]), '''') AS [direction],
-			NULLIF(LTRIM([5]), '''') AS [speed]
-		FROM (
-            SELECT 
-                [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
-            FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''.{4}(.{6})(.{4})(.{10})(.{10})'')
-        ) s
-        PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4], [5])
-        ) p
-    ) m
-    CROSS APPLY (
-        SELECT 
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END AS [date], 
-            LEFT([hour], 2) AS [hour], 
-            REPLACE([direction], '','', ''.'') AS [direction], 
-            REPLACE([speed], '','', ''.'') AS [speed]
+            [month] AS [month], 
+            [year] AS [year], 
+            LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
     ) t;
     ');
     EXEC metadata._WorkStopping @workId, 'Success';
@@ -637,11 +474,11 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_CreateErrorViews', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_CreateErrorViews];
+IF Object_ID('NYPD_Vehicle_CreateErrorViews', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateErrorViews];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_CreateErrorViews
+-- Procedure: NYPD_Vehicle_CreateErrorViews
 --
 -- The created error views can be used to find rows that have errors of
 -- the following kinds: 
@@ -654,16 +491,13 @@ GO
 -- These errors occur when a primary key is defined and duplicates of
 -- that key is found in the tables.
 --
--- Create: SMHI_Weather_TemperatureNew_Error
--- Create: SMHI_Weather_TemperatureNewMetadata_Error
--- Create: SMHI_Weather_Temperature_Error
--- Create: SMHI_Weather_Pressure_Error
--- Create: SMHI_Weather_Wind_Error
+-- Create: NYPD_Vehicle_Collision_Error
+-- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateErrorViews] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -675,104 +509,58 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_CreateInsertView',
+    @name = 'NYPD_Vehicle_CreateInsertView',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_TemperatureNew_Error', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_TemperatureNew_Error];
+    IF Object_ID('NYPD_Vehicle_Collision_Error', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_Collision_Error];
     EXEC('
-    CREATE VIEW [SMHI_Weather_TemperatureNew_Error] 
+    CREATE VIEW [NYPD_Vehicle_Collision_Error] 
     AS
     SELECT
         *
     FROM
-        [SMHI_Weather_TemperatureNew_Split]
+        [NYPD_Vehicle_Collision_Split]
     WHERE
-        [date_Error] is not null
+        [OccurrencePrecinctCode_Error] is not null
     OR
-        [hour_Error] is not null
+        [CollisionID_Error] is not null
     OR
-        [celsius1_Error] is not null
+        [CollisionKey_Error] is not null
     OR
-        [celsius2_Error] is not null
+        [CollisionOrder_Error] is not null
     OR
-        [celsius3_Error] is not null
+        [IntersectionAddress_Error] is not null
     OR
-        [celsius4_Error] is not null;
+        [IntersectingStreet_Error] is not null
+    OR
+        [CrossStreet_Error] is not null
+    OR
+        [CollisionVehicleCount_Error] is not null
+    OR
+        [CollisionInjuredCount_Error] is not null
+    OR
+        [CollisionKilledCount_Error] is not null;
     ');
-    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Error', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_TemperatureNewMetadata_Error];
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_Error', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_CollisionMetadata_Error];
     EXEC('
-    CREATE VIEW [SMHI_Weather_TemperatureNewMetadata_Error] 
+    CREATE VIEW [NYPD_Vehicle_CollisionMetadata_Error] 
     AS
     SELECT
         *
     FROM
-        [SMHI_Weather_TemperatureNewMetadata_Split]
+        [NYPD_Vehicle_CollisionMetadata_Split]
     WHERE
-        [graphType_Error] is not null
+        [month_Error] is not null
     OR
-        [weekday_Error] is not null;
-    ');
-    IF Object_ID('SMHI_Weather_Temperature_Error', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Temperature_Error];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Temperature_Error] 
-    AS
-    SELECT
-        *
-    FROM
-        [SMHI_Weather_Temperature_Split]
-    WHERE
-        measureTime_Duplicate > 0
+        [year_Error] is not null
     OR
-        [date_Error] is not null
-    OR
-        [hour_Error] is not null
-    OR
-        [celsius_Error] is not null;
-    ');
-    IF Object_ID('SMHI_Weather_Pressure_Error', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Pressure_Error];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Pressure_Error] 
-    AS
-    SELECT
-        *
-    FROM
-        [SMHI_Weather_Pressure_Split]
-    WHERE
-        measureTime_Duplicate > 0
-    OR
-        [date_Error] is not null
-    OR
-        [hour_Error] is not null
-    OR
-        [pressure_Error] is not null;
-    ');
-    IF Object_ID('SMHI_Weather_Wind_Error', 'V') IS NOT NULL
-    DROP VIEW [SMHI_Weather_Wind_Error];
-    EXEC('
-    CREATE VIEW [SMHI_Weather_Wind_Error] 
-    AS
-    SELECT
-        *
-    FROM
-        [SMHI_Weather_Wind_Split]
-    WHERE
-        measureTime_Duplicate > 0
-    OR
-        [date_Error] is not null
-    OR
-        [hour_Error] is not null
-    OR
-        [direction_Error] is not null
-    OR
-        [speed_Error] is not null;
+        [notes_Error] is not null;
     ');
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -789,11 +577,11 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_CreateTypedTables', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_CreateTypedTables];
+IF Object_ID('NYPD_Vehicle_CreateTypedTables', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateTypedTables];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_CreateTypedTables
+-- Procedure: NYPD_Vehicle_CreateTypedTables
 --
 -- The typed tables hold the data that make it through the process 
 -- without errors. Columns here have the data types defined in the 
@@ -802,16 +590,13 @@ GO
 -- Metadata columns, such as _id, can be used to backtrack from 
 -- a value to the actual row from where it came.
 --
--- Create: SMHI_Weather_TemperatureNew_Typed
--- Create: SMHI_Weather_TemperatureNewMetadata_Typed
--- Create: SMHI_Weather_Temperature_Typed
--- Create: SMHI_Weather_Pressure_Typed
--- Create: SMHI_Weather_Wind_Typed
+-- Create: NYPD_Vehicle_Collision_Typed
+-- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_CreateTypedTables] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -823,72 +608,39 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_CreateTypedTables',
+    @name = 'NYPD_Vehicle_CreateTypedTables',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_TemperatureNew_Typed];
-    CREATE TABLE [SMHI_Weather_TemperatureNew_Typed] (
+    IF Object_ID('NYPD_Vehicle_Collision_Typed', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_Collision_Typed];
+    CREATE TABLE [NYPD_Vehicle_Collision_Typed] (
         _id int not null,
         _file int not null,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [date] date null, 
-        [hour] char(2) null, 
-        [celsius1] decimal(19,10) null, 
-        [celsius2] decimal(19,10) null, 
-        [celsius3] decimal(19,10) null, 
-        [celsius4] decimal(19,10) null
+        [OccurrencePrecinctCode] int null, 
+        [CollisionID] int null, 
+        [CollisionKey] int null, 
+        [CollisionOrder] tinyint null, 
+        [IntersectionAddress] varchar(555) null, 
+        [IntersectingStreet] varchar(555) null, 
+        [CrossStreet] varchar(555) null, 
+        [CollisionVehicleCount] tinyint null, 
+        [CollisionInjuredCount] tinyint null, 
+        [CollisionKilledCount] tinyint null
     );
-    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Typed', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_TemperatureNewMetadata_Typed];
-    CREATE TABLE [SMHI_Weather_TemperatureNewMetadata_Typed] (
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_CollisionMetadata_Typed];
+    CREATE TABLE [NYPD_Vehicle_CollisionMetadata_Typed] (
         _id int not null,
         _file int not null,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [graphType] varchar(42) null, 
-        [weekday] varchar(42) null
-    );
-    IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_Temperature_Typed];
-    CREATE TABLE [SMHI_Weather_Temperature_Typed] (
-        _id int not null,
-        _file int not null,
-        _timestamp datetime2(2) not null default sysdatetime(),
-        [date] date not null, 
-        [hour] char(2) not null, 
-        [celsius] decimal(19,10) null, 
-        [fahrenheit] as CAST(9 / 5 * [celsius] + 32 AS decimal(19,10)) PERSISTED, 
-        [freezing] as CAST(CASE 
-                WHEN [celsius] > 0 THEN 'A' 
-                WHEN [celsius] < 0 THEN 'B' 
-                WHEN [celsius] = 0 THEN 'Z' 
-                ELSE '?' 
-            END AS char(1)) PERSISTED
-    );
-    IF Object_ID('SMHI_Weather_Pressure_Typed', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_Pressure_Typed];
-    CREATE TABLE [SMHI_Weather_Pressure_Typed] (
-        _id int not null,
-        _file int not null,
-        _timestamp datetime2(2) not null default sysdatetime(),
-        [date] date not null, 
-        [hour] char(2) not null, 
-        [pressure] decimal(19,10) null
-    );
-    IF Object_ID('SMHI_Weather_Wind_Typed', 'U') IS NOT NULL
-    DROP TABLE [SMHI_Weather_Wind_Typed];
-    CREATE TABLE [SMHI_Weather_Wind_Typed] (
-        _id int not null,
-        _file int not null,
-        _timestamp datetime2(2) not null default sysdatetime(),
-        [date] date not null, 
-        [hour] char(2) not null, 
-        [direction] decimal(5,2) null, 
-        [speed] decimal(19,10) null
+        [month] varchar(42) null, 
+        [year] smallint null, 
+        [notes] varchar(max) null
     );
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -905,26 +657,23 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_SplitRawIntoTyped', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_SplitRawIntoTyped];
+IF Object_ID('NYPD_Vehicle_SplitRawIntoTyped', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_SplitRawIntoTyped
+-- Procedure: NYPD_Vehicle_SplitRawIntoTyped
 --
 -- This procedure loads data from the 'Split' views into the 'Typed'
 -- tables, with the condition that data must conform to the given
 -- data types and have no duplicates for defined keys.
 --
--- Load: SMHI_Weather_TemperatureNew_Split into SMHI_Weather_TemperatureNew_Typed
--- Load: SMHI_Weather_TemperatureNewMetadata_Split into SMHI_Weather_TemperatureNewMetadata_Typed
--- Load: SMHI_Weather_Temperature_Split into SMHI_Weather_Temperature_Typed
--- Load: SMHI_Weather_Pressure_Split into SMHI_Weather_Pressure_Typed
--- Load: SMHI_Weather_Wind_Split into SMHI_Weather_Wind_Typed
+-- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
+-- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_SplitRawIntoTyped] (
+CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -937,203 +686,108 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_SplitRawIntoTyped',
+    @name = 'NYPD_Vehicle_SplitRawIntoTyped',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_TemperatureNew_Typed', 'U') IS NOT NULL
+    IF Object_ID('NYPD_Vehicle_Collision_Typed', 'U') IS NOT NULL
     BEGIN
 EXEC Stage.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
-    @sourceName = 'SMHI_Weather_TemperatureNew_Split', 
-    @targetName = 'SMHI_Weather_TemperatureNew_Typed', 
+    @sourceName = 'NYPD_Vehicle_Collision_Split', 
+    @targetName = 'NYPD_Vehicle_Collision_Typed', 
     @sourceType = 'View', 
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
-    INSERT INTO [SMHI_Weather_TemperatureNew_Typed] (
+    INSERT INTO [NYPD_Vehicle_Collision_Typed] (
         _id,
         _file,
-        [date], 
-        [hour], 
-        [celsius1], 
-        [celsius2], 
-        [celsius3], 
-        [celsius4]
+        [OccurrencePrecinctCode], 
+        [CollisionID], 
+        [CollisionKey], 
+        [CollisionOrder], 
+        [IntersectionAddress], 
+        [IntersectingStreet], 
+        [CrossStreet], 
+        [CollisionVehicleCount], 
+        [CollisionInjuredCount], 
+        [CollisionKilledCount]
     )
     SELECT
         _id,
         _file,
-        [date], 
-        [hour], 
-        [celsius1], 
-        [celsius2], 
-        [celsius3], 
-        [celsius4]
+        [OccurrencePrecinctCode], 
+        [CollisionID], 
+        [CollisionKey], 
+        [CollisionOrder], 
+        [IntersectionAddress], 
+        [IntersectingStreet], 
+        [CrossStreet], 
+        [CollisionVehicleCount], 
+        [CollisionInjuredCount], 
+        [CollisionKilledCount]
     FROM 
-        [SMHI_Weather_TemperatureNew_Split]
+        [NYPD_Vehicle_Collision_Split]
     WHERE
-        [date_Error] is null
+        [OccurrencePrecinctCode_Error] is null
     AND
-        [hour_Error] is null
+        [CollisionID_Error] is null
     AND
-        [celsius1_Error] is null
+        [CollisionKey_Error] is null
     AND
-        [celsius2_Error] is null
+        [CollisionOrder_Error] is null
     AND
-        [celsius3_Error] is null
+        [IntersectionAddress_Error] is null
     AND
-        [celsius4_Error] is null;
+        [IntersectingStreet_Error] is null
+    AND
+        [CrossStreet_Error] is null
+    AND
+        [CollisionVehicleCount_Error] is null
+    AND
+        [CollisionInjuredCount_Error] is null
+    AND
+        [CollisionKilledCount_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
     END
-    IF Object_ID('SMHI_Weather_TemperatureNewMetadata_Typed', 'U') IS NOT NULL
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
     BEGIN
 EXEC Stage.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
-    @sourceName = 'SMHI_Weather_TemperatureNewMetadata_Split', 
-    @targetName = 'SMHI_Weather_TemperatureNewMetadata_Typed', 
+    @sourceName = 'NYPD_Vehicle_CollisionMetadata_Split', 
+    @targetName = 'NYPD_Vehicle_CollisionMetadata_Typed', 
     @sourceType = 'View', 
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
-    INSERT INTO [SMHI_Weather_TemperatureNewMetadata_Typed] (
+    INSERT INTO [NYPD_Vehicle_CollisionMetadata_Typed] (
         _id,
         _file,
-        [graphType], 
-        [weekday]
+        [month], 
+        [year], 
+        [notes]
     )
     SELECT
         _id,
         _file,
-        [graphType], 
-        [weekday]
+        [month], 
+        [year], 
+        [notes]
     FROM 
-        [SMHI_Weather_TemperatureNewMetadata_Split]
+        [NYPD_Vehicle_CollisionMetadata_Split]
     WHERE
-        [graphType_Error] is null
+        [month_Error] is null
     AND
-        [weekday_Error] is null;
-    SET @insert = @insert + @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    END
-    IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
-    BEGIN
-EXEC Stage.metadata._WorkSourceToTarget
-    @OP_ID = @operationsId OUTPUT,
-    @WO_ID = @workId, 
-    @sourceName = 'SMHI_Weather_Temperature_Split', 
-    @targetName = 'SMHI_Weather_Temperature_Typed', 
-    @sourceType = 'View', 
-    @targetType = 'Table', 
-    @sourceCreated = DEFAULT,
-    @targetCreated = DEFAULT;
-    INSERT INTO [SMHI_Weather_Temperature_Typed] (
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [celsius]
-    )
-    SELECT
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [celsius]
-    FROM 
-        [SMHI_Weather_Temperature_Split]
-    WHERE
-        measureTime_Duplicate = 0
+        [year_Error] is null
     AND
-        [date_Error] is null
-    AND
-        [hour_Error] is null
-    AND
-        [celsius_Error] is null;
-    SET @insert = @insert + @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    END
-    IF Object_ID('SMHI_Weather_Pressure_Typed', 'U') IS NOT NULL
-    BEGIN
-EXEC Stage.metadata._WorkSourceToTarget
-    @OP_ID = @operationsId OUTPUT,
-    @WO_ID = @workId, 
-    @sourceName = 'SMHI_Weather_Pressure_Split', 
-    @targetName = 'SMHI_Weather_Pressure_Typed', 
-    @sourceType = 'View', 
-    @targetType = 'Table', 
-    @sourceCreated = DEFAULT,
-    @targetCreated = DEFAULT;
-    INSERT INTO [SMHI_Weather_Pressure_Typed] (
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [pressure]
-    )
-    SELECT
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [pressure]
-    FROM 
-        [SMHI_Weather_Pressure_Split]
-    WHERE
-        measureTime_Duplicate = 0
-    AND
-        [date_Error] is null
-    AND
-        [hour_Error] is null
-    AND
-        [pressure_Error] is null;
-    SET @insert = @insert + @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
-    END
-    IF Object_ID('SMHI_Weather_Wind_Typed', 'U') IS NOT NULL
-    BEGIN
-EXEC Stage.metadata._WorkSourceToTarget
-    @OP_ID = @operationsId OUTPUT,
-    @WO_ID = @workId, 
-    @sourceName = 'SMHI_Weather_Wind_Split', 
-    @targetName = 'SMHI_Weather_Wind_Typed', 
-    @sourceType = 'View', 
-    @targetType = 'Table', 
-    @sourceCreated = DEFAULT,
-    @targetCreated = DEFAULT;
-    INSERT INTO [SMHI_Weather_Wind_Typed] (
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [direction], 
-        [speed]
-    )
-    SELECT
-        _id,
-        _file,
-        [date], 
-        [hour], 
-        [direction], 
-        [speed]
-    FROM 
-        [SMHI_Weather_Wind_Split]
-    WHERE
-        measureTime_Duplicate = 0
-    AND
-        [date_Error] is null
-    AND
-        [hour_Error] is null
-    AND
-        [direction_Error] is null
-    AND
-        [speed_Error] is null;
+        [notes_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
     END
@@ -1152,11 +806,11 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('SMHI_Weather_AddKeysToTyped', 'P') IS NOT NULL
-DROP PROCEDURE [SMHI_Weather_AddKeysToTyped];
+IF Object_ID('NYPD_Vehicle_AddKeysToTyped', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_AddKeysToTyped];
 GO
 --------------------------------------------------------------------------
--- Procedure: SMHI_Weather_AddKeysToTyped
+-- Procedure: NYPD_Vehicle_AddKeysToTyped
 --
 -- This procedure adds keys defined in the source xml definition to the 
 -- typed staging tables. Keys boost performance when loading is made 
@@ -1164,20 +818,11 @@ GO
 -- matches the key composition. Primary keys also guarantee uniquness
 -- among its values.
 --
--- Table: SMHI_Weather_Temperature_Typed
--- Key: date (as primary key)
--- Key: hour (as primary key)
--- Table: SMHI_Weather_Pressure_Typed
--- Key: date (as primary key)
--- Key: hour (as primary key)
--- Table: SMHI_Weather_Wind_Typed
--- Key: date (as primary key)
--- Key: hour (as primary key)
 --
--- Generated: Tue Oct 7 13:51:26 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Oct 15 15:51:31 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [SMHI_Weather_AddKeysToTyped] (
+CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -1189,34 +834,13 @@ DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Weather', 
+    @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'SMHI_Weather_AddKeysToTyped',
+    @name = 'NYPD_Vehicle_AddKeysToTyped',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('SMHI_Weather_Temperature_Typed', 'U') IS NOT NULL
-    ALTER TABLE [SMHI_Weather_Temperature_Typed]
-    ADD
-        CONSTRAINT [measureTime_SMHI_Weather_Temperature_Typed] primary key (
-            [date],
-            [hour]
-        );
-    IF Object_ID('SMHI_Weather_Pressure_Typed', 'U') IS NOT NULL
-    ALTER TABLE [SMHI_Weather_Pressure_Typed]
-    ADD
-        CONSTRAINT [measureTime_SMHI_Weather_Pressure_Typed] primary key (
-            [date],
-            [hour]
-        );
-    IF Object_ID('SMHI_Weather_Wind_Typed', 'U') IS NOT NULL
-    ALTER TABLE [SMHI_Weather_Wind_Typed]
-    ADD
-        CONSTRAINT [measureTime_SMHI_Weather_Wind_Typed] primary key (
-            [date],
-            [hour]
-        );
     EXEC metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -1233,20 +857,23 @@ END CATCH
 END
 GO
 -- The source definition used when generating the above
-DECLARE @xml XML = N'<source name="Weather" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
-	<description>http://www.slb.mf.stockholm.se</description>
-	<part name="TemperatureNew" nulls="">
-        SELECT * from SMHI_Weather_Raw WHERE [row] LIKE ''[0-9][0-9][0-9][0-9][0-9][0-9],%''
-        <term name="date" delimiter="," format="date">
-            ''20'' + [date]
-        </term>
-		<term name="hour" pattern="\s*([0-9]{2})[0-9]{2}," format="char(2)"/>
-		<term name="celsius1" delimiter="," format="decimal(19,10)"/>
-		<term name="celsius2" delimiter="," format="decimal(19,10)"/>
-		<term name="celsius3" delimiter="," format="decimal(19,10)"/>
-		<term name="celsius4" delimiter="," format="decimal(19,10)"/>
+DECLARE @xml XML = N'<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
+	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
+	<part name="Collision" nulls="">
+        -- this matches the data rows
+        SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
+        <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
+		<term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
+		<term name="CollisionKey" delimiter=";" format="int"/>
+		<term name="CollisionOrder" delimiter=";" format="tinyint"/>
+		<term name="IntersectionAddress" delimiter=";" format="varchar(555)"/>
+		<term name="IntersectingStreet" delimiter=";" format="varchar(555)"/>
+		<term name="CrossStreet" delimiter=";" format="varchar(555)"/>
+		<term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
+		<term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
+		<term name="CollisionKilledCount" delimiter=";" format="tinyint"/>
 	</part>
-	<part name="TemperatureNewMetadata">
+	<part name="CollisionMetadata">
         SELECT
 			*
 		FROM (
@@ -1258,9 +885,9 @@ DECLARE @xml XML = N'<source name="Weather" codepage="ACP" datafiletype="char" f
                 SELECT
                     *
                 FROM
-                    SMHI_Weather_Raw
+                    NYPD_Vehicle_Raw
                 WHERE 
-                    [row] LIKE ''#%''
+                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
 		    ) src
 			GROUP BY
 				_file
@@ -1272,78 +899,19 @@ DECLARE @xml XML = N'<source name="Weather" codepage="ACP" datafiletype="char" f
                 SELECT
                     *
                 FROM
-                    SMHI_Weather_Raw
+                    NYPD_Vehicle_Raw
                 WHERE 
-					[row] LIKE ''#%''
+					[row] NOT LIKE ''[0-9][0-9][0-9];%''
 		    ) src
 			WHERE
 				src._file = f._file
 			FOR XML PATH('''')
 		) c ([row])
-		<term name="graphType" pattern="(?=.*?Graftyp[^:]*:\s*([^·]*))?" format="varchar(42)"/>
-		<term name="weekday" pattern="(?=.*?Veckodag[^:]*:\s*([^·]*))?" format="varchar(42)"/>
-	</part>
-	<part name="Temperature" nulls="" charskip="4"> 
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''TEMP%''
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
+        <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
+		<term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
+		<term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">
+            LTRIM(REPLACE([notes], ''·'', '' ''))
         </term>
-		<term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-		<term name="celsius" delimiter=" " format="decimal(19,10)">
-            REPLACE([celsius], '','', ''.'')
-        </term>
-		<calculation name="fahrenheit" format="decimal(19,10)">
-            9 / 5 * [celsius] + 32
-        </calculation>
-		<calculation name="freezing" format="char(1)">
-            CASE 
-                WHEN [celsius] &gt; 0 THEN ''A'' 
-                WHEN [celsius] &lt; 0 THEN ''B'' 
-                WHEN [celsius] = 0 THEN ''Z'' 
-                ELSE ''?'' 
-            END
-        </calculation>
-		<key name="measureTime" type="primary key">
-			<component of="date"/>
-			<component of="hour"/>
-		</key>
-	</part>
-	<part name="Pressure" nulls="" charskip="4">
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''PRSR%''
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
-        </term>
-		<term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-		<term name="pressure" size="10" format="decimal(19,10)">
-            REPLACE([pressure], '','', ''.'')
-        </term>
-		<key name="measureTime" type="primary key">
-			<component of="date"/>
-			<component of="hour"/>
-		</key>
-	</part>
-	<part name="Wind" nulls="" charskip="4">
-        SELECT * FROM SMHI_Weather_Raw WHERE [row] LIKE ''WNDS%''
-        <term name="date" size="6" format="date">
-            CASE LEFT([date],1) WHEN ''0'' THEN ''20'' + [date] ELSE ''19'' + [date] END
-        </term>
-		<term name="hour" size="4" format="char(2)">
-            LEFT([hour], 2)
-        </term>
-		<term name="direction" size="10" format="decimal(5,2)">
-            REPLACE([direction], '','', ''.'')
-        </term>
-		<term name="speed" size="10" format="decimal(19,10)">
-            REPLACE([speed], '','', ''.'')
-        </term>
-		<key name="measureTime" type="primary key">
-			<component of="date"/>
-			<component of="hour"/>
-		</key>
 	</part>
 </source>
 ';

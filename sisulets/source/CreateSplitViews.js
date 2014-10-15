@@ -155,7 +155,7 @@ while(part = source.nextPart()) {
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
-                dbo.Splitter(forcedMaterializationTrick.[row], N''$regex'')
+                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''$regex'')
         ) s
         PIVOT (
             MAX([match]) FOR idx IN ($pivots)
