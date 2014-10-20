@@ -97,7 +97,6 @@ setUpdatesMetadata('@updates');
 /*~    
     END    
 ~*/
-// TODO: Add inserted rows here!
 endMetadata();
 /*~
 END

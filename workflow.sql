@@ -55,7 +55,7 @@ sp_add_jobstep
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "Stage" -ErrorAction Stop
+                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "Stage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
                 }
             }
@@ -322,6 +322,7 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="quitWithFailure" value="2"/>
 	<variable name="goToTheNextStep" value="3"/>
 	<variable name="goToStepWithId" value="4"/>
+	<variable name="queryTimeout" value="0"/>
 	<variable name="extraOptions" value="-Recurse"/>
 	<variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
 	<job name="NYPD_Vehicle_Staging">
@@ -340,7 +341,7 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop
+                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
                 }
             }

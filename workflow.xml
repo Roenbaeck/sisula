@@ -7,6 +7,8 @@
     <variable name="quitWithFailure" value="2"/>
     <variable name="goToTheNextStep" value="3"/>
     <variable name="goToStepWithId" value="4"/>    
+    <!-- specify a query timeout if needed for the bulk insert, otherwise leave 0 for no timeout -->
+    <variable name="queryTimeout" value="0"/>
     <!-- recurse directories when searching for files, blank out if no extra options are needed -->
     <variable name="extraOptions" value="-Recurse"/>
     <!-- common parameters that all jobs need for logging to metadata -->
@@ -27,7 +29,7 @@
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename', '$modifiedDate', %parameters%" -Database "%stage%" -ErrorAction Stop
+                    Invoke-Sqlcmd "EXEC %System%_%Source%_BulkInsert '$fullFilename', '$modifiedDate', %parameters%" -Database "%stage%" -ErrorAction Stop -QueryTimeout %queryTimeout%
                     Write-Output "Loaded file: $fullFilename"
                 }
             }
