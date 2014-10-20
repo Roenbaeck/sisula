@@ -23,8 +23,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -56,7 +56,7 @@ BEGIN TRY
             _id asc
         )
     );
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -81,8 +81,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -113,7 +113,7 @@ BEGIN TRY
     FROM
         [NYPD_Vehicle_Raw];
     ');
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -142,8 +142,8 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -191,7 +191,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         );
     ');
     SET @inserts = @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
     SET @file = (
         SELECT
             CO_ID
@@ -208,9 +208,9 @@ EXEC Stage.metadata._WorkSourceToTarget
     WHERE
         _file = 0;
     SET @updates = @@ROWCOUNT;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END 
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -245,8 +245,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -459,7 +459,7 @@ BEGIN TRY
             LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
     ) t;
     ');
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -494,8 +494,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -562,7 +562,7 @@ BEGIN TRY
     OR
         [notes_Error] is not null;
     ');
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -593,8 +593,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -660,7 +660,7 @@ BEGIN TRY
             end + 
             '01')) AS date) 
     );
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -688,8 +688,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -772,7 +772,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     AND
         [CollisionKilledCount_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
     END
     IF Object_ID('NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
     BEGIN
@@ -807,9 +807,9 @@ EXEC Stage.metadata._WorkSourceToTarget
     AND
         [notes_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @insert;
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
     END
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -837,8 +837,8 @@ GO
 -- among its values.
 --
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
@@ -859,7 +859,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -958,12 +958,12 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    metadata.lCF_Configuration
+    Stage.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO metadata.lCF_Configuration (
+    INSERT INTO Stage.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -976,7 +976,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE metadata.lCF_Configuration
+    UPDATE Stage.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE

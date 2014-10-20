@@ -48,9 +48,9 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::G:\sisula\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::C:\sisula\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in G:\sisula\data:"
+              Throw "No matching files were found in C:\sisula\data:"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
@@ -316,7 +316,7 @@ GO
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="stage" value="Stage"/>
-	<variable name="path" value="G:\sisula\data"/>
+	<variable name="path" value="C:\sisula\data"/>
 	<variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>

@@ -1,3 +1,4 @@
+if(METADATA) {
 /*~
 -- The source definition used when generating the above
 DECLARE @xml XML = N'${source._xml.escape()}$';
@@ -6,13 +7,13 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    metadata.lCF_Configuration
+    ${METADATABASE}$.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
     
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO metadata.lCF_Configuration (
+    INSERT INTO ${METADATABASE}$.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -25,10 +26,11 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE metadata.lCF_Configuration
+    UPDATE ${METADATABASE}$.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE
         CF_NAM_Configuration_Name = @name;
 END
 ~*/
+}

@@ -1,6 +1,3 @@
-var METADATA = VARIABLES.MetaDatabase ? true : false;
-var METADATABASE = VARIABLES.MetaDatabase;
-
 function beginMetadata(workName, configurationName, configurationType) {
     if(METADATA) {
 /*~
@@ -24,7 +21,7 @@ BEGIN TRY
 function endMetadata() {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC ${METADATABASE}$.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -62,21 +59,21 @@ EXEC ${METADATABASE}$.metadata._WorkSourceToTarget
 function setInsertsMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetInserts @workId, @operationsId, $sqlVariableName;
+    EXEC ${METADATABASE}$.metadata._WorkSetInserts @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }
 function setUpdatesMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, $sqlVariableName;
+    EXEC ${METADATABASE}$.metadata._WorkSetUpdates @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }
 function setDeletesMetadata(sqlVariableName) {
     if(METADATA) {
 /*~
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, $sqlVariableName;
+    EXEC ${METADATABASE}$.metadata._WorkSetDeletes @workId, @operationsId, $sqlVariableName;
 ~*/
     }
 }

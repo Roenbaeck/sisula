@@ -11,8 +11,8 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: _file to Metadata_ST (as metadata)
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -88,10 +88,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -117,8 +117,8 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: _file to Metadata_IS (as metadata)
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
@@ -204,10 +204,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -235,8 +235,8 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -359,10 +359,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -395,8 +395,8 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Wed Oct 15 19:51:54 UTC+0200 2014 by Lars
--- From: WARP in the WARP domain
+-- Generated: Mon Oct 20 13:22:58 UTC+0200 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
     @agentJobId uniqueidentifier = null,
@@ -523,10 +523,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC metadata._WorkStopping @workId, 'Success';
+    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -705,12 +705,12 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    metadata.lCF_Configuration
+    Stage.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO metadata.lCF_Configuration (
+    INSERT INTO Stage.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -723,7 +723,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE metadata.lCF_Configuration
+    UPDATE Stage.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE
