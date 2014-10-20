@@ -48,9 +48,9 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::C:\sisula\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\sisula\data:"
+              Throw "No matching files were found in C:\sisula\data"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
@@ -333,9 +333,9 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
             EXEC NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Bulk insert" database_name="%SourceDatabase%" subsystem="PowerShell" on_success_action="3">
-            $files = @(Get-ChildItem -Recurse FileSystem::%SisulaPath%\data | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in %SisulaPath%\data:"
+              Throw "No matching files were found in %SisulaPath%\data"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
