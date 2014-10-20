@@ -63,7 +63,7 @@ if(METADATA) {
         SELECT
             CO_ID
         FROM
-            metadata.lCO_Container
+            ${METADATABASE}$.metadata.lCO_Container
         WHERE
             CO_NAM_Container_Name = @filename
         AND
