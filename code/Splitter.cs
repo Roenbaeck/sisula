@@ -18,14 +18,14 @@ public partial class Splitter {
         )
     ]
     // GroupCollection
-    public static IEnumerable InitMethod(SqlChars row, SqlString pattern) {
+    public static IEnumerable InitMethod([SqlFacet(MaxSize = -1)] SqlString row, SqlString pattern) {
         return Regex.Match(row.ToString(), pattern.ToString(), RegexOptions.None).Groups;
     }
-    public static void FillRow(Object fromEnumeration, out SqlChars match) {
+    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match) {
         Group group = (Group) fromEnumeration;
         if(group.Value == String.Empty) 
-            match = new SqlChars(SqlString.Null);
+            match = SqlString.Null;
         else
-            match = new SqlChars(group.Value);
+            match = new SqlString(group.Value);
     }
 }
