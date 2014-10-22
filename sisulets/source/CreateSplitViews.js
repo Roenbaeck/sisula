@@ -59,13 +59,24 @@ while(part = source.nextPart()) {
                 isKeyConstituent = true;
                 break;
             }
-        }        
+        }       
 /*~
         m.[$term.name] as [$term.name$_Match],
         t.[$term.name], 
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
+~*/
+        if(DATABASE_VERSION >= 2012) {
+/*~        
             WHEN t.[$term.name] is not null AND TRY_CAST(t.[$term.name] AS $term.format) is null THEN ''Conversion to $term.format failed''
+~*/
+        }
+        else {
+/*~        
+            WHEN t.[$term.name] is not null AND dbo.Try_Execute(''DECLARE @t $term.format = '''''' + t.[$term.name] + '''''''') is not null THEN ''Conversion to $term.format failed''
+~*/
+        }
+/*~            
         END AS [$term.name$_Error]$(part.hasMoreTerms() || part.hasMoreKeys())?,
 ~*/
         i++;

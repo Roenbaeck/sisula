@@ -71,3 +71,6 @@ function replaceVariables(variables, obj) {
 var METADATA = VARIABLES.MetaDatabase ? true : false;
 var METADATA_SCHEMA = "metadata";
 var METADATABASE = VARIABLES.MetaDatabase;
+
+// assume 2012 if no environment variable is set
+var DATABASE_VERSION = VARIABLES.DatabaseVersion ? VARIABLES.DatabaseVersion : '2012';

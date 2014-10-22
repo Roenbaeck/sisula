@@ -23,7 +23,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
@@ -51,7 +51,7 @@ BEGIN TRY
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [row] nvarchar(max),
+        [row] varchar(1000), 
         constraint [pkNYPD_Vehicle_Raw] primary key(
             _id asc
         )
@@ -81,7 +81,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
@@ -142,7 +142,7 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -196,7 +196,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         SELECT
             CO_ID
         FROM
-            metadata.lCO_Container
+            Stage.metadata.lCO_Container
         WHERE
             CO_NAM_Container_Name = @filename
         AND
@@ -245,7 +245,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -278,52 +278,52 @@ BEGIN TRY
         m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
         t.[OccurrencePrecinctCode], 
         CASE
-            WHEN t.[OccurrencePrecinctCode] is not null AND TRY_CAST(t.[OccurrencePrecinctCode] AS int) is null THEN ''Conversion to int failed''
+            WHEN t.[OccurrencePrecinctCode] is not null AND dbo.Try_Execute(''DECLARE @t int = '''''' + t.[OccurrencePrecinctCode] + '''''''') is not null THEN ''Conversion to int failed''
         END AS [OccurrencePrecinctCode_Error],
         m.[CollisionID] as [CollisionID_Match],
         t.[CollisionID], 
         CASE
-            WHEN t.[CollisionID] is not null AND TRY_CAST(t.[CollisionID] AS int) is null THEN ''Conversion to int failed''
+            WHEN t.[CollisionID] is not null AND dbo.Try_Execute(''DECLARE @t int = '''''' + t.[CollisionID] + '''''''') is not null THEN ''Conversion to int failed''
         END AS [CollisionID_Error],
         m.[CollisionKey] as [CollisionKey_Match],
         t.[CollisionKey], 
         CASE
-            WHEN t.[CollisionKey] is not null AND TRY_CAST(t.[CollisionKey] AS int) is null THEN ''Conversion to int failed''
+            WHEN t.[CollisionKey] is not null AND dbo.Try_Execute(''DECLARE @t int = '''''' + t.[CollisionKey] + '''''''') is not null THEN ''Conversion to int failed''
         END AS [CollisionKey_Error],
         m.[CollisionOrder] as [CollisionOrder_Match],
         t.[CollisionOrder], 
         CASE
-            WHEN t.[CollisionOrder] is not null AND TRY_CAST(t.[CollisionOrder] AS tinyint) is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionOrder] is not null AND dbo.Try_Execute(''DECLARE @t tinyint = '''''' + t.[CollisionOrder] + '''''''') is not null THEN ''Conversion to tinyint failed''
         END AS [CollisionOrder_Error],
         m.[IntersectionAddress] as [IntersectionAddress_Match],
         t.[IntersectionAddress], 
         CASE
-            WHEN t.[IntersectionAddress] is not null AND TRY_CAST(t.[IntersectionAddress] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectionAddress] is not null AND dbo.Try_Execute(''DECLARE @t varchar(555) = '''''' + t.[IntersectionAddress] + '''''''') is not null THEN ''Conversion to varchar(555) failed''
         END AS [IntersectionAddress_Error],
         m.[IntersectingStreet] as [IntersectingStreet_Match],
         t.[IntersectingStreet], 
         CASE
-            WHEN t.[IntersectingStreet] is not null AND TRY_CAST(t.[IntersectingStreet] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectingStreet] is not null AND dbo.Try_Execute(''DECLARE @t varchar(555) = '''''' + t.[IntersectingStreet] + '''''''') is not null THEN ''Conversion to varchar(555) failed''
         END AS [IntersectingStreet_Error],
         m.[CrossStreet] as [CrossStreet_Match],
         t.[CrossStreet], 
         CASE
-            WHEN t.[CrossStreet] is not null AND TRY_CAST(t.[CrossStreet] AS varchar(555)) is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[CrossStreet] is not null AND dbo.Try_Execute(''DECLARE @t varchar(555) = '''''' + t.[CrossStreet] + '''''''') is not null THEN ''Conversion to varchar(555) failed''
         END AS [CrossStreet_Error],
         m.[CollisionVehicleCount] as [CollisionVehicleCount_Match],
         t.[CollisionVehicleCount], 
         CASE
-            WHEN t.[CollisionVehicleCount] is not null AND TRY_CAST(t.[CollisionVehicleCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionVehicleCount] is not null AND dbo.Try_Execute(''DECLARE @t tinyint = '''''' + t.[CollisionVehicleCount] + '''''''') is not null THEN ''Conversion to tinyint failed''
         END AS [CollisionVehicleCount_Error],
         m.[CollisionInjuredCount] as [CollisionInjuredCount_Match],
         t.[CollisionInjuredCount], 
         CASE
-            WHEN t.[CollisionInjuredCount] is not null AND TRY_CAST(t.[CollisionInjuredCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionInjuredCount] is not null AND dbo.Try_Execute(''DECLARE @t tinyint = '''''' + t.[CollisionInjuredCount] + '''''''') is not null THEN ''Conversion to tinyint failed''
         END AS [CollisionInjuredCount_Error],
         m.[CollisionKilledCount] as [CollisionKilledCount_Match],
         t.[CollisionKilledCount], 
         CASE
-            WHEN t.[CollisionKilledCount] is not null AND TRY_CAST(t.[CollisionKilledCount] AS tinyint) is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionKilledCount] is not null AND dbo.Try_Execute(''DECLARE @t tinyint = '''''' + t.[CollisionKilledCount] + '''''''') is not null THEN ''Conversion to tinyint failed''
         END AS [CollisionKilledCount_Error]
     FROM (
         SELECT TOP(2147483647) 
@@ -383,17 +383,17 @@ BEGIN TRY
         m.[month] as [month_Match],
         t.[month], 
         CASE
-            WHEN t.[month] is not null AND TRY_CAST(t.[month] AS varchar(42)) is null THEN ''Conversion to varchar(42) failed''
+            WHEN t.[month] is not null AND dbo.Try_Execute(''DECLARE @t varchar(42) = '''''' + t.[month] + '''''''') is not null THEN ''Conversion to varchar(42) failed''
         END AS [month_Error],
         m.[year] as [year_Match],
         t.[year], 
         CASE
-            WHEN t.[year] is not null AND TRY_CAST(t.[year] AS smallint) is null THEN ''Conversion to smallint failed''
+            WHEN t.[year] is not null AND dbo.Try_Execute(''DECLARE @t smallint = '''''' + t.[year] + '''''''') is not null THEN ''Conversion to smallint failed''
         END AS [year_Error],
         m.[notes] as [notes_Match],
         t.[notes], 
         CASE
-            WHEN t.[notes] is not null AND TRY_CAST(t.[notes] AS varchar(max)) is null THEN ''Conversion to varchar(max) failed''
+            WHEN t.[notes] is not null AND dbo.Try_Execute(''DECLARE @t varchar(max) = '''''' + t.[notes] + '''''''') is not null THEN ''Conversion to varchar(max) failed''
         END AS [notes_Error]
     FROM (
         SELECT TOP(2147483647) 
@@ -494,7 +494,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -593,7 +593,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -688,7 +688,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -837,7 +837,7 @@ GO
 -- among its values.
 --
 --
--- Generated: Mon Oct 20 14:07:37 UTC+0200 2014 by e-lronnback
+-- Generated: Wed Oct 22 14:45:59 UTC+0200 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -875,7 +875,8 @@ END CATCH
 END
 GO
 -- The source definition used when generating the above
-DECLARE @xml XML = N'<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n">
+DECLARE @xml XML = N'
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
 	<part name="Collision" nulls="">
         -- this matches the data rows

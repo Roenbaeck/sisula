@@ -7,7 +7,7 @@
     <variable name="quitWithFailure" value="2"/>
     <variable name="goToTheNextStep" value="3"/>
     <variable name="goToStepWithId" value="4"/>    
-    <!-- specify a query timeout if needed for the bulk insert, otherwise leave 0 for no timeout -->
+    <!-- specify a query timeout if needed for the bulk insert, otherwise leave 0 for no timeout (0 only works in 2012 and later) -->
     <variable name="queryTimeout" value="0"/>
     <!-- recurse directories when searching for files, blank out if no extra options are needed -->
     <variable name="extraOptions" value="-Recurse"/>

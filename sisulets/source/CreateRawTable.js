@@ -36,6 +36,7 @@ BEGIN
 SET NOCOUNT ON;
 ~*/
 beginMetadata(source.qualified + '_CreateRawTable', source.name, 'Source');
+var rowlength = source.rowlength ? source.rowlength : 'max';
 /*~
     IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
     DROP TABLE [$source.qualified$_Raw];
@@ -44,7 +45,7 @@ beginMetadata(source.qualified + '_CreateRawTable', source.name, 'Source');
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [row] $(source.characterType == 'char')? varchar(max), : nvarchar(max),
+        [row] $(source.datafiletype == 'char')? varchar($rowlength), : nvarchar($rowlength),
         constraint [pk$source.qualified$_Raw] primary key(
             _id asc
         )
