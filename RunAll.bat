@@ -7,7 +7,6 @@ chcp 65001>NUL
 REM -------------------------------------------------------------------
 REM   Change the following variables to reflect your desired settings
 REM -------------------------------------------------------------------
-set DatabaseVersion=2012
 set System=NYPD
 set Source=Vehicle
 set TargetDatabase=Traffic
