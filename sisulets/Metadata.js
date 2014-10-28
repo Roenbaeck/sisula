@@ -5,6 +5,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 
 EXEC ${METADATABASE}$.metadata._WorkStarting
     @configurationName = $(configurationName)? '$configurationName', : null,
@@ -26,7 +28,9 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
         
     EXEC ${METADATABASE}$.metadata._WorkStopping
         @WO_ID = @workId, 
@@ -34,7 +38,12 @@ BEGIN CATCH
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
     
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 ~*/
     }    
