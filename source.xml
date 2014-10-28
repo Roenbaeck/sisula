@@ -15,6 +15,11 @@
         <term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
         <term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
         <term name="CollisionKilledCount" delimiter=";" format="tinyint"/>
+        <key name="measureTime" type="primary key">
+            <component of="IntersectingStreet"/>
+            <component of="CrossStreet"/>
+            <component of="CollisionOrder"/>
+        </key>
     </part>
     <part name="CollisionMetadata">
         <!-- 
