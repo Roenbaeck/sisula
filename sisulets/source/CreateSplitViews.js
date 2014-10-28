@@ -65,7 +65,7 @@ while(part = source.nextPart()) {
         t.[$term.name], 
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
-            WHEN t.[$term.name] is not null AND dbo.IsType(t.[$term.name], ''$term.format'') is null THEN ''Conversion to $term.format failed''
+            WHEN t.[$term.name] is not null AND dbo.IsType(t.[$term.name], ''$term.format'') = 0 THEN ''Conversion to $term.format failed''
         END AS [$term.name$_Error]$(part.hasMoreTerms() || part.hasMoreKeys())?,
 ~*/
         i++;
