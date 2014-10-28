@@ -25,8 +25,8 @@ sp_add_job
     $(job.notify_netsend_operator_name)?    @notify_netsend_operator_name   = '$job.notify_netsend_operator_name',
     $(job.notify_page_operator_name)?       @notify_page_operator_name      = '$job.notify_page_operator_name',
     $(job.delete_level)?            @delete_level           = $job.delete_level,
+    $(job.owner_login_name)?        @owner_login_name       = $job.owner_login_name,
     -- mandatory parameters below and optional ones above this line
-    @owner_login_name = 'NT SERVICE\\SQLSERVERAGENT', -- remove hard coding later
     @job_name   = '$job.name';
 GO
 sp_add_jobserver 
