@@ -167,6 +167,7 @@ DECLARE @actions TABLE (
     -- Post processing after the merge ---------------
     $sql._sql
 ~*/
+    }
     endMetadata();
 /*~
 END

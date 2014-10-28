@@ -12,9 +12,10 @@ set Source=Vehicle
 set TargetDatabase=Traffic
 set SourceDatabase=Stage
 set MetaDatabase=Stage
-set SisulaPath=%CD%
+set SisulaPath=%~dp0
 REM -------------------------------------------------------------------
 echo Using %SisulaPath% as path to the Sisulator.
+pushd "%SisulaPath%"
 
 echo Running the Sisulator for source generation...
 Sisulator.js -x source.xml -m Source -d source.directive -o source.sql
@@ -28,4 +29,5 @@ echo Running the Sisulator for workflow generation...
 Sisulator.js -x workflow.xml -m Workflow -d workflow.directive -o workflow.sql
 echo Done, and the result is in workflow.sql.
 
+popd
 chcp %DEFAULT_CODEPAGE%>NUL
