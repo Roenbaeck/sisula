@@ -103,6 +103,9 @@ var MAP = {
                 var pass = fragment.getAttribute('pass');
                 pass = pass ? '__' + pass : '';
                 return fragment.getAttribute('source') + '__' + fragment.getAttribute('target') + pass;
+            },
+            sql: function(xml, fragment) {
+                return fragment.getAttribute('position');
             }
         }
     }

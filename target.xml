@@ -1,5 +1,8 @@
 <target name="Traffic" database="%TargetDatabase%">
     <load source="%System%_%Source%_Collision_Typed" target="lST_Street">
+        <sql position="before">
+        -- preparations can be put here
+        </sql>
         <!-- the query finds unique street names in each file -->
         select
             StreetName, 
@@ -21,6 +24,9 @@
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
         <map source="_file" target="Metadata_ST" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        </sql>
     </load>
     <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection" pass="1">
         <!-- create new identities for all intersections that haven't been seen before -->

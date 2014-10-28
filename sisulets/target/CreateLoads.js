@@ -45,7 +45,16 @@ DECLARE @actions TABLE (
         "'Table'",                      // targetType
         null                            // targetCreated
     ); 
+
+    if(sql = load.sql ? load.sql.before : null) {
+/*~
+    -- Preparations before the merge -----------------
+    $sql._sql
+~*/
+    }
+    
 /*~    
+    -- Perform the actual merge ----------------------
     MERGE INTO [$target.database]..[$load.target] AS t
     USING~*/
     if(load._load) {
@@ -152,6 +161,12 @@ DECLARE @actions TABLE (
     setInsertsMetadata('@inserts');
     setUpdatesMetadata('@updates');
     setDeletesMetadata('@deletes');
+
+    if(sql = load.sql ? load.sql.after : null) {
+/*~
+    -- Post processing after the merge ---------------
+    $sql._sql
+~*/
     endMetadata();
 /*~
 END
