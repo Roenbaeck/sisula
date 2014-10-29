@@ -1,0 +1,15 @@
+@ECHO OFF
+
+REM ---- Find the oldest installation ----
+FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\NET Framework Setup" /s /t REG_SZ /v InstallPath ^| cscript /NoLogo match.js ".*\sInstallPath\s+REG_SZ\s+(.*)" ^| sort /R') DO SET DotNetPath=%%i
+ECHO Using .NET path: %DotNetPath%
+
+ECHO You have the following Assemblies that can be referenced:
+FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\Microsoft SQL Server" /s /t REG_SZ /v SharedCode ^| cscript /NoLogo match.js ".*\sSharedCode\s+REG_SZ\s+(.*)"') DO DIR /B /S "%%i\Microsoft.SqlServer.Types.dll" 2>nul | cscript /NoLogo match.js "(.*Microsoft.SqlServer.Types.dll)" | sort /R
+
+REM ----- Change this reference accordingly -----
+SET Assembly=C:\Program Files\Microsoft SQL Server\110\Shared\Microsoft.SqlServer.Types.dll
+ECHO Using Assembly: %Assembly% (hard coded)
+
+REM ----- Compile -----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities.dll Utilities.cs

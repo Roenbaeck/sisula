@@ -8,6 +8,8 @@ using System.Collections;
 using System.Data.SqlTypes;
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Server;
+using Microsoft.SqlServer.Types;
+
 
 public partial class Splitter {
     [
@@ -107,10 +109,14 @@ public partial class IsType {
                 case "uniqueidentifier":
                     SqlGuid.Parse(dataValue);
                     break;
+                case "geometry":
+                    SqlGeometry.Parse(dataValue);
+                    break;
+                case "geography":
+                    SqlGeography.Parse(dataValue);
+                    break;
                 // we do not handle these at this time
                 case "xml":
-                case "geometry":
-                case "geography":
                 case "time":
                 case "datetimeoffset":
                 case "hierarchyid":
