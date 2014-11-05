@@ -1,32 +1,21 @@
 USE Stage;
 GO
-IF Object_ID('NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
-DROP PROCEDURE [NYPD_Vehicle_CreateRawTable];
+IF Object_ID('NYPD_Vehicle_CreateRawSplitTables', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateRawSplitTables];
 GO
 --------------------------------------------------------------------------
--- Procedure: NYPD_Vehicle_CreateRawTable
+-- Procedure: NYPD_Vehicle_CreateRawSplitTables
 --
--- This table holds the 'raw' loaded data.
---
--- row
--- Holds a row loaded from a file.
---
--- _id
--- This sequence is generated in order to keep a lineage through the 
--- staging process. If a single file has been loaded, this corresponds
--- to the row number in the file.
---
--- _file
--- A number containing the file id, which either points to metadata
--- if its used or is otherwise an incremented number per file.
---
--- _timestamp
--- The time the row was created.
+-- The split table is populated by a bulk insert with a format file that 
+-- split rows from the source file into columns. 
 -- 
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Create: NYPD_Vehicle_Collision_RawSplit
+-- Create: NYPD_Vehicle_CollisionMetadata_RawSplit
+--
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateRawSplitTables] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -37,94 +26,72 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'NYPD_Vehicle_CreateRawTable',
+    @name = 'NYPD_Vehicle_CreateRawSplitTables',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('NYPD_Vehicle_Raw', 'U') IS NOT NULL
-    DROP TABLE [NYPD_Vehicle_Raw];
-    CREATE TABLE [NYPD_Vehicle_Raw] (
+    IF Object_ID('NYPD_Vehicle_Collision_RawSplit', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_Collision_RawSplit];
+    EXEC('
+    CREATE TABLE [NYPD_Vehicle_Collision_RawSplit] (
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [row] varchar(1000), 
-        constraint [pkNYPD_Vehicle_Raw] primary key(
+        [OccurrencePrecinctCode] varchar(), 
+        [CollisionID] varchar(), 
+        [CollisionKey] varchar(), 
+        [CollisionOrder] varchar(), 
+        [IntersectionAddress] varchar(), 
+        [IntersectingStreet] varchar(), 
+        [CrossStreet] varchar(), 
+        [CollisionVehicleCount] varchar(), 
+        [CollisionInjuredCount] varchar(), 
+        [CollisionKilledCount] varchar(), 
+        constraint [pkNYPD_Vehicle_Collision_RawSplit] primary key(
             _id asc
         )
-    );
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
-END TRY
-BEGIN CATCH
-	SELECT
-		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
-    EXEC Stage.metadata._WorkStopping
-        @WO_ID = @workId, 
-        @status = 'Failure', 
-        @errorLine = @theErrorLine, 
-        @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
-END CATCH
-END
-GO
-IF Object_ID('NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
-DROP PROCEDURE [NYPD_Vehicle_CreateInsertView];
-GO
---------------------------------------------------------------------------
--- Procedure: NYPD_Vehicle_CreateInsertView
---
--- This view is created as exposing the single column that will be 
--- the target of the BULK INSERT operation, since it cannot insert
--- into a table with multiple columns without a format file.
---
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
---------------------------------------------------------------------------
-CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
-    @agentJobId uniqueidentifier = null,
-    @agentStepId smallint = null
-)
-AS
-BEGIN
-SET NOCOUNT ON;
-DECLARE @workId int;
-DECLARE @operationsId int;
-DECLARE @theErrorLine int;
-DECLARE @theErrorMessage varchar(555);
-EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Vehicle', 
-    @configurationType = 'Source', 
-    @WO_ID = @workId OUTPUT, 
-    @name = 'NYPD_Vehicle_CreateInsertView',
-    @agentStepId = @agentStepId,
-    @agentJobId = @agentJobId
-BEGIN TRY
-    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
-    DROP VIEW [NYPD_Vehicle_Insert];
+    )
+    ');
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_RawSplit', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_CollisionMetadata_RawSplit];
     EXEC('
-    CREATE VIEW [NYPD_Vehicle_Insert]
-    AS
-    SELECT
-        [row]
-    FROM
-        [NYPD_Vehicle_Raw];
+    CREATE TABLE [NYPD_Vehicle_CollisionMetadata_RawSplit] (
+        _id int identity(1,1) not null,
+        _file int not null default 0,
+        _timestamp datetime2(2) not null default sysdatetime(),
+        [month] varchar(), 
+        [year] varchar(), 
+        [notes] varchar(), 
+        constraint [pkNYPD_Vehicle_CollisionMetadata_RawSplit] primary key(
+            _id asc
+        )
+    )
     ');
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -142,7 +109,7 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -161,6 +128,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -178,15 +147,26 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'View', 
     @sourceCreated = @lastModified, 
     @targetCreated = DEFAULT;
-    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
+    IF Object_ID('NYPD_Vehicle_Collision_RawSplit', 'U') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [NYPD_Vehicle_Insert]
+        BULK INSERT [NYPD_Vehicle_Collision_RawSplit]
         FROM ''' + @filename + '''
         WITH (
             CODEPAGE = ''ACP'',
-            DATAFILETYPE = ''char'',
-            FIELDTERMINATOR = ''\r\n'',
+            FORMATFILE = ''C:\sisula\ormat.xml'',
+            TABLOCK 
+        );
+    ');
+    SET @inserts = @@ROWCOUNT;
+    IF Object_ID('NYPD_Vehicle_CollisionMetadata_RawSplit', 'U') IS NOT NULL
+    BEGIN
+    EXEC('
+        BULK INSERT [NYPD_Vehicle_CollisionMetadata_RawSplit]
+        FROM ''' + @filename + '''
+        WITH (
+            CODEPAGE = ''ACP'',
+            FORMATFILE = ''C:\sisula\ormat.xml'',
             TABLOCK 
         );
     ');
@@ -215,13 +195,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -245,7 +232,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -259,6 +246,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -278,85 +267,77 @@ BEGIN TRY
         m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
         t.[OccurrencePrecinctCode], 
         CASE
-            WHEN t.[OccurrencePrecinctCode] is not null AND dbo.IsType(t.[OccurrencePrecinctCode], ''int'') is null THEN ''Conversion to int failed''
+            WHEN t.[OccurrencePrecinctCode] is not null AND dbo.IsType(t.[OccurrencePrecinctCode], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [OccurrencePrecinctCode_Error],
         m.[CollisionID] as [CollisionID_Match],
         t.[CollisionID], 
         CASE
-            WHEN t.[CollisionID] is not null AND dbo.IsType(t.[CollisionID], ''int'') is null THEN ''Conversion to int failed''
+            WHEN t.[CollisionID] is not null AND dbo.IsType(t.[CollisionID], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [CollisionID_Error],
         m.[CollisionKey] as [CollisionKey_Match],
         t.[CollisionKey], 
         CASE
-            WHEN t.[CollisionKey] is not null AND dbo.IsType(t.[CollisionKey], ''int'') is null THEN ''Conversion to int failed''
+            WHEN t.[CollisionKey] is not null AND dbo.IsType(t.[CollisionKey], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [CollisionKey_Error],
         m.[CollisionOrder] as [CollisionOrder_Match],
         t.[CollisionOrder], 
         CASE
-            WHEN t.[CollisionOrder] is not null AND dbo.IsType(t.[CollisionOrder], ''tinyint'') is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionOrder] is null THEN ''Null value not allowed''
+            WHEN t.[CollisionOrder] is not null AND dbo.IsType(t.[CollisionOrder], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionOrder_Error],
         m.[IntersectionAddress] as [IntersectionAddress_Match],
         t.[IntersectionAddress], 
         CASE
-            WHEN t.[IntersectionAddress] is not null AND dbo.IsType(t.[IntersectionAddress], ''varchar(555)'') is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectionAddress] is not null AND dbo.IsType(t.[IntersectionAddress], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [IntersectionAddress_Error],
         m.[IntersectingStreet] as [IntersectingStreet_Match],
         t.[IntersectingStreet], 
         CASE
-            WHEN t.[IntersectingStreet] is not null AND dbo.IsType(t.[IntersectingStreet], ''varchar(555)'') is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectingStreet] is null THEN ''Null value not allowed''
+            WHEN t.[IntersectingStreet] is not null AND dbo.IsType(t.[IntersectingStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [IntersectingStreet_Error],
         m.[CrossStreet] as [CrossStreet_Match],
         t.[CrossStreet], 
         CASE
-            WHEN t.[CrossStreet] is not null AND dbo.IsType(t.[CrossStreet], ''varchar(555)'') is null THEN ''Conversion to varchar(555) failed''
+            WHEN t.[CrossStreet] is not null AND dbo.IsType(t.[CrossStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [CrossStreet_Error],
         m.[CollisionVehicleCount] as [CollisionVehicleCount_Match],
         t.[CollisionVehicleCount], 
         CASE
-            WHEN t.[CollisionVehicleCount] is not null AND dbo.IsType(t.[CollisionVehicleCount], ''tinyint'') is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionVehicleCount] is not null AND dbo.IsType(t.[CollisionVehicleCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionVehicleCount_Error],
         m.[CollisionInjuredCount] as [CollisionInjuredCount_Match],
         t.[CollisionInjuredCount], 
         CASE
-            WHEN t.[CollisionInjuredCount] is not null AND dbo.IsType(t.[CollisionInjuredCount], ''tinyint'') is null THEN ''Conversion to tinyint failed''
+            WHEN t.[CollisionInjuredCount] is not null AND dbo.IsType(t.[CollisionInjuredCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionInjuredCount_Error],
         m.[CollisionKilledCount] as [CollisionKilledCount_Match],
         t.[CollisionKilledCount], 
         CASE
-            WHEN t.[CollisionKilledCount] is not null AND dbo.IsType(t.[CollisionKilledCount], ''tinyint'') is null THEN ''Conversion to tinyint failed''
-        END AS [CollisionKilledCount_Error]
+            WHEN t.[CollisionKilledCount] is not null AND dbo.IsType(t.[CollisionKilledCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
+        END AS [CollisionKilledCount_Error],
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                t.[IntersectingStreet],
+                t.[CrossStreet],
+                t.[CollisionOrder]
+            ORDER BY
+                _id
+        ) - 1 as measureTime_Duplicate
     FROM (
-        SELECT TOP(2147483647) 
-            * 
-        FROM (
-        -- this matches the data rows
-        SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
-        ) src
-        ORDER BY 
-            _id ASC 
-    ) forcedMaterializationTrick
-    CROSS APPLY (
-		SELECT
-			NULLIF(LTRIM([2]), '''') AS [OccurrencePrecinctCode],
-			NULLIF(LTRIM([3]), '''') AS [CollisionID],
-			NULLIF(LTRIM([4]), '''') AS [CollisionKey],
-			NULLIF(LTRIM([5]), '''') AS [CollisionOrder],
-			NULLIF(LTRIM([6]), '''') AS [IntersectionAddress],
-			NULLIF(LTRIM([7]), '''') AS [IntersectingStreet],
-			NULLIF(LTRIM([8]), '''') AS [CrossStreet],
-			NULLIF(LTRIM([9]), '''') AS [CollisionVehicleCount],
-			NULLIF(LTRIM([10]), '''') AS [CollisionInjuredCount],
-			NULLIF(LTRIM([11]), '''') AS [CollisionKilledCount]
-		FROM (
-            SELECT 
-                [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
-            FROM
-                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(.*?);[0-9]{4}([0-9]{9})[^;]*;(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);'')
-        ) s
-        PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7], [8], [9], [10], [11])
-        ) p
+        SELECT
+			NULLIF(LTRIM([OccurrencePrecinctCode]), '''') AS [OccurrencePrecinctCode],
+			NULLIF(LTRIM([CollisionID]), '''') AS [CollisionID],
+			NULLIF(LTRIM([CollisionKey]), '''') AS [CollisionKey],
+			NULLIF(LTRIM([CollisionOrder]), '''') AS [CollisionOrder],
+			NULLIF(LTRIM([IntersectionAddress]), '''') AS [IntersectionAddress],
+			NULLIF(LTRIM([IntersectingStreet]), '''') AS [IntersectingStreet],
+			NULLIF(LTRIM([CrossStreet]), '''') AS [CrossStreet],
+			NULLIF(LTRIM([CollisionVehicleCount]), '''') AS [CollisionVehicleCount],
+			NULLIF(LTRIM([CollisionInjuredCount]), '''') AS [CollisionInjuredCount],
+			NULLIF(LTRIM([CollisionKilledCount]), '''') AS [CollisionKilledCount]
+        FROM
+            NYPD_Vehicle_Collision_RawSplit 
     ) m
     CROSS APPLY (
         SELECT 
@@ -383,74 +364,25 @@ BEGIN TRY
         m.[month] as [month_Match],
         t.[month], 
         CASE
-            WHEN t.[month] is not null AND dbo.IsType(t.[month], ''varchar(42)'') is null THEN ''Conversion to varchar(42) failed''
+            WHEN t.[month] is not null AND dbo.IsType(t.[month], ''varchar(42)'') = 0 THEN ''Conversion to varchar(42) failed''
         END AS [month_Error],
         m.[year] as [year_Match],
         t.[year], 
         CASE
-            WHEN t.[year] is not null AND dbo.IsType(t.[year], ''smallint'') is null THEN ''Conversion to smallint failed''
+            WHEN t.[year] is not null AND dbo.IsType(t.[year], ''smallint'') = 0 THEN ''Conversion to smallint failed''
         END AS [year_Error],
         m.[notes] as [notes_Match],
         t.[notes], 
         CASE
-            WHEN t.[notes] is not null AND dbo.IsType(t.[notes], ''varchar(max)'') is null THEN ''Conversion to varchar(max) failed''
+            WHEN t.[notes] is not null AND dbo.IsType(t.[notes], ''varchar(max)'') = 0 THEN ''Conversion to varchar(max) failed''
         END AS [notes_Error]
     FROM (
-        SELECT TOP(2147483647) 
-            * 
-        FROM (
         SELECT
-			*
-		FROM (
-			SELECT 
-				_file,
-				MIN(_id) as _id,
-				MIN(_timestamp) as _timestamp
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			GROUP BY
-				_file
-		) f
-		CROSS APPLY (
-			SELECT
-				[row] + CHAR(183) AS [text()]
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-					[row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			WHERE
-				src._file = f._file
-			FOR XML PATH('''')
-		) c ([row])
-        ) src
-        ORDER BY 
-            _id ASC 
-    ) forcedMaterializationTrick
-    CROSS APPLY (
-		SELECT
-			NULLIF(LTRIM([2]), '''') AS [month],
-			NULLIF(LTRIM([3]), '''') AS [year],
-			NULLIF(LTRIM([4]), '''') AS [notes]
-		FROM (
-            SELECT 
-                [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
-            FROM
-                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(?=.*?(\w+)\s+[0-9]{4})?(?=.*?\w+\s+([0-9]{4}))?(?=.*?NOTES[^:]*:(.*))?'')
-        ) s
-        PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4])
-        ) p
+			NULLIF(LTRIM([month]), '''') AS [month],
+			NULLIF(LTRIM([year]), '''') AS [year],
+			NULLIF(LTRIM([notes]), '''') AS [notes]
+        FROM
+            NYPD_Vehicle_CollisionMetadata_RawSplit 
     ) m
     CROSS APPLY (
         SELECT 
@@ -464,13 +396,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -494,7 +433,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -508,6 +447,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -526,6 +467,8 @@ BEGIN TRY
     FROM
         [NYPD_Vehicle_Collision_Split]
     WHERE
+        measureTime_Duplicate > 0
+    OR
         [OccurrencePrecinctCode_Error] is not null
     OR
         [CollisionID_Error] is not null
@@ -567,13 +510,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -593,7 +543,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -607,6 +557,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -624,10 +576,10 @@ BEGIN TRY
         [OccurrencePrecinctCode] int null, 
         [CollisionID] int null, 
         [CollisionKey] int null, 
-        [CollisionOrder] tinyint null, 
+        [CollisionOrder] tinyint not null, 
         [IntersectionAddress] varchar(555) null, 
-        [IntersectingStreet] varchar(555) null, 
-        [CrossStreet] varchar(555) null, 
+        [IntersectingStreet] varchar(555) not null, 
+        [CrossStreet] varchar(555) not null, 
         [CollisionVehicleCount] tinyint null, 
         [CollisionInjuredCount] tinyint null, 
         [CollisionKilledCount] tinyint null
@@ -665,13 +617,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -688,7 +647,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -703,6 +662,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -752,6 +713,8 @@ EXEC Stage.metadata._WorkSourceToTarget
     FROM 
         [NYPD_Vehicle_Collision_Split]
     WHERE
+        measureTime_Duplicate = 0
+    AND
         [OccurrencePrecinctCode_Error] is null
     AND
         [CollisionID_Error] is null
@@ -814,13 +777,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -836,8 +806,12 @@ GO
 -- matches the key composition. Primary keys also guarantee uniquness
 -- among its values.
 --
+-- Table: NYPD_Vehicle_Collision_Typed
+-- Key: IntersectingStreet (as primary key)
+-- Key: CrossStreet (as primary key)
+-- Key: CollisionOrder (as primary key)
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -851,6 +825,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
@@ -859,24 +835,39 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
+    IF Object_ID('NYPD_Vehicle_Collision_Typed', 'U') IS NOT NULL
+    ALTER TABLE [NYPD_Vehicle_Collision_Typed]
+    ADD
+        CONSTRAINT [measureTime_NYPD_Vehicle_Collision_Typed] primary key (
+            [IntersectingStreet],
+            [CrossStreet],
+            [CollisionOrder]
+        );
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
 -- The source definition used when generating the above
 DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000">
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="bulk">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
 	<part name="Collision" nulls="">
         -- this matches the data rows
@@ -891,6 +882,11 @@ DECLARE @xml XML = N'
 		<term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
 		<term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
 		<term name="CollisionKilledCount" delimiter=";" format="tinyint"/>
+		<key name="measureTime" type="primary key">
+			<component of="IntersectingStreet"/>
+			<component of="CrossStreet"/>
+			<component of="CollisionOrder"/>
+		</key>
 	</part>
 	<part name="CollisionMetadata">
         SELECT

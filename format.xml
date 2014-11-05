@@ -1,0 +1,40 @@
+<?xml version = "1.0"?>
+<BCPFORMAT
+xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <RECORD>
+      <FIELD xsi:type="CharTerm" ID="OccurrencePrecinctCode" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionKey" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionOrder" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="IntersectionAddress" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="IntersectingStreet" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CrossStreet" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionVehicleCount" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionInjuredCount" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionKilledCount" TERMINATOR=";" />
+   </RECORD>
+   <ROW>
+      <COLUMN SOURCE="OccurrencePrecinctCode" NAME="OccurrencePrecinctCode" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionID" NAME="CollisionID" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionKey" NAME="CollisionKey" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionOrder" NAME="CollisionOrder" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="IntersectionAddress" NAME="IntersectionAddress" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="IntersectingStreet" NAME="IntersectingStreet" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CrossStreet" NAME="CrossStreet" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionVehicleCount" NAME="CollisionVehicleCount" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionInjuredCount" NAME="CollisionInjuredCount" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="CollisionKilledCount" NAME="CollisionKilledCount" xsi:type="SQLVARYCHAR" />
+   </ROW>
+</BCPFORMAT>
+<?xml version = "1.0"?>
+<BCPFORMAT
+xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <RECORD>
+   </RECORD>
+   <ROW>
+      <COLUMN SOURCE="month" NAME="month" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="year" NAME="year" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="notes" NAME="notes" xsi:type="SQLVARYCHAR" />
+   </ROW>
+</BCPFORMAT>

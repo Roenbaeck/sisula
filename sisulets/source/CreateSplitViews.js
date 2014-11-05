@@ -89,68 +89,68 @@ while(part = source.nextPart()) {
 ~*/
         }
     }
+    if(source.split == 'regex') {
 /*~        
     FROM (
         SELECT TOP($MAXLEN) 
             * 
         FROM ~*/
-    if(part._part) {
+        if(part._part) {
 
 /*~ (
         ${part._part.trim().escape()}$
         ) src
 ~*/
-    }
-    else {
+        }
+        else {
 /*~
             $source.qualified$_Raw src
 ~*/
-    }
+        }
 /*~
         ORDER BY 
             _id ASC 
     ) forcedMaterializationTrick
 ~*/
-    var regex = '', pivots = '';
-    if(part.charskip)
-        regex += '.{' + part.charskip + '}';
-    else if (part.pattern)
-        regex += part.pattern;
+        var regex = '', pivots = '';
+        if(part.charskip)
+            regex += '.{' + part.charskip + '}';
+        else if (part.pattern)
+            regex += part.pattern;
 
-    i = 2;
-    while(term = part.nextTerm()) {
-        pivots += '[' + i + ']';
-        if(part.hasMoreTerms())
-            pivots += ', ';
-        if(term.pattern) 
-            regex += term.pattern.escape();
-        else if(term.size) 
-            regex += '(.{' + term.size + '})';
-        else if(term.delimiter) 
-            regex += '(.*?)' + term.delimiter.escape();
-        else // capture to the end of the line if nothing is specified
-            regex += '(.*)'
-        i++;
-    }
+        i = 2;
+        while(term = part.nextTerm()) {
+            pivots += '[' + i + ']';
+            if(part.hasMoreTerms())
+                pivots += ', ';
+            if(term.pattern) 
+                regex += term.pattern.escape();
+            else if(term.size) 
+                regex += '(.{' + term.size + '})';
+            else if(term.delimiter) 
+                regex += '(.*?)' + term.delimiter.escape();
+            else // capture to the end of the line if nothing is specified
+                regex += '(.*)'
+            i++;
+        }
 /*~
     CROSS APPLY (
 		SELECT
 ~*/
-    i = 2;
-    while(term = part.nextTerm()) {
-        var nulls = '';
-        if(part.nulls)
-            nulls = part.nulls.escape();
-        else if(term.nulls) 
-            nulls = term.nulls.escape();
+        i = 2;
+        while(term = part.nextTerm()) {
+            var nulls = '';
+            if(part.nulls)
+                nulls = part.nulls.escape();
+            else if(term.nulls) 
+                nulls = term.nulls.escape();
 /*~    
 			NULLIF(LTRIM([${i}$]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
-        i++;
-    }
+            i++;
+        }
 /*~            
 		FROM (
-
             SELECT 
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
@@ -161,6 +161,30 @@ while(part = source.nextPart()) {
             MAX([match]) FOR idx IN ($pivots)
         ) p
     ) m
+~*/
+    }  // end of 'regex' splitting
+    else {
+/*~        
+    FROM (
+        SELECT
+~*/
+        while(term = part.nextTerm()) {
+            var nulls = '';
+            if(part.nulls)
+                nulls = part.nulls.escape();
+            else if(term.nulls) 
+                nulls = term.nulls.escape();
+/*~    
+			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+~*/
+        }        
+/*~
+        FROM
+            $part.qualified$_RawSplit 
+    ) m
+~*/
+    }        
+/*~        
     CROSS APPLY (
         SELECT 
 ~*/

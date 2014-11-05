@@ -17,6 +17,10 @@ REM -------------------------------------------------------------------
 echo Using %SisulaPath% as path to the Sisulator.
 pushd "%SisulaPath%"
 
+echo Running the Sisulator for bulk format file generation...
+Sisulator.js -x source.xml -m Source -d format.directive -o format.xml
+echo Done, and the result is in format.xml.
+
 echo Running the Sisulator for source generation...
 Sisulator.js -x source.xml -m Source -d source.directive -o source.sql
 echo Done, and the result is in source.sql.

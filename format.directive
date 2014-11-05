@@ -1,0 +1,8 @@
+# These are the sisulets that create bulk format files.
+sisulets/Polyfills.js
+sisulets/Variables.js
+sisulets/Metadata.js
+sisulets/source/Variables.js
+sisulets/source/Helpers.js
+sisulets/source/Naming.js
+sisulets/format/CreateFormatFiles.js

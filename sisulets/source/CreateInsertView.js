@@ -1,4 +1,5 @@
 // Create a raw view compatible with bulk inserts
+if(source.split == 'regex') {
 /*~
 IF Object_ID('$source.qualified$_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateInsertView];
@@ -40,3 +41,4 @@ endMetadata();
 END
 GO
 ~*/
+}

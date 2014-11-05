@@ -7,7 +7,6 @@ sp_delete_job
 GO
 sp_add_job 
     -- mandatory parameters below and optional ones above this line
-    @owner_login_name = 'NT SERVICE\SQLSERVERAGENT', -- remove hard coding later
     @job_name = 'NYPD_Vehicle_Staging';
 GO
 sp_add_jobserver 
@@ -48,9 +47,9 @@ GO
 sp_add_jobstep 
     @subsystem = 'PowerShell', 
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\sisula\data"
+              Throw "No matching files were found in C:\sisula\\data"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
@@ -206,7 +205,6 @@ sp_delete_job
 GO
 sp_add_job 
     -- mandatory parameters below and optional ones above this line
-    @owner_login_name = 'NT SERVICE\SQLSERVERAGENT', -- remove hard coding later
     @job_name = 'NYPD_Vehicle_Loading';
 GO
 sp_add_jobserver 
@@ -316,7 +314,7 @@ GO
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="stage" value="Stage"/>
-	<variable name="path" value="C:\sisula\data"/>
+	<variable name="path" value="C:\sisula\\data"/>
 	<variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>

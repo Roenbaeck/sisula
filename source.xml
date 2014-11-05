@@ -1,5 +1,15 @@
-<!-- rowlength can be specified as an integer number, but defaults to 'max' -->
-<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000">
+<!-- 
+    rowlength    can be specified as an integer number, but defaults to 'max'
+    split        specifies with which method rows should be split into columns
+                 "bulk" splits already at bulk insert time but imposes 
+                 the limit that only one part can be present and only 
+                 delimiter and size can be used.
+                 "regex" will read whole rows into a raw table and then perform
+                 the split using a CLR splitter, which allows for many parts in 
+                 the same file, and pattern can be used to match the resulting
+                 column value.
+ -->
+<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="bulk">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
     <part name="Collision" nulls="">
         -- this matches the data rows

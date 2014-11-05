@@ -11,7 +11,7 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: _file to Metadata_ST (as metadata)
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_Street__NYPD_Vehicle_Collision_Typed] (
@@ -31,6 +31,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
@@ -48,6 +50,9 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
+    -- Preparations before the merge -----------------
+        -- preparations can be put here
+    -- Perform the actual merge ----------------------
     MERGE INTO [Traffic]..[lST_Street] AS t
     USING (
         select
@@ -91,18 +96,27 @@ EXEC Stage.metadata._WorkSourceToTarget
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
     EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    -- Post processing after the merge ---------------
+        -- post processing can be put here
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -117,7 +131,7 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: _file to Metadata_IS (as metadata)
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
@@ -137,6 +151,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
@@ -154,6 +170,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
+    -- Perform the actual merge ----------------------
     MERGE INTO [Traffic]..[lIS_Intersection] AS t
     USING (
         select 
@@ -212,13 +229,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -235,7 +259,7 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
@@ -255,6 +279,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
@@ -272,6 +298,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
+    -- Perform the actual merge ----------------------
     MERGE INTO [Traffic]..[lST_intersecting_IS_of_ST_crossing] AS t
     USING (
         select
@@ -367,13 +394,20 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
@@ -395,7 +429,7 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Mon Oct 27 15:07:38 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
@@ -415,6 +449,8 @@ DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
 EXEC Stage.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
@@ -432,6 +468,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'Table', 
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
+    -- Perform the actual merge ----------------------
     MERGE INTO [Traffic]..[lIS_Intersection] AS t
     USING (
         select
@@ -531,19 +568,29 @@ END TRY
 BEGIN CATCH
 	SELECT
 		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE();
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
     EXEC Stage.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
         @errorMessage = @theErrorMessage;
-    THROW; -- Propagate the error
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
 END CATCH
 END
 GO
 -- The target definition used when generating the above
 DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
 	<load source="NYPD_Vehicle_Collision_Typed" target="lST_Street">
+		<sql position="before">
+        -- preparations can be put here
+        </sql>
         select
             StreetName, 
             min(_file) as _file
@@ -564,6 +611,9 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
 		<map source="_file" target="Metadata_ST" as="metadata"/>
+		<sql position="after">
+        -- post processing can be put here
+        </sql>
 	</load>
 	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="1">
         select 

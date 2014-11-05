@@ -1,4 +1,5 @@
 // Create a raw table suitable for bulk insert
+if(source.split == 'regex') {
 /*~
 IF Object_ID('$source.qualified$_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateRawTable];
@@ -56,3 +57,4 @@ endMetadata();
 END
 GO
 ~*/
+}

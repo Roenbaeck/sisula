@@ -197,7 +197,8 @@ var Sisulator = {
                 for(var i = 1; i < sisulets.length; i+=2) {
                     // honor escaped dollar signs
                     sisulets[i] = sisulets[i].replace(/[$]{2}/g, '§DOLLAR§'); // escaping dollar signs
-                    sisulets[i] = sisulets[i].replace(/["]{2}/g, '§QUOTED§'); // escaping double quotes
+                    sisulets[i] = sisulets[i].replace(/["]{2}/g, '§DOUBLE§'); // escaping double quotes
+                    sisulets[i] = sisulets[i].replace(/["]{1}/g, '§SINGLE§'); // escaping single quotes
                     sisulets[i] = sisulets[i].replace(/[$]{([\S\s]*?)}[$]/g, '" + $1 + "'); // multi-expression
                     sisulets[i] = sisulets[i].replace(/[$]\(([\S\s]*?)\)\?[^\S\n]*([^:\n]*)[:]?[^\S\n]*(.*)/g, '" + ($1 ? "$2" : "$3") + "'); // conditional
                     sisulets[i] = sisulets[i].replace(/[\$]([\w.]*?)(?:([\$])|([^\w.]|$))/g, '" + ($1 ? $1 : "") + "$3'); // single
@@ -213,11 +214,12 @@ var Sisulator = {
                 }
                 catch(e) {
                     alert('Error in script: ' + script);
-                    // alert(sisula); // alert was used for debugging sisula code
+                    alert(sisula); // alert was used for debugging sisula code
                     throw e;
                 }
             }
             _sisula_ = _sisula_.replace(/§DOLLAR§/g, '$'); // unescaping dollar signs
+            _sisula_ = _sisula_.replace(/§SINGLE§/g, '\"'); // unescaping double quotes
             _sisula_ = _sisula_.replace(/§QUOTED§/g, '"'); // unescaping double quotes
             _sisula_ = _sisula_.replace(/^\s*[\r\n]/gm, ''); // remove empty lines
             _sisula_ = _sisula_.replace(/(\S+[^\S\n])(?:[^\S\n]+)/gm, '$1'); // consume multiple spaces, but not indentation
