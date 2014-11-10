@@ -47,8 +47,9 @@ while(part = source.nextPart()) {
     CREATE VIEW [$part.qualified$_Split] 
     AS
     SELECT
-        _id,
-        _file,
+        t._id,
+        t._file,
+        t._timestamp,
 ~*/
     var key;
     var i = 2;
@@ -84,12 +85,33 @@ while(part = source.nextPart()) {
             }
 /*~
             ORDER BY
-                _id
+                t._id
         ) - 1 as $key.name$_Duplicate$(part.hasMoreKeys())?,
 ~*/
         }
     }
-    if(source.split == 'regex') {
+    if(source.split == 'bulk') {
+/*~        
+    FROM (
+        SELECT
+~*/
+        while(term = part.nextTerm()) {
+            var nulls = '';
+            if(part.nulls)
+                nulls = part.nulls.escape();
+            else if(term.nulls) 
+                nulls = term.nulls.escape();
+/*~    
+			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+~*/
+        }        
+/*~
+        FROM
+            $part.qualified$_RawSplit 
+    ) m
+~*/
+    }  // end of 'bulk' splitting
+    else {
 /*~        
     FROM (
         SELECT TOP($MAXLEN) 
@@ -161,32 +183,14 @@ while(part = source.nextPart()) {
             MAX([match]) FOR idx IN ($pivots)
         ) p
     ) m
-~*/
-    }  // end of 'regex' splitting
-    else {
-/*~        
-    FROM (
-        SELECT
-~*/
-        while(term = part.nextTerm()) {
-            var nulls = '';
-            if(part.nulls)
-                nulls = part.nulls.escape();
-            else if(term.nulls) 
-                nulls = term.nulls.escape();
-/*~    
-			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
-~*/
-        }        
-/*~
-        FROM
-            $part.qualified$_RawSplit 
-    ) m
-~*/
+~*/        
     }        
 /*~        
     CROSS APPLY (
         SELECT 
+            _id,
+            _file,
+            _timestamp,
 ~*/
     var termOrTransform;
     while(term = part.nextTerm()) {

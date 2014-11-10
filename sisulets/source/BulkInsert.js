@@ -39,7 +39,26 @@ setSourceToTargetMetadata(
     "'View'",                               // targetType
     null                                    // targetCreated
 ); 
-if(source.split == 'regex') {
+if(source.split == 'bulk') {  
+    var part;
+    while(part = source.nextPart()) {
+/*~
+    IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
+    BEGIN
+    EXEC('
+        BULK INSERT [$part.qualified$_RawSplit]
+        FROM ''' + @filename + '''
+        WITH (
+            $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
+            $(VARIABLES.SisulaPath)?    FORMATFILE      = ''$VARIABLES.SisulaPath\\format.xml'',
+            TABLOCK   
+        );
+    ');
+    SET @inserts = @@ROWCOUNT;
+~*/
+    }
+} // not 'bulk' splitting
+else {
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
@@ -56,25 +75,6 @@ if(source.split == 'regex') {
     ');
     SET @inserts = @@ROWCOUNT;
 ~*/
-} // not 'regex' splitting
-else {
-    var part;
-    while(part = source.nextPart()) {
-/*~
-    IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
-    BEGIN
-    EXEC('
-        BULK INSERT [$part.qualified$_RawSplit]
-        FROM ''' + @filename + '''
-        WITH (
-            $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
-            $(VARIABLES.SisulaPath)?    FORMATFILE      = ''$VARIABLES.SisulaPath\format.xml'',
-            TABLOCK   
-        );
-    ');
-    SET @inserts = @@ROWCOUNT;
-~*/
-    }
 }
 setInsertsMetadata('@inserts');
 if(METADATA) {
