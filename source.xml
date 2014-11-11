@@ -9,7 +9,7 @@
                  the same file, and pattern can be used to match the resulting
                  column value.
  -->
-<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="bulk">
+<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
     <part name="Collision" nulls="">
         -- this matches the data rows

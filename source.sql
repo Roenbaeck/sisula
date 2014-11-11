@@ -1,21 +1,32 @@
 USE Stage;
 GO
-IF Object_ID('NYPD_Vehicle_CreateRawSplitTables', 'P') IS NOT NULL
-DROP PROCEDURE [NYPD_Vehicle_CreateRawSplitTables];
+IF Object_ID('NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateRawTable];
 GO
 --------------------------------------------------------------------------
--- Procedure: NYPD_Vehicle_CreateRawSplitTables
+-- Procedure: NYPD_Vehicle_CreateRawTable
 --
--- The split table is populated by a bulk insert with a format file that 
--- split rows from the source file into columns. 
+-- This table holds the 'raw' loaded data.
+--
+-- row
+-- Holds a row loaded from a file.
+--
+-- _id
+-- This sequence is generated in order to keep a lineage through the 
+-- staging process. If a single file has been loaded, this corresponds
+-- to the row number in the file.
+--
+-- _file
+-- A number containing the file id, which either points to metadata
+-- if its used or is otherwise an incremented number per file.
+--
+-- _timestamp
+-- The time the row was created.
 -- 
--- Create: NYPD_Vehicle_Collision_RawSplit
--- Create: NYPD_Vehicle_CollisionMetadata_RawSplit
---
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [NYPD_Vehicle_CreateRawSplitTables] (
+CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -32,46 +43,86 @@ EXEC Stage.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
-    @name = 'NYPD_Vehicle_CreateRawSplitTables',
+    @name = 'NYPD_Vehicle_CreateRawTable',
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-    IF Object_ID('NYPD_Vehicle_Collision_RawSplit', 'U') IS NOT NULL
-    DROP TABLE [NYPD_Vehicle_Collision_RawSplit];
-    EXEC('
-    CREATE TABLE [NYPD_Vehicle_Collision_RawSplit] (
+    IF Object_ID('NYPD_Vehicle_Raw', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_Raw];
+    CREATE TABLE [NYPD_Vehicle_Raw] (
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [OccurrencePrecinctCode] varchar(), 
-        [CollisionID] varchar(), 
-        [CollisionKey] varchar(), 
-        [CollisionOrder] varchar(), 
-        [IntersectionAddress] varchar(), 
-        [IntersectingStreet] varchar(), 
-        [CrossStreet] varchar(), 
-        [CollisionVehicleCount] varchar(), 
-        [CollisionInjuredCount] varchar(), 
-        [CollisionKilledCount] varchar(), 
-        constraint [pkNYPD_Vehicle_Collision_RawSplit] primary key(
+        [row] varchar(1000), 
+        constraint [pkNYPD_Vehicle_Raw] primary key(
             _id asc
         )
-    )
-    ');
-    IF Object_ID('NYPD_Vehicle_CollisionMetadata_RawSplit', 'U') IS NOT NULL
-    DROP TABLE [NYPD_Vehicle_CollisionMetadata_RawSplit];
+    );
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
+    EXEC Stage.metadata._WorkStopping
+        @WO_ID = @workId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
+END CATCH
+END
+GO
+IF Object_ID('NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateInsertView];
+GO
+--------------------------------------------------------------------------
+-- Procedure: NYPD_Vehicle_CreateInsertView
+--
+-- This view is created as exposing the single column that will be 
+-- the target of the BULK INSERT operation, since it cannot insert
+-- into a table with multiple columns without a format file.
+--
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
+--------------------------------------------------------------------------
+CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
+AS
+BEGIN
+SET NOCOUNT ON;
+DECLARE @workId int;
+DECLARE @operationsId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
+EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Vehicle', 
+    @configurationType = 'Source', 
+    @WO_ID = @workId OUTPUT, 
+    @name = 'NYPD_Vehicle_CreateInsertView',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
+BEGIN TRY
+    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
+    DROP VIEW [NYPD_Vehicle_Insert];
     EXEC('
-    CREATE TABLE [NYPD_Vehicle_CollisionMetadata_RawSplit] (
-        _id int identity(1,1) not null,
-        _file int not null default 0,
-        _timestamp datetime2(2) not null default sysdatetime(),
-        [month] varchar(), 
-        [year] varchar(), 
-        [notes] varchar(), 
-        constraint [pkNYPD_Vehicle_CollisionMetadata_RawSplit] primary key(
-            _id asc
-        )
-    )
+    CREATE VIEW [NYPD_Vehicle_Insert]
+    AS
+    SELECT
+        [row]
+    FROM
+        [NYPD_Vehicle_Raw];
     ');
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -109,7 +160,7 @@ GO
 -- This job may called multiple times in a workflow when more than 
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -147,26 +198,15 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetType = 'View', 
     @sourceCreated = @lastModified, 
     @targetCreated = DEFAULT;
-    IF Object_ID('NYPD_Vehicle_Collision_RawSplit', 'U') IS NOT NULL
+    IF Object_ID('NYPD_Vehicle_Insert', 'V') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [NYPD_Vehicle_Collision_RawSplit]
+        BULK INSERT [NYPD_Vehicle_Insert]
         FROM ''' + @filename + '''
         WITH (
             CODEPAGE = ''ACP'',
-            FORMATFILE = ''C:\sisula\ormat.xml'',
-            TABLOCK 
-        );
-    ');
-    SET @inserts = @@ROWCOUNT;
-    IF Object_ID('NYPD_Vehicle_CollisionMetadata_RawSplit', 'U') IS NOT NULL
-    BEGIN
-    EXEC('
-        BULK INSERT [NYPD_Vehicle_CollisionMetadata_RawSplit]
-        FROM ''' + @filename + '''
-        WITH (
-            CODEPAGE = ''ACP'',
-            FORMATFILE = ''C:\sisula\ormat.xml'',
+            DATAFILETYPE = ''char'',
+            FIELDTERMINATOR = ''\r\n'',
             TABLOCK 
         );
     ');
@@ -232,7 +272,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -262,8 +302,9 @@ BEGIN TRY
     CREATE VIEW [NYPD_Vehicle_Collision_Split] 
     AS
     SELECT
-        _id,
-        _file,
+        t._id,
+        t._file,
+        t._timestamp,
         m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
         t.[OccurrencePrecinctCode], 
         CASE
@@ -322,25 +363,46 @@ BEGIN TRY
                 t.[CrossStreet],
                 t.[CollisionOrder]
             ORDER BY
-                _id
+                t._id
         ) - 1 as measureTime_Duplicate
     FROM (
-        SELECT
-			NULLIF(LTRIM([OccurrencePrecinctCode]), '''') AS [OccurrencePrecinctCode],
-			NULLIF(LTRIM([CollisionID]), '''') AS [CollisionID],
-			NULLIF(LTRIM([CollisionKey]), '''') AS [CollisionKey],
-			NULLIF(LTRIM([CollisionOrder]), '''') AS [CollisionOrder],
-			NULLIF(LTRIM([IntersectionAddress]), '''') AS [IntersectionAddress],
-			NULLIF(LTRIM([IntersectingStreet]), '''') AS [IntersectingStreet],
-			NULLIF(LTRIM([CrossStreet]), '''') AS [CrossStreet],
-			NULLIF(LTRIM([CollisionVehicleCount]), '''') AS [CollisionVehicleCount],
-			NULLIF(LTRIM([CollisionInjuredCount]), '''') AS [CollisionInjuredCount],
-			NULLIF(LTRIM([CollisionKilledCount]), '''') AS [CollisionKilledCount]
-        FROM
-            NYPD_Vehicle_Collision_RawSplit 
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
+        -- this matches the data rows
+        SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [OccurrencePrecinctCode],
+			NULLIF(LTRIM([3]), '''') AS [CollisionID],
+			NULLIF(LTRIM([4]), '''') AS [CollisionKey],
+			NULLIF(LTRIM([5]), '''') AS [CollisionOrder],
+			NULLIF(LTRIM([6]), '''') AS [IntersectionAddress],
+			NULLIF(LTRIM([7]), '''') AS [IntersectingStreet],
+			NULLIF(LTRIM([8]), '''') AS [CrossStreet],
+			NULLIF(LTRIM([9]), '''') AS [CollisionVehicleCount],
+			NULLIF(LTRIM([10]), '''') AS [CollisionInjuredCount],
+			NULLIF(LTRIM([11]), '''') AS [CollisionKilledCount]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(.*?);[0-9]{4}([0-9]{9})[^;]*;(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7], [8], [9], [10], [11])
+        ) p
     ) m
     CROSS APPLY (
         SELECT 
+            _id,
+            _file,
+            _timestamp,
             [OccurrencePrecinctCode] AS [OccurrencePrecinctCode], 
             [CollisionID] AS [CollisionID], 
             [CollisionKey] AS [CollisionKey], 
@@ -359,8 +421,9 @@ BEGIN TRY
     CREATE VIEW [NYPD_Vehicle_CollisionMetadata_Split] 
     AS
     SELECT
-        _id,
-        _file,
+        t._id,
+        t._file,
+        t._timestamp,
         m.[month] as [month_Match],
         t.[month], 
         CASE
@@ -377,15 +440,67 @@ BEGIN TRY
             WHEN t.[notes] is not null AND dbo.IsType(t.[notes], ''varchar(max)'') = 0 THEN ''Conversion to varchar(max) failed''
         END AS [notes_Error]
     FROM (
+        SELECT TOP(2147483647) 
+            * 
+        FROM (
         SELECT
-			NULLIF(LTRIM([month]), '''') AS [month],
-			NULLIF(LTRIM([year]), '''') AS [year],
-			NULLIF(LTRIM([notes]), '''') AS [notes]
-        FROM
-            NYPD_Vehicle_CollisionMetadata_RawSplit 
+			*
+		FROM (
+			SELECT 
+				_file,
+				MIN(_id) as _id,
+				MIN(_timestamp) as _timestamp
+			FROM (
+                SELECT
+                    *
+                FROM
+                    NYPD_Vehicle_Raw
+                WHERE 
+                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
+		    ) src
+			GROUP BY
+				_file
+		) f
+		CROSS APPLY (
+			SELECT
+				[row] + CHAR(183) AS [text()]
+			FROM (
+                SELECT
+                    *
+                FROM
+                    NYPD_Vehicle_Raw
+                WHERE 
+					[row] NOT LIKE ''[0-9][0-9][0-9];%''
+		    ) src
+			WHERE
+				src._file = f._file
+			FOR XML PATH('''')
+		) c ([row])
+        ) src
+        ORDER BY 
+            _id ASC 
+    ) forcedMaterializationTrick
+    CROSS APPLY (
+		SELECT
+			NULLIF(LTRIM([2]), '''') AS [month],
+			NULLIF(LTRIM([3]), '''') AS [year],
+			NULLIF(LTRIM([4]), '''') AS [notes]
+		FROM (
+            SELECT 
+                [match],
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+            FROM
+                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(?=.*?(\w+)\s+[0-9]{4})?(?=.*?\w+\s+([0-9]{4}))?(?=.*?NOTES[^:]*:(.*))?'')
+        ) s
+        PIVOT (
+            MAX([match]) FOR idx IN ([2], [3], [4])
+        ) p
     ) m
     CROSS APPLY (
         SELECT 
+            _id,
+            _file,
+            _timestamp,
             [month] AS [month], 
             [year] AS [year], 
             LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
@@ -433,7 +548,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -543,7 +658,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -647,7 +762,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -811,7 +926,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Wed Nov 5 15:31:29 UTC+0100 2014 by e-lronnback
+-- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -867,7 +982,7 @@ END
 GO
 -- The source definition used when generating the above
 DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="bulk">
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
 	<part name="Collision" nulls="">
         -- this matches the data rows

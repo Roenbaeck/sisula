@@ -6,41 +6,41 @@ if(source.datafiletype == 'widechar') {
     xsiColumnType = 'SQLNVARCHAR';
 }
 
+// only one part is allowed when 'bulk' is specified
+var part = source.nextPart();
 
-while(part = source.nextPart()) {
 /*~
-<?xml version = "1.0"?>
+<?xml version="1.0"?>
 <BCPFORMAT
 xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
    <RECORD>
 ~*/
-    while(term = part.nextTerm()) {
-        if(term.size) {
-            xsiFieldType = xsiPrefix + 'CharFixed';
+while(term = part.nextTerm()) {
+    if(term.size) {
+        xsiFieldType = xsiPrefix + 'CharFixed';
 /*~
       <FIELD xsi:type="$xsiFieldType" ID="$term.name" LENGTH="$term.size" />
 ~*/
-        }
-        else if (term.delimiter) {
-            xsiFieldType = xsiPrefix + 'CharTerm';
+    }
+    else if (term.delimiter) {
+        xsiFieldType = xsiPrefix + 'CharTerm';
 /*~
       <FIELD xsi:type="$xsiFieldType" ID="$term.name" TERMINATOR="$term.delimiter" />
 ~*/
-        }
     }
+}
 /*~
    </RECORD>
    <ROW>
 ~*/
-    while(term = part.nextTerm()) {
+while(term = part.nextTerm()) {
 /*~
       <COLUMN SOURCE="$term.name" NAME="$term.name" xsi:type="$xsiColumnType" />
 ~*/
-    }
+}
 /*~
    </ROW>
 </BCPFORMAT>
 ~*/
-}
 

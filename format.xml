@@ -1,4 +1,4 @@
-<?xml version = "1.0"?>
+<?xml version="1.0"?>
 <BCPFORMAT
 xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -24,17 +24,5 @@ xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
       <COLUMN SOURCE="CollisionVehicleCount" NAME="CollisionVehicleCount" xsi:type="SQLVARYCHAR" />
       <COLUMN SOURCE="CollisionInjuredCount" NAME="CollisionInjuredCount" xsi:type="SQLVARYCHAR" />
       <COLUMN SOURCE="CollisionKilledCount" NAME="CollisionKilledCount" xsi:type="SQLVARYCHAR" />
-   </ROW>
-</BCPFORMAT>
-<?xml version = "1.0"?>
-<BCPFORMAT
-xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-   <RECORD>
-   </RECORD>
-   <ROW>
-      <COLUMN SOURCE="month" NAME="month" xsi:type="SQLVARYCHAR" />
-      <COLUMN SOURCE="year" NAME="year" xsi:type="SQLVARYCHAR" />
-      <COLUMN SOURCE="notes" NAME="notes" xsi:type="SQLVARYCHAR" />
    </ROW>
 </BCPFORMAT>

@@ -40,8 +40,8 @@ setSourceToTargetMetadata(
     null                                    // targetCreated
 ); 
 if(source.split == 'bulk') {  
-    var part;
-    while(part = source.nextPart()) {
+    // only one part is allowed when 'bulk' is specified
+    var part = source.nextPart();
 /*~
     IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
     BEGIN
@@ -50,13 +50,12 @@ if(source.split == 'bulk') {
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
-            $(VARIABLES.SisulaPath)?    FORMATFILE      = ''$VARIABLES.SisulaPath\\format.xml'',
+            $(VARIABLES.SisulaPath)?    FORMATFILE      = ''${VARIABLES.SisulaPath}$format.xml'',
             TABLOCK   
         );
     ');
     SET @inserts = @@ROWCOUNT;
 ~*/
-    }
 } // not 'bulk' splitting
 else {
 /*~
