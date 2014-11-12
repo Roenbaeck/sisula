@@ -8,7 +8,7 @@ sisulets/source/Naming.js
 sisulets/source/UseDatabase.js
 sisulets/source/CreateRawTable.js
 sisulets/source/CreateInsertView.js
-sisulets/source/CreateRawSplitTables.js
+sisulets/source/CreateRawSplitTable.js
 sisulets/source/BulkInsert.js
 sisulets/source/CreateSplitViews.js
 sisulets/source/CreateErrorViews.js

@@ -6,12 +6,12 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_BulkInsert
 --
--- This procedure performs a BULK INSERT of the given filename into 
+-- This procedure performs a BULK INSERT of the given filename into
 -- the $source.qualified$_Insert view. The file is loaded row by row
--- into a single column holding the entire row. This ensures that no 
+-- into a single column holding the entire row. This ensures that no
 -- data is lost when loading.
 --
--- This job may called multiple times in a workflow when more than 
+-- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
@@ -38,10 +38,14 @@ setSourceToTargetMetadata(
     "'" + source.qualified + "_Insert'",    // targetName
     "'View'",                               // targetType
     null                                    // targetCreated
-); 
-if(source.split == 'bulk') {  
+);
+if(source.split == 'bulk') {
     // only one part is allowed when 'bulk' is specified
     var part = source.nextPart();
+    var sisulaPath = VARIABLES.SisulaPath;
+    if(sisulaPath && !sisulaPath.endsWith('\\')) {
+        sisulaPath += '\\';
+    }
 /*~
     IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
     BEGIN
@@ -50,8 +54,8 @@ if(source.split == 'bulk') {
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
-            $(VARIABLES.SisulaPath)?    FORMATFILE      = ''${VARIABLES.SisulaPath}$format.xml'',
-            TABLOCK   
+            $(sisulaPath)?              FORMATFILE      = ''${sisulaPath}$format.xml'',
+            TABLOCK
         );
     ');
     SET @inserts = @@ROWCOUNT;
@@ -69,7 +73,7 @@ else {
             $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
             $(source.fieldterminator)?  FIELDTERMINATOR = ''$source.fieldterminator'',
             $(source.rowterminator)?    ROWTERMINATOR   = ''$source.rowterminator'',
-            TABLOCK   
+            TABLOCK
         );
     ');
     SET @inserts = @@ROWCOUNT;
@@ -100,10 +104,10 @@ else {
         ORDER BY
             _file
         DESC
-    );    
+    );
 ~*/
 }
-/*~    
+/*~
     UPDATE [$source.qualified$_Raw]
     SET
         _file = @file
@@ -113,8 +117,8 @@ else {
     SET @updates = @@ROWCOUNT;
 ~*/
 setUpdatesMetadata('@updates');
-/*~    
-    END    
+/*~
+    END
 ~*/
 endMetadata();
 /*~

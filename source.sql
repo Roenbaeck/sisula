@@ -23,7 +23,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 -- 
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
@@ -90,7 +90,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
@@ -152,15 +152,15 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: NYPD_Vehicle_BulkInsert
 --
--- This procedure performs a BULK INSERT of the given filename into 
+-- This procedure performs a BULK INSERT of the given filename into
 -- the NYPD_Vehicle_Insert view. The file is loaded row by row
--- into a single column holding the entire row. This ensures that no 
+-- into a single column holding the entire row. This ensures that no
 -- data is lost when loading.
 --
--- This job may called multiple times in a workflow when more than 
+-- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -207,7 +207,7 @@ EXEC Stage.metadata._WorkSourceToTarget
             CODEPAGE = ''ACP'',
             DATAFILETYPE = ''char'',
             FIELDTERMINATOR = ''\r\n'',
-            TABLOCK 
+            TABLOCK
         );
     ');
     SET @inserts = @@ROWCOUNT;
@@ -229,7 +229,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         _file = 0;
     SET @updates = @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    END 
+    END
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -262,17 +262,17 @@ GO
 -- 'raw' table into columns. The Splitter uses a regular expression in
 -- which groups indicate which parts should be cut out as columns.
 --
--- The view also checks data types and provide the results as well as 
+-- The view also checks data types and provide the results as well as
 -- show the 'raw' cut column value, before any given transformations
 -- have taken place.
--- 
--- If keys are defined, these keys are checked for duplicates and the 
+--
+-- If keys are defined, these keys are checked for duplicates and the
 -- duplicate number can be found through the view.
 --
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -299,61 +299,61 @@ BEGIN TRY
     IF Object_ID('NYPD_Vehicle_Collision_Split', 'V') IS NOT NULL
     DROP VIEW [NYPD_Vehicle_Collision_Split];
     EXEC('
-    CREATE VIEW [NYPD_Vehicle_Collision_Split] 
+    CREATE VIEW [NYPD_Vehicle_Collision_Split]
     AS
     SELECT
         t._id,
         t._file,
         t._timestamp,
         m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
-        t.[OccurrencePrecinctCode], 
+        t.[OccurrencePrecinctCode],
         CASE
             WHEN t.[OccurrencePrecinctCode] is not null AND dbo.IsType(t.[OccurrencePrecinctCode], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [OccurrencePrecinctCode_Error],
         m.[CollisionID] as [CollisionID_Match],
-        t.[CollisionID], 
+        t.[CollisionID],
         CASE
             WHEN t.[CollisionID] is not null AND dbo.IsType(t.[CollisionID], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [CollisionID_Error],
         m.[CollisionKey] as [CollisionKey_Match],
-        t.[CollisionKey], 
+        t.[CollisionKey],
         CASE
             WHEN t.[CollisionKey] is not null AND dbo.IsType(t.[CollisionKey], ''int'') = 0 THEN ''Conversion to int failed''
         END AS [CollisionKey_Error],
         m.[CollisionOrder] as [CollisionOrder_Match],
-        t.[CollisionOrder], 
+        t.[CollisionOrder],
         CASE
             WHEN t.[CollisionOrder] is null THEN ''Null value not allowed''
             WHEN t.[CollisionOrder] is not null AND dbo.IsType(t.[CollisionOrder], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionOrder_Error],
         m.[IntersectionAddress] as [IntersectionAddress_Match],
-        t.[IntersectionAddress], 
+        t.[IntersectionAddress],
         CASE
             WHEN t.[IntersectionAddress] is not null AND dbo.IsType(t.[IntersectionAddress], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [IntersectionAddress_Error],
         m.[IntersectingStreet] as [IntersectingStreet_Match],
-        t.[IntersectingStreet], 
+        t.[IntersectingStreet],
         CASE
             WHEN t.[IntersectingStreet] is null THEN ''Null value not allowed''
             WHEN t.[IntersectingStreet] is not null AND dbo.IsType(t.[IntersectingStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [IntersectingStreet_Error],
         m.[CrossStreet] as [CrossStreet_Match],
-        t.[CrossStreet], 
+        t.[CrossStreet],
         CASE
             WHEN t.[CrossStreet] is not null AND dbo.IsType(t.[CrossStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
         END AS [CrossStreet_Error],
         m.[CollisionVehicleCount] as [CollisionVehicleCount_Match],
-        t.[CollisionVehicleCount], 
+        t.[CollisionVehicleCount],
         CASE
             WHEN t.[CollisionVehicleCount] is not null AND dbo.IsType(t.[CollisionVehicleCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionVehicleCount_Error],
         m.[CollisionInjuredCount] as [CollisionInjuredCount_Match],
-        t.[CollisionInjuredCount], 
+        t.[CollisionInjuredCount],
         CASE
             WHEN t.[CollisionInjuredCount] is not null AND dbo.IsType(t.[CollisionInjuredCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionInjuredCount_Error],
         m.[CollisionKilledCount] as [CollisionKilledCount_Match],
-        t.[CollisionKilledCount], 
+        t.[CollisionKilledCount],
         CASE
             WHEN t.[CollisionKilledCount] is not null AND dbo.IsType(t.[CollisionKilledCount], ''tinyint'') = 0 THEN ''Conversion to tinyint failed''
         END AS [CollisionKilledCount_Error],
@@ -366,14 +366,14 @@ BEGIN TRY
                 t._id
         ) - 1 as measureTime_Duplicate
     FROM (
-        SELECT TOP(2147483647) 
-            * 
+        SELECT TOP(2147483647)
+            *
         FROM (
         -- this matches the data rows
         SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
         ) src
-        ORDER BY 
-            _id ASC 
+        ORDER BY
+            _id ASC
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
@@ -388,7 +388,7 @@ BEGIN TRY
 			NULLIF(LTRIM([10]), '''') AS [CollisionInjuredCount],
 			NULLIF(LTRIM([11]), '''') AS [CollisionKilledCount]
 		FROM (
-            SELECT 
+            SELECT
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
@@ -399,86 +399,86 @@ BEGIN TRY
         ) p
     ) m
     CROSS APPLY (
-        SELECT 
+        SELECT
             _id,
             _file,
             _timestamp,
-            [OccurrencePrecinctCode] AS [OccurrencePrecinctCode], 
-            [CollisionID] AS [CollisionID], 
-            [CollisionKey] AS [CollisionKey], 
-            [CollisionOrder] AS [CollisionOrder], 
-            [IntersectionAddress] AS [IntersectionAddress], 
-            [IntersectingStreet] AS [IntersectingStreet], 
-            [CrossStreet] AS [CrossStreet], 
-            [CollisionVehicleCount] AS [CollisionVehicleCount], 
-            [CollisionInjuredCount] AS [CollisionInjuredCount], 
+            [OccurrencePrecinctCode] AS [OccurrencePrecinctCode],
+            [CollisionID] AS [CollisionID],
+            [CollisionKey] AS [CollisionKey],
+            [CollisionOrder] AS [CollisionOrder],
+            [IntersectionAddress] AS [IntersectionAddress],
+            [IntersectingStreet] AS [IntersectingStreet],
+            [CrossStreet] AS [CrossStreet],
+            [CollisionVehicleCount] AS [CollisionVehicleCount],
+            [CollisionInjuredCount] AS [CollisionInjuredCount],
             [CollisionKilledCount] AS [CollisionKilledCount]
     ) t;
     ');
     IF Object_ID('NYPD_Vehicle_CollisionMetadata_Split', 'V') IS NOT NULL
     DROP VIEW [NYPD_Vehicle_CollisionMetadata_Split];
     EXEC('
-    CREATE VIEW [NYPD_Vehicle_CollisionMetadata_Split] 
+    CREATE VIEW [NYPD_Vehicle_CollisionMetadata_Split]
     AS
     SELECT
         t._id,
         t._file,
         t._timestamp,
         m.[month] as [month_Match],
-        t.[month], 
+        t.[month],
         CASE
             WHEN t.[month] is not null AND dbo.IsType(t.[month], ''varchar(42)'') = 0 THEN ''Conversion to varchar(42) failed''
         END AS [month_Error],
         m.[year] as [year_Match],
-        t.[year], 
+        t.[year],
         CASE
             WHEN t.[year] is not null AND dbo.IsType(t.[year], ''smallint'') = 0 THEN ''Conversion to smallint failed''
         END AS [year_Error],
         m.[notes] as [notes_Match],
-        t.[notes], 
+        t.[notes],
         CASE
             WHEN t.[notes] is not null AND dbo.IsType(t.[notes], ''varchar(max)'') = 0 THEN ''Conversion to varchar(max) failed''
         END AS [notes_Error]
     FROM (
-        SELECT TOP(2147483647) 
-            * 
+        SELECT TOP(2147483647)
+            *
         FROM (
         SELECT
-			*
-		FROM (
-			SELECT 
-				_file,
-				MIN(_id) as _id,
-				MIN(_timestamp) as _timestamp
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			GROUP BY
-				_file
-		) f
-		CROSS APPLY (
-			SELECT
-				[row] + CHAR(183) AS [text()]
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-					[row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			WHERE
-				src._file = f._file
-			FOR XML PATH('''')
-		) c ([row])
+          *
+        FROM (
+          SELECT
+            _file,
+            MIN(_id) as _id,
+            MIN(_timestamp) as _timestamp
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        NYPD_Vehicle_Raw
+                    WHERE
+                        [row] NOT LIKE ''[0-9][0-9][0-9];%''
+            ) src
+          GROUP BY
+            _file
+        ) f
+        CROSS APPLY (
+          SELECT
+            [row] + CHAR(183) AS [text()]
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        NYPD_Vehicle_Raw
+                    WHERE
+                        [row] NOT LIKE ''[0-9][0-9][0-9];%''
+            ) src
+          WHERE
+            src._file = f._file
+          FOR XML PATH('''')
+        ) c ([row])
         ) src
-        ORDER BY 
-            _id ASC 
+        ORDER BY
+            _id ASC
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
@@ -486,7 +486,7 @@ BEGIN TRY
 			NULLIF(LTRIM([3]), '''') AS [year],
 			NULLIF(LTRIM([4]), '''') AS [notes]
 		FROM (
-            SELECT 
+            SELECT
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
@@ -497,12 +497,12 @@ BEGIN TRY
         ) p
     ) m
     CROSS APPLY (
-        SELECT 
+        SELECT
             _id,
             _file,
             _timestamp,
-            [month] AS [month], 
-            [year] AS [year], 
+            [month] AS [month],
+            [year] AS [year],
             LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
     ) t;
     ');
@@ -548,7 +548,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -658,7 +658,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -708,9 +708,9 @@ BEGIN TRY
         [month] varchar(42) null, 
         [year] smallint null, 
         [notes] varchar(max) null, 
-        [changedAt] as CAST(dateadd(day, -1, 
-            dateadd(month, 1, 
-            cast([year] as char(4)) + 
+        [changedAt] as CAST(dateadd(day, -1,
+            dateadd(month, 1,
+            cast([year] as char(4)) +
             case left([month], 3)
                 when 'Jan' then '01'
                 when 'Feb' then '02'
@@ -724,7 +724,7 @@ BEGIN TRY
                 when 'Okt' then '10'
                 when 'Nov' then '11'
                 when 'Dec' then '12'
-            end + 
+            end +
             '01')) AS date) 
     );
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
@@ -762,7 +762,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -926,7 +926,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Tue Nov 11 10:27:17 UTC+0100 2014 by e-lronnback
+-- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -1005,44 +1005,44 @@ DECLARE @xml XML = N'
 	</part>
 	<part name="CollisionMetadata">
         SELECT
-			*
-		FROM (
-			SELECT 
-				_file,
-				MIN(_id) as _id,
-				MIN(_timestamp) as _timestamp
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-                    [row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			GROUP BY
-				_file
-		) f
-		CROSS APPLY (
-			SELECT
-				[row] + CHAR(183) AS [text()]
-			FROM (
-                SELECT
-                    *
-                FROM
-                    NYPD_Vehicle_Raw
-                WHERE 
-					[row] NOT LIKE ''[0-9][0-9][0-9];%''
-		    ) src
-			WHERE
-				src._file = f._file
-			FOR XML PATH('''')
-		) c ([row])
+          *
+        FROM (
+          SELECT
+            _file,
+            MIN(_id) as _id,
+            MIN(_timestamp) as _timestamp
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        NYPD_Vehicle_Raw
+                    WHERE
+                        [row] NOT LIKE ''[0-9][0-9][0-9];%''
+            ) src
+          GROUP BY
+            _file
+        ) f
+        CROSS APPLY (
+          SELECT
+            [row] + CHAR(183) AS [text()]
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        NYPD_Vehicle_Raw
+                    WHERE
+                        [row] NOT LIKE ''[0-9][0-9][0-9];%''
+            ) src
+          WHERE
+            src._file = f._file
+          FOR XML PATH('''')
+        ) c ([row])
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
 		<term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
 		<calculation name="changedAt" format="date" persisted="false">
-            dateadd(day, -1, 
-            dateadd(month, 1, 
-            cast([year] as char(4)) + 
+            dateadd(day, -1,
+            dateadd(month, 1,
+            cast([year] as char(4)) +
             case left([month], 3)
                 when ''Jan'' then ''01''
                 when ''Feb'' then ''02''
@@ -1056,7 +1056,7 @@ DECLARE @xml XML = N'
                 when ''Okt'' then ''10''
                 when ''Nov'' then ''11''
                 when ''Dec'' then ''12''
-            end + 
+            end +
             ''01''))
         </calculation>
 		<term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">

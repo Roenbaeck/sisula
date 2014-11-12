@@ -1,14 +1,20 @@
 // --------------------- MOZILLA POLYFILLS ------------------------
-if (!String.prototype.trim) {
+if (typeof String.prototype.trim !== 'function') {
   String.prototype.trim = function () {
     return this.replace(/^[\s\xA0]+|[\s\xA0]+$/g, '');
   };
 }
 
-if (!String.prototype.escape) {
+if (typeof String.prototype.escape !== 'function') {
   String.prototype.escape = function () {
     return this.replace(/'/g, "''");
   };
+}
+
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
 }
 
 if (!Array.prototype.indexOf) {
