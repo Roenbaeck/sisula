@@ -6,7 +6,7 @@
     <variable name="quitWithSuccess" value="1"/>
     <variable name="quitWithFailure" value="2"/>
     <variable name="goToTheNextStep" value="3"/>
-    <variable name="goToStepWithId" value="4"/>    
+    <variable name="goToStepWithId" value="4"/>
     <!-- specify a query timeout if needed for the bulk insert, otherwise leave 0 for no timeout (0 only works in 2012 and later) -->
     <variable name="queryTimeout" value="0"/>
     <!-- recurse directories when searching for files, blank out if no extra options are needed -->
@@ -21,6 +21,12 @@
         <jobstep name="Create insert view" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC %System%_%Source%_CreateInsertView %parameters%
         </jobstep>
+        <!-- replace the above two job steps with the following one when using 'bulk' splitting -->
+        <!--
+        <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %System%_%Source%_CreateRawSplitTables %parameters%
+        </jobstep>
+        -->
         <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
             $files = @(Get-ChildItem %extraOptions% FileSystem::"%path%" | Where-Object {$_.Name -match "%filenamePattern%"})
             If ($files.length -eq 0) {

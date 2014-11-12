@@ -9,9 +9,9 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_CreateRawSplitTables
 --
--- The split table is populated by a bulk insert with a format file that 
--- split rows from the source file into columns. 
--- 
+-- The split table is populated by a bulk insert with a format file that
+-- split rows from the source file into columns.
+--
 ~*/
 while(part = source.nextPart()) {
 /*~
@@ -32,6 +32,7 @@ BEGIN
 SET NOCOUNT ON;
 ~*/
 beginMetadata(source.qualified + '_CreateRawSplitTables', source.name, 'Source');
+var rowlength = source.rowlength ? source.rowlength : 'max';
 while(part = source.nextPart()) {
 /*~
     IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
@@ -41,12 +42,12 @@ while(part = source.nextPart()) {
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
-~*/    
+~*/
     while(term = part.nextTerm()) {
 /*~
         [$term.name$] $(source.datafiletype == 'char')? varchar($rowlength), : nvarchar($rowlength),
 ~*/
-    }        
+    }
 /*~
         constraint [pk$part.qualified$_RawSplit] primary key(
             _id asc

@@ -12,11 +12,11 @@ GO
 -- 'raw' table into columns. The Splitter uses a regular expression in
 -- which groups indicate which parts should be cut out as columns.
 --
--- The view also checks data types and provide the results as well as 
+-- The view also checks data types and provide the results as well as
 -- show the 'raw' cut column value, before any given transformations
 -- have taken place.
--- 
--- If keys are defined, these keys are checked for duplicates and the 
+--
+-- If keys are defined, these keys are checked for duplicates and the
 -- duplicate number can be found through the view.
 --
 ~*/
@@ -44,7 +44,7 @@ while(part = source.nextPart()) {
     IF Object_ID('$part.qualified$_Split', 'V') IS NOT NULL
     DROP VIEW [$part.qualified$_Split];
     EXEC('
-    CREATE VIEW [$part.qualified$_Split] 
+    CREATE VIEW [$part.qualified$_Split]
     AS
     SELECT
         t._id,
@@ -60,10 +60,10 @@ while(part = source.nextPart()) {
                 isKeyConstituent = true;
                 break;
             }
-        }       
+        }
 /*~
         m.[$term.name] as [$term.name$_Match],
-        t.[$term.name], 
+        t.[$term.name],
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
             WHEN t.[$term.name] is not null AND dbo.IsType(t.[$term.name], ''$term.format'') = 0 THEN ''Conversion to $term.format failed''
@@ -91,7 +91,7 @@ while(part = source.nextPart()) {
         }
     }
     if(source.split == 'bulk') {
-/*~        
+/*~
     FROM (
         SELECT
 ~*/
@@ -99,23 +99,23 @@ while(part = source.nextPart()) {
             var nulls = '';
             if(part.nulls)
                 nulls = part.nulls.escape();
-            else if(term.nulls) 
+            else if(term.nulls)
                 nulls = term.nulls.escape();
-/*~    
+/*~
 			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
-        }        
+        }
 /*~
         FROM
-            $part.qualified$_RawSplit 
+            $part.qualified$_RawSplit
     ) m
 ~*/
     }  // end of 'bulk' splitting
     else {
-/*~        
+/*~
     FROM (
-        SELECT TOP($MAXLEN) 
-            * 
+        SELECT TOP($MAXLEN)
+            *
         FROM ~*/
         if(part._part) {
 
@@ -130,8 +130,8 @@ while(part = source.nextPart()) {
 ~*/
         }
 /*~
-        ORDER BY 
-            _id ASC 
+        ORDER BY
+            _id ASC
     ) forcedMaterializationTrick
 ~*/
         var regex = '', pivots = '';
@@ -145,11 +145,11 @@ while(part = source.nextPart()) {
             pivots += '[' + i + ']';
             if(part.hasMoreTerms())
                 pivots += ', ';
-            if(term.pattern) 
+            if(term.pattern)
                 regex += term.pattern.escape();
-            else if(term.size) 
+            else if(term.size)
                 regex += '(.{' + term.size + '})';
-            else if(term.delimiter) 
+            else if(term.delimiter)
                 regex += '(.*?)' + term.delimiter.escape();
             else // capture to the end of the line if nothing is specified
                 regex += '(.*)'
@@ -164,16 +164,16 @@ while(part = source.nextPart()) {
             var nulls = '';
             if(part.nulls)
                 nulls = part.nulls.escape();
-            else if(term.nulls) 
+            else if(term.nulls)
                 nulls = term.nulls.escape();
-/*~    
+/*~
 			NULLIF(LTRIM([${i}$]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
             i++;
         }
-/*~            
+/*~
 		FROM (
-            SELECT 
+            SELECT
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
@@ -183,11 +183,11 @@ while(part = source.nextPart()) {
             MAX([match]) FOR idx IN ($pivots)
         ) p
     ) m
-~*/        
-    }        
-/*~        
+~*/
+    }
+/*~
     CROSS APPLY (
-        SELECT 
+        SELECT
             _id,
             _file,
             _timestamp,
@@ -199,7 +199,7 @@ while(part = source.nextPart()) {
             termOrTransform = term._term.trim().escape();
         }
 /*~
-            $termOrTransform AS [$term.name]$(part.hasMoreTerms())?, 
+            $termOrTransform AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
     }
 /*~

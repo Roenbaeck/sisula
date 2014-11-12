@@ -1,11 +1,11 @@
-<!-- 
+<!--
     rowlength    can be specified as an integer number, but defaults to 'max'
     split        specifies with which method rows should be split into columns
-                 "bulk" splits already at bulk insert time but imposes 
-                 the limit that only one part can be present and only 
+                 "bulk" splits already at bulk insert time but imposes
+                 the limit that only one part can be present and only
                  delimiter and size can be used.
                  "regex" will read whole rows into a raw table and then perform
-                 the split using a CLR splitter, which allows for many parts in 
+                 the split using a CLR splitter, which allows for many parts in
                  the same file, and pattern can be used to match the resulting
                  column value.
  -->
@@ -32,54 +32,54 @@
         </key>
     </part>
     <part name="CollisionMetadata">
-        <!-- 
-            CHAR(183) is · (small bullet), which is rarely used so we can use it as our own 
-            internal delimiter for the regex matching later. The select below builds a 
+        <!--
+            CHAR(183) is · (small bullet), which is rarely used so we can use it as our own
+            internal delimiter for the regex matching later. The select below builds a
             concatenation of a number of rows.
         -->
         SELECT
-			*
-		FROM (
-			SELECT 
-				_file,
-				MIN(_id) as _id,
-				MIN(_timestamp) as _timestamp
-			FROM (
-                SELECT
-                    *
-                FROM
-                    %System%_%Source%_Raw
-                WHERE 
-                    [row] NOT LIKE '[0-9][0-9][0-9];%'
-		    ) src
-			GROUP BY
-				_file
-		) f
-		CROSS APPLY (
-			SELECT
-				[row] + CHAR(183) AS [text()]
-			FROM (
-                SELECT
-                    *
-                FROM
-                    %System%_%Source%_Raw
-                WHERE 
-					[row] NOT LIKE '[0-9][0-9][0-9];%'
-		    ) src
-			WHERE
-				src._file = f._file
-			FOR XML PATH('')
-		) c ([row])
+          *
+        FROM (
+          SELECT
+            _file,
+            MIN(_id) as _id,
+            MIN(_timestamp) as _timestamp
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        %System%_%Source%_Raw
+                    WHERE
+                        [row] NOT LIKE '[0-9][0-9][0-9];%'
+            ) src
+          GROUP BY
+            _file
+        ) f
+        CROSS APPLY (
+          SELECT
+            [row] + CHAR(183) AS [text()]
+          FROM (
+                    SELECT
+                        *
+                    FROM
+                        %System%_%Source%_Raw
+                    WHERE
+                        [row] NOT LIKE '[0-9][0-9][0-9];%'
+            ) src
+          WHERE
+            src._file = f._file
+          FOR XML PATH('')
+        ) c ([row])
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
         <term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
-        <!-- 
+        <!--
             calculations are persisted by default so they can be used in keys,
             but that is only possible for deterministic calculations
         -->
         <calculation name="changedAt" format="date" persisted="false">
-            dateadd(day, -1, 
-            dateadd(month, 1, 
-            cast([year] as char(4)) + 
+            dateadd(day, -1,
+            dateadd(month, 1,
+            cast([year] as char(4)) +
             case left([month], 3)
                 when 'Jan' then '01'
                 when 'Feb' then '02'
@@ -93,11 +93,11 @@
                 when 'Okt' then '10'
                 when 'Nov' then '11'
                 when 'Dec' then '12'
-            end + 
+            end +
             '01'))
         </calculation>
-        <!-- 
-            positive lookahead with an optional number of preceeding characters leading 
+        <!--
+            positive lookahead with an optional number of preceeding characters leading
             up to the string to match, after which we capture everything. In the capture
             we replace small bullets (formerly line breaks) with spaces.
         -->
