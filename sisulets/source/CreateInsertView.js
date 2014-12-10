@@ -24,7 +24,7 @@ SET NOCOUNT ON;
 ~*/
 beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
 if(source.split == 'bulk') {
-    var term, part = source.nextPart();
+    var term, part = source.firstPart();
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     DROP VIEW [$source.qualified$_Insert];

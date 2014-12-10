@@ -40,8 +40,6 @@ setSourceToTargetMetadata(
     null                                    // targetCreated
 );
 if(source.split == 'bulk') {
-    // only one part is allowed when 'bulk' is specified
-    var part = source.nextPart();
     var sisulaPath = VARIABLES.SisulaPath;
     if(sisulaPath && !sisulaPath.endsWith('\\')) {
         sisulaPath += '\\';
