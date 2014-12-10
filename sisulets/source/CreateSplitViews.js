@@ -94,6 +94,9 @@ while(part = source.nextPart()) {
 /*~
     FROM (
         SELECT
+            _id,
+            _file,
+            _timestamp,
 ~*/
         while(term = part.nextTerm()) {
             var nulls = '';
