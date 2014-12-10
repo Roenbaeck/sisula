@@ -1,5 +1,4 @@
 // Create a raw view compatible with bulk inserts
-if(source.split == 'regex') {
 /*~
 IF Object_ID('$source.qualified$_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateInsertView];
@@ -8,7 +7,7 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_CreateInsertView
 --
--- This view is created as exposing the single column that will be 
+-- This view is created as exposing the single column that will be
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
@@ -24,6 +23,29 @@ BEGIN
 SET NOCOUNT ON;
 ~*/
 beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
+if(source.split == 'bulk') {
+    var term, part = source.nextPart();
+/*~
+    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
+    DROP VIEW [$source.qualified$_Insert];
+    EXEC('
+    CREATE VIEW [$source.qualified$_Insert]
+    AS
+    SELECT
+~*/
+    while(term = part.nextTerm()) {
+/*~
+        [$term.name$]$(part.hasMoreTerms())?,
+~*/
+    }
+/*~
+        [row]
+    FROM
+        [$source.qualified$_RawSplit];
+    ');
+~*/
+}
+else {
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     DROP VIEW [$source.qualified$_Insert];
@@ -36,9 +58,9 @@ beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
         [$source.qualified$_Raw];
     ');
 ~*/
+}
 endMetadata();
 /*~
 END
 GO
 ~*/
-}

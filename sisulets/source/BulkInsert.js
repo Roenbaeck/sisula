@@ -47,10 +47,10 @@ if(source.split == 'bulk') {
         sisulaPath += '\\';
     }
 /*~
-    IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
+    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [$part.qualified$_RawSplit]
+        BULK INSERT [$source.qualified$_Insert]
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
@@ -107,6 +107,18 @@ else {
     );
 ~*/
 }
+if(source.split == 'bulk') {
+/*~
+    UPDATE [$source.qualified$_RawSplit]
+    SET
+        _file = @file
+    WHERE
+        _file = 0;
+
+    SET @updates = @@ROWCOUNT;
+~*/
+}
+else {
 /*~
     UPDATE [$source.qualified$_Raw]
     SET
@@ -116,6 +128,7 @@ else {
 
     SET @updates = @@ROWCOUNT;
 ~*/
+}
 setUpdatesMetadata('@updates');
 /*~
     END
