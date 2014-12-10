@@ -107,7 +107,7 @@ while(part = source.nextPart()) {
         }
 /*~
         FROM
-            $part.qualified$_RawSplit
+            $source.qualified$_RawSplit
     ) m
 ~*/
     }  // end of 'bulk' splitting
