@@ -40,10 +40,7 @@ setSourceToTargetMetadata(
     null                                    // targetCreated
 );
 if(source.split == 'bulk') {
-    var sisulaPath = VARIABLES.SisulaPath;
-    if(sisulaPath && !sisulaPath.endsWith('\\')) {
-        sisulaPath += '\\';
-    }
+    var formatFile = VARIABLES.FormatFile;
 /*~
     IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
@@ -52,7 +49,7 @@ if(source.split == 'bulk') {
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
-            $(sisulaPath)?              FORMATFILE      = ''${sisulaPath}$format.xml'',
+            $(formatFile)?              FORMATFILE      = ''${formatFile}$'',
             TABLOCK
         );
     ');
