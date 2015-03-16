@@ -1,6 +1,6 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="stage" value="%SourceDatabase%"/>
-    <variable name="path" value="%SisulaPath%data"/>
+    <variable name="path" value="%SisulaPath%Example\data"/>
     <variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>
