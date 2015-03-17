@@ -99,7 +99,7 @@ if defined Server (
   echo • Installing SQL files:
   for /L %%f in (0,1,!i!) do (
     echo   !SQLFiles[%%f]!
-    sqlcmd -S %Server% -i !SQLFiles[%%f]! -I -x -b >NUL
+    sqlcmd -S %Server% -i !SQLFiles[%%f]! -I -x -b -r1 >NUL
   )
 )
 
