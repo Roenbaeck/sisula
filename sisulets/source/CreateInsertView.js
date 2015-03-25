@@ -39,7 +39,6 @@ if(source.split == 'bulk') {
 ~*/
     }
 /*~
-        [row]
     FROM
         [$source.qualified$_RawSplit];
     ');

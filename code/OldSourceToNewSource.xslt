@@ -5,11 +5,11 @@
 
 	This transform can be used to migrate source system descriptions from the old
 	Intellibis/Affecto ETL framework to the new sisula framework.
-	
+
 	USAGE
 	Remove the namespace declaration from the old description before applying the
 	transform.
-	
+
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 	<xsl:output method="xml" indent="yes"/>
@@ -17,6 +17,7 @@
 		<xsl:for-each select="physicalFile">
 			<source name="{name}" codepage="{characterMap}" datafiletype="{characterType}" fieldterminator="\r\n" rowlength="1000" split="regex">
 				<description>
+					<xsl:text>Source directory should be defined in the workflow: </xsl:text>
 					<xsl:value-of select="parent::system/directory"/>\<xsl:value-of select="subdirectory"/>\<xsl:value-of select="pattern"/>
 				</description>
 				<xsl:for-each select="logicalFile">
@@ -27,7 +28,9 @@
 							</xsl:attribute>
 						</xsl:if>
 						<xsl:if test="number(parent::physicalFile/@skip) > 0">
-							<xsl:text>&#10;SELECT * from %System%_%Source%_Raw WHERE _id > </xsl:text>
+							<xsl:text>&#10;SELECT * from %System%_</xsl:text>
+							<xsl:value-of select="parent::physicalFile/name"/>
+							<xsl:text>_Raw WHERE _id > </xsl:text>
 							<xsl:value-of select="parent::physicalFile/@skip"/>
 							<xsl:text>&#10;</xsl:text>
 						</xsl:if>

@@ -12,7 +12,7 @@ var part = source.nextPart();
 /*~
 <?xml version="1.0"?>
 <BCPFORMAT
-xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format" 
+xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
    <RECORD>
 ~*/
@@ -29,6 +29,12 @@ while(term = part.nextTerm()) {
       <FIELD xsi:type="$xsiFieldType" ID="$term.name" TERMINATOR="$term.delimiter" />
 ~*/
     }
+	else {
+        xsiFieldType = xsiPrefix + 'CharTerm';
+/*~
+      <FIELD xsi:type="$xsiFieldType" ID="$term.name" TERMINATOR="$source.fieldterminator" />
+~*/
+	}
 }
 /*~
    </RECORD>

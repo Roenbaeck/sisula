@@ -109,8 +109,20 @@ while(part = source.nextPart()) {
 ~*/
         }
 /*~
-        FROM
+        FROM ~*/
+        if(part._part) {
+
+/*~ (
+        ${part._part.trim().escape()}$
+        ) src
+~*/
+        }
+        else {
+/*~
             $source.qualified$_RawSplit
+~*/
+        }
+/*~
     ) m
 ~*/
     }  // end of 'bulk' splitting

@@ -8,11 +8,11 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $source.qualified$_CreateTypedTables
 --
--- The typed tables hold the data that make it through the process 
--- without errors. Columns here have the data types defined in the 
--- source XML definition. 
+-- The typed tables hold the data that make it through the process
+-- without errors. Columns here have the data types defined in the
+-- source XML definition.
 --
--- Metadata columns, such as _id, can be used to backtrack from 
+-- Metadata columns, such as _id, can be used to backtrack from
 -- a value to the actual row from where it came.
 --
 ~*/
@@ -54,19 +54,32 @@ while(part = source.nextPart()) {
             }
         }
 /*~
-        [$term.name] $term.format $nullable$(part.hasMoreTerms() || part.hasMoreCalculations())?, 
+        [$term.name] $term.format $nullable$(part.hasMoreTerms() || part.hasMoreCalculations())?,
 ~*/
     }
     while(calculation = part.nextCalculation()) {
         var persisted = calculation.persisted == 'false' ? '' : 'PERSISTED';
+        var nullable = 'null';
+        while(key = part.nextKey()) {
+            if(key.hasComponent(calculation)) {
+                nullable = 'not null';
+            }
+        }
+		if(calculation._calculation) {
 /*~
-        [$calculation.name] as CAST(${calculation._calculation.trim()}$ AS $calculation.format) $persisted$(part.hasMoreCalculations())?, 
+        [$calculation.name] as CAST(${calculation._calculation.trim()}$ AS $calculation.format) $persisted$(part.hasMoreCalculations())?,
 ~*/
+		}
+		else {
+/*~
+        [$calculation.name] $calculation.format $nullable$(part.hasMoreCalculations())?,
+~*/
+		}
     }
 /*~
     );
 ~*/
-}  
+}
 endMetadata();
 /*~
 END

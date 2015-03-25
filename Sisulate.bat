@@ -26,9 +26,9 @@ REM -------------------------------------------------------------------
 for /f "tokens=2 delims=:." %%x in ('chcp') do set DEFAULT_CODEPAGE=%%x
 chcp 65001>NUL
 set SisulaPath=%~dp0
-echo • Path to the sisula ETL Framework installation:
+echo * Path to the sisula ETL Framework installation:
 echo   %SisulaPath%
-echo • Path to the specified folder containing configuration files:
+echo * Path to the specified folder containing configuration files:
 echo   %FolderPath%
 pushd "%SisulaPath%"
 
@@ -45,10 +45,11 @@ REM   Create bulk format files
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\sources\*.xml) do (
   set OutputFile=%FolderPath%\formats\%%~nf.xml
-  echo • Transforming source to bulk format file:
-  echo   %%~f …
-  echo   … !OutputFile!
-  Sisulator.js -x %%~f -m Source -d format.directive -o !OutputFile!
+  echo * Transforming source to bulk format file:
+  echo   %%~f ...
+  echo   !OutputFile!
+  Sisulator.js -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
 )
 
 REM -------------------------------------------------------------------
@@ -58,10 +59,11 @@ REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\sources\*.xml) do (
   set OutputFile=%FolderPath%\sources\%%~nf.sql
   set FormatFile=%FolderPath%\formats\%%~nf.xml
-  echo • Transforming source to SQL loading stored procedures:
-  echo   %%~f …
-  echo   … !OutputFile!
-  Sisulator.js -x %%~f -m Source -d source.directive -o !OutputFile!
+  echo * Transforming source to SQL loading stored procedures:
+  echo   %%~f ...
+  echo   !OutputFile!
+  Sisulator.js -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
 )
@@ -71,10 +73,11 @@ REM   Create target loading SQL code
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\targets\*.xml) do (
   set OutputFile=%FolderPath%\targets\%%~nf.sql
-  echo • Transforming target to SQL loading stored procedures:
-  echo   %%~f …
-  echo   … !OutputFile!
-  Sisulator.js -x %%~f -m Target -d target.directive -o !OutputFile!
+  echo * Transforming target to SQL loading stored procedures:
+  echo   %%~f ...
+  echo   !OutputFile!
+  Sisulator.js -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
 )
@@ -84,10 +87,11 @@ REM   Create SQL Server Agent job code
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\workflows\*.xml) do (
   set OutputFile=%FolderPath%\workflows\%%~nf.sql
-  echo • Transforming workflow to SQL Server Agent job scripts:
-  echo   %%~f …
-  echo   … !OutputFile!
-  Sisulator.js -x %%~f -m Workflow -d workflow.directive -o !OutputFile!
+  echo * Transforming workflow to SQL Server Agent job scripts:
+  echo   %%~f ...
+  echo   !OutputFile!
+  Sisulator.js -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
 )
@@ -96,10 +100,11 @@ REM -------------------------------------------------------------------
 REM   Install the generated SQL files in the database server
 REM -------------------------------------------------------------------
 if defined Server (
-  echo • Installing SQL files:
+  echo * Installing SQL files:
   for /L %%f in (0,1,!i!) do (
     echo   !SQLFiles[%%f]!
-    sqlcmd -S %Server% -i !SQLFiles[%%f]! -I -x -b -r1 >NUL
+    sqlcmd -S %Server% -i "!SQLFiles[%%f]!" -I -x -b -r1 >NUL
+    IF ERRORLEVEL 1 GOTO ERROR
   )
 )
 

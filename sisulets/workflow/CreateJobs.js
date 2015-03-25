@@ -7,7 +7,8 @@ GO
 var job, step, id, lastId;
 while(job = workflow.nextJob()) {
 /*~
-sp_delete_job
+IF EXISTS (select job_id from [dbo].[sysjobs] where name = '$job.name')
+EXEC sp_delete_job
     -- mandatory parameters below and optional ones above this line
     @job_name   = '$job.name';
 GO
