@@ -100,12 +100,12 @@ while(part = source.nextPart()) {
 ~*/
         while(term = part.nextTerm()) {
             var nulls = '';
-            if(part.nulls)
-                nulls = part.nulls.escape();
-            else if(term.nulls)
+            if(term.nulls)
                 nulls = term.nulls.escape();
+            else if(part.nulls)
+                nulls = part.nulls.escape();
 /*~
-			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+			NULLIF([$term.name], ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
         }
 /*~
@@ -177,12 +177,12 @@ while(part = source.nextPart()) {
         i = 2;
         while(term = part.nextTerm()) {
             var nulls = '';
-            if(part.nulls)
-                nulls = part.nulls.escape();
-            else if(term.nulls)
+            if(term.nulls)
                 nulls = term.nulls.escape();
+            else if(part.nulls)
+                nulls = part.nulls.escape();
 /*~
-			NULLIF(LTRIM([${i}$]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+			NULLIF([${i}$], ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
             i++;
         }
