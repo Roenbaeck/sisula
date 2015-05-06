@@ -45,7 +45,16 @@ while(part = source.nextPart()) {
         _file int not null,
         _timestamp datetime2(2) not null default sysdatetime(),
 ~*/
-    var key;
+    var key, component, keyConcat; // _key is kept for legacy reasons
+    while(key = part.nextKey()) {
+        keyConcat = '';
+        while(component = key.nextComponent()) {
+            keyConcat += 'CONVERT(varchar(max), [' + component.of + '], 126)' + (key.hasMoreComponents() ? ' + CHAR(183) + ' : '');
+        }
+/*~
+        ${'_' + key.name}$ as cast(HashBytes('MD5', $keyConcat) as varbinary(16)),
+~*/
+    }
     while(term = part.nextTerm()) {
         var nullable = 'null';
         while(key = part.nextKey()) {
