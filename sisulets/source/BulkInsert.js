@@ -50,6 +50,7 @@ if(source.split == 'bulk') {
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
             $(formatFile)?              FORMATFILE      = ''${formatFile}$'',
+            $(source.firstrow)?         FIRSTROW        = $source.firstrow,
             TABLOCK
         );
     ');
@@ -68,6 +69,7 @@ else {
             $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
             $(source.fieldterminator)?  FIELDTERMINATOR = ''$source.fieldterminator'',
             $(source.rowterminator)?    ROWTERMINATOR   = ''$source.rowterminator'',
+            $(source.firstrow)?         FIRSTROW        = $source.firstrow,
             TABLOCK
         );
     ');

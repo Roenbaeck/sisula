@@ -10,7 +10,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
@@ -80,7 +80,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -127,6 +127,7 @@ EXEC Stage.metadata._WorkSourceToTarget
             CODEPAGE = ''ACP'',
             DATAFILETYPE = ''char'',
             FIELDTERMINATOR = ''\r\n'',
+            FIRSTROW = 1,
             TABLOCK
         );
     ');
@@ -192,7 +193,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -468,7 +469,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -578,7 +579,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -682,7 +683,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -826,7 +827,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Wed May 6 10:06:25 UTC+0200 2015 by e-lronnback
+-- Generated: Wed May 6 10:15:10 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -882,7 +883,7 @@ END
 GO
 -- The source definition used when generating the above
 DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regexp">
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regexp" firstrow="1">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
 	<part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows
