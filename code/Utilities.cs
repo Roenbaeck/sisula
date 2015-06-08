@@ -26,7 +26,7 @@ public partial class Splitter {
     }
     public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match) {
         Group group = (Group) fromEnumeration;
-        if(group.Value == String.Empty) 
+        if(group.Value == String.Empty)
             match = SqlString.Null;
         else
             match = new SqlString(group.Value);
@@ -50,11 +50,11 @@ public partial class IsType {
         String typePrecision = typeGroups["precision"].Value;
         String typeScale = typeGroups["scale"].Value;
         try {
-            switch (typeText) {
+            switch (typeText.ToLower()) {
                 case "bit":
                     SqlBoolean.Parse(dataValue);
                     break;
-                case "tinyint": 
+                case "tinyint":
                     SqlByte.Parse(dataValue);
                     break;
                 case "smallint":
@@ -105,7 +105,7 @@ public partial class IsType {
                 case "nvarchar":
                     if(typePrecision != "max" && dataValue.Length > Convert.ToInt32(typePrecision))
                         throw new OverflowException();
-                    break;            
+                    break;
                 case "uniqueidentifier":
                     SqlGuid.Parse(dataValue);
                     break;
@@ -129,7 +129,7 @@ public partial class IsType {
                 case "timestamp":
                 case "varbinary":
                 default:
-                    break;                
+                    break;
             }
             return SqlBoolean.True;
         }

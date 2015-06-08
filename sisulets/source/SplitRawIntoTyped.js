@@ -1,4 +1,4 @@
-// Create a custom splitter 
+// Create a custom splitter
 var part, term;
 /*~
 IF Object_ID('$source.qualified$_SplitRawIntoTyped', 'P') IS NOT NULL
@@ -46,15 +46,15 @@ setSourceToTargetMetadata(
     "'" + part.qualified + "_Typed'",   // targetName
     "'Table'",                          // targetType
     null                                // targetCreated
-);     
-/*~    
+);
+/*~
     INSERT INTO [$part.qualified$_Typed] (
         _id,
         _file,
 ~*/
     while(term = part.nextTerm()) {
 /*~
-        [$term.name]$(part.hasMoreTerms())?, 
+        [$term.name]$(part.hasMoreTerms())?,
 ~*/
     }
 /*~
@@ -65,28 +65,37 @@ setSourceToTargetMetadata(
 ~*/
     while(term = part.nextTerm()) {
 /*~
-        [$term.name]$(part.hasMoreTerms())?, 
+        [$term.name]$(part.hasMoreTerms())?,
 ~*/
     }
 /*~
-    FROM 
+    FROM
         [$part.qualified$_Split]
+~*/
+    // default to true
+    part.keyCheck = part.keyCheck ? part.keyCheck : 'true';
+    part.typeCheck = part.typeCheck ? part.typeCheck : 'true';
+    if((part.keyCheck == 'true' && part.hasMoreKeys()) || part.typeCheck == 'true') {
+/*~
     WHERE
 ~*/
+    }
     var key;
-    if(part.hasMoreKeys()) {
+    if(part.keyCheck == 'true' && part.hasMoreKeys()) {
         while(key = part.nextKey()) {
 /*~
         $key.name$_Duplicate = 0
-    AND
+    $(part.typeCheck == 'true')? AND
 ~*/
         }
     }
-    while(term = part.nextTerm()) {
+    if(part.typeCheck == 'true') {
+        while(term = part.nextTerm()) {
 /*~
         [$term.name$_Error] is null$(!part.hasMoreTerms())?;
     $(part.hasMoreTerms())? AND
 ~*/
+        }
     }
 /*~
     SET @insert = @insert + @@ROWCOUNT;

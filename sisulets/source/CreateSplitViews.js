@@ -94,20 +94,35 @@ while(part = source.nextPart()) {
 /*~
     FROM (
         SELECT
+            _id,
+            _file,
+            _timestamp,
 ~*/
         while(term = part.nextTerm()) {
             var nulls = '';
-            if(part.nulls)
-                nulls = part.nulls.escape();
-            else if(term.nulls)
+            if(term.nulls)
                 nulls = term.nulls.escape();
+            else if(part.nulls)
+                nulls = part.nulls.escape();
 /*~
-			NULLIF(LTRIM([$term.name]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+			NULLIF([$term.name], ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
         }
 /*~
-        FROM
-            $part.qualified$_RawSplit
+        FROM ~*/
+        if(part._part) {
+
+/*~ (
+        ${part._part.trim().escape()}$
+        ) src
+~*/
+        }
+        else {
+/*~
+            $source.qualified$_RawSplit
+~*/
+        }
+/*~
     ) m
 ~*/
     }  // end of 'bulk' splitting
@@ -162,12 +177,12 @@ while(part = source.nextPart()) {
         i = 2;
         while(term = part.nextTerm()) {
             var nulls = '';
-            if(part.nulls)
-                nulls = part.nulls.escape();
-            else if(term.nulls)
+            if(term.nulls)
                 nulls = term.nulls.escape();
+            else if(part.nulls)
+                nulls = part.nulls.escape();
 /*~
-			NULLIF(LTRIM([${i}$]), ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
+			NULLIF([${i}$], ''$nulls'') AS [$term.name]$(part.hasMoreTerms())?,
 ~*/
             i++;
         }

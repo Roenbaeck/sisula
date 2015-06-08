@@ -1,96 +1,16 @@
 USE Stage;
 GO
-IF Object_ID('NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
-DROP PROCEDURE [NYPD_Vehicle_CreateRawTable];
-GO
---------------------------------------------------------------------------
--- Procedure: NYPD_Vehicle_CreateRawTable
---
--- This table holds the 'raw' loaded data.
---
--- row
--- Holds a row loaded from a file.
---
--- _id
--- This sequence is generated in order to keep a lineage through the 
--- staging process. If a single file has been loaded, this corresponds
--- to the row number in the file.
---
--- _file
--- A number containing the file id, which either points to metadata
--- if its used or is otherwise an incremented number per file.
---
--- _timestamp
--- The time the row was created.
--- 
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
---------------------------------------------------------------------------
-CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
-    @agentJobId uniqueidentifier = null,
-    @agentStepId smallint = null
-)
-AS
-BEGIN
-SET NOCOUNT ON;
-DECLARE @workId int;
-DECLARE @operationsId int;
-DECLARE @theErrorLine int;
-DECLARE @theErrorMessage varchar(555);
-DECLARE @theErrorSeverity int;
-DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
-    @configurationName = 'Vehicle', 
-    @configurationType = 'Source', 
-    @WO_ID = @workId OUTPUT, 
-    @name = 'NYPD_Vehicle_CreateRawTable',
-    @agentStepId = @agentStepId,
-    @agentJobId = @agentJobId
-BEGIN TRY
-    IF Object_ID('NYPD_Vehicle_Raw', 'U') IS NOT NULL
-    DROP TABLE [NYPD_Vehicle_Raw];
-    CREATE TABLE [NYPD_Vehicle_Raw] (
-        _id int identity(1,1) not null,
-        _file int not null default 0,
-        _timestamp datetime2(2) not null default sysdatetime(),
-        [row] varchar(1000), 
-        constraint [pkNYPD_Vehicle_Raw] primary key(
-            _id asc
-        )
-    );
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
-END TRY
-BEGIN CATCH
-	SELECT
-		@theErrorLine = ERROR_LINE(),
-		@theErrorMessage = ERROR_MESSAGE(),
-        @theErrorSeverity = ERROR_SEVERITY(),
-        @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
-        @WO_ID = @workId, 
-        @status = 'Failure', 
-        @errorLine = @theErrorLine, 
-        @errorMessage = @theErrorMessage;
-    -- Propagate the error
-    RAISERROR(
-        @theErrorMessage,
-        @theErrorSeverity,
-        @theErrorState
-    ); 
-END CATCH
-END
-GO
 IF Object_ID('NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [NYPD_Vehicle_CreateInsertView];
 GO
 --------------------------------------------------------------------------
 -- Procedure: NYPD_Vehicle_CreateInsertView
 --
--- This view is created as exposing the single column that will be 
+-- This view is created as exposing the single column that will be
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
@@ -160,7 +80,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
@@ -207,6 +127,7 @@ EXEC Stage.metadata._WorkSourceToTarget
             CODEPAGE = ''ACP'',
             DATAFILETYPE = ''char'',
             FIELDTERMINATOR = ''\r\n'',
+            FIRSTROW = 1,
             TABLOCK
         );
     ');
@@ -272,7 +193,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
@@ -329,18 +250,18 @@ BEGIN TRY
         m.[IntersectionAddress] as [IntersectionAddress_Match],
         t.[IntersectionAddress],
         CASE
-            WHEN t.[IntersectionAddress] is not null AND dbo.IsType(t.[IntersectionAddress], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectionAddress] is not null AND dbo.IsType(t.[IntersectionAddress], ''varchar(321)'') = 0 THEN ''Conversion to varchar(321) failed''
         END AS [IntersectionAddress_Error],
         m.[IntersectingStreet] as [IntersectingStreet_Match],
         t.[IntersectingStreet],
         CASE
             WHEN t.[IntersectingStreet] is null THEN ''Null value not allowed''
-            WHEN t.[IntersectingStreet] is not null AND dbo.IsType(t.[IntersectingStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
+            WHEN t.[IntersectingStreet] is not null AND dbo.IsType(t.[IntersectingStreet], ''varchar(321)'') = 0 THEN ''Conversion to varchar(321) failed''
         END AS [IntersectingStreet_Error],
         m.[CrossStreet] as [CrossStreet_Match],
         t.[CrossStreet],
         CASE
-            WHEN t.[CrossStreet] is not null AND dbo.IsType(t.[CrossStreet], ''varchar(555)'') = 0 THEN ''Conversion to varchar(555) failed''
+            WHEN t.[CrossStreet] is not null AND dbo.IsType(t.[CrossStreet], ''varchar(321)'') = 0 THEN ''Conversion to varchar(321) failed''
         END AS [CrossStreet_Error],
         m.[CollisionVehicleCount] as [CollisionVehicleCount_Match],
         t.[CollisionVehicleCount],
@@ -377,16 +298,16 @@ BEGIN TRY
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF(LTRIM([2]), '''') AS [OccurrencePrecinctCode],
-			NULLIF(LTRIM([3]), '''') AS [CollisionID],
-			NULLIF(LTRIM([4]), '''') AS [CollisionKey],
-			NULLIF(LTRIM([5]), '''') AS [CollisionOrder],
-			NULLIF(LTRIM([6]), '''') AS [IntersectionAddress],
-			NULLIF(LTRIM([7]), '''') AS [IntersectingStreet],
-			NULLIF(LTRIM([8]), '''') AS [CrossStreet],
-			NULLIF(LTRIM([9]), '''') AS [CollisionVehicleCount],
-			NULLIF(LTRIM([10]), '''') AS [CollisionInjuredCount],
-			NULLIF(LTRIM([11]), '''') AS [CollisionKilledCount]
+			NULLIF([2], '''') AS [OccurrencePrecinctCode],
+			NULLIF([3], '''') AS [CollisionID],
+			NULLIF([4], '''') AS [CollisionKey],
+			NULLIF([5], '''') AS [CollisionOrder],
+			NULLIF([6], '''') AS [IntersectionAddress],
+			NULLIF([7], '''') AS [IntersectingStreet],
+			NULLIF([8], '''') AS [CrossStreet],
+			NULLIF([9], '''') AS [CollisionVehicleCount],
+			NULLIF([10], '''') AS [CollisionInjuredCount],
+			NULLIF([11], '''') AS [CollisionKilledCount]
 		FROM (
             SELECT
                 [match],
@@ -482,9 +403,9 @@ BEGIN TRY
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF(LTRIM([2]), '''') AS [month],
-			NULLIF(LTRIM([3]), '''') AS [year],
-			NULLIF(LTRIM([4]), '''') AS [notes]
+			NULLIF([2], '''') AS [month],
+			NULLIF([3], '''') AS [year],
+			NULLIF([4], '''') AS [notes]
 		FROM (
             SELECT
                 [match],
@@ -548,7 +469,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
@@ -648,17 +569,17 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: NYPD_Vehicle_CreateTypedTables
 --
--- The typed tables hold the data that make it through the process 
--- without errors. Columns here have the data types defined in the 
--- source XML definition. 
+-- The typed tables hold the data that make it through the process
+-- without errors. Columns here have the data types defined in the
+-- source XML definition.
 --
--- Metadata columns, such as _id, can be used to backtrack from 
+-- Metadata columns, such as _id, can be used to backtrack from
 -- a value to the actual row from where it came.
 --
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
@@ -688,15 +609,16 @@ BEGIN TRY
         _id int not null,
         _file int not null,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [OccurrencePrecinctCode] int null, 
-        [CollisionID] int null, 
-        [CollisionKey] int null, 
-        [CollisionOrder] tinyint not null, 
-        [IntersectionAddress] varchar(555) null, 
-        [IntersectingStreet] varchar(555) not null, 
-        [CrossStreet] varchar(555) not null, 
-        [CollisionVehicleCount] tinyint null, 
-        [CollisionInjuredCount] tinyint null, 
+        _measureTime as cast(HashBytes('MD5', CONVERT(varchar(max), [IntersectingStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CrossStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CollisionOrder], 126)) as varbinary(16)),
+        [OccurrencePrecinctCode] int null,
+        [CollisionID] int null,
+        [CollisionKey] int null,
+        [CollisionOrder] tinyint not null,
+        [IntersectionAddress] varchar(321) null,
+        [IntersectingStreet] varchar(321) not null,
+        [CrossStreet] varchar(321) not null,
+        [CollisionVehicleCount] tinyint null,
+        [CollisionInjuredCount] tinyint null,
         [CollisionKilledCount] tinyint null
     );
     IF Object_ID('NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
@@ -705,9 +627,9 @@ BEGIN TRY
         _id int not null,
         _file int not null,
         _timestamp datetime2(2) not null default sysdatetime(),
-        [month] varchar(42) null, 
-        [year] smallint null, 
-        [notes] varchar(max) null, 
+        [month] varchar(42) null,
+        [year] smallint null,
+        [notes] varchar(max) null,
         [changedAt] as CAST(dateadd(day, -1,
             dateadd(month, 1,
             cast([year] as char(4)) +
@@ -762,7 +684,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
@@ -801,54 +723,34 @@ EXEC Stage.metadata._WorkSourceToTarget
     INSERT INTO [NYPD_Vehicle_Collision_Typed] (
         _id,
         _file,
-        [OccurrencePrecinctCode], 
-        [CollisionID], 
-        [CollisionKey], 
-        [CollisionOrder], 
-        [IntersectionAddress], 
-        [IntersectingStreet], 
-        [CrossStreet], 
-        [CollisionVehicleCount], 
-        [CollisionInjuredCount], 
+        [OccurrencePrecinctCode],
+        [CollisionID],
+        [CollisionKey],
+        [CollisionOrder],
+        [IntersectionAddress],
+        [IntersectingStreet],
+        [CrossStreet],
+        [CollisionVehicleCount],
+        [CollisionInjuredCount],
         [CollisionKilledCount]
     )
     SELECT
         _id,
         _file,
-        [OccurrencePrecinctCode], 
-        [CollisionID], 
-        [CollisionKey], 
-        [CollisionOrder], 
-        [IntersectionAddress], 
-        [IntersectingStreet], 
-        [CrossStreet], 
-        [CollisionVehicleCount], 
-        [CollisionInjuredCount], 
+        [OccurrencePrecinctCode],
+        [CollisionID],
+        [CollisionKey],
+        [CollisionOrder],
+        [IntersectionAddress],
+        [IntersectingStreet],
+        [CrossStreet],
+        [CollisionVehicleCount],
+        [CollisionInjuredCount],
         [CollisionKilledCount]
-    FROM 
+    FROM
         [NYPD_Vehicle_Collision_Split]
     WHERE
         measureTime_Duplicate = 0
-    AND
-        [OccurrencePrecinctCode_Error] is null
-    AND
-        [CollisionID_Error] is null
-    AND
-        [CollisionKey_Error] is null
-    AND
-        [CollisionOrder_Error] is null
-    AND
-        [IntersectionAddress_Error] is null
-    AND
-        [IntersectingStreet_Error] is null
-    AND
-        [CrossStreet_Error] is null
-    AND
-        [CollisionVehicleCount_Error] is null
-    AND
-        [CollisionInjuredCount_Error] is null
-    AND
-        [CollisionKilledCount_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
     END
@@ -866,17 +768,17 @@ EXEC Stage.metadata._WorkSourceToTarget
     INSERT INTO [NYPD_Vehicle_CollisionMetadata_Typed] (
         _id,
         _file,
-        [month], 
-        [year], 
+        [month],
+        [year],
         [notes]
     )
     SELECT
         _id,
         _file,
-        [month], 
-        [year], 
+        [month],
+        [year],
         [notes]
-    FROM 
+    FROM
         [NYPD_Vehicle_CollisionMetadata_Split]
     WHERE
         [month_Error] is null
@@ -926,7 +828,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Wed Nov 12 11:28:04 UTC+0100 2014 by e-lronnback
+-- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
@@ -982,18 +884,18 @@ END
 GO
 -- The source definition used when generating the above
 DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex">
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regexp" firstrow="1">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
-	<part name="Collision" nulls="">
+	<part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows
         SELECT * from NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
         <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
 		<term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
 		<term name="CollisionKey" delimiter=";" format="int"/>
 		<term name="CollisionOrder" delimiter=";" format="tinyint"/>
-		<term name="IntersectionAddress" delimiter=";" format="varchar(555)"/>
-		<term name="IntersectingStreet" delimiter=";" format="varchar(555)"/>
-		<term name="CrossStreet" delimiter=";" format="varchar(555)"/>
+		<term name="IntersectionAddress" delimiter=";" format="varchar(321)"/>
+		<term name="IntersectingStreet" delimiter=";" format="varchar(321)"/>
+		<term name="CrossStreet" delimiter=";" format="varchar(321)"/>
 		<term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
 		<term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
 		<term name="CollisionKilledCount" delimiter=";" format="tinyint"/>

@@ -1,6 +1,6 @@
 // Create a columnar split table
 if(source.split == 'bulk') {
-var term, part = source.nextPart();
+var term, part = source.firstPart();
 /*~
 IF Object_ID('$source.qualified$_CreateRawSplitTable', 'P') IS NOT NULL
 DROP PROCEDURE [$source.qualified$_CreateRawSplitTable];
@@ -25,13 +25,13 @@ AS
 BEGIN
 SET NOCOUNT ON;
 ~*/
-beginMetadata(source.qualified + '_CreateRawSplitTables', source.name, 'Source');
+beginMetadata(source.qualified + '_CreateRawSplitTable', source.name, 'Source');
 var rowlength = source.rowlength ? source.rowlength : 'max';
 /*~
-    IF Object_ID('$part.qualified$_RawSplit', 'U') IS NOT NULL
-    DROP TABLE [$part.qualified$_RawSplit];
+    IF Object_ID('$source.qualified$_RawSplit', 'U') IS NOT NULL
+    DROP TABLE [$source.qualified$_RawSplit];
     EXEC('
-    CREATE TABLE [$part.qualified$_RawSplit] (
+    CREATE TABLE [$source.qualified$_RawSplit] (
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime2(2) not null default sysdatetime(),
@@ -42,7 +42,7 @@ while(term = part.nextTerm()) {
 ~*/
 }
 /*~
-        constraint [pk$part.qualified$_RawSplit] primary key(
+        constraint [pk$source.qualified$_RawSplit] primary key(
             _id asc
         )
     )

@@ -9,9 +9,9 @@
                  the same file, and pattern can be used to match the resulting
                  column value.
  -->
-<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex">
+<source name="%Source%" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regexp" firstrow="1">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
-    <part name="Collision" nulls="">
+    <part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows
         SELECT * from %System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9];%'
         <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
@@ -19,9 +19,9 @@
         <term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
         <term name="CollisionKey" delimiter=";" format="int"/>
         <term name="CollisionOrder" delimiter=";" format="tinyint"/>
-        <term name="IntersectionAddress" delimiter=";" format="varchar(555)"/>
-        <term name="IntersectingStreet" delimiter=";" format="varchar(555)"/>
-        <term name="CrossStreet" delimiter=";" format="varchar(555)"/>
+        <term name="IntersectionAddress" delimiter=";" format="varchar(321)"/>
+        <term name="IntersectingStreet" delimiter=";" format="varchar(321)"/>
+        <term name="CrossStreet" delimiter=";" format="varchar(321)"/>
         <term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
         <term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
         <term name="CollisionKilledCount" delimiter=";" format="tinyint"/>

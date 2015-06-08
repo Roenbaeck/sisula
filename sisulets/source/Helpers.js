@@ -15,6 +15,9 @@ source.nextPart = function() {
     }
     return this.part[this.parts[source._iterator.part++]];
 };
+source.firstPart = function() {
+    return this.part[this.parts[0]];
+};
 source.hasMoreParts = function() {
     if(!this.parts) return false;
     return source._iterator.part < this.parts.length;

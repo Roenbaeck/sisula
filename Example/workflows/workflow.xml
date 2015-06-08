@@ -1,6 +1,6 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="stage" value="%SourceDatabase%"/>
-    <variable name="path" value="%SisulaPath%\data"/>
+    <variable name="path" value="%SisulaPath%Example\data"/>
     <variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>
@@ -18,15 +18,15 @@
         <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC %System%_%Source%_CreateRawTable %parameters%
         </jobstep>
+        <!-- replace the above job step with the following one when using 'bulk' splitting -->
+        <!--
+        <jobstep name="Create raw split table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %System%_%Source%_CreateRawSplitTable %parameters%
+        </jobstep>
+        -->
         <jobstep name="Create insert view" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC %System%_%Source%_CreateInsertView %parameters%
         </jobstep>
-        <!-- replace the above two job steps with the following one when using 'bulk' splitting -->
-        <!--
-        <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
-            EXEC %System%_%Source%_CreateRawSplitTables %parameters%
-        </jobstep>
-        -->
         <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
             $files = @(Get-ChildItem %extraOptions% FileSystem::"%path%" | Where-Object {$_.Name -match "%filenamePattern%"})
             If ($files.length -eq 0) {
