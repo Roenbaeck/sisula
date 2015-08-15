@@ -1,5 +1,85 @@
 USE Stage;
 GO
+IF Object_ID('NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
+DROP PROCEDURE [NYPD_Vehicle_CreateRawTable];
+GO
+--------------------------------------------------------------------------
+-- Procedure: NYPD_Vehicle_CreateRawTable
+--
+-- This table holds the 'raw' loaded data.
+--
+-- row
+-- Holds a row loaded from a file.
+--
+-- _id
+-- This sequence is generated in order to keep a lineage through the 
+-- staging process. If a single file has been loaded, this corresponds
+-- to the row number in the file.
+--
+-- _file
+-- A number containing the file id, which either points to metadata
+-- if its used or is otherwise an incremented number per file.
+--
+-- _timestamp
+-- The time the row was created.
+-- 
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
+--------------------------------------------------------------------------
+CREATE PROCEDURE [NYPD_Vehicle_CreateRawTable] (
+    @agentJobId uniqueidentifier = null,
+    @agentStepId smallint = null
+)
+AS
+BEGIN
+SET NOCOUNT ON;
+DECLARE @workId int;
+DECLARE @operationsId int;
+DECLARE @theErrorLine int;
+DECLARE @theErrorMessage varchar(555);
+DECLARE @theErrorSeverity int;
+DECLARE @theErrorState int;
+EXEC Stage.metadata._WorkStarting
+    @configurationName = 'Vehicle', 
+    @configurationType = 'Source', 
+    @WO_ID = @workId OUTPUT, 
+    @name = 'NYPD_Vehicle_CreateRawTable',
+    @agentStepId = @agentStepId,
+    @agentJobId = @agentJobId
+BEGIN TRY
+    IF Object_ID('NYPD_Vehicle_Raw', 'U') IS NOT NULL
+    DROP TABLE [NYPD_Vehicle_Raw];
+    CREATE TABLE [NYPD_Vehicle_Raw] (
+        _id int identity(1,1) not null,
+        _file int not null default 0,
+        _timestamp datetime2(2) not null default sysdatetime(),
+        [row] varchar(1000), 
+        constraint [pkNYPD_Vehicle_Raw] primary key(
+            _id asc
+        )
+    );
+    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+END TRY
+BEGIN CATCH
+	SELECT
+		@theErrorLine = ERROR_LINE(),
+		@theErrorMessage = ERROR_MESSAGE(),
+        @theErrorSeverity = ERROR_SEVERITY(),
+        @theErrorState = ERROR_STATE();
+    EXEC Stage.metadata._WorkStopping
+        @WO_ID = @workId, 
+        @status = 'Failure', 
+        @errorLine = @theErrorLine, 
+        @errorMessage = @theErrorMessage;
+    -- Propagate the error
+    RAISERROR(
+        @theErrorMessage,
+        @theErrorSeverity,
+        @theErrorState
+    ); 
+END CATCH
+END
+GO
 IF Object_ID('NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [NYPD_Vehicle_CreateInsertView];
 GO
@@ -10,8 +90,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -80,8 +160,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -193,8 +273,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -469,8 +549,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -579,8 +659,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -684,8 +764,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -828,8 +908,8 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Wed May 6 15:20:02 UTC+0200 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
@@ -884,7 +964,7 @@ END
 GO
 -- The source definition used when generating the above
 DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regexp" firstrow="1">
+<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex" firstrow="1">
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
 	<part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows

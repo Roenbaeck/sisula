@@ -1,6 +1,6 @@
 @ECHO OFF
 
-echo • Setting variables found in:
+echo * Setting variables found in:
 echo   %~f0
 
 REM -------------------------------------------------------------------

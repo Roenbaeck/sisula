@@ -4,7 +4,7 @@ xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
    <RECORD>
       <FIELD xsi:type="CharTerm" ID="OccurrencePrecinctCode" TERMINATOR=";" />
-      <FIELD xsi:type="CharTerm" ID="CollisionID" TERMINATOR="\r\n" />
+      <FIELD xsi:type="CharTerm" ID="CollisionID" TERMINATOR="" />
       <FIELD xsi:type="CharTerm" ID="CollisionKey" TERMINATOR=";" />
       <FIELD xsi:type="CharTerm" ID="CollisionOrder" TERMINATOR=";" />
       <FIELD xsi:type="CharTerm" ID="IntersectionAddress" TERMINATOR=";" />
@@ -12,7 +12,7 @@ xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
       <FIELD xsi:type="CharTerm" ID="CrossStreet" TERMINATOR=";" />
       <FIELD xsi:type="CharTerm" ID="CollisionVehicleCount" TERMINATOR=";" />
       <FIELD xsi:type="CharTerm" ID="CollisionInjuredCount" TERMINATOR=";" />
-      <FIELD xsi:type="CharTerm" ID="CollisionKilledCount" TERMINATOR=";" />
+      <FIELD xsi:type="CharTerm" ID="CollisionKilledCount" TERMINATOR=";\r\n" />
    </RECORD>
    <ROW>
       <COLUMN SOURCE="OccurrencePrecinctCode" NAME="OccurrencePrecinctCode" xsi:type="SQLVARYCHAR" />
