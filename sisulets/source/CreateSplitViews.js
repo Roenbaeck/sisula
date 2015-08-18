@@ -58,7 +58,6 @@ while(part = source.nextPart()) {
         while(key = part.nextKey()) {
             if(key.hasComponent(term)) {
                 isKeyConstituent = true;
-                break;
             }
         }
 /*~
