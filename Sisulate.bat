@@ -108,8 +108,9 @@ if defined Server (
   )
 )
 
-popd
+ENDLOCAL
 chcp %DEFAULT_CODEPAGE%>NUL
+popd
 
 echo -------------------------------------------------------------------
 echo   %date% %time%: sisula ending
