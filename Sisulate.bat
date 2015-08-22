@@ -108,16 +108,14 @@ if defined Server (
   )
 )
 
-ENDLOCAL
-chcp %DEFAULT_CODEPAGE%>NUL
-popd
-
 echo -------------------------------------------------------------------
 echo   %date% %time%: sisula ending
 echo -------------------------------------------------------------------
 
 :ERROR
 REM -------------------------------------------------------------------
-REM This is the end
+REM This is the end (do these things regardless of state)
 REM -------------------------------------------------------------------
 ENDLOCAL
+chcp %DEFAULT_CODEPAGE%>NUL
+popd
