@@ -1,0 +1,157 @@
+<schema format="0.98" date="2015-09-08" time="15:37:46">
+<metadata changingRange="datetime" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime" now="getdate()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/>
+<knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)">
+<metadata capsule="metadata" generator="false"/>
+<layout x="660.61" y="964.81" fixed="false"/>
+</knot>
+<knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)">
+<metadata capsule="metadata" generator="false"/>
+<layout x="506.11" y="200.89" fixed="false"/>
+</knot>
+<knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)">
+<metadata capsule="metadata" generator="false"/>
+<layout x="1074.66" y="42.09" fixed="false"/>
+</knot>
+<anchor mnemonic="JB" descriptor="Job" identity="int">
+<metadata capsule="metadata" generator="true"/>
+<attribute mnemonic="STA" descriptor="Start" dataRange="datetime">
+<metadata capsule="metadata"/>
+<layout x="583.58" y="50.36" fixed="false"/>
+</attribute>
+<attribute mnemonic="END" descriptor="End" dataRange="datetime">
+<metadata capsule="metadata"/>
+<layout x="629.12" y="0.74" fixed="false"/>
+</attribute>
+<attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)">
+<metadata capsule="metadata"/>
+<layout x="666.58" y="-5.61" fixed="false"/>
+</attribute>
+<attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime" knotRange="EST">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="496.35" y="81.94" fixed="false"/>
+</attribute>
+<attribute mnemonic="AID" descriptor="AgentJobId" dataRange="uniqueidentifier">
+<metadata capsule="metadata"/>
+<layout x="710.50" y="0.21" fixed="false"/>
+</attribute>
+<layout x="668.10" y="75.12" fixed="false"/>
+</anchor>
+<anchor mnemonic="CO" descriptor="Container" identity="int">
+<metadata capsule="metadata" generator="true"/>
+<attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)">
+<metadata capsule="metadata"/>
+<layout x="752.71" y="800.78" fixed="false"/>
+</attribute>
+<attribute mnemonic="TYP" descriptor="Type" knotRange="COT">
+<metadata capsule="metadata"/>
+<layout x="705.73" y="924.86" fixed="false"/>
+</attribute>
+<attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime" dataRange="datetime">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="644.06" y="863.43" fixed="false"/>
+</attribute>
+<attribute mnemonic="CRE" descriptor="Created" dataRange="datetime">
+<metadata capsule="metadata"/>
+<layout x="762.78" y="850.76" fixed="false"/>
+</attribute>
+<layout x="696.11" y="803.70" fixed="false"/>
+</anchor>
+<anchor mnemonic="WO" descriptor="Work" identity="int">
+<metadata capsule="metadata" generator="true"/>
+<attribute mnemonic="STA" descriptor="Start" dataRange="datetime">
+<metadata capsule="metadata"/>
+<layout x="548.26" y="459.23" fixed="false"/>
+</attribute>
+<attribute mnemonic="END" descriptor="End" dataRange="datetime">
+<metadata capsule="metadata"/>
+<layout x="734.29" y="457.30" fixed="false"/>
+</attribute>
+<attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)">
+<metadata capsule="metadata"/>
+<layout x="682.12" y="495.19" fixed="false"/>
+</attribute>
+<attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)">
+<metadata capsule="metadata"/>
+<layout x="546.47" y="428.86" fixed="false"/>
+</attribute>
+<attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)">
+<metadata capsule="metadata"/>
+<layout x="582.41" y="477.14" fixed="false"/>
+</attribute>
+<attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime" knotRange="EST">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="546.36" y="335.79" fixed="false"/>
+</attribute>
+<attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int">
+<metadata capsule="metadata"/>
+<layout x="636.78" y="495.80" fixed="false"/>
+</attribute>
+<attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)">
+<metadata capsule="metadata"/>
+<layout x="756.10" y="429.34" fixed="false"/>
+</attribute>
+<attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint">
+<metadata capsule="metadata"/>
+<layout x="698.71" y="398.67" fixed="false"/>
+</attribute>
+<layout x="649.90" y="429.97" fixed="false"/>
+</anchor>
+<anchor mnemonic="CF" descriptor="Configuration" identity="int">
+<metadata capsule="metadata" generator="true"/>
+<attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)">
+<metadata capsule="metadata"/>
+<layout x="956.01" y="224.55" fixed="false"/>
+</attribute>
+<attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml">
+<metadata capsule="metadata" checksum="true" restatable="false" idempotent="true"/>
+<layout x="986.18" y="189.11" fixed="false"/>
+</attribute>
+<attribute mnemonic="TYP" descriptor="Type" knotRange="CFT">
+<metadata capsule="metadata"/>
+<layout x="1014.93" y="99.34" fixed="false"/>
+</attribute>
+<layout x="909.39" y="168.61" fixed="false"/>
+</anchor>
+<anchor mnemonic="OP" descriptor="Operations" identity="int">
+<metadata capsule="metadata" generator="true"/>
+<attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime" dataRange="int">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="923.44" y="697.54" fixed="false"/>
+</attribute>
+<attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime" dataRange="int">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="976.39" y="650.76" fixed="false"/>
+</attribute>
+<attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime" dataRange="int">
+<metadata capsule="metadata" restatable="false" idempotent="true"/>
+<layout x="938.91" y="583.32" fixed="false"/>
+</attribute>
+<layout x="870.40" y="651.21" fixed="false"/>
+</anchor>
+<tie>
+<anchorRole role="part" type="WO" identifier="true"/>
+<anchorRole role="of" type="JB" identifier="true"/>
+<metadata capsule="metadata"/>
+<layout x="647.76" y="256.91" fixed="false"/>
+</tie>
+<tie>
+<anchorRole role="formed" type="JB" identifier="true"/>
+<anchorRole role="from" type="CF" identifier="false"/>
+<metadata capsule="metadata"/>
+<layout x="805.97" y="109.80" fixed="false"/>
+</tie>
+<tie>
+<anchorRole role="operates" type="WO" identifier="true"/>
+<anchorRole role="source" type="CO" identifier="true"/>
+<anchorRole role="target" type="CO" identifier="true"/>
+<anchorRole role="with" type="OP" identifier="false"/>
+<metadata capsule="metadata"/>
+<layout x="714.10" y="646.65" fixed="false"/>
+</tie>
+<tie>
+<anchorRole role="formed" type="WO" identifier="true"/>
+<anchorRole role="from" type="CF" identifier="false"/>
+<metadata capsule="metadata"/>
+<layout x="806.06" y="311.23" fixed="false"/>
+</tie>
+</schema>

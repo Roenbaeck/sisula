@@ -14,7 +14,7 @@ GO
 -- Holds a row loaded from a file.
 --
 -- _id
--- This sequence is generated in order to keep a lineage through the 
+-- This sequence is generated in order to keep a lineage through the
 -- staging process. If a single file has been loaded, this corresponds
 -- to the row number in the file.
 --
@@ -24,7 +24,7 @@ GO
 --
 -- _timestamp
 -- The time the row was created.
--- 
+--
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
@@ -45,7 +45,7 @@ var rowlength = source.rowlength ? source.rowlength : 'max';
     CREATE TABLE [$source.qualified$_Raw] (
         _id int identity(1,1) not null,
         _file int not null default 0,
-        _timestamp datetime2(2) not null default sysdatetime(),
+        _timestamp datetime not null default getdate(),
         [row] $(source.datafiletype == 'char')? varchar($rowlength), : nvarchar($rowlength),
         constraint [pk$source.qualified$_Raw] primary key(
             _id asc

@@ -34,7 +34,7 @@ var rowlength = source.rowlength ? source.rowlength : 'max';
     CREATE TABLE [$source.qualified$_RawSplit] (
         _id int identity(1,1) not null,
         _file int not null default 0,
-        _timestamp datetime2(2) not null default sysdatetime(),
+        _timestamp datetime not null default getdate(),
 ~*/
 while(term = part.nextTerm()) {
 /*~

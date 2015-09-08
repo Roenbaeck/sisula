@@ -43,7 +43,7 @@ while(part = source.nextPart()) {
     CREATE TABLE [$part.qualified$_Typed] (
         _id int not null,
         _file int not null,
-        _timestamp datetime2(2) not null default sysdatetime(),
+        _timestamp datetime not null default getdate(),
 ~*/
     var key, component, keyConcat; // _key is kept for legacy reasons
     while(key = part.nextKey()) {
@@ -94,4 +94,3 @@ endMetadata();
 END
 GO
 ~*/
-
