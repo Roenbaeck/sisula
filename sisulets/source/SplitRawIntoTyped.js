@@ -1,8 +1,8 @@
 // Create a custom splitter
 var part, term;
 /*~
-IF Object_ID('$source.qualified$_SplitRawIntoTyped', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_SplitRawIntoTyped];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_SplitRawIntoTyped', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_SplitRawIntoTyped];
 GO
 
 --------------------------------------------------------------------------
@@ -23,7 +23,7 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_SplitRawIntoTyped] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -36,7 +36,7 @@ beginMetadata(source.qualified + '_SplitRawIntoTyped', source.name, 'Source');
 
 while(part = source.nextPart()) {
 /*~
-    IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
+    IF Object_ID('$S_SCHEMA$.$part.qualified$_Typed', 'U') IS NOT NULL
     BEGIN
 ~*/
 setSourceToTargetMetadata(
@@ -48,7 +48,7 @@ setSourceToTargetMetadata(
     null                                // targetCreated
 );
 /*~
-    INSERT INTO [$part.qualified$_Typed] (
+    INSERT INTO [$S_SCHEMA].[$part.qualified$_Typed] (
         _id,
         _file,
 ~*/
@@ -70,7 +70,7 @@ setSourceToTargetMetadata(
     }
 /*~
     FROM
-        [$part.qualified$_Split]
+        [$S_SCHEMA].[$part.qualified$_Split]
 ~*/
     // default to true
     part.keyCheck = part.keyCheck ? part.keyCheck : 'true';

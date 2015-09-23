@@ -1,7 +1,7 @@
 USE Stage;
 GO
-IF Object_ID('lST_Street__NYPD_Vehicle_Collision_Typed', 'P') IS NOT NULL
-DROP PROCEDURE [lST_Street__NYPD_Vehicle_Collision_Typed];
+IF Object_ID('etl.lST_Street__NYPD_Vehicle_Collision_Typed', 'P') IS NOT NULL
+DROP PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed];
 GO
 --------------------------------------------------------------------------
 -- Procedure: lST_Street__NYPD_Vehicle_Collision_Typed
@@ -11,10 +11,10 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: _file to Metadata_ST (as metadata)
 --
--- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Sep 23 14:15:44 UTC+0200 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lST_Street__NYPD_Vehicle_Collision_Typed] (
+CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -53,7 +53,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     -- Preparations before the merge -----------------
         -- preparations can be put here
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic]..[lST_Street] AS t
+    MERGE INTO [Traffic].[dbo].[lST_Street] AS t
     USING (
         select
             StreetName, 
@@ -63,13 +63,13 @@ EXEC Stage.metadata._WorkSourceToTarget
                 IntersectingStreet as StreetName,
                 _file
             from 
-                NYPD_Vehicle_Collision_Typed
+                etl.NYPD_Vehicle_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
                 _file
             from
-                NYPD_Vehicle_Collision_Typed
+                etl.NYPD_Vehicle_Collision_Typed
         ) s
         group by
             StreetName
@@ -120,8 +120,8 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('lIS_Intersection__NYPD_Vehicle_Collision_Typed__1', 'P') IS NOT NULL
-DROP PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1];
+IF Object_ID('etl.lIS_Intersection__NYPD_Vehicle_Collision_Typed__1', 'P') IS NOT NULL
+DROP PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1];
 GO
 --------------------------------------------------------------------------
 -- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed__1
@@ -131,10 +131,10 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: _file to Metadata_IS (as metadata)
 --
--- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Sep 23 14:15:44 UTC+0200 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
+CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -171,7 +171,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic]..[lIS_Intersection] AS t
+    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS t
     USING (
         select 
             src.IntersectingStreet,
@@ -184,21 +184,21 @@ EXEC Stage.metadata._WorkSourceToTarget
                 CrossStreet,
                 min(_file) as _file
             from
-                NYPD_Vehicle_Collision_Typed 
+                etl.NYPD_Vehicle_Collision_Typed 
             group by
                 IntersectingStreet,
                 CrossStreet 
         ) src
         left join
-            [Traffic]..lST_Street st_i
+            [Traffic].dbo.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         left join
-            [Traffic]..lST_Street st_c
+            [Traffic].dbo.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         left join
-            [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+            [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and
@@ -246,8 +246,8 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed', 'P') IS NOT NULL
-DROP PROCEDURE [lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed];
+IF Object_ID('etl.lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed', 'P') IS NOT NULL
+DROP PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed];
 GO
 --------------------------------------------------------------------------
 -- Procedure: lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed
@@ -259,10 +259,10 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Sep 23 14:15:44 UTC+0200 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
+CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -299,7 +299,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic]..[lST_intersecting_IS_of_ST_crossing] AS t
+    MERGE INTO [Traffic].[dbo].[lST_intersecting_IS_of_ST_crossing] AS t
     USING (
         select
             i.IS_ID_of,
@@ -311,9 +311,9 @@ EXEC Stage.metadata._WorkSourceToTarget
                 i.IS_ID as IS_ID_of,
                 row_number() over (order by i.IS_ID) as _rowId
             from
-                [Traffic]..lIS_Intersection i
+                [Traffic].dbo.lIS_Intersection i
             left join
-                [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+                [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.IS_ID_of = i.IS_ID
         ) i
@@ -329,21 +329,21 @@ EXEC Stage.metadata._WorkSourceToTarget
                     CrossStreet,
                     min(_file) as _file
                 from
-                    NYPD_Vehicle_Collision_Typed 
+                    etl.NYPD_Vehicle_Collision_Typed 
                 group by
                     IntersectingStreet,
                     CrossStreet 
             ) src
             left join
-                [Traffic]..lST_Street st_i
+                [Traffic].dbo.lST_Street st_i
             on
                 st_i.ST_NAM_Street_Name = src.IntersectingStreet
             left join
-                [Traffic]..lST_Street st_c
+                [Traffic].dbo.lST_Street st_c
             on
                 st_c.ST_NAM_Street_Name = src.CrossStreet
             left join
-                [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+                [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.ST_ID_intersecting = st_i.ST_ID
             and
@@ -411,8 +411,8 @@ BEGIN CATCH
 END CATCH
 END
 GO
-IF Object_ID('lIS_Intersection__NYPD_Vehicle_Collision_Typed__2', 'P') IS NOT NULL
-DROP PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__2];
+IF Object_ID('etl.lIS_Intersection__NYPD_Vehicle_Collision_Typed__2', 'P') IS NOT NULL
+DROP PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2];
 GO
 --------------------------------------------------------------------------
 -- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed__2
@@ -429,10 +429,10 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Sat Aug 15 11:40:21 UTC+0200 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Sep 23 14:15:44 UTC+0200 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
+CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -469,7 +469,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic]..[lIS_Intersection] AS t
+    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS t
     USING (
         select
             md.ChangedAt,
@@ -479,21 +479,21 @@ EXEC Stage.metadata._WorkSourceToTarget
             sum(src.CollisionInjuredCount) as CollisionInjuredCount,
             sum(src.CollisionKilledCount) as CollisionKilledCount
         from
-            NYPD_Vehicle_Collision_Typed src
+            etl.NYPD_Vehicle_Collision_Typed src
         join
-            NYPD_Vehicle_CollisionMetadata_Typed md
+            etl.NYPD_Vehicle_CollisionMetadata_Typed md
         on
             md._file = src._file
         join
-            [Traffic]..lST_Street st_i
+            [Traffic].dbo.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         join
-            [Traffic]..lST_Street st_c
+            [Traffic].dbo.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         join
-            [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+            [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and
@@ -599,13 +599,13 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
                 IntersectingStreet as StreetName,
                 _file
             from 
-                NYPD_Vehicle_Collision_Typed
+                etl.NYPD_Vehicle_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
                 _file
             from
-                NYPD_Vehicle_Collision_Typed
+                etl.NYPD_Vehicle_Collision_Typed
         ) s
         group by
             StreetName
@@ -627,21 +627,21 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
                 CrossStreet,
                 min(_file) as _file
             from
-                NYPD_Vehicle_Collision_Typed 
+                etl.NYPD_Vehicle_Collision_Typed 
             group by
                 IntersectingStreet,
                 CrossStreet 
         ) src
         left join
-            [Traffic]..lST_Street st_i
+            [Traffic].dbo.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         left join
-            [Traffic]..lST_Street st_c
+            [Traffic].dbo.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         left join
-            [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+            [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and
@@ -660,9 +660,9 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
                 i.IS_ID as IS_ID_of,
                 row_number() over (order by i.IS_ID) as _rowId
             from
-                [Traffic]..lIS_Intersection i
+                [Traffic].dbo.lIS_Intersection i
             left join
-                [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+                [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.IS_ID_of = i.IS_ID
         ) i
@@ -678,21 +678,21 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
                     CrossStreet,
                     min(_file) as _file
                 from
-                    NYPD_Vehicle_Collision_Typed 
+                    etl.NYPD_Vehicle_Collision_Typed 
                 group by
                     IntersectingStreet,
                     CrossStreet 
             ) src
             left join
-                [Traffic]..lST_Street st_i
+                [Traffic].dbo.lST_Street st_i
             on
                 st_i.ST_NAM_Street_Name = src.IntersectingStreet
             left join
-                [Traffic]..lST_Street st_c
+                [Traffic].dbo.lST_Street st_c
             on
                 st_c.ST_NAM_Street_Name = src.CrossStreet
             left join
-                [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+                [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.ST_ID_intersecting = st_i.ST_ID
             and
@@ -716,21 +716,21 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
             sum(src.CollisionInjuredCount) as CollisionInjuredCount,
             sum(src.CollisionKilledCount) as CollisionKilledCount
         from
-            NYPD_Vehicle_Collision_Typed src
+            etl.NYPD_Vehicle_Collision_Typed src
         join
-            NYPD_Vehicle_CollisionMetadata_Typed md
+            etl.NYPD_Vehicle_CollisionMetadata_Typed md
         on
             md._file = src._file
         join
-            [Traffic]..lST_Street st_i
+            [Traffic].dbo.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         join
-            [Traffic]..lST_Street st_c
+            [Traffic].dbo.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         join
-            [Traffic]..ST_intersecting_IS_of_ST_crossing stst
+            [Traffic].dbo.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and

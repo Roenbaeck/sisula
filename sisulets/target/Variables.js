@@ -28,3 +28,5 @@ replaceVariables(VARIABLES, target);
 
 // global
 var MAXLEN = 2147483647;
+var S_SCHEMA = VARIABLES.SourceSchema ? VARIABLES.SourceSchema : 'dbo';
+var T_SCHEMA = VARIABLES.TargetSchema ? VARIABLES.TargetSchema : 'dbo';

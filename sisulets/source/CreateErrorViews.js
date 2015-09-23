@@ -1,8 +1,8 @@
 // Create a columnar split view
 var part, term;
 /*~
-IF Object_ID('$source.qualified$_CreateErrorViews', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_CreateErrorViews];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateErrorViews', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateErrorViews];
 GO
 
 --------------------------------------------------------------------------
@@ -30,7 +30,7 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateErrorViews] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -41,15 +41,15 @@ SET NOCOUNT ON;
 beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
 while(part = source.nextPart()) {
 /*~
-    IF Object_ID('$part.qualified$_Error', 'V') IS NOT NULL
-    DROP VIEW [$part.qualified$_Error];
+    IF Object_ID('$S_SCHEMA$.$part.qualified$_Error', 'V') IS NOT NULL
+    DROP VIEW [$S_SCHEMA].[$part.qualified$_Error];
     EXEC('
-    CREATE VIEW [$part.qualified$_Error] 
+    CREATE VIEW [$S_SCHEMA].[$part.qualified$_Error] 
     AS
     SELECT
         *
     FROM
-        [$part.qualified$_Split]
+        [$S_SCHEMA].[$part.qualified$_Split]
     WHERE
 ~*/
     var key;

@@ -1,7 +1,7 @@
 var part, term, calculation, key, component;
 /*~
-IF Object_ID('$source.qualified$_AddKeysToTyped', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_AddKeysToTyped];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_AddKeysToTyped', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_AddKeysToTyped];
 GO
 
 --------------------------------------------------------------------------
@@ -33,7 +33,7 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_AddKeysToTyped] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -45,13 +45,13 @@ beginMetadata(source.qualified + '_AddKeysToTyped', source.name, 'Source');
 while(part = source.nextPart()) {
     if(part.hasMoreKeys()) {
 /*~
-    IF Object_ID('$part.qualified$_Typed', 'U') IS NOT NULL
-    ALTER TABLE [$part.qualified$_Typed]
+    IF Object_ID('$S_SCHEMA$.$part.qualified$_Typed', 'U') IS NOT NULL
+    ALTER TABLE [$S_SCHEMA].[$part.qualified$_Typed]
     ADD
 ~*/
         while(key = part.nextKey()) {
 /*~
-        CONSTRAINT [$key.name$_$part.qualified$_Typed] $key.type (
+        CONSTRAINT [${S_SCHEMA}$_$key.name$_$part.qualified$_Typed] $key.type (
 ~*/
             while(component = key.nextComponent()) {
 /*~

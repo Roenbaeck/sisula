@@ -9,6 +9,8 @@ REM -------------------------------------------------------------------
 set System=NYPD
 set Source=Vehicle
 set TargetDatabase=Traffic
+set TargetSchema=dbo
 set SourceDatabase=Stage
+set SourceSchema=etl
 set MetaDatabase=Stage
 REM -------------------------------------------------------------------

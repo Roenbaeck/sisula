@@ -1,8 +1,8 @@
 // Create a columnar split view
 var part, term;
 /*~
-IF Object_ID('$source.qualified$_CreateSplitViews', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_CreateSplitViews];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateSplitViews', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateSplitViews];
 GO
 
 --------------------------------------------------------------------------
@@ -30,7 +30,7 @@ while(part = source.nextPart()) {
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateSplitViews] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -41,10 +41,10 @@ SET NOCOUNT ON;
 beginMetadata(source.qualified + '_CreateSplitViews', source.name, 'Source');
 while(part = source.nextPart()) {
 /*~
-    IF Object_ID('$part.qualified$_Split', 'V') IS NOT NULL
-    DROP VIEW [$part.qualified$_Split];
+    IF Object_ID('$S_SCHEMA$.$part.qualified$_Split', 'V') IS NOT NULL
+    DROP VIEW [$S_SCHEMA].[$part.qualified$_Split];
     EXEC('
-    CREATE VIEW [$part.qualified$_Split]
+    CREATE VIEW [$S_SCHEMA].[$part.qualified$_Split]
     AS
     SELECT
         t._id,
@@ -65,7 +65,7 @@ while(part = source.nextPart()) {
         t.[$term.name],
         CASE
             $(isKeyConstituent)? WHEN t.[$term.name] is null THEN ''Null value not allowed''
-            WHEN t.[$term.name] is not null AND dbo.IsType(t.[$term.name], ''$term.format'') = 0 THEN ''Conversion to $term.format failed''
+            WHEN t.[$term.name] is not null AND [$S_SCHEMA].IsType(t.[$term.name], ''$term.format'') = 0 THEN ''Conversion to $term.format failed''
         END AS [$term.name$_Error]$(part.hasMoreTerms() || part.hasMoreKeys())?,
 ~*/
         i++;
@@ -118,7 +118,7 @@ while(part = source.nextPart()) {
         }
         else {
 /*~
-            $source.qualified$_RawSplit
+            [$S_SCHEMA].[$source.qualified$_RawSplit]
 ~*/
         }
 /*~
@@ -140,7 +140,7 @@ while(part = source.nextPart()) {
         }
         else {
 /*~
-            $source.qualified$_Raw src
+            [$S_SCHEMA].[$source.qualified$_Raw] src
 ~*/
         }
 /*~
@@ -191,7 +191,7 @@ while(part = source.nextPart()) {
                 [match],
                 ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
-                dbo.Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''$regex'')
+                [$S_SCHEMA].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''$regex'')
         ) s
         PIVOT (
             MAX([match]) FOR idx IN ($pivots)

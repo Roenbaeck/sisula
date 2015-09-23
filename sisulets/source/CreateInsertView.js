@@ -1,7 +1,7 @@
 // Create a raw view compatible with bulk inserts
 /*~
-IF Object_ID('$source.qualified$_CreateInsertView', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_CreateInsertView];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateInsertView', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateInsertView];
 GO
 
 --------------------------------------------------------------------------
@@ -14,7 +14,7 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateInsertView] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -26,10 +26,10 @@ beginMetadata(source.qualified + '_CreateInsertView', source.name, 'Source');
 if(source.split == 'bulk') {
     var term, part = source.firstPart();
 /*~
-    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
-    DROP VIEW [$source.qualified$_Insert];
+    IF Object_ID('$S_SCHEMA$.$source.qualified$_Insert', 'V') IS NOT NULL
+    DROP VIEW [$S_SCHEMA].[$source.qualified$_Insert];
     EXEC('
-    CREATE VIEW [$source.qualified$_Insert]
+    CREATE VIEW [$S_SCHEMA].[$source.qualified$_Insert]
     AS
     SELECT
 ~*/
@@ -40,21 +40,21 @@ if(source.split == 'bulk') {
     }
 /*~
     FROM
-        [$source.qualified$_RawSplit];
+        [$S_SCHEMA].[$source.qualified$_RawSplit];
     ');
 ~*/
 }
 else {
 /*~
-    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
-    DROP VIEW [$source.qualified$_Insert];
+    IF Object_ID('$S_SCHEMA$.$source.qualified$_Insert', 'V') IS NOT NULL
+    DROP VIEW [$S_SCHEMA].[$source.qualified$_Insert];
     EXEC('
-    CREATE VIEW [$source.qualified$_Insert]
+    CREATE VIEW [$S_SCHEMA].[$source.qualified$_Insert]
     AS
     SELECT
         [row]
     FROM
-        [$source.qualified$_Raw];
+        [$S_SCHEMA].[$source.qualified$_Raw];
     ');
 ~*/
 }

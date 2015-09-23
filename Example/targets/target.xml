@@ -12,13 +12,13 @@
                 IntersectingStreet as StreetName,
                 _file
             from        
-                %System%_%Source%_Collision_Typed
+                %SourceSchema%.%System%_%Source%_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
                 _file
             from
-                %System%_%Source%_Collision_Typed
+                %SourceSchema%.%System%_%Source%_Collision_Typed
         ) s
         group by
             StreetName
@@ -41,21 +41,21 @@
                 CrossStreet,
                 min(_file) as _file
             from
-                %System%_%Source%_Collision_Typed 
+                %SourceSchema%.%System%_%Source%_Collision_Typed 
             group by
                 IntersectingStreet,
                 CrossStreet        
         ) src
         left join
-            [%TargetDatabase%]..lST_Street st_i
+            [%TargetDatabase%].%TargetSchema%.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         left join
-            [%TargetDatabase%]..lST_Street st_c
+            [%TargetDatabase%].%TargetSchema%.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         left join
-            [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+            [%TargetDatabase%].%TargetSchema%.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and
@@ -75,9 +75,9 @@
                 i.IS_ID as IS_ID_of,
                 row_number() over (order by i.IS_ID) as _rowId
             from
-                [%TargetDatabase%]..lIS_Intersection i
+                [%TargetDatabase%].%TargetSchema%.lIS_Intersection i
             left join
-                [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+                [%TargetDatabase%].%TargetSchema%.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.IS_ID_of = i.IS_ID
         ) i
@@ -93,21 +93,21 @@
                     CrossStreet,
                     min(_file) as _file
                 from
-                    %System%_%Source%_Collision_Typed 
+                    %SourceSchema%.%System%_%Source%_Collision_Typed 
                 group by
                     IntersectingStreet,
                     CrossStreet        
             ) src
             left join
-                [%TargetDatabase%]..lST_Street st_i
+                [%TargetDatabase%].%TargetSchema%.lST_Street st_i
             on
                 st_i.ST_NAM_Street_Name = src.IntersectingStreet
             left join
-                [%TargetDatabase%]..lST_Street st_c
+                [%TargetDatabase%].%TargetSchema%.lST_Street st_c
             on
                 st_c.ST_NAM_Street_Name = src.CrossStreet
             left join
-                [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+                [%TargetDatabase%].%TargetSchema%.ST_intersecting_IS_of_ST_crossing stst
             on
                 stst.ST_ID_intersecting = st_i.ST_ID
             and
@@ -131,21 +131,21 @@
             sum(src.CollisionInjuredCount) as CollisionInjuredCount,
             sum(src.CollisionKilledCount) as CollisionKilledCount
         from
-            %System%_%Source%_Collision_Typed src
+            %SourceSchema%.%System%_%Source%_Collision_Typed src
         join
-            %System%_%Source%_CollisionMetadata_Typed md
+            %SourceSchema%.%System%_%Source%_CollisionMetadata_Typed md
         on
             md._file = src._file
         join
-            [%TargetDatabase%]..lST_Street st_i
+            [%TargetDatabase%].%TargetSchema%.lST_Street st_i
         on
             st_i.ST_NAM_Street_Name = src.IntersectingStreet
         join
-            [%TargetDatabase%]..lST_Street st_c
+            [%TargetDatabase%].%TargetSchema%.lST_Street st_c
         on
             st_c.ST_NAM_Street_Name = src.CrossStreet
         join
-            [%TargetDatabase%]..ST_intersecting_IS_of_ST_crossing stst
+            [%TargetDatabase%].%TargetSchema%.ST_intersecting_IS_of_ST_crossing stst
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and

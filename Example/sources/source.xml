@@ -13,7 +13,7 @@
 	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
     <part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows
-        SELECT * from %System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9];%'
+        SELECT * from %SourceSchema%.%System%_%Source%_Raw WHERE [row] LIKE '[0-9][0-9][0-9];%'
         <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
         <!-- only capture a part of the string -->
         <term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
@@ -48,7 +48,7 @@
                     SELECT
                         *
                     FROM
-                        %System%_%Source%_Raw
+                        %SourceSchema%.%System%_%Source%_Raw
                     WHERE
                         [row] NOT LIKE '[0-9][0-9][0-9];%'
             ) src
@@ -62,7 +62,7 @@
                     SELECT
                         *
                     FROM
-                        %System%_%Source%_Raw
+                        %SourceSchema%.%System%_%Source%_Raw
                     WHERE
                         [row] NOT LIKE '[0-9][0-9][0-9];%'
             ) src

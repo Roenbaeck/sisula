@@ -2,8 +2,8 @@
 var load, map, i;
 while(load = target.nextLoad()) {
 /*~
-IF Object_ID('$load.qualified', 'P') IS NOT NULL
-DROP PROCEDURE [$load.qualified];
+IF Object_ID('$S_SCHEMA$.$load.qualified', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$load.qualified];
 GO
 --------------------------------------------------------------------------
 -- Procedure: $load.qualified
@@ -21,7 +21,7 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$load.qualified] (
+CREATE PROCEDURE [$S_SCHEMA].[$load.qualified] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -55,7 +55,7 @@ DECLARE @actions TABLE (
     
 /*~    
     -- Perform the actual merge ----------------------
-    MERGE INTO [$target.database]..[$load.target] AS t
+    MERGE INTO [$target.database].[$T_SCHEMA].[$load.target] AS t
     USING~*/
     if(load._load) {
 /*~ (

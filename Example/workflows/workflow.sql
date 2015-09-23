@@ -26,7 +26,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -37,7 +37,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -48,14 +48,14 @@ GO
 sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"G:\sisula\Example\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\Example\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in G:\sisula\Example\data"
+              Throw "No matching files were found in C:\sisula\Example\data"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "Stage" -ErrorAction Stop -QueryTimeout 0
+                    Invoke-Sqlcmd "EXEC etl.NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "Stage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
                 }
             }
@@ -69,7 +69,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -80,7 +80,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -91,7 +91,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -102,7 +102,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -113,7 +113,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC NYPD_Vehicle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
@@ -217,7 +217,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC [dbo].[lST_Street__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lST_Street__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -228,7 +228,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -239,7 +239,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     @on_success_action = 3,
@@ -250,7 +250,7 @@ GO
 sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
-            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         ',
     @database_name = 'Stage',
     -- mandatory parameters below and optional ones above this line
@@ -304,7 +304,7 @@ GO
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="stage" value="Stage"/>
-	<variable name="path" value="G:\sisula\Example\data"/>
+	<variable name="path" value="C:\sisula\Example\data"/>
 	<variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>
@@ -316,10 +316,10 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<job name="NYPD_Vehicle_Staging">
 		<variable name="tableName" value="MyTable"/>
 		<jobstep name="Create raw table" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Create insert view" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Bulk insert" database_name="%SourceDatabase%" subsystem="PowerShell" on_success_action="3">
             $files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%Example\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
@@ -329,39 +329,39 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop -QueryTimeout 0
+                    Invoke-Sqlcmd "EXEC etl.NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
                 }
             }
         </jobstep>
 		<jobstep name="Create split views" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Create error views" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Create typed tables" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Split raw into typed" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC NYPD_Vehicle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Add keys to typed" database_name="%SourceDatabase%" subsystem="TSQL">
-            EXEC NYPD_Vehicle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.NYPD_Vehicle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 	</job>
 	<job name="NYPD_Vehicle_Loading">
 		<jobstep name="Load streets" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC [dbo].[lST_Street__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lST_Street__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Load intersection pass 1" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Load ST ST IS tie" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
-            EXEC [dbo].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Load intersection pass 2" database_name="%SourceDatabase%" subsystem="TSQL">
-            EXEC [dbo].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
+            EXEC etl.[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 	</job>
 </workflow>

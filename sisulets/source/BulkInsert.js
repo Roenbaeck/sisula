@@ -1,6 +1,6 @@
 /*~
-IF Object_ID('$source.qualified$_BulkInsert', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_BulkInsert];
+IF Object_ID('$S_SCHEMA$.$source.qualified$_BulkInsert', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_BulkInsert];
 GO
 
 --------------------------------------------------------------------------
@@ -17,7 +17,7 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_BulkInsert] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_BulkInsert] (
 	@filename varchar(2000),
     @lastModified datetime,
     @agentJobId uniqueidentifier = null,
@@ -42,10 +42,10 @@ setSourceToTargetMetadata(
 if(source.split == 'bulk') {
     var formatFile = VARIABLES.FormatFile;
 /*~
-    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
+    IF Object_ID('$S_SCHEMA$.$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [$source.qualified$_Insert]
+        BULK INSERT [$S_SCHEMA].[$source.qualified$_Insert]
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
@@ -59,10 +59,10 @@ if(source.split == 'bulk') {
 } // not 'bulk' splitting
 else {
 /*~
-    IF Object_ID('$source.qualified$_Insert', 'V') IS NOT NULL
+    IF Object_ID('$S_SCHEMA$.$source.qualified$_Insert', 'V') IS NOT NULL
     BEGIN
     EXEC('
-        BULK INSERT [$source.qualified$_Insert]
+        BULK INSERT [$S_SCHEMA].[$source.qualified$_Insert]
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
@@ -97,7 +97,7 @@ else {
         SELECT TOP 1
             _file
         FROM
-            [$source.qualified$_Raw]
+            [$S_SCHEMA].[$source.qualified$_Raw]
         ORDER BY
             _file
         DESC
@@ -106,7 +106,7 @@ else {
 }
 if(source.split == 'bulk') {
 /*~
-    UPDATE [$source.qualified$_RawSplit]
+    UPDATE [$S_SCHEMA].[$source.qualified$_RawSplit]
     SET
         _file = @file
     WHERE
@@ -117,7 +117,7 @@ if(source.split == 'bulk') {
 }
 else {
 /*~
-    UPDATE [$source.qualified$_Raw]
+    UPDATE [$S_SCHEMA].[$source.qualified$_Raw]
     SET
         _file = @file
     WHERE

@@ -1,8 +1,8 @@
 // Create a raw table suitable for bulk insert
 if(source.split == 'regex') {
 /*~
-IF Object_ID('$source.qualified$_CreateRawTable', 'P') IS NOT NULL
-DROP PROCEDURE [$source.qualified$_CreateRawTable];
+IF Object_ID('$S_SCHEMA$.${source.qualified}$_CreateRawTable', 'P') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateRawTable];
 GO
 
 --------------------------------------------------------------------------
@@ -28,7 +28,7 @@ GO
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
-CREATE PROCEDURE [$source.qualified$_CreateRawTable] (
+CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
     @agentStepId smallint = null
 )
@@ -39,15 +39,15 @@ SET NOCOUNT ON;
 beginMetadata(source.qualified + '_CreateRawTable', source.name, 'Source');
 var rowlength = source.rowlength ? source.rowlength : 'max';
 /*~
-    IF Object_ID('$source.qualified$_Raw', 'U') IS NOT NULL
-    DROP TABLE [$source.qualified$_Raw];
+    IF Object_ID('$S_SCHEMA$.$source.qualified$_Raw', 'U') IS NOT NULL
+    DROP TABLE [$S_SCHEMA].[$source.qualified$_Raw];
 
-    CREATE TABLE [$source.qualified$_Raw] (
+    CREATE TABLE [$S_SCHEMA].[$source.qualified$_Raw] (
         _id int identity(1,1) not null,
         _file int not null default 0,
         _timestamp datetime not null default getdate(),
         [row] $(source.datafiletype == 'char')? varchar($rowlength), : nvarchar($rowlength),
-        constraint [pk$source.qualified$_Raw] primary key(
+        constraint [pk${S_SCHEMA}$_$source.qualified$_Raw] primary key(
             _id asc
         )
     );
