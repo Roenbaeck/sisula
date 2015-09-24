@@ -1,10 +1,10 @@
 /*~
 -- creates utility functions needed in the staging
-IF Object_Id('$S_SCHEMA.Splitter', 'FT') IS NOT NULL
+IF Object_Id('$S_SCHEMA$.Splitter', 'FT') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[Splitter];
 GO
 
-IF Object_Id('$S_SCHEMA.IsType', 'FS') IS NOT NULL
+IF Object_Id('$S_SCHEMA$.IsType', 'FS') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[IsType];
 GO
 
