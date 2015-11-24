@@ -267,7 +267,7 @@ var joinedArguments = commandLineArguments.join(delim);
 for(o in commandLineOptions._opts_) {
     option = commandLineOptions._opts_[o][0];
     if(joinedArguments.indexOf(option) >= 0) {
-        pattern = new RegExp(option + delim + '?([^' + delim + ']*)');
+        pattern = new RegExp(option + delim + '([^' + delim + ']*)');
         argumentMatch = joinedArguments.match(pattern);
         if(argumentMatch) {
             commandLineOptions[o] = argumentMatch[1];
