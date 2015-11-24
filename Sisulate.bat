@@ -31,6 +31,8 @@ echo   %SisulaPath%
 echo * Path to the specified folder containing configuration files:
 echo   %FolderPath%
 pushd "%SisulaPath%"
+echo * Entered pushd directory:
+echo   %CD%
 
 REM -------------------------------------------------------------------
 REM   Initiate project specific variables
