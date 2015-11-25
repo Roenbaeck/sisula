@@ -1,0 +1,28 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:complexType name="__variable">
+		<xs:attribute name="name" type="xs:string" use="required"/>		
+		<xs:attribute name="value" type="xs:string" use="required"/>				
+	</xs:complexType>
+	<xs:complexType name="__jobstep" mixed="true">		
+		<xs:attribute name="name" type="xs:string" use="required"/>
+		<!-- Any database specific attributes that should be propagated to sisula. -->
+		<!-- For SQL Server these are the possible arguments to sp_add_jobstep -->
+		<!-- see https://msdn.microsoft.com/en-us/library/ms187358.aspx -->
+		<xs:anyAttribute processContents="lax"/>
+	</xs:complexType>
+	<xs:complexType name="__job">
+		<xs:choice minOccurs="1" maxOccurs="unbounded">
+			<xs:element name="variable" type="__variable" minOccurs="0"/>
+			<xs:element name="jobstep" type="__jobstep"/>
+		</xs:choice>
+		<xs:attribute name="name" type="xs:string" use="required"/>				
+	</xs:complexType>
+	<xs:complexType name="__workflow">
+		<xs:choice minOccurs="1" maxOccurs="unbounded">
+			<xs:element name="variable" type="__variable" minOccurs="0"/>
+			<xs:element name="job" type="__job"/>
+		</xs:choice>
+		<xs:attribute name="name" type="xs:string" use="required"/>		
+	</xs:complexType>
+	<xs:element name="workflow" type="__workflow"/>
+</xs:schema>
