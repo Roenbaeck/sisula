@@ -1,0 +1,40 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:simpleType name="__position">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="before"/>
+			<xs:enumeration value="after"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="__as">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="natural key"/>
+			<xs:enumeration value="surrogate key"/>
+			<xs:enumeration value="metadata"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:complexType name="__sql" mixed="true">
+		<xs:attribute name="position" type="__position" use="required"/>
+	</xs:complexType>
+	<xs:complexType name="__map">
+		<xs:attribute name="source" type="xs:string" use="required"/>
+		<xs:attribute name="target" type="xs:string" use="required"/>
+		<xs:attribute name="as" type="__as" use="optional"/>
+	</xs:complexType>
+	<xs:complexType name="__load" mixed="true">
+		<xs:choice minOccurs="1" maxOccurs="unbounded">
+			<xs:element name="sql" type="__sql" minOccurs="0" maxOccurs="2"/>
+			<xs:element name="map" type="__map"/>
+		</xs:choice>
+		<xs:attribute name="source" type="xs:string" use="required"/>
+		<xs:attribute name="target" type="xs:string" use="required"/>
+		<xs:attribute name="pass" type="xs:positiveInteger" use="optional"/>
+	</xs:complexType>
+	<xs:complexType name="__target">
+		<xs:choice minOccurs="1" maxOccurs="unbounded">
+			<xs:element name="load" type="__load"/>
+		</xs:choice>
+		<xs:attribute name="name" type="xs:string" use="required"/>
+		<xs:attribute name="database" type="xs:string" use="required"/>
+	</xs:complexType>
+	<xs:element name="target" type="__target"/>
+</xs:schema>
