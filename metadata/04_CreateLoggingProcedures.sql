@@ -55,30 +55,40 @@ begin
 			JB_NAM_Job_Name = @jobName
 		and
 			JB_STA_Job_Start = @start;
+	end	
 
-		-- see if this job has a stored configuration
-		select
-			@CF_ID = CF_ID
-		from
-			metadata.lCF_Configuration
-		where
-			CF_NAM_Configuration_Name = @workflowName
-		and
-			CF_TYP_CFT_ConfigurationType = 'Workflow';
+	-- see if this job has a stored configuration
+	select
+		@CF_ID = CF_ID
+	from
+		metadata.lCF_Configuration
+	where
+		CF_NAM_Configuration_Name = @workflowName
+	and
+		CF_TYP_CFT_ConfigurationType = 'Workflow';
 
-		if(@CF_ID is not null)
-		begin
-			-- connect the job with the configuration
-			insert into metadata.lJB_formed_CF_from (
-				JB_ID_formed, 
-				CF_ID_from
-			)
+	if(@CF_ID is not null)
+	begin
+		-- connect the job with the configuration
+		merge metadata.lJB_formed_CF_from as jbcf
+		using (
 			values (
 				@JB_ID,
 				@CF_ID
-			);
-		end
-	end	
+			)
+		) v (JB_ID, CF_ID)
+		on
+			v.JB_ID = jbcf.JB_ID_formed
+		when not matched then
+		insert (
+			JB_ID_formed, 
+			CF_ID_from
+		)
+		values (
+			v.JB_ID,
+			v.CF_ID
+		);
+	end
 end
 go
 
@@ -199,51 +209,71 @@ begin
 			WO_NAM_Work_Name = @name
 		and
 			WO_STA_Work_Start = @start;
+	end
 
-		-- try to find job id
-		select
-			@JB_ID = JB_ID
-		from
-			metadata.lJB_Job
-		where
-			JB_AID_Job_AgentJobId = @agentJobId
-		and
-			JB_EST_EST_ExecutionStatus = 'Running';
+	-- try to find job id
+	select
+		@JB_ID = JB_ID
+	from
+		metadata.lJB_Job
+	where
+		JB_AID_Job_AgentJobId = @agentJobId
+	and
+		JB_EST_EST_ExecutionStatus = 'Running';
 
-		if(@JB_ID is not null)
-		begin
-			insert into metadata.lWO_part_JB_of (
-				WO_ID_part, 
-				JB_ID_of
-			)
+	if(@JB_ID is not null)
+	begin
+		merge metadata.lWO_part_JB_of as wojb
+		using (
 			values (
 				@WO_ID,
 				@JB_ID
-			);
-		end
-
-		-- see if this job has a stored configuration
-		select
-			@CF_ID = CF_ID
-		from
-			metadata.lCF_Configuration
-		where
-			CF_NAM_Configuration_Name = @configurationName
-		and
-			CF_TYP_CFT_ConfigurationType = @configurationType;
-
-		if(@CF_ID is not null)
-		begin
-			-- connect the job with the configuration
-			insert into metadata.lWO_formed_CF_from (
-				WO_ID_formed, 
-				CF_ID_from
 			)
+		) v (WO_ID, JB_ID)
+		on
+			v.WO_ID = wojb.WO_ID_part
+		when not matched then
+		insert (
+			WO_ID_part, 
+			JB_ID_of
+		)
+		values (
+			v.WO_ID,
+			v.JB_ID
+		);
+	end
+
+	-- see if this work has a stored configuration
+	select
+		@CF_ID = CF_ID
+	from
+		metadata.lCF_Configuration
+	where
+		CF_NAM_Configuration_Name = @configurationName
+	and
+		CF_TYP_CFT_ConfigurationType = @configurationType;
+
+	if(@CF_ID is not null)
+	begin
+		-- connect the work with the configuration
+		merge metadata.lWO_formed_CF_from as wocf
+		using (
 			values (
 				@WO_ID,
 				@CF_ID
-			);
-		end
+			)
+		) v (WO_ID, CF_ID)
+		on
+			v.WO_ID = wocf.WO_ID_formed
+		when not matched then
+		insert (
+			WO_ID_formed, 
+			CF_ID_from
+		)
+		values (
+			v.WO_ID,
+			v.CF_ID
+		);
 	end
 end
 go
