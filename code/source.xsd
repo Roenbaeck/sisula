@@ -1,0 +1,69 @@
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:simpleType name="__split">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="regex"/>
+            <xs:enumeration value="bulk"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="__rowlength">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(\d+|max|MAX)"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="__type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="primary key"/>
+            <xs:enumeration value="unique"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="__description" mixed="true"/>
+    <xs:complexType name="__term" mixed="true">
+        <xs:attribute name="name" type="xs:string" use="required"/> 
+        <xs:attribute name="format" type="xs:string" use="required"/>     
+        <!-- only of the three attributes below can be present -->
+        <xs:attribute name="pattern" type="xs:string" use="optional"/>        
+        <xs:attribute name="delimiter" type="xs:string" use="optional"/>        
+        <xs:attribute name="size" type="xs:positiveInteger" use="optional"/>     
+    </xs:complexType>
+    <xs:complexType name="__calculation" mixed="true">
+        <xs:attribute name="name" type="xs:string" use="required"/> 
+        <xs:attribute name="format" type="xs:string" use="required"/>     
+        <xs:attribute name="persisted" type="xs:boolean" use="optional" default="false"/>     
+    </xs:complexType>
+    <xs:complexType name="__component">
+        <!-- this string must be the name of an existing term or calculation -->
+        <xs:attribute name="of" type="xs:string" use="required"/> 
+    </xs:complexType>
+    <xs:complexType name="__key">
+        <xs:choice minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="component" type="__component"/>
+        </xs:choice>
+        <xs:attribute name="name" type="xs:string" use="required"/> 
+        <xs:attribute name="type" type="__type" use="required"/>     
+    </xs:complexType>
+    <xs:complexType name="__part" mixed="true">
+        <xs:choice minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="term" type="__term" minOccurs="1"/>
+            <xs:element name="calculation" type="__calculation" minOccurs="0"/>
+            <xs:element name="key" type="__key" minOccurs="0"/>
+        </xs:choice>        
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="nulls" type="xs:string" use="optional"/>
+        <xs:attribute name="typeCheck" type="xs:boolean" use="optional" default="true"/>
+        <xs:attribute name="keyCheck" type="xs:boolean" use="optional" default="true"/>
+    </xs:complexType>
+    <xs:complexType name="__source">
+        <xs:choice minOccurs="1" maxOccurs="unbounded">
+            <xs:element name="description" type="__description"/>
+            <xs:element name="part" type="__part"/>
+        </xs:choice>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="codepage" type="xs:string" use="required"/>
+        <xs:attribute name="datafiletype" type="xs:string" use="required"/>
+        <xs:attribute name="fieldterminator" type="xs:string" use="required"/>
+        <xs:attribute name="rowlength" type="__rowlength" use="required"/>
+        <xs:attribute name="split" type="__split" use="required"/>
+        <xs:attribute name="firstrow" type="xs:positiveInteger" use="optional"/>
+    </xs:complexType>
+    <xs:element name="source" type="__source"/>
+</xs:schema>
