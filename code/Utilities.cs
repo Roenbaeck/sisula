@@ -33,6 +33,91 @@ public partial class Splitter {
     }
 }
 
+/*
+ * 2015-12-08 Added by Lars Rönnbäck 
+ */
+public partial class ColumnSplitter
+{
+    [Microsoft.SqlServer.Server.SqlProcedure]
+    public static void InitMethod(SqlString table, SqlString column, SqlString pattern, SqlString includeColumns)
+    {
+        string[] extraColumns;
+        // allow columns to be delimited in a few different ways
+        string[] delimiters = new string[3] {" ", ",", ";"};
+        extraColumns = includeColumns.ToString().Split(delimiters, StringSplitOptions.RemoveEmptyEntries); 
+
+        // compile the regex, since it will be used on a lot of rows
+        // this trades a slower instantiation for faster execution 
+        Regex split = new Regex(pattern.ToString(), RegexOptions.Singleline | RegexOptions.Compiled);
+        // find the group names in the provided regex (or numbers for not named capturing groups)
+        string[] groupNamesAndEntireMatch = split.GetGroupNames();
+        // allocate storage for the actual group names (-1 for removing the entire match)
+        string[] groupNames = new string[groupNamesAndEntireMatch.Length - 1]; 
+        Array.Copy(groupNamesAndEntireMatch, 1, groupNames, 0, groupNames.Length);
+
+        // open a connection in the same context as we are executing
+        using (SqlConnection connection = new SqlConnection("context connection=true"))
+        {
+            connection.Open();
+            // set up the query to fetch data
+            string query = 
+                " SELECT " + 
+                    string.Join(",", extraColumns) + "," + 
+                    column.ToString() + 
+                " FROM " + 
+                    table.ToString();
+
+            SqlCommand command = new SqlCommand(query, connection);
+            SqlDataReader reader = command.ExecuteReader();
+
+            // set up the columns expected to be returned 
+            SqlMetaData[] md = new SqlMetaData[extraColumns.Length + groupNames.Length];
+            SqlDbType type;
+            int i;
+            // first add the extra columns
+            for (i = 0; i < extraColumns.Length; i++)
+            {
+                type = (SqlDbType)(int)reader.GetSchemaTable().Rows[i]["ProviderType"];
+                md[i] = new SqlMetaData(extraColumns[i], type);
+            }
+            // then the expected columms created by the split operation
+            for (i = 0; i < groupNames.Length; i++)
+            {
+                md[i + extraColumns.Length] = new SqlMetaData(groupNames[i], SqlDbType.NVarChar, -1);
+            }
+            SqlDataRecord writer = new SqlDataRecord(md);
+
+            SqlString columnValue;   // holds a value from the column to be matched against
+            GroupCollection groups;  // holds the results of the match
+            using (reader)
+            {
+                SqlContext.Pipe.SendResultsStart(writer);
+                // iterate through the result set
+                while (reader.Read())
+                {
+                    for (i = 0; i < extraColumns.Length; i++)
+                    {
+                        // pass through the extra columns
+                        writer.SetValue(i, reader.GetValue(i));
+                    }
+                    // read column to matched against
+                    columnValue = reader.GetSqlString(extraColumns.Length);
+                    // split column according to pattern
+                    groups = split.Match(columnValue.ToString()).Groups;  
+                    for (i = 0; i < groupNames.Length; i++)
+                    {
+                        // write content of capturing group
+                        writer.SetSqlString(i + extraColumns.Length, groups[groupNames[i]].Value); 
+                    }
+                    // send the row to the result set
+                    SqlContext.Pipe.SendResultsRow(writer); 
+                }
+                SqlContext.Pipe.SendResultsEnd();
+            }
+        }
+    }
+};
+
 public partial class IsType {
     [
         Microsoft.SqlServer.Server.SqlFunction (
