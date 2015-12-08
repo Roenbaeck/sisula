@@ -23,17 +23,61 @@ IF EXISTS (
 )
 DROP ASSEMBLY ${S_SCHEMA}$Utilities;
 
-BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012+)
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = '${S_SCHEMA}$Utilities'
+)
+BEGIN TRY -- using Microsoft.SQLServer.Types version 13 (2016)
+	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
+	AUTHORIZATION dbo
+	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2016.dll'
+	WITH PERMISSION_SET = SAFE;
+	PRINT 'The .NET CLR for SQL Server 2016 was installed.'
+END TRY
+BEGIN CATCH 
+	PRINT 'The .NET CLR for SQL Server 2016 was NOT installed.'
+END CATCH
+
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = '${S_SCHEMA}$Utilities'
+)
+BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012)
 	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
 	AUTHORIZATION dbo
 	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2012.dll'
 	WITH PERMISSION_SET = SAFE;
+	PRINT 'The .NET CLR for SQL Server 2012 was installed.'
 END TRY
-BEGIN CATCH -- using Microsoft.SQLServer.Types version 10 (2008)
+BEGIN CATCH 
+	PRINT 'The .NET CLR for SQL Server 2012 was NOT installed.'
+END CATCH
+
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = '${S_SCHEMA}$Utilities'
+)
+BEGIN TRY -- using Microsoft.SQLServer.Types version 10 (2008)
 	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
 	AUTHORIZATION dbo
 	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2008.dll'
 	WITH PERMISSION_SET = SAFE;
+	PRINT 'The .NET CLR for SQL Server 2008 was installed.'
+END TRY
+BEGIN CATCH 
+	PRINT 'The .NET CLR for SQL Server 2008 was NOT installed.'
 END CATCH
 GO
 
@@ -57,8 +101,15 @@ CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
 AS EXTERNAL NAME etlUtilities.ColumnSplitter.InitMethod;
 GO
 
-sp_configure 'clr enabled', 1
-GO
-reconfigure with override
+IF NOT EXISTS (
+    SELECT value
+    FROM sys.configurations
+    WHERE name  = 'clr enabled'
+      AND value = 1
+)
+BEGIN
+    EXEC sp_configure 'clr enabled', 1;
+    reconfigure with override;
+END
 GO
 ~*/

@@ -107,7 +107,12 @@ public partial class ColumnSplitter
                     for (i = 0; i < groupNames.Length; i++)
                     {
                         // write content of capturing group
-                        writer.SetSqlString(i + extraColumns.Length, groups[groupNames[i]].Value); 
+                        if(groups[groupNames[i]].Value == String.Empty)
+                            // an empty string is no match, and should be a null value
+                            writer.SetSqlString(i + extraColumns.Length, SqlString.Null);
+                        else
+                            // if the string is non-empty, write the actual value
+                            writer.SetSqlString(i + extraColumns.Length, groups[groupNames[i]].Value); 
                     }
                     // send the row to the result set
                     SqlContext.Pipe.SendResultsRow(writer); 

@@ -11,8 +11,8 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: _file to Metadata_ST (as metadata)
 --
--- Generated: Tue Dec 8 15:08:43 UTC+0100 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -131,8 +131,8 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: _file to Metadata_IS (as metadata)
 --
--- Generated: Tue Dec 8 15:08:43 UTC+0100 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
@@ -259,8 +259,8 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Tue Dec 8 15:08:43 UTC+0100 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -429,8 +429,8 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Tue Dec 8 15:08:43 UTC+0100 2015 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
     @agentJobId uniqueidentifier = null,

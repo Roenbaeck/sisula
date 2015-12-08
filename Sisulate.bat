@@ -17,8 +17,9 @@ if [%FolderPath%]==[] (
 )
 
 echo -------------------------------------------------------------------
-echo   %date% %time%: sisula starting
+echo  sisula starting                            %date% %time%
 echo -------------------------------------------------------------------
+echo.
 
 REM -------------------------------------------------------------------
 REM   This file needs to be saved as UTF-8 with the option "No Mark"
@@ -26,13 +27,13 @@ REM -------------------------------------------------------------------
 for /f "tokens=2 delims=:." %%x in ('chcp') do set DEFAULT_CODEPAGE=%%x
 chcp 65001>NUL
 set SisulaPath=%~dp0
-echo * Path to the sisula ETL Framework installation:
-echo   %SisulaPath%
-echo * Path to the specified folder containing configuration files:
-echo   %FolderPath%
+echo  * Path to the sisula ETL Framework installation:
+echo    %SisulaPath%
+echo  * Path to the specified folder containing configuration files:
+echo    %FolderPath%
 pushd "%SisulaPath%"
-echo * Entered pushd directory:
-echo   %CD%
+echo  * Entered pushd directory:
+echo    %CD%
 
 REM -------------------------------------------------------------------
 REM   Initiate project specific variables
@@ -47,9 +48,9 @@ REM   Create bulk format files
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\sources\*.xml) do (
   set OutputFile=%FolderPath%\formats\%%~nf.xml
-  echo * Transforming source to bulk format file:
-  echo   %%~f ...
-  echo   !OutputFile!
+  echo  * Transforming source to bulk format file:
+  echo    %%~f ...
+  echo    !OutputFile!
   Sisulator.js -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
 )
@@ -61,9 +62,9 @@ REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\sources\*.xml) do (
   set OutputFile=%FolderPath%\sources\%%~nf.sql
   set FormatFile=%FolderPath%\formats\%%~nf.xml
-  echo * Transforming source to SQL loading stored procedures:
-  echo   %%~f ...
-  echo   !OutputFile!
+  echo  * Transforming source to SQL loading stored procedures:
+  echo    %%~f ...
+  echo    !OutputFile!
   Sisulator.js -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
@@ -75,9 +76,9 @@ REM   Create target loading SQL code
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\targets\*.xml) do (
   set OutputFile=%FolderPath%\targets\%%~nf.sql
-  echo * Transforming target to SQL loading stored procedures:
-  echo   %%~f ...
-  echo   !OutputFile!
+  echo  * Transforming target to SQL loading stored procedures:
+  echo    %%~f ...
+  echo    !OutputFile!
   Sisulator.js -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
@@ -89,9 +90,9 @@ REM   Create SQL Server Agent job code
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\workflows\*.xml) do (
   set OutputFile=%FolderPath%\workflows\%%~nf.sql
-  echo * Transforming workflow to SQL Server Agent job scripts:
-  echo   %%~f ...
-  echo   !OutputFile!
+  echo  * Transforming workflow to SQL Server Agent job scripts:
+  echo    %%~f ...
+  echo    !OutputFile!
   Sisulator.js -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
@@ -102,16 +103,19 @@ REM -------------------------------------------------------------------
 REM   Install the generated SQL files in the database server
 REM -------------------------------------------------------------------
 if defined Server (
-  echo * Installing SQL files:
   for /L %%f in (0,1,!i!) do (
-    echo   !SQLFiles[%%f]!
+    echo.
+    echo  * Installing SQL file:
+    echo    !SQLFiles[%%f]!
+    echo .
     sqlcmd -S %Server% -i "!SQLFiles[%%f]!" -I -x -b -r1 >NUL
     IF ERRORLEVEL 1 GOTO ERROR
   )
 )
 
+echo.
 echo -------------------------------------------------------------------
-echo   %date% %time%: sisula ending
+echo  sisula ending                              %date% %time%
 echo -------------------------------------------------------------------
 
 :ERROR
