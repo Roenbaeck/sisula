@@ -9,9 +9,9 @@ FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\Microsoft SQL Serv
 
 REM ----- Change this reference accordingly -----
 REM SET Assembly=C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies\Microsoft.SqlServer.Types.dll
-REM SET Assembly=C:\Program Files\Microsoft SQL Server\110\Shared\Microsoft.SqlServer.Types.dll
+SET Assembly=C:\Program Files\Microsoft SQL Server\110\Shared\Microsoft.SqlServer.Types.dll
 REM SET Assembly=C:\Program Files\Microsoft SQL Server\120\Shared\Microsoft.SqlServer.Types.dll
-SET Assembly=C:\Program Files\Microsoft SQL Server\130\Shared\Microsoft.SqlServer.Types.dll
+REM SET Assembly=C:\Program Files\Microsoft SQL Server\130\Shared\Microsoft.SqlServer.Types.dll
 
 REM ----- Compile -----
 ECHO The following command will now be executed:

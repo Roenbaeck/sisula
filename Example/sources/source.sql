@@ -36,12 +36,30 @@ IF NOT EXISTS (
 BEGIN TRY -- using Microsoft.SQLServer.Types version 13 (2016)
 	CREATE ASSEMBLY etlUtilities
 	AUTHORIZATION dbo
-	FROM 'G:\sisula\code\Utilities2016.dll'
+	FROM 'C:\sisula\code\Utilities2016.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2016 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2016 was NOT installed.'
+END CATCH
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = 'etlUtilities'
+)
+BEGIN TRY -- using Microsoft.SQLServer.Types version 12 (2014)
+	CREATE ASSEMBLY etlUtilities
+	AUTHORIZATION dbo
+	FROM 'C:\sisula\code\Utilities2014.dll'
+	WITH PERMISSION_SET = SAFE;
+	PRINT 'The .NET CLR for SQL Server 2014 was installed.'
+END TRY
+BEGIN CATCH
+	PRINT 'The .NET CLR for SQL Server 2014 was NOT installed.'
 END CATCH
 IF NOT EXISTS (
 	SELECT
@@ -54,11 +72,11 @@ IF NOT EXISTS (
 BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012)
 	CREATE ASSEMBLY etlUtilities
 	AUTHORIZATION dbo
-	FROM 'G:\sisula\code\Utilities2012.dll'
+	FROM 'C:\sisula\code\Utilities2012.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2012 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2012 was NOT installed.'
 END CATCH
 IF NOT EXISTS (
@@ -72,11 +90,11 @@ IF NOT EXISTS (
 BEGIN TRY -- using Microsoft.SQLServer.Types version 10 (2008)
 	CREATE ASSEMBLY etlUtilities
 	AUTHORIZATION dbo
-	FROM 'G:\sisula\code\Utilities2008.dll'
+	FROM 'C:\sisula\code\Utilities2008.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2008 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2008 was NOT installed.'
 END CATCH
 GO
@@ -90,8 +108,8 @@ RETURNS BIT
 AS EXTERNAL NAME etlUtilities.IsType.InitMethod;
 GO
 CREATE PROCEDURE [etl].ColumnSplitter(
-	@table AS nvarchar(4000), 
-	@column AS nvarchar(4000), 
+	@table AS nvarchar(4000),
+	@column AS nvarchar(4000),
 	@pattern AS nvarchar(4000),
 	@includeColumns AS nvarchar(4000)
 )
@@ -131,8 +149,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -198,8 +216,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -268,8 +286,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -381,8 +399,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -658,8 +676,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -768,8 +786,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -873,8 +891,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -1017,8 +1035,8 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Tue Dec 8 19:01:15 UTC+0100 2015 by Lars
--- From: WARP in the WARP domain
+-- Generated: Wed Dec 9 10:01:55 UTC+0100 2015 by e-lronnback
+-- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,

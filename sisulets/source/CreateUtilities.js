@@ -38,8 +38,27 @@ BEGIN TRY -- using Microsoft.SQLServer.Types version 13 (2016)
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2016 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2016 was NOT installed.'
+END CATCH
+
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = '${S_SCHEMA}$Utilities'
+)
+BEGIN TRY -- using Microsoft.SQLServer.Types version 12 (2014)
+	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
+	AUTHORIZATION dbo
+	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2014.dll'
+	WITH PERMISSION_SET = SAFE;
+	PRINT 'The .NET CLR for SQL Server 2014 was installed.'
+END TRY
+BEGIN CATCH
+	PRINT 'The .NET CLR for SQL Server 2014 was NOT installed.'
 END CATCH
 
 IF NOT EXISTS (
@@ -57,7 +76,7 @@ BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012)
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2012 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2012 was NOT installed.'
 END CATCH
 
@@ -76,7 +95,7 @@ BEGIN TRY -- using Microsoft.SQLServer.Types version 10 (2008)
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server 2008 was installed.'
 END TRY
-BEGIN CATCH 
+BEGIN CATCH
 	PRINT 'The .NET CLR for SQL Server 2008 was NOT installed.'
 END CATCH
 GO
@@ -93,8 +112,8 @@ AS EXTERNAL NAME ${S_SCHEMA}$Utilities.IsType.InitMethod;
 GO
 
 CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
-	@table AS nvarchar(4000), 
-	@column AS nvarchar(4000), 
+	@table AS nvarchar(4000),
+	@column AS nvarchar(4000),
 	@pattern AS nvarchar(4000),
 	@includeColumns AS nvarchar(4000)
 )
