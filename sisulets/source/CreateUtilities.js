@@ -115,7 +115,7 @@ CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
 	@table AS nvarchar(4000),
 	@column AS nvarchar(4000),
 	@pattern AS nvarchar(4000),
-	@includeColumns AS nvarchar(4000)
+	@includeColumns AS nvarchar(4000) = null
 )
 AS EXTERNAL NAME etlUtilities.ColumnSplitter.InitMethod;
 GO
