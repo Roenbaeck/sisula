@@ -24,6 +24,25 @@ sp_add_jobstep
     @on_success_action = 3; -- go to the next step
 GO
 sp_add_jobstep
+    @subsystem = 'PowerShell',
+    @command = '
+            $files = @(Get-ChildItem FileSystem::"C:\sisula\Example\data\incoming" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in C:\sisula\Example\data\incoming"
+            } Else {
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    Move-Item $fullFilename C:\sisula\Example\data\work -force
+                    Write-Output "Moved file: $fullFilename to C:\sisula\Example\data\work"
+                }
+            }
+        ',
+    @on_success_action = 3,
+    -- mandatory parameters below and optional ones above this line
+    @job_name = 'NYPD_Vehicle_Staging',
+    @step_name = 'Check for and move files';
+GO
+sp_add_jobstep
     @subsystem = 'TSQL',
     @command = '
             EXEC etl.NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
@@ -48,15 +67,17 @@ GO
 sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\Example\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"C:\sisula\Example\data\work" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\sisula\Example\data"
+              Throw "No matching files were found in C:\sisula\Example\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC etl.NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "Stage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
+                    Move-Item $fullFilename C:\sisula\Example\data\archive -force
+                    Write-Output "Moved file: $fullFilename to C:\sisula\Example\data\archive"
                 }
             }
         ',
@@ -141,56 +162,70 @@ sp_update_jobstep
     @step_id = 2,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 3,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 4,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 5,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 6,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 7,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 8,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
 GO
 sp_update_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_id = 9,
     -- ensure logging when any step fails
     @on_fail_action = 4, -- go to step with id
-    @on_fail_step_id = 11;
+    @on_fail_step_id = 12;
+GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Staging',
+    @step_id = 10,
+    -- ensure logging when any step fails
+    @on_fail_action = 4, -- go to step with id
+    @on_fail_step_id = 12;
+GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Staging',
+    @step_id = 10,
+    -- ensure logging when last step succeeds
+    @on_success_action = 4, -- go to step with id
+    @on_success_step_id = 11;
 GO
 IF EXISTS (select job_id from [dbo].[sysjobs] where name = 'NYPD_Vehicle_Loading')
 EXEC sp_delete_job
@@ -301,10 +336,19 @@ sp_update_jobstep
     @on_fail_action = 4, -- go to step with id
     @on_fail_step_id = 7;
 GO
+sp_update_jobstep
+    @job_name = 'NYPD_Vehicle_Loading',
+    @step_id = 5,
+    -- ensure logging when last step succeeds
+    @on_success_action = 4, -- go to step with id
+    @on_success_step_id = 6;
+GO
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="stage" value="Stage"/>
-	<variable name="path" value="C:\sisula\Example\data"/>
+	<variable name="incomingPath" value="C:\sisula\Example\data\incoming"/>
+	<variable name="workPath" value="C:\sisula\Example\data\work"/>
+	<variable name="archivePath" value="C:\sisula\Example\data\archive"/>
 	<variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>
@@ -315,6 +359,18 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
 	<variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
 	<job name="NYPD_Vehicle_Staging">
 		<variable name="tableName" value="MyTable"/>
+		<jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="3">
+            $files = @(Get-ChildItem FileSystem::"%SisulaPath%Example\data\incoming" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in %SisulaPath%Example\data\incoming"
+            } Else {
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    Move-Item $fullFilename %SisulaPath%Example\data\work -force
+                    Write-Output "Moved file: $fullFilename to %SisulaPath%Example\data\work"
+                }
+            }
+        </jobstep>
 		<jobstep name="Create raw table" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
             EXEC etl.NYPD_Vehicle_CreateRawTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
@@ -322,15 +378,17 @@ DECLARE @xml XML = N'<workflow name="NYPD_Vehicle_Workflow">
             EXEC etl.NYPD_Vehicle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep>
 		<jobstep name="Bulk insert" database_name="%SourceDatabase%" subsystem="PowerShell" on_success_action="3">
-            $files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%Example\data" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%Example\data\work" | Where-Object {$_.Name -match "[0-9]{5}_Collisions_.*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in %SisulaPath%Example\data"
+              Throw "No matching files were found in %SisulaPath%Example\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC etl.NYPD_Vehicle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
+                    Move-Item $fullFilename %SisulaPath%Example\data\archive -force
+                    Write-Output "Moved file: $fullFilename to %SisulaPath%Example\data\archive"
                 }
             }
         </jobstep>

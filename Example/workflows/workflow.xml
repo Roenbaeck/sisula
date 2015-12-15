@@ -1,6 +1,8 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="stage" value="%SourceDatabase%"/>
-    <variable name="path" value="%SisulaPath%Example\data"/>
+    <variable name="incomingPath" value="%SisulaPath%Example\data\incoming"/>
+    <variable name="workPath" value="%SisulaPath%Example\data\work"/>
+    <variable name="archivePath" value="%SisulaPath%Example\data\archive"/>
     <variable name="filenamePattern" value="[0-9]{5}_Collisions_.*\.csv"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>
@@ -15,6 +17,18 @@
     <variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
     <job name="%System%_%Source%_Staging">
         <variable name="tableName" value="MyTable"/>
+        <jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
+            $files = @(Get-ChildItem FileSystem::"%incomingPath%" | Where-Object {$_.Name -match "%filenamePattern%"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in %incomingPath%"
+            } Else {
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    Move-Item $fullFilename %workPath% -force
+                    Write-Output "Moved file: $fullFilename to %workPath%"
+                }
+            }
+        </jobstep>
         <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
             EXEC %SourceSchema%.%System%_%Source%_CreateRawTable %parameters%
         </jobstep>
@@ -28,15 +42,17 @@
             EXEC %SourceSchema%.%System%_%Source%_CreateInsertView %parameters%
         </jobstep>
         <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
-            $files = @(Get-ChildItem %extraOptions% FileSystem::"%path%" | Where-Object {$_.Name -match "%filenamePattern%"})
+            $files = @(Get-ChildItem %extraOptions% FileSystem::"%workPath%" | Where-Object {$_.Name -match "%filenamePattern%"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in %path%"
+              Throw "No matching files were found in %workPath%"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC %SourceSchema%.%System%_%Source%_BulkInsert '$fullFilename', '$modifiedDate', %parameters%" -Database "%stage%" -ErrorAction Stop -QueryTimeout %queryTimeout%
                     Write-Output "Loaded file: $fullFilename"
+                    Move-Item $fullFilename %archivePath% -force
+                    Write-Output "Moved file: $fullFilename to %archivePath%"
                 }
             }
         </jobstep>

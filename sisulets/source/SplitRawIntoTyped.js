@@ -107,14 +107,14 @@ setSourceToTargetMetadata(
     setInsertsMetadata('@insert');
     if(METADATA) {
 /*~
-    SET @JB_ID = (
+    SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
             ${METADATABASE}$.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
-    );
+    ), 0);
 
     UPDATE [$S_SCHEMA].[$part.qualified$_Typed]
     SET

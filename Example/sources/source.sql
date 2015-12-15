@@ -149,7 +149,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -218,7 +218,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -288,7 +288,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -342,7 +342,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     ');
     SET @inserts = @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    SET @CO_ID = (
+    SET @CO_ID = ISNULL((
         SELECT TOP 1
             CO_ID
         FROM
@@ -351,15 +351,15 @@ EXEC Stage.metadata._WorkSourceToTarget
             CO_NAM_Container_Name = @filename
         AND
             CO_CRE_Container_Created = @lastModified
-    );
-    SET @JB_ID = (
+    ), 0);
+    SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
             Stage.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
-    );
+    ), 0);
     UPDATE [etl].[NYPD_Vehicle_Raw]
     SET
     metadata_CO_ID =
@@ -411,7 +411,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -693,7 +693,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -803,7 +803,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -912,7 +912,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -985,14 +985,14 @@ EXEC Stage.metadata._WorkSourceToTarget
         measureTime_Duplicate = 0
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
-    SET @JB_ID = (
+    SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
             Stage.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
-    );
+    ), 0);
     UPDATE [etl].[NYPD_Vehicle_Collision_Typed]
     SET
       metadata_JB_ID = @JB_ID
@@ -1037,14 +1037,14 @@ EXEC Stage.metadata._WorkSourceToTarget
         [notes_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
-    SET @JB_ID = (
+    SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
             Stage.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
-    );
+    ), 0);
     UPDATE [etl].[NYPD_Vehicle_CollisionMetadata_Typed]
     SET
       metadata_JB_ID = @JB_ID
@@ -1092,7 +1092,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (

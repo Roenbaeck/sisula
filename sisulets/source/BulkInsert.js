@@ -80,7 +80,7 @@ else {
 setInsertsMetadata('@inserts');
 if(METADATA) {
 /*~
-    SET @CO_ID = (
+    SET @CO_ID = ISNULL((
         SELECT TOP 1
             CO_ID
         FROM
@@ -89,15 +89,15 @@ if(METADATA) {
             CO_NAM_Container_Name = @filename
         AND
             CO_CRE_Container_Created = @lastModified
-    );
-    SET @JB_ID = (
+    ), 0);
+    SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
             ${METADATABASE}$.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
-    );
+    ), 0);
 ~*/
 }
 else {

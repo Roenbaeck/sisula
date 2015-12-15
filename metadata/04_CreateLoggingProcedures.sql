@@ -1,5 +1,5 @@
 /*
-             CREATE PROCEDURES FOR LOGGING 
+             CREATE PROCEDURES FOR LOGGING
 */
 --------------------------- Starting Job ----------------------------
 if Object_Id('metadata._JobStarting', 'P') is not null
@@ -26,19 +26,21 @@ begin
 	where
 		JB_NAM_Job_Name = @jobName
 	and
+		JB_AID_Job_AgentJobId = isnull(@agentJobId, JB_AID_Job_AgentJobId)
+	and
 		JB_EST_EST_ExecutionStatus = 'Running';
 
 	-- start it if it is not running
 	if(@JB_ID is null)
 	begin
 		insert into metadata.lJB_Job (
-			JB_NAM_Job_Name, 
+			JB_NAM_Job_Name,
 			JB_STA_Job_Start,
-			JB_AID_Job_AgentJobId, 
-			JB_EST_ChangedAt, 
+			JB_AID_Job_AgentJobId,
+			JB_EST_ChangedAt,
 			JB_EST_EST_ExecutionStatus
 		)
-		values ( 
+		values (
 			@jobName,
 			@start,
 			@agentJobId,
@@ -55,7 +57,7 @@ begin
 			JB_NAM_Job_Name = @jobName
 		and
 			JB_STA_Job_Start = @start;
-	end	
+	end
 
 	-- see if this job has a stored configuration
 	select
@@ -81,7 +83,7 @@ begin
 			v.JB_ID = jbcf.JB_ID_formed
 		when not matched then
 		insert (
-			JB_ID_formed, 
+			JB_ID_formed,
 			CF_ID_from
 		)
 		values (
@@ -107,11 +109,12 @@ begin
 	-- add a chronon in order to guarantee uniqueness (if shorter duration)
 	set @stop = isnull(@stop, dateadd(nanosecond, 100, SYSDATETIME()));
 	set @status = isnull(@status, 'Success');
-	declare @JB_ID int;
 
 	-- ensure this job is running!
 	select
-		@JB_ID = JB_ID
+		JB_ID
+	into
+		#JB_ID
 	from
 		metadata.lJB_Job
 	where
@@ -119,27 +122,37 @@ begin
 	and
 		JB_EST_EST_ExecutionStatus = 'Running';
 
-	if(@JB_ID is not null)
+	if exists (
+		select top 1 JB_ID from #JB_ID
+	)
 	begin
 		if(@status = 'Success')
 		begin
-			update metadata.lJB_Job
+			update jb
 			set
-				JB_END_Job_End = @stop,
-				JB_EST_ChangedAt = @stop, -- same as job stop
-				JB_EST_EST_ExecutionStatus = 'Success'
-			where
-				JB_ID = @JB_ID;
+				jb.JB_END_Job_End = @stop,
+				jb.JB_EST_ChangedAt = @stop, -- same as job stop
+				jb.JB_EST_EST_ExecutionStatus = 'Success'
+			from
+				metadata.lJB_Job jb
+			join
+				#JB_ID running
+			on
+				running.JB_ID = jb.JB_ID;
 		end
 		if(@status = 'Failure')
 		begin
-			update metadata.lJB_Job 
+			update jb
 			set
-				JB_END_Job_End = @stop,
-				JB_EST_ChangedAt = @stop, -- same as job stop
-				JB_EST_EST_ExecutionStatus = 'Failure'
-			where
-				JB_ID = @JB_ID;
+				jb.JB_END_Job_End = @stop,
+				jb.JB_EST_ChangedAt = @stop, -- same as job stop
+				jb.JB_EST_EST_ExecutionStatus = 'Failure'
+			from
+				metadata.lJB_Job jb
+			join
+				#JB_ID running
+			on
+				running.JB_ID = jb.JB_ID;
 		end
 	end
 end
@@ -149,7 +162,7 @@ go
 if Object_Id('metadata._WorkStarting', 'P') is not null
 drop procedure metadata._WorkStarting;
 go
- 
+
 create procedure metadata._WorkStarting (
 	@configurationName varchar(255),
 	@configurationType varchar(42),
@@ -172,26 +185,38 @@ begin
 
 	-- is this work already started?
 	select
-		@WO_ID = WO_ID
+		@WO_ID = wo.WO_ID
 	from
-		metadata.lWO_Work
-	where
-		WO_NAM_Work_Name = @name
+		metadata.lWO_Work wo
+	join
+	  metadata.lWO_part_JB_of wojb
+	on
+		wojb.WO_ID_part = wo.WO_ID
+	join
+		metadata.lJB_Job jb
+	on
+		jb.JB_ID = wojb.JB_ID_of
 	and
-		WO_EST_EST_ExecutionStatus = 'Running';
+		jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+	and
+		jb.JB_EST_EST_ExecutionStatus = 'Running'
+	where
+		wo.WO_NAM_Work_Name = @name
+	and
+		wo.WO_EST_EST_ExecutionStatus = 'Running';
 
 	if(@WO_ID is null)
 	begin
 		insert into metadata.lWO_Work (
-			WO_NAM_Work_Name, 
-			WO_STA_Work_Start, 
-			WO_USR_Work_InvocationUser, 
-			WO_ROL_Work_InvocationRole, 
+			WO_NAM_Work_Name,
+			WO_STA_Work_Start,
+			WO_USR_Work_InvocationUser,
+			WO_ROL_Work_InvocationRole,
 			WO_AID_Work_AgentStepId,
-			WO_EST_ChangedAt, 
+			WO_EST_ChangedAt,
 			WO_EST_EST_ExecutionStatus
 		)
-		values ( 
+		values (
 			@name,
 			@start,
 			@user,
@@ -215,11 +240,21 @@ begin
 	select
 		@JB_ID = JB_ID
 	from
-		metadata.lJB_Job
-	where
-		JB_AID_Job_AgentJobId = @agentJobId
+		metadata.lWO_Work wo
+	join
+		metadata.lWO_part_JB_of wojb
+	on
+		wojb.WO_ID_part = wo.WO_ID
+	join
+		metadata.lJB_Job jb
+	on
+		jb.JB_ID = wojb.JB_ID_of
 	and
-		JB_EST_EST_ExecutionStatus = 'Running';
+		jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+	and
+		jb.JB_EST_EST_ExecutionStatus = 'Running'
+	where
+		wo.WO_ID = @WO_ID;
 
 	if(@JB_ID is not null)
 	begin
@@ -234,7 +269,7 @@ begin
 			v.WO_ID = wojb.WO_ID_part
 		when not matched then
 		insert (
-			WO_ID_part, 
+			WO_ID_part,
 			JB_ID_of
 		)
 		values (
@@ -267,7 +302,7 @@ begin
 			v.WO_ID = wocf.WO_ID_formed
 		when not matched then
 		insert (
-			WO_ID_formed, 
+			WO_ID_formed,
 			CF_ID_from
 		)
 		values (
@@ -282,7 +317,7 @@ go
 if Object_Id('metadata._WorkStopping', 'P') is not null
 drop procedure metadata._WorkStopping;
 go
- 
+
 create procedure metadata._WorkStopping (
 	@WO_ID int,
 	@status varchar(42) = 'Success',
@@ -310,7 +345,7 @@ begin
 	begin
 		if(@status = 'Success')
 		begin
-			update metadata.lWO_Work 
+			update metadata.lWO_Work
 			set
 				WO_END_Work_End = @stop,
 				WO_EST_ChangedAt = @stop, -- same as job stop
@@ -320,7 +355,7 @@ begin
 		end
 		if(@status = 'Failure')
 		begin
-			update metadata.lWO_Work 
+			update metadata.lWO_Work
 			set
 				WO_END_Work_End = @stop,
 				WO_EST_ChangedAt = @stop, -- same as job stop
@@ -338,7 +373,7 @@ go
 if Object_Id('metadata._WorkSourceToTarget', 'P') is not null
 drop procedure metadata._WorkSourceToTarget;
 go
- 
+
 create procedure metadata._WorkSourceToTarget (
 	@OP_ID int output,
 	@WO_ID int,
@@ -380,7 +415,7 @@ begin
 			CO_TYP_COT_ContainerType = @sourceType
 		and
 			-- files are new containers if they have a different created date but same name
-			case 
+			case
 				when @sourceType = 'File' and CO_CRE_Container_Created <> @sourceCreated
 				then 0
 				else 1
@@ -390,8 +425,8 @@ begin
 		if(@CO_ID_source is null)
 		begin
 			insert into lCO_Container (
-				CO_NAM_Container_Name, 
-				CO_TYP_COT_ContainerType, 
+				CO_NAM_Container_Name,
+				CO_TYP_COT_ContainerType,
 				CO_CRE_Container_Created,
 				CO_DSC_Container_Discovered
 			)
@@ -434,7 +469,7 @@ begin
 			CO_TYP_COT_ContainerType = @targetType
 		and
 			-- files are new containers even if they have the same name
-			case 
+			case
 				when @targetType = 'File' and CO_CRE_Container_Created <> @targetCreated
 				then 0
 				else 1
@@ -444,8 +479,8 @@ begin
 		if(@CO_ID_target is null)
 		begin
 			insert into lCO_Container (
-				CO_NAM_Container_Name, 
-				CO_TYP_COT_ContainerType, 
+				CO_NAM_Container_Name,
+				CO_TYP_COT_ContainerType,
 				CO_CRE_Container_Created,
 				CO_DSC_Container_Discovered
 			)
@@ -488,13 +523,13 @@ begin
 		and
 			CO_ID_target = @CO_ID_target;
 
-		if(@OP_ID is null) 
+		if(@OP_ID is null)
 		begin
 			declare @keys table (
 				OP_ID int not null
 			);
 
-			insert @keys 
+			insert @keys
 			exec metadata.kOP_Operations 1;
 
 			set	@OP_ID = (select top 1 OP_ID from @keys);
@@ -521,7 +556,7 @@ go
 if Object_Id('metadata._WorkSetInserts', 'P') is not null
 drop procedure metadata._WorkSetInserts;
 go
- 
+
 create procedure metadata._WorkSetInserts (
 	@WO_ID int,
 	@OP_ID int,
@@ -558,7 +593,7 @@ go
 if Object_Id('metadata._WorkSetUpdates', 'P') is not null
 drop procedure metadata._WorkSetUpdates;
 go
- 
+
 create procedure metadata._WorkSetUpdates (
 	@WO_ID int,
 	@OP_ID int,
@@ -595,7 +630,7 @@ go
 if Object_Id('metadata._WorkSetDeletes', 'P') is not null
 drop procedure metadata._WorkSetDeletes;
 go
- 
+
 create procedure metadata._WorkSetDeletes (
 	@WO_ID int,
 	@OP_ID int,

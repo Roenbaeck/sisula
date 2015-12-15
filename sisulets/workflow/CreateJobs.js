@@ -110,5 +110,14 @@ sp_update_jobstep
 GO
 ~*/
         }
+/*~
+sp_update_jobstep
+    @job_name           = '$job.name',
+    @step_id            = ${(lastId + 1)}$,
+    -- ensure logging when last step succeeds
+    @on_success_action  = 4, -- go to step with id
+    @on_success_step_id = ${(lastId + 2)}$;
+GO
+~*/
     }
 }
