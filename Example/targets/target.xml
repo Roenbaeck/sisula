@@ -6,24 +6,24 @@
         <!-- the query finds unique street names in each file -->
         select
             StreetName, 
-            min(_file) as _file
+            min(metadata_CO_ID) as metadata_CO_ID
         from (
             select distinct
                 IntersectingStreet as StreetName,
-                _file
+                metadata_CO_ID
             from        
                 %SourceSchema%.%System%_%Source%_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
-                _file
+                metadata_CO_ID
             from
                 %SourceSchema%.%System%_%Source%_Collision_Typed
         ) s
         group by
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
-        <map source="_file" target="Metadata_ST" as="metadata"/>
+        <map source="metadata_CO_ID" target="Metadata_ST" as="metadata"/>
         <sql position="after">
         -- post processing can be put here
         </sql>
@@ -33,13 +33,13 @@
         select 
             src.IntersectingStreet,
             src.CrossStreet,
-            src._file,
+            src.metadata_CO_ID,
             stst.IS_ID_of
         from (
             select 
                 IntersectingStreet,
                 CrossStreet,
-                min(_file) as _file
+                min(metadata_CO_ID) as metadata_CO_ID
             from
                 %SourceSchema%.%System%_%Source%_Collision_Typed 
             group by
@@ -61,7 +61,7 @@
         and
             stst.ST_ID_crossing = st_c.ST_ID        
         <map source="IS_ID_of" target="IS_ID" as="surrogate key"/>
-        <map source="_file" target="Metadata_IS" as="metadata"/>
+        <map source="metadata_CO_ID" target="Metadata_IS" as="metadata"/>
     </load>
     <load source="%System%_%Source%_Collision_Typed" target="lST_intersecting_IS_of_ST_crossing">
         <!-- populate the tie -->
@@ -69,7 +69,7 @@
             i.IS_ID_of,
             t.ST_ID_intersecting,
             t.ST_ID_crossing,
-            t._file
+            t.metadata_CO_ID
         from (
             select
                 i.IS_ID as IS_ID_of,
@@ -83,7 +83,7 @@
         ) i
         join (
             select 
-                src._file,
+                src.metadata_CO_ID,
                 st_i.ST_ID as ST_ID_intersecting,
                 st_c.ST_ID as ST_ID_crossing,
                 row_number() over (order by st_i.ST_ID, st_c.ST_ID) as _rowId
@@ -91,7 +91,7 @@
                 select 
                     IntersectingStreet,
                     CrossStreet,
-                    min(_file) as _file
+                    min(metadata_CO_ID) as metadata_CO_ID
                 from
                     %SourceSchema%.%System%_%Source%_Collision_Typed 
                 group by
@@ -120,7 +120,7 @@
         <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key"/>
         <map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key"/>
         <map source="IS_ID_of" target="IS_ID_of"/>
-        <map source="_file" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
+        <map source="metadata_CO_ID" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
     </load>
     <load source="%System%_%Source%_Collision_Typed" target="lIS_Intersection" pass="2">
         select
@@ -135,7 +135,7 @@
         join
             %SourceSchema%.%System%_%Source%_CollisionMetadata_Typed md
         on
-            md._file = src._file
+            md.metadata_CO_ID = src.metadata_CO_ID
         join
             [%TargetDatabase%].%TargetSchema%.lST_Street st_i
         on

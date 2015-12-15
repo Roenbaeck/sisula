@@ -30,7 +30,9 @@ CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_SplitRawIntoTyped] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int = 0;
+DECLARE @JB_ID int;
+DECLARE @insert int;
+DECLARE @updates int;
 ~*/
 beginMetadata(source.qualified + '_SplitRawIntoTyped', source.name, 'Source');
 
@@ -50,7 +52,8 @@ setSourceToTargetMetadata(
 /*~
     INSERT INTO [$S_SCHEMA].[$part.qualified$_Typed] (
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
 ~*/
     while(term = part.nextTerm()) {
 /*~
@@ -61,7 +64,8 @@ setSourceToTargetMetadata(
     )
     SELECT
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
 ~*/
     while(term = part.nextTerm()) {
 /*~
@@ -101,6 +105,27 @@ setSourceToTargetMetadata(
     SET @insert = @insert + @@ROWCOUNT;
 ~*/
     setInsertsMetadata('@insert');
+    if(METADATA) {
+/*~
+    SET @JB_ID = (
+        SELECT TOP 1
+            JB_ID
+        FROM
+            ${METADATABASE}$.metadata.lJB_Job
+        WHERE
+            JB_AID_Job_AgentJobId = @agentJobId
+    );
+
+    UPDATE [$S_SCHEMA].[$part.qualified$_Typed]
+    SET
+      metadata_JB_ID = @JB_ID
+    WHERE
+      metadata_JB_ID <> @JB_ID;
+
+    SET @updates = @@ROWCOUNT;
+~*/
+    }
+    setUpdatesMetadata('@updates');
 /*~
     END
 ~*/

@@ -42,7 +42,9 @@ while(part = source.nextPart()) {
 
     CREATE TABLE [$S_SCHEMA].[$part.qualified$_Typed] (
         _id int not null,
-        _file int not null,
+        _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
+        metadata_CO_ID int not null,
+        metadata_JB_ID int not null,
         _timestamp datetime not null default getdate(),
 ~*/
     var key, component, keyConcat; // _key is kept for legacy reasons

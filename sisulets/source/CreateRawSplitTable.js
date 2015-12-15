@@ -33,7 +33,9 @@ var rowlength = source.rowlength ? source.rowlength : 'max';
     EXEC('
     CREATE TABLE [$S_SCHEMA].[$source.qualified$_RawSplit] (
         _id int identity(1,1) not null,
-        _file int not null default 0,
+        _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
+        metadata_CO_ID int not null default 0,
+        metadata_JB_ID int not null default 0,
         _timestamp datetime not null default getdate(),
 ~*/
 while(term = part.nextTerm()) {

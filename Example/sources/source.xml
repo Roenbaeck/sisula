@@ -41,7 +41,8 @@
           *
         FROM (
           SELECT
-            _file,
+            metadata_CO_ID,
+						MIN(metadata_JB_ID) as metadata_JB_ID,
             MIN(_id) as _id,
             MIN(_timestamp) as _timestamp
           FROM (
@@ -53,7 +54,7 @@
                         [row] NOT LIKE '[0-9][0-9][0-9];%'
             ) src
           GROUP BY
-            _file
+            metadata_CO_ID
         ) f
         CROSS APPLY (
           SELECT
@@ -67,7 +68,7 @@
                         [row] NOT LIKE '[0-9][0-9][0-9];%'
             ) src
           WHERE
-            src._file = f._file
+            src.metadata_CO_ID = f.metadata_CO_ID
           FOR XML PATH('')
         ) c ([row])
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>

@@ -142,14 +142,14 @@ GO
 -- staging process. If a single file has been loaded, this corresponds
 -- to the row number in the file.
 --
--- _file
+-- metadata_CO_ID
 -- A number containing the file id, which either points to metadata
 -- if its used or is otherwise an incremented number per file.
 --
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -177,7 +177,9 @@ BEGIN TRY
     DROP TABLE [etl].[NYPD_Vehicle_Raw];
     CREATE TABLE [etl].[NYPD_Vehicle_Raw] (
         _id int identity(1,1) not null,
-        _file int not null default 0,
+        _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
+        metadata_CO_ID int not null default 0,
+        metadata_JB_ID int not null default 0,
         _timestamp datetime not null default getdate(),
         [row] varchar(1000), 
         constraint [pketl_NYPD_Vehicle_Raw] primary key(
@@ -216,7 +218,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -286,7 +288,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -298,7 +300,8 @@ CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @file int;
+DECLARE @CO_ID int;
+DECLARE @JB_ID int;
 DECLARE @inserts int;
 DECLARE @updates int;
 DECLARE @workId int;
@@ -339,8 +342,8 @@ EXEC Stage.metadata._WorkSourceToTarget
     ');
     SET @inserts = @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    SET @file = (
-        SELECT
+    SET @CO_ID = (
+        SELECT TOP 1
             CO_ID
         FROM
             Stage.metadata.lCO_Container
@@ -349,11 +352,20 @@ EXEC Stage.metadata._WorkSourceToTarget
         AND
             CO_CRE_Container_Created = @lastModified
     );
+    SET @JB_ID = (
+        SELECT TOP 1
+            JB_ID
+        FROM
+            Stage.metadata.lJB_Job
+        WHERE
+            JB_AID_Job_AgentJobId = @agentJobId
+    );
     UPDATE [etl].[NYPD_Vehicle_Raw]
     SET
-        _file = @file
-    WHERE
-        _file = 0;
+    metadata_CO_ID =
+      case when metadata_CO_ID = 0 then @CO_ID else metadata_CO_ID end,
+    metadata_JB_ID =
+      case when metadata_JB_ID = 0 then @JB_ID else metadata_JB_ID end;
     SET @updates = @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
@@ -399,7 +411,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -430,7 +442,8 @@ BEGIN TRY
     AS
     SELECT
         t._id,
-        t._file,
+        t.metadata_CO_ID,
+        t.metadata_JB_ID,
         t._timestamp,
         m.[OccurrencePrecinctCode] as [OccurrencePrecinctCode_Match],
         t.[OccurrencePrecinctCode],
@@ -529,7 +542,8 @@ BEGIN TRY
     CROSS APPLY (
         SELECT
             _id,
-            _file,
+            metadata_CO_ID,
+            metadata_JB_ID,
             _timestamp,
             [OccurrencePrecinctCode] AS [OccurrencePrecinctCode],
             [CollisionID] AS [CollisionID],
@@ -550,7 +564,8 @@ BEGIN TRY
     AS
     SELECT
         t._id,
-        t._file,
+        t.metadata_CO_ID,
+        t.metadata_JB_ID,
         t._timestamp,
         m.[month] as [month_Match],
         t.[month],
@@ -575,7 +590,8 @@ BEGIN TRY
           *
         FROM (
           SELECT
-            _file,
+            metadata_CO_ID,
+						MIN(metadata_JB_ID) as metadata_JB_ID,
             MIN(_id) as _id,
             MIN(_timestamp) as _timestamp
           FROM (
@@ -587,7 +603,7 @@ BEGIN TRY
                         [row] NOT LIKE ''[0-9][0-9][0-9];%''
             ) src
           GROUP BY
-            _file
+            metadata_CO_ID
         ) f
         CROSS APPLY (
           SELECT
@@ -601,7 +617,7 @@ BEGIN TRY
                         [row] NOT LIKE ''[0-9][0-9][0-9];%''
             ) src
           WHERE
-            src._file = f._file
+            src.metadata_CO_ID = f.metadata_CO_ID
           FOR XML PATH('''')
         ) c ([row])
         ) src
@@ -627,7 +643,8 @@ BEGIN TRY
     CROSS APPLY (
         SELECT
             _id,
-            _file,
+            metadata_CO_ID,
+            metadata_JB_ID,
             _timestamp,
             [month] AS [month],
             [year] AS [year],
@@ -676,7 +693,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -786,7 +803,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -814,7 +831,9 @@ BEGIN TRY
     DROP TABLE [etl].[NYPD_Vehicle_Collision_Typed];
     CREATE TABLE [etl].[NYPD_Vehicle_Collision_Typed] (
         _id int not null,
-        _file int not null,
+        _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
+        metadata_CO_ID int not null,
+        metadata_JB_ID int not null,
         _timestamp datetime not null default getdate(),
         _measureTime as cast(HashBytes('MD5', CONVERT(varchar(max), [IntersectingStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CrossStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CollisionOrder], 126)) as varbinary(16)),
         [OccurrencePrecinctCode] int null,
@@ -832,7 +851,9 @@ BEGIN TRY
     DROP TABLE [etl].[NYPD_Vehicle_CollisionMetadata_Typed];
     CREATE TABLE [etl].[NYPD_Vehicle_CollisionMetadata_Typed] (
         _id int not null,
-        _file int not null,
+        _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
+        metadata_CO_ID int not null,
+        metadata_JB_ID int not null,
         _timestamp datetime not null default getdate(),
         [month] varchar(42) null,
         [year] smallint null,
@@ -891,7 +912,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -901,7 +922,9 @@ CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @insert int = 0;
+DECLARE @JB_ID int;
+DECLARE @insert int;
+DECLARE @updates int;
 DECLARE @workId int;
 DECLARE @operationsId int;
 DECLARE @theErrorLine int;
@@ -929,7 +952,8 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetCreated = DEFAULT;
     INSERT INTO [etl].[NYPD_Vehicle_Collision_Typed] (
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
         [OccurrencePrecinctCode],
         [CollisionID],
         [CollisionKey],
@@ -943,7 +967,8 @@ EXEC Stage.metadata._WorkSourceToTarget
     )
     SELECT
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
         [OccurrencePrecinctCode],
         [CollisionID],
         [CollisionKey],
@@ -960,6 +985,21 @@ EXEC Stage.metadata._WorkSourceToTarget
         measureTime_Duplicate = 0
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
+    SET @JB_ID = (
+        SELECT TOP 1
+            JB_ID
+        FROM
+            Stage.metadata.lJB_Job
+        WHERE
+            JB_AID_Job_AgentJobId = @agentJobId
+    );
+    UPDATE [etl].[NYPD_Vehicle_Collision_Typed]
+    SET
+      metadata_JB_ID = @JB_ID
+    WHERE
+      metadata_JB_ID <> @JB_ID;
+    SET @updates = @@ROWCOUNT;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
     IF Object_ID('etl.NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
     BEGIN
@@ -974,14 +1014,16 @@ EXEC Stage.metadata._WorkSourceToTarget
     @targetCreated = DEFAULT;
     INSERT INTO [etl].[NYPD_Vehicle_CollisionMetadata_Typed] (
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
         [month],
         [year],
         [notes]
     )
     SELECT
         _id,
-        _file,
+        metadata_CO_ID,
+        metadata_JB_ID,
         [month],
         [year],
         [notes]
@@ -995,6 +1037,21 @@ EXEC Stage.metadata._WorkSourceToTarget
         [notes_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
+    SET @JB_ID = (
+        SELECT TOP 1
+            JB_ID
+        FROM
+            Stage.metadata.lJB_Job
+        WHERE
+            JB_AID_Job_AgentJobId = @agentJobId
+    );
+    UPDATE [etl].[NYPD_Vehicle_CollisionMetadata_Typed]
+    SET
+      metadata_JB_ID = @JB_ID
+    WHERE
+      metadata_JB_ID <> @JB_ID;
+    SET @updates = @@ROWCOUNT;
+    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
     EXEC Stage.metadata._WorkStopping @workId, 'Success';
 END TRY
@@ -1035,7 +1092,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
@@ -1117,7 +1174,8 @@ DECLARE @xml XML = N'
           *
         FROM (
           SELECT
-            _file,
+            metadata_CO_ID,
+						MIN(metadata_JB_ID) as metadata_JB_ID,
             MIN(_id) as _id,
             MIN(_timestamp) as _timestamp
           FROM (
@@ -1129,7 +1187,7 @@ DECLARE @xml XML = N'
                         [row] NOT LIKE ''[0-9][0-9][0-9];%''
             ) src
           GROUP BY
-            _file
+            metadata_CO_ID
         ) f
         CROSS APPLY (
           SELECT
@@ -1143,7 +1201,7 @@ DECLARE @xml XML = N'
                         [row] NOT LIKE ''[0-9][0-9][0-9];%''
             ) src
           WHERE
-            src._file = f._file
+            src.metadata_CO_ID = f.metadata_CO_ID
           FOR XML PATH('''')
         ) c ([row])
         <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>

@@ -9,9 +9,9 @@ GO
 -- Target: lST_Street
 --
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
--- Map: _file to Metadata_ST (as metadata)
+-- Map: metadata_CO_ID to Metadata_ST (as metadata)
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
@@ -57,17 +57,17 @@ EXEC Stage.metadata._WorkSourceToTarget
     USING (
         select
             StreetName, 
-            min(_file) as _file
+            min(metadata_CO_ID) as metadata_CO_ID
         from (
             select distinct
                 IntersectingStreet as StreetName,
-                _file
+                metadata_CO_ID
             from 
                 etl.NYPD_Vehicle_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
-                _file
+                metadata_CO_ID
             from
                 etl.NYPD_Vehicle_Collision_Typed
         ) s
@@ -83,7 +83,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     )
     VALUES (
         s.[StreetName],
-        s.[_file]
+        s.[metadata_CO_ID]
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
@@ -129,9 +129,9 @@ GO
 -- Target: lIS_Intersection
 --
 -- Map: IS_ID_of to IS_ID (as surrogate key)
--- Map: _file to Metadata_IS (as metadata)
+-- Map: metadata_CO_ID to Metadata_IS (as metadata)
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
@@ -176,13 +176,13 @@ EXEC Stage.metadata._WorkSourceToTarget
         select 
             src.IntersectingStreet,
             src.CrossStreet,
-            src._file,
+            src.metadata_CO_ID,
             stst.IS_ID_of
         from (
             select 
                 IntersectingStreet,
                 CrossStreet,
-                min(_file) as _file
+                min(metadata_CO_ID) as metadata_CO_ID
             from
                 etl.NYPD_Vehicle_Collision_Typed 
             group by
@@ -211,7 +211,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         [Metadata_IS]
     )
     VALUES (
-        s.[_file]
+        s.[metadata_CO_ID]
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
@@ -257,9 +257,9 @@ GO
 -- Map: ST_ID_intersecting to ST_ID_intersecting (as natural key)
 -- Map: ST_ID_crossing to ST_ID_crossing (as natural key)
 -- Map: IS_ID_of to IS_ID_of 
--- Map: _file to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
+-- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
@@ -305,7 +305,7 @@ EXEC Stage.metadata._WorkSourceToTarget
             i.IS_ID_of,
             t.ST_ID_intersecting,
             t.ST_ID_crossing,
-            t._file
+            t.metadata_CO_ID
         from (
             select
                 i.IS_ID as IS_ID_of,
@@ -319,7 +319,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         ) i
         join (
             select 
-                src._file,
+                src.metadata_CO_ID,
                 st_i.ST_ID as ST_ID_intersecting,
                 st_c.ST_ID as ST_ID_crossing,
                 row_number() over (order by st_i.ST_ID, st_c.ST_ID) as _rowId
@@ -327,7 +327,7 @@ EXEC Stage.metadata._WorkSourceToTarget
                 select 
                     IntersectingStreet,
                     CrossStreet,
-                    min(_file) as _file
+                    min(metadata_CO_ID) as metadata_CO_ID
                 from
                     etl.NYPD_Vehicle_Collision_Typed 
                 group by
@@ -369,7 +369,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         s.[ST_ID_intersecting],
         s.[ST_ID_crossing],
         s.[IS_ID_of],
-        s.[_file]
+        s.[metadata_CO_ID]
     )
     WHEN MATCHED AND (
         (t.[IS_ID_of] is null OR s.[IS_ID_of] <> t.[IS_ID_of])
@@ -377,7 +377,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     THEN UPDATE
     SET
         t.[IS_ID_of] = s.[IS_ID_of],
-        t.[Metadata_ST_intersecting_IS_of_ST_crossing] = s.[_file]
+        t.[Metadata_ST_intersecting_IS_of_ST_crossing] = s.[metadata_CO_ID]
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
@@ -429,7 +429,7 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Wed Dec 9 13:39:17 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Dec 15 15:28:14 UTC+0100 2015 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
@@ -483,7 +483,7 @@ EXEC Stage.metadata._WorkSourceToTarget
         join
             etl.NYPD_Vehicle_CollisionMetadata_Typed md
         on
-            md._file = src._file
+            md.metadata_CO_ID = src.metadata_CO_ID
         join
             [Traffic].dbo.lST_Street st_i
         on
@@ -593,24 +593,24 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         </sql>
         select
             StreetName, 
-            min(_file) as _file
+            min(metadata_CO_ID) as metadata_CO_ID
         from (
             select distinct
                 IntersectingStreet as StreetName,
-                _file
+                metadata_CO_ID
             from 
                 etl.NYPD_Vehicle_Collision_Typed
             union 
             select distinct
                 CrossStreet as StreetName,
-                _file
+                metadata_CO_ID
             from
                 etl.NYPD_Vehicle_Collision_Typed
         ) s
         group by
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
-		<map source="_file" target="Metadata_ST" as="metadata"/>
+		<map source="metadata_CO_ID" target="Metadata_ST" as="metadata"/>
 		<sql position="after">
         -- post processing can be put here
         </sql>
@@ -619,13 +619,13 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         select 
             src.IntersectingStreet,
             src.CrossStreet,
-            src._file,
+            src.metadata_CO_ID,
             stst.IS_ID_of
         from (
             select 
                 IntersectingStreet,
                 CrossStreet,
-                min(_file) as _file
+                min(metadata_CO_ID) as metadata_CO_ID
             from
                 etl.NYPD_Vehicle_Collision_Typed 
             group by
@@ -647,14 +647,14 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         and
             stst.ST_ID_crossing = st_c.ST_ID 
         <map source="IS_ID_of" target="IS_ID" as="surrogate key"/>
-		<map source="_file" target="Metadata_IS" as="metadata"/>
+		<map source="metadata_CO_ID" target="Metadata_IS" as="metadata"/>
 	</load>
 	<load source="NYPD_Vehicle_Collision_Typed" target="lST_intersecting_IS_of_ST_crossing">
         select
             i.IS_ID_of,
             t.ST_ID_intersecting,
             t.ST_ID_crossing,
-            t._file
+            t.metadata_CO_ID
         from (
             select
                 i.IS_ID as IS_ID_of,
@@ -668,7 +668,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         ) i
         join (
             select 
-                src._file,
+                src.metadata_CO_ID,
                 st_i.ST_ID as ST_ID_intersecting,
                 st_c.ST_ID as ST_ID_crossing,
                 row_number() over (order by st_i.ST_ID, st_c.ST_ID) as _rowId
@@ -676,7 +676,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
                 select 
                     IntersectingStreet,
                     CrossStreet,
-                    min(_file) as _file
+                    min(metadata_CO_ID) as metadata_CO_ID
                 from
                     etl.NYPD_Vehicle_Collision_Typed 
                 group by
@@ -705,7 +705,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key"/>
 		<map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key"/>
 		<map source="IS_ID_of" target="IS_ID_of"/>
-		<map source="_file" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
+		<map source="metadata_CO_ID" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
 	</load>
 	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="2">
         select
@@ -720,7 +720,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         join
             etl.NYPD_Vehicle_CollisionMetadata_Typed md
         on
-            md._file = src._file
+            md.metadata_CO_ID = src.metadata_CO_ID
         join
             [Traffic].dbo.lST_Street st_i
         on

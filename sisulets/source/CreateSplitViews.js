@@ -48,7 +48,8 @@ while(part = source.nextPart()) {
     AS
     SELECT
         t._id,
-        t._file,
+        t.metadata_CO_ID,
+        t.metadata_JB_ID,
         t._timestamp,
 ~*/
     var key;
@@ -94,7 +95,8 @@ while(part = source.nextPart()) {
     FROM (
         SELECT
             _id,
-            _file,
+            metadata_CO_ID,
+            metadata_JB_ID,
             _timestamp,
 ~*/
         while(term = part.nextTerm()) {
@@ -203,7 +205,8 @@ while(part = source.nextPart()) {
     CROSS APPLY (
         SELECT
             _id,
-            _file,
+            metadata_CO_ID,
+            metadata_JB_ID,
             _timestamp,
 ~*/
     var termOrTransform;

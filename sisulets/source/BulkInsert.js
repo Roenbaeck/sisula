@@ -26,7 +26,8 @@ CREATE PROCEDURE [$S_SCHEMA].[$source.qualified$_BulkInsert] (
 AS
 BEGIN
 SET NOCOUNT ON;
-DECLARE @file int;
+DECLARE @CO_ID int;
+DECLARE @JB_ID int;
 DECLARE @inserts int;
 DECLARE @updates int;
 ~*/
@@ -79,8 +80,8 @@ else {
 setInsertsMetadata('@inserts');
 if(METADATA) {
 /*~
-    SET @file = (
-        SELECT
+    SET @CO_ID = (
+        SELECT TOP 1
             CO_ID
         FROM
             ${METADATABASE}$.metadata.lCO_Container
@@ -89,28 +90,38 @@ if(METADATA) {
         AND
             CO_CRE_Container_Created = @lastModified
     );
+    SET @JB_ID = (
+        SELECT TOP 1
+            JB_ID
+        FROM
+            ${METADATABASE}$.metadata.lJB_Job
+        WHERE
+            JB_AID_Job_AgentJobId = @agentJobId
+    );
 ~*/
 }
 else {
 /*~
-    SET @file = 1 + (
+    SET @CO_ID = 1 + (
         SELECT TOP 1
-            _file
+            metadata_CO_ID
         FROM
             [$S_SCHEMA].[$source.qualified$_Raw]
         ORDER BY
-            _file
+            metadata_CO_ID
         DESC
     );
+    SET @JB_ID = CHECKSUM(@agentJobId);
 ~*/
 }
 if(source.split == 'bulk') {
 /*~
     UPDATE [$S_SCHEMA].[$source.qualified$_RawSplit]
     SET
-        _file = @file
-    WHERE
-        _file = 0;
+        metadata_CO_ID =
+          case when metadata_CO_ID = 0 then @CO_ID else metadata_CO_ID end,
+        metadata_JB_ID =
+          case when metadata_JB_ID = 0 then @JB_ID else metadata_JB_ID end;
 
     SET @updates = @@ROWCOUNT;
 ~*/
@@ -119,9 +130,10 @@ else {
 /*~
     UPDATE [$S_SCHEMA].[$source.qualified$_Raw]
     SET
-        _file = @file
-    WHERE
-        _file = 0;
+    metadata_CO_ID =
+      case when metadata_CO_ID = 0 then @CO_ID else metadata_CO_ID end,
+    metadata_JB_ID =
+      case when metadata_JB_ID = 0 then @JB_ID else metadata_JB_ID end;
 
     SET @updates = @@ROWCOUNT;
 ~*/
