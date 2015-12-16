@@ -232,7 +232,7 @@ begin
 			WO_STA_Work_Start = @start;
 	end
 
-	-- try to find job id
+	-- try to find job id (connected)
 	select
 		@JB_ID = JB_ID
 	from
@@ -251,6 +251,19 @@ begin
 		jb.JB_EST_EST_ExecutionStatus = 'Running'
 	where
 		wo.WO_ID = @WO_ID;
+
+	if(@JB_ID is null)
+	begin
+	  -- try to find job id (unconnected)
+		select
+			@JB_ID = JB_ID
+		from
+			metadata.lJB_Job jb
+		where
+			jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+		and
+			jb.JB_EST_EST_ExecutionStatus = 'Running';
+	end
 
 	if(@JB_ID is not null)
 	begin
