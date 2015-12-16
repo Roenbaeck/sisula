@@ -91,12 +91,18 @@ if(METADATA) {
             CO_CRE_Container_Created = @lastModified
     ), 0);
     SET @JB_ID = ISNULL((
-        SELECT TOP 1
-            JB_ID
+        SELECT
+            jb.JB_ID
         FROM
+            ${METADATABASE}$.metadata.lWO_part_JB_of wojb
+        JOIN
             ${METADATABASE}$.metadata.lJB_Job
+        ON
+            jb.JB_ID = wojb.JB_ID_of
+        AND
+            jb.JB_AID_Job_AgentJobId = @agentJobId
         WHERE
-            JB_AID_Job_AgentJobId = @agentJobId
+            wojb.WO_ID_part = @workId
     ), 0);
 ~*/
 }
