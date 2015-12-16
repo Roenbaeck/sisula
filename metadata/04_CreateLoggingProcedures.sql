@@ -135,10 +135,8 @@ begin
 				jb.JB_EST_EST_ExecutionStatus = 'Success'
 			from
 				metadata.lJB_Job jb
-			join
-				#JB_ID running
-			on
-				running.JB_ID = jb.JB_ID;
+			where
+				jb.JB_ID in (select JB_ID from #JB_ID);
 		end
 		if(@status = 'Failure')
 		begin
@@ -149,10 +147,8 @@ begin
 				jb.JB_EST_EST_ExecutionStatus = 'Failure'
 			from
 				metadata.lJB_Job jb
-			join
-				#JB_ID running
-			on
-				running.JB_ID = jb.JB_ID;
+			where
+				jb.JB_ID in (select JB_ID from #JB_ID);
 		end
 	end
 end
