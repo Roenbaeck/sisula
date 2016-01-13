@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="utf-8" />
+   <title>sisula Loading Report</title>
+
+   <HTA:APPLICATION
+        APPLICATIONNAME = "sisula Loading Report"
+        ICON = "LoadingReport.ico"
+        SCROLL="yes"
+ 	      SINGLEINSTANCE="yes"
+ 	      WINDOWSTATE="maximize"
+    />
+
+    <!-- web fonts -->
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'/>
+
+    <style type="text/css">
+      body {
+  		    font:               10pt "Open Sans", "Helvetica Neue", sans-serif;
+  		    color:              #000000;
+  		    background:         #f9f8f7;
+  		}
+      select, input {
+  			width: 				        10em;
+  		}
+  		label {
+  			position: 			      relative;
+  			top: 				          -3px;
+  			padding-right: 		    10px;
+  			padding-left: 		    10px;
+  		}
+    </style>
+
+    <script
+    type="text/javascript" src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization',
+           'version':'1','packages':['timeline']}]}"></script>
+
+    <script type="text/javascript" language="JavaScript">
+
+    function fetchDatabases() {
+      var statement = "select [name] from master.sys.databases;"
+      var result = query(statement);
+      populateSelect('databases', result, 'name', 'name');
+    }
+    function query(statement) {
+      var connection = new ActiveXObject("ADODB.Connection");
+      var connectionString =
+          "Provider=SQLOLEDB.1;" +
+          "Integrated Security=SSPI;" +
+          "Persist Security Info=True;" +
+          "Initial Catalog=" + (databases.value || 'master') + ";" +
+          "Data Source=" + server.value + ";" +
+          "Use Procedure for Prepare=1;" +
+          "Auto Translate=True;" +
+          "Packet Size=4096;" +
+          "Use Encryption for Data=False;" +
+          "Tag with column collation when possible=False"
+      connection.Open(connectionString);
+      // alert(connectionString);
+      return connection.Execute(statement);
+    }
+    function populateSelect(select, result, optionField, valueField) {
+      var selectElement = document.getElementById(select);
+      while (selectElement.firstChild) {
+          selectElement.removeChild(selectElement.firstChild);
+      }
+      while(!result.EOF) {
+        var option = document.createElement('option');
+        option.value = result.Fields(valueField);
+        option.innerHTML = result.Fields(optionField);
+        selectElement.appendChild(option);
+        result.MoveNext();
+      }
+    }
+
+    // google.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+
+      var statement = "\
+      select \
+      	jb.JB_ID, \
+      	jb.JB_EST_EST_ExecutionStatus, \
+      	jb.JB_NAM_Job_Name, \
+      	datepart(year, v.date_JB_STA_Job_Start) as year_JB_STA_Job_Start, \
+      	datepart(month, v.date_JB_STA_Job_Start) as month_JB_STA_Job_Start, \
+      	datepart(day, v.date_JB_STA_Job_Start) as day_JB_STA_Job_Start, \
+      	datepart(hour, v.time_JB_STA_Job_Start) as hour_JB_STA_Job_Start, \
+      	datepart(minute, v.time_JB_STA_Job_Start) as minute_JB_STA_Job_Start, \
+      	datepart(second, v.time_JB_STA_Job_Start) as second_JB_STA_Job_Start, \
+      	datepart(hour, v.time_JB_END_Job_End) as hour_JB_END_Job_End, \
+      	datepart(minute, v.time_JB_END_Job_End) as minute_JB_END_Job_End, \
+      	datepart(second, v.time_JB_END_Job_End) as second_JB_END_Job_End, \
+          DATEDIFF(s, jb.JB_STA_Job_Start, t.trans_JB_END_Job_End) as Job_Duration, \
+      	jb.JB_AID_Job_AgentJobId \
+      from \
+      	metadata.lJB_Job jb \
+      outer apply ( \
+          values ( \
+      		case when jb.JB_EST_EST_ExecutionStatus = 'Running' then getdate() else jb.JB_END_Job_End end \
+      	) \
+      ) t (trans_JB_END_Job_End) \
+      outer apply ( \
+      	values ( \
+      		cast(jb.JB_STA_Job_Start as date), \
+      		cast(t.trans_JB_END_Job_End as date), \
+      		cast(jb.JB_STA_Job_Start as time(0)), \
+      		cast(t.trans_JB_END_Job_End as time(0)) \
+      	) \
+      ) v (date_JB_STA_Job_Start, date_JB_END_Job_End, time_JB_STA_Job_Start, time_JB_END_Job_End) \
+      ";
+      var result = query(statement);
+
+      var year_JB_STA_Job_Start,
+          month_JB_STA_Job_Start,
+          day_JB_STA_Job_Start,
+          hour_JB_STA_Job_Start,
+          minute_JB_STA_Job_Start,
+          second_JB_STA_Job_Start,
+          hour_JB_END_Job_End,
+          minute_JB_END_Job_End,
+          second_JB_END_Job_End,
+          JB_NAM_Job_Name,
+          JB_EST_EST_ExecutionStatus,
+          JB_ID;
+
+      var rows = [];
+
+      while(!result.EOF) {
+        year_JB_STA_Job_Start = result.Fields('year_JB_STA_Job_Start');
+        month_JB_STA_Job_Start = result.Fields('month_JB_STA_Job_Start');
+        day_JB_STA_Job_Start = result.Fields('day_JB_STA_Job_Start');
+        hour_JB_STA_Job_Start = result.Fields('hour_JB_STA_Job_Start');
+        minute_JB_STA_Job_Start = result.Fields('minute_JB_STA_Job_Start');
+        second_JB_STA_Job_Start = result.Fields('second_JB_STA_Job_Start');
+        hour_JB_END_Job_End = result.Fields('hour_JB_END_Job_End');
+        minute_JB_END_Job_End = result.Fields('minute_JB_END_Job_End');
+        second_JB_END_Job_End = result.Fields('second_JB_END_Job_End');
+        JB_NAM_Job_Name = result.Fields('JB_NAM_Job_Name');
+        JB_EST_EST_ExecutionStatus = result.Fields('JB_EST_EST_ExecutionStatus');
+        JB_ID = result.Fields('JB_ID');
+
+        rows.push([
+            year_JB_STA_Job_Start + '-' + month_JB_STA_Job_Start + '-' + day_JB_STA_Job_Start,
+            JB_NAM_Job_Name + ': ' + JB_EST_EST_ExecutionStatus,
+            new Date(0, 0, 0, hour_JB_STA_Job_Start, minute_JB_STA_Job_Start, second_JB_STA_Job_Start),
+            new Date(0, 0, 0, hour_JB_END_Job_End, minute_JB_END_Job_End, second_JB_END_Job_End)
+        ]);
+        result.MoveNext();
+      }
+
+      var container = document.getElementById('chart');
+      var chart = new google.visualization.Timeline(container);
+
+      var dataTable = new google.visualization.DataTable();
+      dataTable.addColumn({ type: 'string', id: 'Day' });
+      dataTable.addColumn({ type: 'string', id: 'Name' });
+      dataTable.addColumn({ type: 'date', id: 'Start' });
+      dataTable.addColumn({ type: 'date', id: 'End' });
+
+      dataTable.addRows(rows);
+
+      var options = {
+          timeline: { groupByRowLabel: false }
+      };
+
+      chart.draw(dataTable, options);
+    }
+    </script>
+    </head>
+<body>
+  <h1>Loading Report</h1>
+  <label for="server">Server:</label><input id="server" type="text" value="DWSERVERNAME" />
+	<input type="button" value="Connect" onclick="fetchDatabases()" />
+	<label for="database">Database:</label><select id="databases" onchange="drawChart()"></select>
+  <div id="chart" style="height: 1000px;"></div>
+</body>
+</html>
