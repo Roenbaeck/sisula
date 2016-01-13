@@ -96,7 +96,7 @@ if(METADATA) {
         FROM
             ${METADATABASE}$.metadata.lWO_part_JB_of wojb
         JOIN
-            ${METADATABASE}$.metadata.lJB_Job
+            ${METADATABASE}$.metadata.lJB_Job jb
         ON
             jb.JB_ID = wojb.JB_ID_of
         AND
