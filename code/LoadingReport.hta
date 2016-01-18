@@ -110,6 +110,8 @@
       		cast(t.trans_JB_END_Job_End as time(3)) \
       	) \
       ) v (date_JB_STA_Job_Start, date_JB_END_Job_End, time_JB_STA_Job_Start, time_JB_END_Job_End) \
+      order by \
+        JB_ID desc; \
       ";
       var result = query(statement);
 
