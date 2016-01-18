@@ -5,15 +5,17 @@
    <title>sisula Loading Report</title>
 
    <HTA:APPLICATION
-        APPLICATIONNAME = "sisula Loading Report"
-        ICON = "LoadingReport.ico"
+        APPLICATIONNAME="sisula Loading Report"
+        ICON="LoadingReport.ico"
         SCROLL="yes"
  	      SINGLEINSTANCE="yes"
  	      WINDOWSTATE="maximize"
+        ID="sisula"
     />
 
-    <!-- web fonts -->
+    <!-- web fonts (in case we need a nice one for text later)
     <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'/>
+    -->
 
     <style type="text/css">
       body {
@@ -74,8 +76,6 @@
       }
     }
 
-    // google.setOnLoadCallback(drawChart);
-
     function drawChart() {
 
       var statement = "\
@@ -89,10 +89,11 @@
       	datepart(hour, v.time_JB_STA_Job_Start) as hour_JB_STA_Job_Start, \
       	datepart(minute, v.time_JB_STA_Job_Start) as minute_JB_STA_Job_Start, \
       	datepart(second, v.time_JB_STA_Job_Start) as second_JB_STA_Job_Start, \
+        datepart(millisecond, v.time_JB_STA_Job_Start) as millisecond_JB_STA_Job_Start, \
       	datepart(hour, v.time_JB_END_Job_End) as hour_JB_END_Job_End, \
       	datepart(minute, v.time_JB_END_Job_End) as minute_JB_END_Job_End, \
       	datepart(second, v.time_JB_END_Job_End) as second_JB_END_Job_End, \
-          DATEDIFF(s, jb.JB_STA_Job_Start, t.trans_JB_END_Job_End) as Job_Duration, \
+        datepart(millisecond, v.time_JB_END_Job_End) as millisecond_JB_END_Job_End, \
       	jb.JB_AID_Job_AgentJobId \
       from \
       	metadata.lJB_Job jb \
@@ -105,8 +106,8 @@
       	values ( \
       		cast(jb.JB_STA_Job_Start as date), \
       		cast(t.trans_JB_END_Job_End as date), \
-      		cast(jb.JB_STA_Job_Start as time(0)), \
-      		cast(t.trans_JB_END_Job_End as time(0)) \
+      		cast(jb.JB_STA_Job_Start as time(3)), \
+      		cast(t.trans_JB_END_Job_End as time(3)) \
       	) \
       ) v (date_JB_STA_Job_Start, date_JB_END_Job_End, time_JB_STA_Job_Start, time_JB_END_Job_End) \
       ";
@@ -118,9 +119,11 @@
           hour_JB_STA_Job_Start,
           minute_JB_STA_Job_Start,
           second_JB_STA_Job_Start,
+          millisecond_JB_STA_Job_Start,
           hour_JB_END_Job_End,
           minute_JB_END_Job_End,
           second_JB_END_Job_End,
+          millisecond_JB_END_Job_End,
           JB_NAM_Job_Name,
           JB_EST_EST_ExecutionStatus,
           JB_ID;
@@ -129,51 +132,102 @@
 
       while(!result.EOF) {
         year_JB_STA_Job_Start = result.Fields('year_JB_STA_Job_Start');
-        month_JB_STA_Job_Start = result.Fields('month_JB_STA_Job_Start');
-        day_JB_STA_Job_Start = result.Fields('day_JB_STA_Job_Start');
+        month_JB_STA_Job_Start = ('00' + result.Fields('month_JB_STA_Job_Start')).slice(-2);
+        day_JB_STA_Job_Start = ('00' + result.Fields('day_JB_STA_Job_Start')).slice(-2);
         hour_JB_STA_Job_Start = result.Fields('hour_JB_STA_Job_Start');
         minute_JB_STA_Job_Start = result.Fields('minute_JB_STA_Job_Start');
         second_JB_STA_Job_Start = result.Fields('second_JB_STA_Job_Start');
+        millisecond_JB_STA_Job_Start = result.Fields('millisecond_JB_STA_Job_Start');
         hour_JB_END_Job_End = result.Fields('hour_JB_END_Job_End');
         minute_JB_END_Job_End = result.Fields('minute_JB_END_Job_End');
         second_JB_END_Job_End = result.Fields('second_JB_END_Job_End');
+        millisecond_JB_END_Job_End = result.Fields('millisecond_JB_END_Job_End');
         JB_NAM_Job_Name = result.Fields('JB_NAM_Job_Name');
-        JB_EST_EST_ExecutionStatus = result.Fields('JB_EST_EST_ExecutionStatus');
+        JB_EST_EST_ExecutionStatus = '' + result.Fields('JB_EST_EST_ExecutionStatus');
         JB_ID = result.Fields('JB_ID');
 
-        rows.push([
-            year_JB_STA_Job_Start + '-' + month_JB_STA_Job_Start + '-' + day_JB_STA_Job_Start,
-            JB_NAM_Job_Name + ': ' + JB_EST_EST_ExecutionStatus,
-            new Date(0, 0, 0, hour_JB_STA_Job_Start, minute_JB_STA_Job_Start, second_JB_STA_Job_Start),
-            new Date(0, 0, 0, hour_JB_END_Job_End, minute_JB_END_Job_End, second_JB_END_Job_End)
-        ]);
+        rows.push({
+            c:[
+              {v: year_JB_STA_Job_Start + '-' + month_JB_STA_Job_Start + '-' + day_JB_STA_Job_Start},
+              {v: JB_ID + ' ' + JB_NAM_Job_Name},
+              {v: new Date(
+                    0, 0, 0,
+                    hour_JB_STA_Job_Start,
+                    minute_JB_STA_Job_Start,
+                    second_JB_STA_Job_Start,
+                    millisecond_JB_STA_Job_Start
+                  )
+              },
+              {v: new Date(
+                    0, 0, 0,
+                    hour_JB_END_Job_End,
+                    minute_JB_END_Job_End,
+                    second_JB_END_Job_End,
+                    millisecond_JB_END_Job_End
+                  )
+              },
+              {v: JB_EST_EST_ExecutionStatus}
+            ]
+        });
+
         result.MoveNext();
       }
 
       var container = document.getElementById('chart');
       var chart = new google.visualization.Timeline(container);
 
-      var dataTable = new google.visualization.DataTable();
-      dataTable.addColumn({ type: 'string', id: 'Day' });
-      dataTable.addColumn({ type: 'string', id: 'Name' });
-      dataTable.addColumn({ type: 'date', id: 'Start' });
-      dataTable.addColumn({ type: 'date', id: 'End' });
+      var dataTable = new google.visualization.DataTable(
+        {
+          cols: [
+            {id: 'Day',    label: 'Day',    type: 'string'},
+            {id: 'Name',   label: 'Name',   type: 'string'},
+            {id: 'Start',  label: 'Start',  type: 'datetime'},
+            {id: 'End',    label: 'End',    type: 'datetime'},
+            {id: 'Result', label: 'Result', type: 'string'}
+          ],
+          rows: rows
+        }
+      );
 
-      dataTable.addRows(rows);
+      var rowHeight = 41;
+      var chartHeight = (dataTable.getNumberOfRows() + 1) * rowHeight;
+
+      var colors = [];
+      var colorMap = {
+          // should contain a map of category -> color for every category
+          Success: '#99d594',
+          Failure: '#fc8d59',
+          Running: '#ffffbf'
+      }
+      for (var i = 0; i < dataTable.getNumberOfRows(); i++) {
+          colors.push(colorMap[dataTable.getValue(i, 4)]);
+      }
 
       var options = {
-          timeline: { groupByRowLabel: false }
+          timeline: { groupByRowLabel: true, colorByRowLabel: false },
+          avoidOverlappingGridLines: false,
+          colors: colors,
+          height: chartHeight,
+          width: '100%'
       };
 
-      chart.draw(dataTable, options);
+      // use a DataView to hide the category column from the Timeline
+      var view = new google.visualization.DataView(dataTable);
+      view.setColumns([0, 1, 2, 3]);
+
+      chart.draw(view, options);
+
+      document.getElementById('refresh').disabled = false;
     }
     </script>
     </head>
 <body>
-  <h1>Loading Report</h1>
-  <label for="server">Server:</label><input id="server" type="text" value="DWSERVERNAME" />
-	<input type="button" value="Connect" onclick="fetchDatabases()" />
+  <label for="server">Server:</label><input id="server" type="text" value="" />
+	<input id="connect" type="button" value="Connect" onclick="fetchDatabases()" />
 	<label for="database">Database:</label><select id="databases" onchange="drawChart()"></select>
-  <div id="chart" style="height: 1000px;"></div>
+  <input id="refresh" type="button" value="Refresh" onclick="drawChart()" disabled="true" />
+  <p>
+    <div id="chart"></div>
+  </p>
 </body>
 </html>
