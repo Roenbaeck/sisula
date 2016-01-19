@@ -149,7 +149,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -218,7 +218,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -288,7 +288,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -353,12 +353,18 @@ EXEC Stage.metadata._WorkSourceToTarget
             CO_CRE_Container_Created = @lastModified
     ), 0);
     SET @JB_ID = ISNULL((
-        SELECT TOP 1
-            JB_ID
+        SELECT
+            jb.JB_ID
         FROM
-            Stage.metadata.lJB_Job
+            Stage.metadata.lWO_part_JB_of wojb
+        JOIN
+            Stage.metadata.lJB_Job jb
+        ON
+            jb.JB_ID = wojb.JB_ID_of
+        AND
+            jb.JB_AID_Job_AgentJobId = @agentJobId
         WHERE
-            JB_AID_Job_AgentJobId = @agentJobId
+            wojb.WO_ID_part = @workId
     ), 0);
     UPDATE [etl].[NYPD_Vehicle_Raw]
     SET
@@ -411,7 +417,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -518,16 +524,16 @@ BEGIN TRY
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF([2], '''') AS [OccurrencePrecinctCode],
-			NULLIF([3], '''') AS [CollisionID],
-			NULLIF([4], '''') AS [CollisionKey],
-			NULLIF([5], '''') AS [CollisionOrder],
-			NULLIF([6], '''') AS [IntersectionAddress],
-			NULLIF([7], '''') AS [IntersectingStreet],
-			NULLIF([8], '''') AS [CrossStreet],
-			NULLIF([9], '''') AS [CollisionVehicleCount],
-			NULLIF([10], '''') AS [CollisionInjuredCount],
-			NULLIF([11], '''') AS [CollisionKilledCount]
+			NULLIF([1], '''') AS [OccurrencePrecinctCode],
+			NULLIF([2], '''') AS [CollisionID],
+			NULLIF([3], '''') AS [CollisionKey],
+			NULLIF([4], '''') AS [CollisionOrder],
+			NULLIF([5], '''') AS [IntersectionAddress],
+			NULLIF([6], '''') AS [IntersectingStreet],
+			NULLIF([7], '''') AS [CrossStreet],
+			NULLIF([8], '''') AS [CollisionVehicleCount],
+			NULLIF([9], '''') AS [CollisionInjuredCount],
+			NULLIF([10], '''') AS [CollisionKilledCount]
 		FROM (
             SELECT
                 [match],
@@ -536,7 +542,7 @@ BEGIN TRY
                 [etl].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(.*?);[0-9]{4}([0-9]{9})[^;]*;(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);'')
         ) s
         PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4], [5], [6], [7], [8], [9], [10], [11])
+            MAX([match]) FOR idx IN ([1], [2], [3], [4], [5], [6], [7], [8], [9], [10])
         ) p
     ) m
     CROSS APPLY (
@@ -626,9 +632,9 @@ BEGIN TRY
     ) forcedMaterializationTrick
     CROSS APPLY (
 		SELECT
-			NULLIF([2], '''') AS [month],
-			NULLIF([3], '''') AS [year],
-			NULLIF([4], '''') AS [notes]
+			NULLIF([1], '''') AS [month],
+			NULLIF([2], '''') AS [year],
+			NULLIF([3], '''') AS [notes]
 		FROM (
             SELECT
                 [match],
@@ -637,7 +643,7 @@ BEGIN TRY
                 [etl].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(?=.*?(\w+)\s+[0-9]{4})?(?=.*?\w+\s+([0-9]{4}))?(?=.*?NOTES[^:]*:(.*))?'')
         ) s
         PIVOT (
-            MAX([match]) FOR idx IN ([2], [3], [4])
+            MAX([match]) FOR idx IN ([1], [2], [3])
         ) p
     ) m
     CROSS APPLY (
@@ -693,7 +699,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -803,7 +809,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -912,7 +918,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -1092,7 +1098,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (

@@ -53,7 +53,6 @@ while(part = source.nextPart()) {
         t._timestamp,
 ~*/
     var key;
-    var i = 2;
     while(term = part.nextTerm()) {
         var isKeyConstituent = false;
         while(key = part.nextKey()) {
@@ -156,7 +155,7 @@ while(part = source.nextPart()) {
         else if (part.pattern)
             regex += part.pattern;
 
-        i = 2;
+        var i = 1;
         while(term = part.nextTerm()) {
             pivots += '[' + i + ']';
             if(part.hasMoreTerms())
@@ -175,7 +174,7 @@ while(part = source.nextPart()) {
     CROSS APPLY (
 		SELECT
 ~*/
-        i = 2;
+        i = 1;
         while(term = part.nextTerm()) {
             var nulls = '';
             if(term.nulls)

@@ -11,7 +11,7 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: metadata_CO_ID to Metadata_ST (as metadata)
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
@@ -131,7 +131,7 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: metadata_CO_ID to Metadata_IS (as metadata)
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
@@ -259,7 +259,7 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
@@ -429,7 +429,7 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Tue Dec 15 16:26:27 UTC+0100 2015 by e-lronnback
+-- Generated: Tue Jan 19 14:41:43 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (

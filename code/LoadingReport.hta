@@ -13,15 +13,14 @@
         ID="sisula"
     />
 
-    <!-- web fonts (in case we need a nice one for text later)
+    <!-- web fonts -->
     <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'/>
-    -->
 
     <style type="text/css">
       body {
-  		    font:               10pt "Open Sans", "Helvetica Neue", sans-serif;
-  		    color:              #000000;
-  		    background:         #f9f8f7;
+		    font:               10pt "Open Sans", "Helvetica Neue", sans-serif;
+		    color:              #000000;
+		    background:         #f9f8f7;
   		}
       select, input {
   			width: 				        10em;
@@ -76,7 +75,7 @@
       }
     }
 
-    function drawChart() {
+    function drawJobChart() {
 
       var statement = "\
       select \
@@ -144,14 +143,14 @@
         minute_JB_END_Job_End = result.Fields('minute_JB_END_Job_End');
         second_JB_END_Job_End = result.Fields('second_JB_END_Job_End');
         millisecond_JB_END_Job_End = result.Fields('millisecond_JB_END_Job_End');
-        JB_NAM_Job_Name = result.Fields('JB_NAM_Job_Name');
+        JB_NAM_Job_Name = '' + result.Fields('JB_NAM_Job_Name');
         JB_EST_EST_ExecutionStatus = '' + result.Fields('JB_EST_EST_ExecutionStatus');
-        JB_ID = result.Fields('JB_ID');
+        JB_ID =  0 + result.Fields('JB_ID');
 
         rows.push({
             c:[
               {v: year_JB_STA_Job_Start + '-' + month_JB_STA_Job_Start + '-' + day_JB_STA_Job_Start},
-              {v: JB_ID + ' ' + JB_NAM_Job_Name},
+              {v: JB_NAM_Job_Name},
               {v: new Date(
                     0, 0, 0,
                     hour_JB_STA_Job_Start,
@@ -168,14 +167,15 @@
                     millisecond_JB_END_Job_End
                   )
               },
-              {v: JB_EST_EST_ExecutionStatus}
+              {v: JB_EST_EST_ExecutionStatus},
+              {v: JB_ID}
             ]
         });
 
         result.MoveNext();
       }
 
-      var container = document.getElementById('chart');
+      var container = document.getElementById('job');
       var chart = new google.visualization.Timeline(container);
 
       var dataTable = new google.visualization.DataTable(
@@ -185,7 +185,8 @@
             {id: 'Name',   label: 'Name',   type: 'string'},
             {id: 'Start',  label: 'Start',  type: 'datetime'},
             {id: 'End',    label: 'End',    type: 'datetime'},
-            {id: 'Result', label: 'Result', type: 'string'}
+            {id: 'Result', label: 'Result', type: 'string'},
+            {id: 'JB_ID',  label: 'JB_ID',  type: 'number'}
           ],
           rows: rows
         }
@@ -210,7 +211,7 @@
           avoidOverlappingGridLines: false,
           colors: colors,
           height: chartHeight,
-          width: '100%'
+          width: '90%'
       };
 
       // use a DataView to hide the category column from the Timeline
@@ -218,18 +219,198 @@
       view.setColumns([0, 1, 2, 3]);
 
       chart.draw(view, options);
+      google.visualization.events.addListener(chart, 'select',
+        function selectHandler(e) {
+          drawWorkChart(dataTable.getValue(chart.getSelection()[0].row, 5));
+        }
+      );
 
       document.getElementById('refresh').disabled = false;
     }
+
+    function drawWorkChart(JB_ID) {
+      var statement = "\
+      select \
+      	wo.WO_ID, \
+      	wo.WO_EST_EST_ExecutionStatus, \
+      	wo.WO_NAM_Work_Name, \
+      	datepart(year, v.date_WO_STA_Work_Start) as year_WO_STA_Work_Start, \
+      	datepart(month, v.date_WO_STA_Work_Start) as month_WO_STA_Workb_Start, \
+      	datepart(day, v.date_WO_STA_Work_Start) as day_WO_STA_Work_Start, \
+      	datepart(hour, v.time_WO_STA_Work_Start) as hour_WO_STA_Work_Start, \
+      	datepart(minute, v.time_WO_STA_Work_Start) as minute_WO_STA_Work_Start, \
+      	datepart(second, v.time_WO_STA_Work_Start) as second_WO_STA_Work_Start, \
+      	datepart(millisecond, v.time_WO_STA_Work_Start) as millisecond_WO_STA_Work_Start, \
+      	datepart(hour, v.time_WO_END_Work_End) as hour_WO_END_Work_End, \
+      	datepart(minute, v.time_WO_END_Work_End) as minute_WO_END_Work_End, \
+      	datepart(second, v.time_WO_END_Work_End) as second_WO_END_Work_End, \
+      	datepart(millisecond, v.time_WO_END_Work_End) as millisecond_WO_END_Work_End, \
+      	isnull(wo.WO_ERM_Work_ErrorMessage, '') as WO_ERM_Work_ErrorMessage, \
+          v.Work_Duration, \
+      	wo.WO_AID_Work_AgentStepId \
+      from  \
+      	metadata.lWO_part_JB_of wojb \
+      join \
+      	metadata.lWO_Work wo \
+      on \
+      	wo.WO_ID = wojb.WO_ID_part \
+      outer apply ( \
+          values ( \
+      		case when wo.WO_EST_EST_ExecutionStatus = 'Running' then getdate() else wo.WO_END_Work_End end \
+      	) \
+      ) t (trans_WO_END_Work_End) \
+      outer apply ( \
+      	values ( \
+      		cast(wo.WO_STA_Work_Start as date), \
+      		cast(t.trans_WO_END_Work_End as date), \
+      		cast(WO.WO_STA_Work_Start as time(3)), \
+      		cast(t.trans_WO_END_Work_End as time(3)), \
+      		DATEDIFF(s, wo.WO_STA_Work_Start, t.trans_WO_END_Work_End)  \
+      	) \
+      ) v (date_WO_STA_Work_Start, date_WO_END_Work_End, time_WO_STA_Work_Start, time_WO_END_Work_End, Work_Duration) \
+      where \
+      	wojb.JB_ID_of = " + JB_ID + " \
+      ";
+      var result = query(statement);
+
+      var year_WO_STA_Work_Start,
+          month_WO_STA_Workb_Start,
+          day_WO_STA_Work_Start,
+          hour_WO_STA_Work_Start,
+          minute_WO_STA_Work_Start,
+          second_WO_STA_Work_Start,
+          millisecond_WO_STA_Work_Start,
+          hour_WO_END_Work_End,
+          minute_WO_END_Work_End,
+          second_WO_END_Work_End,
+          millisecond_WO_END_Work_End,
+          WO_NAM_Work_Name,
+          WO_EST_EST_ExecutionStatus,
+          WO_ERM_Work_ErrorMessage,
+          WO_ID;
+
+      var rows = [];
+      var errorMessage = '';
+
+      while(!result.EOF) {
+        year_WO_STA_Work_Start = result.Fields('year_WO_STA_Work_Start');
+        month_WO_STA_Workb_Start = ('00' + result.Fields('month_WO_STA_Workb_Start')).slice(-2);
+        day_WO_STA_Work_Start = ('00' + result.Fields('day_WO_STA_Work_Start')).slice(-2);
+        hour_WO_STA_Work_Start = result.Fields('hour_WO_STA_Work_Start');
+        minute_WO_STA_Work_Start = result.Fields('minute_WO_STA_Work_Start');
+        second_WO_STA_Work_Start = result.Fields('second_WO_STA_Work_Start');
+        millisecond_WO_STA_Work_Start = result.Fields('millisecond_WO_STA_Work_Start');
+        hour_WO_END_Work_End = result.Fields('hour_WO_END_Work_End');
+        minute_WO_END_Work_End = result.Fields('minute_WO_END_Work_End');
+        second_WO_END_Work_End = result.Fields('second_WO_END_Work_End');
+        millisecond_WO_END_Work_End = result.Fields('millisecond_WO_END_Work_End');
+        WO_NAM_Work_Name = '' + result.Fields('WO_NAM_Work_Name');
+        WO_EST_EST_ExecutionStatus = '' + result.Fields('WO_EST_EST_ExecutionStatus');
+        WO_ERM_Work_ErrorMessage = '' + result.Fields('WO_ERM_Work_ErrorMessage');
+        WO_ID =  0 + result.Fields('WO_ID');
+
+        rows.push({
+            c:[
+              {v: year_WO_STA_Work_Start + '-' + month_WO_STA_Workb_Start + '-' + day_WO_STA_Work_Start},
+              {v: WO_NAM_Work_Name},
+              {v: new Date(
+                    0, 0, 0,
+                    hour_WO_STA_Work_Start,
+                    minute_WO_STA_Work_Start,
+                    second_WO_STA_Work_Start,
+                    millisecond_WO_STA_Work_Start
+                  )
+              },
+              {v: new Date(
+                    0, 0, 0,
+                    hour_WO_END_Work_End,
+                    minute_WO_END_Work_End,
+                    second_WO_END_Work_End,
+                    millisecond_WO_END_Work_End
+                  )
+              },
+              {v: WO_EST_EST_ExecutionStatus},
+              {v: WO_ID}
+            ]
+        });
+
+        errorMessage += WO_ERM_Work_ErrorMessage;
+
+        result.MoveNext();
+      }
+
+      var container = document.getElementById('work');
+      while(container.firstChild){
+          container.removeChild(container.firstChild);
+      }
+
+      var text = document.getElementById('text');
+      while(text.firstChild){
+          text.removeChild(text.firstChild);
+      }
+
+      if(rows.length > 0) {
+        var chart = new google.visualization.Timeline(container);
+
+        var dataTable = new google.visualization.DataTable(
+          {
+            cols: [
+              {id: 'Day',    label: 'Day',    type: 'string'},
+              {id: 'Name',   label: 'Name',   type: 'string'},
+              {id: 'Start',  label: 'Start',  type: 'datetime'},
+              {id: 'End',    label: 'End',    type: 'datetime'},
+              {id: 'Result', label: 'Result', type: 'string'},
+              {id: 'WO_ID',  label: 'WO_ID',  type: 'number'}
+            ],
+            rows: rows
+          }
+        );
+
+        var rowHeight = 41;
+        var chartHeight = (dataTable.getNumberOfRows() + 1) * rowHeight;
+
+        var colors = [];
+        var colorMap = {
+            // should contain a map of category -> color for every category
+            Success: '#99d594',
+            Failure: '#fc8d59',
+            Running: '#ffffbf'
+        }
+        for (var i = 0; i < dataTable.getNumberOfRows(); i++) {
+            colors.push(colorMap[dataTable.getValue(i, 4)]);
+        }
+
+        var options = {
+            timeline: { groupByRowLabel: true, colorByRowLabel: false },
+            avoidOverlappingGridLines: true,
+            colors: colors,
+            height: 100,
+            width: '90%'
+        };
+
+        // use a DataView to hide the category column from the Timeline
+        var view = new google.visualization.DataView(dataTable);
+        view.setColumns([0, 1, 2, 3]);
+
+        chart.draw(view, options);
+        text.appendChild(document.createTextNode(errorMessage));
+
+      }
+      text.appendChild(document.createElement('br'));
+      text.appendChild(document.createTextNode('JB_ID: ' + JB_ID));
+    }
+
     </script>
     </head>
 <body>
   <label for="server">Server:</label><input id="server" type="text" value="" />
 	<input id="connect" type="button" value="Connect" onclick="fetchDatabases()" />
-	<label for="database">Database:</label><select id="databases" onchange="drawChart()"></select>
-  <input id="refresh" type="button" value="Refresh" onclick="drawChart()" disabled="true" />
+	<label for="database">Database:</label><select id="databases" onchange="drawJobChart()"></select>
+  <input id="refresh" type="button" value="Refresh" onclick="drawJobChart()" disabled="true" />
   <p>
-    <div id="chart"></div>
+    <div id="work"></div>
+    <div id="text"></div>
+    <div id="job"></div>
   </p>
 </body>
 </html>

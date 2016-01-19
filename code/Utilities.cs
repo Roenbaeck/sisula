@@ -5,12 +5,16 @@ using System.Data;
 using System.Data.Sql;
 using System.Data.SqlClient;
 using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data.SqlTypes;
 using System.Text.RegularExpressions;
 using Microsoft.SqlServer.Server;
 using Microsoft.SqlServer.Types;
 
-
+/*
+ * 2016-01-19 Added support for groups with quantifiers that capture multiple substrings
+ */
 public partial class Splitter {
     [
         Microsoft.SqlServer.Server.SqlFunction (
@@ -22,14 +26,26 @@ public partial class Splitter {
         )
     ]
     public static IEnumerable InitMethod([SqlFacet(MaxSize = -1)] SqlString row, SqlString pattern) {
-        return Regex.Match(row.ToString(), pattern.ToString(), RegexOptions.None).Groups;
+		ICollection<Capture> captures = new Collection<Capture>();
+		bool first = true;
+		foreach (Group group in Regex.Match(row.ToString(), pattern.ToString(), RegexOptions.None).Groups) {
+			if(first) {
+				first = false;
+			}
+			else {
+				foreach(Capture capture in group.Captures) {
+					captures.Add(capture);
+				}
+			}
+		}
+        return captures;
     }
     public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match) {
-        Group group = (Group) fromEnumeration;
-        if(group.Value == String.Empty)
+        Capture capture = (Capture) fromEnumeration;
+        if(capture.Value == String.Empty)
             match = SqlString.Null;
         else
-            match = new SqlString(group.Value);
+            match = new SqlString(capture.Value);
     }
 }
 
