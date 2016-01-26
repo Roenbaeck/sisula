@@ -102,7 +102,8 @@ GO
 
 CREATE FUNCTION [$S_SCHEMA].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
-	[match] nvarchar(max)
+	[match] nvarchar(max),
+	[index] int
 ) AS EXTERNAL NAME ${S_SCHEMA}$Utilities.Splitter.InitMethod;
 GO
 

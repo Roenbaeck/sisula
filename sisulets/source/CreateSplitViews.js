@@ -190,7 +190,7 @@ while(part = source.nextPart()) {
 		FROM (
             SELECT
                 [match],
-                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
+                ROW_NUMBER() OVER (ORDER BY [index] ASC) AS idx
             FROM
                 [$S_SCHEMA].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''$regex'')
         ) s

@@ -14,6 +14,7 @@ using Microsoft.SqlServer.Types;
 
 /*
  * 2016-01-19 Added support for groups with quantifiers that capture multiple substrings
+ * 2016-01-26 Added index of match as output (so we can sort the matches using it)
  */
 public partial class Splitter {
     [
@@ -40,12 +41,16 @@ public partial class Splitter {
 		}
         return captures;
     }
-    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match) {
+    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index) {
         Capture capture = (Capture) fromEnumeration;
-        if(capture.Value == String.Empty)
+        if(capture.Value == String.Empty) {
             match = SqlString.Null;
-        else
+            index = -1;
+        }
+        else {
             match = new SqlString(capture.Value);
+            index = new SqlInt32(capture.Index);
+        }
     }
 }
 
