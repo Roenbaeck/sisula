@@ -310,3 +310,25 @@ public partial class IsType {
     private static readonly Regex splitValue = new Regex("(?<whole>[0-9]+)?(?:[^0-9](?<scale>[0-9]+))?", RegexOptions.Compiled);
     private static readonly Regex splitType = new Regex("(?<type>[^()]+)(?:\\s*\\((?<precision>[^,()]*),?(?<scale>[^)]*)\\))?", RegexOptions.Compiled);
 }
+
+/*
+    
+*/
+public partial class ToLocalTime {
+    [
+        Microsoft.SqlServer.Server.SqlFunction (
+            SystemDataAccess  = SystemDataAccessKind.None,
+            DataAccess        = DataAccessKind.None,
+            IsDeterministic   = true,
+            IsPrecise         = true
+        )
+    ]
+    public static SqlDateTime InitMethod(SqlDateTime sqlDatetime) {
+        try {
+            return TimeZone.CurrentTimeZone.ToLocalTime(sqlDatetime.Value);
+        }
+        catch {
+            return SqlDateTime.Null;
+        }
+    }
+}

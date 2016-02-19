@@ -12,6 +12,10 @@ IF Object_Id('${S_SCHEMA}$.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[ColumnSplitter];
 GO
 
+IF Object_Id('${S_SCHEMA}$.ToLocalTime', 'FS') IS NOT NULL
+DROP FUNCTION [$S_SCHEMA].[ToLocalTime];
+GO
+
 
 IF EXISTS (
 	SELECT
@@ -108,8 +112,13 @@ RETURNS TABLE (
 GO
 
 CREATE FUNCTION [$S_SCHEMA].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
-RETURNS BIT
+RETURNS bit
 AS EXTERNAL NAME ${S_SCHEMA}$Utilities.IsType.InitMethod;
+GO
+
+CREATE FUNCTION [$S_SCHEMA].ToLocalTime(@sqlDatetime AS datetime)
+RETURNS datetime
+AS EXTERNAL NAME ${S_SCHEMA}$Utilities.ToLocalTime.InitMethod;
 GO
 
 CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(

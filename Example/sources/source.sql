@@ -16,6 +16,9 @@ GO
 IF Object_Id('etl.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [etl].[ColumnSplitter];
 GO
+IF Object_Id('etl.ToLocalTime', 'FS') IS NOT NULL
+DROP FUNCTION [etl].[ToLocalTime];
+GO
 IF EXISTS (
 	SELECT
 		*
@@ -105,8 +108,12 @@ RETURNS TABLE (
 ) AS EXTERNAL NAME etlUtilities.Splitter.InitMethod;
 GO
 CREATE FUNCTION [etl].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
-RETURNS BIT
+RETURNS bit
 AS EXTERNAL NAME etlUtilities.IsType.InitMethod;
+GO
+CREATE FUNCTION [etl].ToLocalTime(@sqlDatetime AS datetime)
+RETURNS datetime
+AS EXTERNAL NAME etlUtilities.ToLocalTime.InitMethod;
 GO
 CREATE PROCEDURE [etl].ColumnSplitter(
 	@table AS nvarchar(4000),
@@ -150,7 +157,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -219,7 +226,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -289,7 +296,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -418,7 +425,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -700,7 +707,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -810,7 +817,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -919,7 +926,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -1099,7 +1106,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Tue Jan 26 15:02:27 UTC+0100 2016 by e-lronnback
+-- Generated: Fri Feb 19 10:03:02 UTC+0100 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
