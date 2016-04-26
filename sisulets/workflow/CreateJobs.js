@@ -2,17 +2,51 @@
 ------------------------------- $workflow.name -------------------------------
 USE msdb;
 GO
+
+DECLARE @scheduleId int;
+DECLARE @scheduleName varchar(128);
 ~*/
 
 var job, step, id, lastId;
 while(job = workflow.nextJob()) {
 /*~
+SELECT
+    s.schedule_id,
+    s.name
+INTO
+    [#schedules $job.name]
+FROM
+    dbo.sysschedules s
+JOIN
+    dbo.sysjobschedules js
+ON
+    js.schedule_id = s.schedule_id
+JOIN
+    dbo.sysjobs j
+ON
+    j.job_id = js.job_id
+WHERE
+    j.name = '$job.name';
+
+DECLARE schedules SCROLL CURSOR FOR SELECT schedule_id, name FROM [#schedules $job.name];
+OPEN schedules;
+
 IF EXISTS (select job_id from [dbo].[sysjobs] where name = '$job.name')
-EXEC sp_delete_job
-    -- mandatory parameters below and optional ones above this line
-    @job_name   = '$job.name';
-GO
-sp_add_job
+BEGIN
+    FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
+    WHILE(@@FETCH_STATUS = 0) 
+    BEGIN
+        --PRINT 'Detaching schedule "' + @scheduleName + '" from $job.name';
+        EXEC msdb.dbo.sp_detach_schedule @job_name = '$job.name', @schedule_id = @scheduleId;
+        FETCH NEXT FROM schedules INTO @scheduleId, @scheduleName;
+    END
+
+    EXEC sp_delete_job
+        -- mandatory parameters below and optional ones above this line
+        @job_name   = '$job.name';
+END
+
+EXEC sp_add_job
     $(job.enabled)?                 @enabled                = $job.enabled,
     $(job._job)?                    @description            = '$job._job',
     $(job.start_step_id)?           @start_step_id          = $job.start_step_id,
@@ -29,15 +63,15 @@ sp_add_job
     $(job.owner_login_name)?        @owner_login_name       = $job.owner_login_name,
     -- mandatory parameters below and optional ones above this line
     @job_name   = '$job.name';
-GO
-sp_add_jobserver
+
+EXEC sp_add_jobserver
     -- mandatory parameters below and optional ones above this line
     @job_name   = '$job.name';
-GO
+
 ~*/
     if(METADATA) {
 /*~
-sp_add_jobstep
+EXEC sp_add_jobstep
     @job_name           = '$job.name',
     @step_name          = 'Log starting of job',
     @step_id            = 1,
@@ -45,12 +79,11 @@ sp_add_jobstep
     @database_name      = '${METADATABASE}$',
     @command            = 'EXEC metadata._JobStarting @workflowName = ''$workflow.name'', @jobName = ''$job.name'', @agentJobId = $$(ESCAPE_NONE(JOBID))',
     @on_success_action  = 3; -- go to the next step
-GO
 ~*/
     }
     while(step = job.nextStep()) {
 /*~
-sp_add_jobstep
+EXEC sp_add_jobstep
     $(step.job_id)?                 @job_id                 = $step.job_id,
     $(step.step_id)?                @step_id                = $step.step_id,
     $(step.subsystem)?              @subsystem              = '$step.subsystem',
@@ -74,50 +107,57 @@ sp_add_jobstep
     -- mandatory parameters below and optional ones above this line
     @job_name       = '$job.name',
     @step_name      = '$step.name';
-GO
 ~*/
     }
     if(METADATA) {
 /*~
-sp_add_jobstep
+EXEC sp_add_jobstep
     @job_name           = '$job.name',
     @step_name          = 'Log success of job',
     @subsystem          = 'TSQL',
     @database_name      = '${METADATABASE}$',
     @command            = 'EXEC metadata._JobStopping @name = ''$job.name'', @status = ''Success''',
     @on_success_action  = 1; -- quit with success
-GO
 
-sp_add_jobstep
+EXEC sp_add_jobstep
     @job_name           = '$job.name',
     @step_name          = 'Log failure of job',
     @subsystem          = 'TSQL',
     @database_name      = '${METADATABASE}$',
     @command            = 'EXEC metadata._JobStopping @name = ''$job.name'', @status = ''Failure''',
     @on_success_action  = 2; -- quit with failure
-GO
 ~*/
         id = 2;
         lastId = job.jobsteps.length;
         while(step = job.nextStep()) {
 /*~
-sp_update_jobstep
+EXEC sp_update_jobstep
     @job_name           = '$job.name',
     @step_id            = ${(id++)}$,
     -- ensure logging when any step fails
     @on_fail_action     = 4, -- go to step with id
     @on_fail_step_id    = ${(lastId + 3)}$;
-GO
 ~*/
         }
 /*~
-sp_update_jobstep
+EXEC sp_update_jobstep
     @job_name           = '$job.name',
     @step_id            = ${(lastId + 1)}$,
     -- ensure logging when last step succeeds
     @on_success_action  = 4, -- go to step with id
     @on_success_step_id = ${(lastId + 2)}$;
-GO
 ~*/
     }
+/*~
+FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
+WHILE(@@FETCH_STATUS = 0) 
+BEGIN
+    --PRINT 'Attaching schedule "' + @scheduleName + '" to $job.name';
+    EXEC msdb.dbo.sp_attach_schedule @job_name = '$job.name', @schedule_id = @scheduleId;
+    FETCH NEXT FROM schedules INTO @scheduleId, @scheduleName;
+END
+CLOSE schedules;
+DEALLOCATE schedules;
+DROP TABLE [#schedules $job.name];
+~*/    
 }
