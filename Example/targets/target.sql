@@ -11,7 +11,7 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: metadata_CO_ID to Metadata_ST (as metadata)
 --
--- Generated: Tue Apr 26 16:11:25 UTC+0200 2016 by e-lronnback
+-- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
@@ -53,7 +53,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     -- Preparations before the merge -----------------
         -- preparations can be put here
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic].[dbo].[lST_Street] AS t
+    MERGE INTO [Traffic].[dbo].[lST_Street] AS [target]
     USING (
         select
             StreetName, 
@@ -73,17 +73,20 @@ EXEC Stage.metadata._WorkSourceToTarget
         ) s
         group by
             StreetName
-    ) AS s
+    ) AS [source]
     ON (
-        s.[StreetName] = t.[ST_NAM_Street_Name]
+        [source].[StreetName] = [target].[ST_NAM_Street_Name]
+    AND (
+            [target].ST_NAM_Street_Name != 'TESTING CONDITIONS'
+        )
     )
     WHEN NOT MATCHED THEN INSERT (
         [ST_NAM_Street_Name],
         [Metadata_ST]
     )
     VALUES (
-        s.[StreetName],
-        s.[metadata_CO_ID]
+        [source].[StreetName],
+        [source].[metadata_CO_ID]
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
@@ -131,7 +134,7 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: metadata_CO_ID to Metadata_IS (as metadata)
 --
--- Generated: Tue Apr 26 16:11:25 UTC+0200 2016 by e-lronnback
+-- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
@@ -171,7 +174,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS t
+    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS [target]
     USING (
         select 
             src.IntersectingStreet,
@@ -203,15 +206,15 @@ EXEC Stage.metadata._WorkSourceToTarget
             stst.ST_ID_intersecting = st_i.ST_ID
         and
             stst.ST_ID_crossing = st_c.ST_ID 
-    ) AS s
+    ) AS [source]
     ON (
-        s.[IS_ID_of] = t.[IS_ID]
+        [source].[IS_ID_of] = [target].[IS_ID]
     )
     WHEN NOT MATCHED THEN INSERT (
         [Metadata_IS]
     )
     VALUES (
-        s.[metadata_CO_ID]
+        [source].[metadata_CO_ID]
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
@@ -259,7 +262,7 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Tue Apr 26 16:11:25 UTC+0200 2016 by e-lronnback
+-- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
@@ -299,7 +302,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic].[dbo].[lST_intersecting_IS_of_ST_crossing] AS t
+    MERGE INTO [Traffic].[dbo].[lST_intersecting_IS_of_ST_crossing] AS [target]
     USING (
         select
             i.IS_ID_of,
@@ -353,11 +356,11 @@ EXEC Stage.metadata._WorkSourceToTarget
         ) t
         on
             t._rowId = i._rowId
-    ) AS s
+    ) AS [source]
     ON (
-        s.[ST_ID_intersecting] = t.[ST_ID_intersecting]
+        [source].[ST_ID_intersecting] = [target].[ST_ID_intersecting]
     AND
-        s.[ST_ID_crossing] = t.[ST_ID_crossing]
+        [source].[ST_ID_crossing] = [target].[ST_ID_crossing]
     )
     WHEN NOT MATCHED THEN INSERT (
         [ST_ID_intersecting],
@@ -366,18 +369,18 @@ EXEC Stage.metadata._WorkSourceToTarget
         [Metadata_ST_intersecting_IS_of_ST_crossing]
     )
     VALUES (
-        s.[ST_ID_intersecting],
-        s.[ST_ID_crossing],
-        s.[IS_ID_of],
-        s.[metadata_CO_ID]
+        [source].[ST_ID_intersecting],
+        [source].[ST_ID_crossing],
+        [source].[IS_ID_of],
+        [source].[metadata_CO_ID]
     )
     WHEN MATCHED AND (
-        (t.[IS_ID_of] is null OR s.[IS_ID_of] <> t.[IS_ID_of])
+        ([target].[IS_ID_of] is null OR [source].[IS_ID_of] <> [target].[IS_ID_of])
     ) 
     THEN UPDATE
     SET
-        t.[IS_ID_of] = s.[IS_ID_of],
-        t.[Metadata_ST_intersecting_IS_of_ST_crossing] = s.[metadata_CO_ID]
+        [target].[IS_ID_of] = [source].[IS_ID_of],
+        [target].[Metadata_ST_intersecting_IS_of_ST_crossing] = [source].[metadata_CO_ID]
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
@@ -429,7 +432,7 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Tue Apr 26 16:11:25 UTC+0200 2016 by e-lronnback
+-- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
@@ -469,7 +472,7 @@ EXEC Stage.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Perform the actual merge ----------------------
-    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS t
+    MERGE INTO [Traffic].[dbo].[lIS_Intersection] AS [target]
     USING (
         select
             md.ChangedAt,
@@ -501,9 +504,9 @@ EXEC Stage.metadata._WorkSourceToTarget
         group by
             md.ChangedAt,
             stst.IS_ID_of
-    ) AS s
+    ) AS [source]
     ON (
-        s.[IS_ID_of] = t.[IS_ID]
+        [source].[IS_ID_of] = [target].[IS_ID]
     )
     WHEN NOT MATCHED THEN INSERT (
         [IS_COL_Intersection_CollisionCount],
@@ -516,42 +519,42 @@ EXEC Stage.metadata._WorkSourceToTarget
         [IS_KIL_ChangedAt]
     )
     VALUES (
-        s.[CollisionCount],
-        s.[ChangedAt],
-        s.[CollisionVehicleCount],
-        s.[ChangedAt],
-        s.[CollisionInjuredCount],
-        s.[ChangedAt],
-        s.[CollisionKilledCount],
-        s.[ChangedAt]
+        [source].[CollisionCount],
+        [source].[ChangedAt],
+        [source].[CollisionVehicleCount],
+        [source].[ChangedAt],
+        [source].[CollisionInjuredCount],
+        [source].[ChangedAt],
+        [source].[CollisionKilledCount],
+        [source].[ChangedAt]
     )
     WHEN MATCHED AND (
-        (t.[IS_COL_Intersection_CollisionCount] is null OR s.[CollisionCount] <> t.[IS_COL_Intersection_CollisionCount])
+        ([target].[IS_COL_Intersection_CollisionCount] is null OR [source].[CollisionCount] <> [target].[IS_COL_Intersection_CollisionCount])
     OR 
-        (t.[IS_COL_ChangedAt] is null OR s.[ChangedAt] <> t.[IS_COL_ChangedAt])
+        ([target].[IS_COL_ChangedAt] is null OR [source].[ChangedAt] <> [target].[IS_COL_ChangedAt])
     OR 
-        (t.[IS_VEH_Intersection_VehicleCount] is null OR s.[CollisionVehicleCount] <> t.[IS_VEH_Intersection_VehicleCount])
+        ([target].[IS_VEH_Intersection_VehicleCount] is null OR [source].[CollisionVehicleCount] <> [target].[IS_VEH_Intersection_VehicleCount])
     OR 
-        (t.[IS_VEH_ChangedAt] is null OR s.[ChangedAt] <> t.[IS_VEH_ChangedAt])
+        ([target].[IS_VEH_ChangedAt] is null OR [source].[ChangedAt] <> [target].[IS_VEH_ChangedAt])
     OR 
-        (t.[IS_INJ_Intersection_InjuredCount] is null OR s.[CollisionInjuredCount] <> t.[IS_INJ_Intersection_InjuredCount])
+        ([target].[IS_INJ_Intersection_InjuredCount] is null OR [source].[CollisionInjuredCount] <> [target].[IS_INJ_Intersection_InjuredCount])
     OR 
-        (t.[IS_INJ_ChangedAt] is null OR s.[ChangedAt] <> t.[IS_INJ_ChangedAt])
+        ([target].[IS_INJ_ChangedAt] is null OR [source].[ChangedAt] <> [target].[IS_INJ_ChangedAt])
     OR 
-        (t.[IS_KIL_Intersection_KilledCount] is null OR s.[CollisionKilledCount] <> t.[IS_KIL_Intersection_KilledCount])
+        ([target].[IS_KIL_Intersection_KilledCount] is null OR [source].[CollisionKilledCount] <> [target].[IS_KIL_Intersection_KilledCount])
     OR 
-        (t.[IS_KIL_ChangedAt] is null OR s.[ChangedAt] <> t.[IS_KIL_ChangedAt])
+        ([target].[IS_KIL_ChangedAt] is null OR [source].[ChangedAt] <> [target].[IS_KIL_ChangedAt])
     ) 
     THEN UPDATE
     SET
-        t.[IS_COL_Intersection_CollisionCount] = s.[CollisionCount],
-        t.[IS_COL_ChangedAt] = s.[ChangedAt],
-        t.[IS_VEH_Intersection_VehicleCount] = s.[CollisionVehicleCount],
-        t.[IS_VEH_ChangedAt] = s.[ChangedAt],
-        t.[IS_INJ_Intersection_InjuredCount] = s.[CollisionInjuredCount],
-        t.[IS_INJ_ChangedAt] = s.[ChangedAt],
-        t.[IS_KIL_Intersection_KilledCount] = s.[CollisionKilledCount],
-        t.[IS_KIL_ChangedAt] = s.[ChangedAt]
+        [target].[IS_COL_Intersection_CollisionCount] = [source].[CollisionCount],
+        [target].[IS_COL_ChangedAt] = [source].[ChangedAt],
+        [target].[IS_VEH_Intersection_VehicleCount] = [source].[CollisionVehicleCount],
+        [target].[IS_VEH_ChangedAt] = [source].[ChangedAt],
+        [target].[IS_INJ_Intersection_InjuredCount] = [source].[CollisionInjuredCount],
+        [target].[IS_INJ_ChangedAt] = [source].[ChangedAt],
+        [target].[IS_KIL_Intersection_KilledCount] = [source].[CollisionKilledCount],
+        [target].[IS_KIL_ChangedAt] = [source].[ChangedAt]
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
@@ -611,6 +614,9 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
 		<map source="metadata_CO_ID" target="Metadata_ST" as="metadata"/>
+		<condition>
+            [target].ST_NAM_Street_Name != ''TESTING CONDITIONS''
+        </condition>
 		<sql position="after">
         -- post processing can be put here
         </sql>

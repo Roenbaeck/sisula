@@ -55,17 +55,17 @@ DECLARE @actions TABLE (
     
 /*~    
     -- Perform the actual merge ----------------------
-    MERGE INTO [$target.database].[$T_SCHEMA].[$load.target] AS t
+    MERGE INTO [$target.database].[$T_SCHEMA].[$load.target] AS [target]
     USING~*/
     if(load._load) {
 /*~ (
         $load._load
-    ) AS s
+    ) AS [source]
 ~*/
     }
     else {
 /*~
-        $load.source AS s
+        $load.source AS [source]
 ~*/
     }
 /*~
@@ -94,10 +94,17 @@ DECLARE @actions TABLE (
     var maps = naturalKeys.concat(surrogateKeys);
     for(i = 0; map = maps[i]; i++) {
 /*~
-        s.[$map.source] = t.[$map.target]
+        [source].[$map.source] = [target].[$map.target]
     $(i < maps.length - 1)? AND
 ~*/
-    }
+    } 
+    if(load.condition) {
+/*~
+    AND (
+        $load.condition
+        )
+~*/        
+    } 
 /*~    
     )
 ~*/
@@ -117,7 +124,7 @@ DECLARE @actions TABLE (
 ~*/
         for(i = 0; map = maps[i]; i++) {
 /*~
-        s.[$map.source]$(i < maps.length - 1)?,
+        [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
         }    
 /*~
@@ -131,7 +138,7 @@ DECLARE @actions TABLE (
 ~*/
         for(i = 0; map = maps[i]; i++) {
 /*~
-        (t.[$map.target] is null OR s.[$map.source] <> t.[$map.target])
+        ([target].[$map.target] is null OR [source].[$map.source] <> [target].[$map.target])
     $(i < maps.length - 1)? OR    
 ~*/
         }    
@@ -143,7 +150,7 @@ DECLARE @actions TABLE (
         var maps = others.concat(metadata);
         for(i = 0; map = maps[i]; i++) {
 /*~
-        t.[$map.target] = s.[$map.source]$(i < maps.length - 1)?,
+        [target].[$map.target] = [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
         }    
     } // end of if nonkeys

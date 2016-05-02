@@ -99,6 +99,9 @@ var MAP = {
             map: function(xml, fragment) {
                 return fragment.getAttribute('source') + '__' + fragment.getAttribute('target');
             },
+            condition: function(xml, fragment) {
+                return 'singleton'; // there can be only one!
+            },
             load: function(xml, fragment) {
                 var pass = fragment.getAttribute('pass');
                 pass = pass ? '__' + pass : '';

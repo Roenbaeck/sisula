@@ -24,6 +24,9 @@
             StreetName
         <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
         <map source="metadata_CO_ID" target="Metadata_ST" as="metadata"/>
+        <condition>
+            [target].ST_NAM_Street_Name != 'TESTING CONDITIONS'
+        </condition>
         <sql position="after">
         -- post processing can be put here
         </sql>

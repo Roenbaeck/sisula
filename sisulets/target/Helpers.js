@@ -43,5 +43,6 @@ while(load = target.nextLoad()) {
     load.hasMap = function(map) {
         return this.maps.indexOf(map.name) >= 0;
     };
+    load.condition = load.condition && load.condition.singleton && load.condition.singleton._condition ? load.condition.singleton._condition : null;
 }
 
