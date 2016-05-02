@@ -185,7 +185,7 @@ begin
 	from
 		metadata.lWO_Work wo
 	join
-	  metadata.lWO_part_JB_of wojb
+		metadata.lWO_part_JB_of wojb
 	on
 		wojb.WO_ID_part = wo.WO_ID
 	join
@@ -254,15 +254,19 @@ begin
 
 	if(@JB_ID is null)
 	begin
-	  -- try to find job id (unconnected)
-		select
-			@JB_ID = JB_ID
-		from
-			metadata.lJB_Job jb
-		where
-			jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
-		and
-			jb.JB_EST_EST_ExecutionStatus = 'Running';
+	  	-- try to find job id (unconnected)
+	  	set @JB_ID = (
+			select top 1
+				JB_ID
+			from
+				metadata.lJB_Job jb
+			where
+				jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+			and
+				jb.JB_EST_EST_ExecutionStatus = 'Running'
+			order by
+				jb.JB_STA_Job_Start desc
+		);
 	end
 
 	if(@JB_ID is not null)
