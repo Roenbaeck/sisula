@@ -34,7 +34,7 @@ OPEN schedules;
 IF EXISTS (select job_id from [dbo].[sysjobs] where name = '$job.name')
 BEGIN
     FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-    WHILE(@@FETCH_STATUS = 0) 
+    WHILE(@@FETCH_STATUS = 0)
     BEGIN
         --PRINT 'Detaching schedule "' + @scheduleName + '" from $job.name';
         EXEC msdb.dbo.sp_detach_schedule @job_name = '$job.name', @schedule_id = @scheduleId;
@@ -130,6 +130,10 @@ EXEC sp_add_jobstep
         id = 2;
         lastId = job.jobsteps.length;
         while(step = job.nextStep()) {
+          if(step.on_fail_action) {
+            id++; // skip already assigned actions
+          }
+          else {
 /*~
 EXEC sp_update_jobstep
     @job_name           = '$job.name',
@@ -138,6 +142,7 @@ EXEC sp_update_jobstep
     @on_fail_action     = 4, -- go to step with id
     @on_fail_step_id    = ${(lastId + 3)}$;
 ~*/
+          }
         }
 /*~
 EXEC sp_update_jobstep
@@ -150,7 +155,7 @@ EXEC sp_update_jobstep
     }
 /*~
 FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-WHILE(@@FETCH_STATUS = 0) 
+WHILE(@@FETCH_STATUS = 0)
 BEGIN
     --PRINT 'Attaching schedule "' + @scheduleName + '" to $job.name';
     EXEC msdb.dbo.sp_attach_schedule @job_name = '$job.name', @schedule_id = @scheduleId;
@@ -159,5 +164,5 @@ END
 CLOSE schedules;
 DEALLOCATE schedules;
 DROP TABLE [#schedules $job.name];
-~*/    
+~*/
 }
