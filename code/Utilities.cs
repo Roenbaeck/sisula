@@ -1,5 +1,10 @@
 // In order to compile this code:
 // C:\sisula\code>C:\WINDOWS\Microsoft.NET\Framework64\v3.5\csc.exe /optimize /debug- /target:library /out:Utilities.dll Utilities.cs
+// If you get an error complaining about missing Microsoft.SqlServer.Types modify and add this option:
+// /reference:"C:\Program Files\Microsoft SQL Server\120\Shared\Microsoft.SqlServer.Types.dll"
+// or this option, depending on where the DLL is located:
+// /reference:"C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies\Microsoft.SqlServer.Types.dll"
+
 using System;
 using System.Data;
 using System.Data.Sql;
@@ -15,6 +20,7 @@ using Microsoft.SqlServer.Types;
 /*
  * 2016-01-19 Added support for groups with quantifiers that capture multiple substrings
  * 2016-01-26 Added index of match as output (so we can sort the matches using it)
+ * 2017-03-09 Fixed bug caused by returning index = -1 for non matching captures
  */
 public partial class Splitter {
     [
@@ -43,19 +49,13 @@ public partial class Splitter {
     }
     public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index) {
         Capture capture = (Capture) fromEnumeration;
-        if(capture.Value == String.Empty) {
-            match = SqlString.Null;
-            index = -1;
-        }
-        else {
-            match = new SqlString(capture.Value);
-            index = new SqlInt32(capture.Index);
-        }
+        match = (capture.Value == String.Empty) ? SqlString.Null : new SqlString(capture.Value);
+        index = new SqlInt32(capture.Index);
     }
 }
 
 /*
- * 2015-12-08 Added by Lars Rönnbäck
+ * 2015-12-08 Added by Lars Rï¿½nnbï¿½ck
  * 2015-12-09 Bug fixes
  */
 public partial class ColumnSplitter
@@ -312,7 +312,7 @@ public partial class IsType {
 }
 
 /*
-    
+
 */
 public partial class ToLocalTime {
     [
