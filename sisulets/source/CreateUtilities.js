@@ -16,7 +16,7 @@ IF Object_Id('${S_SCHEMA}$.ToLocalTime', 'FS') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[ToLocalTime];
 GO
 
-
+-- BEGIN! LEGACY --
 IF EXISTS (
 	SELECT
 		*
@@ -26,99 +26,56 @@ IF EXISTS (
 		name = '${S_SCHEMA}$Utilities'
 )
 DROP ASSEMBLY ${S_SCHEMA}$Utilities;
+-- END! LEGACY --
 
-IF NOT EXISTS (
+declare @version char(4) =
+	case
+		when @@VERSION like '% 2016 %' then '2016'
+		when @@VERSION like '% 2014 %' then '2014'
+		when @@VERSION like '% 2012 %' then '2012'
+		when @@VERSION like '% 2008 %' then '2008'
+		else '????'
+	end
+
+IF EXISTS (
 	SELECT
 		*
 	FROM
 		sys.assemblies
 	WHERE
-		name = '${S_SCHEMA}$Utilities'
+		name = 'Utilities'
 )
-BEGIN TRY -- using Microsoft.SQLServer.Types version 13 (2016)
-	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
-	AUTHORIZATION dbo
-	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2016.dll'
+BEGIN TRY
+	ALTER ASSEMBLY Utilities
+	FROM '${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2016 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2016 was NOT installed.'
-END CATCH
-
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = '${S_SCHEMA}$Utilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 12 (2014)
-	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
+END TRY BEGIN CATCH END CATCH
+ELSE -- assembly does not exist
+BEGIN TRY
+	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2014.dll'
+	FROM '${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2014 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2014 was NOT installed.'
-END CATCH
-
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = '${S_SCHEMA}$Utilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012)
-	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
-	AUTHORIZATION dbo
-	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2012.dll'
-	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2012 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2012 was NOT installed.'
-END CATCH
-
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = '${S_SCHEMA}$Utilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 10 (2008)
-	CREATE ASSEMBLY ${S_SCHEMA}$Utilities
-	AUTHORIZATION dbo
-	FROM '${VARIABLES.SisulaPath}$\code\\Utilities2008.dll'
-	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2008 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2008 was NOT installed.'
-END CATCH
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
+END TRY BEGIN CATCH END CATCH
 GO
 
 CREATE FUNCTION [$S_SCHEMA].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
 	[match] nvarchar(max),
 	[index] int
-) AS EXTERNAL NAME ${S_SCHEMA}$Utilities.Splitter.InitMethod;
+) AS EXTERNAL NAME Utilities.Splitter.InitMethod;
 GO
 
 CREATE FUNCTION [$S_SCHEMA].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
 RETURNS bit
-AS EXTERNAL NAME ${S_SCHEMA}$Utilities.IsType.InitMethod;
+AS EXTERNAL NAME Utilities.IsType.InitMethod;
 GO
 
 CREATE FUNCTION [$S_SCHEMA].ToLocalTime(@sqlDatetime AS datetime)
 RETURNS datetime
-AS EXTERNAL NAME ${S_SCHEMA}$Utilities.ToLocalTime.InitMethod;
+AS EXTERNAL NAME Utilities.ToLocalTime.InitMethod;
 GO
 
 CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
@@ -127,7 +84,7 @@ CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
 	@pattern AS nvarchar(4000),
 	@includeColumns AS nvarchar(4000) = null
 )
-AS EXTERNAL NAME ${S_SCHEMA}$Utilities.ColumnSplitter.InitMethod;
+AS EXTERNAL NAME Utilities.ColumnSplitter.InitMethod;
 GO
 
 IF NOT EXISTS (
