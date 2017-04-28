@@ -25,7 +25,7 @@ OPEN schedules;
 IF EXISTS (select job_id from [dbo].[sysjobs] where name = 'NYPD_Vehicle_Staging')
 BEGIN
     FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-    WHILE(@@FETCH_STATUS = 0) 
+    WHILE(@@FETCH_STATUS = 0)
     BEGIN
         --PRINT 'Detaching schedule "' + @scheduleName + '" from NYPD_Vehicle_Staging';
         EXEC msdb.dbo.sp_detach_schedule @job_name = 'NYPD_Vehicle_Staging', @schedule_id = @scheduleId;
@@ -233,7 +233,7 @@ EXEC sp_update_jobstep
     @on_success_action = 4, -- go to step with id
     @on_success_step_id = 11;
 FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-WHILE(@@FETCH_STATUS = 0) 
+WHILE(@@FETCH_STATUS = 0)
 BEGIN
     --PRINT 'Attaching schedule "' + @scheduleName + '" to NYPD_Vehicle_Staging';
     EXEC msdb.dbo.sp_attach_schedule @job_name = 'NYPD_Vehicle_Staging', @schedule_id = @scheduleId;
@@ -264,7 +264,7 @@ OPEN schedules;
 IF EXISTS (select job_id from [dbo].[sysjobs] where name = 'NYPD_Vehicle_Loading')
 BEGIN
     FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-    WHILE(@@FETCH_STATUS = 0) 
+    WHILE(@@FETCH_STATUS = 0)
     BEGIN
         --PRINT 'Detaching schedule "' + @scheduleName + '" from NYPD_Vehicle_Loading';
         EXEC msdb.dbo.sp_detach_schedule @job_name = 'NYPD_Vehicle_Loading', @schedule_id = @scheduleId;
@@ -372,7 +372,7 @@ EXEC sp_update_jobstep
     @on_success_action = 4, -- go to step with id
     @on_success_step_id = 6;
 FETCH FIRST FROM schedules INTO @scheduleId, @scheduleName;
-WHILE(@@FETCH_STATUS = 0) 
+WHILE(@@FETCH_STATUS = 0)
 BEGIN
     --PRINT 'Attaching schedule "' + @scheduleName + '" to NYPD_Vehicle_Loading';
     EXEC msdb.dbo.sp_attach_schedule @job_name = 'NYPD_Vehicle_Loading', @schedule_id = @scheduleId;

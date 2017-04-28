@@ -19,6 +19,7 @@ GO
 IF Object_Id('etl.ToLocalTime', 'FS') IS NOT NULL
 DROP FUNCTION [etl].[ToLocalTime];
 GO
+-- BEGIN! LEGACY --
 IF EXISTS (
 	SELECT
 		*
@@ -28,92 +29,51 @@ IF EXISTS (
 		name = 'etlUtilities'
 )
 DROP ASSEMBLY etlUtilities;
-IF NOT EXISTS (
+-- END! LEGACY --
+declare @version char(4) =
+	case
+		when @@VERSION like '% 2016 %' then '2016'
+		when @@VERSION like '% 2014 %' then '2014'
+		when @@VERSION like '% 2012 %' then '2012'
+		when @@VERSION like '% 2008 %' then '2008'
+		else '????'
+	end
+IF EXISTS (
 	SELECT
 		*
 	FROM
 		sys.assemblies
 	WHERE
-		name = 'etlUtilities'
+		name = 'Utilities'
 )
-BEGIN TRY -- using Microsoft.SQLServer.Types version 13 (2016)
-	CREATE ASSEMBLY etlUtilities
-	AUTHORIZATION dbo
-	FROM 'C:\sisula\code\Utilities2016.dll'
+BEGIN TRY
+	ALTER ASSEMBLY Utilities
+	FROM 'C:\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2016 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2016 was NOT installed.'
-END CATCH
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = 'etlUtilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 12 (2014)
-	CREATE ASSEMBLY etlUtilities
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
+END TRY BEGIN CATCH END CATCH
+ELSE -- assembly does not exist
+BEGIN TRY
+	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'C:\sisula\code\Utilities2014.dll'
+	FROM 'C:\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2014 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2014 was NOT installed.'
-END CATCH
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = 'etlUtilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 11 (2012)
-	CREATE ASSEMBLY etlUtilities
-	AUTHORIZATION dbo
-	FROM 'C:\sisula\code\Utilities2012.dll'
-	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2012 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2012 was NOT installed.'
-END CATCH
-IF NOT EXISTS (
-	SELECT
-		*
-	FROM
-		sys.assemblies
-	WHERE
-		name = 'etlUtilities'
-)
-BEGIN TRY -- using Microsoft.SQLServer.Types version 10 (2008)
-	CREATE ASSEMBLY etlUtilities
-	AUTHORIZATION dbo
-	FROM 'C:\sisula\code\Utilities2008.dll'
-	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server 2008 was installed.'
-END TRY
-BEGIN CATCH
-	PRINT 'The .NET CLR for SQL Server 2008 was NOT installed.'
-END CATCH
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
+END TRY BEGIN CATCH END CATCH
 GO
 CREATE FUNCTION [etl].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
 	[match] nvarchar(max),
 	[index] int
-) AS EXTERNAL NAME etlUtilities.Splitter.InitMethod;
+) AS EXTERNAL NAME Utilities.Splitter.InitMethod;
 GO
 CREATE FUNCTION [etl].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
 RETURNS bit
-AS EXTERNAL NAME etlUtilities.IsType.InitMethod;
+AS EXTERNAL NAME Utilities.IsType.InitMethod;
 GO
 CREATE FUNCTION [etl].ToLocalTime(@sqlDatetime AS datetime)
 RETURNS datetime
-AS EXTERNAL NAME etlUtilities.ToLocalTime.InitMethod;
+AS EXTERNAL NAME Utilities.ToLocalTime.InitMethod;
 GO
 CREATE PROCEDURE [etl].ColumnSplitter(
 	@table AS nvarchar(4000),
@@ -121,7 +81,7 @@ CREATE PROCEDURE [etl].ColumnSplitter(
 	@pattern AS nvarchar(4000),
 	@includeColumns AS nvarchar(4000) = null
 )
-AS EXTERNAL NAME etlUtilities.ColumnSplitter.InitMethod;
+AS EXTERNAL NAME Utilities.ColumnSplitter.InitMethod;
 GO
 IF NOT EXISTS (
     SELECT value
@@ -157,7 +117,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -226,7 +186,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -296,7 +256,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -425,7 +385,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -545,7 +505,7 @@ BEGIN TRY
 		FROM (
             SELECT
                 [match],
-                ROW_NUMBER() OVER (ORDER BY [index] ASC) AS idx
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
                 [etl].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(.*?);[0-9]{4}([0-9]{9})[^;]*;(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);'')
         ) s
@@ -646,7 +606,7 @@ BEGIN TRY
 		FROM (
             SELECT
                 [match],
-                ROW_NUMBER() OVER (ORDER BY [index] ASC) AS idx
+                ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS idx
             FROM
                 [etl].Splitter(ISNULL(forcedMaterializationTrick.[row], ''''), N''(?=.*?(\w+)\s+[0-9]{4})?(?=.*?\w+\s+([0-9]{4}))?(?=.*?NOTES[^:]*:(.*))?'')
         ) s
@@ -707,7 +667,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -817,7 +777,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -926,7 +886,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -1106,7 +1066,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Mon May 2 11:10:30 UTC+0200 2016 by e-lronnback
+-- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (

@@ -86,6 +86,18 @@ for %%f in (%FolderPath%\targets\*.xml) do (
 )
 
 REM -------------------------------------------------------------------
+REM   Create BIML files
+REM -------------------------------------------------------------------
+for %%f in (%FolderPath%\targets\*.xml) do (
+  set OutputFile=%FolderPath%\biml\%%~nf.biml
+  echo  * Transforming target to BIML file:
+  echo    %%~f ...
+  echo    !OutputFile!
+  Sisulator.js -x "%%~f" -m Target -d biml.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
+)
+
+REM -------------------------------------------------------------------
 REM   Create SQL Server Agent job code
 REM -------------------------------------------------------------------
 for %%f in (%FolderPath%\workflows\*.xml) do (
