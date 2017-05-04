@@ -11,7 +11,7 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: metadata_CO_ID to Metadata_ST (as metadata)
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
@@ -33,7 +33,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
@@ -41,7 +41,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_Collision_Typed', 
@@ -96,12 +96,12 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
         -- post processing can be put here
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -109,7 +109,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -134,7 +134,7 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: metadata_CO_ID to Metadata_IS (as metadata)
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
@@ -156,7 +156,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
@@ -164,7 +164,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_Collision_Typed', 
@@ -224,10 +224,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -235,7 +235,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -262,7 +262,7 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
@@ -284,7 +284,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
@@ -292,7 +292,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_Collision_Typed', 
@@ -389,10 +389,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -400,7 +400,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -432,7 +432,7 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
@@ -454,7 +454,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Traffic', 
     @configurationType = 'Target', 
     @WO_ID = @workId OUTPUT, 
@@ -462,7 +462,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_Collision_Typed', 
@@ -563,10 +563,10 @@ EXEC Stage.metadata._WorkSourceToTarget
         @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
     FROM
         @actions;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
-    EXEC Stage.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -574,7 +574,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -761,12 +761,12 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    Stage.metadata.lCF_Configuration
+    Traffic.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO Stage.metadata.lCF_Configuration (
+    INSERT INTO Traffic.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -779,7 +779,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE Stage.metadata.lCF_Configuration
+    UPDATE Traffic.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE

@@ -46,7 +46,7 @@ EXEC sp_add_jobstep
     @step_name = 'Log starting of job',
     @step_id = 1,
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStarting @workflowName = ''NYPD_Vehicle_Workflow'', @jobName = ''NYPD_Vehicle_Staging'', @agentJobId = $(ESCAPE_NONE(JOBID))',
     @on_success_action = 3; -- go to the next step
 EXEC sp_add_jobstep
@@ -162,14 +162,14 @@ EXEC sp_add_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_name = 'Log success of job',
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStopping @name = ''NYPD_Vehicle_Staging'', @status = ''Success''',
     @on_success_action = 1; -- quit with success
 EXEC sp_add_jobstep
     @job_name = 'NYPD_Vehicle_Staging',
     @step_name = 'Log failure of job',
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStopping @name = ''NYPD_Vehicle_Staging'', @status = ''Failure''',
     @on_success_action = 2; -- quit with failure
 EXEC sp_update_jobstep
@@ -285,7 +285,7 @@ EXEC sp_add_jobstep
     @step_name = 'Log starting of job',
     @step_id = 1,
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStarting @workflowName = ''NYPD_Vehicle_Workflow'', @jobName = ''NYPD_Vehicle_Loading'', @agentJobId = $(ESCAPE_NONE(JOBID))',
     @on_success_action = 3; -- go to the next step
 EXEC sp_add_jobstep
@@ -331,14 +331,14 @@ EXEC sp_add_jobstep
     @job_name = 'NYPD_Vehicle_Loading',
     @step_name = 'Log success of job',
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStopping @name = ''NYPD_Vehicle_Loading'', @status = ''Success''',
     @on_success_action = 1; -- quit with success
 EXEC sp_add_jobstep
     @job_name = 'NYPD_Vehicle_Loading',
     @step_name = 'Log failure of job',
     @subsystem = 'TSQL',
-    @database_name = 'Stage',
+    @database_name = 'Traffic',
     @command = 'EXEC metadata._JobStopping @name = ''NYPD_Vehicle_Loading'', @status = ''Failure''',
     @on_success_action = 2; -- quit with failure
 EXEC sp_update_jobstep
@@ -467,12 +467,12 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    Stage.metadata.lCF_Configuration
+    Traffic.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO Stage.metadata.lCF_Configuration (
+    INSERT INTO Traffic.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -485,7 +485,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE Stage.metadata.lCF_Configuration
+    UPDATE Traffic.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE

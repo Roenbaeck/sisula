@@ -117,7 +117,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -133,7 +133,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -154,7 +154,7 @@ BEGIN TRY
             _id asc
         )
     );
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -162,7 +162,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -186,7 +186,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -202,7 +202,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -220,7 +220,7 @@ BEGIN TRY
     FROM
         [etl].[NYPD_Vehicle_Raw];
     ');
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -228,7 +228,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -256,7 +256,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -278,7 +278,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -286,7 +286,7 @@ EXEC Stage.metadata._WorkStarting
     @agentStepId = @agentStepId,
     @agentJobId = @agentJobId
 BEGIN TRY
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = @filename, 
@@ -309,12 +309,12 @@ EXEC Stage.metadata._WorkSourceToTarget
         );
     ');
     SET @inserts = @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @inserts;
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @inserts;
     SET @CO_ID = ISNULL((
         SELECT TOP 1
             CO_ID
         FROM
-            Stage.metadata.lCO_Container
+            Traffic.metadata.lCO_Container
         WHERE
             CO_NAM_Container_Name = @filename
         AND
@@ -324,9 +324,9 @@ EXEC Stage.metadata._WorkSourceToTarget
         SELECT
             jb.JB_ID
         FROM
-            Stage.metadata.lWO_part_JB_of wojb
+            Traffic.metadata.lWO_part_JB_of wojb
         JOIN
-            Stage.metadata.lJB_Job jb
+            Traffic.metadata.lJB_Job jb
         ON
             jb.JB_ID = wojb.JB_ID_of
         AND
@@ -341,9 +341,9 @@ EXEC Stage.metadata._WorkSourceToTarget
     metadata_JB_ID =
       case when metadata_JB_ID = 0 then @JB_ID else metadata_JB_ID end;
     SET @updates = @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -351,7 +351,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -385,7 +385,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -401,7 +401,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -625,7 +625,7 @@ BEGIN TRY
             LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
     ) t;
     ');
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -633,7 +633,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -667,7 +667,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -683,7 +683,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -739,7 +739,7 @@ BEGIN TRY
     OR
         [notes_Error] is not null;
     ');
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -747,7 +747,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -777,7 +777,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -793,7 +793,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -851,7 +851,7 @@ BEGIN TRY
             end +
             '01')) AS date) 
     );
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -859,7 +859,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -886,7 +886,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -905,7 +905,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -915,7 +915,7 @@ EXEC Stage.metadata._WorkStarting
 BEGIN TRY
     IF Object_ID('etl.NYPD_Vehicle_Collision_Typed', 'U') IS NOT NULL
     BEGIN
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_Collision_Split', 
@@ -958,12 +958,12 @@ EXEC Stage.metadata._WorkSourceToTarget
     WHERE
         measureTime_Duplicate = 0
     SET @insert = @insert + @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @insert;
     SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
-            Stage.metadata.lJB_Job
+            Traffic.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
     ), 0);
@@ -973,11 +973,11 @@ EXEC Stage.metadata._WorkSourceToTarget
     WHERE
       metadata_JB_ID <> @JB_ID;
     SET @updates = @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
     IF Object_ID('etl.NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
     BEGIN
-EXEC Stage.metadata._WorkSourceToTarget
+EXEC Traffic.metadata._WorkSourceToTarget
     @OP_ID = @operationsId OUTPUT,
     @WO_ID = @workId, 
     @sourceName = 'NYPD_Vehicle_CollisionMetadata_Split', 
@@ -1010,12 +1010,12 @@ EXEC Stage.metadata._WorkSourceToTarget
     AND
         [notes_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetInserts @workId, @operationsId, @insert;
+    EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @insert;
     SET @JB_ID = ISNULL((
         SELECT TOP 1
             JB_ID
         FROM
-            Stage.metadata.lJB_Job
+            Traffic.metadata.lJB_Job
         WHERE
             JB_AID_Job_AgentJobId = @agentJobId
     ), 0);
@@ -1025,9 +1025,9 @@ EXEC Stage.metadata._WorkSourceToTarget
     WHERE
       metadata_JB_ID <> @JB_ID;
     SET @updates = @@ROWCOUNT;
-    EXEC Stage.metadata._WorkSetUpdates @workId, @operationsId, @updates;
+    EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     END
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -1035,7 +1035,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -1066,7 +1066,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Fri Apr 28 14:44:02 UTC+0200 2017 by e-lronnback
+-- Generated: Thu May 4 15:53:42 UTC+0200 2017 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
@@ -1082,7 +1082,7 @@ DECLARE @theErrorLine int;
 DECLARE @theErrorMessage varchar(555);
 DECLARE @theErrorSeverity int;
 DECLARE @theErrorState int;
-EXEC Stage.metadata._WorkStarting
+EXEC Traffic.metadata._WorkStarting
     @configurationName = 'Vehicle', 
     @configurationType = 'Source', 
     @WO_ID = @workId OUTPUT, 
@@ -1098,7 +1098,7 @@ BEGIN TRY
             [CrossStreet],
             [CollisionOrder]
         );
-    EXEC Stage.metadata._WorkStopping @workId, 'Success';
+    EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
 	SELECT
@@ -1106,7 +1106,7 @@ BEGIN CATCH
 		@theErrorMessage = ERROR_MESSAGE(),
         @theErrorSeverity = ERROR_SEVERITY(),
         @theErrorState = ERROR_STATE();
-    EXEC Stage.metadata._WorkStopping
+    EXEC Traffic.metadata._WorkStopping
         @WO_ID = @workId, 
         @status = 'Failure', 
         @errorLine = @theErrorLine, 
@@ -1211,12 +1211,12 @@ DECLARE @CF_ID int;
 SELECT
     @CF_ID = CF_ID
 FROM
-    Stage.metadata.lCF_Configuration
+    Traffic.metadata.lCF_Configuration
 WHERE
     CF_NAM_Configuration_Name = @name;
 IF(@CF_ID is null) 
 BEGIN
-    INSERT INTO Stage.metadata.lCF_Configuration (
+    INSERT INTO Traffic.metadata.lCF_Configuration (
         CF_TYP_CFT_ConfigurationType,
         CF_NAM_Configuration_Name,
         CF_XML_Configuration_XMLDefinition
@@ -1229,7 +1229,7 @@ BEGIN
 END
 ELSE
 BEGIN
-    UPDATE Stage.metadata.lCF_Configuration
+    UPDATE Traffic.metadata.lCF_Configuration
     SET
         CF_XML_Configuration_XMLDefinition = @xml
     WHERE

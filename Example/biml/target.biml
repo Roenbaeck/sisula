@@ -4,18 +4,12 @@
         <OleDbConnection Name="Traffic" ConnectionString="Server=localhost;Initial Catalog=Traffic;Integrated Security=SSPI;Provider=SQLNCLI11;" />
     </Connections>
     <Packages>
-        <Package Name="lST_Street__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear">
+        <Package Name="lST_Street__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
             <Tasks>
                 <ExecuteSQL Name="SQL Before" ConnectionName="Stage">
                     <DirectInput>
         -- preparations can be put here
         </DirectInput>
-                </ExecuteSQL>
-                <ExecuteSQL Name="Disable triggers and constraints" ConnectionName="Traffic">
-                    <DirectInput>
-                    DISABLE TRIGGER ALL ON [dbo].[ST_NAM_Street_Name];
-                    ALTER TABLE [dbo].[ST_NAM_Street_Name] NOCHECK CONSTRAINT ALL;
-                    </DirectInput>
                 </ExecuteSQL>
                 <Dataflow Name="Load">
                     <Transformations>
@@ -64,42 +58,12 @@
                                     isnull(src.ST_ID, inserted.ST_ID) as ST_ID,
                                     src.StreetName,
                                     src.metadata_CO_ID,
+                                    metadata_CO_ID,
                                     left($action, 1) as Operation;
                             </DirectInput>
                         </OleDbSource>
-                        <ConditionalSplit Name="Known_Unknown">
-                            <OutputPaths>
-                                <OutputPath Name="Known">
-                                    <Expression>[Operation]=="U"</Expression>
-                                </OutputPath>
-                                <OutputPath Name="Unknown">
-                                    <Expression>[Operation]=="I"</Expression>
-                                </OutputPath>
-                            </OutputPaths>
-                        </ConditionalSplit>
-                        <Multicast Name="Split_Unknown">
-                            <OutputPaths> 
-                                <OutputPath Name="ST_NAM_Street_Name"/> 
-                            </OutputPaths>
-                            <InputPath OutputPathName="Known_Unknown.Unknown" />
-                        </Multicast>
-                        <OleDbDestination Name="ST_NAM_Street_Name__Unknown" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[ST_NAM_Street_Name]" />
-                            <InputPath OutputPathName="Split_Unknown.ST_NAM_Street_Name" />
-                            <Columns>
-                                <Column SourceColumn="ST_ID" TargetColumn="ST_NAM_ST_ID" />
-                                <Column SourceColumn="StreetName" TargetColumn="ST_NAM_Street_Name" />
-                            </Columns>
-                        </OleDbDestination>
                     </Transformations>
                 </Dataflow>
-                <ExecuteSQL Name="Enable triggers and constraints" ConnectionName="Traffic">
-                    <DirectInput>
-                    ENABLE TRIGGER ALL ON [dbo].[ST_NAM_Street_Name];
-                    ALTER TABLE [dbo].[ST_NAM_Street_Name] WITH NOCHECK CHECK CONSTRAINT ALL;
-                    </DirectInput>
-                </ExecuteSQL>
                 <ExecuteSQL Name="SQL After" ConnectionName="Stage">
                     <DirectInput>
         -- post processing can be put here
@@ -107,7 +71,7 @@
                 </ExecuteSQL>
             </Tasks>
         </Package>
-        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__1" ConstraintMode="Linear">
+        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__1" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
             <Tasks>
                 <Dataflow Name="Load">
                     <Transformations>
@@ -157,6 +121,7 @@
                                 OUTPUT
                                     isnull(src.IS_ID_of, inserted.IS_ID) as IS_ID,
                                     src.metadata_CO_ID,
+                                    metadata_CO_ID,
                                     left($action, 1) as Operation;
                             </DirectInput>
                         </OleDbSource>
@@ -164,7 +129,7 @@
                 </Dataflow>
             </Tasks>
         </Package>
-        <Package Name="lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear">
+        <Package Name="lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
             <Tasks>
                 <Dataflow Name="Load">
                     <Transformations>
@@ -172,20 +137,8 @@
                 </Dataflow>
             </Tasks>
         </Package>
-        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__2" ConstraintMode="Linear">
+        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__2" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
             <Tasks>
-                <ExecuteSQL Name="Disable triggers and constraints" ConnectionName="Traffic">
-                    <DirectInput>
-                    DISABLE TRIGGER ALL ON [dbo].[IS_COL_Intersection_CollisionCount];
-                    ALTER TABLE [dbo].[IS_COL_Intersection_CollisionCount] NOCHECK CONSTRAINT ALL;
-                    DISABLE TRIGGER ALL ON [dbo].[IS_VEH_Intersection_VehicleCount];
-                    ALTER TABLE [dbo].[IS_VEH_Intersection_VehicleCount] NOCHECK CONSTRAINT ALL;
-                    DISABLE TRIGGER ALL ON [dbo].[IS_INJ_Intersection_InjuredCount];
-                    ALTER TABLE [dbo].[IS_INJ_Intersection_InjuredCount] NOCHECK CONSTRAINT ALL;
-                    DISABLE TRIGGER ALL ON [dbo].[IS_KIL_Intersection_KilledCount];
-                    ALTER TABLE [dbo].[IS_KIL_Intersection_KilledCount] NOCHECK CONSTRAINT ALL;
-                    </DirectInput>
-                </ExecuteSQL>
                 <Dataflow Name="Load">
                     <Transformations>
                         <OleDbSource Name="NYPD_Vehicle_Collision_Typed" ConnectionName="Stage">
@@ -226,6 +179,9 @@
                                 ) src
                                 ON
                                     src.IS_ID_of = [IS].IS_ID
+                                WHEN NOT MATCHED THEN 
+                                INSERT ( IS_Dummy )
+                                VALUES ( null )
                                 WHEN MATCHED THEN 
                                 UPDATE SET @known = @known + 1
                                 OUTPUT
@@ -235,140 +191,11 @@
                                     src.CollisionVehicleCount,
                                     src.CollisionInjuredCount,
                                     src.CollisionKilledCount,
-                                    0 as Metadata_IS,
                                     left($action, 1) as Operation;
                             </DirectInput>
                         </OleDbSource>
-                        <ConditionalSplit Name="Known_Unknown">
-                            <OutputPaths>
-                                <OutputPath Name="Known">
-                                    <Expression>[Operation]=="U"</Expression>
-                                </OutputPath>
-                                <OutputPath Name="Unknown">
-                                    <Expression>[Operation]=="I"</Expression>
-                                </OutputPath>
-                            </OutputPaths>
-                        </ConditionalSplit>
-                        <Multicast Name="Split_Known">
-                            <OutputPaths> 
-                                <OutputPath Name="IS_COL_Intersection_CollisionCount"/> 
-                                <OutputPath Name="IS_VEH_Intersection_VehicleCount"/> 
-                                <OutputPath Name="IS_INJ_Intersection_InjuredCount"/> 
-                                <OutputPath Name="IS_KIL_Intersection_KilledCount"/> 
-                            </OutputPaths>
-                            <InputPath OutputPathName="Known_Unknown.Known" />
-                        </Multicast>
-                        <OleDbDestination Name="IS_COL_Intersection_CollisionCount__Known" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_COL_Intersection_CollisionCount]" />
-                            <InputPath OutputPathName="Split_Known.IS_COL_Intersection_CollisionCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_COL_IS_ID" />
-                                <Column SourceColumn="CollisionCount" TargetColumn="IS_COL_Intersection_CollisionCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_COL_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_COL" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_VEH_Intersection_VehicleCount__Known" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_VEH_Intersection_VehicleCount]" />
-                            <InputPath OutputPathName="Split_Known.IS_VEH_Intersection_VehicleCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_VEH_IS_ID" />
-                                <Column SourceColumn="CollisionVehicleCount" TargetColumn="IS_VEH_Intersection_VehicleCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_VEH_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_VEH" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_INJ_Intersection_InjuredCount__Known" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_INJ_Intersection_InjuredCount]" />
-                            <InputPath OutputPathName="Split_Known.IS_INJ_Intersection_InjuredCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_INJ_IS_ID" />
-                                <Column SourceColumn="CollisionInjuredCount" TargetColumn="IS_INJ_Intersection_InjuredCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_INJ_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_INJ" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_KIL_Intersection_KilledCount__Known" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_KIL_Intersection_KilledCount]" />
-                            <InputPath OutputPathName="Split_Known.IS_KIL_Intersection_KilledCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_KIL_IS_ID" />
-                                <Column SourceColumn="CollisionKilledCount" TargetColumn="IS_KIL_Intersection_KilledCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_KIL_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_KIL" />
-                            </Columns>
-                        </OleDbDestination>
-                        <Multicast Name="Split_Unknown">
-                            <OutputPaths> 
-                                <OutputPath Name="IS_COL_Intersection_CollisionCount"/> 
-                                <OutputPath Name="IS_VEH_Intersection_VehicleCount"/> 
-                                <OutputPath Name="IS_INJ_Intersection_InjuredCount"/> 
-                                <OutputPath Name="IS_KIL_Intersection_KilledCount"/> 
-                            </OutputPaths>
-                            <InputPath OutputPathName="Known_Unknown.Unknown" />
-                        </Multicast>
-                        <OleDbDestination Name="IS_COL_Intersection_CollisionCount__Unknown" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_COL_Intersection_CollisionCount]" />
-                            <InputPath OutputPathName="Split_Unknown.IS_COL_Intersection_CollisionCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_COL_IS_ID" />
-                                <Column SourceColumn="CollisionCount" TargetColumn="IS_COL_Intersection_CollisionCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_COL_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_COL" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_VEH_Intersection_VehicleCount__Unknown" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_VEH_Intersection_VehicleCount]" />
-                            <InputPath OutputPathName="Split_Unknown.IS_VEH_Intersection_VehicleCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_VEH_IS_ID" />
-                                <Column SourceColumn="CollisionVehicleCount" TargetColumn="IS_VEH_Intersection_VehicleCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_VEH_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_VEH" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_INJ_Intersection_InjuredCount__Unknown" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_INJ_Intersection_InjuredCount]" />
-                            <InputPath OutputPathName="Split_Unknown.IS_INJ_Intersection_InjuredCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_INJ_IS_ID" />
-                                <Column SourceColumn="CollisionInjuredCount" TargetColumn="IS_INJ_Intersection_InjuredCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_INJ_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_INJ" />
-                            </Columns>
-                        </OleDbDestination>
-                        <OleDbDestination Name="IS_KIL_Intersection_KilledCount__Unknown" ConnectionName="Traffic" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[dbo].[IS_KIL_Intersection_KilledCount]" />
-                            <InputPath OutputPathName="Split_Unknown.IS_KIL_Intersection_KilledCount" />
-                            <Columns>
-                                <Column SourceColumn="IS_ID" TargetColumn="IS_KIL_IS_ID" />
-                                <Column SourceColumn="CollisionKilledCount" TargetColumn="IS_KIL_Intersection_KilledCount" />
-                                <Column SourceColumn="ChangedAt" TargetColumn="IS_KIL_ChangedAt" />
-                                <Column SourceColumn="Metadata_IS" TargetColumn="Metadata_IS_KIL" />
-                            </Columns>
-                        </OleDbDestination>
                     </Transformations>
                 </Dataflow>
-                <ExecuteSQL Name="Enable triggers and constraints" ConnectionName="Traffic">
-                    <DirectInput>
-                    ENABLE TRIGGER ALL ON [dbo].[IS_COL_Intersection_CollisionCount];
-                    ALTER TABLE [dbo].[IS_COL_Intersection_CollisionCount] WITH NOCHECK CHECK CONSTRAINT ALL;
-                    ENABLE TRIGGER ALL ON [dbo].[IS_VEH_Intersection_VehicleCount];
-                    ALTER TABLE [dbo].[IS_VEH_Intersection_VehicleCount] WITH NOCHECK CHECK CONSTRAINT ALL;
-                    ENABLE TRIGGER ALL ON [dbo].[IS_INJ_Intersection_InjuredCount];
-                    ALTER TABLE [dbo].[IS_INJ_Intersection_InjuredCount] WITH NOCHECK CHECK CONSTRAINT ALL;
-                    ENABLE TRIGGER ALL ON [dbo].[IS_KIL_Intersection_KilledCount];
-                    ALTER TABLE [dbo].[IS_KIL_Intersection_KilledCount] WITH NOCHECK CHECK CONSTRAINT ALL;
-                    </DirectInput>
-                </ExecuteSQL>
             </Tasks>
         </Package>
     </Packages>

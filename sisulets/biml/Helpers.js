@@ -28,7 +28,7 @@ while(load = target.nextLoad()) {
     load.targetTable = load.target.match(/l(.*)/)[1];
     load.anchorMnemonic = load.target.match(/l(..)\_.*/)[1];
     load.toAnchor = function() {
-        return load.target.match(/^l..\_[^\_]*$/);
+        return load.anchor || load.target.match(/^l..\_[^\_]*$/);
     }
     load.nextMap = function() {
         if(!this.maps) return null;
@@ -53,8 +53,8 @@ while(load = target.nextLoad()) {
 
 while(load = target.nextLoad()) {
     while(map = load.nextMap()) {
-        map.toAttribute = function() {
-            return !map.target.match(/^.*\_(ChangedAt|ID)$/) && !map.target.match(/^Metadata\_.*$/);
+        map.isValueColumn = function() {
+            return map.attribute && !map.target.match(/^.*\_(ChangedAt|ID)$/) && !map.target.match(/^Metadata\_.*$/);
         }
     }
 }

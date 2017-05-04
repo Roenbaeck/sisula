@@ -3,14 +3,14 @@ var load, map, sql, i;
 /*~
 <Biml xmlns="http://schemas.varigence.com/biml.xsd">
     <Connections>
-        <OleDbConnection Name="$VARIABLES.SourceDatabase" ConnectionString="Server=localhost;Initial Catalog=$VARIABLES.SourceDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
-        <OleDbConnection Name="$VARIABLES.TargetDatabase" ConnectionString="Server=localhost;Initial Catalog=$VARIABLES.TargetDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
+        <OleDbConnection Name="$VARIABLES.SourceDatabase" ConnectionString="Server=$VARIABLES.SourceServer;Initial Catalog=$VARIABLES.SourceDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
+        <OleDbConnection Name="$VARIABLES.TargetDatabase" ConnectionString="Server=$VARIABLES.TargetServer;Initial Catalog=$VARIABLES.TargetDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
     </Connections>
     <Packages>
 ~*/
 while(load = target.nextLoad()) {
 /*~
-        <Package Name="$load.qualified" ConstraintMode="Linear">
+        <Package Name="$load.qualified" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
             <Tasks>
 ~*/
     if(sql = load.sql ? load.sql.before : null) {
@@ -45,7 +45,7 @@ while(load = target.nextLoad()) {
     var historizedAttributesExist = false;
     if(load.toAnchor()) {
         while(map = load.nextMap()) {
-            if(map.toAttribute()) {
+            if(map.isValueColumn()) {
                 var otherMap;
                 var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
                 for(i = 0; otherMap = others[i]; i++) {
@@ -66,8 +66,8 @@ while(load = target.nextLoad()) {
 ~*/
         for(i = 0; map = attributeMappings[i]; i++) {
 /*~
-                    DISABLE TRIGGER ALL ON [${VARIABLES.TargetSchema}$].[${map.target}$];
-                    ALTER TABLE [${VARIABLES.TargetSchema}$].[${map.target}$] NOCHECK CONSTRAINT ALL;
+                    DISABLE TRIGGER ALL ON [${VARIABLES.TargetSchema}$].[${map.attribute}$];
+                    ALTER TABLE [${VARIABLES.TargetSchema}$].[${map.attribute}$] NOCHECK CONSTRAINT ALL;
 ~*/
         }
 /*~
@@ -132,6 +132,13 @@ while(load = target.nextLoad()) {
                                 VALUES ( src.${metadata[0].source}$ )
 ~*/
         }
+        else {
+/*~                                    
+                                WHEN NOT MATCHED THEN 
+                                INSERT ( ${load.anchorMnemonic}$_Dummy )
+                                VALUES ( null )
+~*/            
+        }
 /*~
                                 WHEN MATCHED THEN 
                                 UPDATE SET @known = @known + 1
@@ -147,9 +154,9 @@ while(load = target.nextLoad()) {
 ~*/
             }
         }
-        if(!metadata[0]) {
+        if(metadata[0]) {
 /*~
-                                    0 as Metadata_${load.anchorMnemonic}$,
+                                    ${metadata[0].source}$,
 ~*/            
         }
 /*~                                    
@@ -177,6 +184,13 @@ while(load = target.nextLoad()) {
                                 VALUES ( src.${metadata[0].source}$ )
 ~*/
         }
+        else {
+/*~                                    
+                                WHEN NOT MATCHED THEN 
+                                INSERT ( ${load.anchorMnemonic}$_Dummy )
+                                VALUES ( null )
+~*/            
+        }
 /*~
                                 WHEN MATCHED THEN 
                                 UPDATE SET @known = @known + 1
@@ -192,9 +206,9 @@ while(load = target.nextLoad()) {
 ~*/
             }
         }
-        if(!metadata[0]) {
+        if(metadata[0]) {
 /*~
-                                    0 as Metadata_${load.anchorMnemonic}$,
+                                    ${metadata[0].source}$,
 ~*/            
         }
 /*~
@@ -225,7 +239,7 @@ while(load = target.nextLoad()) {
             for(i = 0; map = attributeMappings[i]; i++) {
                 if(map.isHistorized) {
 /*~
-                                <OutputPath Name="$map.target"/> 
+                                <OutputPath Name="$map.attribute"/> 
 ~*/
                 }
             }
@@ -235,27 +249,49 @@ while(load = target.nextLoad()) {
                         </Multicast>
 ~*/
             for(i = 0; map = attributeMappings[i]; i++) {
-                var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
                 if(map.isHistorized) {
+                    var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
+                    var inputPath = 'Split_Known.' + map.attribute;
+                    var source = map.source;
+                    var target = map.target;
+                    if(map.knot) {
+                        var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <OleDbDestination Name="${map.target}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
+                            <Inputs>
+                                <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
+                            </Inputs>
+                            <Outputs>
+                                <Column SourceColumn="${knotMnemonic}$_ID" />
+                            </Outputs>
+                            <InputPath OutputPathName="$inputPath" />                            
+                        </Lookup>
+~*/                    
+                        inputPath = map.attribute + '__Known_Lookup.Match';
+                        mapSource = knotMnemonic + '_ID';
+                        mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
+                    }
+/*~
+                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.target}$]" />
-                            <InputPath OutputPathName="Split_Known.$map.target" />
+                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
+                            <InputPath OutputPathName="$inputPath" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
+                                <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
 ~*/
                     var attributeMap;
                     while(attributeMap = load.nextMap()) {
-                        if(attributeMap.target.indexOf(attributeMnemonic) >= 0) {
+                        if(map != attributeMap && attributeMap.target.indexOf(attributeMnemonic) == 0) {
 /*~
                                 <Column SourceColumn="$attributeMap.source" TargetColumn="$attributeMap.target" />
 ~*/                            
                         }
                     }
-                    if(!metadata[0]) {
+                    if(metadata[0]) {
 /*~
-                                <Column SourceColumn="Metadata_${load.anchorMnemonic}$" TargetColumn="Metadata_${attributeMnemonic}$" />
+                                <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${attributeMnemonic}$" />
 ~*/                                                        
                     }
 /*~                                
@@ -271,7 +307,7 @@ while(load = target.nextLoad()) {
 ~*/
         for(i = 0; map = attributeMappings[i]; i++) {
 /*~
-                                <OutputPath Name="$map.target"/> 
+                                <OutputPath Name="$map.attribute"/> 
 ~*/
         }
 /*~
@@ -281,25 +317,47 @@ while(load = target.nextLoad()) {
 ~*/
         for(i = 0; map = attributeMappings[i]; i++) {
             var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
+            var inputPath = 'Split_Unknown.' + map.attribute;
+            var mapSource = map.source;
+            var mapTarget = map.target;
+            if(map.knot) {
+                var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <OleDbDestination Name="${map.target}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
+                            <Inputs>
+                                <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
+                            </Inputs>
+                            <Outputs>
+                                <Column SourceColumn="${knotMnemonic}$_ID" />
+                            </Outputs>
+                            <InputPath OutputPathName="$inputPath" />                            
+                        </Lookup>
+~*/                    
+                inputPath = map.attribute + '__Unknown_Lookup.Match';
+                mapSource = knotMnemonic + '_ID';
+                mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
+            }
+/*~
+                        <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.target}$]" />
-                            <InputPath OutputPathName="Split_Unknown.$map.target" />
+                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
+                            <InputPath OutputPathName="$inputPath" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
+                                <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
 ~*/
             var attributeMap;
             while(attributeMap = load.nextMap()) {
-                if(attributeMap.target.indexOf(attributeMnemonic) >= 0) {
+                if(map != attributeMap && attributeMap.target.indexOf(attributeMnemonic) == 0) {
 /*~
                                 <Column SourceColumn="$attributeMap.source" TargetColumn="$attributeMap.target" />
 ~*/                            
                 }
             }
-            if(!metadata[0]) {
+            if(metadata[0]) {
 /*~
-                                <Column SourceColumn="Metadata_${load.anchorMnemonic}$" TargetColumn="Metadata_${attributeMnemonic}$" />
+                                <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${attributeMnemonic}$" />
 ~*/                                                        
             }
 /*~                                
@@ -319,8 +377,8 @@ while(load = target.nextLoad()) {
 ~*/
         for(i = 0; map = attributeMappings[i]; i++) {
 /*~
-                    ENABLE TRIGGER ALL ON [${VARIABLES.TargetSchema}$].[${map.target}$];
-                    ALTER TABLE [${VARIABLES.TargetSchema}$].[${map.target}$] WITH NOCHECK CHECK CONSTRAINT ALL;
+                    ENABLE TRIGGER ALL ON [${VARIABLES.TargetSchema}$].[${map.attribute}$];
+                    ALTER TABLE [${VARIABLES.TargetSchema}$].[${map.attribute}$] WITH NOCHECK CHECK CONSTRAINT ALL;
 ~*/
         }
 /*~

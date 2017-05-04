@@ -10,7 +10,9 @@ set System=NYPD
 set Source=Vehicle
 set TargetDatabase=Traffic
 set TargetSchema=dbo
+set TargetServer=localhost
 set SourceDatabase=Stage
 set SourceSchema=etl
-set MetaDatabase=Stage
+set SourceServer=localhost
+set MetaDatabase=Traffic
 REM -------------------------------------------------------------------
