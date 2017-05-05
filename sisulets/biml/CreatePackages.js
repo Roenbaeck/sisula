@@ -43,8 +43,10 @@ while(load = target.nextLoad()) {
 
     var attributeMappings = [];
     var historizedAttributesExist = false;
+    var knottedAttributesExist = false;
     if(load.toAnchor()) {
         while(map = load.nextMap()) {
+            if(map.knot) knottedAttributesExist = true;
             if(map.isValueColumn()) {
                 var otherMap;
                 var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
@@ -75,14 +77,96 @@ while(load = target.nextLoad()) {
                 </ExecuteSQL>
 ~*/        
     }
-/*~
-                <Dataflow Name="Load">
-                    <Transformations>
-~*/
+
     var commaStr = ',',
         andStr = 'AND';
 
     var loadingSQL = load._load ? load._load : "SELECT * FROM " + load.source;
+
+    if(knottedAttributesExist) {
+/*~
+                <Dataflow Name="Load knots">
+                    <Transformations>
+                        <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
+                            <DirectInput>$loadingSQL</DirectInput>
+                        </OleDbSource>
+                        <Multicast Name="Split">
+                            <OutputPaths> 
+~*/
+        for(i = 0; map = attributeMappings[i]; i++) {
+            if(map.knot) {
+/*~
+                                <OutputPath Name="$map.knot"/> 
+~*/
+            }
+        }
+/*~
+                            </OutputPaths>
+                        </Multicast>
+~*/
+        for(i = 0; map = attributeMappings[i]; i++) {
+            if(map.knot) {
+                var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
+/*~
+                        <ConditionalSplit Name="${map.knot}$__not_Null">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Expression>!ISNULL([$map.source])</Expression>
+                                </OutputPath>
+                            </OutputPaths>
+                            <InputPath OutputPathName="Split.$map.knot" />
+                        </ConditionalSplit>
+                        <Aggregate Name="${map.knot}$__Unique">
+                            <InputPath OutputPathName="${map.knot}$__not_Null.Values" />
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Columns>
+                                        <Column Operation="GroupBy" SourceColumn="$map.source" />
+~*/
+                if(metadata[0]) {
+/*~
+                                        <Column Operation="Minimum" SourceColumn="${metadata[0].source}$" />
+~*/                                                        
+                }
+/*~                                
+                                    </Columns>
+                                </OutputPath>
+                            </OutputPaths>
+                        </Aggregate>
+                        <Lookup Name="${map.knot}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
+                            <Inputs>
+                                <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
+                            </Inputs>
+                            <InputPath OutputPathName="${map.knot}$__Unique.Values" />
+                        </Lookup>
+                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
+                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
+                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
+                            <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
+                            <Columns>
+                                <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
+~*/
+                if(metadata[0]) {
+/*~
+                                <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${knotMnemonic}$" />
+~*/                                                        
+                }
+/*~                                
+                            </Columns>
+                        </OleDbDestination>
+~*/
+            }
+        }
+/*~
+                    </Transformations>
+                </Dataflow>
+~*/        
+    } // if knotted attributes exist
+/*~
+                <Dataflow Name="Load data">
+                    <Transformations>
+~*/
     if(naturalKeys.length == 0 && surrogateKeys.length == 0) {
 /*~
                         <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
@@ -111,7 +195,7 @@ while(load = target.nextLoad()) {
                                         $loadingSQL
                                     ) t
                                     LEFT JOIN
-                                        [${VARIABLES.TargetDatabase}$].[${VARIABLES.TargetSchema}$].[${load.target}$] l
+                                        [${VARIABLES.TargetDatabase}$].[${VARIABLES.TargetSchema}$].[${load.target}$] l WITH (NOLOCK)
                                     ON
 ~*/
         for(i = 0; map = naturalKeys[i]; i++) {
@@ -160,7 +244,7 @@ while(load = target.nextLoad()) {
 ~*/            
         }
 /*~                                    
-                                    left($$action, 1) as Operation;
+                                    left($$action, 1) as __Operation;
                             </DirectInput>
                         </OleDbSource>
 ~*/
@@ -212,7 +296,7 @@ while(load = target.nextLoad()) {
 ~*/            
         }
 /*~
-                                    left($$action, 1) as Operation;
+                                    left($$action, 1) as __Operation;
                             </DirectInput>
                         </OleDbSource>
 ~*/        
@@ -223,10 +307,10 @@ while(load = target.nextLoad()) {
                         <ConditionalSplit Name="Known_Unknown">
                             <OutputPaths>
                                 <OutputPath Name="Known">
-                                    <Expression>[Operation]=="U"</Expression>
+                                    <Expression>[__Operation]=="U"</Expression>
                                 </OutputPath>
                                 <OutputPath Name="Unknown">
-                                    <Expression>[Operation]=="I"</Expression>
+                                    <Expression>[__Operation]=="I"</Expression>
                                 </OutputPath>
                             </OutputPaths>
                         </ConditionalSplit>
@@ -257,7 +341,7 @@ while(load = target.nextLoad()) {
                     if(map.knot) {
                         var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
@@ -273,10 +357,18 @@ while(load = target.nextLoad()) {
                         mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
                     }
 /*~
-                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <ConditionalSplit Name="${map.attribute}$__Known_not_Null">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Expression>!ISNULL([$mapSource])</Expression>
+                                </OutputPath>
+                            </OutputPaths>
+                            <InputPath OutputPathName="$inputPath" />
+                        </ConditionalSplit>
+                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
-                            <InputPath OutputPathName="$inputPath" />
+                            <InputPath OutputPathName="${map.attribute}$__Known_not_Null.Values" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
                                 <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
@@ -323,7 +415,7 @@ while(load = target.nextLoad()) {
             if(map.knot) {
                 var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
@@ -339,10 +431,18 @@ while(load = target.nextLoad()) {
                 mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
             }
 /*~
-                        <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <ConditionalSplit Name="${map.attribute}$__Unknown_not_Null">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Expression>!ISNULL([$mapSource])</Expression>
+                                </OutputPath>
+                            </OutputPaths>
+                            <InputPath OutputPathName="$inputPath" />
+                        </ConditionalSplit>
+                        <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
-                            <InputPath OutputPathName="$inputPath" />
+                            <InputPath OutputPathName="${map.attribute}$__Unknown_not_Null.Values" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
                                 <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
