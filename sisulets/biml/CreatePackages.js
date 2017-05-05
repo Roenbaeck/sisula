@@ -141,7 +141,7 @@ while(load = target.nextLoad()) {
                             <InputPath OutputPathName="${map.knot}$__Unique.Values" />
                         </Lookup>
                         <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
+                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
                             <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
                             <Columns>
