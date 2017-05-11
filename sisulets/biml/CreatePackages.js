@@ -140,7 +140,7 @@ while(load = target.nextLoad()) {
                             </Inputs>
                             <InputPath OutputPathName="${map.knot}$__Unique.Values" />
                         </Lookup>
-                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
+                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="false" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
                             <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
@@ -336,8 +336,19 @@ while(load = target.nextLoad()) {
                 if(map.isHistorized) {
                     var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
                     var inputPath = 'Split_Known.' + map.attribute;
-                    var source = map.source;
-                    var target = map.target;
+                    var mapSource = map.source;
+                    var mapTarget = map.target;
+/*~
+                        <ConditionalSplit Name="${map.attribute}$__Known_not_Null">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Expression>!ISNULL([$mapSource])</Expression>
+                                </OutputPath>
+                            </OutputPaths>
+                            <InputPath OutputPathName="$inputPath" />
+                        </ConditionalSplit>
+~*/                    
+                    inputPath = map.attribute + '__Known_not_Null.Values';
                     if(map.knot) {
                         var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
@@ -357,18 +368,10 @@ while(load = target.nextLoad()) {
                         mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
                     }
 /*~
-                        <ConditionalSplit Name="${map.attribute}$__Known_not_Null">
-                            <OutputPaths>
-                                <OutputPath Name="Values">
-                                    <Expression>!ISNULL([$mapSource])</Expression>
-                                </OutputPath>
-                            </OutputPaths>
-                            <InputPath OutputPathName="$inputPath" />
-                        </ConditionalSplit>
                         <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
-                            <InputPath OutputPathName="${map.attribute}$__Known_not_Null.Values" />
+                            <InputPath OutputPathName="$inputPath" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
                                 <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
@@ -412,6 +415,17 @@ while(load = target.nextLoad()) {
             var inputPath = 'Split_Unknown.' + map.attribute;
             var mapSource = map.source;
             var mapTarget = map.target;
+/*~
+                        <ConditionalSplit Name="${map.attribute}$__Unknown_not_Null">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Expression>!ISNULL([$mapSource])</Expression>
+                                </OutputPath>
+                            </OutputPaths>
+                            <InputPath OutputPathName="$inputPath" />
+                        </ConditionalSplit>
+~*/
+            inputPath = map.attribute + '__Unknown_not_Null.Values';
             if(map.knot) {
                 var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
@@ -431,18 +445,10 @@ while(load = target.nextLoad()) {
                 mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
             }
 /*~
-                        <ConditionalSplit Name="${map.attribute}$__Unknown_not_Null">
-                            <OutputPaths>
-                                <OutputPath Name="Values">
-                                    <Expression>!ISNULL([$mapSource])</Expression>
-                                </OutputPath>
-                            </OutputPaths>
-                            <InputPath OutputPathName="$inputPath" />
-                        </ConditionalSplit>
                         <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
-                            <InputPath OutputPathName="${map.attribute}$__Unknown_not_Null.Values" />
+                            <InputPath OutputPathName="$inputPath" />
                             <Columns>
                                 <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
                                 <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
