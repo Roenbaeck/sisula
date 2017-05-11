@@ -9,17 +9,6 @@ var load, map, sql, i;
     <Packages>
 ~*/
 while(load = target.nextLoad()) {
-/*~
-        <Package Name="$load.qualified" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
-            <Tasks>
-~*/
-    if(sql = load.sql ? load.sql.before : null) {
-/*~
-                <ExecuteSQL Name="SQL Before" ConnectionName="$VARIABLES.SourceDatabase">
-                    <DirectInput>$sql._sql</DirectInput>
-                </ExecuteSQL>
-~*/
-    }
     var naturalKeys = [], 
         surrogateKeys = [], 
         metadata = [],
@@ -42,23 +31,34 @@ while(load = target.nextLoad()) {
     }    
 
     var attributeMappings = [];
-    var historizedAttributesExist = false;
-    var knottedAttributesExist = false;
+    var numberOfHistorizedAttributes = 0;
+    var numberOfKnottedAttributes = 0;
     if(load.toAnchor()) {
         while(map = load.nextMap()) {
-            if(map.knot) knottedAttributesExist = true;
+            if(map.knot) numberOfKnottedAttributes++;
             if(map.isValueColumn()) {
                 var otherMap;
                 var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
                 for(i = 0; otherMap = others[i]; i++) {
                     if(otherMap.target == attributeMnemonic + '_ChangedAt') {
                         map.isHistorized = true;
-                        historizedAttributesExist = true;
+                        numberOfHistorizedAttributes++;
                     }
                 }
                 attributeMappings.push(map);
             }
         }
+    }
+/*~
+        <Package Name="$load.qualified" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Tasks>
+~*/
+    if(sql = load.sql ? load.sql.before : null) {
+/*~
+                <ExecuteSQL Name="SQL Before" ConnectionName="$VARIABLES.SourceDatabase">
+                    <DirectInput>$sql._sql</DirectInput>
+                </ExecuteSQL>
+~*/
     }
 
     if(attributeMappings.length > 0) {
@@ -83,9 +83,12 @@ while(load = target.nextLoad()) {
 
     var loadingSQL = load._load ? load._load : "SELECT * FROM " + load.source;
 
-    if(knottedAttributesExist) {
+    // one thread for the source + one for each destination
+    var numberOfThreads; 
+    if(numberOfKnottedAttributes > 0) {
+        numberOfThreads = numberOfKnottedAttributes + 1;
 /*~
-                <Dataflow Name="Load knots">
+                <Dataflow Name="Load knots" EngineThreads="$numberOfThreads" DefaultBufferSize="104857600" DefaultBufferMaxRows="100000">
                     <Transformations>
                         <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
                             <DirectInput>$loadingSQL</DirectInput>
@@ -133,14 +136,14 @@ while(load = target.nextLoad()) {
                                 </OutputPath>
                             </OutputPaths>
                         </Aggregate>
-                        <Lookup Name="${map.knot}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.knot}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
                             </Inputs>
                             <InputPath OutputPathName="${map.knot}$__Unique.Values" />
                         </Lookup>
-                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="false" TableLock="false">
+                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
                             <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
                             <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
@@ -163,8 +166,10 @@ while(load = target.nextLoad()) {
                 </Dataflow>
 ~*/        
     } // if knotted attributes exist
+    // one thread for the source + one for each destination
+    numberOfThreads = attributeMappings.length + 1;
 /*~
-                <Dataflow Name="Load data">
+                <Dataflow Name="Load data" EngineThreads="$numberOfThreads" DefaultBufferSize="104857600"  DefaultBufferMaxRows="100000">
                     <Transformations>
 ~*/
     if(naturalKeys.length == 0 && surrogateKeys.length == 0) {
@@ -315,7 +320,7 @@ while(load = target.nextLoad()) {
                             </OutputPaths>
                         </ConditionalSplit>
 ~*/
-        if(historizedAttributesExist) {
+        if(numberOfHistorizedAttributes > 0) {
 /*~                        
                         <Multicast Name="Split_Known">
                             <OutputPaths> 
@@ -352,7 +357,7 @@ while(load = target.nextLoad()) {
                     if(map.knot) {
                         var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
@@ -429,7 +434,7 @@ while(load = target.nextLoad()) {
             if(map.knot) {
                 var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
