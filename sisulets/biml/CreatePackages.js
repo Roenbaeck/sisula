@@ -3,8 +3,8 @@ var load, map, sql, i;
 /*~
 <Biml xmlns="http://schemas.varigence.com/biml.xsd">
     <Connections>
-        <OleDbConnection Name="$VARIABLES.SourceDatabase" ConnectionString="Server=$VARIABLES.SourceServer;Initial Catalog=$VARIABLES.SourceDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
-        <OleDbConnection Name="$VARIABLES.TargetDatabase" ConnectionString="Server=$VARIABLES.TargetServer;Initial Catalog=$VARIABLES.TargetDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;" />
+        <OleDbConnection Name="$VARIABLES.SourceDatabase" ConnectionString="Data Source=$VARIABLES.SourceServer;Server=$VARIABLES.SourceServer;Initial Catalog=$VARIABLES.SourceDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
+        <OleDbConnection Name="$VARIABLES.TargetDatabase" ConnectionString="Data Source=$VARIABLES.TargetServer;Server=$VARIABLES.TargetServer;Initial Catalog=$VARIABLES.TargetDatabase;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
     </Connections>
     <Packages>
 ~*/
@@ -49,8 +49,12 @@ while(load = target.nextLoad()) {
             }
         }
     }
+    var now = new Date();
 /*~
         <Package Name="$load.qualified" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Annotations>
+                <Annotation AnnotationType="Description">BIML generated: ${new Date()}$ by $VARIABLES.USERNAME from: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain</Annotation>
+            </Annotations>
             <Tasks>
 ~*/
     if(sql = load.sql ? load.sql.before : null) {
@@ -119,7 +123,7 @@ while(load = target.nextLoad()) {
                             </OutputPaths>
                             <InputPath OutputPathName="Split.$map.knot" />
                         </ConditionalSplit>
-                        <Aggregate Name="${map.knot}$__Unique">
+                        <Aggregate Name="${map.knot}$__Unique" GroupByKeyScale="Low" AutoExtendFactor="100">
                             <InputPath OutputPathName="${map.knot}$__not_Null.Values" />
                             <OutputPaths>
                                 <OutputPath Name="Values">
@@ -166,8 +170,8 @@ while(load = target.nextLoad()) {
                 </Dataflow>
 ~*/        
     } // if knotted attributes exist
-    // one thread for the source + one for each destination
-    numberOfThreads = attributeMappings.length + 1;
+    // one thread for the source + two for each destination (known and unknown)
+    numberOfThreads = 2 * attributeMappings.length + 1;
 /*~
                 <Dataflow Name="Load data" EngineThreads="$numberOfThreads" DefaultBufferSize="104857600"  DefaultBufferMaxRows="100000">
                     <Transformations>

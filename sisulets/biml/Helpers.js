@@ -25,8 +25,8 @@ target.hasLoad = function(load) {
 
 var load, map;
 while(load = target.nextLoad()) {
-    load.targetTable = load.target.match(/l(.*)/)[1];
-    load.anchorMnemonic = load.target.match(/l(..)\_.*/)[1];
+    load.targetTable = load.anchor || load.target.match(/l(.*)/)[1];
+    load.anchorMnemonic = load.anchor.match(/(..)\_.*/)[1] || load.target.match(/l(..)\_.*/)[1];
     load.toAnchor = function() {
         return load.anchor || load.target.match(/^l..\_[^\_]*$/);
     }
