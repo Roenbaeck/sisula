@@ -92,7 +92,7 @@ while(load = target.nextLoad()) {
     if(numberOfKnottedAttributes > 0) {
         numberOfThreads = numberOfKnottedAttributes + 1;
 /*~
-                <Dataflow Name="Load knots" EngineThreads="$numberOfThreads" DefaultBufferSize="104857600" DefaultBufferMaxRows="100000">
+                <Dataflow Name="Load knots" EngineThreads="$numberOfThreads">
                     <Transformations>
                         <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
                             <DirectInput>$loadingSQL</DirectInput>
@@ -148,7 +148,7 @@ while(load = target.nextLoad()) {
                             <InputPath OutputPathName="${map.knot}$__Unique.Values" />
                         </Lookup>
                         <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
+                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
                             <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
                             <Columns>
@@ -173,7 +173,7 @@ while(load = target.nextLoad()) {
     // one thread for the source + two for each destination (known and unknown)
     numberOfThreads = 2 * attributeMappings.length + 1;
 /*~
-                <Dataflow Name="Load data" EngineThreads="$numberOfThreads" DefaultBufferSize="104857600"  DefaultBufferMaxRows="100000">
+                <Dataflow Name="Load data" EngineThreads="$numberOfThreads">
                     <Transformations>
 ~*/
     if(naturalKeys.length == 0 && surrogateKeys.length == 0) {
@@ -378,7 +378,7 @@ while(load = target.nextLoad()) {
                     }
 /*~
                         <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
-                            <ErrorHandling ErrorRowDisposition="IgnoreFailure" TruncationRowDisposition="FailComponent" />
+                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
                             <InputPath OutputPathName="$inputPath" />
                             <Columns>
