@@ -147,7 +147,7 @@ while(load = target.nextLoad()) {
                             </Inputs>
                             <InputPath OutputPathName="${map.knot}$__Unique.Values" />
                         </Lookup>
-                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
+                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
                             <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
@@ -187,6 +187,7 @@ while(load = target.nextLoad()) {
 /*~
                         <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
                             <DirectInput>
+                                DBCC TRACEON (610);
                                 DECLARE @known INT = 0;
                                 MERGE [${VARIABLES.TargetDatabase}$].[${VARIABLES.TargetSchema}$].[${load.targetTable}$] [${load.anchorMnemonic}$]
                                 USING (
@@ -262,6 +263,7 @@ while(load = target.nextLoad()) {
 /*~
                         <OleDbSource Name="$load.source" ConnectionName="$VARIABLES.SourceDatabase">
                             <DirectInput>
+                                DBCC TRACEON (610);
                                 DECLARE @known INT = 0;
                                 MERGE [${VARIABLES.TargetDatabase}$].[${VARIABLES.TargetSchema}$].[${load.targetTable}$] [${load.anchorMnemonic}$]
                                 USING (
@@ -377,7 +379,7 @@ while(load = target.nextLoad()) {
                         mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
                     }
 /*~
-                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
+                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" FastLoadOptions="ORDER(${attributeMnemonic}$_${load.anchorMnemonic}$_ID ASC)" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
                             <InputPath OutputPathName="$inputPath" />
@@ -454,7 +456,7 @@ while(load = target.nextLoad()) {
                 mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
             }
 /*~
-                        <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="false">
+                        <OleDbDestination Name="${map.attribute}$__Unknown" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" FastLoadOptions="ORDER(${attributeMnemonic}$_${load.anchorMnemonic}$_ID ASC)" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
                             <InputPath OutputPathName="$inputPath" />
