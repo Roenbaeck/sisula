@@ -13,7 +13,7 @@ while(load = target.nextLoad()) {
         surrogateKeys = [], 
         metadata = [],
         others = [];
-    
+    // populate some arrays
     while(map = load.nextMap()) {
         switch (map.as) {
             case 'natural key':
