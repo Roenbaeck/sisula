@@ -103,7 +103,7 @@ while(load = target.nextLoad()) {
         for(i = 0; map = attributeMappings[i]; i++) {
             if(map.knot) {
 /*~
-                                <OutputPath Name="$map.knot"/> 
+                                <OutputPath Name="$map.attribute"/> 
 ~*/
             }
         }
@@ -115,16 +115,16 @@ while(load = target.nextLoad()) {
             if(map.knot) {
                 var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <ConditionalSplit Name="${map.knot}$__not_Null">
+                        <ConditionalSplit Name="${map.attribute}$__not_Null">
                             <OutputPaths>
                                 <OutputPath Name="Values">
                                     <Expression>!ISNULL([$map.source])</Expression>
                                 </OutputPath>
                             </OutputPaths>
-                            <InputPath OutputPathName="Split.$map.knot" />
+                            <InputPath OutputPathName="Split.$map.attribute" />
                         </ConditionalSplit>
-                        <Aggregate Name="${map.knot}$__Unique" GroupByKeyScale="Low" AutoExtendFactor="100">
-                            <InputPath OutputPathName="${map.knot}$__not_Null.Values" />
+                        <Aggregate Name="${map.attribute}$__Unique" GroupByKeyScale="Low" AutoExtendFactor="100">
+                            <InputPath OutputPathName="${map.attribute}$__not_Null.Values" />
                             <OutputPaths>
                                 <OutputPath Name="Values">
                                     <Columns>
@@ -140,17 +140,17 @@ while(load = target.nextLoad()) {
                                 </OutputPath>
                             </OutputPaths>
                         </Aggregate>
-                        <Lookup Name="${map.knot}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
                             </Inputs>
-                            <InputPath OutputPathName="${map.knot}$__Unique.Values" />
+                            <InputPath OutputPathName="${map.attribute}$__Unique.Values" />
                         </Lookup>
-                        <OleDbDestination Name="${map.knot}$" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <OleDbDestination Name="${map.attribute}$" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
-                            <InputPath OutputPathName="${map.knot}$__Lookup.NoMatch" />
+                            <InputPath OutputPathName="${map.attribute}$__Lookup.NoMatch" />
                             <Columns>
                                 <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
 ~*/
@@ -247,11 +247,6 @@ while(load = target.nextLoad()) {
                                     src.$map.source,
 ~*/
             }
-        }
-        if(metadata[0]) {
-/*~
-                                    ${metadata[0].source}$,
-~*/            
         }
 /*~                                    
                                     left($$action, 1) as __Operation;
