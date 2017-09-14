@@ -31,11 +31,18 @@ while(load = target.nextLoad()) {
     }    
 
     var attributeMappings = [];
+    var knotToAttributes = {};
     var numberOfHistorizedAttributes = 0;
     var numberOfKnottedAttributes = 0;
     if(load.toAnchor()) {
         while(map = load.nextMap()) {
-            if(map.knot) numberOfKnottedAttributes++;
+            if(map.knot) {
+                numberOfKnottedAttributes++;
+                if(knotToAttributes[map.knot])
+                    knotToAttributes[map.knot].push(map);
+                else
+                    knotToAttributes[map.knot] = [map];
+            }
             if(map.isValueColumn()) {
                 var otherMap;
                 var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
@@ -128,7 +135,7 @@ while(load = target.nextLoad()) {
                             <OutputPaths>
                                 <OutputPath Name="Values">
                                     <Columns>
-                                        <Column Operation="GroupBy" SourceColumn="$map.source" />
+                                        <Column Operation="GroupBy" SourceColumn="$map.source" TargetColumn="$map.knot"/>
 ~*/
                 if(metadata[0]) {
 /*~
@@ -140,30 +147,73 @@ while(load = target.nextLoad()) {
                                 </OutputPath>
                             </OutputPaths>
                         </Aggregate>
-                        <Lookup Name="${map.attribute}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
-                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
-                            <Inputs>
-                                <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
-                            </Inputs>
-                            <InputPath OutputPathName="${map.attribute}$__Unique.Values" />
-                        </Lookup>
-                        <OleDbDestination Name="${map.attribute}$" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
-                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
-                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.knot}$]" />
-                            <InputPath OutputPathName="${map.attribute}$__Lookup.NoMatch" />
-                            <Columns>
-                                <Column SourceColumn="$map.source" TargetColumn="$map.knot" />
+~*/
+            }
+        }
+
+        for(var knot in knotToAttributes) {
+            // knot reuse
+            if(knotToAttributes[knot].length > 0) {
+/*~
+                        <UnionAll Name="${knot}$__Union">
+                            <InputPaths>
+~*/
+                for(i = 0; map = knotToAttributes[knot][i]; i++) {
+/*~
+                                <InputPath OutputPathName="${map.attribute}$__Unique.Values">
+                                    <Columns>
+                                        <Column SourceColumn="$map.source"/>
+                                    </Columns>
+                                </InputPath>
+~*/
+                }
+/*~                            
+                            </InputPaths>
+                        </UnionAll>
+                        <Aggregate Name="${knot}$__Unique" GroupByKeyScale="Low" AutoExtendFactor="100">
+                            <OutputPaths>
+                                <OutputPath Name="Values">
+                                    <Columns>
+                                        <Column Operation="GroupBy" SourceColumn="$knot" TargetColumn="$knot"/>
 ~*/
                 if(metadata[0]) {
 /*~
-                                <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${knotMnemonic}$" />
+                                        <Column Operation="Minimum" SourceColumn="${metadata[0].source}$" />
 ~*/                                                        
                 }
+/*~                                
+                                    </Columns>
+                                </OutputPath>
+                            </OutputPaths>
+                        </Aggregate>
+~*/                
+            }
+
+            var knotMnemonic = knot.match(/^(...)\_.*/)[1];
+/*~                        
+                        <Lookup Name="${knot}$__Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${knot}$]" />
+                            <Inputs>
+                                <Column SourceColumn="$knot" TargetColumn="$knot" />
+                            </Inputs>
+                            <InputPath OutputPathName="${knot}$__Unique.Values" />
+                        </Lookup>
+                        <OleDbDestination Name="${knot}$" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                            <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
+                            <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${knot}$]" />
+                            <InputPath OutputPathName="${knot}$__Lookup.NoMatch" />
+                            <Columns>
+                                <Column SourceColumn="$knot" TargetColumn="$knot" />
+~*/
+            if(metadata[0]) {
+/*~
+                                <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${knotMnemonic}$" />
+~*/                                                        
+            }
 /*~                                
                             </Columns>
                         </OleDbDestination>
 ~*/
-            }
         }
 /*~
                     </Transformations>
