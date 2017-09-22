@@ -370,30 +370,25 @@ while(load = target.nextLoad()) {
                                 </OutputPath>
                             </OutputPaths>
                         </ConditionalSplit>
-~*/
-        if(numberOfHistorizedAttributes > 0) {
-/*~                        
                         <Multicast Name="Split_Known">
                             <OutputPaths> 
 ~*/
             for(i = 0; map = attributeMappings[i]; i++) {
-                if(map.isHistorized) {
 /*~
                                 <OutputPath Name="$map.attribute"/> 
 ~*/
-                }
             }
 /*~
                             </OutputPaths>
                             <InputPath OutputPathName="Known_Unknown.Known" />
                         </Multicast>
 ~*/
-            for(i = 0; map = attributeMappings[i]; i++) {
-                if(map.isHistorized) {
-                    var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
-                    var inputPath = 'Split_Known.' + map.attribute;
-                    var mapSource = map.source;
-                    var mapTarget = map.target;
+        for(i = 0; map = attributeMappings[i]; i++) {
+            var attributeMnemonic = map.target.match(/^(..\_...)\_.*/)[1];
+            var anchorReference = attributeMnemonic + '_' + load.anchorMnemonic + '_ID';
+            var inputPath = 'Split_Known.' + map.attribute;
+            var mapSource = map.source;
+            var mapTarget = map.target;
 /*~
                         <ConditionalSplit Name="${map.attribute}$__Known_not_Null">
                             <OutputPaths>
@@ -404,11 +399,11 @@ while(load = target.nextLoad()) {
                             <InputPath OutputPathName="$inputPath" />
                         </ConditionalSplit>
 ~*/                    
-                    inputPath = map.attribute + '__Known_not_Null.Values';
-                    if(map.knot) {
-                        var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
+            inputPath = map.attribute + '__Known_not_Null.Values';
+            if(map.knot) {
+                var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Known_Knot_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
@@ -419,39 +414,66 @@ while(load = target.nextLoad()) {
                             <InputPath OutputPathName="$inputPath" />                            
                         </Lookup>
 ~*/                    
-                        inputPath = map.attribute + '__Known_Lookup.Match';
-                        mapSource = knotMnemonic + '_ID';
-                        mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
-                    }
+                inputPath = map.attribute + '__Known_Knot_Lookup.Match';
+                mapSource = knotMnemonic + '_ID';
+                mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
+            }
 /*~
-                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" FastLoadOptions="ORDER(${attributeMnemonic}$_${load.anchorMnemonic}$_ID ASC)" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
+                        <Lookup Name="${map.attribute}$__Known_Lookup" NoMatchBehavior="RedirectRowsToNoMatchOutput" CacheMode="Partial" OleDbConnectionName="$VARIABLES.TargetDatabase">
+~*/
+            if(map.isHistorized) {
+/*~
+                            <DirectInput>
+                                SELECT $anchorReference, $mapTarget, ${attributeMnemonic}$_ChangedAt 
+                                FROM (
+                                    SELECT $anchorReference, $mapTarget, ${attributeMnemonic}$_ChangedAt,
+                                        LAST_VALUE(${attributeMnemonic}$_ChangedAt) OVER (
+                                            PARTITION BY $anchorReference ORDER BY ${attributeMnemonic}$_ChangedAt RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING
+                                        ) as Last_ChangedAt
+                                    FROM
+                                        [$VARIABLES.TargetSchema].[${map.attribute}$]
+                                ) a WHERE ${attributeMnemonic}$_ChangedAt = Last_ChangedAt
+                            </DirectInput>
+~*/
+            }
+            else { // static attribute
+/*~
+                            <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.attribute}$]" />
+~*/                
+            }
+/*~
+                            <Inputs>
+                                <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
+                                <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="$anchorReference" />
+                            </Inputs>
+                            <InputPath OutputPathName="$inputPath" />                            
+                        </Lookup>
+                        <OleDbDestination Name="${map.attribute}$__Known" ConnectionName="$VARIABLES.TargetDatabase" BatchSize="0" MaximumInsertCommitSize="0" FastLoadOptions="ORDER($anchorReference ASC)" KeepNulls="false" KeepIdentity="false" CheckConstraints="false" UseFastLoadIfAvailable="true" TableLock="true">
                             <ErrorHandling ErrorRowDisposition="FailComponent" TruncationRowDisposition="FailComponent" />
                             <ExternalTableOutput Table="[${VARIABLES.TargetSchema}$].[${map.attribute}$]" />
-                            <InputPath OutputPathName="$inputPath" />
+                            <InputPath OutputPathName="${map.attribute}$__Known_Lookup.NoMatch" />
                             <Columns>
-                                <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="${attributeMnemonic}$_${load.anchorMnemonic}$_ID" />
+                                <Column SourceColumn="${load.anchorMnemonic}$_ID" TargetColumn="$anchorReference" />
                                 <Column SourceColumn="$mapSource" TargetColumn="$mapTarget" />
 ~*/
-                    var attributeMap;
-                    while(attributeMap = load.nextMap()) {
-                        if(map != attributeMap && attributeMap.target.indexOf(attributeMnemonic) == 0) {
+            var attributeMap;
+            while(attributeMap = load.nextMap()) {
+                if(map != attributeMap && attributeMap.target.indexOf(attributeMnemonic) == 0) {
 /*~
                                 <Column SourceColumn="$attributeMap.source" TargetColumn="$attributeMap.target" />
 ~*/                            
-                        }
-                    }
-                    if(metadata[0]) {
+                }
+            }
+            if(metadata[0]) {
 /*~
                                 <Column SourceColumn="${metadata[0].source}$" TargetColumn="Metadata_${attributeMnemonic}$" />
 ~*/                                                        
-                    }
+            }
 /*~                                
                             </Columns>
                         </OleDbDestination>
 ~*/
-                }
-            }
-        } // end of if historized attributes exist
+        }
 /*~                        
                         <Multicast Name="Split_Unknown">
                             <OutputPaths> 
@@ -485,7 +507,7 @@ while(load = target.nextLoad()) {
             if(map.knot) {
                 var knotMnemonic = map.knot.match(/^(...)\_.*/)[1];
 /*~
-                        <Lookup Name="${map.attribute}$__Unknown_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
+                        <Lookup Name="${map.attribute}$__Unknown_Knot_Lookup" NoMatchBehavior="FailComponent" CacheMode="Full" OleDbConnectionName="$VARIABLES.TargetDatabase">
                             <ExternalTableInput Table="[$VARIABLES.TargetSchema].[${map.knot}$]" />
                             <Inputs>
                                 <Column SourceColumn="$mapSource" TargetColumn="$map.knot" />
@@ -496,7 +518,7 @@ while(load = target.nextLoad()) {
                             <InputPath OutputPathName="$inputPath" />                            
                         </Lookup>
 ~*/                    
-                inputPath = map.attribute + '__Unknown_Lookup.Match';
+                inputPath = map.attribute + '__Unknown_Knot_Lookup.Match';
                 mapSource = knotMnemonic + '_ID';
                 mapTarget = attributeMnemonic + '_' + knotMnemonic + '_ID';
             }
