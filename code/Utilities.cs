@@ -55,8 +55,9 @@ public partial class Splitter {
 }
 
 /*
- * 2015-12-08 Added by Lars R�nnb�ck
+ * 2015-12-08 Added by Lars Rönnbäck
  * 2015-12-09 Bug fixes
+ * 2018-04-20 Only allow @includeColumns to be split by commas
  */
 public partial class ColumnSplitter
 {
@@ -71,9 +72,15 @@ public partial class ColumnSplitter
         }
         else
         {
-            // allow columns to be delimited in a few different ways
-            string[] delimiters = new string[3] {" ", ",", ";"};
+            // columns should be delimited using commas
+            string[] delimiters = new string[1] {","};
             extraColumns = includeColumns.ToString().Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+        }
+        int i;
+        // trim column names
+        for (i = 0; i < extraColumns.Length; i++)
+        {
+            extraColumns[i] = extraColumns[i].Trim();
         }
 
         // compile the regex, since it will be used on a lot of rows
@@ -105,11 +112,11 @@ public partial class ColumnSplitter
             SqlDbType providerType;
             int columnSize;
             byte numericPrecision, numericScale;
-            int i;
             // first add the extra columns
             for (i = 0; i < extraColumns.Length; i++)
             {
-                extraColumns[i] = extraColumns[i].Replace("[", "").Replace("]", "");
+        		// remove brackets from column names
+            	extraColumns[i] = extraColumns[i].Replace("[", "").Replace("]", "");
                 providerType = (SqlDbType)(int)reader.GetSchemaTable().Rows[i]["ProviderType"];
                 switch(providerType) {
                     case SqlDbType.Bit:
