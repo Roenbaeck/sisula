@@ -1,5 +1,5 @@
 // Create loading logic
-var load, map, i;
+var load, map, i, deletable;
 while(load = target.nextLoad()) {
 /*~
 IF Object_ID('$S_SCHEMA$.$load.qualified', 'P') IS NOT NULL
@@ -11,13 +11,37 @@ GO
 -- Target:    $load.target
 --
 ~*/
+    var naturalKeys = [], 
+        surrogateKeys = [], 
+        metadata = [],
+        deletables = [],
+        deletablesWithHistory = [],
+        others = [];
+
     while(map = load.nextMap()) {
+        switch (map.as) {
+            case 'natural key':
+                naturalKeys.push(map);
+                break;
+            case 'surrogate key':
+                surrogateKeys.push(map);
+                break;
+            case 'metadata':
+                metadata.push(map);
+                break;
+            default:
+                others.push(map);
+        }
+        if(map.deletable === 'true' && map.as != 'history') deletables.push(map);
+        if(map.deletable === 'true') deletablesWithHistory.push(map);
+        deletable = map.deletable === 'true' ? '[D]' : '';
 /*~
--- Map: $map.source to $map.target $(map.as)? (as $map.as)
+-- Map: $map.source to $map.target $deletable $(map.as)? (as $map.as)
 ~*/
     }
 /*~
---
+-- 
+$(deletables.length > 0)? -- [D] marks deletable attributes
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
@@ -70,27 +94,7 @@ DECLARE @actions TABLE (
     }
 /*~
     ON (
-~*/
-    var naturalKeys = [], 
-        surrogateKeys = [], 
-        metadata = [],
-        others = [];
-    
-    while(map = load.nextMap()) {
-        switch (map.as) {
-            case 'natural key':
-                naturalKeys.push(map);
-                break;
-            case 'surrogate key':
-                surrogateKeys.push(map);
-                break;
-            case 'metadata':
-                metadata.push(map);
-                break;
-            default:
-                others.push(map);
-        }
-    }
+~*/ 
     var maps = naturalKeys.concat(surrogateKeys);
     for(i = 0; map = maps[i]; i++) {
 /*~
@@ -131,7 +135,11 @@ DECLARE @actions TABLE (
     )
 ~*/
     }
-    var maps = others;
+    var othersWithoutHistory = [];
+    for(i = 0; map = others[i]; i++) {
+        if(map.as != 'history') othersWithoutHistory.push(map);
+    }
+    var maps = othersWithoutHistory;
     if(maps.length > 0) {
 /*~
     WHEN MATCHED AND (
@@ -154,6 +162,36 @@ DECLARE @actions TABLE (
 ~*/
         }    
     } // end of if nonkeys
+    if(deletables.length > 0) {
+/*~
+    WHEN MATCHED AND (
+~*/
+        for(i = 0; map = deletables[i]; i++) {
+/*~
+        ([target].[$map.target] is not null AND [source].[$map.source] is null)
+    $(i < deletables.length - 1)? OR    
+~*/
+        }
+/*~
+    ) 
+    THEN UPDATE
+    SET
+~*/
+        for(i = 0; map = deletablesWithHistory[i]; i++) {
+            if(map.as === 'history') {
+/*~
+        [target].[$map.target] = [source].[$map.source]$(i < deletablesWithHistory.length - 1)?,
+~*/                
+            }
+            else {
+                var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';
+/*~
+        [target].$deletableColumn = 1,
+        [target].[$map.target] = null$(i < deletablesWithHistory.length - 1)?,
+~*/
+            }
+        }    
+    } // end of deletables
 /*~
     OUTPUT
         LEFT($$action, 1) INTO @actions;
