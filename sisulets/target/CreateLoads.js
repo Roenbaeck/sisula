@@ -1,5 +1,5 @@
 // Create loading logic
-var load, map, i, deletable;
+var load, map, i, deletable, deletablesExist;
 while(load = target.nextLoad()) {
 /*~
 IF Object_ID('$S_SCHEMA$.$load.qualified', 'P') IS NOT NULL
@@ -14,10 +14,9 @@ GO
     var naturalKeys = [], 
         surrogateKeys = [], 
         metadata = [],
-        deletables = [],
-        deletablesWithHistory = [],
         others = [];
 
+    deletablesExist = false;
     while(map = load.nextMap()) {
         switch (map.as) {
             case 'natural key':
@@ -32,8 +31,7 @@ GO
             default:
                 others.push(map);
         }
-        if(map.deletable === 'true' && map.as != 'history') deletables.push(map);
-        if(map.deletable === 'true') deletablesWithHistory.push(map);
+        if(map.deletable === 'true') deletablesExist = true;
         deletable = map.deletable === 'true' ? '[D]' : '';
 /*~
 -- Map: $map.source to $map.target $deletable $(map.as)? (as $map.as)
@@ -41,7 +39,7 @@ GO
     }
 /*~
 -- 
-$(deletables.length > 0)? -- [D] marks deletable attributes
+$(deletablesExist)? -- [D] marks deletable attributes
 -- Generated: ${new Date()}$ by $VARIABLES.USERNAME
 -- From: $VARIABLES.COMPUTERNAME in the $VARIABLES.USERDOMAIN domain
 --------------------------------------------------------------------------
@@ -145,6 +143,13 @@ DECLARE @actions TABLE (
     WHEN MATCHED AND (
 ~*/
         for(i = 0; map = maps[i]; i++) {
+            if(map.deletable === 'true') {
+/*~
+        ([target].[$map.target] is not null AND [source].[$map.source] is null)
+    OR    
+~*/
+
+            }
 /*~
         ([target].[$map.target] is null OR [source].[$map.source] <> [target].[$map.target])
     $(i < maps.length - 1)? OR    
@@ -157,41 +162,17 @@ DECLARE @actions TABLE (
 ~*/
         var maps = others.concat(metadata);
         for(i = 0; map = maps[i]; i++) {
+            if(map.deletable === 'true' && map.as != 'history') {
+                var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';                
+/*~
+        [target].$deletableColumn = 1,
+~*/
+            }
 /*~
         [target].[$map.target] = [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
         }    
     } // end of if nonkeys
-    if(deletables.length > 0) {
-/*~
-    WHEN MATCHED AND (
-~*/
-        for(i = 0; map = deletables[i]; i++) {
-/*~
-        ([target].[$map.target] is not null AND [source].[$map.source] is null)
-    $(i < deletables.length - 1)? OR    
-~*/
-        }
-/*~
-    ) 
-    THEN UPDATE
-    SET
-~*/
-        for(i = 0; map = deletablesWithHistory[i]; i++) {
-            if(map.as === 'history') {
-/*~
-        [target].[$map.target] = [source].[$map.source]$(i < deletablesWithHistory.length - 1)?,
-~*/                
-            }
-            else {
-                var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';
-/*~
-        [target].$deletableColumn = 1,
-        [target].[$map.target] = null$(i < deletablesWithHistory.length - 1)?,
-~*/
-            }
-        }    
-    } // end of deletables
 /*~
     OUTPUT
         LEFT($$action, 1) INTO @actions;
