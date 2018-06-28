@@ -1,20 +1,24 @@
 <Biml xmlns="http://schemas.varigence.com/biml.xsd">
     <Connections>
-        <OleDbConnection Name="Stage" ConnectionString="Server=localhost;Initial Catalog=Stage;Integrated Security=SSPI;Provider=SQLNCLI11;" />
-        <OleDbConnection Name="Traffic" ConnectionString="Server=localhost;Initial Catalog=Traffic;Integrated Security=SSPI;Provider=SQLNCLI11;" />
+        <OleDbConnection Name="Stage" ConnectionString="Data Source=localhost;Server=localhost;Initial Catalog=Stage;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
+        <OleDbConnection Name="Traffic" ConnectionString="Data Source=localhost;Server=localhost;Initial Catalog=Traffic;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
     </Connections>
     <Packages>
-        <Package Name="lST_Street__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
+        <Package Name="lST_Street__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Annotations>
+                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+            </Annotations>
             <Tasks>
                 <ExecuteSQL Name="SQL Before" ConnectionName="Stage">
                     <DirectInput>
         -- preparations can be put here
         </DirectInput>
                 </ExecuteSQL>
-                <Dataflow Name="Load">
+                <Dataflow Name="Load data" EngineThreads="1">
                     <Transformations>
                         <OleDbSource Name="NYPD_Vehicle_Collision_Typed" ConnectionName="Stage">
                             <DirectInput>
+                                DBCC TRACEON (610);
                                 DECLARE @known INT = 0;
                                 MERGE [Traffic].[dbo].[ST_Street] [ST]
                                 USING (
@@ -43,7 +47,7 @@
             StreetName
                                     ) t
                                     LEFT JOIN
-                                        [Traffic].[dbo].[lST_Street] l
+                                        [Traffic].[dbo].[lST_Street] l WITH (NOLOCK)
                                     ON
                                         t.StreetName = l.ST_NAM_Street_Name 
                                 ) src
@@ -58,8 +62,7 @@
                                     isnull(src.ST_ID, inserted.ST_ID) as ST_ID,
                                     src.StreetName,
                                     src.metadata_CO_ID,
-                                    metadata_CO_ID,
-                                    left($action, 1) as Operation;
+                                    left($action, 1) as __Operation;
                             </DirectInput>
                         </OleDbSource>
                     </Transformations>
@@ -71,12 +74,16 @@
                 </ExecuteSQL>
             </Tasks>
         </Package>
-        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__1" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
+        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__1" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Annotations>
+                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+            </Annotations>
             <Tasks>
-                <Dataflow Name="Load">
+                <Dataflow Name="Load data" EngineThreads="1">
                     <Transformations>
                         <OleDbSource Name="NYPD_Vehicle_Collision_Typed" ConnectionName="Stage">
                             <DirectInput>
+                                DBCC TRACEON (610);
                                 DECLARE @known INT = 0;
                                 MERGE [Traffic].[dbo].[IS_Intersection] [IS]
                                 USING (
@@ -122,27 +129,34 @@
                                     isnull(src.IS_ID_of, inserted.IS_ID) as IS_ID,
                                     src.metadata_CO_ID,
                                     metadata_CO_ID,
-                                    left($action, 1) as Operation;
+                                    left($action, 1) as __Operation;
                             </DirectInput>
                         </OleDbSource>
                     </Transformations>
                 </Dataflow>
             </Tasks>
         </Package>
-        <Package Name="lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
+        <Package Name="lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Annotations>
+                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+            </Annotations>
             <Tasks>
-                <Dataflow Name="Load">
+                <Dataflow Name="Load data" EngineThreads="1">
                     <Transformations>
                     </Transformations>
                 </Dataflow>
             </Tasks>
         </Package>
-        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__2" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithUserKey">
+        <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__2" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
+            <Annotations>
+                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+            </Annotations>
             <Tasks>
-                <Dataflow Name="Load">
+                <Dataflow Name="Load data" EngineThreads="1">
                     <Transformations>
                         <OleDbSource Name="NYPD_Vehicle_Collision_Typed" ConnectionName="Stage">
                             <DirectInput>
+                                DBCC TRACEON (610);
                                 DECLARE @known INT = 0;
                                 MERGE [Traffic].[dbo].[IS_Intersection] [IS]
                                 USING (
@@ -191,7 +205,7 @@
                                     src.CollisionVehicleCount,
                                     src.CollisionInjuredCount,
                                     src.CollisionKilledCount,
-                                    left($action, 1) as Operation;
+                                    left($action, 1) as __Operation;
                             </DirectInput>
                         </OleDbSource>
                     </Transformations>

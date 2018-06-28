@@ -16,6 +16,10 @@ IF Object_Id('${S_SCHEMA}$.ToLocalTime', 'FS') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[ToLocalTime];
 GO
 
+IF Object_Id('${S_SCHEMA}$.ToUniversalTime', 'FS') IS NOT NULL 
+DROP FUNCTION [$S_SCHEMA].[ToUniversalTime]; 
+GO
+
 -- BEGIN! LEGACY --
 IF EXISTS (
 	SELECT
@@ -76,6 +80,11 @@ GO
 CREATE FUNCTION [$S_SCHEMA].ToLocalTime(@sqlDatetime AS datetime)
 RETURNS datetime
 AS EXTERNAL NAME Utilities.ToLocalTime.InitMethod;
+GO
+
+CREATE FUNCTION [$S_SCHEMA].ToUniversalTime(@sqlDatetime AS datetime) 
+RETURNS datetime 
+AS EXTERNAL NAME Utilities.ToUniversalTime.InitMethod;
 GO
 
 CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(

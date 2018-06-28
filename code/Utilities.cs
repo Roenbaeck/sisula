@@ -319,7 +319,7 @@ public partial class IsType {
 }
 
 /*
-
+	Time conversion utility functions
 */
 public partial class ToLocalTime {
     [
@@ -333,6 +333,24 @@ public partial class ToLocalTime {
     public static SqlDateTime InitMethod(SqlDateTime sqlDatetime) {
         try {
             return TimeZone.CurrentTimeZone.ToLocalTime(sqlDatetime.Value);
+        }
+        catch {
+            return SqlDateTime.Null;
+        }
+    }
+}
+public partial class ToUniversalTime {
+    [
+        Microsoft.SqlServer.Server.SqlFunction (
+            SystemDataAccess  = SystemDataAccessKind.None,
+            DataAccess        = DataAccessKind.None,
+            IsDeterministic   = true,
+            IsPrecise         = true
+        )
+    ]
+    public static SqlDateTime InitMethod(SqlDateTime sqlDatetime) {
+        try {
+            return TimeZone.CurrentTimeZone.ToUniversalTime(sqlDatetime.Value);
         }
         catch {
             return SqlDateTime.Null;
