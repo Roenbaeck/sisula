@@ -1,12 +1,12 @@
 <Biml xmlns="http://schemas.varigence.com/biml.xsd">
     <Connections>
-        <OleDbConnection Name="Stage" ConnectionString="Data Source=localhost;Server=localhost;Initial Catalog=Stage;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
-        <OleDbConnection Name="Traffic" ConnectionString="Data Source=localhost;Server=localhost;Initial Catalog=Traffic;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
+        <OleDbConnection Name="Stage" ConnectionString="Data Source=;Server=;Initial Catalog=Stage;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
+        <OleDbConnection Name="Traffic" ConnectionString="Data Source=;Server=;Initial Catalog=Traffic;Integrated Security=SSPI;Provider=SQLNCLI11;Packet Size=32737;" />
     </Connections>
     <Packages>
         <Package Name="lST_Street__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
             <Annotations>
-                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+                <Annotation AnnotationType="Description">BIML generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
             </Annotations>
             <Tasks>
                 <ExecuteSQL Name="SQL Before" ConnectionName="Stage">
@@ -76,7 +76,7 @@
         </Package>
         <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__1" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
             <Annotations>
-                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+                <Annotation AnnotationType="Description">BIML generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
             </Annotations>
             <Tasks>
                 <Dataflow Name="Load data" EngineThreads="1">
@@ -138,7 +138,7 @@
         </Package>
         <Package Name="lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
             <Annotations>
-                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+                <Annotation AnnotationType="Description">BIML generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
             </Annotations>
             <Tasks>
                 <Dataflow Name="Load data" EngineThreads="1">
@@ -149,7 +149,7 @@
         </Package>
         <Package Name="lIS_Intersection__NYPD_Vehicle_Collision_Typed__2" ConstraintMode="Linear" ProtectionLevel="EncryptSensitiveWithPassword" PackagePassword="sisula">
             <Annotations>
-                <Annotation AnnotationType="Description">BIML generated: Thu Jun 28 09:32:09 UTC+0200 2018 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
+                <Annotation AnnotationType="Description">BIML generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback from: TSE-9B50TY1 in the CORPNET domain</Annotation>
             </Annotations>
             <Tasks>
                 <Dataflow Name="Load data" EngineThreads="1">

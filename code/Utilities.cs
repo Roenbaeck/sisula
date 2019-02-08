@@ -55,6 +55,44 @@ public partial class Splitter {
 }
 
 /*
+ * 2019-02-08 Added by Lars Rönnbäck
+ */
+public partial class MultiSplitter {
+    [
+        Microsoft.SqlServer.Server.SqlFunction (
+            SystemDataAccess  = SystemDataAccessKind.None,
+            DataAccess        = DataAccessKind.None,
+            IsDeterministic   = true,
+            IsPrecise         = true,
+            FillRowMethodName = "FillRow"
+        )
+    ]
+    public static IEnumerable InitMethod([SqlFacet(MaxSize = -1)] SqlString row, SqlString pattern) {
+        ICollection<Capture> captures = new Collection<Capture>();
+        foreach(Match match in Regex.Matches(row.ToString(), pattern.ToString(), RegexOptions.None)) {
+            bool first = true;
+            foreach (Group group in match.Groups) {
+                if(first) {
+                    first = false;
+                }
+                else {
+                    foreach(Capture capture in group.Captures) {
+                        captures.Add(capture);
+                    }
+                }
+            }
+        }
+        return captures;
+    }
+    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index) {
+        Capture capture = (Capture) fromEnumeration;
+        match = (capture.Value == String.Empty) ? SqlString.Null : new SqlString(capture.Value);
+        index = new SqlInt32(capture.Index);
+    }
+}
+
+
+/*
  * 2015-12-08 Added by Lars Rönnbäck
  * 2015-12-09 Bug fixes
  * 2018-04-20 Only allow @includeColumns to be split by commas
