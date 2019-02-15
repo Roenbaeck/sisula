@@ -13,8 +13,8 @@ The sisulator takes an XML file as input and converts this into a
 JSON-compatible object according to a mapping ruleset. It will then
 process a number of sisulets as specified in the given directive, which
 recieve the object as input. The sisulets are parsed and the sisula
-language substituted to JScript using regular expressions, after which
-the JScript is evaluated and the output stored.
+language substituted to JavaScript/JScript using regular expressions, after which
+the JavaScript/JScript is evaluated and the output stored.
 
 ### History
 sisula was introduced in [Anchor Modeling](http://www.anchormodeling.com) in order to replace XSLT for producing text output, and a first JavaScript version of the Sisulator is built into its [modeling tool](http://code.google.com/p/anchormodeler). This version is derived from that work.
