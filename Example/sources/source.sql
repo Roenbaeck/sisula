@@ -10,14 +10,20 @@ GO
 IF Object_Id('etl.Splitter', 'FT') IS NOT NULL
 DROP FUNCTION [etl].[Splitter];
 GO
-IF Object_Id('etl.IsType', 'FS') IS NOT NULL
-DROP FUNCTION [etl].[IsType];
+IF Object_Id('etl.MultiSplitter', 'FT') IS NOT NULL
+DROP FUNCTION [etl].[MultiSplitter];
 GO
 IF Object_Id('etl.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [etl].[ColumnSplitter];
 GO
+IF Object_Id('etl.IsType', 'FS') IS NOT NULL
+DROP FUNCTION [etl].[IsType];
+GO
 IF Object_Id('etl.ToLocalTime', 'FS') IS NOT NULL
 DROP FUNCTION [etl].[ToLocalTime];
+GO
+IF Object_Id('etl.ToUniversalTime', 'FS') IS NOT NULL 
+DROP FUNCTION [etl].[ToUniversalTime]; 
 GO
 -- BEGIN! LEGACY --
 IF EXISTS (
@@ -67,6 +73,12 @@ RETURNS TABLE (
 	[index] int
 ) AS EXTERNAL NAME Utilities.Splitter.InitMethod;
 GO
+CREATE FUNCTION [etl].MultiSplitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
+RETURNS TABLE (
+	[match] nvarchar(max),
+	[index] int
+) AS EXTERNAL NAME Utilities.MultiSplitter.InitMethod;
+GO
 CREATE FUNCTION [etl].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
 RETURNS bit
 AS EXTERNAL NAME Utilities.IsType.InitMethod;
@@ -74,6 +86,10 @@ GO
 CREATE FUNCTION [etl].ToLocalTime(@sqlDatetime AS datetime)
 RETURNS datetime
 AS EXTERNAL NAME Utilities.ToLocalTime.InitMethod;
+GO
+CREATE FUNCTION [etl].ToUniversalTime(@sqlDatetime AS datetime) 
+RETURNS datetime 
+AS EXTERNAL NAME Utilities.ToUniversalTime.InitMethod;
 GO
 CREATE PROCEDURE [etl].ColumnSplitter(
 	@table AS nvarchar(4000),
@@ -117,7 +133,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -186,7 +202,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -256,7 +272,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -385,7 +401,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -667,7 +683,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -777,7 +793,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -886,7 +902,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -1066,7 +1082,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Fri May 5 08:37:09 UTC+0200 2017 by e-lronnback
+-- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (

@@ -4,16 +4,24 @@ IF Object_Id('${S_SCHEMA}$.Splitter', 'FT') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[Splitter];
 GO
 
-IF Object_Id('${S_SCHEMA}$.IsType', 'FS') IS NOT NULL
-DROP FUNCTION [$S_SCHEMA].[IsType];
+IF Object_Id('${S_SCHEMA}$.MultiSplitter', 'FT') IS NOT NULL
+DROP FUNCTION [$S_SCHEMA].[MultiSplitter];
 GO
 
 IF Object_Id('${S_SCHEMA}$.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[ColumnSplitter];
 GO
 
+IF Object_Id('${S_SCHEMA}$.IsType', 'FS') IS NOT NULL
+DROP FUNCTION [$S_SCHEMA].[IsType];
+GO
+
 IF Object_Id('${S_SCHEMA}$.ToLocalTime', 'FS') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[ToLocalTime];
+GO
+
+IF Object_Id('${S_SCHEMA}$.ToUniversalTime', 'FS') IS NOT NULL 
+DROP FUNCTION [$S_SCHEMA].[ToUniversalTime]; 
 GO
 
 -- BEGIN! LEGACY --
@@ -68,6 +76,13 @@ RETURNS TABLE (
 ) AS EXTERNAL NAME Utilities.Splitter.InitMethod;
 GO
 
+CREATE FUNCTION [$S_SCHEMA].MultiSplitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
+RETURNS TABLE (
+	[match] nvarchar(max),
+	[index] int
+) AS EXTERNAL NAME Utilities.MultiSplitter.InitMethod;
+GO
+
 CREATE FUNCTION [$S_SCHEMA].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
 RETURNS bit
 AS EXTERNAL NAME Utilities.IsType.InitMethod;
@@ -76,6 +91,11 @@ GO
 CREATE FUNCTION [$S_SCHEMA].ToLocalTime(@sqlDatetime AS datetime)
 RETURNS datetime
 AS EXTERNAL NAME Utilities.ToLocalTime.InitMethod;
+GO
+
+CREATE FUNCTION [$S_SCHEMA].ToUniversalTime(@sqlDatetime AS datetime) 
+RETURNS datetime 
+AS EXTERNAL NAME Utilities.ToUniversalTime.InitMethod;
 GO
 
 CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(

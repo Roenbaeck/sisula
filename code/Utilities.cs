@@ -55,8 +55,47 @@ public partial class Splitter {
 }
 
 /*
- * 2015-12-08 Added by Lars R�nnb�ck
+ * 2019-02-08 Added by Lars Rönnbäck
+ */
+public partial class MultiSplitter {
+    [
+        Microsoft.SqlServer.Server.SqlFunction (
+            SystemDataAccess  = SystemDataAccessKind.None,
+            DataAccess        = DataAccessKind.None,
+            IsDeterministic   = true,
+            IsPrecise         = true,
+            FillRowMethodName = "FillRow"
+        )
+    ]
+    public static IEnumerable InitMethod([SqlFacet(MaxSize = -1)] SqlString row, SqlString pattern) {
+        ICollection<Capture> captures = new Collection<Capture>();
+        foreach(Match match in Regex.Matches(row.ToString(), pattern.ToString(), RegexOptions.None)) {
+            bool first = true;
+            foreach (Group group in match.Groups) {
+                if(first) {
+                    first = false;
+                }
+                else {
+                    foreach(Capture capture in group.Captures) {
+                        captures.Add(capture);
+                    }
+                }
+            }
+        }
+        return captures;
+    }
+    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index) {
+        Capture capture = (Capture) fromEnumeration;
+        match = (capture.Value == String.Empty) ? SqlString.Null : new SqlString(capture.Value);
+        index = new SqlInt32(capture.Index);
+    }
+}
+
+
+/*
+ * 2015-12-08 Added by Lars Rönnbäck
  * 2015-12-09 Bug fixes
+ * 2018-04-20 Only allow @includeColumns to be split by commas
  */
 public partial class ColumnSplitter
 {
@@ -71,9 +110,15 @@ public partial class ColumnSplitter
         }
         else
         {
-            // allow columns to be delimited in a few different ways
-            string[] delimiters = new string[3] {" ", ",", ";"};
+            // columns should be delimited using commas
+            string[] delimiters = new string[1] {","};
             extraColumns = includeColumns.ToString().Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+        }
+        int i;
+        // trim column names
+        for (i = 0; i < extraColumns.Length; i++)
+        {
+            extraColumns[i] = extraColumns[i].Trim();
         }
 
         // compile the regex, since it will be used on a lot of rows
@@ -105,11 +150,11 @@ public partial class ColumnSplitter
             SqlDbType providerType;
             int columnSize;
             byte numericPrecision, numericScale;
-            int i;
             // first add the extra columns
             for (i = 0; i < extraColumns.Length; i++)
             {
-                extraColumns[i] = extraColumns[i].Replace("[", "").Replace("]", "");
+        		// remove brackets from column names
+            	extraColumns[i] = extraColumns[i].Replace("[", "").Replace("]", "");
                 providerType = (SqlDbType)(int)reader.GetSchemaTable().Rows[i]["ProviderType"];
                 switch(providerType) {
                     case SqlDbType.Bit:
@@ -312,7 +357,7 @@ public partial class IsType {
 }
 
 /*
-
+	Time conversion utility functions
 */
 public partial class ToLocalTime {
     [
@@ -326,6 +371,24 @@ public partial class ToLocalTime {
     public static SqlDateTime InitMethod(SqlDateTime sqlDatetime) {
         try {
             return TimeZone.CurrentTimeZone.ToLocalTime(sqlDatetime.Value);
+        }
+        catch {
+            return SqlDateTime.Null;
+        }
+    }
+}
+public partial class ToUniversalTime {
+    [
+        Microsoft.SqlServer.Server.SqlFunction (
+            SystemDataAccess  = SystemDataAccessKind.None,
+            DataAccess        = DataAccessKind.None,
+            IsDeterministic   = true,
+            IsPrecise         = true
+        )
+    ]
+    public static SqlDateTime InitMethod(SqlDateTime sqlDatetime) {
+        try {
+            return TimeZone.CurrentTimeZone.ToUniversalTime(sqlDatetime.Value);
         }
         catch {
             return SqlDateTime.Null;

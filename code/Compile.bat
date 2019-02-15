@@ -2,19 +2,40 @@
 
 REM ---- Find the oldest installation ----
 FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\NET Framework Setup" /s /t REG_SZ /v InstallPath ^| cscript /NoLogo match.js ".*\sInstallPath\s+REG_SZ\s+(.*)" ^| sort /R') DO SET DotNetPath=%%i
+ECHO ---------------------------------------------------------------------------
 ECHO Using .NET path: %DotNetPath%
+ECHO ---------------------------------------------------------------------------
+ECHO.
 
-ECHO You have the following Assemblies that can be referenced:
-FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\Microsoft SQL Server" /s /t REG_SZ /v SharedCode ^| cscript /NoLogo match.js ".*\sSharedCode\s+REG_SZ\s+(.*)"') DO DIR /B /S "%%i\Microsoft.SqlServer.Types.dll" 2>nul | cscript /NoLogo match.js "(.*Microsoft.SqlServer.Types.dll)" | sort /R
-
-REM ----- Change this reference accordingly -----
-REM SET Assembly=C:\Program Files (x86)\Microsoft SQL Server\100\SDK\Assemblies\Microsoft.SqlServer.Types.dll
-SET Assembly=C:\Program Files\Microsoft SQL Server\110\Shared\Microsoft.SqlServer.Types.dll
-REM SET Assembly=C:\Program Files\Microsoft SQL Server\120\Shared\Microsoft.SqlServer.Types.dll
-REM SET Assembly=C:\Program Files\Microsoft SQL Server\130\Shared\Microsoft.SqlServer.Types.dll
+REM *** Code 100 is SQL Server 2008 *** 
+REM *** Code 110 is SQL Server 2012 *** 
+REM *** Code 120 is SQL Server 2014 *** 
+REM *** Code 130 is SQL Server 2016 *** 
+REM *** Code 140 is SQL Server 2017 *** 
+REM *** Code 150 is SQL Server 2019 *** 
 
 REM ----- Compile -----
-ECHO The following command will now be executed:
-ECHO %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities.dll Utilities.cs
 
-%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities.dll Utilities.cs
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.100.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2008) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2008.dll Utilities.cs
+
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.110.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2012) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2012.dll Utilities.cs
+
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.120.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2014) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2014.dll Utilities.cs
+
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.130.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2016) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2016.dll Utilities.cs
+
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.140.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2017) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2017.dll Utilities.cs
+
+SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.150.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2019) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2019.dll Utilities.cs

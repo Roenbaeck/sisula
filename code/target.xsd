@@ -10,6 +10,7 @@
 			<xs:enumeration value="natural key"/>
 			<xs:enumeration value="surrogate key"/>
 			<xs:enumeration value="metadata"/>
+			<xs:enumeration value="history"/>
 		</xs:restriction>
 	</xs:simpleType>
 	<xs:complexType name="__sql" mixed="true">
@@ -19,6 +20,7 @@
 		<xs:attribute name="source" type="xs:string" use="required"/>
 		<xs:attribute name="target" type="xs:string" use="required"/>
 		<xs:attribute name="as" type="__as" use="optional"/>
+		<xs:attribute name="deletable" type="xs:boolean" use="optional"/>
 	</xs:complexType>
 	<xs:complexType name="__load" mixed="true">
 		<xs:choice minOccurs="1" maxOccurs="unbounded">
