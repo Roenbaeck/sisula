@@ -51,7 +51,7 @@ for %%f in (%FolderPath%\sources\*.xml) do (
   echo  * Transforming source to bulk format file:
   echo    %%~f ...
   echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
+  Sisulator.js -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
 )
 
@@ -65,7 +65,7 @@ for %%f in (%FolderPath%\sources\*.xml) do (
   echo  * Transforming source to SQL loading stored procedures:
   echo    %%~f ...
   echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
+  Sisulator.js -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
@@ -79,7 +79,7 @@ for %%f in (%FolderPath%\targets\*.xml) do (
   echo  * Transforming target to SQL loading stored procedures:
   echo    %%~f ...
   echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
+  Sisulator.js -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
@@ -88,14 +88,14 @@ for %%f in (%FolderPath%\targets\*.xml) do (
 REM -------------------------------------------------------------------
 REM   Create BIML files
 REM -------------------------------------------------------------------
-REM for %%f in (%FolderPath%\targets\*.xml) do (
-REM   set OutputFile=%FolderPath%\biml\%%~nf.biml
-REM   echo  * Transforming target to BIML file:
-REM   echo    %%~f ...
-REM   echo    !OutputFile!
-REM   Sisulator.hta -x "%%~f" -m Target -d biml.directive -o "!OutputFile!"
-REM   IF ERRORLEVEL 1 GOTO ERROR
-REM )
+for %%f in (%FolderPath%\targets\*.xml) do (
+  set OutputFile=%FolderPath%\biml\%%~nf.biml
+  echo  * Transforming target to BIML file:
+  echo    %%~f ...
+  echo    !OutputFile!
+  Sisulator.js -x "%%~f" -m Target -d biml.directive -o "!OutputFile!"
+  IF ERRORLEVEL 1 GOTO ERROR
+)
 
 REM -------------------------------------------------------------------
 REM   Create SQL Server Agent job code
@@ -105,7 +105,7 @@ for %%f in (%FolderPath%\workflows\*.xml) do (
   echo  * Transforming workflow to SQL Server Agent job scripts:
   echo    %%~f ...
   echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
+  Sisulator.js -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
   IF ERRORLEVEL 1 GOTO ERROR
   set /a i=!i!+1
   set SQLFiles[!i!]=!OutputFile!
