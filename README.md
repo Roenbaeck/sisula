@@ -3,7 +3,7 @@ sisula
 
 sisula, short for "simple substitution language", is a language for producing text output from XML input.
 
-The current version is built in [JScript](http://en.wikipedia.org/wiki/JScript) and should run using the [Windows Scripting Host](http://en.wikipedia.org/wiki/Windows_Script_Host) in any Windows version from the last decade. There are no special requirements or dependencies.
+The current version is built in [JavaScript](https://en.wikipedia.org/wiki/JavaScript) and should run using [HTA](https://en.wikipedia.org/wiki/HTML_Application) in any Windows version from the last decade. There are no special requirements or dependencies. A legacy version using [JScript](http://en.wikipedia.org/wiki/JScript) in [Windows Scripting Host](http://en.wikipedia.org/wiki/Windows_Script_Host) is also available.
 
 ### ETL
 The ETL branch contains an SQL driven ELT framework for data warehouse automation. This framework can be used with SQL Server and is particularly useful for [Anchor Modeling](http://www.anchormodeling.com). There is a playlist of video tutorials on how to use it available here: https://www.youtube.com/playlist?list=PLG6-3kKEOyYlWEaEFzhcARtjqHU6zn1cH
