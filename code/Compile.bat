@@ -16,26 +16,26 @@ REM *** Code 150 is SQL Server 2019 ***
 
 REM ----- Compile -----
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.100.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.100.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2008) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2008.dll Utilities.cs
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.110.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.110.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2012) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2012.dll Utilities.cs
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.120.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.120.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2014) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2014.dll Utilities.cs
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.130.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.130.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2016) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2016.dll Utilities.cs
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.140.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.140.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2017) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2017.dll Utilities.cs
 
-SET Assembly=C:\sisula\code\DLL\Microsoft.SqlServer.Types.150.dll
+SET Assembly=DLL\Microsoft.SqlServer.Types.150.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2019) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2019.dll Utilities.cs
