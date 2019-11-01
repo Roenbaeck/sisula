@@ -1,5 +1,9 @@
 // Create a raw view compatible with bulk inserts
 /*~
+-- Dropping insert view to enforce Deferred Name Resolution: $source.qualified$_Insert
+IF Object_ID('$S_SCHEMA$.$source.qualified$_Insert', 'V') IS NOT NULL
+DROP VIEW [$S_SCHEMA].[$source.qualified$_Insert];
+
 IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateInsertView];
 GO

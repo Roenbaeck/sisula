@@ -2,6 +2,10 @@
 if(source.split == 'bulk') {
 var term, part = source.firstPart();
 /*~
+-- Dropping raw split table to enforce Deferred Name Resolution: $source.qualified$_RawSplit
+IF Object_ID('$S_SCHEMA$.$source.qualified$_RawSplit', 'U') IS NOT NULL
+DROP TABLE [$S_SCHEMA].[$source.qualified$_RawSplit];
+
 IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateRawSplitTable', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateRawSplitTable];
 GO
@@ -36,7 +40,7 @@ var rowlength = source.rowlength ? source.rowlength : 'max';
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null default 0,
         metadata_JB_ID int not null default 0,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default $TIMESTAMP,
 ~*/
 while(term = part.nextTerm()) {
 /*~

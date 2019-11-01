@@ -1,4 +1,12 @@
 @ECHO OFF
+REM -------------------------------------------------------------------
+REM   This file needs to be saved as UTF-8 with the option "No Mark"
+REM   Note that your CMD prompt may need to use Lucida Console in 
+REM   order to display foreign characters correctly
+REM -------------------------------------------------------------------
+for /f "tokens=2 delims=:." %%x in ('chcp') do set DEFAULT_CODEPAGE=%%x
+chcp 65001>NUL
+
 set FolderPath=%~f1
 set Server=%2
 set SQLFiles=
@@ -11,7 +19,7 @@ if [%FolderPath%]==[] (
   echo -----------------------------------------------------------------------
   echo You must specify in which folder your configuration files are located.
   echo Note that if no server name is given the generated SQL files must be
-  echo installed manually on the server.
+  echo installed manually on the server. 
   echo -----------------------------------------------------------------------
   GOTO ERROR
 )
@@ -21,11 +29,6 @@ echo  sisula starting                            %date% %time%
 echo -------------------------------------------------------------------
 echo.
 
-REM -------------------------------------------------------------------
-REM   This file needs to be saved as UTF-8 with the option "No Mark"
-REM -------------------------------------------------------------------
-for /f "tokens=2 delims=:." %%x in ('chcp') do set DEFAULT_CODEPAGE=%%x
-chcp 65001>NUL
 set SisulaPath=%~dp0
 echo  * Path to the sisula ETL Framework installation:
 echo    %SisulaPath%
@@ -46,69 +49,103 @@ set i=-1
 REM -------------------------------------------------------------------
 REM   Create bulk format files
 REM -------------------------------------------------------------------
-for %%f in (%FolderPath%\sources\*.xml) do (
-  set OutputFile=%FolderPath%\formats\%%~nf.xml
-  echo  * Transforming source to bulk format file:
-  echo    %%~f ...
-  echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
-  IF ERRORLEVEL 1 GOTO ERROR
+dir /ad /b %FolderPath%\sources 1>NUL 2>NUL
+if NOT ERRORLEVEL 1 (
+  dir /ad /b %FolderPath%\formats 1>NUL 2>NUL 
+  if NOT ERRORLEVEL 1 (
+    echo  + Creating bulk format files using:
+    echo    %FolderPath%\sources
+    for %%f in (%FolderPath%\sources\*.xml) do (
+      set OutputFile=%FolderPath%\formats\%%~nf.xml
+      echo  * Transforming source to bulk format file:
+      echo    %%~f ...
+      echo    !OutputFile!
+      Sisulator.hta -x "%%~f" -m Source -d format.directive -o "!OutputFile!"
+      IF ERRORLEVEL 1 GOTO ERROR
+    )
+  )
 )
 
 REM -------------------------------------------------------------------
 REM   Create source loading SQL code
 REM   Note that the name of the corresponding format file is needed
 REM -------------------------------------------------------------------
-for %%f in (%FolderPath%\sources\*.xml) do (
-  set OutputFile=%FolderPath%\sources\%%~nf.sql
-  set FormatFile=%FolderPath%\formats\%%~nf.xml
-  echo  * Transforming source to SQL loading stored procedures:
-  echo    %%~f ...
-  echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
-  IF ERRORLEVEL 1 GOTO ERROR
-  set /a i=!i!+1
-  set SQLFiles[!i!]=!OutputFile!
+dir /ad /b %FolderPath%\sources 1>NUL 2>NUL
+if NOT ERRORLEVEL 1 (
+  dir /ad /b %FolderPath%\formats 1>NUL 2>NUL 
+  if NOT ERRORLEVEL 1 (
+    echo  + Creating stored procedures using: 
+    echo    %FolderPath%\sources
+    for %%f in (%FolderPath%\sources\*.xml) do (
+      set OutputFile=%FolderPath%\sources\%%~nf.sql
+      set FormatFile=%FolderPath%\formats\%%~nf.xml
+      echo  * Transforming source to SQL loading stored procedures:
+      echo    %%~f ...
+      echo    !OutputFile!
+      Sisulator.hta -x "%%~f" -m Source -d source.directive -o "!OutputFile!"
+      IF ERRORLEVEL 1 GOTO ERROR
+      set /a i=!i!+1
+      set SQLFiles[!i!]=!OutputFile!
+    )
+  )
 )
 
 REM -------------------------------------------------------------------
 REM   Create target loading SQL code
 REM -------------------------------------------------------------------
-for %%f in (%FolderPath%\targets\*.xml) do (
-  set OutputFile=%FolderPath%\targets\%%~nf.sql
-  echo  * Transforming target to SQL loading stored procedures:
-  echo    %%~f ...
-  echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
-  IF ERRORLEVEL 1 GOTO ERROR
-  set /a i=!i!+1
-  set SQLFiles[!i!]=!OutputFile!
+dir /ad /b %FolderPath%\targets 1>NUL 2>NUL
+if NOT ERRORLEVEL 1 (
+  echo  + Creating stored procedures using:
+  echo    %FolderPath%\targets
+  for %%f in (%FolderPath%\targets\*.xml) do (
+    set OutputFile=%FolderPath%\targets\%%~nf.sql
+    echo  * Transforming target to SQL loading stored procedures:
+    echo    %%~f ...
+    echo    !OutputFile!
+    Sisulator.hta -x "%%~f" -m Target -d target.directive -o "!OutputFile!"
+    IF ERRORLEVEL 1 GOTO ERROR
+    set /a i=!i!+1
+    set SQLFiles[!i!]=!OutputFile!
+  )
 )
 
 REM -------------------------------------------------------------------
 REM   Create BIML files
 REM -------------------------------------------------------------------
-REM for %%f in (%FolderPath%\targets\*.xml) do (
-REM   set OutputFile=%FolderPath%\biml\%%~nf.biml
-REM   echo  * Transforming target to BIML file:
-REM   echo    %%~f ...
-REM   echo    !OutputFile!
-REM   Sisulator.hta -x "%%~f" -m Target -d biml.directive -o "!OutputFile!"
-REM   IF ERRORLEVEL 1 GOTO ERROR
-REM )
+dir /ad /b %FolderPath%\targets 1>NUL 2>NUL 
+if NOT ERRORLEVEL 1 (
+  dir /ad /b %FolderPath%\biml 1>NUL 2>NUL
+  if NOT ERRORLEVEL 1 (
+    echo  + Creating BIML files using:
+    echo    %FolderPath%\targets
+    for %%f in (%FolderPath%\targets\*.xml) do (
+      set OutputFile=%FolderPath%\biml\%%~nf.biml
+      echo  * Transforming target to BIML file:
+      echo    %%~f ...
+      echo    !OutputFile!
+      Sisulator.hta -x "%%~f" -m Target -d biml.directive -o "!OutputFile!"
+      IF ERRORLEVEL 1 GOTO ERROR
+    )
+  )
+)
 
 REM -------------------------------------------------------------------
 REM   Create SQL Server Agent job code
 REM -------------------------------------------------------------------
-for %%f in (%FolderPath%\workflows\*.xml) do (
-  set OutputFile=%FolderPath%\workflows\%%~nf.sql
-  echo  * Transforming workflow to SQL Server Agent job scripts:
-  echo    %%~f ...
-  echo    !OutputFile!
-  Sisulator.hta -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
-  IF ERRORLEVEL 1 GOTO ERROR
-  set /a i=!i!+1
-  set SQLFiles[!i!]=!OutputFile!
+dir /ad /b %FolderPath%\workflows 1>NUL 2>NUL
+if NOT ERRORLEVEL 1 (
+  echo  + Creating SQL Server Agent jobs using:
+  echo    %FolderPath%\workflows
+  for %%f in (%FolderPath%\workflows\*.xml) do (
+    set OutputFile=%FolderPath%\workflows\%%~nf.sql
+    echo  * Transforming workflow to SQL Server Agent job scripts:
+    echo    %%~f ...
+    echo    !OutputFile!
+    Sisulator.hta -x "%%~f" -m Workflow -d workflow.directive -o "!OutputFile!"
+    IF ERRORLEVEL 1 GOTO ERROR
+    set /a i=!i!+1
+    set SQLFiles[!i!]=!OutputFile!
+  )
 )
 
 REM -------------------------------------------------------------------

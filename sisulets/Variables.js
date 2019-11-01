@@ -67,6 +67,9 @@ function replaceVariables(variables, obj) {
     }
 }
 
+// make it possible to override UTC with your own setting
+var TIMESTAMP = VARIABLES.Timestamp ? VARIABLES.Timestamp : "SYSUTCDATETIME()";
+
 // in case we ever need to change the schema used for the metadata model it should be changed here (and only here)
 var METADATA = VARIABLES.MetaDatabase ? true : false;
 var METADATA_SCHEMA = "metadata";

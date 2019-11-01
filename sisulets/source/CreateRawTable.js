@@ -1,6 +1,10 @@
 // Create a raw table suitable for bulk insert
 if(source.split == 'regex') {
 /*~
+-- Dropping raw table to enforce Deferred Name Resolution: $source.qualified$_Raw
+IF Object_ID('$S_SCHEMA$.$source.qualified$_Raw', 'U') IS NOT NULL
+DROP TABLE [$S_SCHEMA].[$source.qualified$_Raw];
+
 IF Object_ID('$S_SCHEMA$.${source.qualified}$_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateRawTable];
 GO
@@ -47,7 +51,7 @@ var rowlength = source.rowlength ? source.rowlength : 'max';
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null default 0,
         metadata_JB_ID int not null default 0,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default $TIMESTAMP,
         [row] $(source.datafiletype == 'char')? varchar($rowlength), : nvarchar($rowlength),
         constraint [pk${S_SCHEMA}$_$source.qualified$_Raw] primary key(
             _id asc

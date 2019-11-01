@@ -1,5 +1,12 @@
 // Create a columnar split view
 var part, term;
+while(part = source.nextPart()) {
+/*~
+-- Dropping error view to enforce Deferred Name Resolution: $part.qualified$_Error
+IF Object_ID('$S_SCHEMA$.$part.qualified$_Error', 'V') IS NOT NULL
+DROP VIEW [$S_SCHEMA].[$part.qualified$_Error];
+~*/
+}
 /*~
 IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateErrorViews', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateErrorViews];

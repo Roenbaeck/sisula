@@ -1,5 +1,12 @@
 // Create typed tables corresponding to parts
 var part, term, calculation;
+while(part = source.nextPart()) {
+/*~
+-- Dropping table to enforce Deferred Name Resolution: $part.qualified$_Typed
+IF Object_ID('$S_SCHEMA$.$part.qualified$_Typed', 'U') IS NOT NULL
+DROP TABLE [$S_SCHEMA].[$part.qualified$_Typed];
+~*/
+}
 /*~
 IF Object_ID('$S_SCHEMA$.$source.qualified$_CreateTypedTables', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$source.qualified$_CreateTypedTables];
@@ -45,7 +52,7 @@ while(part = source.nextPart()) {
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null,
         metadata_JB_ID int not null,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default $TIMESTAMP,
 ~*/
     var key, component, keyConcat; // _key is kept for legacy reasons
     while(key = part.nextKey()) {

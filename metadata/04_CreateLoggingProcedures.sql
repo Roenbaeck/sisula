@@ -2,6 +2,18 @@
              CREATE PROCEDURES FOR LOGGING
 */
 --------------------------- Starting Job ----------------------------
+if Object_Id('metadata._Now', 'FN') is not null
+drop function metadata._Now;
+go
+
+create function metadata._Now()
+returns datetime2(7)
+as
+begin
+	return SYSUTCDATETIME();
+end
+go
+
 if Object_Id('metadata._JobStarting', 'P') is not null
 drop procedure metadata._JobStarting;
 go
@@ -14,7 +26,7 @@ create procedure metadata._JobStarting (
 )
 as
 begin
-	set @start = isnull(@start, SYSDATETIME());
+	set @start = isnull(@start, metadata._Now());
 	declare @JB_ID int;
 	declare @CF_ID int;
 
@@ -107,7 +119,7 @@ create procedure metadata._JobStopping (
 as
 begin
 	-- add a chronon in order to guarantee uniqueness (if shorter duration)
-	set @stop = isnull(@stop, dateadd(nanosecond, 100, SYSDATETIME()));
+	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
 
 	-- ensure this job is running!
@@ -172,7 +184,7 @@ create procedure metadata._WorkStarting (
 )
 as
 begin
-	set @start = isnull(@start, SYSDATETIME());
+	set @start = isnull(@start, metadata._Now());
 	set @user = isnull(@user, SYSTEM_USER);
 	set @role = isnull(@role, USER);
 
@@ -341,7 +353,7 @@ create procedure metadata._WorkStopping (
 as
 begin
 	-- add a chronon in order to guarantee uniqueness (if shorter duration)
-	set @stop = isnull(@stop, dateadd(nanosecond, 100, SYSDATETIME()));
+	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
 
 	-- ensure this work is running!
@@ -399,11 +411,11 @@ create procedure metadata._WorkSourceToTarget (
 )
 as
 begin
-	declare @now datetime = SYSDATETIME();
+	declare @now datetime = metadata._Now();
 	set @sourceType = isnull(@sourceType, 'Table');
 	set @targetType = isnull(@targetType, 'Table');
-	set @sourceCreated = isnull(@sourceCreated, SYSDATETIME());
-	set @targetCreated = isnull(@targetCreated, SYSDATETIME());
+	set @sourceCreated = isnull(@sourceCreated, metadata._Now());
+	set @targetCreated = isnull(@targetCreated, metadata._Now());
 
 	-- ensure this work is running!
 	select
@@ -578,7 +590,7 @@ create procedure metadata._WorkSetInserts (
 )
 as
 begin
-	set @at = isnull(@at, SYSDATETIME());
+	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
 	select
@@ -615,7 +627,7 @@ create procedure metadata._WorkSetUpdates (
 )
 as
 begin
-	set @at = isnull(@at, SYSDATETIME());
+	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
 	select
@@ -652,7 +664,7 @@ create procedure metadata._WorkSetDeletes (
 )
 as
 begin
-	set @at = isnull(@at, SYSDATETIME());
+	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
 	select
