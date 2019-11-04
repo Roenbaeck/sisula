@@ -50,6 +50,7 @@ if(source.split == 'bulk') {
         FROM ''' + @filename + '''
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
+            $(source.fieldquote)?       FIELDQUOTE      = ''$source.fieldquote'',
             $(formatFile)?              FORMATFILE      = ''${formatFile}$'',
             $(source.firstrow)?         FIRSTROW        = $source.firstrow,
             TABLOCK
@@ -68,6 +69,7 @@ else {
         WITH (
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
             $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
+            $(source.fieldquote)?       FIELDQUOTE      = ''$source.fieldquote'',
             $(source.fieldterminator)?  FIELDTERMINATOR = ''$source.fieldterminator'',
             $(source.rowterminator)?    ROWTERMINATOR   = ''$source.rowterminator'',
             $(source.firstrow)?         FIRSTROW        = $source.firstrow,

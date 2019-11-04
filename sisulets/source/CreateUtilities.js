@@ -37,11 +37,9 @@ DROP ASSEMBLY ${S_SCHEMA}$Utilities;
 -- END! LEGACY --
 
 declare @version char(4) =
-	case
-		when @@VERSION like '% 2016 %' then '2016'
-		when @@VERSION like '% 2014 %' then '2014'
-		when @@VERSION like '% 2012 %' then '2012'
-		when @@VERSION like '% 2008 %' then '2008'
+	case 
+		when patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
+		then substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
 		else '????'
 	end
 
