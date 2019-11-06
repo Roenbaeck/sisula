@@ -49,6 +49,7 @@ if(source.split == 'bulk') {
         BULK INSERT [$S_SCHEMA].[$source.qualified$_Insert]
         FROM ''' + @filename + '''
         WITH (
+            $(source.format)?           FORMAT          = ''$source.format'',
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
             $(source.fieldquote)?       FIELDQUOTE      = ''$source.fieldquote'',
             $(formatFile)?              FORMATFILE      = ''${formatFile}$'',
@@ -67,6 +68,7 @@ else {
         BULK INSERT [$S_SCHEMA].[$source.qualified$_Insert]
         FROM ''' + @filename + '''
         WITH (
+            $(source.format)?           FORMAT          = ''$source.format'',
             $(source.codepage)?         CODEPAGE        = ''$source.codepage'',
             $(source.datafiletype)?     DATAFILETYPE    = ''$source.datafiletype'',
             $(source.fieldquote)?       FIELDQUOTE      = ''$source.fieldquote'',
