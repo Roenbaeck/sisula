@@ -37,11 +37,9 @@ IF EXISTS (
 DROP ASSEMBLY etlUtilities;
 -- END! LEGACY --
 declare @version char(4) =
-	case
-		when @@VERSION like '% 2016 %' then '2016'
-		when @@VERSION like '% 2014 %' then '2014'
-		when @@VERSION like '% 2012 %' then '2012'
-		when @@VERSION like '% 2008 %' then '2008'
+	case 
+		when patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
+		then substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
 		else '????'
 	end
 IF EXISTS (
@@ -110,6 +108,9 @@ BEGIN
     reconfigure with override;
 END
 GO
+-- Dropping raw table to enforce Deferred Name Resolution: NYPD_Vehicle_Raw
+IF Object_ID('etl.NYPD_Vehicle_Raw', 'U') IS NOT NULL
+DROP TABLE [etl].[NYPD_Vehicle_Raw];
 IF Object_ID('etl.NYPD_Vehicle_CreateRawTable', 'P') IS NOT NULL
 DROP PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable];
 GO
@@ -133,7 +134,7 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
@@ -164,7 +165,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null default 0,
         metadata_JB_ID int not null default 0,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default SYSDATETIME(),
         [row] varchar(1000), 
         constraint [pketl_NYPD_Vehicle_Raw] primary key(
             _id asc
@@ -192,6 +193,9 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- Dropping insert view to enforce Deferred Name Resolution: NYPD_Vehicle_Insert
+IF Object_ID('etl.NYPD_Vehicle_Insert', 'V') IS NOT NULL
+DROP VIEW [etl].[NYPD_Vehicle_Insert];
 IF Object_ID('etl.NYPD_Vehicle_CreateInsertView', 'P') IS NOT NULL
 DROP PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView];
 GO
@@ -202,7 +206,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
@@ -272,7 +276,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
@@ -381,6 +385,12 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- Dropping split view to enforce Deferred Name Resolution: NYPD_Vehicle_Collision_Split
+IF Object_ID('etl.NYPD_Vehicle_Collision_Split', 'V') IS NOT NULL
+DROP VIEW [etl].[NYPD_Vehicle_Collision_Split];
+-- Dropping split view to enforce Deferred Name Resolution: NYPD_Vehicle_CollisionMetadata_Split
+IF Object_ID('etl.NYPD_Vehicle_CollisionMetadata_Split', 'V') IS NOT NULL
+DROP VIEW [etl].[NYPD_Vehicle_CollisionMetadata_Split];
 IF Object_ID('etl.NYPD_Vehicle_CreateSplitViews', 'P') IS NOT NULL
 DROP PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews];
 GO
@@ -401,7 +411,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
@@ -663,6 +673,12 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- Dropping error view to enforce Deferred Name Resolution: NYPD_Vehicle_Collision_Error
+IF Object_ID('etl.NYPD_Vehicle_Collision_Error', 'V') IS NOT NULL
+DROP VIEW [etl].[NYPD_Vehicle_Collision_Error];
+-- Dropping error view to enforce Deferred Name Resolution: NYPD_Vehicle_CollisionMetadata_Error
+IF Object_ID('etl.NYPD_Vehicle_CollisionMetadata_Error', 'V') IS NOT NULL
+DROP VIEW [etl].[NYPD_Vehicle_CollisionMetadata_Error];
 IF Object_ID('etl.NYPD_Vehicle_CreateErrorViews', 'P') IS NOT NULL
 DROP PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews];
 GO
@@ -683,7 +699,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
@@ -777,6 +793,12 @@ BEGIN CATCH
 END CATCH
 END
 GO
+-- Dropping table to enforce Deferred Name Resolution: NYPD_Vehicle_Collision_Typed
+IF Object_ID('etl.NYPD_Vehicle_Collision_Typed', 'U') IS NOT NULL
+DROP TABLE [etl].[NYPD_Vehicle_Collision_Typed];
+-- Dropping table to enforce Deferred Name Resolution: NYPD_Vehicle_CollisionMetadata_Typed
+IF Object_ID('etl.NYPD_Vehicle_CollisionMetadata_Typed', 'U') IS NOT NULL
+DROP TABLE [etl].[NYPD_Vehicle_CollisionMetadata_Typed];
 IF Object_ID('etl.NYPD_Vehicle_CreateTypedTables', 'P') IS NOT NULL
 DROP PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables];
 GO
@@ -793,7 +815,7 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
@@ -824,7 +846,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null,
         metadata_JB_ID int not null,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default SYSDATETIME(),
         _measureTime as cast(HashBytes('MD5', CONVERT(varchar(max), [IntersectingStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CrossStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CollisionOrder], 126)) as varbinary(16)),
         [OccurrencePrecinctCode] int null,
         [CollisionID] int null,
@@ -844,7 +866,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null,
         metadata_JB_ID int not null,
-        _timestamp datetime not null default getdate(),
+        _timestamp datetime not null default SYSDATETIME(),
         [month] varchar(42) null,
         [year] smallint null,
         [notes] varchar(max) null,
@@ -902,7 +924,7 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
@@ -1082,7 +1104,7 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Fri Feb 8 13:08:18 UTC+0100 2019 by e-lronnback
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
 -- From: TSE-9B50TY1 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
