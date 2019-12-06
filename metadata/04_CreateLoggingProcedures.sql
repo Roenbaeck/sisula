@@ -604,6 +604,20 @@ begin
 
 	if(@WO_ID is not null and @OP_ID is not null)
 	begin
+		declare @latestChangedAt datetime2(7);
+		set @latestChangedAt = (
+			select 
+				MAX(OP_INS_ChangedAt)
+			from 
+				metadata.OP_INS_Operations_Inserts
+			where
+				OP_INS_OP_ID = @OP_ID
+		);
+		if (@at <= @latestChangedAt)
+		begin 
+			set @at = DATEADD(NANOSECOND, 100, @latestChangedAt);
+		end
+
 		update metadata.lOP_Operations
 		set
 			OP_INS_ChangedAt = @at,
@@ -641,6 +655,20 @@ begin
 
 	if(@WO_ID is not null and @OP_ID is not null)
 	begin
+		declare @latestChangedAt datetime2(7);
+		set @latestChangedAt = (
+			select 
+				MAX(OP_UPD_ChangedAt)
+			from 
+				metadata.OP_UPD_Operations_Updates
+			where
+				OP_UPD_OP_ID = @OP_ID
+		);
+		if (@at <= @latestChangedAt)
+		begin 
+			set @at = DATEADD(NANOSECOND, 100, @latestChangedAt);
+		end
+
 		update metadata.lOP_Operations
 		set
 			OP_UPD_ChangedAt = @at,
@@ -678,6 +706,20 @@ begin
 
 	if(@WO_ID is not null and @OP_ID is not null)
 	begin
+		declare @latestChangedAt datetime2(7);
+		set @latestChangedAt = (
+			select 
+				MAX(OP_DEL_ChangedAt)
+			from 
+				metadata.OP_DEL_Operations_Deletes
+			where
+				OP_DEL_OP_ID = @OP_ID
+		);
+		if (@at <= @latestChangedAt)
+		begin 
+			set @at = DATEADD(NANOSECOND, 100, @latestChangedAt);
+		end
+
 		update metadata.lOP_Operations
 		set
 			OP_DEL_ChangedAt = @at,
