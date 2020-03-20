@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<BCPFORMAT
+xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <RECORD>
+      <FIELD xsi:type="CharTerm" ID="Player Name" TERMINATOR="," />
+      <FIELD xsi:type="CharTerm" ID="Date" TERMINATOR="," />
+      <FIELD xsi:type="CharTerm" ID="Statistic" TERMINATOR="," />
+      <FIELD xsi:type="CharTerm" ID="Variable" TERMINATOR="," />
+      <FIELD xsi:type="CharTerm" ID="Value" TERMINATOR="\n" />
+   </RECORD>
+   <ROW>
+      <COLUMN SOURCE="Player Name" NAME="Player Name" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="Date" NAME="Date" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="Statistic" NAME="Statistic" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="Variable" NAME="Variable" xsi:type="SQLVARYCHAR" />
+      <COLUMN SOURCE="Value" NAME="Value" xsi:type="SQLVARYCHAR" />
+   </ROW>
+</BCPFORMAT>

@@ -1,0 +1,214 @@
+<target name="Stats" database="%TargetDatabase%">
+    <load source="%System%_%Source%_Stats_Typed" target="lPL_Player">
+        <sql position="before">
+        -- preparations can be put here
+        </sql>
+        select distinct [Player Name], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        <map source="Player Name" target="PL_NAM_Player_Name" as="natural key"/>
+        <map source="WorkId" target="Metadata_PL" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        </sql>
+    </load>
+    <load source="%System%_%Source%_Stats_Typed" target="SGR_StatisticGroup">
+        <sql position="before">
+        -- preparations can be put here
+        </sql>
+        select distinct [Statistic], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        <map source="Statistic" target="SGR_StatisticGroup" as="natural key"/>
+        <map source="WorkId" target="Metadata_SGR" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        </sql>
+    </load>
+    <load source="%System%_%Source%_Stats_Typed" target="lST_Statistic">
+        <sql position="before">
+        -- preparations can be put here
+        </sql>
+        select distinct [Statistic], [Variable], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        <map source="Statistic" target="ST_GRP_SGR_StatisticGroup" as="natural key"/>
+        <map source="Variable" target="ST_DET_Statistic_Detail" as="natural key"/>
+        <map source="WorkId" target="Metadata_ST" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        </sql>
+    </load>    
+    <load source="%System%_%Source%_Stats_Typed" target="lME_Measurement" pass="Instance">
+        <sql position="before">
+        -- preparations can be put here
+        select distinct
+            [Player Name], 
+            [Statistic], 
+            [Variable]
+        into
+            #key
+        from 
+            %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed;
+
+        create unique clustered index pk_key on #key (
+            [Player Name], 
+            [Statistic], 
+            [Variable]
+        ); 
+
+        select
+            mest.[ME_ID_for] as ME_ID,
+            k.*
+        into
+            #known
+        from 
+            #key k
+        join
+            %TargetDatabase%.%TargetSchema%.lPL_Player lPL
+        on
+            lPL.[PL_NAM_Player_Name] = k.[Player Name]
+        join 
+            %TargetDatabase%.%TargetSchema%.lST_Statistic lST
+        on
+            lST.[ST_GRP_SGR_StatisticGroup] = k.[Statistic]
+        and 
+            lST.[ST_DET_Statistic_Detail] = k.[Variable]
+        join
+            %TargetDatabase%.%TargetSchema%.[lPL_was_ME_measured] plme
+        on
+            plme.[PL_ID_was] = lPL.PL_ID
+        join
+            %TargetDatabase%.%TargetSchema%.[lME_for_ST_the] mest
+        on 
+            mest.[ST_ID_the] = lST.ST_ID
+        where
+            mest.[ME_ID_for] = plme.[ME_ID_measured];
+
+        create unique clustered index pk_known on #known (ME_ID);
+
+        </sql>
+        select
+            kn.ME_ID, -- always null
+            @WorkId as WorkId
+        from 
+            #key k
+        left join
+            #known kn
+        on
+            kn.[Player Name] = k.[Player Name]
+        and
+            kn.[Statistic] = k.[Statistic]
+        and
+            kn.[Variable] = k.[Variable]
+        where
+            kn.ME_ID is null
+
+        <map source="ME_ID" target="ME_ID" as="surrogate key"/>
+        <map source="WorkId" target="Metadata_ME" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        select
+            lME.ME_ID, 
+            row_number() over (order by lME.ME_ID) as R
+        into
+            #created
+        from
+            %TargetDatabase%.%TargetSchema%.lME_Measurement lME
+        where
+            lME.Metadata_ME = @WorkId;
+
+        select
+            c.ME_ID,
+            k.[Player Name], 
+            k.[Statistic], 
+            k.[Variable]
+        into
+            #new
+        from (
+            select 
+                *,
+                row_number() over (order by 
+                    [Player Name], 
+                    [Statistic], 
+                    [Variable]
+                ) as R
+            from
+                #key 
+        ) k
+        join
+            #created c
+        on  
+            c.R = k.R;
+
+        insert into %TargetDatabase%.%TargetSchema%.[lPL_was_ME_measured](
+            [Metadata_PL_was_ME_measured], 
+            [PL_ID_was], 
+            [ME_ID_measured]
+        )
+        select
+            @WorkId,
+            lPL.PL_ID,
+            n.ME_ID
+        from
+            #new n
+        join
+            %TargetDatabase%.%TargetSchema%.lPL_Player lPL
+        on
+            lPL.[PL_NAM_Player_Name] = n.[Player Name];
+
+        insert into %TargetDatabase%.%TargetSchema%.[lME_for_ST_the](
+            [Metadata_ME_for_ST_the], 
+            [ME_ID_for], 
+            [ST_ID_the]
+        )
+        select
+            @WorkId,
+            n.ME_ID,
+            lST.ST_ID
+        from
+            #new n
+        join
+            %TargetDatabase%.%TargetSchema%.lST_Statistic lST
+        on
+            lST.[ST_GRP_SGR_StatisticGroup] = n.[Statistic]
+        and 
+            lST.[ST_DET_Statistic_Detail] = n.[Variable];        
+
+        </sql>
+    </load>    
+    <load source="%System%_%Source%_Stats_Typed" target="lME_Measurement" pass="Value">
+        <sql position="before">
+        -- preparations can be put here
+        </sql>
+        select
+            mest.[ME_ID_for] as ME_ID,
+            src.[Date],
+            src.[Value], 
+            @WorkId as WorkId
+        from
+            %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed src
+        join
+            %TargetDatabase%.%TargetSchema%.lPL_Player lPL
+        on
+            lPL.[PL_NAM_Player_Name] = src.[Player Name]
+        join 
+            %TargetDatabase%.%TargetSchema%.lST_Statistic lST
+        on
+            lST.[ST_GRP_SGR_StatisticGroup] = src.[Statistic]
+        and 
+            lST.[ST_DET_Statistic_Detail] = src.[Variable]
+        join
+            %TargetDatabase%.%TargetSchema%.[lPL_was_ME_measured] plme
+        on
+            plme.[PL_ID_was] = lPL.PL_ID
+        join
+            %TargetDatabase%.%TargetSchema%.[lME_for_ST_the] mest
+        on 
+            mest.[ST_ID_the] = lST.ST_ID
+        where
+            mest.[ME_ID_for] = plme.[ME_ID_measured]
+
+        <map source="ME_ID" target="ME_ID" as="surrogate key"/>
+        <map source="Value" target="ME_VAL_Measurement_Value"/>
+        <map source="Date" target="ME_VAL_ChangedAt" type="history"/>
+        <map source="WorkId" target="Metadata_ME" as="metadata"/>
+        <sql position="after">
+        -- post processing can be put here
+        </sql>
+    </load>    
+</target>

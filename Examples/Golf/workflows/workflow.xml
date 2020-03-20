@@ -1,0 +1,94 @@
+<workflow name="%System%_%Source%_Workflow">
+    <variable name="stage" value="%SourceDatabase%"/>
+    <variable name="incomingPath" value="%SisulaPath%Golf\data\incoming"/>
+    <variable name="workPath" value="%SisulaPath%Golf\data\work"/>
+    <variable name="archivePath" value="%SisulaPath%Golf\data\archive"/>
+    <variable name="filenamePattern" value=".*\.csv"/>
+    <!-- enumeration of on_success_action codes -->
+    <variable name="quitWithSuccess" value="1"/>
+    <variable name="quitWithFailure" value="2"/>
+    <variable name="goToTheNextStep" value="3"/>
+    <variable name="goToStepWithId" value="4"/>
+    <!-- specify a query timeout if needed for the bulk insert, otherwise leave 0 for no timeout (0 only works in 2012 and later) -->
+    <variable name="queryTimeout" value="0"/>
+    <!-- recurse directories when searching for files, blank out if no extra options are needed -->
+    <variable name="extraOptions" value="-Recurse"/>
+    <!-- common parameters that all jobs need for logging to metadata -->
+    <variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
+    <job name="%System%_%Source%_Staging">
+        <variable name="tableName" value="MyTable"/>
+        <jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
+            $files = @(Get-ChildItem FileSystem::"%incomingPath%" | Where-Object {$_.Name -match "%filenamePattern%"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in %incomingPath%"
+            } Else {
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    Move-Item $fullFilename %workPath% -force
+                    Write-Output "Moved file: $fullFilename to %workPath%"
+                }
+            }
+        </jobstep>
+        <!--
+        <jobstep name="Create raw table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_CreateRawTable %parameters%
+        </jobstep>
+    -->
+        <!-- replace the above job step with the following one when using 'bulk' splitting -->
+        <jobstep name="Create raw split table" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %System%_%Source%_CreateRawSplitTable %parameters%
+        </jobstep>
+        <jobstep name="Create insert view" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_CreateInsertView %parameters%
+        </jobstep>
+        <jobstep name="Bulk insert" database_name="%stage%" subsystem="PowerShell" on_success_action="%goToTheNextStep%">
+            $files = @(Get-ChildItem %extraOptions% FileSystem::"%workPath%" | Where-Object {$_.Name -match "%filenamePattern%"})
+            If ($files.length -eq 0) {
+              Throw "No matching files were found in %workPath%"
+            } Else {
+                ForEach ($file in $files) {
+                    $fullFilename = $file.FullName
+                    $modifiedDate = $file.LastWriteTime
+                    Invoke-Sqlcmd "EXEC %SourceSchema%.%System%_%Source%_BulkInsert '$fullFilename', '$modifiedDate', %parameters%" -Database "%stage%" -ErrorAction Stop -QueryTimeout %queryTimeout%
+                    Write-Output "Loaded file: $fullFilename"
+                    Move-Item $fullFilename %archivePath% -force
+                    Write-Output "Moved file: $fullFilename to %archivePath%"
+                }
+            }
+        </jobstep>
+        <jobstep name="Create split views" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_CreateSplitViews %parameters%
+        </jobstep>
+        <jobstep name="Create error views" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_CreateErrorViews %parameters%
+        </jobstep>
+        <jobstep name="Create typed tables" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_CreateTypedTables %parameters%
+        </jobstep>
+        <jobstep name="Split raw into typed" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.%System%_%Source%_SplitRawIntoTyped %parameters%
+        </jobstep>
+        <jobstep name="Add keys to typed" database_name="%stage%" subsystem="TSQL">
+            EXEC %SourceSchema%.%System%_%Source%_AddKeysToTyped %parameters%
+        </jobstep>
+    </job>
+    <job name="%System%_%Source%_Loading">
+        <!-- PL_Player -->
+        <jobstep name="Load players" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.[lPL_Player__%System%_%Source%_Stats_Typed] %parameters%
+        </jobstep>
+        <!-- SGR_StatisticGroup -->
+        <jobstep name="Load statistic groups" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.[SGR_StatisticGroup__%System%_%Source%_Stats_Typed] %parameters%
+        </jobstep>
+        <jobstep name="Load statistic" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.[lST_Statistic__%System%_%Source%_Stats_Typed] %parameters%
+        </jobstep>
+        <jobstep name="Load measurement (instance)" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.[lME_Measurement__%System%_%Source%_Stats_Typed__Instance] %parameters%
+        </jobstep>
+        <jobstep name="Load measurement (value)" database_name="%stage%" subsystem="TSQL" on_success_action="%goToTheNextStep%">
+            EXEC %SourceSchema%.[lME_Measurement__%System%_%Source%_Stats_Typed__Value] %parameters%
+        </jobstep>
+    </job>
+</workflow>
