@@ -56,15 +56,30 @@ BEGIN TRY
 	FROM '${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
-END TRY BEGIN CATCH END CATCH
+END TRY BEGIN CATCH 
+	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
+	IF(PATINDEX('%identical%', @msg) = 0) PRINT ERROR_MESSAGE();
+END CATCH
 ELSE -- assembly does not exist
 BEGIN TRY
+    -- since some version of 2017 assemblies must be explicitly whitelisted
+    IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+    BEGIN
+		CREATE TABLE #hash([hash] varbinary(64));
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		DECLARE @hash varbinary(64);
+		SELECT @hash = [hash] FROM #hash;
+        IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
+            EXEC sys.sp_add_trusted_assembly @hash, N'Utilities';
+	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
 	FROM '${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
-END TRY BEGIN CATCH END CATCH
+END TRY BEGIN CATCH 
+	PRINT ERROR_MESSAGE();
+END CATCH
 GO
 
 CREATE FUNCTION [$S_SCHEMA].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))

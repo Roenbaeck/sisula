@@ -52,18 +52,33 @@ IF EXISTS (
 )
 BEGIN TRY
 	ALTER ASSEMBLY Utilities
-	FROM 'F:\sisula-1.13\code\Utilities' + @version + '.dll'
+	FROM 'G:\Versionshanterat\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
-END TRY BEGIN CATCH END CATCH
+END TRY BEGIN CATCH 
+	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
+	IF(PATINDEX('%identical%', @msg) = 0) PRINT ERROR_MESSAGE();
+END CATCH
 ELSE -- assembly does not exist
 BEGIN TRY
+    -- since some version of 2017 assemblies must be explicitly whitelisted
+    IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+    BEGIN
+		CREATE TABLE #hash([hash] varbinary(64));
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''G:\Versionshanterat\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		DECLARE @hash varbinary(64);
+		SELECT @hash = [hash] FROM #hash;
+        IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
+            EXEC sys.sp_add_trusted_assembly @hash, N'Utilities';
+	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'F:\sisula-1.13\code\Utilities' + @version + '.dll'
+	FROM 'G:\Versionshanterat\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
-END TRY BEGIN CATCH END CATCH
+END TRY BEGIN CATCH 
+	PRINT ERROR_MESSAGE();
+END CATCH
 GO
 CREATE FUNCTION [dbo].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
@@ -122,7 +137,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_RawSplit
 --
--- Generated: Sat Nov 30 12:37:39 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateRawSplitTable] (
@@ -200,7 +215,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Sat Nov 30 12:37:39 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateInsertView] (
@@ -274,7 +289,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Sat Nov 30 12:37:39 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_BulkInsert] (
@@ -322,7 +337,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
             FORMAT = ''CSV'',
             CODEPAGE = ''ACP'',
             FIELDQUOTE = ''"'',
-            FORMATFILE = ''F:\sisula-1.13\Golf\formats\source.xml'',
+            FORMATFILE = ''G:\Versionshanterat\sisula\Examples\Golf\formats\source.xml'',
             FIRSTROW = 2,
             TABLOCK
         );
@@ -406,7 +421,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Split
 --
--- Generated: Sat Nov 30 12:37:39 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateSplitViews] (
@@ -549,7 +564,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Error
 --
--- Generated: Sat Nov 30 12:37:40 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateErrorViews] (
@@ -635,7 +650,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Typed
 --
--- Generated: Sat Nov 30 12:37:40 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateTypedTables] (
@@ -708,7 +723,7 @@ GO
 --
 -- Load: PGA_Kaggle_Stats_Split into PGA_Kaggle_Stats_Typed
 --
--- Generated: Sat Nov 30 12:37:40 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_SplitRawIntoTyped] (
@@ -827,7 +842,7 @@ GO
 -- Key: Player Name (as primary key)
 -- Key: Date (as primary key)
 --
--- Generated: Sat Nov 30 12:37:40 UTC+0100 2019 by eldle
+-- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_AddKeysToTyped] (

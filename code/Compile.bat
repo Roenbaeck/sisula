@@ -19,23 +19,29 @@ REM ----- Compile -----
 SET Assembly=DLL\Microsoft.SqlServer.Types.100.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2008) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2008.dll Utilities.cs
+certutil -hashfile Utilities2008.dll SHA512 | find /V "hash" > Utilities2008.SHA512
 
 SET Assembly=DLL\Microsoft.SqlServer.Types.110.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2012) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2012.dll Utilities.cs
+certutil -hashfile Utilities2012.dll SHA512 | find /V "hash" > Utilities2012.SHA512
 
 SET Assembly=DLL\Microsoft.SqlServer.Types.120.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2014) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2014.dll Utilities.cs
+certutil -hashfile Utilities2014.dll SHA512 | find /V "hash" > Utilities2014.SHA512
 
 SET Assembly=DLL\Microsoft.SqlServer.Types.130.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2016) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2016.dll Utilities.cs
+certutil -hashfile Utilities2016.dll SHA512 | find /V "hash" > Utilities2016.SHA512
 
 SET Assembly=DLL\Microsoft.SqlServer.Types.140.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2017) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2017.dll Utilities.cs
+certutil -hashfile Utilities2017.dll SHA512 | find /V "hash" > Utilities2017.SHA512
 
 SET Assembly=DLL\Microsoft.SqlServer.Types.150.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2019) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2019.dll Utilities.cs
+certutil -hashfile Utilities2019.dll SHA512 | find /V "hash" > Utilities2019.SHA512

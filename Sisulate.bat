@@ -15,7 +15,7 @@ set SQLFiles=
 if [%Filters%]==[] set Filters=/STW
 
 set SYNTAX="` SYNTAX: Sisulate `<folder name`> [server name] /filters"
-set VERSION="` sisula ETL Metadata Driven DW Automation Framework version 1.13.1"
+set VERSION="` sisula ETL Metadata Driven DW Automation Framework version 1.14"
 
 REM -------------------------------------------------------------------
 REM   Print out program syntax if no arguments are given

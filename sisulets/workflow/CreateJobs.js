@@ -3,13 +3,13 @@
 USE msdb;
 GO
 
+DECLARE @AgentJobID uniqueidentifier;
 ~*/
 
 var job, step, id, lastId;
 while(job = workflow.nextJob()) {
 /*~
 -- check for existing job
-DECLARE @AgentJobID uniqueidentifier;
 SET @AgentJobID = (
     select job_id from [dbo].[sysjobs] where name = '$job.name'
 );
