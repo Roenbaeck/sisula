@@ -4,6 +4,10 @@ DROP PROC stats._GatherStatistics;
 GO
 
 /*
+	This procedure calculates measures used as indicators of how a database
+	is growing over time. It lends heavily from thinking found in RFM-models
+	(Recency, Frequency, Monetary).
+
 	RUNNING: 
 	EXEC stats._GatherStatistics DEFAULT;
 
@@ -16,6 +20,11 @@ CREATE PROC stats._GatherStatistics (
 )
 AS
 BEGIN
+	-- is used to determine when things are within normal deviations
+	declare @normalDeviationPercentage float = 0.01; -- = 1%
+	-- is used to determine when growth passes from delayed to overdue
+	declare @overdueThresholdPercentage float = 1.00; -- = 100%
+	-- when the gathering of statistics is done
 	declare @gatheringTime datetime = getdate();
 
 	if OBJECT_ID('tempdb..#schemas') is not null
@@ -75,36 +84,6 @@ BEGIN
 
 	close schemaNames;
 	deallocate schemaNames;
-
-	if OBJECT_ID('tempdb..#types') is not null
-	drop table #types;
-
-	create table #types (
-		[type] char(1) not null primary key,
-		[name] varchar(42) not null
-	);
-
-	insert into #types 
-	([type], [name])
-	values 
-	('A', 'Anchor'),
-	('B', 'Attribute'),
-	('K', 'Knot'),
-	('T', 'Tie');
-
-	merge stats.TYP_Type [TYP]
-	using #types t
-	   on t.[type] = [TYP].[TYP_ID]
-	when not matched then insert (
-		[TYP_ID],
-		[TYP_Type],
-		[Metadata_TYP]
-	)
-	values (
-		t.[type],
-		t.[name],
-		@Metadata_Id
-	);
 
 	update c 
 	set
@@ -343,5 +322,92 @@ BEGIN
 	) calc
 	GROUP BY
 		GC_ID;
+
+	insert into stats.lGC_GatheredConstruct (
+		GC_ID,
+		[Metadata_GC], 
+		GC_RGT_ChangedAt,
+		GC_RGT_TRE_Trend, 
+		GC_UGT_ChangedAt, 
+		GC_UGT_TRE_Trend,
+		GC_AGT_ChangedAt, 
+		GC_AGT_TRE_Trend,
+		GC_RGS_ChangedAt, 
+		GC_RGS_SYN_Sync,
+		GC_UGS_ChangedAt,
+		GC_UGS_SYN_Sync,
+		GC_AGS_ChangedAt,
+		GC_AGS_SYN_Sync
+	)
+	select
+		GC_ID,
+		@Metadata_Id,
+		@gatheringTime,
+		case
+			when GC_RGR_GatheredConstruct_RowGrowth between GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage and GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage then '0'
+			when GC_RGR_GatheredConstruct_RowGrowth > GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage + GC_RGD_GatheredConstruct_RowGrowthDeviation then '++'
+			when GC_RGR_GatheredConstruct_RowGrowth > GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage then '+'
+			when GC_RGR_GatheredConstruct_RowGrowth < GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage - GC_RGD_GatheredConstruct_RowGrowthDeviation then '--'
+			when GC_RGR_GatheredConstruct_RowGrowth < GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage then '-'
+		end as GC_RGD_GatheredConstruct_RowGrowthTrend,
+		@gatheringTime,
+		case
+			when GC_UGR_GatheredConstruct_UsedGrowth between GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage and GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage then '0'
+			when GC_UGR_GatheredConstruct_UsedGrowth > GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage + GC_UGD_GatheredConstruct_UsedGrowthDeviation then '++'
+			when GC_UGR_GatheredConstruct_UsedGrowth > GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage then '+'
+			when GC_UGR_GatheredConstruct_UsedGrowth < GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage - GC_UGD_GatheredConstruct_UsedGrowthDeviation then '--'
+			when GC_UGR_GatheredConstruct_UsedGrowth < GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage then '-'
+		end as GC_UGR_GatheredConstruct_UsedGrowthTrend,
+		@gatheringTime,
+		case
+			when GC_AGR_GatheredConstruct_AllocatedGrowth between GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage and GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage then '0'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth > GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage + GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '++'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth > GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage then '+'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth < GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage - GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '--'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth < GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage then '-'
+		end as GC_AGR_GatheredConstruct_AllocatedGrowthTrend,
+		@gatheringTime,
+		case 
+			when datediff(s, GC_RGR_ChangedAt, @gatheringTime) < RowGrowthTimeToDelay then 'Arrived'
+			when datediff(s, GC_RGR_ChangedAt, @gatheringTime) between RowGrowthTimeToDelay and RowGrowthTimeToOverdue then 'Delayed'
+			when datediff(s, GC_RGR_ChangedAt, @gatheringTime) > RowGrowthTimeToOverdue then 'Overdue'
+		end,
+		@gatheringTime,
+		case 
+			when datediff(s, GC_UGR_ChangedAt, @gatheringTime) < UsedGrowthTimeToDelay then 'Arrived'
+			when datediff(s, GC_UGR_ChangedAt, @gatheringTime) between UsedGrowthTimeToDelay and UsedGrowthTimeToOverdue then 'Delayed'
+			when datediff(s, GC_UGR_ChangedAt, @gatheringTime) > UsedGrowthTimeToOverdue then 'Overdue'
+		end,
+		@gatheringTime,
+		case 
+			when datediff(s, GC_AGR_ChangedAt, @gatheringTime) < AllocatedGrowthTimeToDelay then 'Arrived'
+			when datediff(s, GC_AGR_ChangedAt, @gatheringTime) between AllocatedGrowthTimeToDelay and AllocatedGrowthTimeToOverdue then 'Delayed'
+			when datediff(s, GC_AGR_ChangedAt, @gatheringTime) > AllocatedGrowthTimeToOverdue then 'Overdue'
+		end
+	from	
+		stats.lGC_GatheredConstruct
+	outer apply (
+		values (
+			@normalDeviationPercentage * GC_RGN_GatheredConstruct_RowGrowthNormal,
+			@normalDeviationPercentage * GC_UGN_GatheredConstruct_UsedGrowthNormal,
+			@normalDeviationPercentage * GC_AGN_GatheredConstruct_AllocatedGrowthNormal, 
+			GC_RGI_GatheredConstruct_RowGrowthInterval + @normalDeviationPercentage * GC_RGI_GatheredConstruct_RowGrowthInterval,
+			GC_UGI_GatheredConstruct_UsedGrowthInterval + @normalDeviationPercentage * GC_UGI_GatheredConstruct_UsedGrowthInterval,
+			GC_AGI_GatheredConstruct_AllocatedGrowthInterval + @normalDeviationPercentage * GC_AGI_GatheredConstruct_AllocatedGrowthInterval,
+			GC_RGI_GatheredConstruct_RowGrowthInterval + @overdueThresholdPercentage * GC_RGI_GatheredConstruct_RowGrowthInterval,
+			GC_UGI_GatheredConstruct_UsedGrowthInterval + @overdueThresholdPercentage * GC_UGI_GatheredConstruct_UsedGrowthInterval,
+			GC_AGI_GatheredConstruct_AllocatedGrowthInterval + @overdueThresholdPercentage * GC_AGI_GatheredConstruct_AllocatedGrowthInterval
+		)
+	) v (
+		RowGrowthPercentage,
+		UsedGrowthPercentage,
+		AllocatedGrowthPercentage, 
+		RowGrowthTimeToDelay,
+		UsedGrowthTimeToDelay,
+		AllocatedGrowthTimeToDelay,
+		RowGrowthTimeToOverdue,
+		UsedGrowthTimeToOverdue,
+		AllocatedGrowthTimeToOverdue
+	);
 
 END
