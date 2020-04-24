@@ -172,21 +172,26 @@ BEGIN
 		GC_RGN_ChangedAt,
 		GC_RGN_GatheredConstruct_RowGrowthNormal, 
 		GC_RGI_ChangedAt,
-		GC_RGI_GatheredConstruct_RowGrowthInterval
+		GC_RGI_GatheredConstruct_RowGrowthInterval,
+		GC_RGD_ChangedAt, 
+		GC_RGD_GatheredConstruct_RowGrowthDeviation
 	)
 	SELECT
 		GC_ID,
 		@Metadata_Id,
 		@gatheringTime,
-		MAX(Growth),
+		MAX(CASE WHEN Latest = 1 THEN Growth END),
 		@gatheringTime,
 		MAX(MedianGrowth), 
 		@gatheringTime, 
-		AVG(Interval)
+		AVG(Interval),
+		@gatheringTime, 
+		STDEVP(Growth)
 	FROM (
 		SELECT
 			ROC.GC_ROC_GC_ID as GC_ID,
-			CASE WHEN ROC.GC_ROC_ChangedAt = window.GC_ROC_ChangedAt THEN ROC.GC_ROC_GatheredConstruct_RowCount - window.PreviousValue END as Growth,
+			CASE WHEN ROC.GC_ROC_ChangedAt = window.GC_ROC_ChangedAt THEN 1 END as Latest,
+			window.GC_ROC_GatheredConstruct_RowCount - window.PreviousValue as Growth,
 			PERCENTILE_CONT(0.5) WITHIN GROUP (
 				ORDER BY CASE 
 					WHEN window.GC_ROC_ChangedAt < ROC.GC_ROC_ChangedAt 
@@ -227,21 +232,26 @@ BEGIN
 		GC_UGN_ChangedAt,
 		GC_UGN_GatheredConstruct_UsedGrowthNormal,
 		GC_UGI_ChangedAt,
-		GC_UGI_GatheredConstruct_UsedGrowthInterval
+		GC_UGI_GatheredConstruct_UsedGrowthInterval,
+		GC_UGD_ChangedAt, 
+		GC_UGD_GatheredConstruct_UsedGrowthDeviation
 	)
 	SELECT
 		GC_ID,
 		@Metadata_Id,
 		@gatheringTime,
-		MAX(Growth),
+		MAX(CASE WHEN Latest = 1 THEN Growth END),
 		@gatheringTime,
 		MAX(MedianGrowth), 
 		@gatheringTime, 
-		AVG(Interval)
+		AVG(Interval),
+		@gatheringTime, 
+		STDEVP(Growth)
 	FROM (
 		SELECT
 			UMB.GC_UMB_GC_ID as GC_ID,
-			CASE WHEN UMB.GC_UMB_ChangedAt = window.GC_UMB_ChangedAt THEN UMB.GC_UMB_GatheredConstruct_UsedMegabytes - window.PreviousValue END as Growth,
+			CASE WHEN UMB.GC_UMB_ChangedAt = window.GC_UMB_ChangedAt THEN 1 END as Latest,
+			window.GC_UMB_GatheredConstruct_UsedMegabytes - window.PreviousValue as Growth,
 			PERCENTILE_CONT(0.5) WITHIN GROUP (
 				ORDER BY CASE 
 					WHEN window.GC_UMB_ChangedAt < UMB.GC_UMB_ChangedAt 
@@ -282,21 +292,26 @@ BEGIN
 		GC_AGN_ChangedAt,
 		GC_AGN_GatheredConstruct_AllocatedGrowthNormal,
 		GC_AGI_ChangedAt,
-		GC_AGI_GatheredConstruct_AllocatedGrowthInterval
+		GC_AGI_GatheredConstruct_AllocatedGrowthInterval,
+		GC_AGD_ChangedAt,
+		GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
 	)
 	SELECT
 		GC_ID,
 		@Metadata_Id,
 		@gatheringTime,
-		MAX(Growth),
+		MAX(CASE WHEN Latest = 1 THEN Growth END),
 		@gatheringTime,
 		MAX(MedianGrowth), 
 		@gatheringTime, 
-		AVG(Interval)
+		AVG(Interval),
+		@gatheringTime, 
+		STDEVP(Growth)
 	FROM (
 		SELECT
 			AMB.GC_AMB_GC_ID as GC_ID,
-			CASE WHEN AMB.GC_AMB_ChangedAt = window.GC_AMB_ChangedAt THEN AMB.GC_AMB_GatheredConstruct_AllocatedMegabytes - window.PreviousValue END as Growth,
+			CASE WHEN AMB.GC_AMB_ChangedAt = window.GC_AMB_ChangedAt THEN 1 END as Latest,
+			window.GC_AMB_GatheredConstruct_AllocatedMegabytes - window.PreviousValue as Growth,
 			PERCENTILE_CONT(0.5) WITHIN GROUP (
 				ORDER BY CASE 
 					WHEN window.GC_AMB_ChangedAt < AMB.GC_AMB_ChangedAt 

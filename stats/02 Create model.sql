@@ -33,7 +33,7 @@ GO
 -- Anchors may have zero or more adjoined attributes.
 --
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- GC_GatheredConstruct table (with 16 attributes)
+-- GC_GatheredConstruct table (with 19 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('stats.GC_GatheredConstruct', 'U') IS NULL
 CREATE TABLE [stats].[GC_GatheredConstruct] (
@@ -326,6 +326,60 @@ CREATE TABLE [stats].[GC_LGT_GatheredConstruct_LatestGatheringTime] (
     constraint pkGC_LGT_GatheredConstruct_LatestGatheringTime primary key (
         GC_LGT_GC_ID asc,
         GC_LGT_ChangedAt desc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- GC_UGD_GatheredConstruct_UsedGrowthDeviation table (on GC_GatheredConstruct)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.GC_UGD_GatheredConstruct_UsedGrowthDeviation', 'U') IS NULL
+CREATE TABLE [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+    GC_UGD_GC_ID int not null,
+    GC_UGD_GatheredConstruct_UsedGrowthDeviation decimal(19,2) not null,
+    GC_UGD_ChangedAt datetime not null,
+    Metadata_GC_UGD int not null,
+    constraint fkGC_UGD_GatheredConstruct_UsedGrowthDeviation foreign key (
+        GC_UGD_GC_ID
+    ) references [stats].[GC_GatheredConstruct](GC_ID),
+    constraint pkGC_UGD_GatheredConstruct_UsedGrowthDeviation primary key (
+        GC_UGD_GC_ID asc,
+        GC_UGD_ChangedAt desc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- GC_AGD_GatheredConstruct_AllocatedGrowthDeviation table (on GC_GatheredConstruct)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation', 'U') IS NULL
+CREATE TABLE [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+    GC_AGD_GC_ID int not null,
+    GC_AGD_GatheredConstruct_AllocatedGrowthDeviation decimal(19,2) not null,
+    GC_AGD_ChangedAt datetime not null,
+    Metadata_GC_AGD int not null,
+    constraint fkGC_AGD_GatheredConstruct_AllocatedGrowthDeviation foreign key (
+        GC_AGD_GC_ID
+    ) references [stats].[GC_GatheredConstruct](GC_ID),
+    constraint pkGC_AGD_GatheredConstruct_AllocatedGrowthDeviation primary key (
+        GC_AGD_GC_ID asc,
+        GC_AGD_ChangedAt desc
+    )
+);
+GO
+-- Historized attribute table -----------------------------------------------------------------------------------------
+-- GC_RGD_GatheredConstruct_RowGrowthDeviation table (on GC_GatheredConstruct)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.GC_RGD_GatheredConstruct_RowGrowthDeviation', 'U') IS NULL
+CREATE TABLE [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] (
+    GC_RGD_GC_ID int not null,
+    GC_RGD_GatheredConstruct_RowGrowthDeviation decimal(19,2) not null,
+    GC_RGD_ChangedAt datetime not null,
+    Metadata_GC_RGD int not null,
+    constraint fkGC_RGD_GatheredConstruct_RowGrowthDeviation foreign key (
+        GC_RGD_GC_ID
+    ) references [stats].[GC_GatheredConstruct](GC_ID),
+    constraint pkGC_RGD_GatheredConstruct_RowGrowthDeviation primary key (
+        GC_RGD_GC_ID asc,
+        GC_RGD_ChangedAt desc
     )
 );
 GO
@@ -1272,6 +1326,195 @@ BEGIN
     );
 END
 GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfGC_UGD_GatheredConstruct_UsedGrowthDeviation restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcGC_UGD_GatheredConstruct_UsedGrowthDeviation restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rfGC_UGD_GatheredConstruct_UsedGrowthDeviation', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rfGC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+        @id int,
+        @value decimal(19,2),
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+                    FROM
+                        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] pre
+                    WHERE
+                        pre.GC_UGD_GC_ID = @id
+                    AND
+                        pre.GC_UGD_ChangedAt < @changed
+                    ORDER BY
+                        pre.GC_UGD_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+                    FROM
+                        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] fol
+                    WHERE
+                        fol.GC_UGD_GC_ID = @id
+                    AND
+                        fol.GC_UGD_ChangedAt > @changed
+                    ORDER BY
+                        fol.GC_UGD_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation]
+    ADD CONSTRAINT [rcGC_UGD_GatheredConstruct_UsedGrowthDeviation] CHECK (
+        [stats].[rfGC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+            GC_UGD_GC_ID,
+            GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+            GC_UGD_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfGC_AGD_GatheredConstruct_AllocatedGrowthDeviation restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcGC_AGD_GatheredConstruct_AllocatedGrowthDeviation restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rfGC_AGD_GatheredConstruct_AllocatedGrowthDeviation', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rfGC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+        @id int,
+        @value decimal(19,2),
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+                    FROM
+                        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] pre
+                    WHERE
+                        pre.GC_AGD_GC_ID = @id
+                    AND
+                        pre.GC_AGD_ChangedAt < @changed
+                    ORDER BY
+                        pre.GC_AGD_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+                    FROM
+                        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] fol
+                    WHERE
+                        fol.GC_AGD_GC_ID = @id
+                    AND
+                        fol.GC_AGD_ChangedAt > @changed
+                    ORDER BY
+                        fol.GC_AGD_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+    ADD CONSTRAINT [rcGC_AGD_GatheredConstruct_AllocatedGrowthDeviation] CHECK (
+        [stats].[rfGC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+            GC_AGD_GC_ID,
+            GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+            GC_AGD_ChangedAt
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfGC_RGD_GatheredConstruct_RowGrowthDeviation restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcGC_RGD_GatheredConstruct_RowGrowthDeviation restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rfGC_RGD_GatheredConstruct_RowGrowthDeviation', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rfGC_RGD_GatheredConstruct_RowGrowthDeviation] (
+        @id int,
+        @value decimal(19,2),
+        @changed datetime
+    )
+    RETURNS tinyint AS
+    BEGIN RETURN (
+        CASE WHEN EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        pre.GC_RGD_GatheredConstruct_RowGrowthDeviation
+                    FROM
+                        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] pre
+                    WHERE
+                        pre.GC_RGD_GC_ID = @id
+                    AND
+                        pre.GC_RGD_ChangedAt < @changed
+                    ORDER BY
+                        pre.GC_RGD_ChangedAt DESC
+                )
+        ) OR EXISTS (
+            SELECT
+                @value 
+            WHERE
+                @value = (
+                    SELECT TOP 1
+                        fol.GC_RGD_GatheredConstruct_RowGrowthDeviation
+                    FROM
+                        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] fol
+                    WHERE
+                        fol.GC_RGD_GC_ID = @id
+                    AND
+                        fol.GC_RGD_ChangedAt > @changed
+                    ORDER BY
+                        fol.GC_RGD_ChangedAt ASC
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation]
+    ADD CONSTRAINT [rcGC_RGD_GatheredConstruct_RowGrowthDeviation] CHECK (
+        [stats].[rfGC_RGD_GatheredConstruct_RowGrowthDeviation] (
+            GC_RGD_GC_ID,
+            GC_RGD_GatheredConstruct_RowGrowthDeviation,
+            GC_RGD_ChangedAt
+        ) = 0
+    );
+END
+GO
 -- KEY GENERATORS -----------------------------------------------------------------------------------------------------
 --
 -- These stored procedures can be used to generate identities of entities.
@@ -1612,6 +1855,72 @@ BEGIN
     ');
 END
 GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rGC_UGD_GatheredConstruct_UsedGrowthDeviation rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rGC_UGD_GatheredConstruct_UsedGrowthDeviation','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rGC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_GC_UGD,
+        GC_UGD_GC_ID,
+        GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+        GC_UGD_ChangedAt
+    FROM
+        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation]
+    WHERE
+        GC_UGD_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rGC_AGD_GatheredConstruct_AllocatedGrowthDeviation rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rGC_AGD_GatheredConstruct_AllocatedGrowthDeviation','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rGC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_GC_AGD,
+        GC_AGD_GC_ID,
+        GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+        GC_AGD_ChangedAt
+    FROM
+        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+    WHERE
+        GC_AGD_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rGC_RGD_GatheredConstruct_RowGrowthDeviation rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.rGC_RGD_GatheredConstruct_RowGrowthDeviation','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [stats].[rGC_RGD_GatheredConstruct_RowGrowthDeviation] (
+        @changingTimepoint datetime
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_GC_RGD,
+        GC_RGD_GC_ID,
+        GC_RGD_GatheredConstruct_RowGrowthDeviation,
+        GC_RGD_ChangedAt
+    FROM
+        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation]
+    WHERE
+        GC_RGD_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
 -- ANCHOR TEMPORAL BUSINESS PERSPECTIVES ------------------------------------------------------------------------------
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
@@ -1728,7 +2037,19 @@ SELECT
     [LGT].GC_LGT_GC_ID,
     [LGT].Metadata_GC_LGT,
     [LGT].GC_LGT_ChangedAt,
-    [LGT].GC_LGT_GatheredConstruct_LatestGatheringTime
+    [LGT].GC_LGT_GatheredConstruct_LatestGatheringTime,
+    [UGD].GC_UGD_GC_ID,
+    [UGD].Metadata_GC_UGD,
+    [UGD].GC_UGD_ChangedAt,
+    [UGD].GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+    [AGD].GC_AGD_GC_ID,
+    [AGD].Metadata_GC_AGD,
+    [AGD].GC_AGD_ChangedAt,
+    [AGD].GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+    [RGD].GC_RGD_GC_ID,
+    [RGD].Metadata_GC_RGD,
+    [RGD].GC_RGD_ChangedAt,
+    [RGD].GC_RGD_GatheredConstruct_RowGrowthDeviation
 FROM
     [stats].[GC_GatheredConstruct] [GC]
 LEFT JOIN
@@ -1915,6 +2236,45 @@ AND
             [stats].[GC_LGT_GatheredConstruct_LatestGatheringTime] sub
         WHERE
             sub.GC_LGT_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] [UGD]
+ON
+    [UGD].GC_UGD_GC_ID = [GC].GC_ID
+AND
+    [UGD].GC_UGD_ChangedAt = (
+        SELECT
+            max(sub.GC_UGD_ChangedAt)
+        FROM
+            [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] sub
+        WHERE
+            sub.GC_UGD_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] [AGD]
+ON
+    [AGD].GC_AGD_GC_ID = [GC].GC_ID
+AND
+    [AGD].GC_AGD_ChangedAt = (
+        SELECT
+            max(sub.GC_AGD_ChangedAt)
+        FROM
+            [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] sub
+        WHERE
+            sub.GC_AGD_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] [RGD]
+ON
+    [RGD].GC_RGD_GC_ID = [GC].GC_ID
+AND
+    [RGD].GC_RGD_ChangedAt = (
+        SELECT
+            max(sub.GC_RGD_ChangedAt)
+        FROM
+            [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] sub
+        WHERE
+            sub.GC_RGD_GC_ID = [GC].GC_ID
    );
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -1989,7 +2349,19 @@ SELECT
     [LGT].GC_LGT_GC_ID,
     [LGT].Metadata_GC_LGT,
     [LGT].GC_LGT_ChangedAt,
-    [LGT].GC_LGT_GatheredConstruct_LatestGatheringTime
+    [LGT].GC_LGT_GatheredConstruct_LatestGatheringTime,
+    [UGD].GC_UGD_GC_ID,
+    [UGD].Metadata_GC_UGD,
+    [UGD].GC_UGD_ChangedAt,
+    [UGD].GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+    [AGD].GC_AGD_GC_ID,
+    [AGD].Metadata_GC_AGD,
+    [AGD].GC_AGD_ChangedAt,
+    [AGD].GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+    [RGD].GC_RGD_GC_ID,
+    [RGD].Metadata_GC_RGD,
+    [RGD].GC_RGD_ChangedAt,
+    [RGD].GC_RGD_GatheredConstruct_RowGrowthDeviation
 FROM
     [stats].[GC_GatheredConstruct] [GC]
 LEFT JOIN
@@ -2176,6 +2548,45 @@ AND
             [stats].[rGC_LGT_GatheredConstruct_LatestGatheringTime](@changingTimepoint) sub
         WHERE
             sub.GC_LGT_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[rGC_UGD_GatheredConstruct_UsedGrowthDeviation](@changingTimepoint) [UGD]
+ON
+    [UGD].GC_UGD_GC_ID = [GC].GC_ID
+AND
+    [UGD].GC_UGD_ChangedAt = (
+        SELECT
+            max(sub.GC_UGD_ChangedAt)
+        FROM
+            [stats].[rGC_UGD_GatheredConstruct_UsedGrowthDeviation](@changingTimepoint) sub
+        WHERE
+            sub.GC_UGD_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[rGC_AGD_GatheredConstruct_AllocatedGrowthDeviation](@changingTimepoint) [AGD]
+ON
+    [AGD].GC_AGD_GC_ID = [GC].GC_ID
+AND
+    [AGD].GC_AGD_ChangedAt = (
+        SELECT
+            max(sub.GC_AGD_ChangedAt)
+        FROM
+            [stats].[rGC_AGD_GatheredConstruct_AllocatedGrowthDeviation](@changingTimepoint) sub
+        WHERE
+            sub.GC_AGD_GC_ID = [GC].GC_ID
+   )
+LEFT JOIN
+    [stats].[rGC_RGD_GatheredConstruct_RowGrowthDeviation](@changingTimepoint) [RGD]
+ON
+    [RGD].GC_RGD_GC_ID = [GC].GC_ID
+AND
+    [RGD].GC_RGD_ChangedAt = (
+        SELECT
+            max(sub.GC_RGD_ChangedAt)
+        FROM
+            [stats].[rGC_RGD_GatheredConstruct_RowGrowthDeviation](@changingTimepoint) sub
+        WHERE
+            sub.GC_RGD_GC_ID = [GC].GC_ID
    );
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -2344,6 +2755,39 @@ FROM (
         (@selection is null OR @selection like '%LGT%')
     AND
         GC_LGT_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_UGD_GC_ID AS GC_ID,
+        GC_UGD_ChangedAt AS inspectedTimepoint,
+        'UGD' AS mnemonic
+    FROM
+        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%UGD%')
+    AND
+        GC_UGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_AGD_GC_ID AS GC_ID,
+        GC_AGD_ChangedAt AS inspectedTimepoint,
+        'AGD' AS mnemonic
+    FROM
+        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%AGD%')
+    AND
+        GC_AGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_RGD_GC_ID AS GC_ID,
+        GC_RGD_ChangedAt AS inspectedTimepoint,
+        'RGD' AS mnemonic
+    FROM
+        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%RGD%')
+    AND
+        GC_RGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
 ) timepoints
 CROSS APPLY
     [stats].[pGC_GatheredConstruct](timepoints.inspectedTimepoint) [pGC]
@@ -2396,7 +2840,10 @@ SELECT
     [GC].GC_AGI_GatheredConstruct_AllocatedGrowthInterval as [AllocatedGrowthInterval],
     [GC].GC_UGI_GatheredConstruct_UsedGrowthInterval as [UsedGrowthInterval],
     [GC].GC_RGI_GatheredConstruct_RowGrowthInterval as [RowGrowthInterval],
-    [GC].GC_LGT_GatheredConstruct_LatestGatheringTime as [LatestGatheringTime]
+    [GC].GC_LGT_GatheredConstruct_LatestGatheringTime as [LatestGatheringTime],
+    [GC].GC_UGD_GatheredConstruct_UsedGrowthDeviation as [UsedGrowthDeviation],
+    [GC].GC_AGD_GatheredConstruct_AllocatedGrowthDeviation as [AllocatedGrowthDeviation],
+    [GC].GC_RGD_GatheredConstruct_RowGrowthDeviation as [RowGrowthDeviation]
 FROM
     [stats].[lGC_GatheredConstruct] [GC];
 GO
@@ -2424,7 +2871,10 @@ SELECT
     [GC].GC_AGI_GatheredConstruct_AllocatedGrowthInterval as [AllocatedGrowthInterval],
     [GC].GC_UGI_GatheredConstruct_UsedGrowthInterval as [UsedGrowthInterval],
     [GC].GC_RGI_GatheredConstruct_RowGrowthInterval as [RowGrowthInterval],
-    [GC].GC_LGT_GatheredConstruct_LatestGatheringTime as [LatestGatheringTime]
+    [GC].GC_LGT_GatheredConstruct_LatestGatheringTime as [LatestGatheringTime],
+    [GC].GC_UGD_GatheredConstruct_UsedGrowthDeviation as [UsedGrowthDeviation],
+    [GC].GC_AGD_GatheredConstruct_AllocatedGrowthDeviation as [AllocatedGrowthDeviation],
+    [GC].GC_RGD_GatheredConstruct_RowGrowthDeviation as [RowGrowthDeviation]
 FROM
     [stats].[pGC_GatheredConstruct](@changingTimepoint) [GC]
 GO
@@ -2594,6 +3044,39 @@ FROM (
         (@selection is null OR @selection like '%LGT%')
     AND
         GC_LGT_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_UGD_GC_ID AS GC_ID,
+        GC_UGD_ChangedAt AS [Time_of_Change],
+        'UsedGrowthDeviation' AS [Subject_of_Change]
+    FROM
+        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%UGD%')
+    AND
+        GC_UGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_AGD_GC_ID AS GC_ID,
+        GC_AGD_ChangedAt AS [Time_of_Change],
+        'AllocatedGrowthDeviation' AS [Subject_of_Change]
+    FROM
+        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%AGD%')
+    AND
+        GC_AGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        GC_RGD_GC_ID AS GC_ID,
+        GC_RGD_ChangedAt AS [Time_of_Change],
+        'RowGrowthDeviation' AS [Subject_of_Change]
+    FROM
+        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation]
+    WHERE
+        (@selection is null OR @selection like '%RGD%')
+    AND
+        GC_RGD_ChangedAt BETWEEN @intervalStart AND @intervalEnd
 ) timepoints
 CROSS APPLY
     [stats].[Point_GatheredConstruct](timepoints.[Time_of_Change]) [pGC]
@@ -4444,6 +4927,372 @@ BEGIN
     END
 END
 GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_GC_UGD_GatheredConstruct_UsedGrowthDeviation instead of INSERT trigger on GC_UGD_GatheredConstruct_UsedGrowthDeviation
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.it_GC_UGD_GatheredConstruct_UsedGrowthDeviation', 'TR') IS NOT NULL
+DROP TRIGGER [stats].[it_GC_UGD_GatheredConstruct_UsedGrowthDeviation];
+GO
+CREATE TRIGGER [stats].[it_GC_UGD_GatheredConstruct_UsedGrowthDeviation] ON [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @GC_UGD_GatheredConstruct_UsedGrowthDeviation TABLE (
+        GC_UGD_GC_ID int not null,
+        Metadata_GC_UGD int not null,
+        GC_UGD_ChangedAt datetime not null,
+        GC_UGD_GatheredConstruct_UsedGrowthDeviation decimal(19,2) not null,
+        GC_UGD_Version bigint not null,
+        GC_UGD_StatementType char(1) not null,
+        primary key(
+            GC_UGD_Version,
+            GC_UGD_GC_ID
+        )
+    );
+    INSERT INTO @GC_UGD_GatheredConstruct_UsedGrowthDeviation
+    SELECT
+        i.GC_UGD_GC_ID,
+        i.Metadata_GC_UGD,
+        i.GC_UGD_ChangedAt,
+        i.GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.GC_UGD_GC_ID
+            ORDER BY
+                i.GC_UGD_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(GC_UGD_Version), 
+        @currentVersion = 0
+    FROM
+        @GC_UGD_GatheredConstruct_UsedGrowthDeviation;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.GC_UGD_StatementType =
+                CASE
+                    WHEN [UGD].GC_UGD_GC_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [stats].[rfGC_UGD_GatheredConstruct_UsedGrowthDeviation]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_UGD_GatheredConstruct_UsedGrowthDeviation = (
+                                SELECT TOP 1
+                                    pre.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+                                FROM
+                                    [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] pre
+                                WHERE
+                                    pre.GC_UGD_GC_ID = v.GC_UGD_GC_ID
+                                AND
+                                    pre.GC_UGD_ChangedAt < v.GC_UGD_ChangedAt
+                                ORDER BY
+                                    pre.GC_UGD_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_UGD_GatheredConstruct_UsedGrowthDeviation = (
+                                SELECT TOP 1
+                                    fol.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+                                FROM
+                                    [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] fol
+                                WHERE
+                                    fol.GC_UGD_GC_ID = v.GC_UGD_GC_ID
+                                AND
+                                    fol.GC_UGD_ChangedAt > v.GC_UGD_ChangedAt
+                                ORDER BY
+                                    fol.GC_UGD_ChangedAt ASC
+                            )
+                    ) 
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @GC_UGD_GatheredConstruct_UsedGrowthDeviation v
+        LEFT JOIN
+            [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] [UGD]
+        ON
+            [UGD].GC_UGD_GC_ID = v.GC_UGD_GC_ID
+        AND
+            [UGD].GC_UGD_ChangedAt = v.GC_UGD_ChangedAt
+        AND
+            [UGD].GC_UGD_GatheredConstruct_UsedGrowthDeviation = v.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        WHERE
+            v.GC_UGD_Version = @currentVersion;
+        INSERT INTO [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+            GC_UGD_GC_ID,
+            Metadata_GC_UGD,
+            GC_UGD_ChangedAt,
+            GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        )
+        SELECT
+            GC_UGD_GC_ID,
+            Metadata_GC_UGD,
+            GC_UGD_ChangedAt,
+            GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        FROM
+            @GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        WHERE
+            GC_UGD_Version = @currentVersion
+        AND
+            GC_UGD_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_GC_AGD_GatheredConstruct_AllocatedGrowthDeviation instead of INSERT trigger on GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.it_GC_AGD_GatheredConstruct_AllocatedGrowthDeviation', 'TR') IS NOT NULL
+DROP TRIGGER [stats].[it_GC_AGD_GatheredConstruct_AllocatedGrowthDeviation];
+GO
+CREATE TRIGGER [stats].[it_GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] ON [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @GC_AGD_GatheredConstruct_AllocatedGrowthDeviation TABLE (
+        GC_AGD_GC_ID int not null,
+        Metadata_GC_AGD int not null,
+        GC_AGD_ChangedAt datetime not null,
+        GC_AGD_GatheredConstruct_AllocatedGrowthDeviation decimal(19,2) not null,
+        GC_AGD_Version bigint not null,
+        GC_AGD_StatementType char(1) not null,
+        primary key(
+            GC_AGD_Version,
+            GC_AGD_GC_ID
+        )
+    );
+    INSERT INTO @GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+    SELECT
+        i.GC_AGD_GC_ID,
+        i.Metadata_GC_AGD,
+        i.GC_AGD_ChangedAt,
+        i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.GC_AGD_GC_ID
+            ORDER BY
+                i.GC_AGD_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(GC_AGD_Version), 
+        @currentVersion = 0
+    FROM
+        @GC_AGD_GatheredConstruct_AllocatedGrowthDeviation;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.GC_AGD_StatementType =
+                CASE
+                    WHEN [AGD].GC_AGD_GC_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [stats].[rfGC_AGD_GatheredConstruct_AllocatedGrowthDeviation]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation = (
+                                SELECT TOP 1
+                                    pre.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+                                FROM
+                                    [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] pre
+                                WHERE
+                                    pre.GC_AGD_GC_ID = v.GC_AGD_GC_ID
+                                AND
+                                    pre.GC_AGD_ChangedAt < v.GC_AGD_ChangedAt
+                                ORDER BY
+                                    pre.GC_AGD_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation = (
+                                SELECT TOP 1
+                                    fol.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+                                FROM
+                                    [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] fol
+                                WHERE
+                                    fol.GC_AGD_GC_ID = v.GC_AGD_GC_ID
+                                AND
+                                    fol.GC_AGD_ChangedAt > v.GC_AGD_ChangedAt
+                                ORDER BY
+                                    fol.GC_AGD_ChangedAt ASC
+                            )
+                    ) 
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @GC_AGD_GatheredConstruct_AllocatedGrowthDeviation v
+        LEFT JOIN
+            [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] [AGD]
+        ON
+            [AGD].GC_AGD_GC_ID = v.GC_AGD_GC_ID
+        AND
+            [AGD].GC_AGD_ChangedAt = v.GC_AGD_ChangedAt
+        AND
+            [AGD].GC_AGD_GatheredConstruct_AllocatedGrowthDeviation = v.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        WHERE
+            v.GC_AGD_Version = @currentVersion;
+        INSERT INTO [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+            GC_AGD_GC_ID,
+            Metadata_GC_AGD,
+            GC_AGD_ChangedAt,
+            GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        )
+        SELECT
+            GC_AGD_GC_ID,
+            Metadata_GC_AGD,
+            GC_AGD_ChangedAt,
+            GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        FROM
+            @GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        WHERE
+            GC_AGD_Version = @currentVersion
+        AND
+            GC_AGD_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_GC_RGD_GatheredConstruct_RowGrowthDeviation instead of INSERT trigger on GC_RGD_GatheredConstruct_RowGrowthDeviation
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('stats.it_GC_RGD_GatheredConstruct_RowGrowthDeviation', 'TR') IS NOT NULL
+DROP TRIGGER [stats].[it_GC_RGD_GatheredConstruct_RowGrowthDeviation];
+GO
+CREATE TRIGGER [stats].[it_GC_RGD_GatheredConstruct_RowGrowthDeviation] ON [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @GC_RGD_GatheredConstruct_RowGrowthDeviation TABLE (
+        GC_RGD_GC_ID int not null,
+        Metadata_GC_RGD int not null,
+        GC_RGD_ChangedAt datetime not null,
+        GC_RGD_GatheredConstruct_RowGrowthDeviation decimal(19,2) not null,
+        GC_RGD_Version bigint not null,
+        GC_RGD_StatementType char(1) not null,
+        primary key(
+            GC_RGD_Version,
+            GC_RGD_GC_ID
+        )
+    );
+    INSERT INTO @GC_RGD_GatheredConstruct_RowGrowthDeviation
+    SELECT
+        i.GC_RGD_GC_ID,
+        i.Metadata_GC_RGD,
+        i.GC_RGD_ChangedAt,
+        i.GC_RGD_GatheredConstruct_RowGrowthDeviation,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.GC_RGD_GC_ID
+            ORDER BY
+                i.GC_RGD_ChangedAt ASC
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = max(GC_RGD_Version), 
+        @currentVersion = 0
+    FROM
+        @GC_RGD_GatheredConstruct_RowGrowthDeviation;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.GC_RGD_StatementType =
+                CASE
+                    WHEN [RGD].GC_RGD_GC_ID is not null
+                    THEN 'D' -- duplicate
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [stats].[rfGC_RGD_GatheredConstruct_RowGrowthDeviation]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_RGD_GatheredConstruct_RowGrowthDeviation = (
+                                SELECT TOP 1
+                                    pre.GC_RGD_GatheredConstruct_RowGrowthDeviation
+                                FROM
+                                    [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] pre
+                                WHERE
+                                    pre.GC_RGD_GC_ID = v.GC_RGD_GC_ID
+                                AND
+                                    pre.GC_RGD_ChangedAt < v.GC_RGD_ChangedAt
+                                ORDER BY
+                                    pre.GC_RGD_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.GC_RGD_GatheredConstruct_RowGrowthDeviation = (
+                                SELECT TOP 1
+                                    fol.GC_RGD_GatheredConstruct_RowGrowthDeviation
+                                FROM
+                                    [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] fol
+                                WHERE
+                                    fol.GC_RGD_GC_ID = v.GC_RGD_GC_ID
+                                AND
+                                    fol.GC_RGD_ChangedAt > v.GC_RGD_ChangedAt
+                                ORDER BY
+                                    fol.GC_RGD_ChangedAt ASC
+                            )
+                    ) 
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @GC_RGD_GatheredConstruct_RowGrowthDeviation v
+        LEFT JOIN
+            [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] [RGD]
+        ON
+            [RGD].GC_RGD_GC_ID = v.GC_RGD_GC_ID
+        AND
+            [RGD].GC_RGD_ChangedAt = v.GC_RGD_ChangedAt
+        AND
+            [RGD].GC_RGD_GatheredConstruct_RowGrowthDeviation = v.GC_RGD_GatheredConstruct_RowGrowthDeviation
+        WHERE
+            v.GC_RGD_Version = @currentVersion;
+        INSERT INTO [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] (
+            GC_RGD_GC_ID,
+            Metadata_GC_RGD,
+            GC_RGD_ChangedAt,
+            GC_RGD_GatheredConstruct_RowGrowthDeviation
+        )
+        SELECT
+            GC_RGD_GC_ID,
+            Metadata_GC_RGD,
+            GC_RGD_ChangedAt,
+            GC_RGD_GatheredConstruct_RowGrowthDeviation
+        FROM
+            @GC_RGD_GatheredConstruct_RowGrowthDeviation
+        WHERE
+            GC_RGD_Version = @currentVersion
+        AND
+            GC_RGD_StatementType in ('N');
+    END
+END
+GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
 -- The following triggers on the latest view make it behave like a table.
@@ -4548,7 +5397,19 @@ BEGIN
         GC_LGT_GC_ID int null,
         Metadata_GC_LGT int null,
         GC_LGT_ChangedAt datetime null,
-        GC_LGT_GatheredConstruct_LatestGatheringTime datetime null
+        GC_LGT_GatheredConstruct_LatestGatheringTime datetime null,
+        GC_UGD_GC_ID int null,
+        Metadata_GC_UGD int null,
+        GC_UGD_ChangedAt datetime null,
+        GC_UGD_GatheredConstruct_UsedGrowthDeviation decimal(19,2) null,
+        GC_AGD_GC_ID int null,
+        Metadata_GC_AGD int null,
+        GC_AGD_ChangedAt datetime null,
+        GC_AGD_GatheredConstruct_AllocatedGrowthDeviation decimal(19,2) null,
+        GC_RGD_GC_ID int null,
+        Metadata_GC_RGD int null,
+        GC_RGD_ChangedAt datetime null,
+        GC_RGD_GatheredConstruct_RowGrowthDeviation decimal(19,2) null
     );
     INSERT INTO @inserted
     SELECT
@@ -4616,7 +5477,19 @@ BEGIN
         ISNULL(ISNULL(i.GC_LGT_GC_ID, i.GC_ID), a.GC_ID),
         ISNULL(i.Metadata_GC_LGT, i.Metadata_GC),
         ISNULL(i.GC_LGT_ChangedAt, @now),
-        i.GC_LGT_GatheredConstruct_LatestGatheringTime
+        i.GC_LGT_GatheredConstruct_LatestGatheringTime,
+        ISNULL(ISNULL(i.GC_UGD_GC_ID, i.GC_ID), a.GC_ID),
+        ISNULL(i.Metadata_GC_UGD, i.Metadata_GC),
+        ISNULL(i.GC_UGD_ChangedAt, @now),
+        i.GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+        ISNULL(ISNULL(i.GC_AGD_GC_ID, i.GC_ID), a.GC_ID),
+        ISNULL(i.Metadata_GC_AGD, i.Metadata_GC),
+        ISNULL(i.GC_AGD_ChangedAt, @now),
+        i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+        ISNULL(ISNULL(i.GC_RGD_GC_ID, i.GC_ID), a.GC_ID),
+        ISNULL(i.Metadata_GC_RGD, i.Metadata_GC),
+        ISNULL(i.GC_RGD_ChangedAt, @now),
+        i.GC_RGD_GatheredConstruct_RowGrowthDeviation
     FROM (
         SELECT
             GC_ID,
@@ -4684,6 +5557,18 @@ BEGIN
             Metadata_GC_LGT,
             GC_LGT_ChangedAt,
             GC_LGT_GatheredConstruct_LatestGatheringTime,
+            GC_UGD_GC_ID,
+            Metadata_GC_UGD,
+            GC_UGD_ChangedAt,
+            GC_UGD_GatheredConstruct_UsedGrowthDeviation,
+            GC_AGD_GC_ID,
+            Metadata_GC_AGD,
+            GC_AGD_ChangedAt,
+            GC_AGD_GatheredConstruct_AllocatedGrowthDeviation,
+            GC_RGD_GC_ID,
+            Metadata_GC_RGD,
+            GC_RGD_ChangedAt,
+            GC_RGD_GatheredConstruct_RowGrowthDeviation,
             ROW_NUMBER() OVER (PARTITION BY GC_ID ORDER BY GC_ID) AS Row
         FROM
             inserted
@@ -4930,6 +5815,51 @@ BEGIN
         @inserted i
     WHERE
         i.GC_LGT_GatheredConstruct_LatestGatheringTime is not null;
+    INSERT INTO [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+        Metadata_GC_UGD,
+        GC_UGD_GC_ID,
+        GC_UGD_ChangedAt,
+        GC_UGD_GatheredConstruct_UsedGrowthDeviation
+    )
+    SELECT
+        i.Metadata_GC_UGD,
+        i.GC_UGD_GC_ID,
+        i.GC_UGD_ChangedAt,
+        i.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+    FROM
+        @inserted i
+    WHERE
+        i.GC_UGD_GatheredConstruct_UsedGrowthDeviation is not null;
+    INSERT INTO [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+        Metadata_GC_AGD,
+        GC_AGD_GC_ID,
+        GC_AGD_ChangedAt,
+        GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+    )
+    SELECT
+        i.Metadata_GC_AGD,
+        i.GC_AGD_GC_ID,
+        i.GC_AGD_ChangedAt,
+        i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+    FROM
+        @inserted i
+    WHERE
+        i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation is not null;
+    INSERT INTO [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] (
+        Metadata_GC_RGD,
+        GC_RGD_GC_ID,
+        GC_RGD_ChangedAt,
+        GC_RGD_GatheredConstruct_RowGrowthDeviation
+    )
+    SELECT
+        i.Metadata_GC_RGD,
+        i.GC_RGD_GC_ID,
+        i.GC_RGD_ChangedAt,
+        i.GC_RGD_GatheredConstruct_RowGrowthDeviation
+    FROM
+        @inserted i
+    WHERE
+        i.GC_RGD_GatheredConstruct_RowGrowthDeviation is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -5373,6 +6303,87 @@ BEGIN
         WHERE
             i.GC_LGT_GatheredConstruct_LatestGatheringTime is not null;
     END
+    IF(UPDATE(GC_UGD_GC_ID))
+        RAISERROR('The foreign key column GC_UGD_GC_ID is not updatable.', 16, 1);
+    IF(UPDATE(GC_UGD_GatheredConstruct_UsedGrowthDeviation))
+    BEGIN
+        INSERT INTO [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] (
+            Metadata_GC_UGD,
+            GC_UGD_GC_ID,
+            GC_UGD_ChangedAt,
+            GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_GC) AND NOT UPDATE(Metadata_GC_UGD)
+                THEN i.Metadata_GC
+                ELSE i.Metadata_GC_UGD
+            END, i.Metadata_GC),
+            ISNULL(i.GC_UGD_GC_ID, i.GC_ID),
+            cast(ISNULL(CASE
+                WHEN i.GC_UGD_GatheredConstruct_UsedGrowthDeviation is null THEN i.GC_UGD_ChangedAt
+                WHEN UPDATE(GC_UGD_ChangedAt) THEN i.GC_UGD_ChangedAt
+            END, @now) as datetime),
+            i.GC_UGD_GatheredConstruct_UsedGrowthDeviation
+        FROM
+            inserted i
+        WHERE
+            i.GC_UGD_GatheredConstruct_UsedGrowthDeviation is not null;
+    END
+    IF(UPDATE(GC_AGD_GC_ID))
+        RAISERROR('The foreign key column GC_AGD_GC_ID is not updatable.', 16, 1);
+    IF(UPDATE(GC_AGD_GatheredConstruct_AllocatedGrowthDeviation))
+    BEGIN
+        INSERT INTO [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] (
+            Metadata_GC_AGD,
+            GC_AGD_GC_ID,
+            GC_AGD_ChangedAt,
+            GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_GC) AND NOT UPDATE(Metadata_GC_AGD)
+                THEN i.Metadata_GC
+                ELSE i.Metadata_GC_AGD
+            END, i.Metadata_GC),
+            ISNULL(i.GC_AGD_GC_ID, i.GC_ID),
+            cast(ISNULL(CASE
+                WHEN i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation is null THEN i.GC_AGD_ChangedAt
+                WHEN UPDATE(GC_AGD_ChangedAt) THEN i.GC_AGD_ChangedAt
+            END, @now) as datetime),
+            i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation
+        FROM
+            inserted i
+        WHERE
+            i.GC_AGD_GatheredConstruct_AllocatedGrowthDeviation is not null;
+    END
+    IF(UPDATE(GC_RGD_GC_ID))
+        RAISERROR('The foreign key column GC_RGD_GC_ID is not updatable.', 16, 1);
+    IF(UPDATE(GC_RGD_GatheredConstruct_RowGrowthDeviation))
+    BEGIN
+        INSERT INTO [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] (
+            Metadata_GC_RGD,
+            GC_RGD_GC_ID,
+            GC_RGD_ChangedAt,
+            GC_RGD_GatheredConstruct_RowGrowthDeviation
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_GC) AND NOT UPDATE(Metadata_GC_RGD)
+                THEN i.Metadata_GC
+                ELSE i.Metadata_GC_RGD
+            END, i.Metadata_GC),
+            ISNULL(i.GC_RGD_GC_ID, i.GC_ID),
+            cast(ISNULL(CASE
+                WHEN i.GC_RGD_GatheredConstruct_RowGrowthDeviation is null THEN i.GC_RGD_ChangedAt
+                WHEN UPDATE(GC_RGD_ChangedAt) THEN i.GC_RGD_ChangedAt
+            END, @now) as datetime),
+            i.GC_RGD_GatheredConstruct_RowGrowthDeviation
+        FROM
+            inserted i
+        WHERE
+            i.GC_RGD_GatheredConstruct_RowGrowthDeviation is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -5521,6 +6532,33 @@ BEGIN
         d.GC_LGT_ChangedAt = [LGT].GC_LGT_ChangedAt
     AND
         d.GC_LGT_GC_ID = [LGT].GC_LGT_GC_ID;
+    DELETE [UGD]
+    FROM
+        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] [UGD]
+    JOIN
+        deleted d
+    ON
+        d.GC_UGD_ChangedAt = [UGD].GC_UGD_ChangedAt
+    AND
+        d.GC_UGD_GC_ID = [UGD].GC_UGD_GC_ID;
+    DELETE [AGD]
+    FROM
+        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] [AGD]
+    JOIN
+        deleted d
+    ON
+        d.GC_AGD_ChangedAt = [AGD].GC_AGD_ChangedAt
+    AND
+        d.GC_AGD_GC_ID = [AGD].GC_AGD_GC_ID;
+    DELETE [RGD]
+    FROM
+        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] [RGD]
+    JOIN
+        deleted d
+    ON
+        d.GC_RGD_ChangedAt = [RGD].GC_RGD_ChangedAt
+    AND
+        d.GC_RGD_GC_ID = [RGD].GC_RGD_GC_ID;
     DELETE [GC]
     FROM
         [stats].[GC_GatheredConstruct] [GC]
@@ -5588,6 +6626,18 @@ BEGIN
         [stats].[GC_LGT_GatheredConstruct_LatestGatheringTime] [LGT]
     ON
         [LGT].GC_LGT_GC_ID = [GC].GC_ID
+    LEFT JOIN
+        [stats].[GC_UGD_GatheredConstruct_UsedGrowthDeviation] [UGD]
+    ON
+        [UGD].GC_UGD_GC_ID = [GC].GC_ID
+    LEFT JOIN
+        [stats].[GC_AGD_GatheredConstruct_AllocatedGrowthDeviation] [AGD]
+    ON
+        [AGD].GC_AGD_GC_ID = [GC].GC_ID
+    LEFT JOIN
+        [stats].[GC_RGD_GatheredConstruct_RowGrowthDeviation] [RGD]
+    ON
+        [RGD].GC_RGD_GC_ID = [GC].GC_ID
     WHERE
         [NAM].GC_NAM_GC_ID is null
     AND
@@ -5619,7 +6669,13 @@ BEGIN
     AND
         [RGI].GC_RGI_GC_ID is null
     AND
-        [LGT].GC_LGT_GC_ID is null;
+        [LGT].GC_LGT_GC_ID is null
+    AND
+        [UGD].GC_UGD_GC_ID is null
+    AND
+        [AGD].GC_AGD_GC_ID is null
+    AND
+        [RGD].GC_RGD_GC_ID is null;
 END
 GO
 -- TIE TEMPORAL BUSINESS PERSPECTIVES ---------------------------------------------------------------------------------
@@ -5706,7 +6762,7 @@ INSERT INTO [stats].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.99.6.1" date="2020-04-23" time="17:21:29"><metadata changingRange="datetime" encapsulation="stats" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><anchor mnemonic="GC" descriptor="GatheredConstruct" identity="int"><metadata capsule="stats" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="nvarchar(128)"><metadata privacy="Ignore" capsule="stats" deletable="false"/><key stop="2" route="ConstructName" of="GC" branch="2"/><layout x="1547.81" y="526.77" fixed="false"/></attribute><attribute mnemonic="CAP" descriptor="Capsule" dataRange="nvarchar(128)"><metadata privacy="Ignore" capsule="stats" deletable="false"/><key stop="1" route="ConstructName" of="GC" branch="1"/><layout x="1626.51" y="590.41" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata privacy="Ignore" capsule="stats" deletable="false"/><layout x="1647.77" y="814.66" fixed="false"/></attribute><attribute mnemonic="ROC" descriptor="RowCount" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1685.79" y="637.40" fixed="false"/></attribute><attribute mnemonic="RGR" descriptor="RowGrowth" timeRange="datetime" dataRange="int"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1470.41" y="661.36" fixed="false"/></attribute><attribute mnemonic="RGN" descriptor="RowGrowthNormal" timeRange="datetime" dataRange="int"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1529.36" y="783.04" fixed="false"/></attribute><attribute mnemonic="UMB" descriptor="UsedMegabytes" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1701.57" y="717.89" fixed="false"/></attribute><attribute mnemonic="UGR" descriptor="UsedGrowth" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1649.92" y="615.62" fixed="false"/></attribute><attribute mnemonic="UGN" descriptor="UsedGrowthNormal" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1497.53" y="749.23" fixed="false"/></attribute><attribute mnemonic="AMB" descriptor="AllocatedMegabytes" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1572.29" y="802.41" fixed="false"/></attribute><attribute mnemonic="AGR" descriptor="AllocatedGrowth" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1480.72" y="713.90" fixed="false"/></attribute><attribute mnemonic="AGN" descriptor="AllocatedGrowthNormal" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1516.61" y="579.95" fixed="false"/></attribute><attribute mnemonic="AGI" descriptor="AllocatedGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1488.98" y="638.37" fixed="false"/></attribute><attribute mnemonic="UGI" descriptor="UsedGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1640.47" y="750.13" fixed="false"/></attribute><attribute mnemonic="RGI" descriptor="RowGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1608.37" y="566.13" fixed="false"/></attribute><attribute mnemonic="LGT" descriptor="LatestGatheringTime" timeRange="datetime" dataRange="datetime"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1709.37" y="671.35" fixed="false"/></attribute><layout x="1585.94" y="684.24" fixed="false"/></anchor><knot mnemonic="TYP" descriptor="Type" identity="char(1)" dataRange="varchar(42)"><metadata capsule="stats" generator="false"/><layout x="1682.46" y="898.58" fixed="false"/></knot></schema>';
+   N'<schema format="0.99.6.1" date="2020-04-24" time="08:33:47"><metadata changingRange="datetime" encapsulation="stats" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><anchor mnemonic="GC" descriptor="GatheredConstruct" identity="int"><metadata capsule="stats" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="nvarchar(128)"><metadata privacy="Ignore" capsule="stats" deletable="false"/><key stop="2" route="ConstructName" of="GC" branch="2"/><layout x="1535.48" y="516.61" fixed="false"/></attribute><attribute mnemonic="CAP" descriptor="Capsule" dataRange="nvarchar(128)"><metadata privacy="Ignore" capsule="stats" deletable="false"/><key stop="1" route="ConstructName" of="GC" branch="1"/><layout x="1589.89" y="705.32" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="TYP"><metadata privacy="Ignore" capsule="stats" deletable="false"/><layout x="1636.81" y="446.03" fixed="false"/></attribute><attribute mnemonic="ROC" descriptor="RowCount" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1624.37" y="742.53" fixed="false"/></attribute><attribute mnemonic="RGR" descriptor="RowGrowth" timeRange="datetime" dataRange="int"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1687.79" y="683.35" fixed="false"/></attribute><attribute mnemonic="RGN" descriptor="RowGrowthNormal" timeRange="datetime" dataRange="int"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1485.45" y="591.07" fixed="false"/></attribute><attribute mnemonic="UMB" descriptor="UsedMegabytes" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1557.17" y="687.98" fixed="false"/></attribute><attribute mnemonic="UGR" descriptor="UsedGrowth" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1639.02" y="714.37" fixed="false"/></attribute><attribute mnemonic="UGN" descriptor="UsedGrowthNormal" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1531.57" y="656.89" fixed="false"/></attribute><attribute mnemonic="AMB" descriptor="AllocatedMegabytes" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1554.40" y="473.42" fixed="false"/></attribute><attribute mnemonic="AGR" descriptor="AllocatedGrowth" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1665.95" y="491.45" fixed="false"/></attribute><attribute mnemonic="AGN" descriptor="AllocatedGrowthNormal" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1718.22" y="651.72" fixed="false"/></attribute><attribute mnemonic="AGI" descriptor="AllocatedGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1727.97" y="534.74" fixed="false"/></attribute><attribute mnemonic="UGI" descriptor="UsedGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1505.25" y="625.03" fixed="false"/></attribute><attribute mnemonic="RGI" descriptor="RowGrowthInterval" timeRange="datetime" dataRange="bigint"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1507.88" y="545.67" fixed="false"/></attribute><attribute mnemonic="LGT" descriptor="LatestGatheringTime" timeRange="datetime" dataRange="datetime"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1752.14" y="618.52" fixed="false"/></attribute><attribute mnemonic="UGD" descriptor="UsedGrowthDeviation" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1697.21" y="514.39" fixed="false"/></attribute><attribute mnemonic="AGD" descriptor="AllocatedGrowthDeviation" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1748.00" y="568.58" fixed="false"/></attribute><attribute mnemonic="RGD" descriptor="RowGrowthDeviation" timeRange="datetime" dataRange="decimal(19,2)"><metadata privacy="Ignore" capsule="stats" restatable="false" idempotent="true" deletable="false"/><layout x="1605.86" y="492.43" fixed="false"/></attribute><layout x="1620.07" y="592.35" fixed="false"/></anchor><knot mnemonic="TYP" descriptor="Type" identity="char(1)" dataRange="varchar(42)"><metadata capsule="stats" generator="false"/><layout x="1649.08" y="360.61" fixed="false"/></knot></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
