@@ -1,4 +1,4 @@
-
+﻿
 IF OBJECT_ID('stats._GatherStatistics') IS NOT NULL
 DROP PROC stats._GatherStatistics;
 GO
@@ -24,6 +24,8 @@ BEGIN
 	declare @normalDeviationPercentage float = 0.01; -- = 1%
 	-- is used to determine when growth passes from delayed to overdue
 	declare @overdueThresholdPercentage float = 1.00; -- = 100%
+	-- number of allowed standard deviatons before something is trending heavily
+	declare @numberOfStandardDeviations float = 2.00; -- = 2σ
 	-- when the gathering of statistics is done
 	declare @gatheringTime datetime = getdate();
 
@@ -345,25 +347,25 @@ BEGIN
 		@gatheringTime,
 		case
 			when GC_RGR_GatheredConstruct_RowGrowth between GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage and GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage then '0'
-			when GC_RGR_GatheredConstruct_RowGrowth > GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage + GC_RGD_GatheredConstruct_RowGrowthDeviation then '++'
+			when GC_RGR_GatheredConstruct_RowGrowth > GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage + @numberOfStandardDeviations * GC_RGD_GatheredConstruct_RowGrowthDeviation then '++'
 			when GC_RGR_GatheredConstruct_RowGrowth > GC_RGN_GatheredConstruct_RowGrowthNormal + RowGrowthPercentage then '+'
-			when GC_RGR_GatheredConstruct_RowGrowth < GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage - GC_RGD_GatheredConstruct_RowGrowthDeviation then '--'
+			when GC_RGR_GatheredConstruct_RowGrowth < GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage - @numberOfStandardDeviations * GC_RGD_GatheredConstruct_RowGrowthDeviation then '--'
 			when GC_RGR_GatheredConstruct_RowGrowth < GC_RGN_GatheredConstruct_RowGrowthNormal - RowGrowthPercentage then '-'
 		end as GC_RGD_GatheredConstruct_RowGrowthTrend,
 		@gatheringTime,
 		case
 			when GC_UGR_GatheredConstruct_UsedGrowth between GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage and GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage then '0'
-			when GC_UGR_GatheredConstruct_UsedGrowth > GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage + GC_UGD_GatheredConstruct_UsedGrowthDeviation then '++'
+			when GC_UGR_GatheredConstruct_UsedGrowth > GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage + @numberOfStandardDeviations * GC_UGD_GatheredConstruct_UsedGrowthDeviation then '++'
 			when GC_UGR_GatheredConstruct_UsedGrowth > GC_UGN_GatheredConstruct_UsedGrowthNormal + UsedGrowthPercentage then '+'
-			when GC_UGR_GatheredConstruct_UsedGrowth < GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage - GC_UGD_GatheredConstruct_UsedGrowthDeviation then '--'
+			when GC_UGR_GatheredConstruct_UsedGrowth < GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage - @numberOfStandardDeviations * GC_UGD_GatheredConstruct_UsedGrowthDeviation then '--'
 			when GC_UGR_GatheredConstruct_UsedGrowth < GC_UGN_GatheredConstruct_UsedGrowthNormal - UsedGrowthPercentage then '-'
 		end as GC_UGR_GatheredConstruct_UsedGrowthTrend,
 		@gatheringTime,
 		case
 			when GC_AGR_GatheredConstruct_AllocatedGrowth between GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage and GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage then '0'
-			when GC_AGR_GatheredConstruct_AllocatedGrowth > GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage + GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '++'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth > GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage + @numberOfStandardDeviations * GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '++'
 			when GC_AGR_GatheredConstruct_AllocatedGrowth > GC_AGN_GatheredConstruct_AllocatedGrowthNormal + AllocatedGrowthPercentage then '+'
-			when GC_AGR_GatheredConstruct_AllocatedGrowth < GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage - GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '--'
+			when GC_AGR_GatheredConstruct_AllocatedGrowth < GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage - @numberOfStandardDeviations * GC_AGD_GatheredConstruct_AllocatedGrowthDeviation then '--'
 			when GC_AGR_GatheredConstruct_AllocatedGrowth < GC_AGN_GatheredConstruct_AllocatedGrowthNormal - AllocatedGrowthPercentage then '-'
 		end as GC_AGR_GatheredConstruct_AllocatedGrowthTrend,
 		@gatheringTime,
