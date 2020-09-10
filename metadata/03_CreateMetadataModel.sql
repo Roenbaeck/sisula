@@ -7,8 +7,18 @@
 -- MD5 function -------------------------------------------------------------------------------------------------------
 -- MD5 hashing function
 -----------------------------------------------------------------------------------------------------------------------
+DECLARE @version smallint =
+    CASE 
+        WHEN patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
+        THEN substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
+        ELSE 0
+    END
 IF Object_Id('metadata.MD5', 'FS') IS NULL
 BEGIN
+    -- since some version of 2017 assemblies must be explicitly whitelisted
+    IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+        IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636)
+            EXEC sys.sp_add_trusted_assembly @hash = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636, @description = N'Anchor';
     CREATE ASSEMBLY Anchor
     AUTHORIZATION dbo
     -- you can use the DLL instead if you substitute for your path:
@@ -20,11 +30,9 @@ BEGIN
     CREATE FUNCTION metadata.MD5(@binaryData AS varbinary(max))
     RETURNS varbinary(16) AS EXTERNAL NAME Anchor.Utilities.HashMD5
     ');
+    EXEC sys.sp_configure 'clr enabled', 1;
+    reconfigure with override;
 END
-GO
-sp_configure 'clr enabled', 1;
-GO
-reconfigure with override;
 GO
 -- KNOTS --------------------------------------------------------------------------------------------------------------
 --
@@ -80,6 +88,81 @@ CREATE TABLE [metadata].[CFT_ConfigurationType] (
     )
 );
 GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- WON_WorkName table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WON_WorkName', 'U') IS NULL
+CREATE TABLE [metadata].[WON_WorkName] (
+    WON_ID int IDENTITY(1,1) not null,
+    WON_WorkName varchar(255) not null,
+    constraint pkWON_WorkName primary key (
+        WON_ID asc
+    ),
+    constraint uqWON_WorkName unique (
+        WON_WorkName
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- WIU_WorkInvocationUser table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WIU_WorkInvocationUser', 'U') IS NULL
+CREATE TABLE [metadata].[WIU_WorkInvocationUser] (
+    WIU_ID smallint IDENTITY(1,1) not null,
+    WIU_WorkInvocationUser varchar(555) not null,
+    constraint pkWIU_WorkInvocationUser primary key (
+        WIU_ID asc
+    ),
+    constraint uqWIU_WorkInvocationUser unique (
+        WIU_WorkInvocationUser
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- WIR_WorkInvocationRole table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.WIR_WorkInvocationRole', 'U') IS NULL
+CREATE TABLE [metadata].[WIR_WorkInvocationRole] (
+    WIR_ID smallint IDENTITY(1,1) not null,
+    WIR_WorkInvocationRole varchar(42) not null,
+    constraint pkWIR_WorkInvocationRole primary key (
+        WIR_ID asc
+    ),
+    constraint uqWIR_WorkInvocationRole unique (
+        WIR_WorkInvocationRole
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- JON_JobName table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.JON_JobName', 'U') IS NULL
+CREATE TABLE [metadata].[JON_JobName] (
+    JON_ID int IDENTITY(1,1) not null,
+    JON_JobName varchar(255) not null,
+    constraint pkJON_JobName primary key (
+        JON_ID asc
+    ),
+    constraint uqJON_JobName unique (
+        JON_JobName
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- AID_AgentJobId table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata.AID_AgentJobId', 'U') IS NULL
+CREATE TABLE [metadata].[AID_AgentJobId] (
+    AID_ID int IDENTITY(1,1) not null,
+    AID_AgentJobId uniqueidentifier not null,
+    constraint pkAID_AgentJobId primary key (
+        AID_ID asc
+    ),
+    constraint uqAID_AgentJobId unique (
+        AID_AgentJobId
+    )
+);
+GO
 -- ANCHORS AND ATTRIBUTES ---------------------------------------------------------------------------------------------
 --
 -- Anchors are used to store the identities of entities.
@@ -131,16 +214,19 @@ CREATE TABLE [metadata].[JB_END_Job_End] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Knotted static attribute table -------------------------------------------------------------------------------------
 -- JB_NAM_Job_Name table (on JB_Job)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.JB_NAM_Job_Name', 'U') IS NULL
 CREATE TABLE [metadata].[JB_NAM_Job_Name] (
     JB_NAM_JB_ID int not null,
-    JB_NAM_Job_Name varchar(255) not null,
-    constraint fkJB_NAM_Job_Name foreign key (
+    JB_NAM_JON_ID int not null,
+    constraint fk_A_JB_NAM_Job_Name foreign key (
         JB_NAM_JB_ID
     ) references [metadata].[JB_Job](JB_ID),
+    constraint fk_K_JB_NAM_Job_Name foreign key (
+        JB_NAM_JON_ID
+    ) references [metadata].[JON_JobName](JON_ID),
     constraint pkJB_NAM_Job_Name primary key (
         JB_NAM_JB_ID asc
     )
@@ -166,16 +252,19 @@ CREATE TABLE [metadata].[JB_EST_Job_ExecutionStatus] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Knotted static attribute table -------------------------------------------------------------------------------------
 -- JB_AID_Job_AgentJobId table (on JB_Job)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.JB_AID_Job_AgentJobId', 'U') IS NULL
 CREATE TABLE [metadata].[JB_AID_Job_AgentJobId] (
     JB_AID_JB_ID int not null,
-    JB_AID_Job_AgentJobId uniqueidentifier not null,
-    constraint fkJB_AID_Job_AgentJobId foreign key (
+    JB_AID_AID_ID int not null,
+    constraint fk_A_JB_AID_Job_AgentJobId foreign key (
         JB_AID_JB_ID
     ) references [metadata].[JB_Job](JB_ID),
+    constraint fk_K_JB_AID_Job_AgentJobId foreign key (
+        JB_AID_AID_ID
+    ) references [metadata].[AID_AgentJobId](AID_ID),
     constraint pkJB_AID_Job_AgentJobId primary key (
         JB_AID_JB_ID asc
     )
@@ -300,46 +389,55 @@ CREATE TABLE [metadata].[WO_END_Work_End] (
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Knotted static attribute table -------------------------------------------------------------------------------------
 -- WO_NAM_Work_Name table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_NAM_Work_Name', 'U') IS NULL
 CREATE TABLE [metadata].[WO_NAM_Work_Name] (
     WO_NAM_WO_ID int not null,
-    WO_NAM_Work_Name varchar(255) not null,
-    constraint fkWO_NAM_Work_Name foreign key (
+    WO_NAM_WON_ID int not null,
+    constraint fk_A_WO_NAM_Work_Name foreign key (
         WO_NAM_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
+    constraint fk_K_WO_NAM_Work_Name foreign key (
+        WO_NAM_WON_ID
+    ) references [metadata].[WON_WorkName](WON_ID),
     constraint pkWO_NAM_Work_Name primary key (
         WO_NAM_WO_ID asc
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Knotted static attribute table -------------------------------------------------------------------------------------
 -- WO_USR_Work_InvocationUser table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_USR_Work_InvocationUser', 'U') IS NULL
 CREATE TABLE [metadata].[WO_USR_Work_InvocationUser] (
     WO_USR_WO_ID int not null,
-    WO_USR_Work_InvocationUser varchar(555) not null,
-    constraint fkWO_USR_Work_InvocationUser foreign key (
+    WO_USR_WIU_ID smallint not null,
+    constraint fk_A_WO_USR_Work_InvocationUser foreign key (
         WO_USR_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
+    constraint fk_K_WO_USR_Work_InvocationUser foreign key (
+        WO_USR_WIU_ID
+    ) references [metadata].[WIU_WorkInvocationUser](WIU_ID),
     constraint pkWO_USR_Work_InvocationUser primary key (
         WO_USR_WO_ID asc
     )
 );
 GO
--- Static attribute table ---------------------------------------------------------------------------------------------
+-- Knotted static attribute table -------------------------------------------------------------------------------------
 -- WO_ROL_Work_InvocationRole table (on WO_Work)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('metadata.WO_ROL_Work_InvocationRole', 'U') IS NULL
 CREATE TABLE [metadata].[WO_ROL_Work_InvocationRole] (
     WO_ROL_WO_ID int not null,
-    WO_ROL_Work_InvocationRole varchar(42) not null,
-    constraint fkWO_ROL_Work_InvocationRole foreign key (
+    WO_ROL_WIR_ID smallint not null,
+    constraint fk_A_WO_ROL_Work_InvocationRole foreign key (
         WO_ROL_WO_ID
     ) references [metadata].[WO_Work](WO_ID),
+    constraint fk_K_WO_ROL_Work_InvocationRole foreign key (
+        WO_ROL_WIR_ID
+    ) references [metadata].[WIR_WorkInvocationRole](WIR_ID),
     constraint pkWO_ROL_Work_InvocationRole primary key (
         WO_ROL_WO_ID asc
     )
@@ -1498,13 +1596,15 @@ SELECT
     [END].JB_END_JB_ID,
     [END].JB_END_Job_End,
     [NAM].JB_NAM_JB_ID,
-    [NAM].JB_NAM_Job_Name,
+    [kNAM].JON_JobName AS JB_NAM_JON_JobName,
+    [NAM].JB_NAM_JON_ID,
     [EST].JB_EST_JB_ID,
     [EST].JB_EST_ChangedAt,
     [kEST].EST_ExecutionStatus AS JB_EST_EST_ExecutionStatus,
     [EST].JB_EST_EST_ID,
     [AID].JB_AID_JB_ID,
-    [AID].JB_AID_Job_AgentJobId
+    [kAID].AID_AgentJobId AS JB_AID_AID_AgentJobId,
+    [AID].JB_AID_AID_ID
 FROM
     [metadata].[JB_Job] [JB]
 LEFT JOIN
@@ -1519,6 +1619,10 @@ LEFT JOIN
     [metadata].[JB_NAM_Job_Name] [NAM]
 ON
     [NAM].JB_NAM_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[JON_JobName] [kNAM]
+ON
+    [kNAM].JON_ID = [NAM].JB_NAM_JON_ID
 LEFT JOIN
     [metadata].[JB_EST_Job_ExecutionStatus] [EST]
 ON
@@ -1539,7 +1643,11 @@ ON
 LEFT JOIN
     [metadata].[JB_AID_Job_AgentJobId] [AID]
 ON
-    [AID].JB_AID_JB_ID = [JB].JB_ID;
+    [AID].JB_AID_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[AID_AgentJobId] [kAID]
+ON
+    [kAID].AID_ID = [AID].JB_AID_AID_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pJB_Job viewed as it was on the given timepoint
@@ -1555,13 +1663,15 @@ SELECT
     [END].JB_END_JB_ID,
     [END].JB_END_Job_End,
     [NAM].JB_NAM_JB_ID,
-    [NAM].JB_NAM_Job_Name,
+    [kNAM].JON_JobName AS JB_NAM_JON_JobName,
+    [NAM].JB_NAM_JON_ID,
     [EST].JB_EST_JB_ID,
     [EST].JB_EST_ChangedAt,
     [kEST].EST_ExecutionStatus AS JB_EST_EST_ExecutionStatus,
     [EST].JB_EST_EST_ID,
     [AID].JB_AID_JB_ID,
-    [AID].JB_AID_Job_AgentJobId
+    [kAID].AID_AgentJobId AS JB_AID_AID_AgentJobId,
+    [AID].JB_AID_AID_ID
 FROM
     [metadata].[JB_Job] [JB]
 LEFT JOIN
@@ -1576,6 +1686,10 @@ LEFT JOIN
     [metadata].[JB_NAM_Job_Name] [NAM]
 ON
     [NAM].JB_NAM_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[JON_JobName] [kNAM]
+ON
+    [kNAM].JON_ID = [NAM].JB_NAM_JON_ID
 LEFT JOIN
     [metadata].[rJB_EST_Job_ExecutionStatus](@changingTimepoint) [EST]
 ON
@@ -1596,7 +1710,11 @@ ON
 LEFT JOIN
     [metadata].[JB_AID_Job_AgentJobId] [AID]
 ON
-    [AID].JB_AID_JB_ID = [JB].JB_ID;
+    [AID].JB_AID_JB_ID = [JB].JB_ID
+LEFT JOIN
+    [metadata].[AID_AgentJobId] [kAID]
+ON
+    [kAID].AID_ID = [AID].JB_AID_AID_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nJB_Job viewed as it currently is (cannot include future versions)
@@ -1808,11 +1926,14 @@ SELECT
     [END].WO_END_WO_ID,
     [END].WO_END_Work_End,
     [NAM].WO_NAM_WO_ID,
-    [NAM].WO_NAM_Work_Name,
+    [kNAM].WON_WorkName AS WO_NAM_WON_WorkName,
+    [NAM].WO_NAM_WON_ID,
     [USR].WO_USR_WO_ID,
-    [USR].WO_USR_Work_InvocationUser,
+    [kUSR].WIU_WorkInvocationUser AS WO_USR_WIU_WorkInvocationUser,
+    [USR].WO_USR_WIU_ID,
     [ROL].WO_ROL_WO_ID,
-    [ROL].WO_ROL_Work_InvocationRole,
+    [kROL].WIR_WorkInvocationRole AS WO_ROL_WIR_WorkInvocationRole,
+    [ROL].WO_ROL_WIR_ID,
     [EST].WO_EST_WO_ID,
     [EST].WO_EST_ChangedAt,
     [kEST].EST_ExecutionStatus AS WO_EST_EST_ExecutionStatus,
@@ -1838,13 +1959,25 @@ LEFT JOIN
 ON
     [NAM].WO_NAM_WO_ID = [WO].WO_ID
 LEFT JOIN
+    [metadata].[WON_WorkName] [kNAM]
+ON
+    [kNAM].WON_ID = [NAM].WO_NAM_WON_ID
+LEFT JOIN
     [metadata].[WO_USR_Work_InvocationUser] [USR]
 ON
     [USR].WO_USR_WO_ID = [WO].WO_ID
 LEFT JOIN
+    [metadata].[WIU_WorkInvocationUser] [kUSR]
+ON
+    [kUSR].WIU_ID = [USR].WO_USR_WIU_ID
+LEFT JOIN
     [metadata].[WO_ROL_Work_InvocationRole] [ROL]
 ON
     [ROL].WO_ROL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WIR_WorkInvocationRole] [kROL]
+ON
+    [kROL].WIR_ID = [ROL].WO_ROL_WIR_ID
 LEFT JOIN
     [metadata].[WO_EST_Work_ExecutionStatus] [EST]
 ON
@@ -1889,11 +2022,14 @@ SELECT
     [END].WO_END_WO_ID,
     [END].WO_END_Work_End,
     [NAM].WO_NAM_WO_ID,
-    [NAM].WO_NAM_Work_Name,
+    [kNAM].WON_WorkName AS WO_NAM_WON_WorkName,
+    [NAM].WO_NAM_WON_ID,
     [USR].WO_USR_WO_ID,
-    [USR].WO_USR_Work_InvocationUser,
+    [kUSR].WIU_WorkInvocationUser AS WO_USR_WIU_WorkInvocationUser,
+    [USR].WO_USR_WIU_ID,
     [ROL].WO_ROL_WO_ID,
-    [ROL].WO_ROL_Work_InvocationRole,
+    [kROL].WIR_WorkInvocationRole AS WO_ROL_WIR_WorkInvocationRole,
+    [ROL].WO_ROL_WIR_ID,
     [EST].WO_EST_WO_ID,
     [EST].WO_EST_ChangedAt,
     [kEST].EST_ExecutionStatus AS WO_EST_EST_ExecutionStatus,
@@ -1919,13 +2055,25 @@ LEFT JOIN
 ON
     [NAM].WO_NAM_WO_ID = [WO].WO_ID
 LEFT JOIN
+    [metadata].[WON_WorkName] [kNAM]
+ON
+    [kNAM].WON_ID = [NAM].WO_NAM_WON_ID
+LEFT JOIN
     [metadata].[WO_USR_Work_InvocationUser] [USR]
 ON
     [USR].WO_USR_WO_ID = [WO].WO_ID
 LEFT JOIN
+    [metadata].[WIU_WorkInvocationUser] [kUSR]
+ON
+    [kUSR].WIU_ID = [USR].WO_USR_WIU_ID
+LEFT JOIN
     [metadata].[WO_ROL_Work_InvocationRole] [ROL]
 ON
     [ROL].WO_ROL_WO_ID = [WO].WO_ID
+LEFT JOIN
+    [metadata].[WIR_WorkInvocationRole] [kROL]
+ON
+    [kROL].WIR_ID = [ROL].WO_ROL_WIR_ID
 LEFT JOIN
     [metadata].[rWO_EST_Work_ExecutionStatus](@changingTimepoint) [EST]
 ON
@@ -2507,7 +2655,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @JB_NAM_Job_Name TABLE (
         JB_NAM_JB_ID int not null,
-        JB_NAM_Job_Name varchar(255) not null,
+        JB_NAM_JON_ID int not null, 
         JB_NAM_Version bigint not null,
         JB_NAM_StatementType char(1) not null,
         primary key(
@@ -2518,7 +2666,7 @@ BEGIN
     INSERT INTO @JB_NAM_Job_Name
     SELECT
         i.JB_NAM_JB_ID,
-        i.JB_NAM_Job_Name,
+        i.JB_NAM_JON_ID,
         ROW_NUMBER() OVER (
             PARTITION BY
                 i.JB_NAM_JB_ID
@@ -2551,16 +2699,16 @@ BEGIN
         ON
             [NAM].JB_NAM_JB_ID = v.JB_NAM_JB_ID
         AND
-            [NAM].JB_NAM_Job_Name = v.JB_NAM_Job_Name
+            [NAM].JB_NAM_JON_ID = v.JB_NAM_JON_ID
         WHERE
             v.JB_NAM_Version = @currentVersion;
         INSERT INTO [metadata].[JB_NAM_Job_Name] (
             JB_NAM_JB_ID,
-            JB_NAM_Job_Name
+            JB_NAM_JON_ID
         )
         SELECT
             JB_NAM_JB_ID,
-            JB_NAM_Job_Name
+            JB_NAM_JON_ID
         FROM
             @JB_NAM_Job_Name
         WHERE
@@ -2703,7 +2851,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @JB_AID_Job_AgentJobId TABLE (
         JB_AID_JB_ID int not null,
-        JB_AID_Job_AgentJobId uniqueidentifier not null,
+        JB_AID_AID_ID int not null, 
         JB_AID_Version bigint not null,
         JB_AID_StatementType char(1) not null,
         primary key(
@@ -2714,7 +2862,7 @@ BEGIN
     INSERT INTO @JB_AID_Job_AgentJobId
     SELECT
         i.JB_AID_JB_ID,
-        i.JB_AID_Job_AgentJobId,
+        i.JB_AID_AID_ID,
         ROW_NUMBER() OVER (
             PARTITION BY
                 i.JB_AID_JB_ID
@@ -2747,16 +2895,16 @@ BEGIN
         ON
             [AID].JB_AID_JB_ID = v.JB_AID_JB_ID
         AND
-            [AID].JB_AID_Job_AgentJobId = v.JB_AID_Job_AgentJobId
+            [AID].JB_AID_AID_ID = v.JB_AID_AID_ID
         WHERE
             v.JB_AID_Version = @currentVersion;
         INSERT INTO [metadata].[JB_AID_Job_AgentJobId] (
             JB_AID_JB_ID,
-            JB_AID_Job_AgentJobId
+            JB_AID_AID_ID
         )
         SELECT
             JB_AID_JB_ID,
-            JB_AID_Job_AgentJobId
+            JB_AID_AID_ID
         FROM
             @JB_AID_Job_AgentJobId
         WHERE
@@ -3289,7 +3437,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_NAM_Work_Name TABLE (
         WO_NAM_WO_ID int not null,
-        WO_NAM_Work_Name varchar(255) not null,
+        WO_NAM_WON_ID int not null, 
         WO_NAM_Version bigint not null,
         WO_NAM_StatementType char(1) not null,
         primary key(
@@ -3300,7 +3448,7 @@ BEGIN
     INSERT INTO @WO_NAM_Work_Name
     SELECT
         i.WO_NAM_WO_ID,
-        i.WO_NAM_Work_Name,
+        i.WO_NAM_WON_ID,
         ROW_NUMBER() OVER (
             PARTITION BY
                 i.WO_NAM_WO_ID
@@ -3333,16 +3481,16 @@ BEGIN
         ON
             [NAM].WO_NAM_WO_ID = v.WO_NAM_WO_ID
         AND
-            [NAM].WO_NAM_Work_Name = v.WO_NAM_Work_Name
+            [NAM].WO_NAM_WON_ID = v.WO_NAM_WON_ID
         WHERE
             v.WO_NAM_Version = @currentVersion;
         INSERT INTO [metadata].[WO_NAM_Work_Name] (
             WO_NAM_WO_ID,
-            WO_NAM_Work_Name
+            WO_NAM_WON_ID
         )
         SELECT
             WO_NAM_WO_ID,
-            WO_NAM_Work_Name
+            WO_NAM_WON_ID
         FROM
             @WO_NAM_Work_Name
         WHERE
@@ -3367,7 +3515,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_USR_Work_InvocationUser TABLE (
         WO_USR_WO_ID int not null,
-        WO_USR_Work_InvocationUser varchar(555) not null,
+        WO_USR_WIU_ID smallint not null, 
         WO_USR_Version bigint not null,
         WO_USR_StatementType char(1) not null,
         primary key(
@@ -3378,7 +3526,7 @@ BEGIN
     INSERT INTO @WO_USR_Work_InvocationUser
     SELECT
         i.WO_USR_WO_ID,
-        i.WO_USR_Work_InvocationUser,
+        i.WO_USR_WIU_ID,
         ROW_NUMBER() OVER (
             PARTITION BY
                 i.WO_USR_WO_ID
@@ -3411,16 +3559,16 @@ BEGIN
         ON
             [USR].WO_USR_WO_ID = v.WO_USR_WO_ID
         AND
-            [USR].WO_USR_Work_InvocationUser = v.WO_USR_Work_InvocationUser
+            [USR].WO_USR_WIU_ID = v.WO_USR_WIU_ID
         WHERE
             v.WO_USR_Version = @currentVersion;
         INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
             WO_USR_WO_ID,
-            WO_USR_Work_InvocationUser
+            WO_USR_WIU_ID
         )
         SELECT
             WO_USR_WO_ID,
-            WO_USR_Work_InvocationUser
+            WO_USR_WIU_ID
         FROM
             @WO_USR_Work_InvocationUser
         WHERE
@@ -3445,7 +3593,7 @@ BEGIN
     DECLARE @currentVersion int;
     DECLARE @WO_ROL_Work_InvocationRole TABLE (
         WO_ROL_WO_ID int not null,
-        WO_ROL_Work_InvocationRole varchar(42) not null,
+        WO_ROL_WIR_ID smallint not null, 
         WO_ROL_Version bigint not null,
         WO_ROL_StatementType char(1) not null,
         primary key(
@@ -3456,7 +3604,7 @@ BEGIN
     INSERT INTO @WO_ROL_Work_InvocationRole
     SELECT
         i.WO_ROL_WO_ID,
-        i.WO_ROL_Work_InvocationRole,
+        i.WO_ROL_WIR_ID,
         ROW_NUMBER() OVER (
             PARTITION BY
                 i.WO_ROL_WO_ID
@@ -3489,16 +3637,16 @@ BEGIN
         ON
             [ROL].WO_ROL_WO_ID = v.WO_ROL_WO_ID
         AND
-            [ROL].WO_ROL_Work_InvocationRole = v.WO_ROL_Work_InvocationRole
+            [ROL].WO_ROL_WIR_ID = v.WO_ROL_WIR_ID
         WHERE
             v.WO_ROL_Version = @currentVersion;
         INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
             WO_ROL_WO_ID,
-            WO_ROL_Work_InvocationRole
+            WO_ROL_WIR_ID
         )
         SELECT
             WO_ROL_WO_ID,
-            WO_ROL_Work_InvocationRole
+            WO_ROL_WIR_ID
         FROM
             @WO_ROL_Work_InvocationRole
         WHERE
@@ -4536,13 +4684,15 @@ BEGIN
         JB_END_JB_ID int null,
         JB_END_Job_End datetime2(7) null,
         JB_NAM_JB_ID int null,
-        JB_NAM_Job_Name varchar(255) null,
+        JB_NAM_JON_JobName varchar(255) null,
+        JB_NAM_JON_ID int null,
         JB_EST_JB_ID int null,
         JB_EST_ChangedAt datetime2(7) null,
         JB_EST_EST_ExecutionStatus varchar(42) null,
         JB_EST_EST_ID tinyint null,
         JB_AID_JB_ID int null,
-        JB_AID_Job_AgentJobId uniqueidentifier null
+        JB_AID_AID_AgentJobId uniqueidentifier null,
+        JB_AID_AID_ID int null
     );
     INSERT INTO @inserted
     SELECT
@@ -4552,13 +4702,15 @@ BEGIN
         ISNULL(ISNULL(i.JB_END_JB_ID, i.JB_ID), a.JB_ID),
         i.JB_END_Job_End,
         ISNULL(ISNULL(i.JB_NAM_JB_ID, i.JB_ID), a.JB_ID),
-        i.JB_NAM_Job_Name,
+        i.JB_NAM_JON_JobName,
+        i.JB_NAM_JON_ID,
         ISNULL(ISNULL(i.JB_EST_JB_ID, i.JB_ID), a.JB_ID),
         ISNULL(i.JB_EST_ChangedAt, @now),
         i.JB_EST_EST_ExecutionStatus,
         i.JB_EST_EST_ID,
         ISNULL(ISNULL(i.JB_AID_JB_ID, i.JB_ID), a.JB_ID),
-        i.JB_AID_Job_AgentJobId
+        i.JB_AID_AID_AgentJobId,
+        i.JB_AID_AID_ID
     FROM (
         SELECT
             JB_ID,
@@ -4567,13 +4719,15 @@ BEGIN
             JB_END_JB_ID,
             JB_END_Job_End,
             JB_NAM_JB_ID,
-            JB_NAM_Job_Name,
+            JB_NAM_JON_JobName,
+            JB_NAM_JON_ID,
             JB_EST_JB_ID,
             JB_EST_ChangedAt,
             JB_EST_EST_ExecutionStatus,
             JB_EST_EST_ID,
             JB_AID_JB_ID,
-            JB_AID_Job_AgentJobId,
+            JB_AID_AID_AgentJobId,
+            JB_AID_AID_ID,
             ROW_NUMBER() OVER (PARTITION BY JB_ID ORDER BY JB_ID) AS Row
         FROM
             inserted
@@ -4606,15 +4760,19 @@ BEGIN
         i.JB_END_Job_End is not null;
     INSERT INTO [metadata].[JB_NAM_Job_Name] (
         JB_NAM_JB_ID,
-        JB_NAM_Job_Name
+        JB_NAM_JON_ID
     )
     SELECT
         i.JB_NAM_JB_ID,
-        i.JB_NAM_Job_Name
+        ISNULL(i.JB_NAM_JON_ID, [kJON].JON_ID) 
     FROM
         @inserted i
+    LEFT JOIN
+        [metadata].[JON_JobName] [kJON]
+    ON
+        [kJON].JON_JobName = i.JB_NAM_JON_JobName
     WHERE
-        i.JB_NAM_Job_Name is not null;
+        ISNULL(i.JB_NAM_JON_ID, [kJON].JON_ID) is not null;
     INSERT INTO [metadata].[JB_EST_Job_ExecutionStatus] (
         JB_EST_JB_ID,
         JB_EST_ChangedAt,
@@ -4634,15 +4792,19 @@ BEGIN
         ISNULL(i.JB_EST_EST_ID, [kEST].EST_ID) is not null;
     INSERT INTO [metadata].[JB_AID_Job_AgentJobId] (
         JB_AID_JB_ID,
-        JB_AID_Job_AgentJobId
+        JB_AID_AID_ID
     )
     SELECT
         i.JB_AID_JB_ID,
-        i.JB_AID_Job_AgentJobId
+        ISNULL(i.JB_AID_AID_ID, [kAID].AID_ID) 
     FROM
         @inserted i
+    LEFT JOIN
+        [metadata].[AID_AgentJobId] [kAID]
+    ON
+        [kAID].AID_AgentJobId = i.JB_AID_AID_AgentJobId
     WHERE
-        i.JB_AID_Job_AgentJobId is not null;
+        ISNULL(i.JB_AID_AID_ID, [kAID].AID_ID) is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -4695,21 +4857,27 @@ BEGIN
     END
     IF(UPDATE(JB_NAM_JB_ID))
         RAISERROR('The foreign key column JB_NAM_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_NAM_Job_Name))
-        RAISERROR('The static column JB_NAM_Job_Name is not updatable, and only missing values have been added.', 0, 1);
-    IF(UPDATE(JB_NAM_Job_Name))
+    IF (UPDATE(JB_NAM_JON_ID))
+        RAISERROR('The static column JB_NAM_JON_ID is not updatable, and only missing values have been added.', 0, 1);
+    IF (UPDATE(JB_NAM_JON_JobName))
+        RAISERROR('The static column JB_NAM_JON_JobName is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(JB_NAM_JON_ID) OR UPDATE(JB_NAM_JON_JobName))
     BEGIN
         INSERT INTO [metadata].[JB_NAM_Job_Name] (
             JB_NAM_JB_ID,
-            JB_NAM_Job_Name
+            JB_NAM_JON_ID
         )
         SELECT
             ISNULL(i.JB_NAM_JB_ID, i.JB_ID),
-            i.JB_NAM_Job_Name
+            CASE WHEN UPDATE(JB_NAM_JON_ID) THEN i.JB_NAM_JON_ID ELSE [kJON].JON_ID END
         FROM
             inserted i
+        LEFT JOIN
+            [metadata].[JON_JobName] [kJON]
+        ON
+            [kJON].JON_JobName = i.JB_NAM_JON_JobName
         WHERE
-            i.JB_NAM_Job_Name is not null;
+            CASE WHEN UPDATE(JB_NAM_JON_ID) THEN i.JB_NAM_JON_ID ELSE [kJON].JON_ID END is not null;
     END
     IF(UPDATE(JB_EST_JB_ID))
         RAISERROR('The foreign key column JB_EST_JB_ID is not updatable.', 16, 1);
@@ -4738,21 +4906,27 @@ BEGIN
     END
     IF(UPDATE(JB_AID_JB_ID))
         RAISERROR('The foreign key column JB_AID_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_AID_Job_AgentJobId))
-        RAISERROR('The static column JB_AID_Job_AgentJobId is not updatable, and only missing values have been added.', 0, 1);
-    IF(UPDATE(JB_AID_Job_AgentJobId))
+    IF (UPDATE(JB_AID_AID_ID))
+        RAISERROR('The static column JB_AID_AID_ID is not updatable, and only missing values have been added.', 0, 1);
+    IF (UPDATE(JB_AID_AID_AgentJobId))
+        RAISERROR('The static column JB_AID_AID_AgentJobId is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(JB_AID_AID_ID) OR UPDATE(JB_AID_AID_AgentJobId))
     BEGIN
         INSERT INTO [metadata].[JB_AID_Job_AgentJobId] (
             JB_AID_JB_ID,
-            JB_AID_Job_AgentJobId
+            JB_AID_AID_ID
         )
         SELECT
             ISNULL(i.JB_AID_JB_ID, i.JB_ID),
-            i.JB_AID_Job_AgentJobId
+            CASE WHEN UPDATE(JB_AID_AID_ID) THEN i.JB_AID_AID_ID ELSE [kAID].AID_ID END
         FROM
             inserted i
+        LEFT JOIN
+            [metadata].[AID_AgentJobId] [kAID]
+        ON
+            [kAID].AID_AgentJobId = i.JB_AID_AID_AgentJobId
         WHERE
-            i.JB_AID_Job_AgentJobId is not null;
+            CASE WHEN UPDATE(JB_AID_AID_ID) THEN i.JB_AID_AID_ID ELSE [kAID].AID_ID END is not null;
     END
 END
 GO
@@ -5158,11 +5332,14 @@ BEGIN
         WO_END_WO_ID int null,
         WO_END_Work_End datetime2(7) null,
         WO_NAM_WO_ID int null,
-        WO_NAM_Work_Name varchar(255) null,
+        WO_NAM_WON_WorkName varchar(255) null,
+        WO_NAM_WON_ID int null,
         WO_USR_WO_ID int null,
-        WO_USR_Work_InvocationUser varchar(555) null,
+        WO_USR_WIU_WorkInvocationUser varchar(555) null,
+        WO_USR_WIU_ID smallint null,
         WO_ROL_WO_ID int null,
-        WO_ROL_Work_InvocationRole varchar(42) null,
+        WO_ROL_WIR_WorkInvocationRole varchar(42) null,
+        WO_ROL_WIR_ID smallint null,
         WO_EST_WO_ID int null,
         WO_EST_ChangedAt datetime2(7) null,
         WO_EST_EST_ExecutionStatus varchar(42) null,
@@ -5182,11 +5359,14 @@ BEGIN
         ISNULL(ISNULL(i.WO_END_WO_ID, i.WO_ID), a.WO_ID),
         i.WO_END_Work_End,
         ISNULL(ISNULL(i.WO_NAM_WO_ID, i.WO_ID), a.WO_ID),
-        i.WO_NAM_Work_Name,
+        i.WO_NAM_WON_WorkName,
+        i.WO_NAM_WON_ID,
         ISNULL(ISNULL(i.WO_USR_WO_ID, i.WO_ID), a.WO_ID),
-        i.WO_USR_Work_InvocationUser,
+        i.WO_USR_WIU_WorkInvocationUser,
+        i.WO_USR_WIU_ID,
         ISNULL(ISNULL(i.WO_ROL_WO_ID, i.WO_ID), a.WO_ID),
-        i.WO_ROL_Work_InvocationRole,
+        i.WO_ROL_WIR_WorkInvocationRole,
+        i.WO_ROL_WIR_ID,
         ISNULL(ISNULL(i.WO_EST_WO_ID, i.WO_ID), a.WO_ID),
         ISNULL(i.WO_EST_ChangedAt, @now),
         i.WO_EST_EST_ExecutionStatus,
@@ -5205,11 +5385,14 @@ BEGIN
             WO_END_WO_ID,
             WO_END_Work_End,
             WO_NAM_WO_ID,
-            WO_NAM_Work_Name,
+            WO_NAM_WON_WorkName,
+            WO_NAM_WON_ID,
             WO_USR_WO_ID,
-            WO_USR_Work_InvocationUser,
+            WO_USR_WIU_WorkInvocationUser,
+            WO_USR_WIU_ID,
             WO_ROL_WO_ID,
-            WO_ROL_Work_InvocationRole,
+            WO_ROL_WIR_WorkInvocationRole,
+            WO_ROL_WIR_ID,
             WO_EST_WO_ID,
             WO_EST_ChangedAt,
             WO_EST_EST_ExecutionStatus,
@@ -5252,37 +5435,49 @@ BEGIN
         i.WO_END_Work_End is not null;
     INSERT INTO [metadata].[WO_NAM_Work_Name] (
         WO_NAM_WO_ID,
-        WO_NAM_Work_Name
+        WO_NAM_WON_ID
     )
     SELECT
         i.WO_NAM_WO_ID,
-        i.WO_NAM_Work_Name
+        ISNULL(i.WO_NAM_WON_ID, [kWON].WON_ID) 
     FROM
         @inserted i
+    LEFT JOIN
+        [metadata].[WON_WorkName] [kWON]
+    ON
+        [kWON].WON_WorkName = i.WO_NAM_WON_WorkName
     WHERE
-        i.WO_NAM_Work_Name is not null;
+        ISNULL(i.WO_NAM_WON_ID, [kWON].WON_ID) is not null;
     INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
         WO_USR_WO_ID,
-        WO_USR_Work_InvocationUser
+        WO_USR_WIU_ID
     )
     SELECT
         i.WO_USR_WO_ID,
-        i.WO_USR_Work_InvocationUser
+        ISNULL(i.WO_USR_WIU_ID, [kWIU].WIU_ID) 
     FROM
         @inserted i
+    LEFT JOIN
+        [metadata].[WIU_WorkInvocationUser] [kWIU]
+    ON
+        [kWIU].WIU_WorkInvocationUser = i.WO_USR_WIU_WorkInvocationUser
     WHERE
-        i.WO_USR_Work_InvocationUser is not null;
+        ISNULL(i.WO_USR_WIU_ID, [kWIU].WIU_ID) is not null;
     INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
         WO_ROL_WO_ID,
-        WO_ROL_Work_InvocationRole
+        WO_ROL_WIR_ID
     )
     SELECT
         i.WO_ROL_WO_ID,
-        i.WO_ROL_Work_InvocationRole
+        ISNULL(i.WO_ROL_WIR_ID, [kWIR].WIR_ID) 
     FROM
         @inserted i
+    LEFT JOIN
+        [metadata].[WIR_WorkInvocationRole] [kWIR]
+    ON
+        [kWIR].WIR_WorkInvocationRole = i.WO_ROL_WIR_WorkInvocationRole
     WHERE
-        i.WO_ROL_Work_InvocationRole is not null;
+        ISNULL(i.WO_ROL_WIR_ID, [kWIR].WIR_ID) is not null;
     INSERT INTO [metadata].[WO_EST_Work_ExecutionStatus] (
         WO_EST_WO_ID,
         WO_EST_ChangedAt,
@@ -5385,57 +5580,75 @@ BEGIN
     END
     IF(UPDATE(WO_NAM_WO_ID))
         RAISERROR('The foreign key column WO_NAM_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_NAM_Work_Name))
-        RAISERROR('The static column WO_NAM_Work_Name is not updatable, and only missing values have been added.', 0, 1);
-    IF(UPDATE(WO_NAM_Work_Name))
+    IF (UPDATE(WO_NAM_WON_ID))
+        RAISERROR('The static column WO_NAM_WON_ID is not updatable, and only missing values have been added.', 0, 1);
+    IF (UPDATE(WO_NAM_WON_WorkName))
+        RAISERROR('The static column WO_NAM_WON_WorkName is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(WO_NAM_WON_ID) OR UPDATE(WO_NAM_WON_WorkName))
     BEGIN
         INSERT INTO [metadata].[WO_NAM_Work_Name] (
             WO_NAM_WO_ID,
-            WO_NAM_Work_Name
+            WO_NAM_WON_ID
         )
         SELECT
             ISNULL(i.WO_NAM_WO_ID, i.WO_ID),
-            i.WO_NAM_Work_Name
+            CASE WHEN UPDATE(WO_NAM_WON_ID) THEN i.WO_NAM_WON_ID ELSE [kWON].WON_ID END
         FROM
             inserted i
+        LEFT JOIN
+            [metadata].[WON_WorkName] [kWON]
+        ON
+            [kWON].WON_WorkName = i.WO_NAM_WON_WorkName
         WHERE
-            i.WO_NAM_Work_Name is not null;
+            CASE WHEN UPDATE(WO_NAM_WON_ID) THEN i.WO_NAM_WON_ID ELSE [kWON].WON_ID END is not null;
     END
     IF(UPDATE(WO_USR_WO_ID))
         RAISERROR('The foreign key column WO_USR_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_USR_Work_InvocationUser))
-        RAISERROR('The static column WO_USR_Work_InvocationUser is not updatable, and only missing values have been added.', 0, 1);
-    IF(UPDATE(WO_USR_Work_InvocationUser))
+    IF (UPDATE(WO_USR_WIU_ID))
+        RAISERROR('The static column WO_USR_WIU_ID is not updatable, and only missing values have been added.', 0, 1);
+    IF (UPDATE(WO_USR_WIU_WorkInvocationUser))
+        RAISERROR('The static column WO_USR_WIU_WorkInvocationUser is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(WO_USR_WIU_ID) OR UPDATE(WO_USR_WIU_WorkInvocationUser))
     BEGIN
         INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
             WO_USR_WO_ID,
-            WO_USR_Work_InvocationUser
+            WO_USR_WIU_ID
         )
         SELECT
             ISNULL(i.WO_USR_WO_ID, i.WO_ID),
-            i.WO_USR_Work_InvocationUser
+            CASE WHEN UPDATE(WO_USR_WIU_ID) THEN i.WO_USR_WIU_ID ELSE [kWIU].WIU_ID END
         FROM
             inserted i
+        LEFT JOIN
+            [metadata].[WIU_WorkInvocationUser] [kWIU]
+        ON
+            [kWIU].WIU_WorkInvocationUser = i.WO_USR_WIU_WorkInvocationUser
         WHERE
-            i.WO_USR_Work_InvocationUser is not null;
+            CASE WHEN UPDATE(WO_USR_WIU_ID) THEN i.WO_USR_WIU_ID ELSE [kWIU].WIU_ID END is not null;
     END
     IF(UPDATE(WO_ROL_WO_ID))
         RAISERROR('The foreign key column WO_ROL_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_ROL_Work_InvocationRole))
-        RAISERROR('The static column WO_ROL_Work_InvocationRole is not updatable, and only missing values have been added.', 0, 1);
-    IF(UPDATE(WO_ROL_Work_InvocationRole))
+    IF (UPDATE(WO_ROL_WIR_ID))
+        RAISERROR('The static column WO_ROL_WIR_ID is not updatable, and only missing values have been added.', 0, 1);
+    IF (UPDATE(WO_ROL_WIR_WorkInvocationRole))
+        RAISERROR('The static column WO_ROL_WIR_WorkInvocationRole is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(WO_ROL_WIR_ID) OR UPDATE(WO_ROL_WIR_WorkInvocationRole))
     BEGIN
         INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
             WO_ROL_WO_ID,
-            WO_ROL_Work_InvocationRole
+            WO_ROL_WIR_ID
         )
         SELECT
             ISNULL(i.WO_ROL_WO_ID, i.WO_ID),
-            i.WO_ROL_Work_InvocationRole
+            CASE WHEN UPDATE(WO_ROL_WIR_ID) THEN i.WO_ROL_WIR_ID ELSE [kWIR].WIR_ID END
         FROM
             inserted i
+        LEFT JOIN
+            [metadata].[WIR_WorkInvocationRole] [kWIR]
+        ON
+            [kWIR].WIR_WorkInvocationRole = i.WO_ROL_WIR_WorkInvocationRole
         WHERE
-            i.WO_ROL_Work_InvocationRole is not null;
+            CASE WHEN UPDATE(WO_ROL_WIR_ID) THEN i.WO_ROL_WIR_ID ELSE [kWIR].WIR_ID END is not null;
     END
     IF(UPDATE(WO_EST_WO_ID))
         RAISERROR('The foreign key column WO_EST_WO_ID is not updatable.', 16, 1);
@@ -6823,7 +7036,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.99" date="2019-11-01" time="07:57:08"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysutcdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="660.61" y="964.81" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="506.11" y="200.89" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1074.66" y="42.09" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata capsule="metadata" deletable="false"/><layout x="583.58" y="50.36" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata capsule="metadata" deletable="false"/><layout x="629.12" y="0.74" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata" deletable="false"/><layout x="666.58" y="-5.61" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="496.35" y="81.94" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" dataRange="uniqueidentifier"><metadata capsule="metadata" deletable="false"/><layout x="710.50" y="0.21" fixed="false"/></attribute><layout x="668.10" y="75.12" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata capsule="metadata" deletable="false"/><layout x="752.71" y="800.78" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata capsule="metadata" deletable="false"/><layout x="705.73" y="924.86" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime2(7)" dataRange="datetime"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="644.06" y="863.43" fixed="false"/></attribute><attribute mnemonic="CRE" descriptor="Created" dataRange="datetime"><metadata capsule="metadata" deletable="false"/><layout x="762.78" y="850.76" fixed="false"/></attribute><layout x="696.11" y="803.70" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata capsule="metadata" deletable="false"/><layout x="548.26" y="459.23" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata capsule="metadata" deletable="false"/><layout x="734.29" y="457.30" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata" deletable="false"/><layout x="682.12" y="495.19" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" dataRange="varchar(555)"><metadata capsule="metadata" deletable="false"/><layout x="546.47" y="428.86" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" dataRange="varchar(42)"><metadata capsule="metadata" deletable="false"/><layout x="582.41" y="477.14" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="546.36" y="335.79" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata capsule="metadata" deletable="false"/><layout x="636.78" y="495.80" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata capsule="metadata" deletable="false"/><layout x="756.10" y="429.34" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata capsule="metadata" deletable="false"/><layout x="698.71" y="398.67" fixed="false"/></attribute><layout x="649.90" y="429.97" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata capsule="metadata" deletable="false"/><layout x="956.01" y="224.55" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata capsule="metadata" checksum="true" restatable="false" idempotent="true" deletable="false"/><layout x="986.18" y="189.11" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata capsule="metadata" deletable="false"/><layout x="1014.93" y="99.34" fixed="false"/></attribute><layout x="909.39" y="168.61" fixed="false"/></anchor><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="923.44" y="697.54" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="976.39" y="650.76" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="938.91" y="583.32" fixed="false"/></attribute><layout x="870.40" y="651.21" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata" deletable="false"/><layout x="647.76" y="256.91" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="805.97" y="109.80" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="714.10" y="646.65" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="806.06" y="311.23" fixed="false"/></tie></schema>';
+   N'<schema format="0.99.6.1" date="2020-09-10" time="16:44:00"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysutcdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="387.60" y="896.41" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="438.52" y="150.08" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1005.04" y="94.19" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="501.82" y="-2.32" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="537.57" y="-25.36" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="JON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="607.51" y="-59.90" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.56" y="44.18" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" knotRange="AID"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="678.51" y="-38.90" fixed="true"/></attribute><layout x="587.40" y="28.06" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="549.51" y="785.10" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="420.74" y="826.77" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime2(7)" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="491.43" y="822.15" fixed="false"/></attribute><attribute mnemonic="CRE" descriptor="Created" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="409.02" y="737.23" fixed="false"/></attribute><layout x="486.14" y="719.35" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="532.15" y="455.07" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="635.32" y="448.22" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="WON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="483.13" y="477.26" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" knotRange="WIU"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="450.43" y="399.49" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" knotRange="WIR"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="448.49" y="437.97" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.44" y="281.47" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="598.41" y="463.33" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="662.52" y="418.54" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="648.39" y="402.32" fixed="false"/></attribute><layout x="554.62" y="403.94" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="893.18" y="200.39" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata privacy="Ignore" capsule="metadata" checksum="true" restatable="false" idempotent="true" deletable="false"/><layout x="910.77" y="159.81" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="938.10" y="122.49" fixed="false"/></attribute><layout x="826.03" y="164.64" fixed="false"/></anchor><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="724.76" y="789.35" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="766.60" y="751.54" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="789.60" y="702.18" fixed="false"/></attribute><layout x="692.65" y="695.79" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata" deletable="false"/><layout x="555.96" y="204.02" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="735.45" y="81.40" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="565.13" y="632.69" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="710.86" y="289.11" fixed="false"/></tie><knot mnemonic="WON" descriptor="WorkName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="420.96" y="498.46" fixed="false"/></knot><knot mnemonic="WIU" descriptor="WorkInvocationUser" identity="smallint" dataRange="varchar(555)"><metadata capsule="metadata" generator="true"/><layout x="385.15" y="376.34" fixed="false"/></knot><knot mnemonic="WIR" descriptor="WorkInvocationRole" identity="smallint" dataRange="varchar(42)"><metadata capsule="metadata" generator="true"/><layout x="372.45" y="456.39" fixed="false"/></knot><knot mnemonic="JON" descriptor="JobName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="637.51" y="-124.90" fixed="true"/></knot><knot mnemonic="AID" descriptor="AgentJobId" identity="int" dataRange="uniqueidentifier"><metadata capsule="metadata" generator="true"/><layout x="736.51" y="-86.90" fixed="true"/></knot></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
@@ -6834,50 +7047,50 @@ GO
 CREATE VIEW [metadata].[_Schema_Expanded]
 AS
 SELECT
-    [version],
-    [activation],
-    [schema],
-    [schema].value('schema[1]/@format', 'nvarchar(max)') as [format],
-    [schema].value('schema[1]/@date', 'datetime') + [schema].value('schema[1]/@time', 'datetime') as [date],
-    [schema].value('schema[1]/metadata[1]/@temporalization', 'nvarchar(max)') as [temporalization],
-    [schema].value('schema[1]/metadata[1]/@databaseTarget', 'nvarchar(max)') as [databaseTarget],
-    [schema].value('schema[1]/metadata[1]/@changingRange', 'nvarchar(max)') as [changingRange],
-    [schema].value('schema[1]/metadata[1]/@encapsulation', 'nvarchar(max)') as [encapsulation],
-    [schema].value('schema[1]/metadata[1]/@identity', 'nvarchar(max)') as [identity],
-    [schema].value('schema[1]/metadata[1]/@metadataPrefix', 'nvarchar(max)') as [metadataPrefix],
-    [schema].value('schema[1]/metadata[1]/@metadataType', 'nvarchar(max)') as [metadataType],
-    [schema].value('schema[1]/metadata[1]/@metadataUsage', 'nvarchar(max)') as [metadataUsage],
-    [schema].value('schema[1]/metadata[1]/@changingSuffix', 'nvarchar(max)') as [changingSuffix],
-    [schema].value('schema[1]/metadata[1]/@identitySuffix', 'nvarchar(max)') as [identitySuffix],
-    [schema].value('schema[1]/metadata[1]/@positIdentity', 'nvarchar(max)') as [positIdentity],
-    [schema].value('schema[1]/metadata[1]/@positGenerator', 'nvarchar(max)') as [positGenerator],
-    [schema].value('schema[1]/metadata[1]/@positingRange', 'nvarchar(max)') as [positingRange],
-    [schema].value('schema[1]/metadata[1]/@positingSuffix', 'nvarchar(max)') as [positingSuffix],
-    [schema].value('schema[1]/metadata[1]/@positorRange', 'nvarchar(max)') as [positorRange],
-    [schema].value('schema[1]/metadata[1]/@positorSuffix', 'nvarchar(max)') as [positorSuffix],
-    [schema].value('schema[1]/metadata[1]/@reliabilityRange', 'nvarchar(max)') as [reliabilityRange],
-    [schema].value('schema[1]/metadata[1]/@reliabilitySuffix', 'nvarchar(max)') as [reliabilitySuffix],
-    [schema].value('schema[1]/metadata[1]/@deleteReliability', 'nvarchar(max)') as [deleteReliability],
-    [schema].value('schema[1]/metadata[1]/@assertionSuffix', 'nvarchar(max)') as [assertionSuffix],
-    [schema].value('schema[1]/metadata[1]/@partitioning', 'nvarchar(max)') as [partitioning],
-    [schema].value('schema[1]/metadata[1]/@entityIntegrity', 'nvarchar(max)') as [entityIntegrity],
-    [schema].value('schema[1]/metadata[1]/@restatability', 'nvarchar(max)') as [restatability],
-    [schema].value('schema[1]/metadata[1]/@idempotency', 'nvarchar(max)') as [idempotency],
-    [schema].value('schema[1]/metadata[1]/@assertiveness', 'nvarchar(max)') as [assertiveness],
-    [schema].value('schema[1]/metadata[1]/@naming', 'nvarchar(max)') as [naming],
-    [schema].value('schema[1]/metadata[1]/@positSuffix', 'nvarchar(max)') as [positSuffix],
-    [schema].value('schema[1]/metadata[1]/@annexSuffix', 'nvarchar(max)') as [annexSuffix],
-    [schema].value('schema[1]/metadata[1]/@chronon', 'nvarchar(max)') as [chronon],
-    [schema].value('schema[1]/metadata[1]/@now', 'nvarchar(max)') as [now],
-    [schema].value('schema[1]/metadata[1]/@dummySuffix', 'nvarchar(max)') as [dummySuffix],
-    [schema].value('schema[1]/metadata[1]/@statementTypeSuffix', 'nvarchar(max)') as [statementTypeSuffix],
-    [schema].value('schema[1]/metadata[1]/@checksumSuffix', 'nvarchar(max)') as [checksumSuffix],
-    [schema].value('schema[1]/metadata[1]/@businessViews', 'nvarchar(max)') as [businessViews],
-    [schema].value('schema[1]/metadata[1]/@equivalence', 'nvarchar(max)') as [equivalence],
-    [schema].value('schema[1]/metadata[1]/@equivalentSuffix', 'nvarchar(max)') as [equivalentSuffix],
-    [schema].value('schema[1]/metadata[1]/@equivalentRange', 'nvarchar(max)') as [equivalentRange]
+	[version],
+	[activation],
+	[schema],
+	[schema].value('schema[1]/@format', 'nvarchar(max)') as [format],
+	[schema].value('schema[1]/@date', 'datetime') + [schema].value('schema[1]/@time', 'datetime') as [date],
+	[schema].value('schema[1]/metadata[1]/@temporalization', 'nvarchar(max)') as [temporalization],
+	[schema].value('schema[1]/metadata[1]/@databaseTarget', 'nvarchar(max)') as [databaseTarget],
+	[schema].value('schema[1]/metadata[1]/@changingRange', 'nvarchar(max)') as [changingRange],
+	[schema].value('schema[1]/metadata[1]/@encapsulation', 'nvarchar(max)') as [encapsulation],
+	[schema].value('schema[1]/metadata[1]/@identity', 'nvarchar(max)') as [identity],
+	[schema].value('schema[1]/metadata[1]/@metadataPrefix', 'nvarchar(max)') as [metadataPrefix],
+	[schema].value('schema[1]/metadata[1]/@metadataType', 'nvarchar(max)') as [metadataType],
+	[schema].value('schema[1]/metadata[1]/@metadataUsage', 'nvarchar(max)') as [metadataUsage],
+	[schema].value('schema[1]/metadata[1]/@changingSuffix', 'nvarchar(max)') as [changingSuffix],
+	[schema].value('schema[1]/metadata[1]/@identitySuffix', 'nvarchar(max)') as [identitySuffix],
+	[schema].value('schema[1]/metadata[1]/@positIdentity', 'nvarchar(max)') as [positIdentity],
+	[schema].value('schema[1]/metadata[1]/@positGenerator', 'nvarchar(max)') as [positGenerator],
+	[schema].value('schema[1]/metadata[1]/@positingRange', 'nvarchar(max)') as [positingRange],
+	[schema].value('schema[1]/metadata[1]/@positingSuffix', 'nvarchar(max)') as [positingSuffix],
+	[schema].value('schema[1]/metadata[1]/@positorRange', 'nvarchar(max)') as [positorRange],
+	[schema].value('schema[1]/metadata[1]/@positorSuffix', 'nvarchar(max)') as [positorSuffix],
+	[schema].value('schema[1]/metadata[1]/@reliabilityRange', 'nvarchar(max)') as [reliabilityRange],
+	[schema].value('schema[1]/metadata[1]/@reliabilitySuffix', 'nvarchar(max)') as [reliabilitySuffix],
+	[schema].value('schema[1]/metadata[1]/@deleteReliability', 'nvarchar(max)') as [deleteReliability],
+	[schema].value('schema[1]/metadata[1]/@assertionSuffix', 'nvarchar(max)') as [assertionSuffix],
+	[schema].value('schema[1]/metadata[1]/@partitioning', 'nvarchar(max)') as [partitioning],
+	[schema].value('schema[1]/metadata[1]/@entityIntegrity', 'nvarchar(max)') as [entityIntegrity],
+	[schema].value('schema[1]/metadata[1]/@restatability', 'nvarchar(max)') as [restatability],
+	[schema].value('schema[1]/metadata[1]/@idempotency', 'nvarchar(max)') as [idempotency],
+	[schema].value('schema[1]/metadata[1]/@assertiveness', 'nvarchar(max)') as [assertiveness],
+	[schema].value('schema[1]/metadata[1]/@naming', 'nvarchar(max)') as [naming],
+	[schema].value('schema[1]/metadata[1]/@positSuffix', 'nvarchar(max)') as [positSuffix],
+	[schema].value('schema[1]/metadata[1]/@annexSuffix', 'nvarchar(max)') as [annexSuffix],
+	[schema].value('schema[1]/metadata[1]/@chronon', 'nvarchar(max)') as [chronon],
+	[schema].value('schema[1]/metadata[1]/@now', 'nvarchar(max)') as [now],
+	[schema].value('schema[1]/metadata[1]/@dummySuffix', 'nvarchar(max)') as [dummySuffix],
+	[schema].value('schema[1]/metadata[1]/@statementTypeSuffix', 'nvarchar(max)') as [statementTypeSuffix],
+	[schema].value('schema[1]/metadata[1]/@checksumSuffix', 'nvarchar(max)') as [checksumSuffix],
+	[schema].value('schema[1]/metadata[1]/@businessViews', 'nvarchar(max)') as [businessViews],
+	[schema].value('schema[1]/metadata[1]/@equivalence', 'nvarchar(max)') as [equivalence],
+	[schema].value('schema[1]/metadata[1]/@equivalentSuffix', 'nvarchar(max)') as [equivalentSuffix],
+	[schema].value('schema[1]/metadata[1]/@equivalentRange', 'nvarchar(max)') as [equivalentRange]
 FROM
-    _Schema;
+	_Schema;
 GO
 -- Anchor view --------------------------------------------------------------------------------------------------------
 -- The anchor view shows information about all the anchors in a schema
@@ -6896,7 +7109,8 @@ SELECT
    Nodeset.anchor.value('@descriptor', 'nvarchar(max)') as [descriptor],
    Nodeset.anchor.value('@identity', 'nvarchar(max)') as [identity],
    Nodeset.anchor.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
-   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes]
+   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.anchor.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [metadata].[_Schema] S
 CROSS APPLY
@@ -6921,7 +7135,8 @@ SELECT
    Nodeset.knot.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.knot.value('@dataRange', 'nvarchar(max)') as [dataRange],
    isnull(Nodeset.knot.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
-   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent]
+   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
+   Nodeset.knot.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [metadata].[_Schema] S
 CROSS APPLY
@@ -6949,6 +7164,7 @@ SELECT
    isnull(Nodeset.attribute.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
    Nodeset.attribute.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.attribute.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
+   Nodeset.attribute.value('metadata[1]/@privacy', 'nvarchar(max)') as [privacy],
    isnull(Nodeset.attribute.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
    Nodeset.attribute.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
    Nodeset.attribute.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
@@ -6957,7 +7173,10 @@ SELECT
    ParentNodeset.anchor.value('@identity', 'nvarchar(max)') as [anchorIdentity],
    Nodeset.attribute.value('@dataRange', 'nvarchar(max)') as [dataRange],
    Nodeset.attribute.value('@knotRange', 'nvarchar(max)') as [knotRange],
-   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange]
+   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
+   Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
+   Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [metadata].[_Schema] S
 CROSS APPLY
@@ -7005,11 +7224,60 @@ SELECT
    Nodeset.tie.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
    Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
-   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent]
+   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [metadata].[_Schema] S
 CROSS APPLY
    S.[schema].nodes('/schema/tie') as Nodeset(tie);
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- The key view shows information about all the keys in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('metadata._Key', 'V') IS NOT NULL
+DROP VIEW [metadata].[_Key]
+GO
+CREATE VIEW [metadata].[_Key]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
+   Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
+   Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
+   case [parent]
+      when 'tie'
+      then Nodeset.keys.value('../@role', 'nvarchar(max)')
+   end as [role],
+   case [parent]
+      when 'knot'
+      then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'attribute'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'tie'
+      then REPLACE(Nodeset.keys.query('
+            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            return concat($role/@type, "_", $role/@role)
+          ').value('.', 'nvarchar(max)'), ' ', '_')
+   end as [in],
+   [parent]
+FROM
+   [dbo].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema//key') as Nodeset(keys)
+CROSS APPLY (
+   VALUES (
+      case
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
+         then 'tie'
+         else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
+      end 
+   )
+) p ([parent]);
 GO
 -- Evolution function -------------------------------------------------------------------------------------------------
 -- The evolution function shows what the schema looked like at the given
@@ -7490,289 +7758,289 @@ IF Object_ID('metadata._GenerateCopyScript', 'P') IS NOT NULL
 DROP PROCEDURE [metadata].[_GenerateCopyScript];
 GO
 CREATE PROCEDURE [metadata]._GenerateCopyScript (
-    @source varchar(123),
-    @target varchar(123)
+	@source varchar(123),
+	@target varchar(123)
 )
 as
 begin
-    declare @R char(1);
+	declare @R char(1);
     set @R = CHAR(13);
-    -- stores the built SQL code
-    declare @sql varchar(max);
+	-- stores the built SQL code
+	declare @sql varchar(max);
     set @sql = 'USE ' + @target + ';' + @R;
-    declare @xml xml;
-    -- find which version of the schema that is in effect
-    declare @version int;
-    select
-        @version = max([version])
-    from
-        _Schema;
-    -- declare and set other variables we need
-    declare @equivalentSuffix varchar(42);
-    declare @identitySuffix varchar(42);
-    declare @annexSuffix varchar(42);
-    declare @positSuffix varchar(42);
-    declare @temporalization varchar(42);
-    select
-        @equivalentSuffix = equivalentSuffix,
-        @identitySuffix = identitySuffix,
-        @annexSuffix = annexSuffix,
-        @positSuffix = positSuffix,
-        @temporalization = temporalization
-    from
-        _Schema_Expanded
-    where
-        [version] = @version;
-    -- build non-equivalent knot copy
-    set @xml = (
-        select
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
-            end,
-            'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
-            'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
-            end
-        from
-            _Knot x
-        cross apply (
-            select stuff((
-                select
-                    ', ' + [name]
-                from
-                    sys.columns
-                where
-                    [object_Id] = object_Id(x.[capsule] + '.' + x.[name])
-                and
-                    is_computed = 0
-                for xml path('')
-            ), 1, 2, '')
-        ) c ([columns])
-        where
-            [version] = @version
-        and
-            isnull(equivalent, 'false') = 'false'
-        for xml path('')
-    );
-    set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-    -- build equivalent knot copy
-    set @xml = (
-        select
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' ON;' + @R
-            end,
-            'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @identitySuffix + '(' + [columns] + ')' + @R +
-            'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @identitySuffix + ';' + @R,
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' OFF;' + @R
-            end,
-            'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + '(' + [columns] + ')' + @R +
-            'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + ';' + @R
-        from
-            _Knot x
-        cross apply (
-            select stuff((
-                select
-                    ', ' + [name]
-                from
-                    sys.columns
-                where
-                    [object_Id] = object_Id(x.[capsule] + '.' + x.[name])
-                and
-                    is_computed = 0
-                for xml path('')
-            ), 1, 2, '')
-        ) c ([columns])
-        where
-            [version] = @version
-        and
-            isnull(equivalent, 'false') = 'true'
-        for xml path('')
-    );
-    set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-    -- build anchor copy
-    set @xml = (
-        select
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
-            end,
-            'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
-            'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
-            case
-                when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
-            end
-        from
-            _Anchor x
-        cross apply (
-            select stuff((
-                select
-                    ', ' + [name]
-                from
-                    sys.columns
-                where
-                    [object_Id] = object_Id(x.[capsule] + '.' + x.[name])
-                and
-                    is_computed = 0
-                for xml path('')
-            ), 1, 2, '')
-        ) c ([columns])
-        where
-            [version] = @version
-        for xml path('')
-    );
-    set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-    -- build attribute copy
-    if (@temporalization = 'crt')
-    begin
-        set @xml = (
-            select
-                case
-                    when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
-                end,
-                'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
-                'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
-                case
-                    when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
-                end,
-                'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
-                'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
-            from
-                _Attribute x
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) pc ([positColumns])
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) ac ([annexColumns])
-            where
-                [version] = @version
-            for xml path('')
-        );
-    end
-    else -- uni
-    begin
-        set @xml = (
-            select
-                'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
-                'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
-            from
-                _Attribute x
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name])
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) c ([columns])
-            where
-                [version] = @version
-            for xml path('')
-        );
-    end
-    set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-    -- build tie copy
-    if (@temporalization = 'crt')
-    begin
-        set @xml = (
-            select
-                case
-                    when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
-                end,
-                'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
-                'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
-                case
-                    when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
-                end,
-                'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
-                'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
-            from
-                _Tie x
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) pc ([positColumns])
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) ac ([annexColumns])
-            where
-                [version] = @version
-            for xml path('')
-        );
-    end
-    else -- uni
-    begin
-        set @xml = (
-            select
-                'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
-                'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
-            from
-                _Tie x
-            cross apply (
-                select stuff((
-                    select
-                        ', ' + [name]
-                    from
-                        sys.columns
-                    where
-                        [object_Id] = object_Id(x.[capsule] + '.' + x.[name])
-                    and
-                        is_computed = 0
-                    for xml path('')
-                ), 1, 2, '')
-            ) c ([columns])
-            where
-                [version] = @version
-            for xml path('')
-        );
-    end
-    set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-    select @sql for xml path('');
+	declare @xml xml;
+	-- find which version of the schema that is in effect
+	declare @version int;
+	select
+		@version = max([version])
+	from
+		_Schema;
+	-- declare and set other variables we need
+	declare @equivalentSuffix varchar(42);
+	declare @identitySuffix varchar(42);
+	declare @annexSuffix varchar(42);
+	declare @positSuffix varchar(42);
+	declare @temporalization varchar(42);
+	select
+		@equivalentSuffix = equivalentSuffix,
+		@identitySuffix = identitySuffix,
+		@annexSuffix = annexSuffix,
+		@positSuffix = positSuffix,
+		@temporalization = temporalization
+	from
+		_Schema_Expanded
+	where
+		[version] = @version;
+	-- build non-equivalent knot copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			_Knot x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		and
+			isnull(equivalent, 'false') = 'false'
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build equivalent knot copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @identitySuffix + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @identitySuffix + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' OFF;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + ';' + @R
+		from
+			_Knot x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		and
+			isnull(equivalent, 'false') = 'true'
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build anchor copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			_Anchor x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build attribute copy
+	if (@temporalization = 'crt')
+	begin
+		set @xml = (
+			select
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
+				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
+				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
+			from
+				_Attribute x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) pc ([positColumns])
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) ac ([annexColumns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	else -- uni
+	begin
+		set @xml = (
+			select
+				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
+			from
+				_Attribute x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) c ([columns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build tie copy
+	if (@temporalization = 'crt')
+	begin
+		set @xml = (
+			select
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
+				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
+				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
+			from
+				_Tie x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) pc ([positColumns])
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) ac ([annexColumns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	else -- uni
+	begin
+		set @xml = (
+			select
+				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
+			from
+				_Tie x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) c ([columns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	select @sql for xml path('');
 end
 go
 -- Delete Everything with a Certain Metadata Id -----------------------------------------------------------------------
@@ -7782,66 +8050,66 @@ IF Object_ID('metadata._DeleteWhereMetadataEquals', 'P') IS NOT NULL
 DROP PROCEDURE [metadata].[_DeleteWhereMetadataEquals];
 GO
 CREATE PROCEDURE [metadata]._DeleteWhereMetadataEquals (
-    @metadataID int,
-    @schemaVersion int = null,
-    @includeKnots bit = 0
+	@metadataID int,
+	@schemaVersion int = null,
+	@includeKnots bit = 0
 )
 as
 begin
-    declare @sql varchar(max);
-    set @sql = 'print ''Null is not a valid value for @metadataId''';
-    if(@metadataId is not null)
-    begin
-        if(@schemaVersion is null)
-        begin
-            select
-                @schemaVersion = max(Version)
-            from
-                _Schema;
-        end;
-        with constructs as (
-            select
-                'l' + name as name,
-                2 as prio,
-                'Metadata_' + name as metadataColumn
-            from
-                _Tie
-            where
-                [version] = @schemaVersion
-            union all
-            select
-                'l' + name as name,
-                3 as prio,
-                'Metadata_' + mnemonic as metadataColumn
-            from
-                _Anchor
-            where
-                [version] = @schemaVersion
-            union all
-            select
-                name,
-                4 as prio,
-                'Metadata_' + mnemonic as metadataColumn
-            from
-                _Knot
-            where
-                [version] = @schemaVersion
-            and
-                @includeKnots = 1
-        )
-        select
-            @sql = (
-                select
-                    'DELETE FROM ' + name + ' WHERE ' + metadataColumn + ' = ' + cast(@metadataId as varchar(10)) + '; '
-                from
-                    constructs
+	declare @sql varchar(max);
+	set @sql = 'print ''Null is not a valid value for @metadataId''';
+	if(@metadataId is not null)
+	begin
+		if(@schemaVersion is null)
+		begin
+			select
+				@schemaVersion = max(Version)
+			from
+				_Schema;
+		end;
+		with constructs as (
+			select
+				'l' + name as name,
+				2 as prio,
+				'Metadata_' + name as metadataColumn
+			from
+				_Tie
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				'l' + name as name,
+				3 as prio,
+				'Metadata_' + mnemonic as metadataColumn
+			from
+				_Anchor
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				name,
+				4 as prio,
+				'Metadata_' + mnemonic as metadataColumn
+			from
+				_Knot
+			where
+				[version] = @schemaVersion
+			and
+				@includeKnots = 1
+		)
+		select
+			@sql = (
+				select
+					'DELETE FROM ' + name + ' WHERE ' + metadataColumn + ' = ' + cast(@metadataId as varchar(10)) + '; '
+				from
+					constructs
         order by
-                    prio, name
-                for xml
-                    path('')
-            );
-    end
-    exec(@sql);
+					prio, name
+				for xml
+					path('')
+			);
+	end
+	exec(@sql);
 end
 go
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------

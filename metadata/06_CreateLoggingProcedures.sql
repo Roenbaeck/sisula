@@ -1,7 +1,7 @@
 /*
              CREATE PROCEDURES FOR LOGGING
 */
---------------------------- Starting Job ----------------------------
+
 if Object_Id('metadata._Now', 'FN') is not null
 drop function metadata._Now;
 go
@@ -14,6 +14,7 @@ begin
 end
 go
 
+--------------------------- Starting Job ----------------------------
 if Object_Id('metadata._JobStarting', 'P') is not null
 drop procedure metadata._JobStarting;
 go
@@ -26,6 +27,12 @@ create procedure metadata._JobStarting (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	set @start = isnull(@start, metadata._Now());
 	declare @JB_ID int;
 	declare @CF_ID int;
@@ -36,19 +43,49 @@ begin
 	from
 		metadata.lJB_Job
 	where
-		JB_NAM_Job_Name = @jobName
+		JB_NAM_JON_JobName = @jobName
 	and
-		JB_AID_Job_AgentJobId = isnull(@agentJobId, JB_AID_Job_AgentJobId)
+		JB_AID_AID_AgentJobId = isnull(@agentJobId, JB_AID_AID_AgentJobId)
 	and
 		JB_EST_EST_ExecutionStatus = 'Running';
 
 	-- start it if it is not running
 	if(@JB_ID is null)
 	begin
+		-- add to knot if it is not already there
+		insert into metadata.JON_JobName (
+			JON_JobName
+		)
+		select
+			@jobName
+		where not exists (
+			select 
+				JON_JobName
+			from
+				metadata.JON_JobName
+			where
+				JON_JobName = @jobName
+		);
+
+		-- add to knot if it is not already there
+		insert into metadata.AID_AgentJobId (
+			AID_AgentJobId
+		)
+		select
+			@agentJobId
+		where not exists (
+			select 
+				AID_AgentJobId
+			from
+				metadata.AID_AgentJobId
+			where
+				AID_AgentJobId = @agentJobId
+		);
+
 		insert into metadata.lJB_Job (
-			JB_NAM_Job_Name,
+			JB_NAM_JON_JobName,
 			JB_STA_Job_Start,
-			JB_AID_Job_AgentJobId,
+			JB_AID_AID_AgentJobId,
 			JB_EST_ChangedAt,
 			JB_EST_EST_ExecutionStatus
 		)
@@ -66,7 +103,7 @@ begin
 		from
 			metadata.lJB_Job
 		where
-			JB_NAM_Job_Name = @jobName
+			JB_NAM_JON_JobName = @jobName
 		and
 			JB_STA_Job_Start = @start;
 	end
@@ -103,6 +140,9 @@ begin
 			v.CF_ID
 		);
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -118,6 +158,12 @@ create procedure metadata._JobStopping (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	-- add a chronon in order to guarantee uniqueness (if shorter duration)
 	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
@@ -130,7 +176,7 @@ begin
 	from
 		metadata.lJB_Job
 	where
-		JB_NAM_Job_Name = @name
+		JB_NAM_JON_JobName = @name
 	and
 		JB_EST_EST_ExecutionStatus = 'Running';
 
@@ -163,6 +209,67 @@ begin
 				jb.JB_ID in (select JB_ID from #JB_ID);
 		end
 	end
+
+	-- if this job has running work they need to be stopped
+	-- which can happen when statement-level recompilation errors occur
+	-- such as a missing table
+	declare @agentJobId uniqueidentifier;
+	declare @JB_ID int;
+
+	select top 1
+		@agentJobId = jb.JB_AID_AID_AgentJobId,
+		@JB_ID = jb.JB_ID
+	from
+		metadata.lJB_Job jb
+	where
+		jb.JB_ID in (select JB_ID from #JB_ID);
+
+	-- try to figure out the error message from the agent job history
+	merge metadata.lWO_Work wo
+	using (
+		select
+			wo.WO_ID,
+			lh.[message]
+		from 
+			metadata.lJB_Job jb
+		join
+			metadata.lWO_part_JB_of wojb
+		on
+			wojb.JB_ID_of = jb.JB_ID
+		join
+			metadata.lWO_Work wo
+		on
+			wo.WO_ID = wojb.WO_ID_part 
+		and
+			wo.WO_EST_EST_ExecutionStatus = 'Running'
+		cross apply (
+			select top 1
+				[message]
+			from
+				MSDB.dbo.sysjobhistory history
+			where
+				history.job_id = @agentJobId
+			and
+				history.run_status = 0 -- unclean exit
+		    and
+		    	history.step_id = wo.WO_AID_Work_AgentStepId
+		    order by 
+		    	history.run_date desc, history.run_time desc
+	    ) lh
+		where
+			jb.JB_ID = @JB_ID
+	) fail
+	on 
+		wo.WO_ID = fail.WO_ID
+	when matched then update
+	set
+		wo.WO_END_Work_End = @stop,
+		wo.WO_EST_ChangedAt = @stop, 
+		wo.WO_EST_EST_ExecutionStatus = @status,
+		wo.WO_ERM_Work_ErrorMessage = case when @status = 'Failure' then fail.[message] end;
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -184,6 +291,12 @@ create procedure metadata._WorkStarting (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	set @start = isnull(@start, metadata._Now());
 	set @user = isnull(@user, SYSTEM_USER);
 	set @role = isnull(@role, USER);
@@ -205,21 +318,66 @@ begin
 	on
 		jb.JB_ID = wojb.JB_ID_of
 	and
-		jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+		jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
 	and
 		jb.JB_EST_EST_ExecutionStatus = 'Running'
 	where
-		wo.WO_NAM_Work_Name = @name
+		wo.WO_NAM_WON_WorkName = @name
 	and
 		wo.WO_EST_EST_ExecutionStatus = 'Running';
 
 	if(@WO_ID is null)
 	begin
+		-- add to knot if it is not already there
+		insert into metadata.WON_WorkName (
+			WON_WorkName
+		)
+		select
+			@name
+		where not exists (
+			select 
+				WON_WorkName
+			from
+				metadata.WON_WorkName
+			where
+				WON_WorkName = @name
+		);
+
+		-- add to knot if it is not already there
+		insert into metadata.WIU_WorkInvocationUser (
+			WIU_WorkInvocationUser
+		)
+		select
+			@user
+		where not exists (
+			select 
+				WIU_WorkInvocationUser
+			from
+				metadata.WIU_WorkInvocationUser
+			where
+				WIU_WorkInvocationUser = @user
+		);
+
+		-- add to knot if it is not already there
+		insert into metadata.WIR_WorkInvocationRole (
+			WIR_WorkInvocationRole
+		)
+		select
+			@role
+		where not exists (
+			select 
+				WIR_WorkInvocationRole
+			from
+				metadata.WIR_WorkInvocationRole
+			where
+				WIR_WorkInvocationRole = @role
+		);
+
 		insert into metadata.lWO_Work (
-			WO_NAM_Work_Name,
+			WO_NAM_WON_WorkName,
 			WO_STA_Work_Start,
-			WO_USR_Work_InvocationUser,
-			WO_ROL_Work_InvocationRole,
+			WO_USR_WIU_WorkInvocationUser,
+			WO_ROL_WIR_WorkInvocationRole,
 			WO_AID_Work_AgentStepId,
 			WO_EST_ChangedAt,
 			WO_EST_EST_ExecutionStatus
@@ -239,7 +397,7 @@ begin
 		from
 			metadata.lWO_Work
 		where
-			WO_NAM_Work_Name = @name
+			WO_NAM_WON_WorkName = @name
 		and
 			WO_STA_Work_Start = @start;
 	end
@@ -258,7 +416,7 @@ begin
 	on
 		jb.JB_ID = wojb.JB_ID_of
 	and
-		jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+		jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
 	and
 		jb.JB_EST_EST_ExecutionStatus = 'Running'
 	where
@@ -273,7 +431,7 @@ begin
 			from
 				metadata.lJB_Job jb
 			where
-				jb.JB_AID_Job_AgentJobId = isnull(@agentJobId, jb.JB_AID_Job_AgentJobId)
+				jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
 			and
 				jb.JB_EST_EST_ExecutionStatus = 'Running'
 			order by
@@ -335,6 +493,9 @@ begin
 			v.CF_ID
 		);
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -352,6 +513,12 @@ create procedure metadata._WorkStopping (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	-- add a chronon in order to guarantee uniqueness (if shorter duration)
 	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
@@ -391,6 +558,17 @@ begin
 				WO_ID = @WO_ID;
 		end
 	end
+
+	if Object_Id('A') is not null drop table A;
+	select 
+		@errorLine as WO_ERL_Work_ErrorLine,
+		@errorMessage as WO_ERM_Work_ErrorMessage,
+		@status as WO_EST_EST_ExecutionStatus,
+		@stop as WO_END_Work_End
+	into A;
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -411,6 +589,12 @@ create procedure metadata._WorkSourceToTarget (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	declare @now datetime = metadata._Now();
 	set @sourceType = isnull(@sourceType, 'Table');
 	set @targetType = isnull(@targetType, 'Table');
@@ -473,8 +657,8 @@ begin
 			and
 				CO_CRE_Container_Created = @sourceCreated;
 		end
-		-- otherwise update the discovey
-		else
+		-- otherwise update the discovery (but only done for files)
+		else if (@sourceType = 'File')
 		begin
 			update lCO_Container
 			set
@@ -527,8 +711,8 @@ begin
 			and
 				CO_CRE_Container_Created = @targetCreated
 		end
-		-- otherwise update the discovey
-		else
+		-- otherwise update the discovery (but only done for files)
+		else if (@sourceType = 'File')
 		begin
 			update lCO_Container
 			set
@@ -573,6 +757,9 @@ begin
 			);
 		end
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -590,6 +777,12 @@ create procedure metadata._WorkSetInserts (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
@@ -625,6 +818,9 @@ begin
 		where
 			OP_ID = @OP_ID;
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -641,6 +837,12 @@ create procedure metadata._WorkSetUpdates (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
@@ -676,6 +878,9 @@ begin
 		where
 			OP_ID = @OP_ID;
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
 
@@ -692,6 +897,12 @@ create procedure metadata._WorkSetDeletes (
 )
 as
 begin
+	-- prevent deadlocks when jobs run in parallel
+	EXEC sp_getapplock 	@Resource    = 'metadata',  
+     					@LockOwner   = 'Session',
+     					@LockMode    = 'Exclusive',
+						@LockTimeout = 60000;
+
 	set @at = isnull(@at, metadata._Now());
 
 	-- ensure this work is running!
@@ -727,5 +938,9 @@ begin
 		where
 			OP_ID = @OP_ID;
 	end
+
+	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
+     						@LockOwner = 'Session';
 end
 go
+
