@@ -81,7 +81,7 @@
       select \
       	jb.JB_ID, \
       	jb.JB_EST_EST_ExecutionStatus, \
-      	jb.JB_NAM_Job_Name, \
+      	jb.JB_NAM_JON_JobName, \
       	datepart(year, v.date_JB_STA_Job_Start) as year_JB_STA_Job_Start, \
       	datepart(month, v.date_JB_STA_Job_Start) as month_JB_STA_Job_Start, \
       	datepart(day, v.date_JB_STA_Job_Start) as day_JB_STA_Job_Start, \
@@ -93,7 +93,7 @@
       	datepart(minute, v.time_JB_END_Job_End) as minute_JB_END_Job_End, \
       	datepart(second, v.time_JB_END_Job_End) as second_JB_END_Job_End, \
         datepart(millisecond, v.time_JB_END_Job_End) as millisecond_JB_END_Job_End, \
-      	jb.JB_AID_Job_AgentJobId \
+      	jb.JB_AID_AID_AgentJobId \
       from \
       	metadata.lJB_Job jb \
       outer apply ( \
@@ -125,7 +125,7 @@
           minute_JB_END_Job_End,
           second_JB_END_Job_End,
           millisecond_JB_END_Job_End,
-          JB_NAM_Job_Name,
+          JB_NAM_JON_JobName,
           JB_EST_EST_ExecutionStatus,
           JB_ID;
 
@@ -143,14 +143,14 @@
         minute_JB_END_Job_End = result.Fields('minute_JB_END_Job_End');
         second_JB_END_Job_End = result.Fields('second_JB_END_Job_End');
         millisecond_JB_END_Job_End = result.Fields('millisecond_JB_END_Job_End');
-        JB_NAM_Job_Name = '' + result.Fields('JB_NAM_Job_Name');
+        JB_NAM_JON_JobName = '' + result.Fields('JB_NAM_JON_JobName');
         JB_EST_EST_ExecutionStatus = '' + result.Fields('JB_EST_EST_ExecutionStatus');
         JB_ID =  0 + result.Fields('JB_ID');
 
         rows.push({
             c:[
               {v: year_JB_STA_Job_Start + '-' + month_JB_STA_Job_Start + '-' + day_JB_STA_Job_Start},
-              {v: JB_NAM_Job_Name},
+              {v: JB_NAM_JON_JobName},
               {v: new Date(
                     0, 0, 0,
                     hour_JB_STA_Job_Start,
@@ -233,7 +233,7 @@
       select \
       	wo.WO_ID, \
       	wo.WO_EST_EST_ExecutionStatus, \
-      	wo.WO_NAM_Work_Name, \
+      	wo.WO_NAM_WON_WorkName, \
       	datepart(year, v.date_WO_STA_Work_Start) as year_WO_STA_Work_Start, \
       	datepart(month, v.date_WO_STA_Work_Start) as month_WO_STA_Workb_Start, \
       	datepart(day, v.date_WO_STA_Work_Start) as day_WO_STA_Work_Start, \
@@ -284,7 +284,7 @@
           minute_WO_END_Work_End,
           second_WO_END_Work_End,
           millisecond_WO_END_Work_End,
-          WO_NAM_Work_Name,
+          WO_NAM_WON_WorkName,
           WO_EST_EST_ExecutionStatus,
           WO_ERM_Work_ErrorMessage,
           WO_ID;
@@ -304,7 +304,7 @@
         minute_WO_END_Work_End = result.Fields('minute_WO_END_Work_End');
         second_WO_END_Work_End = result.Fields('second_WO_END_Work_End');
         millisecond_WO_END_Work_End = result.Fields('millisecond_WO_END_Work_End');
-        WO_NAM_Work_Name = '' + result.Fields('WO_NAM_Work_Name');
+        WO_NAM_WON_WorkName = '' + result.Fields('WO_NAM_WON_WorkName');
         WO_EST_EST_ExecutionStatus = '' + result.Fields('WO_EST_EST_ExecutionStatus');
         WO_ERM_Work_ErrorMessage = '' + result.Fields('WO_ERM_Work_ErrorMessage');
         WO_ID =  0 + result.Fields('WO_ID');
@@ -312,7 +312,7 @@
         rows.push({
             c:[
               {v: year_WO_STA_Work_Start + '-' + month_WO_STA_Workb_Start + '-' + day_WO_STA_Work_Start},
-              {v: WO_NAM_Work_Name},
+              {v: WO_NAM_WON_WorkName},
               {v: new Date(
                     0, 0, 0,
                     hour_WO_STA_Work_Start,

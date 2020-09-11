@@ -113,7 +113,7 @@ setSourceToTargetMetadata(
         FROM
             ${METADATABASE}$.metadata.lJB_Job
         WHERE
-            JB_AID_Job_AgentJobId = @agentJobId
+            JB_AID_AID_AgentJobId = @agentJobId
     ), 0);
 
     UPDATE [$S_SCHEMA].[$part.qualified$_Typed]

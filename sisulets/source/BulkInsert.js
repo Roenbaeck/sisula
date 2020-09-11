@@ -104,7 +104,7 @@ if(METADATA) {
         ON
             jb.JB_ID = wojb.JB_ID_of
         AND
-            jb.JB_AID_Job_AgentJobId = @agentJobId
+            jb.JB_AID_AID_AgentJobId = @agentJobId
         WHERE
             wojb.WO_ID_part = @workId
     ), 0);
