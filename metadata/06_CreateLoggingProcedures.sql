@@ -559,14 +559,6 @@ begin
 		end
 	end
 
-	if Object_Id('A') is not null drop table A;
-	select 
-		@errorLine as WO_ERL_Work_ErrorLine,
-		@errorMessage as WO_ERM_Work_ErrorMessage,
-		@status as WO_EST_EST_ExecutionStatus,
-		@stop as WO_END_Work_End
-	into A;
-
 	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
      						@LockOwner = 'Session';
 end
