@@ -986,12 +986,17 @@ BEGIN
         i.ST_NAM_ST_ID,
         i.Metadata_ST_NAM,
         i.ST_NAM_Street_Name,
-        1,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                i.ST_NAM_ST_ID
+            ORDER BY
+                (SELECT 1) ASC -- some undefined order
+        ),
         'X'
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(ST_NAM_Version),
+        @maxVersion = 1,
         @currentVersion = 0
     FROM
         @ST_NAM_Street_Name;
@@ -1075,7 +1080,7 @@ BEGIN
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(IS_COL_Version),
+        @maxVersion = max(IS_COL_Version), 
         @currentVersion = 0
     FROM
         @IS_COL_Intersection_CollisionCount;
@@ -1088,11 +1093,39 @@ BEGIN
                 CASE
                     WHEN [COL].IS_COL_IS_ID is not null
                     THEN 'D' -- duplicate
-                    WHEN [dbo].[rfIS_COL_Intersection_CollisionCount](
-                        v.IS_COL_IS_ID,
-                        v.IS_COL_Intersection_CollisionCount,
-                        v.IS_COL_ChangedAt
-                    ) = 1
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [dbo].[rfIS_COL_Intersection_CollisionCount]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_COL_Intersection_CollisionCount = (
+                                SELECT TOP 1
+                                    pre.IS_COL_Intersection_CollisionCount
+                                FROM
+                                    [dbo].[IS_COL_Intersection_CollisionCount] pre
+                                WHERE
+                                    pre.IS_COL_IS_ID = v.IS_COL_IS_ID
+                                AND
+                                    pre.IS_COL_ChangedAt < v.IS_COL_ChangedAt
+                                ORDER BY
+                                    pre.IS_COL_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_COL_Intersection_CollisionCount = (
+                                SELECT TOP 1
+                                    fol.IS_COL_Intersection_CollisionCount
+                                FROM
+                                    [dbo].[IS_COL_Intersection_CollisionCount] fol
+                                WHERE
+                                    fol.IS_COL_IS_ID = v.IS_COL_IS_ID
+                                AND
+                                    fol.IS_COL_ChangedAt > v.IS_COL_ChangedAt
+                                ORDER BY
+                                    fol.IS_COL_ChangedAt ASC
+                            )
+                    ) 
                     THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
@@ -1169,7 +1202,7 @@ BEGIN
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(IS_INJ_Version),
+        @maxVersion = max(IS_INJ_Version), 
         @currentVersion = 0
     FROM
         @IS_INJ_Intersection_InjuredCount;
@@ -1182,11 +1215,39 @@ BEGIN
                 CASE
                     WHEN [INJ].IS_INJ_IS_ID is not null
                     THEN 'D' -- duplicate
-                    WHEN [dbo].[rfIS_INJ_Intersection_InjuredCount](
-                        v.IS_INJ_IS_ID,
-                        v.IS_INJ_Intersection_InjuredCount,
-                        v.IS_INJ_ChangedAt
-                    ) = 1
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [dbo].[rfIS_INJ_Intersection_InjuredCount]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_INJ_Intersection_InjuredCount = (
+                                SELECT TOP 1
+                                    pre.IS_INJ_Intersection_InjuredCount
+                                FROM
+                                    [dbo].[IS_INJ_Intersection_InjuredCount] pre
+                                WHERE
+                                    pre.IS_INJ_IS_ID = v.IS_INJ_IS_ID
+                                AND
+                                    pre.IS_INJ_ChangedAt < v.IS_INJ_ChangedAt
+                                ORDER BY
+                                    pre.IS_INJ_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_INJ_Intersection_InjuredCount = (
+                                SELECT TOP 1
+                                    fol.IS_INJ_Intersection_InjuredCount
+                                FROM
+                                    [dbo].[IS_INJ_Intersection_InjuredCount] fol
+                                WHERE
+                                    fol.IS_INJ_IS_ID = v.IS_INJ_IS_ID
+                                AND
+                                    fol.IS_INJ_ChangedAt > v.IS_INJ_ChangedAt
+                                ORDER BY
+                                    fol.IS_INJ_ChangedAt ASC
+                            )
+                    ) 
                     THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
@@ -1263,7 +1324,7 @@ BEGIN
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(IS_KIL_Version),
+        @maxVersion = max(IS_KIL_Version), 
         @currentVersion = 0
     FROM
         @IS_KIL_Intersection_KilledCount;
@@ -1276,11 +1337,39 @@ BEGIN
                 CASE
                     WHEN [KIL].IS_KIL_IS_ID is not null
                     THEN 'D' -- duplicate
-                    WHEN [dbo].[rfIS_KIL_Intersection_KilledCount](
-                        v.IS_KIL_IS_ID,
-                        v.IS_KIL_Intersection_KilledCount,
-                        v.IS_KIL_ChangedAt
-                    ) = 1
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [dbo].[rfIS_KIL_Intersection_KilledCount]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_KIL_Intersection_KilledCount = (
+                                SELECT TOP 1
+                                    pre.IS_KIL_Intersection_KilledCount
+                                FROM
+                                    [dbo].[IS_KIL_Intersection_KilledCount] pre
+                                WHERE
+                                    pre.IS_KIL_IS_ID = v.IS_KIL_IS_ID
+                                AND
+                                    pre.IS_KIL_ChangedAt < v.IS_KIL_ChangedAt
+                                ORDER BY
+                                    pre.IS_KIL_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_KIL_Intersection_KilledCount = (
+                                SELECT TOP 1
+                                    fol.IS_KIL_Intersection_KilledCount
+                                FROM
+                                    [dbo].[IS_KIL_Intersection_KilledCount] fol
+                                WHERE
+                                    fol.IS_KIL_IS_ID = v.IS_KIL_IS_ID
+                                AND
+                                    fol.IS_KIL_ChangedAt > v.IS_KIL_ChangedAt
+                                ORDER BY
+                                    fol.IS_KIL_ChangedAt ASC
+                            )
+                    ) 
                     THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
@@ -1357,7 +1446,7 @@ BEGIN
     FROM
         inserted i;
     SELECT
-        @maxVersion = max(IS_VEH_Version),
+        @maxVersion = max(IS_VEH_Version), 
         @currentVersion = 0
     FROM
         @IS_VEH_Intersection_VehicleCount;
@@ -1370,11 +1459,39 @@ BEGIN
                 CASE
                     WHEN [VEH].IS_VEH_IS_ID is not null
                     THEN 'D' -- duplicate
-                    WHEN [dbo].[rfIS_VEH_Intersection_VehicleCount](
-                        v.IS_VEH_IS_ID,
-                        v.IS_VEH_Intersection_VehicleCount,
-                        v.IS_VEH_ChangedAt
-                    ) = 1
+                    WHEN EXISTS ( -- note that this code is identical to the scalar function [dbo].[rfIS_VEH_Intersection_VehicleCount]
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_VEH_Intersection_VehicleCount = (
+                                SELECT TOP 1
+                                    pre.IS_VEH_Intersection_VehicleCount
+                                FROM
+                                    [dbo].[IS_VEH_Intersection_VehicleCount] pre
+                                WHERE
+                                    pre.IS_VEH_IS_ID = v.IS_VEH_IS_ID
+                                AND
+                                    pre.IS_VEH_ChangedAt < v.IS_VEH_ChangedAt
+                                ORDER BY
+                                    pre.IS_VEH_ChangedAt DESC
+                            )
+                    ) OR EXISTS (
+                        SELECT TOP 1
+                            42 
+                        WHERE
+                            v.IS_VEH_Intersection_VehicleCount = (
+                                SELECT TOP 1
+                                    fol.IS_VEH_Intersection_VehicleCount
+                                FROM
+                                    [dbo].[IS_VEH_Intersection_VehicleCount] fol
+                                WHERE
+                                    fol.IS_VEH_IS_ID = v.IS_VEH_IS_ID
+                                AND
+                                    fol.IS_VEH_ChangedAt > v.IS_VEH_ChangedAt
+                                ORDER BY
+                                    fol.IS_VEH_ChangedAt ASC
+                            )
+                    ) 
                     THEN 'R' -- restatement
                     ELSE 'N' -- new statement
                 END
@@ -1515,7 +1632,11 @@ BEGIN
             ST_NAM_Street_Name
         )
         SELECT
-            ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_NAM
+            END, i.Metadata_ST),
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
             i.ST_NAM_Street_Name
         FROM
@@ -1731,13 +1852,16 @@ BEGIN
             IS_COL_Intersection_CollisionCount
         )
         SELECT
-            ISNULL(i.Metadata_IS_COL, i.Metadata_IS),
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_IS) AND NOT UPDATE(Metadata_IS_COL)
+                THEN i.Metadata_IS
+                ELSE i.Metadata_IS_COL
+            END, i.Metadata_IS),
             ISNULL(i.IS_COL_IS_ID, i.IS_ID),
-            cast(CASE
+            cast(ISNULL(CASE
                 WHEN i.IS_COL_Intersection_CollisionCount is null THEN i.IS_COL_ChangedAt
                 WHEN UPDATE(IS_COL_ChangedAt) THEN i.IS_COL_ChangedAt
-                ELSE @now
-            END as date),
+            END, @now) as date),
             i.IS_COL_Intersection_CollisionCount
         FROM
             inserted i
@@ -1755,13 +1879,16 @@ BEGIN
             IS_INJ_Intersection_InjuredCount
         )
         SELECT
-            ISNULL(i.Metadata_IS_INJ, i.Metadata_IS),
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_IS) AND NOT UPDATE(Metadata_IS_INJ)
+                THEN i.Metadata_IS
+                ELSE i.Metadata_IS_INJ
+            END, i.Metadata_IS),
             ISNULL(i.IS_INJ_IS_ID, i.IS_ID),
-            cast(CASE
+            cast(ISNULL(CASE
                 WHEN i.IS_INJ_Intersection_InjuredCount is null THEN i.IS_INJ_ChangedAt
                 WHEN UPDATE(IS_INJ_ChangedAt) THEN i.IS_INJ_ChangedAt
-                ELSE @now
-            END as date),
+            END, @now) as date),
             i.IS_INJ_Intersection_InjuredCount
         FROM
             inserted i
@@ -1779,13 +1906,16 @@ BEGIN
             IS_KIL_Intersection_KilledCount
         )
         SELECT
-            ISNULL(i.Metadata_IS_KIL, i.Metadata_IS),
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_IS) AND NOT UPDATE(Metadata_IS_KIL)
+                THEN i.Metadata_IS
+                ELSE i.Metadata_IS_KIL
+            END, i.Metadata_IS),
             ISNULL(i.IS_KIL_IS_ID, i.IS_ID),
-            cast(CASE
+            cast(ISNULL(CASE
                 WHEN i.IS_KIL_Intersection_KilledCount is null THEN i.IS_KIL_ChangedAt
                 WHEN UPDATE(IS_KIL_ChangedAt) THEN i.IS_KIL_ChangedAt
-                ELSE @now
-            END as date),
+            END, @now) as date),
             i.IS_KIL_Intersection_KilledCount
         FROM
             inserted i
@@ -1803,13 +1933,16 @@ BEGIN
             IS_VEH_Intersection_VehicleCount
         )
         SELECT
-            ISNULL(i.Metadata_IS_VEH, i.Metadata_IS),
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_IS) AND NOT UPDATE(Metadata_IS_VEH)
+                THEN i.Metadata_IS
+                ELSE i.Metadata_IS_VEH
+            END, i.Metadata_IS),
             ISNULL(i.IS_VEH_IS_ID, i.IS_ID),
-            cast(CASE
+            cast(ISNULL(CASE
                 WHEN i.IS_VEH_Intersection_VehicleCount is null THEN i.IS_VEH_ChangedAt
                 WHEN UPDATE(IS_VEH_ChangedAt) THEN i.IS_VEH_ChangedAt
-                ELSE @now
-            END as date),
+            END, @now) as date),
             i.IS_VEH_Intersection_VehicleCount
         FROM
             inserted i
@@ -2054,7 +2187,7 @@ BEGIN
         i.IS_ID_of,
         i.ST_ID_crossing
     FROM
-        inserted i; 
+        inserted i;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -2116,9 +2249,12 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo._Schema', 'U') IS NULL
    CREATE TABLE [dbo].[_Schema] (
-      [version] int identity(1, 1) not null primary key,
+      [version] int identity(1, 1) not null,
       [activation] datetime2(7) not null,
-      [schema] xml not null
+      [schema] xml not null,
+      constraint pk_Schema primary key (
+         [version]
+      )
    );
 GO
 -- Insert the XML schema (as of now)
@@ -2128,7 +2264,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.98" date="2014-10-15" time="19:43:59"><metadata changingRange="date" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" reliableCutoff="1" deleteReliability="0" reliableSuffix="Reliable" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni"/><anchor mnemonic="ST" descriptor="Street" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata capsule="dbo"/><layout x="811.12" y="627.80" fixed="false"/></attribute><layout x="833.28" y="572.21" fixed="true"/></anchor><anchor mnemonic="IS" descriptor="Intersection" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="COL" descriptor="CollisionCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="868.55" y="368.42" fixed="false"/></attribute><attribute mnemonic="INJ" descriptor="InjuredCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="909.90" y="323.48" fixed="false"/></attribute><attribute mnemonic="KIL" descriptor="KilledCount" timeRange="date" dataRange="int"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="966.00" y="367.00" fixed="false"/></attribute><attribute mnemonic="VEH" descriptor="VehicleCount" timeRange="date" dataRange="smallint"><metadata capsule="dbo" restatable="false" idempotent="true"/><layout x="953.42" y="432.55" fixed="false"/></attribute><layout x="900.77" y="403.78" fixed="false"/></anchor><tie><anchorRole role="intersecting" type="ST" identifier="true"/><anchorRole role="of" type="IS" identifier="false"/><anchorRole role="crossing" type="ST" identifier="true"/><metadata capsule="dbo"/><layout x="857.65" y="494.83" fixed="false"/></tie></schema>';
+   N'<schema format="0.99.6.2" date="2020-09-18" time="13:38:53"><metadata changingRange="date" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><anchor mnemonic="ST" descriptor="Street" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="811.12" y="627.80" fixed="false"/></attribute><layout x="833.28" y="572.21" fixed="true"/></anchor><anchor mnemonic="IS" descriptor="Intersection" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="COL" descriptor="CollisionCount" timeRange="date" dataRange="int"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="868.55" y="368.42" fixed="false"/></attribute><attribute mnemonic="INJ" descriptor="InjuredCount" timeRange="date" dataRange="int"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="909.90" y="323.48" fixed="false"/></attribute><attribute mnemonic="KIL" descriptor="KilledCount" timeRange="date" dataRange="int"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="966.00" y="367.00" fixed="false"/></attribute><attribute mnemonic="VEH" descriptor="VehicleCount" timeRange="date" dataRange="smallint"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="953.42" y="432.55" fixed="false"/></attribute><layout x="900.77" y="403.78" fixed="false"/></anchor><tie><anchorRole role="intersecting" type="ST" identifier="true"/><anchorRole role="of" type="IS" identifier="false"/><anchorRole role="crossing" type="ST" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="857.65" y="494.83" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
@@ -2143,9 +2279,8 @@ SELECT
 	[activation],
 	[schema],
 	[schema].value('schema[1]/@format', 'nvarchar(max)') as [format],
-	[schema].value('schema[1]/@date', 'date') as [date],
-	[schema].value('schema[1]/@time', 'time(0)') as [time],
-	[schema].value('schema[1]/metadata[1]/@temporalization', 'nvarchar(max)') as [temporalization], 
+	[schema].value('schema[1]/@date', 'datetime') + [schema].value('schema[1]/@time', 'datetime') as [date],
+	[schema].value('schema[1]/metadata[1]/@temporalization', 'nvarchar(max)') as [temporalization],
 	[schema].value('schema[1]/metadata[1]/@databaseTarget', 'nvarchar(max)') as [databaseTarget],
 	[schema].value('schema[1]/metadata[1]/@changingRange', 'nvarchar(max)') as [changingRange],
 	[schema].value('schema[1]/metadata[1]/@encapsulation', 'nvarchar(max)') as [encapsulation],
@@ -2163,9 +2298,8 @@ SELECT
 	[schema].value('schema[1]/metadata[1]/@positorSuffix', 'nvarchar(max)') as [positorSuffix],
 	[schema].value('schema[1]/metadata[1]/@reliabilityRange', 'nvarchar(max)') as [reliabilityRange],
 	[schema].value('schema[1]/metadata[1]/@reliabilitySuffix', 'nvarchar(max)') as [reliabilitySuffix],
-	[schema].value('schema[1]/metadata[1]/@reliableCutoff', 'nvarchar(max)') as [reliableCutoff],
 	[schema].value('schema[1]/metadata[1]/@deleteReliability', 'nvarchar(max)') as [deleteReliability],
-	[schema].value('schema[1]/metadata[1]/@reliableSuffix', 'nvarchar(max)') as [reliableSuffix],
+	[schema].value('schema[1]/metadata[1]/@assertionSuffix', 'nvarchar(max)') as [assertionSuffix],
 	[schema].value('schema[1]/metadata[1]/@partitioning', 'nvarchar(max)') as [partitioning],
 	[schema].value('schema[1]/metadata[1]/@entityIntegrity', 'nvarchar(max)') as [entityIntegrity],
 	[schema].value('schema[1]/metadata[1]/@restatability', 'nvarchar(max)') as [restatability],
@@ -2183,7 +2317,7 @@ SELECT
 	[schema].value('schema[1]/metadata[1]/@equivalence', 'nvarchar(max)') as [equivalence],
 	[schema].value('schema[1]/metadata[1]/@equivalentSuffix', 'nvarchar(max)') as [equivalentSuffix],
 	[schema].value('schema[1]/metadata[1]/@equivalentRange', 'nvarchar(max)') as [equivalentRange]
-FROM 
+FROM
 	_Schema;
 GO
 -- Anchor view --------------------------------------------------------------------------------------------------------
@@ -2203,7 +2337,8 @@ SELECT
    Nodeset.anchor.value('@descriptor', 'nvarchar(max)') as [descriptor],
    Nodeset.anchor.value('@identity', 'nvarchar(max)') as [identity],
    Nodeset.anchor.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
-   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes]
+   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.anchor.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2228,7 +2363,8 @@ SELECT
    Nodeset.knot.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.knot.value('@dataRange', 'nvarchar(max)') as [dataRange],
    isnull(Nodeset.knot.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
-   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent]
+   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
+   Nodeset.knot.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2256,6 +2392,7 @@ SELECT
    isnull(Nodeset.attribute.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
    Nodeset.attribute.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.attribute.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
+   Nodeset.attribute.value('metadata[1]/@privacy', 'nvarchar(max)') as [privacy],
    isnull(Nodeset.attribute.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
    Nodeset.attribute.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
    Nodeset.attribute.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
@@ -2264,7 +2401,10 @@ SELECT
    ParentNodeset.anchor.value('@identity', 'nvarchar(max)') as [anchorIdentity],
    Nodeset.attribute.value('@dataRange', 'nvarchar(max)') as [dataRange],
    Nodeset.attribute.value('@knotRange', 'nvarchar(max)') as [knotRange],
-   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange]
+   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
+   Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
+   Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2312,11 +2452,60 @@ SELECT
    Nodeset.tie.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
    Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
-   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent]
+   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
    S.[schema].nodes('/schema/tie') as Nodeset(tie);
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- The key view shows information about all the keys in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo._Key', 'V') IS NOT NULL
+DROP VIEW [dbo].[_Key]
+GO
+CREATE VIEW [dbo].[_Key]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
+   Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
+   Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
+   case [parent]
+      when 'tie'
+      then Nodeset.keys.value('../@role', 'nvarchar(max)')
+   end as [role],
+   case [parent]
+      when 'knot'
+      then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'attribute'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'tie'
+      then REPLACE(Nodeset.keys.query('
+            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            return concat($role/@type, "_", $role/@role)
+          ').value('.', 'nvarchar(max)'), ' ', '_')
+   end as [in],
+   [parent]
+FROM
+   [dbo].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema//key') as Nodeset(keys)
+CROSS APPLY (
+   VALUES (
+      case
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
+         then 'tie'
+         else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
+      end 
+   )
+) p ([parent]);
 GO
 -- Evolution function -------------------------------------------------------------------------------------------------
 -- The evolution function shows what the schema looked like at the given
@@ -2329,79 +2518,137 @@ IF Object_ID('dbo._Evolution', 'IF') IS NOT NULL
 DROP FUNCTION [dbo].[_Evolution];
 GO
 CREATE FUNCTION [dbo].[_Evolution] (
-    @timepoint AS DATETIME2(7)
+    @timepoint AS datetime2(7)
 )
-RETURNS TABLE
+RETURNS TABLE AS
 RETURN
-SELECT
-   V.[version],
-   ISNULL(S.[name], T.[name]) AS [name],
-   ISNULL(V.[activation], T.[create_date]) AS [activation],
-   CASE
-      WHEN S.[name] is null THEN
-         CASE
-            WHEN T.[create_date] > (
-               SELECT
-                  ISNULL(MAX([activation]), @timepoint)
-               FROM
-                  [dbo].[_Schema]
-               WHERE
-                  [activation] <= @timepoint
-            ) THEN 'Future'
-            ELSE 'Past'
-         END
-      WHEN T.[name] is null THEN 'Missing'
-      ELSE 'Present'
-   END AS Existence
-FROM (
+WITH constructs AS (
    SELECT
-      MAX([version]) as [version],
-      MAX([activation]) as [activation]
-   FROM
-      [dbo].[_Schema]
-   WHERE
-      [activation] <= @timepoint
-) V
-JOIN (
-   SELECT
-      [name],
-      [version]
-   FROM
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM 
       [dbo].[_Anchor] a
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '')
+   ) s (temporalization, suffix)
    UNION ALL
    SELECT
-      [name],
-      [version]
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
    FROM
       [dbo].[_Knot] k
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '')
+   ) s (temporalization, suffix)
    UNION ALL
    SELECT
-      [name],
-      [version]
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
    FROM
       [dbo].[_Attribute] b
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+   ) s (temporalization, suffix)
    UNION ALL
    SELECT
-      [name],
-      [version]
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
    FROM
       [dbo].[_Tie] t
-) S
-ON
-   S.[version] = V.[version]
-FULL OUTER JOIN (
-   SELECT
-      [name],
-      [create_date]
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+   ) s (temporalization, suffix)
+), 
+selectedSchema AS (
+   SELECT TOP 1
+      *
    FROM
-      sys.tables
+      [dbo].[_Schema_Expanded]
    WHERE
-      [type] like '%U%'
+      [activation] <= @timepoint
+   ORDER BY
+      [activation] DESC
+),
+presentConstructs AS (
+   SELECT
+      C.*
+   FROM
+      selectedSchema S
+   JOIN
+      constructs C
+   ON
+      S.[version] = C.[version]
    AND
-      LEFT([name], 1) <> '_'
+      S.temporalization = C.temporalization 
+), 
+allConstructs AS (
+   SELECT
+      C.*
+   FROM
+      selectedSchema S
+   JOIN
+      constructs C
+   ON
+      S.temporalization = C.temporalization
+)
+SELECT
+   COALESCE(P.[version], X.[version]) as [version],
+   COALESCE(P.[qualifiedName], T.[qualifiedName]) AS [name],
+   COALESCE(P.[activation], X.[activation], T.[create_date]) AS [activation],
+   CASE
+      WHEN P.[activation] = S.[activation] THEN 'Present'
+      WHEN X.[activation] > S.[activation] THEN 'Future'
+      WHEN X.[activation] < S.[activation] THEN 'Past'
+      ELSE 'Missing'
+   END AS Existence
+FROM 
+   presentConstructs P
+FULL OUTER JOIN (
+   SELECT 
+      s.[name] + '.' + t.[name] AS [qualifiedName],
+      t.[create_date]
+   FROM 
+      sys.tables t
+   JOIN
+      sys.schemas s
+   ON
+      s.schema_id = t.schema_id
+   WHERE
+      t.[type] = 'U'
+   AND
+      LEFT(t.[name], 1) <> '_'
 ) T
 ON
-   S.[name] = T.[name];
+   T.[qualifiedName] = P.[qualifiedName]
+LEFT JOIN
+   allConstructs X
+ON
+   X.[qualifiedName] = T.[qualifiedName]
+AND
+   X.[activation] = (
+      SELECT
+         MIN(sub.[activation])
+      FROM
+         constructs sub
+      WHERE
+         sub.[qualifiedName] = T.[qualifiedName]
+      AND 
+         sub.[activation] >= T.[create_date]
+   )
+CROSS APPLY (
+   SELECT
+      *
+   FROM
+      selectedSchema
+) S;
 GO
 -- Drop Script Generator ----------------------------------------------------------------------------------------------
 -- generates a drop script, that must be run separately, dropping everything in an Anchor Modeled database
@@ -2410,156 +2657,326 @@ IF Object_ID('dbo._GenerateDropScript', 'P') IS NOT NULL
 DROP PROCEDURE [dbo].[_GenerateDropScript];
 GO
 CREATE PROCEDURE [dbo]._GenerateDropScript (
-   @exclusionPattern varchar(42) = '[_]%', -- exclude Metadata by default
-   @inclusionPattern varchar(42) = '%' -- include everything by default
+   @exclusionPattern varchar(42) = '%.[[][_]%', -- exclude Metadata by default
+   @inclusionPattern varchar(42) = '%', -- include everything by default
+   @directions varchar(42) = 'Upwards, Downwards', -- do both up and down by default
+   @qualifiedName varchar(555) = null -- can specify a single object
 )
 AS
 BEGIN
-   DECLARE @xml XML;
-   WITH objects AS (
-      SELECT
-         'DROP ' + ft.[type] + ' ' + fn.[name] + '; -- ' + fn.[description] as [statement],
-         row_number() OVER (
-            ORDER BY
-               -- restatement finders last
-               CASE dc.[description]
-                  WHEN 'restatement finder' THEN 1
-                  ELSE 0
-               END ASC,
-               -- order based on type
-               CASE ft.[type]
-                  WHEN 'PROCEDURE' THEN 1
-                  WHEN 'FUNCTION' THEN 2
-                  WHEN 'VIEW' THEN 3
-                  WHEN 'TABLE' THEN 4
-                  ELSE 5
-               END ASC,
-               -- order within type
-               CASE dc.[description]
-                  WHEN 'key generator' THEN 1
-                  WHEN 'latest perspective' THEN 2
-                  WHEN 'current perspective' THEN 3
-                  WHEN 'difference perspective' THEN 4
-                  WHEN 'point-in-time perspective' THEN 5
-                  WHEN 'time traveler' THEN 6
-                  WHEN 'rewinder' THEN 7
-                  WHEN 'assembled view' THEN 8
-                  WHEN 'annex table' THEN 9
-                  WHEN 'posit table' THEN 10
-                  WHEN 'table' THEN 11
-                  WHEN 'restatement finder' THEN 12
-                  ELSE 13
-               END,
-               -- order within description
-               CASE ft.[type]
-                  WHEN 'TABLE' THEN
-                     CASE cl.[class]
-                        WHEN 'Attribute' THEN 1
-                        WHEN 'Attribute Annex' THEN 2
-                        WHEN 'Attribute Posit' THEN 3
-                        WHEN 'Tie' THEN 4
-                        WHEN 'Anchor' THEN 5
-                        WHEN 'Knot' THEN 6
-                        ELSE 7
-                     END
-                  ELSE
-                     CASE cl.[class]
-                        WHEN 'Anchor' THEN 1
-                        WHEN 'Attribute' THEN 2
-                        WHEN 'Attribute Annex' THEN 3
-                        WHEN 'Attribute Posit' THEN 4
-                        WHEN 'Tie' THEN 5
-                        WHEN 'Knot' THEN 6
-                        ELSE 7
-                     END
-               END,
-               -- finally alphabetically
-               o.[name] ASC
-         ) AS [ordinal]
-      FROM
+   set nocount on;
+   select
+      ordinal,
+      unqualifiedName,
+      qualifiedName
+   into 
+      #constructs
+   from (
+      select distinct
+         10 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + ']' as qualifiedName
+      from
+         [dbo]._Attribute
+      union all
+      select distinct
+         11 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + '_Annex]' as qualifiedName
+      from
+         [dbo]._Attribute
+      union all
+      select distinct
+         12 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + '_Posit]' as qualifiedName
+      from
+         [dbo]._Attribute
+      union all
+      select distinct
+         20 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + ']' as qualifiedName
+      from
+         [dbo]._Tie
+      union all
+      select distinct
+         21 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + '_Annex]' as qualifiedName
+      from
+         [dbo]._Tie
+      union all
+      select distinct
+         22 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + '_Posit]' as qualifiedName
+      from
+         [dbo]._Tie
+      union all
+      select distinct
+         30 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + ']' as qualifiedName
+      from
+         [dbo]._Knot
+      union all
+      select distinct
+         40 as ordinal,
+         name as unqualifiedName,
+         '[' + capsule + '].[' + name + ']' as qualifiedName
+      from
+         [dbo]._Anchor
+   ) t;
+   select
+      c.ordinal,
+      cast(c.unqualifiedName as nvarchar(517)) as unqualifiedName,
+      cast(c.qualifiedName as nvarchar(517)) as qualifiedName,
+      o.[object_id],
+      o.[type]
+   into
+      #includedConstructs
+   from
+      #constructs c
+   join
+      sys.objects o
+   on
+      o.[object_id] = OBJECT_ID(c.qualifiedName)
+   and 
+      o.[type] = 'U'
+   where
+      OBJECT_ID(c.qualifiedName) = OBJECT_ID(isnull(@qualifiedName, c.qualifiedName));
+   create unique clustered index ix_includedConstructs on #includedConstructs([object_id]);
+   with relatedUpwards as (
+      select
+         c.[object_id],
+         c.[type],
+         c.unqualifiedName,
+         c.qualifiedName,
+         1 as depth
+      from
+         #includedConstructs c
+      union all
+      select
+         o.[object_id],
+         o.[type],
+         n.unqualifiedName,
+         n.qualifiedName,
+         c.depth + 1 as depth
+      from
+         relatedUpwards c
+      cross apply (
+         select
+            refs.referencing_id
+         from 
+            sys.dm_sql_referencing_entities(c.qualifiedName, 'OBJECT') refs
+         where
+            refs.referencing_id <> OBJECT_ID(c.qualifiedName)
+      ) r
+      join
          sys.objects o
-      JOIN
-         sys.schemas s
-      ON
-         s.[schema_id] = o.[schema_id]
-      CROSS APPLY (
-         SELECT
-            CASE
-               WHEN o.[name] LIKE '[_]%'
-               COLLATE Latin1_General_BIN THEN 'Metadata'
-               WHEN o.[name] LIKE '%[A-Z][A-Z][_][a-z]%[A-Z][A-Z][_][a-z]%'
-               COLLATE Latin1_General_BIN THEN 'Tie'
-               WHEN o.[name] LIKE '%[A-Z][A-Z][_][A-Z][A-Z][A-Z][_][A-Z]%[_]%'
-               COLLATE Latin1_General_BIN THEN 'Attribute'
-               WHEN o.[name] LIKE '%[A-Z][A-Z][A-Z][_][A-Z]%'
-               COLLATE Latin1_General_BIN THEN 'Knot'
-               WHEN o.[name] LIKE '%[A-Z][A-Z][_][A-Z]%'
-               COLLATE Latin1_General_BIN THEN 'Anchor'
-               ELSE 'Other'
-            END
-      ) cl ([class])
-      CROSS APPLY (
-         SELECT
-            CASE o.[type]
-               WHEN 'P' THEN 'PROCEDURE'
-               WHEN 'IF' THEN 'FUNCTION'
-               WHEN 'FN' THEN 'FUNCTION'
-               WHEN 'V' THEN 'VIEW'
-               WHEN 'U' THEN 'TABLE'
-            END
-      ) ft ([type])
-      CROSS APPLY (
-         SELECT
-            CASE
-               WHEN ft.[type] = 'PROCEDURE' AND cl.[class] = 'Anchor' AND o.[name] LIKE 'k%'
-               COLLATE Latin1_General_BIN THEN 'key generator'
-               WHEN ft.[type] = 'FUNCTION' AND o.[name] LIKE 't%'
-               COLLATE Latin1_General_BIN THEN 'time traveler'
-               WHEN ft.[type] = 'FUNCTION' AND o.[name] LIKE 'rf%'
-               COLLATE Latin1_General_BIN THEN 'restatement finder'
-               WHEN ft.[type] = 'FUNCTION' AND o.[name] LIKE 'r%'
-               COLLATE Latin1_General_BIN THEN 'rewinder'
-               WHEN ft.[type] = 'VIEW' AND o.[name] LIKE 'l%'
-               COLLATE Latin1_General_BIN THEN 'latest perspective'
-               WHEN ft.[type] = 'FUNCTION' AND o.[name] LIKE 'p%'
-               COLLATE Latin1_General_BIN THEN 'point-in-time perspective'
-               WHEN ft.[type] = 'VIEW' AND o.[name] LIKE 'n%'
-               COLLATE Latin1_General_BIN THEN 'current perspective'
-               WHEN ft.[type] = 'FUNCTION' AND o.[name] LIKE 'd%'
-               COLLATE Latin1_General_BIN THEN 'difference perspective'
-               WHEN ft.[type] = 'VIEW' AND cl.[class] = 'Attribute'
-               COLLATE Latin1_General_BIN THEN 'assembled view'
-               WHEN ft.[type] = 'TABLE' AND o.[name] LIKE '%Annex'
-               COLLATE Latin1_General_BIN THEN 'annex table'
-               WHEN ft.[type] = 'TABLE' AND o.[name] LIKE '%Posit'
-               COLLATE Latin1_General_BIN THEN 'posit table'
-               WHEN ft.[type] = 'TABLE'
-               COLLATE Latin1_General_BIN THEN 'table'
-               ELSE 'other'
-            END
-      ) dc ([description])
-      CROSS APPLY (
-         SELECT
-            s.[name] + '.' + o.[name],
-            cl.[class] + ' ' + dc.[description]
-      ) fn ([name], [description])
-      WHERE
-         o.[type] IN ('P', 'IF', 'FN', 'V', 'U')
-      AND
-         o.[name] NOT LIKE ISNULL(@exclusionPattern, '')
-      AND
-         o.[name] LIKE ISNULL(@inclusionPattern, '%')
+      on
+         o.[object_id] = r.referencing_id
+      and
+         o.type not in ('S')
+      join 
+         sys.schemas s 
+      on 
+         s.schema_id = o.schema_id
+      cross apply (
+         select
+            cast('[' + s.name + '].[' + o.name + ']' as nvarchar(517)),
+            cast(o.name as nvarchar(517))
+      ) n (qualifiedName, unqualifiedName)
    )
-   SELECT @xml = (
-       SELECT
-          [statement] + CHAR(13) as [text()]
-       FROM
-          objects
-       ORDER BY
-          [ordinal]
-       FOR XML PATH('')
-   );
-   SELECT isnull(@xml.value('.', 'varchar(max)'), ''); 
+   select distinct
+      [object_id],
+      [type],
+      unqualifiedName,
+      qualifiedName,
+      depth
+   into
+      #relatedUpwards
+   from
+      relatedUpwards u
+   where
+      depth = (
+         select
+            MAX(depth)
+         from
+            relatedUpwards s
+         where
+            s.[object_id] = u.[object_id]
+      );
+   create unique clustered index ix_relatedUpwards on #relatedUpwards([object_id]);
+   with relatedDownwards as (
+      select
+         cast('Upwards' as varchar(42)) as [relationType],
+         c.[object_id],
+         c.[type],
+         c.unqualifiedName, 
+         c.qualifiedName,
+         c.depth
+      from
+         #relatedUpwards c 
+      union all
+      select
+         cast('Downwards' as varchar(42)) as [relationType],
+         o.[object_id],
+         o.[type],
+         n.unqualifiedName, 
+         n.qualifiedName,
+         c.depth - 1 as depth
+      from
+         relatedDownwards c
+      cross apply (
+         select 
+            refs.referenced_id 
+         from
+            sys.dm_sql_referenced_entities(c.qualifiedName, 'OBJECT') refs
+         where
+            refs.referenced_minor_id = 0
+         and
+            refs.referenced_id <> OBJECT_ID(c.qualifiedName)
+         and 
+            refs.referenced_id not in (select [object_id] from #relatedUpwards)
+      ) r
+      join -- select top 100 * from 
+         sys.objects o
+      on
+         o.[object_id] = r.referenced_id
+      and
+         o.type not in ('S')
+      join
+         sys.schemas s
+      on 
+         s.schema_id = o.schema_id
+      cross apply (
+         select
+            cast('[' + s.name + '].[' + o.name + ']' as nvarchar(517)),
+            cast(o.name as nvarchar(517))
+      ) n (qualifiedName, unqualifiedName)
+   )
+   select distinct
+      relationType,
+      [object_id],
+      [type],
+      unqualifiedName,
+      qualifiedName,
+      depth
+   into
+      #relatedDownwards
+   from
+      relatedDownwards d
+   where
+      depth = (
+         select
+            MIN(depth)
+         from
+            relatedDownwards s
+         where
+            s.[object_id] = d.[object_id]
+      );
+   create unique clustered index ix_relatedDownwards on #relatedDownwards([object_id]);
+   select distinct
+      [object_id],
+      [type],
+      [unqualifiedName],
+      [qualifiedName],
+      [depth]
+   into
+      #affectedObjects
+   from
+      #relatedDownwards d
+   where
+      [qualifiedName] not like @exclusionPattern
+   and
+      [qualifiedName] like @inclusionPattern
+   and
+      @directions like '%' + [relationType] + '%';
+   create unique clustered index ix_affectedObjects on #affectedObjects([object_id]);
+   select distinct
+      objectType,
+      unqualifiedName,
+      qualifiedName,
+      dropOrder
+   into
+      #dropList
+   from (
+      select
+         t.objectType,
+         o.unqualifiedName,
+         o.qualifiedName,
+         dense_rank() over (
+            order by
+               o.depth desc,
+               case o.[type]
+                  when 'C' then 0 -- CHECK CONSTRAINT
+                  when 'TR' then 1 -- SQL_TRIGGER
+                  when 'P' then 2 -- SQL_STORED_PROCEDURE
+                  when 'V' then 3 -- VIEW
+                  when 'IF' then 4 -- SQL_INLINE_TABLE_VALUED_FUNCTION
+                  when 'FN' then 5 -- SQL_SCALAR_FUNCTION
+                  when 'PK' then 6 -- PRIMARY_KEY_CONSTRAINT
+                  when 'UQ' then 7 -- UNIQUE_CONSTRAINT
+                  when 'F' then 8 -- FOREIGN_KEY_CONSTRAINT
+                  when 'U' then 9 -- USER_TABLE
+               end asc,
+               isnull(c.ordinal, 0) asc
+         ) as dropOrder
+      from
+         #affectedObjects o
+      left join
+         #includedConstructs c
+      on
+         c.[object_id] = o.[object_id]
+      cross apply (
+         select
+            case o.[type]
+               when 'C' then 'CHECK'
+               when 'TR' then 'TRIGGER'
+               when 'V' then 'VIEW'
+               when 'IF' then 'FUNCTION'
+               when 'FN' then 'FUNCTION'
+               when 'P' then 'PROCEDURE'
+               when 'PK' then 'CONSTRAINT'
+               when 'UQ' then 'CONSTRAINT'
+               when 'F' then 'CONSTRAINT'
+               when 'U' then 'TABLE'
+            end
+         ) t (objectType)
+      where
+         t.objectType in (
+            'CHECK',
+            'VIEW',
+            'FUNCTION',
+            'PROCEDURE',
+            'TABLE'
+         )
+   ) r;
+   select
+      case 
+         when d.objectType = 'CHECK'
+         then 'ALTER TABLE ' + p.parentName + ' DROP CONSTRAINT ' + d.unqualifiedName
+         else 'DROP ' + d.objectType + ' ' + d.qualifiedName
+      end + ';' + CHAR(13) as [text()]
+   from
+      #dropList d
+   join
+      sys.objects o
+   on
+      o.[object_id] = OBJECT_ID(d.qualifiedName)
+   join
+      sys.schemas s
+   on
+      s.[schema_id] = o.[schema_id]
+   cross apply (
+      select
+         '[' + s.name + '].[' + OBJECT_NAME(o.parent_object_id) + ']'
+   ) p (parentName)
+   order by
+      d.dropOrder asc
+   for xml path('');
 END
 GO
 -- Database Copy Script Generator -------------------------------------------------------------------------------------
@@ -2572,16 +2989,18 @@ CREATE PROCEDURE [dbo]._GenerateCopyScript (
 	@source varchar(123),
 	@target varchar(123)
 )
-as 
+as
 begin
-	declare @R char(1) = CHAR(13);
+	declare @R char(1);
+    set @R = CHAR(13);
 	-- stores the built SQL code
-	declare @sql varchar(max) = 'USE ' + @target + ';' + @R;
+	declare @sql varchar(max);
+    set @sql = 'USE ' + @target + ';' + @R;
 	declare @xml xml;
 	-- find which version of the schema that is in effect
 	declare @version int;
-	select 
-		@version = max([version]) 
+	select
+		@version = max([version])
 	from
 		_Schema;
 	-- declare and set other variables we need
@@ -2597,28 +3016,28 @@ begin
 		@positSuffix = positSuffix,
 		@temporalization = temporalization
 	from
-		_Schema_Expanded 
+		_Schema_Expanded
 	where
 		[version] = @version;
 	-- build non-equivalent knot copy
 	set @xml = (
-		select 
+		select
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
 			end,
 			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
 			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
 			end
-		from 
+		from
 			_Knot x
 		cross apply (
 			select stuff((
-				select 
+				select
 					', ' + [name]
 				from
-					sys.columns 
+					sys.columns
 				where
 					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
 				and
@@ -2635,25 +3054,25 @@ begin
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
 	-- build equivalent knot copy
 	set @xml = (
-		select 
+		select
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' ON;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' ON;' + @R
 			end,
 			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @identitySuffix + '(' + [columns] + ')' + @R +
 			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @identitySuffix + ';' + @R,
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' OFF;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' OFF;' + @R
 			end,
 			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + '(' + [columns] + ')' + @R +
 			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + ';' + @R
-		from 
+		from
 			_Knot x
 		cross apply (
 			select stuff((
-				select 
+				select
 					', ' + [name]
 				from
-					sys.columns 
+					sys.columns
 				where
 					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
 				and
@@ -2670,23 +3089,23 @@ begin
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
 	-- build anchor copy
 	set @xml = (
-		select 
+		select
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
 			end,
 			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
 			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
 			case
-				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R 
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
 			end
-		from 
+		from
 			_Anchor x
 		cross apply (
 			select stuff((
-				select 
+				select
 					', ' + [name]
 				from
-					sys.columns 
+					sys.columns
 				where
 					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
 				and
@@ -2703,25 +3122,25 @@ begin
 	if (@temporalization = 'crt')
 	begin
 		set @xml = (
-			select 
+			select
 				case
-					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R 
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
 				end,
 				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
 				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
 				case
-					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R 
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
 				end,
 				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
 				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
-			from 
+			from
 				_Attribute x
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
 					and
@@ -2731,10 +3150,10 @@ begin
 			) pc ([positColumns])
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
 					and
@@ -2750,17 +3169,17 @@ begin
 	else -- uni
 	begin
 		set @xml = (
-			select 
+			select
 				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
 				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
-			from 
+			from
 				_Attribute x
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
 					and
@@ -2778,25 +3197,25 @@ begin
 	if (@temporalization = 'crt')
 	begin
 		set @xml = (
-			select 
+			select
 				case
-					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R 
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
 				end,
 				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
 				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
 				case
-					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R 
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
 				end,
 				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
 				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
-			from 
+			from
 				_Tie x
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
 					and
@@ -2806,10 +3225,10 @@ begin
 			) pc ([positColumns])
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
 					and
@@ -2825,17 +3244,17 @@ begin
 	else -- uni
 	begin
 		set @xml = (
-			select 
+			select
 				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
 				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
-			from 
+			from
 				_Tie x
 			cross apply (
 				select stuff((
-					select 
+					select
 						', ' + [name]
 					from
-						sys.columns 
+						sys.columns
 					where
 						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
 					and
@@ -2849,6 +3268,76 @@ begin
 		);
 	end
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-	select @sql;
+	select @sql for xml path('');
 end
+go
+-- Delete Everything with a Certain Metadata Id -----------------------------------------------------------------------
+-- deletes all rows from all tables that have the specified metadata id
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo._DeleteWhereMetadataEquals', 'P') IS NOT NULL
+DROP PROCEDURE [dbo].[_DeleteWhereMetadataEquals];
+GO
+CREATE PROCEDURE [dbo]._DeleteWhereMetadataEquals (
+	@metadataID int,
+	@schemaVersion int = null,
+	@includeKnots bit = 0
+)
+as
+begin
+	declare @sql varchar(max);
+	set @sql = 'print ''Null is not a valid value for @metadataId''';
+	if(@metadataId is not null)
+	begin
+		if(@schemaVersion is null)
+		begin
+			select
+				@schemaVersion = max(Version)
+			from
+				_Schema;
+		end;
+		with constructs as (
+			select
+				'l' + name as name,
+				2 as prio,
+				'Metadata_' + name as metadataColumn
+			from
+				_Tie
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				'l' + name as name,
+				3 as prio,
+				'Metadata_' + mnemonic as metadataColumn
+			from
+				_Anchor
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				name,
+				4 as prio,
+				'Metadata_' + mnemonic as metadataColumn
+			from
+				_Knot
+			where
+				[version] = @schemaVersion
+			and
+				@includeKnots = 1
+		)
+		select
+			@sql = (
+				select
+					'DELETE FROM ' + name + ' WHERE ' + metadataColumn + ' = ' + cast(@metadataId as varchar(10)) + '; '
+				from
+					constructs
+        order by
+					prio, name
+				for xml
+					path('')
+			);
+	end
+	exec(@sql);
+end
+go
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------

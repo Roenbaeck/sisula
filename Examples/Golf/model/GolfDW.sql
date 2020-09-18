@@ -1504,8 +1504,6 @@ BEGIN
         RAISERROR('The identity column PL_ID is not updatable.', 16, 1);
     IF(UPDATE(PL_NAM_PL_ID))
         RAISERROR('The foreign key column PL_NAM_PL_ID is not updatable.', 16, 1);
-    IF (UPDATE(PL_NAM_Player_Name))
-        RAISERROR('The static column PL_NAM_Player_Name is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(PL_NAM_Player_Name))
     BEGIN
         INSERT INTO [dbo].[PL_NAM_Player_Name] (
@@ -1528,8 +1526,6 @@ BEGIN
     END
     IF(UPDATE(PL_BID_PL_ID))
         RAISERROR('The foreign key column PL_BID_PL_ID is not updatable.', 16, 1);
-    IF (UPDATE(PL_BID_Player_BirthDate))
-        RAISERROR('The static column PL_BID_Player_BirthDate is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(PL_BID_Player_BirthDate))
     BEGIN
         INSERT INTO [dbo].[PL_BID_Player_BirthDate] (
@@ -1853,8 +1849,6 @@ BEGIN
         RAISERROR('The identity column ST_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_DET_ST_ID))
         RAISERROR('The foreign key column ST_DET_ST_ID is not updatable.', 16, 1);
-    IF (UPDATE(ST_DET_Statistic_Detail))
-        RAISERROR('The static column ST_DET_Statistic_Detail is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(ST_DET_Statistic_Detail))
     BEGIN
         INSERT INTO [dbo].[ST_DET_Statistic_Detail] (
@@ -1877,10 +1871,6 @@ BEGIN
     END
     IF(UPDATE(ST_GRP_ST_ID))
         RAISERROR('The foreign key column ST_GRP_ST_ID is not updatable.', 16, 1);
-    IF (UPDATE(ST_GRP_SGR_ID))
-        RAISERROR('The static column ST_GRP_SGR_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(ST_GRP_SGR_StatisticGroup))
-        RAISERROR('The static column ST_GRP_SGR_StatisticGroup is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(ST_GRP_SGR_ID) OR UPDATE(ST_GRP_SGR_StatisticGroup))
     BEGIN
         INSERT INTO [dbo].[ST_GRP_Statistic_Group] (
@@ -2402,7 +2392,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.99.6.1" date="2020-09-18" time="09:21:55"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="SGR" descriptor="StatisticGroup" identity="smallint" dataRange="varchar(555)"><metadata capsule="dbo" generator="true"/><layout x="1067.87" y="619.48" fixed="false"/></knot><anchor mnemonic="PL" descriptor="Player" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1194.94" y="151.87" fixed="false"/></attribute><attribute mnemonic="BID" descriptor="BirthDate" dataRange="date"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1210.11" y="235.49" fixed="false"/></attribute><layout x="1157.46" y="206.72" fixed="false"/></anchor><anchor mnemonic="ME" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="VAL" descriptor="Value" timeRange="date" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="942.38" y="318.66" fixed="false"/></attribute><layout x="1043.46" y="351.93" fixed="false"/></anchor><anchor mnemonic="ST" descriptor="Statistic" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DET" descriptor="Detail" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1182.94" y="502.38" fixed="false"/></attribute><attribute mnemonic="GRP" descriptor="Group" knotRange="SGR"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1088.52" y="547.32" fixed="false"/></attribute><layout x="1104.69" y="486.71" fixed="false"/></anchor><tie><anchorRole role="was" type="PL" identifier="true"/><anchorRole role="measured" type="ME" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1104.12" y="273.31" fixed="false"/></tie><tie><anchorRole role="for" type="ME" identifier="true"/><anchorRole role="the" type="ST" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1056.40" y="436.89" fixed="false"/></tie></schema>';
+   N'<schema format="0.99.6.2" date="2020-09-18" time="13:37:41"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="SGR" descriptor="StatisticGroup" identity="smallint" dataRange="varchar(555)"><metadata capsule="dbo" generator="true"/><layout x="1067.87" y="619.48" fixed="false"/></knot><anchor mnemonic="PL" descriptor="Player" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1194.94" y="151.87" fixed="false"/></attribute><attribute mnemonic="BID" descriptor="BirthDate" dataRange="date"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1210.11" y="235.49" fixed="false"/></attribute><layout x="1157.46" y="206.72" fixed="false"/></anchor><anchor mnemonic="ME" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="VAL" descriptor="Value" timeRange="date" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="942.38" y="318.66" fixed="false"/></attribute><layout x="1043.46" y="351.93" fixed="false"/></anchor><anchor mnemonic="ST" descriptor="Statistic" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DET" descriptor="Detail" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1182.94" y="502.38" fixed="false"/></attribute><attribute mnemonic="GRP" descriptor="Group" knotRange="SGR"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1088.52" y="547.32" fixed="false"/></attribute><layout x="1104.69" y="486.71" fixed="false"/></anchor><tie><anchorRole role="was" type="PL" identifier="true"/><anchorRole role="measured" type="ME" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1104.12" y="273.31" fixed="false"/></tie><tie><anchorRole role="for" type="ME" identifier="true"/><anchorRole role="the" type="ST" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1056.40" y="436.89" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns

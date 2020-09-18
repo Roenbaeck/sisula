@@ -4821,8 +4821,6 @@ BEGIN
         RAISERROR('The identity column JB_ID is not updatable.', 16, 1);
     IF(UPDATE(JB_STA_JB_ID))
         RAISERROR('The foreign key column JB_STA_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_STA_Job_Start))
-        RAISERROR('The static column JB_STA_Job_Start is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(JB_STA_Job_Start))
     BEGIN
         INSERT INTO [metadata].[JB_STA_Job_Start] (
@@ -4839,8 +4837,6 @@ BEGIN
     END
     IF(UPDATE(JB_END_JB_ID))
         RAISERROR('The foreign key column JB_END_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_END_Job_End))
-        RAISERROR('The static column JB_END_Job_End is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(JB_END_Job_End))
     BEGIN
         INSERT INTO [metadata].[JB_END_Job_End] (
@@ -4857,10 +4853,6 @@ BEGIN
     END
     IF(UPDATE(JB_NAM_JB_ID))
         RAISERROR('The foreign key column JB_NAM_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_NAM_JON_ID))
-        RAISERROR('The static column JB_NAM_JON_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(JB_NAM_JON_JobName))
-        RAISERROR('The static column JB_NAM_JON_JobName is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(JB_NAM_JON_ID) OR UPDATE(JB_NAM_JON_JobName))
     BEGIN
         INSERT INTO [metadata].[JB_NAM_Job_Name] (
@@ -4906,10 +4898,6 @@ BEGIN
     END
     IF(UPDATE(JB_AID_JB_ID))
         RAISERROR('The foreign key column JB_AID_JB_ID is not updatable.', 16, 1);
-    IF (UPDATE(JB_AID_AID_ID))
-        RAISERROR('The static column JB_AID_AID_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(JB_AID_AID_AgentJobId))
-        RAISERROR('The static column JB_AID_AID_AgentJobId is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(JB_AID_AID_ID) OR UPDATE(JB_AID_AID_AgentJobId))
     BEGIN
         INSERT INTO [metadata].[JB_AID_Job_AgentJobId] (
@@ -5150,8 +5138,6 @@ BEGIN
         RAISERROR('The identity column CO_ID is not updatable.', 16, 1);
     IF(UPDATE(CO_NAM_CO_ID))
         RAISERROR('The foreign key column CO_NAM_CO_ID is not updatable.', 16, 1);
-    IF (UPDATE(CO_NAM_Container_Name))
-        RAISERROR('The static column CO_NAM_Container_Name is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(CO_NAM_Container_Name))
     BEGIN
         INSERT INTO [metadata].[CO_NAM_Container_Name] (
@@ -5168,10 +5154,6 @@ BEGIN
     END
     IF(UPDATE(CO_TYP_CO_ID))
         RAISERROR('The foreign key column CO_TYP_CO_ID is not updatable.', 16, 1);
-    IF (UPDATE(CO_TYP_COT_ID))
-        RAISERROR('The static column CO_TYP_COT_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(CO_TYP_COT_ContainerType))
-        RAISERROR('The static column CO_TYP_COT_ContainerType is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(CO_TYP_COT_ID) OR UPDATE(CO_TYP_COT_ContainerType))
     BEGIN
         INSERT INTO [metadata].[CO_TYP_Container_Type] (
@@ -5213,8 +5195,6 @@ BEGIN
     END
     IF(UPDATE(CO_CRE_CO_ID))
         RAISERROR('The foreign key column CO_CRE_CO_ID is not updatable.', 16, 1);
-    IF (UPDATE(CO_CRE_Container_Created))
-        RAISERROR('The static column CO_CRE_Container_Created is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(CO_CRE_Container_Created))
     BEGIN
         INSERT INTO [metadata].[CO_CRE_Container_Created] (
@@ -5544,8 +5524,6 @@ BEGIN
         RAISERROR('The identity column WO_ID is not updatable.', 16, 1);
     IF(UPDATE(WO_STA_WO_ID))
         RAISERROR('The foreign key column WO_STA_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_STA_Work_Start))
-        RAISERROR('The static column WO_STA_Work_Start is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_STA_Work_Start))
     BEGIN
         INSERT INTO [metadata].[WO_STA_Work_Start] (
@@ -5562,8 +5540,6 @@ BEGIN
     END
     IF(UPDATE(WO_END_WO_ID))
         RAISERROR('The foreign key column WO_END_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_END_Work_End))
-        RAISERROR('The static column WO_END_Work_End is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_END_Work_End))
     BEGIN
         INSERT INTO [metadata].[WO_END_Work_End] (
@@ -5580,10 +5556,6 @@ BEGIN
     END
     IF(UPDATE(WO_NAM_WO_ID))
         RAISERROR('The foreign key column WO_NAM_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_NAM_WON_ID))
-        RAISERROR('The static column WO_NAM_WON_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(WO_NAM_WON_WorkName))
-        RAISERROR('The static column WO_NAM_WON_WorkName is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_NAM_WON_ID) OR UPDATE(WO_NAM_WON_WorkName))
     BEGIN
         INSERT INTO [metadata].[WO_NAM_Work_Name] (
@@ -5604,10 +5576,6 @@ BEGIN
     END
     IF(UPDATE(WO_USR_WO_ID))
         RAISERROR('The foreign key column WO_USR_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_USR_WIU_ID))
-        RAISERROR('The static column WO_USR_WIU_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(WO_USR_WIU_WorkInvocationUser))
-        RAISERROR('The static column WO_USR_WIU_WorkInvocationUser is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_USR_WIU_ID) OR UPDATE(WO_USR_WIU_WorkInvocationUser))
     BEGIN
         INSERT INTO [metadata].[WO_USR_Work_InvocationUser] (
@@ -5628,10 +5596,6 @@ BEGIN
     END
     IF(UPDATE(WO_ROL_WO_ID))
         RAISERROR('The foreign key column WO_ROL_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_ROL_WIR_ID))
-        RAISERROR('The static column WO_ROL_WIR_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(WO_ROL_WIR_WorkInvocationRole))
-        RAISERROR('The static column WO_ROL_WIR_WorkInvocationRole is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_ROL_WIR_ID) OR UPDATE(WO_ROL_WIR_WorkInvocationRole))
     BEGIN
         INSERT INTO [metadata].[WO_ROL_Work_InvocationRole] (
@@ -5677,8 +5641,6 @@ BEGIN
     END
     IF(UPDATE(WO_ERL_WO_ID))
         RAISERROR('The foreign key column WO_ERL_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_ERL_Work_ErrorLine))
-        RAISERROR('The static column WO_ERL_Work_ErrorLine is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_ERL_Work_ErrorLine))
     BEGIN
         INSERT INTO [metadata].[WO_ERL_Work_ErrorLine] (
@@ -5695,8 +5657,6 @@ BEGIN
     END
     IF(UPDATE(WO_ERM_WO_ID))
         RAISERROR('The foreign key column WO_ERM_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_ERM_Work_ErrorMessage))
-        RAISERROR('The static column WO_ERM_Work_ErrorMessage is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_ERM_Work_ErrorMessage))
     BEGIN
         INSERT INTO [metadata].[WO_ERM_Work_ErrorMessage] (
@@ -5713,8 +5673,6 @@ BEGIN
     END
     IF(UPDATE(WO_AID_WO_ID))
         RAISERROR('The foreign key column WO_AID_WO_ID is not updatable.', 16, 1);
-    IF (UPDATE(WO_AID_Work_AgentStepId))
-        RAISERROR('The static column WO_AID_Work_AgentStepId is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(WO_AID_Work_AgentStepId))
     BEGIN
         INSERT INTO [metadata].[WO_AID_Work_AgentStepId] (
@@ -5986,8 +5944,6 @@ BEGIN
         RAISERROR('The identity column CF_ID is not updatable.', 16, 1);
     IF(UPDATE(CF_NAM_CF_ID))
         RAISERROR('The foreign key column CF_NAM_CF_ID is not updatable.', 16, 1);
-    IF (UPDATE(CF_NAM_Configuration_Name))
-        RAISERROR('The static column CF_NAM_Configuration_Name is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(CF_NAM_Configuration_Name))
     BEGIN
         INSERT INTO [metadata].[CF_NAM_Configuration_Name] (
@@ -6025,10 +5981,6 @@ BEGIN
     END
     IF(UPDATE(CF_TYP_CF_ID))
         RAISERROR('The foreign key column CF_TYP_CF_ID is not updatable.', 16, 1);
-    IF (UPDATE(CF_TYP_CFT_ID))
-        RAISERROR('The static column CF_TYP_CFT_ID is not updatable, and only missing values have been added.', 0, 1);
-    IF (UPDATE(CF_TYP_CFT_ConfigurationType))
-        RAISERROR('The static column CF_TYP_CFT_ConfigurationType is not updatable, and only missing values have been added.', 0, 1);
     IF(UPDATE(CF_TYP_CFT_ID) OR UPDATE(CF_TYP_CFT_ConfigurationType))
     BEGIN
         INSERT INTO [metadata].[CF_TYP_Configuration_Type] (
@@ -7036,7 +6988,7 @@ INSERT INTO [metadata].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.99.6.1" date="2020-09-10" time="16:44:00"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysutcdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="387.60" y="896.41" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="438.52" y="150.08" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1005.04" y="94.19" fixed="false"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="501.82" y="-2.32" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="537.57" y="-25.36" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="JON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="607.51" y="-59.90" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.56" y="44.18" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" knotRange="AID"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="678.51" y="-38.90" fixed="true"/></attribute><layout x="587.40" y="28.06" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="549.51" y="785.10" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="420.74" y="826.77" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime2(7)" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="491.43" y="822.15" fixed="false"/></attribute><attribute mnemonic="CRE" descriptor="Created" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="409.02" y="737.23" fixed="false"/></attribute><layout x="486.14" y="719.35" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="532.15" y="455.07" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="635.32" y="448.22" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="WON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="483.13" y="477.26" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" knotRange="WIU"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="450.43" y="399.49" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" knotRange="WIR"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="448.49" y="437.97" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.44" y="281.47" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="598.41" y="463.33" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="662.52" y="418.54" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="648.39" y="402.32" fixed="false"/></attribute><layout x="554.62" y="403.94" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="893.18" y="200.39" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata privacy="Ignore" capsule="metadata" checksum="true" restatable="false" idempotent="true" deletable="false"/><layout x="910.77" y="159.81" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="938.10" y="122.49" fixed="false"/></attribute><layout x="826.03" y="164.64" fixed="false"/></anchor><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="724.76" y="789.35" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="766.60" y="751.54" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="789.60" y="702.18" fixed="false"/></attribute><layout x="692.65" y="695.79" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata" deletable="false"/><layout x="555.96" y="204.02" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="735.45" y="81.40" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="565.13" y="632.69" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="710.86" y="289.11" fixed="false"/></tie><knot mnemonic="WON" descriptor="WorkName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="420.96" y="498.46" fixed="false"/></knot><knot mnemonic="WIU" descriptor="WorkInvocationUser" identity="smallint" dataRange="varchar(555)"><metadata capsule="metadata" generator="true"/><layout x="385.15" y="376.34" fixed="false"/></knot><knot mnemonic="WIR" descriptor="WorkInvocationRole" identity="smallint" dataRange="varchar(42)"><metadata capsule="metadata" generator="true"/><layout x="372.45" y="456.39" fixed="false"/></knot><knot mnemonic="JON" descriptor="JobName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="637.51" y="-124.90" fixed="true"/></knot><knot mnemonic="AID" descriptor="AgentJobId" identity="int" dataRange="uniqueidentifier"><metadata capsule="metadata" generator="true"/><layout x="736.51" y="-86.90" fixed="true"/></knot></schema>';
+   N'<schema format="0.99.6.2" date="2020-09-18" time="13:48:38"><metadata changingRange="datetime2(7)" encapsulation="metadata" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="false" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="tinyint" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="false" idempotency="true" assertiveness="false" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysutcdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="COT" descriptor="ContainerType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="387.60" y="896.41" fixed="false"/></knot><knot mnemonic="EST" descriptor="ExecutionStatus" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="438.52" y="150.08" fixed="false"/></knot><knot mnemonic="CFT" descriptor="ConfigurationType" identity="tinyint" dataRange="varchar(42)"><metadata capsule="metadata" generator="false"/><layout x="1005.04" y="94.19" fixed="false"/></knot><knot mnemonic="WON" descriptor="WorkName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="420.96" y="498.46" fixed="false"/></knot><knot mnemonic="WIU" descriptor="WorkInvocationUser" identity="smallint" dataRange="varchar(555)"><metadata capsule="metadata" generator="true"/><layout x="385.15" y="376.34" fixed="false"/></knot><knot mnemonic="WIR" descriptor="WorkInvocationRole" identity="smallint" dataRange="varchar(42)"><metadata capsule="metadata" generator="true"/><layout x="372.45" y="456.39" fixed="false"/></knot><knot mnemonic="JON" descriptor="JobName" identity="int" dataRange="varchar(255)"><metadata capsule="metadata" generator="true"/><layout x="637.51" y="-124.90" fixed="true"/></knot><knot mnemonic="AID" descriptor="AgentJobId" identity="int" dataRange="uniqueidentifier"><metadata capsule="metadata" generator="true"/><layout x="736.51" y="-86.90" fixed="true"/></knot><anchor mnemonic="JB" descriptor="Job" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="501.82" y="-2.32" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="537.57" y="-25.36" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="JON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="607.51" y="-59.90" fixed="true"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.56" y="44.18" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentJobId" knotRange="AID"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="678.51" y="-38.90" fixed="true"/></attribute><layout x="587.40" y="28.06" fixed="false"/></anchor><anchor mnemonic="CO" descriptor="Container" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(2000)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="549.51" y="785.10" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="COT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="420.74" y="826.77" fixed="false"/></attribute><attribute mnemonic="DSC" descriptor="Discovered" timeRange="datetime2(7)" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="491.43" y="822.15" fixed="false"/></attribute><attribute mnemonic="CRE" descriptor="Created" dataRange="datetime"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="409.02" y="737.23" fixed="false"/></attribute><layout x="486.14" y="719.35" fixed="false"/></anchor><anchor mnemonic="WO" descriptor="Work" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="STA" descriptor="Start" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="532.15" y="455.07" fixed="false"/></attribute><attribute mnemonic="END" descriptor="End" dataRange="datetime2(7)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="635.32" y="448.22" fixed="false"/></attribute><attribute mnemonic="NAM" descriptor="Name" knotRange="WON"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="483.13" y="477.26" fixed="false"/></attribute><attribute mnemonic="USR" descriptor="InvocationUser" knotRange="WIU"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="450.43" y="399.49" fixed="false"/></attribute><attribute mnemonic="ROL" descriptor="InvocationRole" knotRange="WIR"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="448.49" y="437.97" fixed="false"/></attribute><attribute mnemonic="EST" descriptor="ExecutionStatus" timeRange="datetime2(7)" knotRange="EST"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="472.44" y="281.47" fixed="false"/></attribute><attribute mnemonic="ERL" descriptor="ErrorLine" dataRange="int"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="598.41" y="463.33" fixed="false"/></attribute><attribute mnemonic="ERM" descriptor="ErrorMessage" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="662.52" y="418.54" fixed="false"/></attribute><attribute mnemonic="AID" descriptor="AgentStepId" dataRange="smallint"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="648.39" y="402.32" fixed="false"/></attribute><layout x="554.62" y="403.94" fixed="false"/></anchor><anchor mnemonic="CF" descriptor="Configuration" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(255)"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="893.18" y="200.39" fixed="false"/></attribute><attribute mnemonic="XML" descriptor="XMLDefinition" timeRange="datetime" dataRange="xml"><metadata privacy="Ignore" capsule="metadata" checksum="true" restatable="false" idempotent="true" deletable="false"/><layout x="910.77" y="159.81" fixed="false"/></attribute><attribute mnemonic="TYP" descriptor="Type" knotRange="CFT"><metadata privacy="Ignore" capsule="metadata" deletable="false"/><layout x="938.10" y="122.49" fixed="false"/></attribute><layout x="826.03" y="164.64" fixed="false"/></anchor><anchor mnemonic="OP" descriptor="Operations" identity="int"><metadata capsule="metadata" generator="true"/><attribute mnemonic="INS" descriptor="Inserts" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="724.76" y="789.35" fixed="false"/></attribute><attribute mnemonic="UPD" descriptor="Updates" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="766.60" y="751.54" fixed="false"/></attribute><attribute mnemonic="DEL" descriptor="Deletes" timeRange="datetime2(7)" dataRange="int"><metadata privacy="Ignore" capsule="metadata" restatable="false" idempotent="true" deletable="false"/><layout x="789.60" y="702.18" fixed="false"/></attribute><layout x="692.65" y="695.79" fixed="false"/></anchor><tie><anchorRole role="part" type="WO" identifier="true"/><anchorRole role="of" type="JB" identifier="true"/><metadata capsule="metadata" deletable="false"/><layout x="555.96" y="204.02" fixed="false"/></tie><tie><anchorRole role="formed" type="JB" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="735.45" y="81.40" fixed="false"/></tie><tie><anchorRole role="operates" type="WO" identifier="true"/><anchorRole role="source" type="CO" identifier="true"/><anchorRole role="target" type="CO" identifier="true"/><anchorRole role="with" type="OP" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="565.13" y="632.69" fixed="false"/></tie><tie><anchorRole role="formed" type="WO" identifier="true"/><anchorRole role="from" type="CF" identifier="false"/><metadata capsule="metadata" deletable="false"/><layout x="710.86" y="289.11" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
@@ -7266,7 +7218,7 @@ SELECT
    end as [in],
    [parent]
 FROM
-   [dbo].[_Schema] S
+   [metadata].[_Schema] S
 CROSS APPLY
    S.[schema].nodes('/schema//key') as Nodeset(keys)
 CROSS APPLY (

@@ -168,21 +168,23 @@ begin
 	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
 
+	declare @agentJobId uniqueidentifier;
+	declare @JB_ID int;
+
 	-- ensure this job is running!
-	select
-		JB_ID
-	into
-		#JB_ID
+	select top 1 
+		@agentJobId = JB_AID_AID_AgentJobId,
+		@JB_ID = JB_ID
 	from
 		metadata.lJB_Job
 	where
 		JB_NAM_JON_JobName = @name
 	and
-		JB_EST_EST_ExecutionStatus = 'Running';
+		JB_EST_EST_ExecutionStatus = 'Running'
+	order by
+		JB_ID desc;
 
-	if exists (
-		select top 1 JB_ID from #JB_ID
-	)
+	if(@JB_ID is not null)
 	begin
 		if(@status = 'Success')
 		begin
@@ -213,60 +215,62 @@ begin
 	-- if this job has running work they need to be stopped
 	-- which can happen when statement-level recompilation errors occur
 	-- such as a missing table
-	declare @agentJobId uniqueidentifier;
-	declare @JB_ID int;
-
-	select top 1
-		@agentJobId = jb.JB_AID_AID_AgentJobId,
-		@JB_ID = jb.JB_ID
-	from
+	select
+		wo.WO_ID,
+		wo.WO_AID_Work_AgentStepId
+	into
+		#WO_ID
+	from 
 		metadata.lJB_Job jb
+	join
+		metadata.lWO_part_JB_of wojb
+	on
+		wojb.JB_ID_of = jb.JB_ID
+	join
+		metadata.lWO_Work wo
+	on
+		wo.WO_ID = wojb.WO_ID_part 
+	and
+		wo.WO_EST_EST_ExecutionStatus = 'Running'
 	where
-		jb.JB_ID in (select JB_ID from #JB_ID);
+		jb.JB_ID = @JB_ID;
 
 	-- try to figure out the error message from the agent job history
-	merge metadata.lWO_Work wo
-	using (
-		select
-			wo.WO_ID,
-			lh.[message]
-		from 
-			metadata.lJB_Job jb
-		join
-			metadata.lWO_part_JB_of wojb
-		on
-			wojb.JB_ID_of = jb.JB_ID
-		join
-			metadata.lWO_Work wo
-		on
-			wo.WO_ID = wojb.WO_ID_part 
-		and
-			wo.WO_EST_EST_ExecutionStatus = 'Running'
-		cross apply (
-			select top 1
-				[message]
-			from
-				MSDB.dbo.sysjobhistory history
-			where
-				history.job_id = @agentJobId
-			and
-				history.run_status = 0 -- unclean exit
-		    and
-		    	history.step_id = wo.WO_AID_Work_AgentStepId
-		    order by 
-		    	history.run_date desc, history.run_time desc
-	    ) lh
-		where
-			jb.JB_ID = @JB_ID
-	) fail
-	on 
-		wo.WO_ID = fail.WO_ID
-	when matched then update
-	set
-		wo.WO_END_Work_End = @stop,
-		wo.WO_EST_ChangedAt = @stop, 
-		wo.WO_EST_EST_ExecutionStatus = @status,
-		wo.WO_ERM_Work_ErrorMessage = case when @status = 'Failure' then fail.[message] end;
+	if exists (
+		select top 1 WO_ID from #WO_ID
+	)
+	begin
+		merge metadata.lWO_Work wo
+		using (
+			select
+				wo.WO_ID,
+				lh.[message]
+			from 
+				#WO_ID wo
+			cross apply (
+				select top 1
+					[message]
+				from
+					MSDB.dbo.sysjobhistory history
+				where
+					history.job_id = @agentJobId
+				and
+					history.run_status = 0 -- unclean exit
+			    and
+			    	history.step_id = wo.WO_AID_Work_AgentStepId
+			    order by 
+			    	history.run_date desc, history.run_time desc
+		    ) lh
+		) fail
+		on 
+			wo.WO_ID = fail.WO_ID
+		when matched then update
+		set
+			wo.WO_END_Work_End = @stop,
+			wo.WO_EST_ChangedAt = @stop, 
+			wo.WO_EST_EST_ExecutionStatus = @status,
+			wo.WO_ERM_Work_ErrorMessage = case when @status = 'Failure' then fail.[message] end;
+	end
 
 	EXEC sp_releaseapplock 	@Resource  = 'metadata',  
      						@LockOwner = 'Session';
