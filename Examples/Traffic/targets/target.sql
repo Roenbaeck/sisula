@@ -11,8 +11,8 @@ GO
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: metadata_CO_ID to Metadata_ST (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -134,8 +134,8 @@ GO
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: metadata_CO_ID to Metadata_IS (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
@@ -262,8 +262,8 @@ GO
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -432,8 +432,8 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
     @agentJobId uniqueidentifier = null,

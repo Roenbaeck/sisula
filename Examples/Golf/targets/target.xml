@@ -3,8 +3,14 @@
         <sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Player Name], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        select distinct 
+            [Player Name], 
+            '1972-08-20' as [Birth Date],
+            @WorkID as WorkId 
+        from 
+            %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
         <map source="Player Name" target="PL_NAM_Player_Name" as="natural key"/>
+        <map source="Birth Date" target="PL_BID_Player_BirthDate" as="static"/>
         <map source="WorkId" target="Metadata_PL" as="metadata"/>
         <sql position="after">
         -- post processing can be put here
@@ -14,7 +20,11 @@
         <sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Statistic], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        select distinct 
+            [Statistic], 
+            @WorkID as WorkId 
+        from 
+            %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
         <map source="Statistic" target="SGR_StatisticGroup" as="natural key"/>
         <map source="WorkId" target="Metadata_SGR" as="metadata"/>
         <sql position="after">
@@ -25,7 +35,12 @@
         <sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Statistic], [Variable], @WorkID as WorkId from %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
+        select distinct 
+            [Statistic], 
+            [Variable], 
+            @WorkID as WorkId 
+        from 
+            %SourceDatabase%.%SourceSchema%.%System%_%Source%_Stats_Typed
         <map source="Statistic" target="ST_GRP_SGR_StatisticGroup" as="natural key"/>
         <map source="Variable" target="ST_DET_Statistic_Detail" as="natural key"/>
         <map source="WorkId" target="Metadata_ST" as="metadata"/>
@@ -205,7 +220,7 @@
 
         <map source="ME_ID" target="ME_ID" as="surrogate key"/>
         <map source="Value" target="ME_VAL_Measurement_Value"/>
-        <map source="Date" target="ME_VAL_ChangedAt" type="history"/>
+        <map source="Date" target="ME_VAL_ChangedAt" as="history"/>
         <map source="WorkId" target="Metadata_ME" as="metadata"/>
         <sql position="after">
         -- post processing can be put here

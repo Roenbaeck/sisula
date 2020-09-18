@@ -33,7 +33,7 @@ GO
 -- Anchors may have zero or more adjoined attributes.
 --
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- PL_Player table (with 1 attributes)
+-- PL_Player table (with 2 attributes)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.PL_Player', 'U') IS NULL
 CREATE TABLE [dbo].[PL_Player] (
@@ -57,6 +57,22 @@ CREATE TABLE [dbo].[PL_NAM_Player_Name] (
     ) references [dbo].[PL_Player](PL_ID),
     constraint pkPL_NAM_Player_Name primary key (
         PL_NAM_PL_ID asc
+    )
+);
+GO
+-- Static attribute table ---------------------------------------------------------------------------------------------
+-- PL_BID_Player_BirthDate table (on PL_Player)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.PL_BID_Player_BirthDate', 'U') IS NULL
+CREATE TABLE [dbo].[PL_BID_Player_BirthDate] (
+    PL_BID_PL_ID int not null,
+    PL_BID_Player_BirthDate date not null,
+    Metadata_PL_BID int not null,
+    constraint fkPL_BID_Player_BirthDate foreign key (
+        PL_BID_PL_ID
+    ) references [dbo].[PL_Player](PL_ID),
+    constraint pkPL_BID_Player_BirthDate primary key (
+        PL_BID_PL_ID asc
     )
 );
 GO
@@ -507,13 +523,20 @@ SELECT
     [PL].Metadata_PL,
     [NAM].PL_NAM_PL_ID,
     [NAM].Metadata_PL_NAM,
-    [NAM].PL_NAM_Player_Name
+    [NAM].PL_NAM_Player_Name,
+    [BID].PL_BID_PL_ID,
+    [BID].Metadata_PL_BID,
+    [BID].PL_BID_Player_BirthDate
 FROM
     [dbo].[PL_Player] [PL]
 LEFT JOIN
     [dbo].[PL_NAM_Player_Name] [NAM]
 ON
-    [NAM].PL_NAM_PL_ID = [PL].PL_ID;
+    [NAM].PL_NAM_PL_ID = [PL].PL_ID
+LEFT JOIN
+    [dbo].[PL_BID_Player_BirthDate] [BID]
+ON
+    [BID].PL_BID_PL_ID = [PL].PL_ID;
 GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pPL_Player viewed as it was on the given timepoint
@@ -527,13 +550,20 @@ SELECT
     [PL].Metadata_PL,
     [NAM].PL_NAM_PL_ID,
     [NAM].Metadata_PL_NAM,
-    [NAM].PL_NAM_Player_Name
+    [NAM].PL_NAM_Player_Name,
+    [BID].PL_BID_PL_ID,
+    [BID].Metadata_PL_BID,
+    [BID].PL_BID_Player_BirthDate
 FROM
     [dbo].[PL_Player] [PL]
 LEFT JOIN
     [dbo].[PL_NAM_Player_Name] [NAM]
 ON
-    [NAM].PL_NAM_PL_ID = [PL].PL_ID;
+    [NAM].PL_NAM_PL_ID = [PL].PL_ID
+LEFT JOIN
+    [dbo].[PL_BID_Player_BirthDate] [BID]
+ON
+    [BID].PL_BID_PL_ID = [PL].PL_ID;
 GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nPL_Player viewed as it currently is (cannot include future versions)
@@ -766,7 +796,8 @@ GO
 CREATE VIEW [dbo].[Latest_Player] AS
 SELECT
     [PL].PL_ID as [Player_Id],
-    [PL].PL_NAM_Player_Name as [Name]
+    [PL].PL_NAM_Player_Name as [Name],
+    [PL].PL_BID_Player_BirthDate as [BirthDate]
 FROM
     [dbo].[lPL_Player] [PL];
 GO
@@ -779,7 +810,8 @@ CREATE FUNCTION [dbo].[Point_Player] (
 RETURNS TABLE AS RETURN
 SELECT
     [PL].PL_ID as [Player_Id],
-    [PL].PL_NAM_Player_Name as [Name]
+    [PL].PL_NAM_Player_Name as [Name],
+    [PL].PL_BID_Player_BirthDate as [BirthDate]
 FROM
     [dbo].[pPL_Player](@changingTimepoint) [PL]
 GO
@@ -982,6 +1014,88 @@ BEGIN
             PL_NAM_Version = @currentVersion
         AND
             PL_NAM_StatementType in ('N');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PL_BID_Player_BirthDate instead of INSERT trigger on PL_BID_Player_BirthDate
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_PL_BID_Player_BirthDate', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_PL_BID_Player_BirthDate];
+GO
+CREATE TRIGGER [dbo].[it_PL_BID_Player_BirthDate] ON [dbo].[PL_BID_Player_BirthDate]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @PL_BID_Player_BirthDate TABLE (
+        PL_BID_PL_ID int not null,
+        Metadata_PL_BID int not null,
+        PL_BID_Player_BirthDate date not null,
+        PL_BID_Version bigint not null,
+        PL_BID_StatementType char(1) not null,
+        primary key(
+            PL_BID_Version,
+            PL_BID_PL_ID
+        )
+    );
+    INSERT INTO @PL_BID_Player_BirthDate
+    SELECT
+        i.PL_BID_PL_ID,
+        i.Metadata_PL_BID,
+        i.PL_BID_Player_BirthDate,
+        ROW_NUMBER() OVER (
+            PARTITION BY
+                i.PL_BID_PL_ID
+            ORDER BY
+                (SELECT 1) ASC -- some undefined order
+        ),
+        'X'
+    FROM
+        inserted i;
+    SELECT
+        @maxVersion = 1,
+        @currentVersion = 0
+    FROM
+        @PL_BID_Player_BirthDate;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.PL_BID_StatementType =
+                CASE
+                    WHEN [BID].PL_BID_PL_ID is not null
+                    THEN 'D' -- duplicate
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @PL_BID_Player_BirthDate v
+        LEFT JOIN
+            [dbo].[PL_BID_Player_BirthDate] [BID]
+        ON
+            [BID].PL_BID_PL_ID = v.PL_BID_PL_ID
+        AND
+            [BID].PL_BID_Player_BirthDate = v.PL_BID_Player_BirthDate
+        WHERE
+            v.PL_BID_Version = @currentVersion;
+        INSERT INTO [dbo].[PL_BID_Player_BirthDate] (
+            PL_BID_PL_ID,
+            Metadata_PL_BID,
+            PL_BID_Player_BirthDate
+        )
+        SELECT
+            PL_BID_PL_ID,
+            Metadata_PL_BID,
+            PL_BID_Player_BirthDate
+        FROM
+            @PL_BID_Player_BirthDate
+        WHERE
+            PL_BID_Version = @currentVersion
+        AND
+            PL_BID_StatementType in ('N');
     END
 END
 GO
@@ -1315,7 +1429,10 @@ BEGIN
         Metadata_PL int not null,
         PL_NAM_PL_ID int null,
         Metadata_PL_NAM int null,
-        PL_NAM_Player_Name varchar(555) null
+        PL_NAM_Player_Name varchar(555) null,
+        PL_BID_PL_ID int null,
+        Metadata_PL_BID int null,
+        PL_BID_Player_BirthDate date null
     );
     INSERT INTO @inserted
     SELECT
@@ -1323,7 +1440,10 @@ BEGIN
         i.Metadata_PL,
         ISNULL(ISNULL(i.PL_NAM_PL_ID, i.PL_ID), a.PL_ID),
         ISNULL(i.Metadata_PL_NAM, i.Metadata_PL),
-        i.PL_NAM_Player_Name
+        i.PL_NAM_Player_Name,
+        ISNULL(ISNULL(i.PL_BID_PL_ID, i.PL_ID), a.PL_ID),
+        ISNULL(i.Metadata_PL_BID, i.Metadata_PL),
+        i.PL_BID_Player_BirthDate
     FROM (
         SELECT
             PL_ID,
@@ -1331,6 +1451,9 @@ BEGIN
             PL_NAM_PL_ID,
             Metadata_PL_NAM,
             PL_NAM_Player_Name,
+            PL_BID_PL_ID,
+            Metadata_PL_BID,
+            PL_BID_Player_BirthDate,
             ROW_NUMBER() OVER (PARTITION BY PL_ID ORDER BY PL_ID) AS Row
         FROM
             inserted
@@ -1352,6 +1475,19 @@ BEGIN
         @inserted i
     WHERE
         i.PL_NAM_Player_Name is not null;
+    INSERT INTO [dbo].[PL_BID_Player_BirthDate] (
+        Metadata_PL_BID,
+        PL_BID_PL_ID,
+        PL_BID_Player_BirthDate
+    )
+    SELECT
+        i.Metadata_PL_BID,
+        i.PL_BID_PL_ID,
+        i.PL_BID_Player_BirthDate
+    FROM
+        @inserted i
+    WHERE
+        i.PL_BID_Player_BirthDate is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -1390,6 +1526,30 @@ BEGIN
         WHERE
             i.PL_NAM_Player_Name is not null;
     END
+    IF(UPDATE(PL_BID_PL_ID))
+        RAISERROR('The foreign key column PL_BID_PL_ID is not updatable.', 16, 1);
+    IF (UPDATE(PL_BID_Player_BirthDate))
+        RAISERROR('The static column PL_BID_Player_BirthDate is not updatable, and only missing values have been added.', 0, 1);
+    IF(UPDATE(PL_BID_Player_BirthDate))
+    BEGIN
+        INSERT INTO [dbo].[PL_BID_Player_BirthDate] (
+            Metadata_PL_BID,
+            PL_BID_PL_ID,
+            PL_BID_Player_BirthDate
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PL) AND NOT UPDATE(Metadata_PL_BID)
+                THEN i.Metadata_PL
+                ELSE i.Metadata_PL_BID
+            END, i.Metadata_PL),
+            ISNULL(i.PL_BID_PL_ID, i.PL_ID),
+            i.PL_BID_Player_BirthDate
+        FROM
+            inserted i
+        WHERE
+            i.PL_BID_Player_BirthDate is not null;
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1407,6 +1567,13 @@ BEGIN
         deleted d
     ON
         d.PL_NAM_PL_ID = [NAM].PL_NAM_PL_ID;
+    DELETE [BID]
+    FROM
+        [dbo].[PL_BID_Player_BirthDate] [BID]
+    JOIN
+        deleted d
+    ON
+        d.PL_BID_PL_ID = [BID].PL_BID_PL_ID;
     DELETE [PL]
     FROM
         [dbo].[PL_Player] [PL]
@@ -1414,8 +1581,14 @@ BEGIN
         [dbo].[PL_NAM_Player_Name] [NAM]
     ON
         [NAM].PL_NAM_PL_ID = [PL].PL_ID
+    LEFT JOIN
+        [dbo].[PL_BID_Player_BirthDate] [BID]
+    ON
+        [BID].PL_BID_PL_ID = [PL].PL_ID
     WHERE
-        [NAM].PL_NAM_PL_ID is null;
+        [NAM].PL_NAM_PL_ID is null
+    AND
+        [BID].PL_BID_PL_ID is null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -2229,7 +2402,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.99.1" date="2020-03-20" time="08:12:27"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore"/><knot mnemonic="SGR" descriptor="StatisticGroup" identity="smallint" dataRange="varchar(555)"><metadata capsule="dbo" generator="true"/><layout x="1067.87" y="619.48" fixed="false"/></knot><anchor mnemonic="PL" descriptor="Player" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1194.94" y="151.87" fixed="false"/></attribute><layout x="1157.46" y="206.72" fixed="false"/></anchor><anchor mnemonic="ME" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="VAL" descriptor="Value" timeRange="date" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="942.28" y="318.62" fixed="false"/></attribute><layout x="1043.46" y="351.93" fixed="false"/></anchor><anchor mnemonic="ST" descriptor="Statistic" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DET" descriptor="Detail" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1182.94" y="502.38" fixed="false"/></attribute><attribute mnemonic="GRP" descriptor="Group" knotRange="SGR"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1088.52" y="547.32" fixed="false"/></attribute><layout x="1104.69" y="486.71" fixed="false"/></anchor><tie><anchorRole role="was" type="PL" identifier="true"/><anchorRole role="measured" type="ME" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1104.12" y="273.31" fixed="false"/></tie><tie><anchorRole role="for" type="ME" identifier="true"/><anchorRole role="the" type="ST" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1056.40" y="436.89" fixed="false"/></tie></schema>';
+   N'<schema format="0.99.6.1" date="2020-09-18" time="09:21:55"><metadata changingRange="datetime" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2(7)" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false"/><knot mnemonic="SGR" descriptor="StatisticGroup" identity="smallint" dataRange="varchar(555)"><metadata capsule="dbo" generator="true"/><layout x="1067.87" y="619.48" fixed="false"/></knot><anchor mnemonic="PL" descriptor="Player" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="NAM" descriptor="Name" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1194.94" y="151.87" fixed="false"/></attribute><attribute mnemonic="BID" descriptor="BirthDate" dataRange="date"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1210.11" y="235.49" fixed="false"/></attribute><layout x="1157.46" y="206.72" fixed="false"/></anchor><anchor mnemonic="ME" descriptor="Measurement" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="VAL" descriptor="Value" timeRange="date" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="true" deletable="false"/><layout x="942.38" y="318.66" fixed="false"/></attribute><layout x="1043.46" y="351.93" fixed="false"/></anchor><anchor mnemonic="ST" descriptor="Statistic" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="DET" descriptor="Detail" dataRange="varchar(555)"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1182.94" y="502.38" fixed="false"/></attribute><attribute mnemonic="GRP" descriptor="Group" knotRange="SGR"><metadata privacy="Ignore" capsule="dbo" deletable="false"/><layout x="1088.52" y="547.32" fixed="false"/></attribute><layout x="1104.69" y="486.71" fixed="false"/></anchor><tie><anchorRole role="was" type="PL" identifier="true"/><anchorRole role="measured" type="ME" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1104.12" y="273.31" fixed="false"/></tie><tie><anchorRole role="for" type="ME" identifier="true"/><anchorRole role="the" type="ST" identifier="true"/><metadata capsule="dbo" deletable="false"/><layout x="1056.40" y="436.89" fixed="false"/></tie></schema>';
 GO
 -- Schema expanded view -----------------------------------------------------------------------------------------------
 -- A view of the schema table that expands the XML attributes into columns
@@ -2302,7 +2475,8 @@ SELECT
    Nodeset.anchor.value('@descriptor', 'nvarchar(max)') as [descriptor],
    Nodeset.anchor.value('@identity', 'nvarchar(max)') as [identity],
    Nodeset.anchor.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
-   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes]
+   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.anchor.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2327,7 +2501,8 @@ SELECT
    Nodeset.knot.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.knot.value('@dataRange', 'nvarchar(max)') as [dataRange],
    isnull(Nodeset.knot.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
-   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent]
+   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
+   Nodeset.knot.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2355,6 +2530,7 @@ SELECT
    isnull(Nodeset.attribute.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
    Nodeset.attribute.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.attribute.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
+   Nodeset.attribute.value('metadata[1]/@privacy', 'nvarchar(max)') as [privacy],
    isnull(Nodeset.attribute.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
    Nodeset.attribute.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
    Nodeset.attribute.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
@@ -2363,7 +2539,10 @@ SELECT
    ParentNodeset.anchor.value('@identity', 'nvarchar(max)') as [anchorIdentity],
    Nodeset.attribute.value('@dataRange', 'nvarchar(max)') as [dataRange],
    Nodeset.attribute.value('@knotRange', 'nvarchar(max)') as [knotRange],
-   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange]
+   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
+   Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
+   Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -2411,11 +2590,60 @@ SELECT
    Nodeset.tie.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
    Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
    Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
-   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent]
+   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
    S.[schema].nodes('/schema/tie') as Nodeset(tie);
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- The key view shows information about all the keys in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo._Key', 'V') IS NOT NULL
+DROP VIEW [dbo].[_Key]
+GO
+CREATE VIEW [dbo].[_Key]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
+   Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
+   Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
+   case [parent]
+      when 'tie'
+      then Nodeset.keys.value('../@role', 'nvarchar(max)')
+   end as [role],
+   case [parent]
+      when 'knot'
+      then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'attribute'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'tie'
+      then REPLACE(Nodeset.keys.query('
+            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            return concat($role/@type, "_", $role/@role)
+          ').value('.', 'nvarchar(max)'), ' ', '_')
+   end as [in],
+   [parent]
+FROM
+   [dbo].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema//key') as Nodeset(keys)
+CROSS APPLY (
+   VALUES (
+      case
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
+         then 'tie'
+         else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
+      end 
+   )
+) p ([parent]);
 GO
 -- Evolution function -------------------------------------------------------------------------------------------------
 -- The evolution function shows what the schema looked like at the given

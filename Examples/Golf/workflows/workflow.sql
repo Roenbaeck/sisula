@@ -33,14 +33,14 @@ EXEC sp_add_jobstep
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem FileSystem::"G:\Versionshanterat\sisula\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
+            $files = @(Get-ChildItem FileSystem::"H:\GitHub\sisula\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in G:\Versionshanterat\sisula\Golf\data\incoming"
+              Throw "No matching files were found in H:\GitHub\sisula\Golf\data\incoming"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
-                    Move-Item $fullFilename G:\Versionshanterat\sisula\Golf\data\work -force
-                    Write-Output "Moved file: $fullFilename to G:\Versionshanterat\sisula\Golf\data\work"
+                    Move-Item $fullFilename H:\GitHub\sisula\Golf\data\work -force
+                    Write-Output "Moved file: $fullFilename to H:\GitHub\sisula\Golf\data\work"
                 }
             }
         ',
@@ -71,17 +71,17 @@ EXEC sp_add_jobstep
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"G:\Versionshanterat\sisula\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"H:\GitHub\sisula\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in G:\Versionshanterat\sisula\Golf\data\work"
+              Throw "No matching files were found in H:\GitHub\sisula\Golf\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
-                    Move-Item $fullFilename G:\Versionshanterat\sisula\Golf\data\archive -force
-                    Write-Output "Moved file: $fullFilename to G:\Versionshanterat\sisula\Golf\data\archive"
+                    Move-Item $fullFilename H:\GitHub\sisula\Golf\data\archive -force
+                    Write-Output "Moved file: $fullFilename to H:\GitHub\sisula\Golf\data\archive"
                 }
             }
         ',
@@ -346,9 +346,9 @@ EXEC sp_update_jobstep
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow">
 	<variable name="stage" value="GolfStage"/>
-	<variable name="incomingPath" value="G:\Versionshanterat\sisula\Golf\data\incoming"/>
-	<variable name="workPath" value="G:\Versionshanterat\sisula\Golf\data\work"/>
-	<variable name="archivePath" value="G:\Versionshanterat\sisula\Golf\data\archive"/>
+	<variable name="incomingPath" value="H:\GitHub\sisula\Golf\data\incoming"/>
+	<variable name="workPath" value="H:\GitHub\sisula\Golf\data\work"/>
+	<variable name="archivePath" value="H:\GitHub\sisula\Golf\data\archive"/>
 	<variable name="filenamePattern" value=".*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>

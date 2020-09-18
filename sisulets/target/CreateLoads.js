@@ -150,10 +150,18 @@ DECLARE @actions TABLE (
 ~*/
 
             }
+            if(map.as == 'static') {
+/*~
+        ([target].[$map.target] is null)
+    $(i < maps.length - 1)? OR    
+~*/
+            }
+            else {
 /*~
         ([target].[$map.target] is null OR [source].[$map.source] <> [target].[$map.target])
     $(i < maps.length - 1)? OR    
 ~*/
+            }
         }    
 /*~
     ) 

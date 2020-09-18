@@ -134,8 +134,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -206,8 +206,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -276,8 +276,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -411,8 +411,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -699,8 +699,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -815,8 +815,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -924,8 +924,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -1104,8 +1104,8 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by e-lronnback
--- From: TSE-9B50TY1 in the CORPNET domain
+-- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,

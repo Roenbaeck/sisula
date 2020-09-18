@@ -9,10 +9,11 @@ GO
 -- Target: lPL_Player
 --
 -- Map: Player Name to PL_NAM_Player_Name (as natural key)
+-- Map: Birth Date to PL_BID_Player_BirthDate (as static)
 -- Map: WorkId to Metadata_PL (as metadata)
 -- 
--- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 18 09:42:46 UTC+0200 2020 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lPL_Player__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -55,19 +56,33 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[lPL_Player] AS [target]
     USING (
-        select distinct [Player Name], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Player Name], 
+            '1972-08-20' as [Birth Date],
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
     ) AS [source]
     ON (
         [source].[Player Name] = [target].[PL_NAM_Player_Name]
     )
     WHEN NOT MATCHED THEN INSERT (
         [PL_NAM_Player_Name],
+        [PL_BID_Player_BirthDate],
         [Metadata_PL]
     )
     VALUES (
         [source].[Player Name],
+        [source].[Birth Date],
         [source].[WorkId]
     )
+    WHEN MATCHED AND (
+        ([target].[PL_BID_Player_BirthDate] is null)
+    ) 
+    THEN UPDATE
+    SET
+        [target].[PL_BID_Player_BirthDate] = [source].[Birth Date],
+        [target].[Metadata_PL] = [source].[WorkId]
     OUTPUT
         LEFT($action, 1) INTO @actions;
     SELECT
@@ -114,8 +129,8 @@ GO
 -- Map: Statistic to SGR_StatisticGroup (as natural key)
 -- Map: WorkId to Metadata_SGR (as metadata)
 -- 
--- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -158,7 +173,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[SGR_StatisticGroup] AS [target]
     USING (
-        select distinct [Statistic], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Statistic], 
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
     ) AS [source]
     ON (
         [source].[Statistic] = [target].[SGR_StatisticGroup]
@@ -218,8 +237,8 @@ GO
 -- Map: Variable to ST_DET_Statistic_Detail (as natural key)
 -- Map: WorkId to Metadata_ST (as metadata)
 -- 
--- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lST_Statistic__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -262,7 +281,12 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[lST_Statistic] AS [target]
     USING (
-        select distinct [Statistic], [Variable], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Statistic], 
+            [Variable], 
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
     ) AS [source]
     ON (
         [source].[Statistic] = [target].[ST_GRP_SGR_StatisticGroup]
@@ -325,8 +349,8 @@ GO
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] (
     @agentJobId uniqueidentifier = null,
@@ -543,11 +567,11 @@ GO
 --
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: Value to ME_VAL_Measurement_Value 
--- Map: Date to ME_VAL_ChangedAt 
+-- Map: Date to ME_VAL_ChangedAt (as history)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Mar 20 10:39:31 UTC+0100 2020 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
+-- From: <computer> in the <domainname> domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] (
     @agentJobId uniqueidentifier = null,
@@ -633,8 +657,6 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     )
     WHEN MATCHED AND (
         ([target].[ME_VAL_Measurement_Value] is null OR [source].[Value] <> [target].[ME_VAL_Measurement_Value])
-    OR 
-        ([target].[ME_VAL_ChangedAt] is null OR [source].[Date] <> [target].[ME_VAL_ChangedAt])
     ) 
     THEN UPDATE
     SET
@@ -682,8 +704,14 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
 		<sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Player Name], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Player Name], 
+            ''1972-08-20'' as [Birth Date],
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
         <map source="Player Name" target="PL_NAM_Player_Name" as="natural key"/>
+		<map source="Birth Date" target="PL_BID_Player_BirthDate" as="static"/>
 		<map source="WorkId" target="Metadata_PL" as="metadata"/>
 		<sql position="after">
         -- post processing can be put here
@@ -693,7 +721,11 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
 		<sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Statistic], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Statistic], 
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
         <map source="Statistic" target="SGR_StatisticGroup" as="natural key"/>
 		<map source="WorkId" target="Metadata_SGR" as="metadata"/>
 		<sql position="after">
@@ -704,7 +736,12 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
 		<sql position="before">
         -- preparations can be put here
         </sql>
-        select distinct [Statistic], [Variable], @WorkID as WorkId from GolfStage.dbo.PGA_Kaggle_Stats_Typed
+        select distinct 
+            [Statistic], 
+            [Variable], 
+            @WorkID as WorkId 
+        from 
+            GolfStage.dbo.PGA_Kaggle_Stats_Typed
         <map source="Statistic" target="ST_GRP_SGR_StatisticGroup" as="natural key"/>
 		<map source="Variable" target="ST_DET_Statistic_Detail" as="natural key"/>
 		<map source="WorkId" target="Metadata_ST" as="metadata"/>
@@ -874,7 +911,7 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             mest.[ME_ID_for] = plme.[ME_ID_measured]
         <map source="ME_ID" target="ME_ID" as="surrogate key"/>
 		<map source="Value" target="ME_VAL_Measurement_Value"/>
-		<map source="Date" target="ME_VAL_ChangedAt" type="history"/>
+		<map source="Date" target="ME_VAL_ChangedAt" as="history"/>
 		<map source="WorkId" target="Metadata_ME" as="metadata"/>
 		<sql position="after">
         -- post processing can be put here
