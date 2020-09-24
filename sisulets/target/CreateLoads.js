@@ -176,9 +176,21 @@ DECLARE @actions TABLE (
         [target].$deletableColumn = 1,
 ~*/
             }
+            if(map.as == 'static') {
+/*~
+        [target].[$map.target] = 
+            CASE 
+                WHEN ([target].[$map.target] is null) 
+                THEN [source].[$map.source] 
+                ELSE [target].[$map.target] 
+            END$(i < maps.length - 1)?,
+~*/
+            }
+            else {            
 /*~
         [target].[$map.target] = [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
+            }
         }    
     } // end of if nonkeys
 /*~
