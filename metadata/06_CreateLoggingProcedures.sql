@@ -196,7 +196,7 @@ begin
 			from
 				metadata.lJB_Job jb
 			where
-				jb.JB_ID in (select JB_ID from #JB_ID);
+				jb.JB_ID = @JB_ID;
 		end
 		if(@status = 'Failure')
 		begin
@@ -208,7 +208,7 @@ begin
 			from
 				metadata.lJB_Job jb
 			where
-				jb.JB_ID in (select JB_ID from #JB_ID);
+				jb.JB_ID = @JB_ID;
 		end
 	end
 
