@@ -1,4 +1,10 @@
 <xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:simpleType name="__type">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="merge"/>
+			<xs:enumeration value="insert"/>
+		</xs:restriction>
+	</xs:simpleType>
 	<xs:simpleType name="__position">
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="before"/>
@@ -30,6 +36,7 @@
 		<xs:attribute name="source" type="xs:string" use="required"/>
 		<xs:attribute name="target" type="xs:string" use="required"/>
 		<xs:attribute name="pass" type="xs:positiveInteger" use="optional"/>
+		<xs:attribute name="type" type="__type" use="optional"/>
 	</xs:complexType>
 	<xs:complexType name="__target">
 		<xs:choice minOccurs="1" maxOccurs="unbounded">

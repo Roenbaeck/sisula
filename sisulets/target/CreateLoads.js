@@ -1,6 +1,7 @@
 // Create loading logic
 var load, map, i, deletable, deletablesExist;
 while(load = target.nextLoad()) {
+    load.type = load.type ? load.type : 'merge';
 /*~
 IF Object_ID('$S_SCHEMA$.$load.qualified', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$load.qualified];
@@ -8,7 +9,7 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: $load.qualified
 -- Source:    $load.source
--- Target:    $load.target
+-- Target:    $load.target ($load.type)
 --
 ~*/
     var naturalKeys = [], 
@@ -74,109 +75,144 @@ DECLARE @actions TABLE (
     $sql._sql
 ~*/
     }
-    
+    if(load.type == 'insert') {
+/*~    
+    -- Perform the actual insert ----------------------
+    INSERT INTO [$target.database].[$T_SCHEMA].[$load.target] (
+~*/
+        while(map = load.nextMap()) {
+/*~
+        [$map.target]$(load.hasMoreMaps())?,
+~*/
+        }
+/*~    
+    )
+    SELECT
+~*/
+        while(map = load.nextMap()) {
+/*~
+        [source].[$map.source]$(load.hasMoreMaps())?,
+~*/
+        }
+/*~    
+    FROM~*/
+        if(load._load) {
+/*~ (
+        $load._load
+    ) AS [source];
+~*/
+        }
+        else {
+/*~
+        $load.source AS [source];
+~*/
+        }
+/*~
+    SET @inserts = NULLIF(@@ROWCOUNT + COALESCE(@inserts, 0), 0);
+~*/
+    } // end of type = "insert"
+    else {
 /*~    
     -- Perform the actual merge ----------------------
     MERGE INTO [$target.database].[$T_SCHEMA].[$load.target] AS [target]
     USING~*/
-    if(load._load) {
+        if(load._load) {
 /*~ (
         $load._load
     ) AS [source]
 ~*/
-    }
-    else {
+        }
+        else {
 /*~
         $load.source AS [source]
 ~*/
-    }
+        }
 /*~
     ON (
 ~*/ 
-    var maps = naturalKeys.concat(surrogateKeys);
-    for(i = 0; map = maps[i]; i++) {
+        var maps = naturalKeys.concat(surrogateKeys);
+        for(i = 0; map = maps[i]; i++) {
 /*~
         [source].[$map.source] = [target].[$map.target]
     $(i < maps.length - 1)? AND
 ~*/
-    } 
-    if(load.condition) {
+        } 
+        if(load.condition) {
 /*~
     AND (
         $load.condition
         )
 ~*/        
-    } 
+        } 
 /*~    
     )
 ~*/
-    var maps = naturalKeys.concat(others, metadata);
-    if(maps.length > 0) {
+        var maps = naturalKeys.concat(others, metadata);
+        if(maps.length > 0) {
 /*~        
     WHEN NOT MATCHED THEN INSERT (
 ~*/
-        for(i = 0; map = maps[i]; i++) {
+            for(i = 0; map = maps[i]; i++) {
 /*~
         [$map.target]$(i < maps.length - 1)?,
 ~*/
-        }    
+            }    
 /*~    
     )
     VALUES (
 ~*/
-        for(i = 0; map = maps[i]; i++) {
+            for(i = 0; map = maps[i]; i++) {
 /*~
         [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
-        }    
+            }    
 /*~
     )
 ~*/
-    }
-    var othersWithoutHistory = [];
-    for(i = 0; map = others[i]; i++) {
-        if(map.as != 'history') othersWithoutHistory.push(map);
-    }
-    var maps = othersWithoutHistory;
-    if(maps.length > 0) {
+        }
+        var othersWithoutHistory = [];
+        for(i = 0; map = others[i]; i++) {
+            if(map.as != 'history') othersWithoutHistory.push(map);
+        }
+        var maps = othersWithoutHistory;
+        if(maps.length > 0) {
 /*~
     WHEN MATCHED AND (
 ~*/
-        for(i = 0; map = maps[i]; i++) {
-            if(map.deletable === 'true') {
+            for(i = 0; map = maps[i]; i++) {
+                if(map.deletable === 'true') {
 /*~
         ([target].[$map.target] is not null AND [source].[$map.source] is null)
     OR    
 ~*/
-
-            }
-            if(map.as == 'static') {
+                }
+                if(map.as == 'static') {
 /*~
         ([target].[$map.target] is null)
     $(i < maps.length - 1)? OR    
 ~*/
-            }
-            else {
+                }
+                else {
 /*~
         ([target].[$map.target] is null OR [source].[$map.source] <> [target].[$map.target])
     $(i < maps.length - 1)? OR    
 ~*/
-            }
-        }    
+                }
+            }    
 /*~
     ) 
     THEN UPDATE
     SET
 ~*/
-        var maps = others.concat(metadata);
-        for(i = 0; map = maps[i]; i++) {
-            if(map.deletable === 'true' && map.as != 'history') {
-                var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';                
+            var maps = others.concat(metadata);
+            for(i = 0; map = maps[i]; i++) {
+                if(map.deletable === 'true' && map.as != 'history') {
+                    var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';                
 /*~
         [target].$deletableColumn = 1,
 ~*/
-            }
-            if(map.as == 'static') {
+                }
+                if(map.as == 'static') {
 /*~
         [target].[$map.target] = 
             CASE 
@@ -185,14 +221,14 @@ DECLARE @actions TABLE (
                 ELSE [target].[$map.target] 
             END$(i < maps.length - 1)?,
 ~*/
-            }
-            else {            
+                }
+                else {            
 /*~
         [target].[$map.target] = [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
-            }
-        }    
-    } // end of if nonkeys
+                }
+            }    
+        } // end of if nonkeys
 /*~
     OUTPUT
         LEFT($$action, 1) INTO @actions;
@@ -204,6 +240,7 @@ DECLARE @actions TABLE (
     FROM
         @actions;
 ~*/
+    } // end of type = "merge" (default)
     setInsertsMetadata('@inserts');
     setUpdatesMetadata('@updates');
     setDeletesMetadata('@deletes');
