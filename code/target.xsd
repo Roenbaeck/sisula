@@ -5,6 +5,12 @@
 			<xs:enumeration value="insert"/>
 		</xs:restriction>
 	</xs:simpleType>
+	<xs:simpleType name="__temporalization">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="uni"/>
+			<xs:enumeration value="crt"/>
+		</xs:restriction>
+	</xs:simpleType>
 	<xs:simpleType name="__position">
 		<xs:restriction base="xs:string">
 			<xs:enumeration value="before"/>
@@ -44,6 +50,7 @@
 		</xs:choice>
 		<xs:attribute name="name" type="xs:string" use="required"/>
 		<xs:attribute name="database" type="xs:string" use="required"/>
+		<xs:attribute name="temporalization" type="__temporalization" use="optional"/>
 	</xs:complexType>
 	<xs:element name="target" type="__target"/>
 </xs:schema>

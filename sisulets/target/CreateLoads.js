@@ -1,7 +1,6 @@
 // Create loading logic
 var load, map, i, deletable, deletablesExist;
 while(load = target.nextLoad()) {
-    load.type = load.type ? load.type : 'merge';
 /*~
 IF Object_ID('$S_SCHEMA$.$load.qualified', 'P') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[$load.qualified];
@@ -32,8 +31,11 @@ GO
             default:
                 others.push(map);
         }
-        if(map.deletable === 'true') deletablesExist = true;
-        deletable = map.deletable === 'true' ? '[D]' : '';
+        deletable = '';
+        if(map.deletable === 'true') { 
+            deletablesExist = true;
+            deletable = '[D]';
+        }
 /*~
 -- Map: $map.source to $map.target $deletable $(map.as)? (as $map.as)
 ~*/
@@ -206,7 +208,8 @@ DECLARE @actions TABLE (
 ~*/
             var maps = others.concat(metadata);
             for(i = 0; map = maps[i]; i++) {
-                if(map.deletable === 'true' && map.as != 'history') {
+                // Use poor man's auditability in uni-temporal models
+                if(target.temporalization === 'uni' && map.deletable === 'true' && map.as != 'history') {
                     var deletableColumn = '[Deletable_' + map.target.substring(0, 6) + ']';                
 /*~
         [target].$deletableColumn = 1,
