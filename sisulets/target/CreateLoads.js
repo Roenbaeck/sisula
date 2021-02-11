@@ -28,8 +28,12 @@ GO
             case 'metadata':
                 metadata.push(map);
                 break;
+            case 'opinion':
+                if(target.temporalization === 'crt')
+                    others.push(map);
+                break;
             default:
-                others.push(map);
+                others.push(map);                    
         }
         deletable = '';
         if(map.deletable === 'true') { 
@@ -78,11 +82,12 @@ DECLARE @actions TABLE (
 ~*/
     }
     if(load.type == 'insert') {
+        var maps = naturalKeys.concat(surrogateKeys, metadata, others);
 /*~    
     -- Perform the actual insert ----------------------
     INSERT INTO [$target.database].[$T_SCHEMA].[$load.target] (
 ~*/
-        while(map = load.nextMap()) {
+        for(i = 0; map = maps[i]; i++) {
 /*~
         [$map.target]$(load.hasMoreMaps())?,
 ~*/
@@ -91,7 +96,7 @@ DECLARE @actions TABLE (
     )
     SELECT
 ~*/
-        while(map = load.nextMap()) {
+        for(i = 0; map = maps[i]; i++) {
 /*~
         [source].[$map.source]$(load.hasMoreMaps())?,
 ~*/
@@ -174,7 +179,7 @@ DECLARE @actions TABLE (
         }
         var othersWithoutHistory = [];
         for(i = 0; map = others[i]; i++) {
-            if(map.as != 'history') othersWithoutHistory.push(map);
+            if(map.as != 'history' && map.as != 'opinion') othersWithoutHistory.push(map);
         }
         var maps = othersWithoutHistory;
         if(maps.length > 0) {

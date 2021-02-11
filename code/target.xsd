@@ -23,6 +23,8 @@
 			<xs:enumeration value="surrogate key"/>
 			<xs:enumeration value="metadata"/>
 			<xs:enumeration value="history"/>
+			<xs:enumeration value="static"/>
+			<xs:enumeration value="opinion"/>
 		</xs:restriction>
 	</xs:simpleType>
 	<xs:complexType name="__sql" mixed="true">
