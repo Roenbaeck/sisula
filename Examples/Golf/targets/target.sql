@@ -6,14 +6,14 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lPL_Player__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lPL_Player
+-- Target: lPL_Player ()
 --
 -- Map: Player Name to PL_NAM_Player_Name (as natural key)
 -- Map: Birth Date to PL_BID_Player_BirthDate (as static)
 -- Map: WorkId to Metadata_PL (as metadata)
 -- 
--- Generated: Fri Sep 18 09:42:46 UTC+0200 2020 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lPL_Player__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -81,7 +81,12 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     ) 
     THEN UPDATE
     SET
-        [target].[PL_BID_Player_BirthDate] = [source].[Birth Date],
+        [target].[PL_BID_Player_BirthDate] = 
+            CASE 
+                WHEN ([target].[PL_BID_Player_BirthDate] is null) 
+                THEN [source].[Birth Date] 
+                ELSE [target].[PL_BID_Player_BirthDate] 
+            END,
         [target].[Metadata_PL] = [source].[WorkId]
     OUTPUT
         LEFT($action, 1) INTO @actions;
@@ -124,13 +129,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SGR_StatisticGroup__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: SGR_StatisticGroup
+-- Target: SGR_StatisticGroup ()
 --
 -- Map: Statistic to SGR_StatisticGroup (as natural key)
 -- Map: WorkId to Metadata_SGR (as metadata)
 -- 
--- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -231,14 +236,14 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lST_Statistic__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lST_Statistic
+-- Target: lST_Statistic ()
 --
 -- Map: Statistic to ST_GRP_SGR_StatisticGroup (as natural key)
 -- Map: Variable to ST_DET_Statistic_Detail (as natural key)
 -- Map: WorkId to Metadata_ST (as metadata)
 -- 
--- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lST_Statistic__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -344,13 +349,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lME_Measurement__PGA_Kaggle_Stats_Typed__Instance
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lME_Measurement
+-- Target: lME_Measurement ()
 --
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] (
     @agentJobId uniqueidentifier = null,
@@ -563,15 +568,15 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lME_Measurement__PGA_Kaggle_Stats_Typed__Value
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lME_Measurement
+-- Target: lME_Measurement ()
 --
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: Value to ME_VAL_Measurement_Value 
 -- Map: Date to ME_VAL_ChangedAt (as history)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Sep 18 09:42:48 UTC+0200 2020 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] (
     @agentJobId uniqueidentifier = null,

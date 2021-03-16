@@ -1,8 +1,8 @@
 <workflow name="%System%_%Source%_Workflow">
     <variable name="stage" value="%SourceDatabase%"/>
-    <variable name="incomingPath" value="%SisulaPath%Golf\data\incoming"/>
-    <variable name="workPath" value="%SisulaPath%Golf\data\work"/>
-    <variable name="archivePath" value="%SisulaPath%Golf\data\archive"/>
+    <variable name="incomingPath" value="%SisulaPath%Examples\Golf\data\incoming"/>
+    <variable name="workPath" value="%SisulaPath%Examples\Golf\data\work"/>
+    <variable name="archivePath" value="%SisulaPath%Examples\Golf\data\archive"/>
     <variable name="filenamePattern" value=".*\.csv"/>
     <!-- enumeration of on_success_action codes -->
     <variable name="quitWithSuccess" value="1"/>
