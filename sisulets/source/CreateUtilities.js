@@ -12,6 +12,10 @@ IF Object_Id('${S_SCHEMA}$.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [$S_SCHEMA].[ColumnSplitter];
 GO
 
+IF Object_Id('${S_SCHEMA}$.MultiColumnSplitter', 'PC') IS NOT NULL
+DROP PROCEDURE [$S_SCHEMA].[MultiColumnSplitter];
+GO
+
 IF Object_Id('${S_SCHEMA}$.IsType', 'FS') IS NOT NULL
 DROP FUNCTION [$S_SCHEMA].[IsType];
 GO
@@ -118,6 +122,15 @@ CREATE PROCEDURE [$S_SCHEMA].ColumnSplitter(
 	@includeColumns AS nvarchar(4000) = null
 )
 AS EXTERNAL NAME Utilities.ColumnSplitter.InitMethod;
+GO
+
+CREATE PROCEDURE [$S_SCHEMA].MultiColumnSplitter(
+	@table AS nvarchar(4000),
+	@column AS nvarchar(4000),
+	@pattern AS nvarchar(4000),
+	@includeColumns AS nvarchar(4000) = null
+)
+AS EXTERNAL NAME Utilities.MultiColumnSplitter.InitMethod;
 GO
 
 IF NOT EXISTS (

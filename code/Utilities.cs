@@ -238,6 +238,152 @@ public partial class ColumnSplitter
     }
 };
 
+/*
+ * 2022-05-20 Adding a "mutli" version of the column splitter
+ */
+public partial class MultiColumnSplitter
+{
+    [Microsoft.SqlServer.Server.SqlProcedure]
+    public static void InitMethod(SqlString table, SqlString column, SqlString pattern, SqlString includeColumns)
+    {
+        string[] extraColumns;
+        if(includeColumns.IsNull)
+        {
+            // if the includeColumns parameter has been omitted
+            extraColumns = new string[0];
+        }
+        else
+        {
+            // columns should be delimited using commas
+            string[] delimiters = new string[1] {","};
+            extraColumns = includeColumns.ToString().Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+        }
+        int i;
+        // trim column names
+        for (i = 0; i < extraColumns.Length; i++)
+        {
+            extraColumns[i] = extraColumns[i].Trim();
+        }
+
+        // compile the regex, since it will be used on a lot of rows
+        // this trades a slower instantiation for faster execution
+        Regex split = new Regex(pattern.ToString(), RegexOptions.Singleline | RegexOptions.Compiled);
+        // find the group names in the provided regex (or numbers for not named capturing groups)
+        string[] groupNamesAndEntireMatch = split.GetGroupNames();
+        // allocate storage for the actual group names (-1 for removing the entire match)
+        string[] groupNames = new string[groupNamesAndEntireMatch.Length - 1];
+        Array.Copy(groupNamesAndEntireMatch, 1, groupNames, 0, groupNames.Length);
+
+        // open a connection in the same context as we are executing
+        using (SqlConnection connection = new SqlConnection("context connection=true"))
+        {
+            connection.Open();
+            // set up the query to fetch data
+            string query =
+                " SELECT " +
+                    (extraColumns.Length == 0 ? "" : string.Join(",", extraColumns) + ",") +
+                    column.ToString() +
+                " FROM " +
+                    table.ToString();
+
+            SqlCommand command = new SqlCommand(query, connection);
+            SqlDataReader reader = command.ExecuteReader(CommandBehavior.KeyInfo);
+
+            // set up the columns expected to be returned
+            SqlMetaData[] md = new SqlMetaData[extraColumns.Length + groupNames.Length];
+            SqlDbType providerType;
+            int columnSize;
+            byte numericPrecision, numericScale;
+            // first add the extra columns
+            for (i = 0; i < extraColumns.Length; i++)
+            {
+        		// remove brackets from column names
+            	extraColumns[i] = extraColumns[i].Replace("[", "").Replace("]", "");
+                providerType = (SqlDbType)(int)reader.GetSchemaTable().Rows[i]["ProviderType"];
+                switch(providerType) {
+                    case SqlDbType.Bit:
+                    case SqlDbType.BigInt:
+                    case SqlDbType.DateTime:
+                    case SqlDbType.Float:
+                    case SqlDbType.Int:
+                    case SqlDbType.Money:
+                    case SqlDbType.SmallDateTime:
+                    case SqlDbType.SmallInt:
+                    case SqlDbType.SmallMoney:
+                    case SqlDbType.Timestamp:
+                    case SqlDbType.TinyInt:
+                    case SqlDbType.UniqueIdentifier:
+                    case SqlDbType.Xml:
+                        md[i] = new SqlMetaData(extraColumns[i], providerType);
+                        break;
+                    case SqlDbType.Binary:
+                    case SqlDbType.Char:
+                    case SqlDbType.Image:
+                    case SqlDbType.NChar:
+                    case SqlDbType.NText:
+                    case SqlDbType.NVarChar:
+                    case SqlDbType.Text:
+                    case SqlDbType.VarBinary:
+                    case SqlDbType.VarChar:
+                        columnSize = (int)reader.GetSchemaTable().Rows[i]["ColumnSize"];
+                        columnSize = columnSize == 2147483647 ? -1 : columnSize;
+                        md[i] = new SqlMetaData(extraColumns[i], providerType, columnSize);
+                        break;
+                    case SqlDbType.Decimal:
+                        numericPrecision = (byte)reader.GetSchemaTable().Rows[i]["NumericPrecision"];
+                        numericScale     = (byte)reader.GetSchemaTable().Rows[i]["NumericScale"];
+                        md[i] = new SqlMetaData(extraColumns[i], providerType, numericPrecision, numericScale);
+                        break;
+                    default:
+                        md[i] = new SqlMetaData(extraColumns[i], providerType);
+                        break;
+                }
+            }
+            // then the expected columms created by the split operation
+            for (i = 0; i < groupNames.Length; i++)
+            {
+                md[i + extraColumns.Length] = new SqlMetaData(groupNames[i], SqlDbType.NVarChar, -1);
+            }
+            SqlDataRecord writer = new SqlDataRecord(md);
+
+            SqlString columnValue;   // holds a value from the column to be matched against
+            GroupCollection groups;  // holds the results of the match
+            using (reader)
+            {
+                SqlContext.Pipe.SendResultsStart(writer);
+                // iterate through the result set
+                while (reader.Read())
+                {
+                    for (i = 0; i < extraColumns.Length; i++)
+                    {
+                        // pass through the extra columns
+                        writer.SetValue(i, reader.GetValue(i));
+                    }
+                    // read column to matched against
+                    columnValue = reader.GetSqlString(extraColumns.Length);
+                    // split column according to pattern
+                    foreach(Match match in split.Matches(columnValue.ToString())) {
+                        groups = match.Groups;
+                        for (i = 0; i < groupNames.Length; i++)
+                        {
+                            // write content of capturing group
+                            if(groups[groupNames[i]].Value == String.Empty)
+                                // an empty string is no match, and should be a null value
+                                writer.SetSqlString(i + extraColumns.Length, SqlString.Null);
+                            else
+                                // if the string is non-empty, write the actual value
+                                writer.SetSqlString(i + extraColumns.Length, groups[groupNames[i]].Value);
+                        }
+                        // send the row to the result set
+                        SqlContext.Pipe.SendResultsRow(writer);
+                    }
+                }
+                SqlContext.Pipe.SendResultsEnd();
+            }
+        }
+    }
+};
+
 public partial class IsType {
     [
         Microsoft.SqlServer.Server.SqlFunction (
