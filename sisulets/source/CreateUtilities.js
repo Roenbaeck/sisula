@@ -62,7 +62,17 @@ BEGIN TRY
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
 END TRY BEGIN CATCH 
 	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
-	IF(PATINDEX('%identical%', @msg) = 0) PRINT ERROR_MESSAGE();
+	IF(PATINDEX('%identical%', @msg) = 0) 
+	BEGIN 
+		PRINT ERROR_MESSAGE();
+	END
+	ELSE
+	BEGIN TRY
+		DROP ASSEMBLY Utilities;
+	END TRY
+	BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+	END CATCH
 END CATCH
 ELSE -- assembly does not exist
 BEGIN TRY

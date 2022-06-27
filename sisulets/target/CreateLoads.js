@@ -89,7 +89,7 @@ DECLARE @actions TABLE (
 ~*/
         for(i = 0; map = maps[i]; i++) {
 /*~
-        [$map.target]$(load.hasMoreMaps())?,
+        [$map.target]$(i < maps.length - 1)?,
 ~*/
         }
 /*~    
@@ -98,7 +98,7 @@ DECLARE @actions TABLE (
 ~*/
         for(i = 0; map = maps[i]; i++) {
 /*~
-        [source].[$map.source]$(load.hasMoreMaps())?,
+        [source].[$map.source]$(i < maps.length - 1)?,
 ~*/
         }
 /*~    
