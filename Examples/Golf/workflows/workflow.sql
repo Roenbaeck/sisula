@@ -33,14 +33,14 @@ EXEC sp_add_jobstep
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
+            $files = @(Get-ChildItem FileSystem::"C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming"
+              Throw "No matching files were found in C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+                    Move-Item $fullFilename C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work -force
+                    Write-Output "Moved file: $fullFilename to C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
                 }
             }
         ',
@@ -71,17 +71,17 @@ EXEC sp_add_jobstep
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
     @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+              Throw "No matching files were found in C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive"
+                    Move-Item $fullFilename C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive -force
+                    Write-Output "Moved file: $fullFilename to C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"
                 }
             }
         ',
@@ -346,9 +346,9 @@ EXEC sp_update_jobstep
 -- The workflow definition used when generating the above
 DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow">
 	<variable name="stage" value="GolfStage"/>
-	<variable name="incomingPath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming"/>
-	<variable name="workPath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"/>
-	<variable name="archivePath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive"/>
+	<variable name="incomingPath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"/>
+	<variable name="workPath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"/>
+	<variable name="archivePath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"/>
 	<variable name="filenamePattern" value=".*\.csv"/>
 	<variable name="quitWithSuccess" value="1"/>
 	<variable name="quitWithFailure" value="2"/>

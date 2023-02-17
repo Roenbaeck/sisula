@@ -106,7 +106,8 @@ GO
 CREATE FUNCTION [$S_SCHEMA].MultiSplitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
 	[match] nvarchar(max),
-	[index] int
+	[index] int, 
+	[group] nvarchar(max)
 ) AS EXTERNAL NAME Utilities.MultiSplitter.InitMethod;
 GO
 

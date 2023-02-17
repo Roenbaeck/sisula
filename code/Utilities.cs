@@ -54,6 +54,7 @@ public partial class Splitter {
     }
 }
 
+
 /*
  * 2019-02-08 Added by Lars Rönnbäck
  */
@@ -68,7 +69,7 @@ public partial class MultiSplitter {
         )
     ]
     public static IEnumerable InitMethod([SqlFacet(MaxSize = -1)] SqlString row, SqlString pattern) {
-        ICollection<Capture> captures = new Collection<Capture>();
+        ICollection<Tuple<String, Capture>> named_captures = new Collection<Tuple<String,Capture>>();
         foreach(Match match in Regex.Matches(row.ToString(), pattern.ToString(), RegexOptions.None)) {
             bool first = true;
             foreach (Group group in match.Groups) {
@@ -77,15 +78,17 @@ public partial class MultiSplitter {
                 }
                 else {
                     foreach(Capture capture in group.Captures) {
-                        captures.Add(capture);
+                        named_captures.Add(new Tuple<String, Capture>(group.Name, capture));
                     }
                 }
             }
         }
-        return captures;
+        return named_captures;
     }
-    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index) {
-        Capture capture = (Capture) fromEnumeration;
+    public static void FillRow(Object fromEnumeration, [SqlFacet(MaxSize = -1)] out SqlString match, out SqlInt32 index, out SqlString group) {
+        Tuple<String, Capture> named_capture = (Tuple<String, Capture>) fromEnumeration;
+        group = named_capture.Item1;
+        Capture capture = named_capture.Item2;
         match = (capture.Value == String.Empty) ? SqlString.Null : new SqlString(capture.Value);
         index = new SqlInt32(capture.Index);
     }

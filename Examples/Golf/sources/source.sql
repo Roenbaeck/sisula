@@ -16,6 +16,9 @@ GO
 IF Object_Id('dbo.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [dbo].[ColumnSplitter];
 GO
+IF Object_Id('dbo.MultiColumnSplitter', 'PC') IS NOT NULL
+DROP PROCEDURE [dbo].[MultiColumnSplitter];
+GO
 IF Object_Id('dbo.IsType', 'FS') IS NOT NULL
 DROP FUNCTION [dbo].[IsType];
 GO
@@ -52,12 +55,22 @@ IF EXISTS (
 )
 BEGIN TRY
 	ALTER ASSEMBLY Utilities
-	FROM 'C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM 'C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
 END TRY BEGIN CATCH 
 	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
-	IF(PATINDEX('%identical%', @msg) = 0) PRINT ERROR_MESSAGE();
+	IF(PATINDEX('%identical%', @msg) = 0) 
+	BEGIN 
+		PRINT ERROR_MESSAGE();
+	END
+	ELSE
+	BEGIN TRY
+		DROP ASSEMBLY Utilities;
+	END TRY
+	BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+	END CATCH
 END CATCH
 ELSE -- assembly does not exist
 BEGIN TRY
@@ -65,7 +78,7 @@ BEGIN TRY
     IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
     BEGIN
 		CREATE TABLE #hash([hash] varbinary(64));
-		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
 		DECLARE @hash varbinary(64);
 		SELECT @hash = [hash] FROM #hash;
         IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
@@ -73,7 +86,7 @@ BEGIN TRY
 	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM 'C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
 END TRY BEGIN CATCH 
@@ -112,6 +125,14 @@ CREATE PROCEDURE [dbo].ColumnSplitter(
 )
 AS EXTERNAL NAME Utilities.ColumnSplitter.InitMethod;
 GO
+CREATE PROCEDURE [dbo].MultiColumnSplitter(
+	@table AS nvarchar(4000),
+	@column AS nvarchar(4000),
+	@pattern AS nvarchar(4000),
+	@includeColumns AS nvarchar(4000) = null
+)
+AS EXTERNAL NAME Utilities.MultiColumnSplitter.InitMethod;
+GO
 IF NOT EXISTS (
     SELECT value
     FROM sys.configurations
@@ -137,8 +158,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_RawSplit
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateRawSplitTable] (
     @agentJobId uniqueidentifier = null,
@@ -215,8 +236,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -289,8 +310,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_BulkInsert] (
 	@filename varchar(2000),
@@ -337,7 +358,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
             FORMAT = ''CSV'',
             CODEPAGE = ''ACP'',
             FIELDQUOTE = ''"'',
-            FORMATFILE = ''C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\formats\source.xml'',
+            FORMATFILE = ''C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\formats\source.xml'',
             FIRSTROW = 2,
             TABLOCK
         );
@@ -421,8 +442,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Split
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -564,8 +585,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Error
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -650,8 +671,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Typed
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -723,8 +744,8 @@ GO
 --
 -- Load: PGA_Kaggle_Stats_Split into PGA_Kaggle_Stats_Typed
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -842,8 +863,8 @@ GO
 -- Key: Player Name (as primary key)
 -- Key: Date (as primary key)
 --
--- Generated: Tue Mar 16 13:06:49 UTC+0100 2021 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
+-- From: TSE-5GYVY33 in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
