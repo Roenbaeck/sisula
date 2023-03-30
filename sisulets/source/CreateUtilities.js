@@ -59,12 +59,12 @@ BEGIN TRY
 	ALTER ASSEMBLY Utilities
 	FROM '${VARIABLES.SisulaPath}$\code\\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.';
 END TRY BEGIN CATCH 
 	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
-	IF(PATINDEX('%identical%', @msg) = 0) 
+	IF(PATINDEX('%identical%', @msg) > 0) 
 	BEGIN 
-		PRINT ERROR_MESSAGE();
+		PRINT 'The .NET CLR for SQL Server ' + @version + ' has already been installed.';
 	END
 	ELSE
 	BEGIN TRY
@@ -74,7 +74,15 @@ END TRY BEGIN CATCH
 		PRINT ERROR_MESSAGE();
 	END CATCH
 END CATCH
-ELSE -- assembly does not exist
+
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = 'Utilities'
+)
 BEGIN TRY
     -- since some version of 2017 assemblies must be explicitly whitelisted
     IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
