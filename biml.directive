@@ -3,6 +3,7 @@ sisulets/Polyfills.js
 sisulets/Variables.js
 sisulets/Metadata.js
 sisulets/biml/Variables.js
+sisulets/target/Helpers.js
 sisulets/biml/Helpers.js
 sisulets/biml/Naming.js
 sisulets/biml/CreatePackages.js

@@ -3,6 +3,9 @@ target._iterator = {};
 target._iterator.load = 0;
 target._iterator.map = 0;
 
+// default temporalization
+target.temporalization = target.temporalization ? target.temporalization : 'uni';
+
 // set up helpers for loads
 target.nextLoad = function() {
     if(!this.loads) return null;
@@ -43,6 +46,7 @@ while(load = target.nextLoad()) {
     load.hasMap = function(map) {
         return this.maps.indexOf(map.name) >= 0;
     };
+    load.type = load.type ? load.type : 'merge';
     load.condition = load.condition && load.condition.singleton && load.condition.singleton._condition ? load.condition.singleton._condition : null;
 }
 
