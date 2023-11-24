@@ -37,17 +37,40 @@ begin
 	declare @JB_ID int;
 	declare @CF_ID int;
 
+	-- knot lookup
+	declare @JON_ID int = (
+		select JON_ID from metadata.JON_JobName where JON_JobName = @jobName
+	);
+
+	declare @AID_ID int = (
+		select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = @agentJobId
+	);
+
+	if @AID_ID is null
+	begin
+		set @AID_ID = (
+			select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = (
+				select top 1 JB_AID_AID_AgentJobId
+				from metadata.lJB_Job where JB_NAM_JON_ID = @JON_ID
+			)
+		);
+	end
+
+	declare @EST_ID tinyint = (
+		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
+	);
+
 	-- is this job already started?
 	select
 		@JB_ID = JB_ID
 	from
 		metadata.lJB_Job
 	where
-		JB_NAM_JON_JobName = @jobName
+		JB_NAM_JON_ID = @JON_ID
 	and
-		JB_AID_AID_AgentJobId = isnull(@agentJobId, JB_AID_AID_AgentJobId)
+		JB_AID_AID_ID = @AID_ID 
 	and
-		JB_EST_EST_ExecutionStatus = 'Running';
+		JB_EST_EST_ID = @EST_ID;
 
 	-- start it if it is not running
 	if(@JB_ID is null)
@@ -171,6 +194,30 @@ begin
 	declare @agentJobId uniqueidentifier;
 	declare @JB_ID int;
 
+	-- knot lookup
+	declare @JON_ID int = (
+		select JON_ID from metadata.JON_JobName where JON_JobName = @name
+	);
+
+	declare @AID_ID int = (
+		select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = @agentJobId
+	);
+
+	if @AID_ID is null
+	begin
+		set @AID_ID = (
+			select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = (
+				select top 1 JB_AID_AID_AgentJobId
+				from metadata.lJB_Job where JB_NAM_JON_ID = @JON_ID
+			)
+		);
+	end
+
+	declare @EST_ID tinyint = (
+		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
+	);
+
+
 	-- ensure this job is running!
 	select top 1 
 		@agentJobId = JB_AID_AID_AgentJobId,
@@ -178,9 +225,9 @@ begin
 	from
 		metadata.lJB_Job
 	where
-		JB_NAM_JON_JobName = @name
+		JB_NAM_JON_ID = @JON_ID
 	and
-		JB_EST_EST_ExecutionStatus = 'Running'
+		JB_EST_EST_ID = @EST_ID
 	order by
 		JB_ID desc;
 
@@ -231,7 +278,7 @@ begin
 	on
 		wo.WO_ID = wojb.WO_ID_part 
 	and
-		wo.WO_EST_EST_ExecutionStatus = 'Running'
+		wo.WO_EST_EST_ID = @EST_ID
 	where
 		jb.JB_ID = @JB_ID;
 
@@ -308,6 +355,35 @@ begin
 	declare @JB_ID int;
 	declare @CF_ID int;
 
+	-- knot lookup
+	declare @WON_ID int = (
+		select WON_ID from metadata.WON_WorkName where WON_WorkName = @name
+	);
+
+	declare @AID_ID int = (
+		select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = @agentJobId
+	);
+
+	if @AID_ID is null
+	begin
+		set @AID_ID = (
+			select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = (
+				select top 1 jb.JB_AID_AID_AgentJobId
+				from metadata.lWO_Work wo
+				join metadata.lWO_part_JB_of wojb
+				on wojb.WO_ID_part = wo.WO_ID
+				join metadata.lJB_Job jb
+				on jb.JB_ID = wojb.JB_ID_of
+				where wo.WO_NAM_WON_ID = @WON_ID
+				order by jb.JB_STA_Job_Start desc
+			)
+		);
+	end
+
+	declare @EST_ID tinyint = (
+		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
+	);
+
 	-- is this work already started?
 	select
 		@WO_ID = wo.WO_ID
@@ -322,13 +398,13 @@ begin
 	on
 		jb.JB_ID = wojb.JB_ID_of
 	and
-		jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
+		jb.JB_AID_AID_ID = @AID_ID 
 	and
-		jb.JB_EST_EST_ExecutionStatus = 'Running'
+		jb.JB_EST_EST_ID = @EST_ID
 	where
-		wo.WO_NAM_WON_WorkName = @name
+		wo.WO_NAM_WON_ID = @WON_ID
 	and
-		wo.WO_EST_EST_ExecutionStatus = 'Running';
+		wo.WO_EST_EST_ID = @EST_ID;
 
 	if(@WO_ID is null)
 	begin
@@ -377,6 +453,11 @@ begin
 				WIR_WorkInvocationRole = @role
 		);
 
+		-- since we increment any newly created WO_ID must be larger than this
+		declare @max_before_WO_ID int = (
+			select MAX(WO_ID) from metadata.WO_Work
+		);
+
 		insert into metadata.lWO_Work (
 			WO_NAM_WON_WorkName,
 			WO_STA_Work_Start,
@@ -401,6 +482,8 @@ begin
 		from
 			metadata.lWO_Work
 		where
+			WO_ID > @max_before_WO_ID
+		and
 			WO_NAM_WON_WorkName = @name
 		and
 			WO_STA_Work_Start = @start;
@@ -420,9 +503,9 @@ begin
 	on
 		jb.JB_ID = wojb.JB_ID_of
 	and
-		jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
+		jb.JB_AID_AID_ID = @AID_ID
 	and
-		jb.JB_EST_EST_ExecutionStatus = 'Running'
+		jb.JB_EST_EST_ID = @EST_ID
 	where
 		wo.WO_ID = @WO_ID;
 
@@ -435,9 +518,9 @@ begin
 			from
 				metadata.lJB_Job jb
 			where
-				jb.JB_AID_AID_AgentJobId = isnull(@agentJobId, jb.JB_AID_AID_AgentJobId)
+				jb.JB_AID_AID_ID = @AID_ID
 			and
-				jb.JB_EST_EST_ExecutionStatus = 'Running'
+				jb.JB_EST_EST_ID = @EST_ID
 			order by
 				jb.JB_STA_Job_Start desc
 		);
@@ -527,6 +610,10 @@ begin
 	set @stop = isnull(@stop, dateadd(nanosecond, 100, metadata._Now()));
 	set @status = isnull(@status, 'Success');
 
+	declare @EST_ID tinyint = (
+		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
+	);
+
 	-- ensure this work is running!
 	select
 		@WO_ID = WO_ID
@@ -535,7 +622,7 @@ begin
 	where
 		WO_ID = @WO_ID
 	and
-		WO_EST_EST_ExecutionStatus = 'Running';
+		WO_EST_EST_ID = @EST_ID;
 
 	if(@WO_ID is not null)
 	begin
