@@ -6,8 +6,7 @@
 
 */
 CREATE NONCLUSTERED INDEX ix_WO_part_JB_of
-ON [metadata].[WO_part_JB_of] ([JB_ID_of])
-INCLUDE (WO_ID_part);
+ON [metadata].[WO_part_JB_of] ([JB_ID_of]);
 
 CREATE NONCLUSTERED INDEX ix_WO_EST_Work_ExecutionStatus
 ON [metadata].[WO_EST_Work_ExecutionStatus] ([WO_EST_EST_ID])
