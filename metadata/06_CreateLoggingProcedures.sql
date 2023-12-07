@@ -61,16 +61,31 @@ begin
 	);
 
 	-- is this job already started?
-	select
-		@JB_ID = JB_ID
-	from
-		metadata.lJB_Job
-	where
-		JB_NAM_JON_ID = @JON_ID
-	and
-		JB_AID_AID_ID = @AID_ID 
-	and
-		JB_EST_EST_ID = @EST_ID;
+	select 
+		@JB_ID = JB_EST_JB_ID
+	from (
+		select top 1 
+			est.JB_EST_JB_ID, 
+			est.JB_EST_EST_ID
+		from 
+			metadata.JB_AID_Job_AgentJobId aid
+		join 
+			metadata.JB_NAM_Job_Name nam
+		on 
+			nam.JB_NAM_JB_ID = aid.JB_AID_JB_ID
+		and 
+			nam.JB_NAM_JON_ID = @JON_ID
+		join
+			metadata.JB_EST_Job_ExecutionStatus est 
+		on
+			est.JB_EST_JB_ID = nam.JB_NAM_JB_ID
+		where
+			aid.JB_AID_AID_ID = @AID_ID
+		order by 
+			est.JB_EST_ChangedAt desc
+	) jb
+	where 
+		jb.JB_EST_EST_ID = @EST_ID;
 
 	-- start it if it is not running
 	if(@JB_ID is null)
