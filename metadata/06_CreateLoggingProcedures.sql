@@ -399,27 +399,39 @@ begin
 		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
 	);
 
-	-- is this work already started?
-	select
-		@WO_ID = wo.WO_ID
-	from
-		metadata.lWO_Work wo
-	join
-		metadata.lWO_part_JB_of wojb
-	on
-		wojb.WO_ID_part = wo.WO_ID
-	join
-		metadata.lJB_Job jb
-	on
-		jb.JB_ID = wojb.JB_ID_of
-	and
-		jb.JB_AID_AID_ID = @AID_ID 
-	and
-		jb.JB_EST_EST_ID = @EST_ID
-	where
-		wo.WO_NAM_WON_ID = @WON_ID
-	and
-		wo.WO_EST_EST_ID = @EST_ID;
+	-- find the running job
+	set @JB_ID = (
+		select top 1 
+			aid.JB_AID_JB_ID
+		from metadata.JB_AID_Job_AgentJobId aid
+		cross apply (
+			select top 1 JB_EST_EST_ID
+			from metadata.JB_EST_Job_ExecutionStatus
+			where JB_EST_JB_ID = aid.JB_AID_JB_ID
+			order by JB_EST_ChangedAt desc
+		) est
+		where aid.JB_AID_AID_ID = @AID_ID
+		and est.JB_EST_EST_ID = @EST_ID
+		order by aid.JB_AID_JB_ID desc
+	);
+
+	-- find if this work is running and connected
+	set @WO_ID = (
+		select top 1 wojb.WO_ID_part
+		from metadata.lWO_part_JB_of wojb
+		cross apply (
+			select top 1 wo_est.WO_EST_EST_ID
+			from metadata.WO_EST_Work_ExecutionStatus wo_est
+			join metadata.WO_NAM_Work_Name wo_nam
+			on wo_nam.WO_NAM_WO_ID = wo_est.WO_EST_WO_ID
+			and wo_nam.WO_NAM_WON_ID = @WON_ID
+			where wo_est.WO_EST_WO_ID = wojb.WO_ID_part
+			order by wo_est.WO_EST_ChangedAt desc
+		) est
+		where wojb.JB_ID_of = @JB_ID
+		and est.WO_EST_EST_ID = @EST_ID
+		order by wojb.WO_ID_part desc
+	)
 
 	if(@WO_ID is null)
 	begin
@@ -502,43 +514,6 @@ begin
 			WO_NAM_WON_WorkName = @name
 		and
 			WO_STA_Work_Start = @start;
-	end
-
-	-- try to find job id (connected)
-	select
-		@JB_ID = JB_ID
-	from
-		metadata.lWO_Work wo
-	join
-		metadata.lWO_part_JB_of wojb
-	on
-		wojb.WO_ID_part = wo.WO_ID
-	join
-		metadata.lJB_Job jb
-	on
-		jb.JB_ID = wojb.JB_ID_of
-	and
-		jb.JB_AID_AID_ID = @AID_ID
-	and
-		jb.JB_EST_EST_ID = @EST_ID
-	where
-		wo.WO_ID = @WO_ID;
-
-	if(@JB_ID is null)
-	begin
-	  	-- try to find job id (unconnected)
-	  	set @JB_ID = (
-			select top 1
-				JB_ID
-			from
-				metadata.lJB_Job jb
-			where
-				jb.JB_AID_AID_ID = @AID_ID
-			and
-				jb.JB_EST_EST_ID = @EST_ID
-			order by
-				jb.JB_STA_Job_Start desc
-		);
 	end
 
 	if(@JB_ID is not null)
