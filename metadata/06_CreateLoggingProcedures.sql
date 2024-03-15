@@ -135,15 +135,7 @@ begin
 			'Running'
 		);
 
-		-- get the created JB_ID
-		select
-			@JB_ID = JB_ID
-		from
-			metadata.lJB_Job
-		where
-			JB_NAM_JON_JobName = @jobName
-		and
-			JB_STA_Job_Start = @start;
+		set @JB_ID = IDENT_CURRENT('metadata.JB_Job');
 	end
 
 	-- see if this job has a stored configuration
@@ -480,11 +472,6 @@ begin
 				WIR_WorkInvocationRole = @role
 		);
 
-		-- since we increment any newly created WO_ID must be larger than this
-		declare @max_before_WO_ID int = (
-			select MAX(WO_ID) from metadata.WO_Work
-		);
-
 		insert into metadata.lWO_Work (
 			WO_NAM_WON_WorkName,
 			WO_STA_Work_Start,
@@ -504,16 +491,7 @@ begin
 			'Running'
 		);
 
-		select
-			@WO_ID = WO_ID
-		from
-			metadata.lWO_Work
-		where
-			WO_ID > @max_before_WO_ID
-		and
-			WO_NAM_WON_WorkName = @name
-		and
-			WO_STA_Work_Start = @start;
+		set @WO_ID = IDENT_CURRENT('metadata.WO_Work');
 	end
 
 	if(@JB_ID is not null)
