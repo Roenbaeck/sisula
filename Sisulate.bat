@@ -184,7 +184,7 @@ if defined Server (
     echo  * Installing SQL file:
     echo    !SQLFiles[%%f]!
     echo .
-    sqlcmd -S %Server% -i "!SQLFiles[%%f]!" -I -x -b -r1 >NUL
+    sqlcmd -S %Server% -f 65001 -i "!SQLFiles[%%f]!" -I -x -b -r1 >NUL
     IF ERRORLEVEL 1 GOTO ERROR
   )
 )
