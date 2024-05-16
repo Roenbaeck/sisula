@@ -330,10 +330,25 @@
             var outputFilename = commandLineOptions.outputFilename || commandLineOptions.directiveFilename + '.output';
             outputFilename = outputFilename.replace(/"/g, '');
             LOG.nodeValue += 'Writing file: ' + outputFilename + '\r';
-            var writer = new ActiveXObject("Scripting.FileSystemObject");
-            var outputFile = writer.CreateTextFile(outputFilename, true);
-            outputFile.Write(sisulaOutput);
-            outputFile.Close();
+            var adTypeBinary = 1;
+            var adTypeText = 2;
+            var adSaveCreateOverwrite = 2;
+            var stream = new ActiveXObject("ADODB.Stream");
+            stream.Type = adTypeText;
+            stream.Charset = "utf-8";
+            stream.Open();
+            stream.WriteText(sisulaOutput);
+            stream.Flush();
+            stream.Position = 0;
+            stream.Type = adTypeBinary;
+            stream.Position = 3;
+            var bomless = new ActiveXObject("ADODB.Stream");
+            bomless.Open();
+            bomless.Type = adTypeBinary;
+            stream.CopyTo(bomless);
+            stream.Close();
+            bomless.SaveToFile(outputFilename, adSaveCreateOverwrite);
+            bomless.Close();
         }
 
         LOG.nodeValue += 'Ending ' + new Date().toLocaleString() + '\r';

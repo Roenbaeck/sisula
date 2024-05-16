@@ -10,7 +10,7 @@ if(source.datafiletype == 'widechar') {
 var part = source.nextPart();
 
 /*~
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <BCPFORMAT
 xmlns="http://schemas.microsoft.com/sqlserver/2004/bulkload/format"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
