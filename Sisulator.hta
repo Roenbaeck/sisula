@@ -314,6 +314,9 @@
             // load an XML file into the DOM instance
             if(!xmlObject.load(inputFilename)) {
                 LOG.nodeValue += "The XML file: " + inputFilename + " could not be loaded\r";
+                if(xmlObject.parseError && xmlObject.parseError.reason) {
+                    LOG.nodeValue += xmlObject.parseError.reason + "\r";
+                }
                 ERROR = 42;
             }
         }
