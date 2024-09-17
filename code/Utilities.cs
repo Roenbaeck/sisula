@@ -501,7 +501,7 @@ public partial class IsType {
     }
     private static readonly SqlMoney smallmoneyMinValue = new SqlMoney(-214748.3648);
     private static readonly SqlMoney smallmoneyMaxValue = new SqlMoney(214748.3647);
-    private static readonly Regex splitValue = new Regex("(?<whole>[0-9]+)?(?:[^0-9](?<scale>[0-9]+))?", RegexOptions.Compiled);
+    private static readonly Regex splitValue = new Regex("(?:-?)(?<whole>[0-9]+)?(?:[^0-9](?<scale>[0-9]+))?", RegexOptions.Compiled);
     private static readonly Regex splitType = new Regex("(?<type>[^()]+)(?:\\s*\\((?<precision>[^,()]*),?(?<scale>[^)]*)\\))?", RegexOptions.Compiled);
 }
 

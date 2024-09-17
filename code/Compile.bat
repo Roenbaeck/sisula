@@ -1,7 +1,7 @@
 @ECHO OFF
 
-REM ---- Find the oldest installation ----
-FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\NET Framework Setup" /s /t REG_SZ /v InstallPath ^| cscript /NoLogo match.js ".*\sInstallPath\s+REG_SZ\s+(.*)" ^| sort /R') DO SET DotNetPath=%%i
+REM ---- Find the newest installation ----
+FOR /F "tokens=*" %%i in ('reg query "HKLM\Software\Microsoft\NET Framework Setup" /s /t REG_SZ /v InstallPath ^| cscript /NoLogo match.js ".*\sInstallPath\s+REG_SZ\s+(.*)" ^| sort') DO SET DotNetPath=%%i
 ECHO ---------------------------------------------------------------------------
 ECHO Using .NET path: %DotNetPath%
 ECHO ---------------------------------------------------------------------------
