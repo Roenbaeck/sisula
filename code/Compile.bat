@@ -13,6 +13,7 @@ REM *** Code 120 is SQL Server 2014 ***
 REM *** Code 130 is SQL Server 2016 *** 
 REM *** Code 140 is SQL Server 2017 *** 
 REM *** Code 150 is SQL Server 2019 *** 
+REM *** Code 160 is SQL Server 2022 *** 
 
 REM ----- Compile -----
 
@@ -45,3 +46,8 @@ SET Assembly=DLL\Microsoft.SqlServer.Types.150.dll
 for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2019) ----
 %DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2019.dll Utilities.cs
 certutil -hashfile Utilities2019.dll SHA512 | find /V "hash" > Utilities2019.SHA512
+
+SET Assembly=DLL\Microsoft.SqlServer.Types.160.dll
+for %%f in (%Assembly%) do echo ---- Compiling for: %%~nf (2022) ----
+%DotNetPath%\csc.exe /optimize /debug- /target:library /reference:"%Assembly%" /out:Utilities2022.dll Utilities.cs
+certutil -hashfile Utilities2022.dll SHA512 | find /V "hash" > Utilities2022.SHA512
