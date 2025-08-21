@@ -1,16 +1,18 @@
 // global variables are stored in the VARIABLE hash map
-var VARIABLES = {};
+if (typeof VARIABLES !== 'object' || VARIABLES === null) {
+    VARIABLES = {};
 
-// fetch environment variables
-var oWshShell = new ActiveXObject ("WScript.Shell");
-var oEnv = oWshShell.Environment("Process");
-var oEnum = new Enumerator(oEnv);
-while(!oEnum.atEnd()) {
-    var match = oEnum.item().match(/(.*?)=(.*)/);
-    if(match && match[1] && match[2]) {
-        VARIABLES[match[1]] = match[2];
+    // fetch environment variables
+    var oWshShell = new ActiveXObject("WScript.Shell");
+    var oEnv = oWshShell.Environment("Process");
+    var oEnum = new Enumerator(oEnv);
+    while(!oEnum.atEnd()) {
+        var match = oEnum.item().match(/(.*?)=(.*)/);
+        if(match && match[1] && match[2]) {
+            VARIABLES[match[1]] = match[2];
+        }
+        oEnum.moveNext();
     }
-    oEnum.moveNext();
 }
 
 // helper function to create copy a 'hash map'
