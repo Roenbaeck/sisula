@@ -25,14 +25,5 @@ while(job = workflow.job[workflow.jobs[j++]]) {
 
 
 // do the actual replacement
-replaceVariables(VARIABLES, workflow.variable);
-
-if(workflow.variables && workflow.variables.length > 0) {
-    for(var v = 0; v < workflow.variables.length; v++) {
-        var name = workflow.variables[v];
-        var resolvedValue = workflow.variable[name].value;
-        workflow.VARIABLES[name] = resolvedValue;
-    }
-}
-
-replaceVariables(workflow.VARIABLES, workflow);
+replaceVariables(VARIABLES, workflow);
+replaceVariables(VARIABLES, workflow);
