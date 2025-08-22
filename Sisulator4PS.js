@@ -1,28 +1,33 @@
 // Sisulator.js - V5 (Correct Final Version)
 console.log('Starting up the sisulator...');
 
+function getAttribute(fragment, attribute) {
+    var attr = fragment.Attributes.GetNamedItem(attribute);
+    return attr ? attr.Value : null;
+}
+
 var MAP = {
     Anchor: {
         description: 'models from Anchor Modeling, http://www.anchormodeling.com',
         root: 'schema',
         key: {
             // CORRECTED: Use .NET property access: .Attributes.GetNamedItem(...).Value
-            knot: function(xml, fragment) { return fragment.Attributes.GetNamedItem('mnemonic').Value; },
-            anchor: function(xml, fragment) { return fragment.Attributes.GetNamedItem('mnemonic').Value; },
-            attribute: function(xml, fragment) { return fragment.Attributes.GetNamedItem('mnemonic').Value; },
+            knot: function(xml, fragment) { return getAttribute(fragment, 'mnemonic'); },
+            anchor: function(xml, fragment) { return getAttribute(fragment, 'mnemonic'); },
+            attribute: function(xml, fragment) { return getAttribute(fragment, 'mnemonic'); },
             tie: function(xml, fragment) {
                 // CORRECTED: .SelectNodes is the .NET way to query
                 var roles = fragment.SelectNodes(".//*[@role]");
                 var key = '', role;
                 for(var i = 0; i < roles.Count; i++) {
                     role = roles.Item(i);
-                    key += role.Attributes.GetNamedItem('type').Value + '_' + role.Attributes.GetNamedItem('role').Value;
+                    key += getAttribute(role, 'type') + '_' + getAttribute(role, 'role');
                     if(i < roles.Count - 1) key += '_';
                 }
                 return key;
             },
-            anchorRole: function(xml, fragment) { return fragment.Attributes.GetNamedItem('type').Value + '_' + fragment.Attributes.GetNamedItem('role').Value; },
-            knotRole: function(xml, fragment) { return fragment.Attributes.GetNamedItem('type').Value + '_' + fragment.Attributes.GetNamedItem('role').Value; }
+            anchorRole: function(xml, fragment) { return getAttribute(fragment, 'type') + '_' + getAttribute(fragment, 'role'); },
+            knotRole: function(xml, fragment) { return getAttribute(fragment, 'type') + '_' + getAttribute(fragment, 'role'); }
         },
         replacer: function(name) {
             switch(name) {
@@ -33,22 +38,22 @@ var MAP = {
         }
     },
     Workflow: { description: 'workflow for SQL Server Job Agent', root: 'workflow', key: { 
-        job: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }, 
-        jobstep: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }, 
-        variable: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }
+        job: function(xml, fragment) { return getAttribute(fragment, 'name'); }, 
+        jobstep: function(xml, fragment) { return getAttribute(fragment, 'name'); }, 
+        variable: function(xml, fragment) { return getAttribute(fragment, 'name'); }
     }},
     Source: { description: 'source data format description', root: 'source', key: { 
-        part: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }, 
-        term: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }, 
-        key: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }, 
-        component: function(xml, fragment) { return fragment.Attributes.GetNamedItem('of').Value; }, 
-        calculation: function(xml, fragment) { return fragment.Attributes.GetNamedItem('name').Value; }
+        part: function(xml, fragment) { return getAttribute(fragment, 'name'); }, 
+        term: function(xml, fragment) { return getAttribute(fragment, 'name'); }, 
+        key: function(xml, fragment) { return getAttribute(fragment, 'name'); }, 
+        component: function(xml, fragment) { return getAttribute(fragment, 'of'); }, 
+        calculation: function(xml, fragment) { return getAttribute(fragment, 'name'); }
     }},
     Target: { description: 'target loading description', root: 'target', key: { 
-        map: function(xml, fragment) { return fragment.Attributes.GetNamedItem('source').Value + '__' + fragment.Attributes.GetNamedItem('target').Value; }, 
+        map: function(xml, fragment) { return getAttribute(fragment, 'source') + '__' + getAttribute(fragment, 'target'); }, 
         condition: function(xml, fragment) { return 'singleton'; }, 
-        load: function(xml, fragment) { var pass = fragment.Attributes.GetNamedItem('pass'); pass = pass ? '__' + pass.Value : ''; return fragment.Attributes.GetNamedItem('source').Value + '__' + fragment.Attributes.GetNamedItem('target').Value + pass; }, 
-        sql: function(xml, fragment) { return fragment.Attributes.GetNamedItem('position').Value; }
+        load: function(xml, fragment) { var pass = getAttribute(fragment, 'pass'); pass = pass ? '__' + pass : ''; return getAttribute(fragment, 'source') + '__' + getAttribute(fragment, 'target') + pass; }, 
+        sql: function(xml, fragment) { return getAttribute(fragment, 'position'); }
     }}
 };
 
@@ -117,16 +122,16 @@ var Sisulator = {
             jsonObject[map.root]._xml = rawXmlString.replace(/(\r\n|\n|\r)/g, '\n').replace(/<!--[\s\S]*?-->/g, ''); 
         }
 
-        // console.log('JSON object: ' + JSON.stringify(jsonObject, null, 2));
-
         // 1. Create a NEW object for the execution context.
         var executionContext = {};
 
         // 2. Manually create a shallow copy of the global VARIABLES.
-        for (var key in VARIABLES) {
-            if (VARIABLES.hasOwnProperty(key)) {
-                executionContext[key] = VARIABLES[key];
-            }
+        var VARIABLES = {};
+        var enumerator = variablesHashtable.GetEnumerator();
+        while (enumerator.MoveNext()) {
+            var key = enumerator.Current.Key;
+            var value = enumerator.Current.Value;            
+            VARIABLES[key] = value;
         }
         
         // 3. Add the objectified XML root to the new context.
