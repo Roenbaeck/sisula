@@ -251,6 +251,9 @@ if (Test-Path $variablesBatPath) {
 
 # --- Setup Sisula Path and Working Directory ---
 $sisulaPath = $PSScriptRoot
+# Explicitly add the script's own path to the context variables (with a trailing slash)
+$slash = [System.IO.Path]::DirectorySeparatorChar
+$scriptContextVariables['SisulaPath'] = "$sisulaPath$slash"
 Write-Host "`n  * Path to Sisulator script: $sisulaPath"
 Write-Host "  * Path to configuration folder: $FolderPath"
 Push-Location -Path $sisulaPath
@@ -342,7 +345,7 @@ try {
         Write-Host "`n  + Installing SQL files on server '$Server'..." -ForegroundColor Yellow
         foreach ($sqlFile in $sqlFiles) {
             Write-Host "  * Installing $($sqlFile.Replace($FolderPath, '...'))"
-            sqlcmd -S $Server -i $sqlFile -f 65001 -I -b -r1 
+            sqlcmd -S $Server -i $sqlFile -f 65001 -I -x -b -r1 
             if ($LASTEXITCODE -ne 0) {
                 throw "sqlcmd failed with exit code $LASTEXITCODE while installing $sqlFile"
             }
