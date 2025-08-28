@@ -166,7 +166,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_RawSplit
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateRawSplitTable] (
@@ -244,7 +244,7 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateInsertView] (
@@ -318,7 +318,7 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_BulkInsert] (
@@ -449,7 +449,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Split
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateSplitViews] (
@@ -592,7 +592,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Error
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateErrorViews] (
@@ -678,7 +678,7 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Typed
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateTypedTables] (
@@ -751,7 +751,7 @@ GO
 --
 -- Load: PGA_Kaggle_Stats_Split into PGA_Kaggle_Stats_Typed
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_SplitRawIntoTyped] (
@@ -880,7 +880,7 @@ GO
 -- Key: Player Name (as primary key)
 -- Key: Date (as primary key)
 --
--- Generated: Thu Aug 28 2025 11:09:54 GMT+02:00 by eldle
+-- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
 -- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_AddKeysToTyped] (

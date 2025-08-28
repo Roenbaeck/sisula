@@ -9,7 +9,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true, Position = 0, HelpMessage = "The folder where your configuration files (sources, targets, etc.) are located.")]
+    [Parameter(Position = 0, HelpMessage = "The folder where your configuration files (sources, targets, etc.) are located.")]
     [string]$FolderPath,
 
     [Parameter(Position = 1, HelpMessage = "Optional. The name of the database server to install the generated SQL files on.")]
@@ -184,6 +184,19 @@ try {
 #===================================================================
 # SCRIPT ENTRY POINT
 #===================================================================
+# Check if the script was invoked without any parameters.
+if (-not $PSBoundParameters.ContainsKey('FolderPath')) {      
+    Write-Host "Error: The -FolderPath parameter is required either as the first parameter or a named parameter." -ForegroundColor Red
+    Write-Host "Please provide the path to your configuration folder." -ForegroundColor Yellow
+    Write-Host "" # Add a blank line for spacing
+    
+    # Display the script's own built-in help documentation.
+    $sisulaScript = $MyInvocation.MyCommand
+    Get-Help $PSScriptRoot\$sisulaScript -Full
+    
+    # Exit the script gracefully.
+    exit
+}
 
 # --- Print Header ---
 Write-Host "-------------------------------------------------------------------"
