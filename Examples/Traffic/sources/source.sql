@@ -16,6 +16,9 @@ GO
 IF Object_Id('etl.ColumnSplitter', 'PC') IS NOT NULL
 DROP PROCEDURE [etl].[ColumnSplitter];
 GO
+IF Object_Id('etl.MultiColumnSplitter', 'PC') IS NOT NULL
+DROP PROCEDURE [etl].[MultiColumnSplitter];
+GO
 IF Object_Id('etl.IsType', 'FS') IS NOT NULL
 DROP FUNCTION [etl].[IsType];
 GO
@@ -52,18 +55,50 @@ IF EXISTS (
 )
 BEGIN TRY
 	ALTER ASSEMBLY Utilities
-	FROM 'C:\sisula\code\Utilities' + @version + '.dll'
+	FROM 'undefinedcode\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
-END TRY BEGIN CATCH END CATCH
-ELSE -- assembly does not exist
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.';
+END TRY BEGIN CATCH 
+	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
+	IF(PATINDEX('%identical%', @msg) > 0) 
+	BEGIN 
+		PRINT 'The .NET CLR for SQL Server ' + @version + ' has already been installed.';
+	END
+	ELSE
+	BEGIN TRY
+		DROP ASSEMBLY Utilities;
+	END TRY
+	BEGIN CATCH
+		PRINT ERROR_MESSAGE();
+	END CATCH
+END CATCH
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = 'Utilities'
+)
 BEGIN TRY
+    -- since some version of 2017 assemblies must be explicitly whitelisted
+    IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+    BEGIN
+		CREATE TABLE #hash([hash] varbinary(64));
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''undefinedcode\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		DECLARE @hash varbinary(64);
+		SELECT @hash = [hash] FROM #hash;
+        IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
+            EXEC sys.sp_add_trusted_assembly @hash, N'Utilities';
+	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'C:\sisula\code\Utilities' + @version + '.dll'
+	FROM 'undefinedcode\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
-END TRY BEGIN CATCH END CATCH
+END TRY BEGIN CATCH 
+	PRINT ERROR_MESSAGE();
+END CATCH
 GO
 CREATE FUNCTION [etl].Splitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
@@ -74,7 +109,8 @@ GO
 CREATE FUNCTION [etl].MultiSplitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
 	[match] nvarchar(max),
-	[index] int
+	[index] int, 
+	[group] nvarchar(max)
 ) AS EXTERNAL NAME Utilities.MultiSplitter.InitMethod;
 GO
 CREATE FUNCTION [etl].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
@@ -96,6 +132,14 @@ CREATE PROCEDURE [etl].ColumnSplitter(
 	@includeColumns AS nvarchar(4000) = null
 )
 AS EXTERNAL NAME Utilities.ColumnSplitter.InitMethod;
+GO
+CREATE PROCEDURE [etl].MultiColumnSplitter(
+	@table AS nvarchar(4000),
+	@column AS nvarchar(4000),
+	@pattern AS nvarchar(4000),
+	@includeColumns AS nvarchar(4000) = null
+)
+AS EXTERNAL NAME Utilities.MultiColumnSplitter.InitMethod;
 GO
 IF NOT EXISTS (
     SELECT value
@@ -134,8 +178,8 @@ GO
 -- _timestamp
 -- The time the row was created.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateRawTable] (
     @agentJobId uniqueidentifier = null,
@@ -165,7 +209,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null default 0,
         metadata_JB_ID int not null default 0,
-        _timestamp datetime not null default SYSDATETIME(),
+        _timestamp datetime not null default SYSUTCDATETIME(),
         [row] varchar(1000), 
         constraint [pketl_NYPD_Vehicle_Raw] primary key(
             _id asc
@@ -206,8 +250,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -276,8 +320,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_BulkInsert] (
 	@filename varchar(2000),
@@ -350,7 +394,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
         ON
             jb.JB_ID = wojb.JB_ID_of
         AND
-            jb.JB_AID_Job_AgentJobId = @agentJobId
+            jb.JB_AID_AID_AgentJobId = @agentJobId
         WHERE
             wojb.WO_ID_part = @workId
     ), 0);
@@ -411,8 +455,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Split
 -- Create: NYPD_Vehicle_CollisionMetadata_Split
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -648,7 +692,7 @@ BEGIN TRY
             _timestamp,
             [month] AS [month],
             [year] AS [year],
-            LTRIM(REPLACE([notes], ''·'', '' '')) AS [notes]
+            LTRIM(REPLACE([notes], ''Â·'', '' '')) AS [notes]
     ) t;
     ');
     EXEC Traffic.metadata._WorkStopping @workId, 'Success';
@@ -699,8 +743,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Error
 -- Create: NYPD_Vehicle_CollisionMetadata_Error
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -815,8 +859,8 @@ GO
 -- Create: NYPD_Vehicle_Collision_Typed
 -- Create: NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -846,7 +890,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null,
         metadata_JB_ID int not null,
-        _timestamp datetime not null default SYSDATETIME(),
+        _timestamp datetime not null default SYSUTCDATETIME(),
         _measureTime as cast(HashBytes('MD5', CONVERT(varchar(max), [IntersectingStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CrossStreet], 126) + CHAR(183) + CONVERT(varchar(max), [CollisionOrder], 126)) as varbinary(16)),
         [OccurrencePrecinctCode] int null,
         [CollisionID] int null,
@@ -866,7 +910,7 @@ BEGIN TRY
         _file AS metadata_CO_ID, -- keep an alias for backwards compatibility
         metadata_CO_ID int not null,
         metadata_JB_ID int not null,
-        _timestamp datetime not null default SYSDATETIME(),
+        _timestamp datetime not null default SYSUTCDATETIME(),
         [month] varchar(42) null,
         [year] smallint null,
         [notes] varchar(max) null,
@@ -924,8 +968,8 @@ GO
 -- Load: NYPD_Vehicle_Collision_Split into NYPD_Vehicle_Collision_Typed
 -- Load: NYPD_Vehicle_CollisionMetadata_Split into NYPD_Vehicle_CollisionMetadata_Typed
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -995,6 +1039,26 @@ EXEC Traffic.metadata._WorkSourceToTarget
         [etl].[NYPD_Vehicle_Collision_Split]
     WHERE
         measureTime_Duplicate = 0
+    AND
+        [OccurrencePrecinctCode_Error] is null
+    AND
+        [CollisionID_Error] is null
+    AND
+        [CollisionKey_Error] is null
+    AND
+        [CollisionOrder_Error] is null
+    AND
+        [IntersectionAddress_Error] is null
+    AND
+        [IntersectingStreet_Error] is null
+    AND
+        [CrossStreet_Error] is null
+    AND
+        [CollisionVehicleCount_Error] is null
+    AND
+        [CollisionInjuredCount_Error] is null
+    AND
+        [CollisionKilledCount_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC Traffic.metadata._WorkSetInserts @workId, @operationsId, @insert;
     SET @JB_ID = ISNULL((
@@ -1003,7 +1067,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
         FROM
             Traffic.metadata.lJB_Job
         WHERE
-            JB_AID_Job_AgentJobId = @agentJobId
+            JB_AID_AID_AgentJobId = @agentJobId
     ), 0);
     UPDATE [etl].[NYPD_Vehicle_Collision_Typed]
     SET
@@ -1055,7 +1119,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
         FROM
             Traffic.metadata.lJB_Job
         WHERE
-            JB_AID_Job_AgentJobId = @agentJobId
+            JB_AID_AID_AgentJobId = @agentJobId
     ), 0);
     UPDATE [etl].[NYPD_Vehicle_CollisionMetadata_Typed]
     SET
@@ -1104,8 +1168,8 @@ GO
 -- Key: CrossStreet (as primary key)
 -- Key: CollisionOrder (as primary key)
 --
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[NYPD_Vehicle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
@@ -1159,29 +1223,10 @@ END CATCH
 END
 GO
 -- The source definition used when generating the above
-DECLARE @xml XML = N'
-<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex" firstrow="1">
-	<description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description>
-	<part name="Collision" nulls="" typeCheck="false" keyCheck="true">
+DECLARE @xml XML = N'<source name="Vehicle" codepage="ACP" datafiletype="char" fieldterminator="\r\n" rowlength="1000" split="regex" firstrow="1"><description>http://www.nyc.gov/html/nypd/html/traffic_reports/motor_vehicle_collision_data.shtml</description><part name="Collision" nulls="" typeCheck="false" keyCheck="true">
         -- this matches the data rows
         SELECT * from etl.NYPD_Vehicle_Raw WHERE [row] LIKE ''[0-9][0-9][0-9];%''
-        <term name="OccurrencePrecinctCode" delimiter=";" format="int"/>
-		<term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int"/>
-		<term name="CollisionKey" delimiter=";" format="int"/>
-		<term name="CollisionOrder" delimiter=";" format="tinyint"/>
-		<term name="IntersectionAddress" delimiter=";" format="varchar(321)"/>
-		<term name="IntersectingStreet" delimiter=";" format="varchar(321)"/>
-		<term name="CrossStreet" delimiter=";" format="varchar(321)"/>
-		<term name="CollisionVehicleCount" delimiter=";" format="tinyint"/>
-		<term name="CollisionInjuredCount" delimiter=";" format="tinyint"/>
-		<term name="CollisionKilledCount" delimiter=";" format="tinyint"/>
-		<key name="measureTime" type="primary key">
-			<component of="IntersectingStreet"/>
-			<component of="CrossStreet"/>
-			<component of="CollisionOrder"/>
-		</key>
-	</part>
-	<part name="CollisionMetadata">
+        <term name="OccurrencePrecinctCode" delimiter=";" format="int" /><term name="CollisionID" pattern="[0-9]{4}([0-9]{9})[^;]*;" format="int" /><term name="CollisionKey" delimiter=";" format="int" /><term name="CollisionOrder" delimiter=";" format="tinyint" /><term name="IntersectionAddress" delimiter=";" format="varchar(321)" /><term name="IntersectingStreet" delimiter=";" format="varchar(321)" /><term name="CrossStreet" delimiter=";" format="varchar(321)" /><term name="CollisionVehicleCount" delimiter=";" format="tinyint" /><term name="CollisionInjuredCount" delimiter=";" format="tinyint" /><term name="CollisionKilledCount" delimiter=";" format="tinyint" /><key name="measureTime" type="primary key"><component of="IntersectingStreet" /><component of="CrossStreet" /><component of="CollisionOrder" /></key></part><part name="CollisionMetadata">
         SELECT
           *
         FROM (
@@ -1216,9 +1261,7 @@ DECLARE @xml XML = N'
             src.metadata_CO_ID = f.metadata_CO_ID
           FOR XML PATH('''')
         ) c ([row])
-        <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)"/>
-		<term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint"/>
-		<calculation name="changedAt" format="date" persisted="false">
+        <term name="month" pattern="(?=.*?(\w+)\s+[0-9]{4})?" format="varchar(42)" /><term name="year" pattern="(?=.*?\w+\s+([0-9]{4}))?" format="smallint" /><calculation name="changedAt" format="date" persisted="false">
             dateadd(day, -1,
             dateadd(month, 1,
             cast([year] as char(4)) +
@@ -1237,13 +1280,9 @@ DECLARE @xml XML = N'
                 when ''Dec'' then ''12''
             end +
             ''01''))
-        </calculation>
-		<term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">
-            LTRIM(REPLACE([notes], ''·'', '' ''))
-        </term>
-	</part>
-</source>
-';
+        </calculation><term name="notes" pattern="(?=.*?NOTES[^:]*:(.*))?" format="varchar(max)">
+            LTRIM(REPLACE([notes], ''Â·'', '' ''))
+        </term></part></source>';
 DECLARE @name varchar(255) = @xml.value('/source[1]/@name', 'varchar(255)');
 DECLARE @CF_ID int;
 SELECT

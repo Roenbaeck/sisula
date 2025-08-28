@@ -54,7 +54,7 @@ function Initialize-JintEngine {
 
         if ($psMajorVersion -ge 7) {
             # Running in modern PowerShell (7 or higher)
-            # Write-Host "  * PowerShell 7+ detected. Loading high-performance Jint 3.x..."
+            # The 2.x version runs fast enough for now and requires less dependencies so we will use it here as well
             Write-Host "  * PowerShell 7+ detected. Loading compatible Jint 2.x..."
             $jintDllPath = Join-Path -Path $PSScriptRoot -ChildPath "code\DLL\Jint.2.11.58.dll"
         }
@@ -232,6 +232,7 @@ if (-not (Test-Path $sisulatorJsPath)) {
     throw "The required helper file 'Sisulator.js' was not found."
 }
 $sisulatorJavaScript = Get-Content -Path $sisulatorJsPath -Raw -Encoding UTF8
+Write-Host "  * Executing: $sisulatorJsPath"
 $jintEngine.Execute($sisulatorJavaScript) | Out-Null
 Write-Host "  * Jint engine is configured and ready." -ForegroundColor Green
 

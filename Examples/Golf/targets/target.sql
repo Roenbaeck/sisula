@@ -6,14 +6,14 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lPL_Player__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lPL_Player ()
+-- Target: lPL_Player (merge)
 --
 -- Map: Player Name to PL_NAM_Player_Name (as natural key)
 -- Map: Birth Date to PL_BID_Player_BirthDate (as static)
 -- Map: WorkId to Metadata_PL (as metadata)
 -- 
--- Generated: Fri Feb 17 10:36:16 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lPL_Player__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -52,7 +52,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[lPL_Player] AS [target]
     USING (
@@ -100,7 +100,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     EXEC GolfDW.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC GolfDW.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
     EXEC GolfDW.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -129,13 +129,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: SGR_StatisticGroup__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: SGR_StatisticGroup ()
+-- Target: SGR_StatisticGroup (merge)
 --
 -- Map: Statistic to SGR_StatisticGroup (as natural key)
 -- Map: WorkId to Metadata_SGR (as metadata)
 -- 
--- Generated: Fri Feb 17 10:36:16 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -174,7 +174,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[SGR_StatisticGroup] AS [target]
     USING (
@@ -207,7 +207,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     EXEC GolfDW.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC GolfDW.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
     EXEC GolfDW.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -236,14 +236,14 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lST_Statistic__PGA_Kaggle_Stats_Typed
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lST_Statistic ()
+-- Target: lST_Statistic (merge)
 --
 -- Map: Statistic to ST_GRP_SGR_StatisticGroup (as natural key)
 -- Map: Variable to ST_DET_Statistic_Detail (as natural key)
 -- Map: WorkId to Metadata_ST (as metadata)
 -- 
--- Generated: Fri Feb 17 10:36:16 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lST_Statistic__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -282,7 +282,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[lST_Statistic] AS [target]
     USING (
@@ -320,7 +320,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     EXEC GolfDW.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC GolfDW.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
     EXEC GolfDW.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -349,13 +349,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lME_Measurement__PGA_Kaggle_Stats_Typed__Instance
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lME_Measurement ()
+-- Target: lME_Measurement (merge)
 --
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Feb 17 10:36:16 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] (
     @agentJobId uniqueidentifier = null,
@@ -394,7 +394,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
         select distinct
             [Player Name], 
             [Statistic], 
@@ -476,7 +476,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     EXEC GolfDW.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC GolfDW.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
         select
             lME.ME_ID, 
             row_number() over (order by lME.ME_ID) as R
@@ -539,7 +539,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
         on
             lST.[ST_GRP_SGR_StatisticGroup] = n.[Statistic]
         and 
-            lST.[ST_DET_Statistic_Detail] = n.[Variable]; 
+            lST.[ST_DET_Statistic_Detail] = n.[Variable];
     EXEC GolfDW.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -568,15 +568,15 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lME_Measurement__PGA_Kaggle_Stats_Typed__Value
 -- Source: PGA_Kaggle_Stats_Typed
--- Target: lME_Measurement ()
+-- Target: lME_Measurement (merge)
 --
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: Value to ME_VAL_Measurement_Value 
 -- Map: Date to ME_VAL_ChangedAt (as history)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Feb 17 10:36:16 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] (
     @agentJobId uniqueidentifier = null,
@@ -615,7 +615,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
     -- Perform the actual merge ----------------------
     MERGE INTO [GolfDW].[dbo].[lME_Measurement] AS [target]
     USING (
@@ -680,7 +680,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     EXEC GolfDW.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC GolfDW.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
     EXEC GolfDW.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -704,9 +704,7 @@ END CATCH
 END
 GO
 -- The target definition used when generating the above
-DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
-	<load source="PGA_Kaggle_Stats_Typed" target="lPL_Player">
-		<sql position="before">
+DECLARE @xml XML = N'<target name="Stats" database="GolfDW"><load source="PGA_Kaggle_Stats_Typed" target="lPL_Player"><sql position="before">
         -- preparations can be put here
         </sql>
         select distinct 
@@ -715,15 +713,9 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             @WorkID as WorkId 
         from 
             GolfStage.dbo.PGA_Kaggle_Stats_Typed
-        <map source="Player Name" target="PL_NAM_Player_Name" as="natural key"/>
-		<map source="Birth Date" target="PL_BID_Player_BirthDate" as="static"/>
-		<map source="WorkId" target="Metadata_PL" as="metadata"/>
-		<sql position="after">
+        <map source="Player Name" target="PL_NAM_Player_Name" as="natural key" /><map source="Birth Date" target="PL_BID_Player_BirthDate" as="static" /><map source="WorkId" target="Metadata_PL" as="metadata" /><sql position="after">
         -- post processing can be put here
-        </sql>
-	</load>
-	<load source="PGA_Kaggle_Stats_Typed" target="SGR_StatisticGroup">
-		<sql position="before">
+        </sql></load><load source="PGA_Kaggle_Stats_Typed" target="SGR_StatisticGroup"><sql position="before">
         -- preparations can be put here
         </sql>
         select distinct 
@@ -731,14 +723,9 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             @WorkID as WorkId 
         from 
             GolfStage.dbo.PGA_Kaggle_Stats_Typed
-        <map source="Statistic" target="SGR_StatisticGroup" as="natural key"/>
-		<map source="WorkId" target="Metadata_SGR" as="metadata"/>
-		<sql position="after">
+        <map source="Statistic" target="SGR_StatisticGroup" as="natural key" /><map source="WorkId" target="Metadata_SGR" as="metadata" /><sql position="after">
         -- post processing can be put here
-        </sql>
-	</load>
-	<load source="PGA_Kaggle_Stats_Typed" target="lST_Statistic">
-		<sql position="before">
+        </sql></load><load source="PGA_Kaggle_Stats_Typed" target="lST_Statistic"><sql position="before">
         -- preparations can be put here
         </sql>
         select distinct 
@@ -747,15 +734,9 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             @WorkID as WorkId 
         from 
             GolfStage.dbo.PGA_Kaggle_Stats_Typed
-        <map source="Statistic" target="ST_GRP_SGR_StatisticGroup" as="natural key"/>
-		<map source="Variable" target="ST_DET_Statistic_Detail" as="natural key"/>
-		<map source="WorkId" target="Metadata_ST" as="metadata"/>
-		<sql position="after">
+        <map source="Statistic" target="ST_GRP_SGR_StatisticGroup" as="natural key" /><map source="Variable" target="ST_DET_Statistic_Detail" as="natural key" /><map source="WorkId" target="Metadata_ST" as="metadata" /><sql position="after">
         -- post processing can be put here
-        </sql>
-	</load>
-	<load source="PGA_Kaggle_Stats_Typed" target="lME_Measurement" pass="Instance">
-		<sql position="before">
+        </sql></load><load source="PGA_Kaggle_Stats_Typed" target="lME_Measurement" pass="Instance"><sql position="before">
         -- preparations can be put here
         select distinct
             [Player Name], 
@@ -814,9 +795,7 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             kn.[Variable] = k.[Variable]
         where
             kn.ME_ID is null
-        <map source="ME_ID" target="ME_ID" as="surrogate key"/>
-		<map source="WorkId" target="Metadata_ME" as="metadata"/>
-		<sql position="after">
+        <map source="ME_ID" target="ME_ID" as="surrogate key" /><map source="WorkId" target="Metadata_ME" as="metadata" /><sql position="after">
         -- post processing can be put here
         select
             lME.ME_ID, 
@@ -881,10 +860,7 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             lST.[ST_GRP_SGR_StatisticGroup] = n.[Statistic]
         and 
             lST.[ST_DET_Statistic_Detail] = n.[Variable]; 
-        </sql>
-	</load>
-	<load source="PGA_Kaggle_Stats_Typed" target="lME_Measurement" pass="Value">
-		<sql position="before">
+        </sql></load><load source="PGA_Kaggle_Stats_Typed" target="lME_Measurement" pass="Value"><sql position="before">
         -- preparations can be put here
         </sql>
         select
@@ -914,16 +890,9 @@ DECLARE @xml XML = N'<target name="Stats" database="GolfDW">
             mest.[ST_ID_the] = lST.ST_ID
         where
             mest.[ME_ID_for] = plme.[ME_ID_measured]
-        <map source="ME_ID" target="ME_ID" as="surrogate key"/>
-		<map source="Value" target="ME_VAL_Measurement_Value"/>
-		<map source="Date" target="ME_VAL_ChangedAt" as="history"/>
-		<map source="WorkId" target="Metadata_ME" as="metadata"/>
-		<sql position="after">
+        <map source="ME_ID" target="ME_ID" as="surrogate key" /><map source="Value" target="ME_VAL_Measurement_Value" /><map source="Date" target="ME_VAL_ChangedAt" as="history" /><map source="WorkId" target="Metadata_ME" as="metadata" /><sql position="after">
         -- post processing can be put here
-        </sql>
-	</load>
-</target>
-';
+        </sql></load></target>';
 DECLARE @name varchar(255) = @xml.value('/target[1]/@name', 'varchar(255)');
 DECLARE @CF_ID int;
 SELECT

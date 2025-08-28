@@ -32,27 +32,23 @@ EXEC sp_add_jobstep
     @on_success_action = 3; -- go to the next step
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
-    @command = '
-            $files = @(Get-ChildItem FileSystem::"C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
+    @command = '$files = @(Get-ChildItem FileSystem::"%SisulaPath%Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"
+              Throw "No matching files were found in %SisulaPath%Examples\Golf\data\incoming"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
-                    Move-Item $fullFilename C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
+                    Move-Item $fullFilename %SisulaPath%Examples\Golf\data\work -force
+                    Write-Output "Moved file: $fullFilename to %SisulaPath%Examples\Golf\data\work"
                 }
-            }
-        ',
+            }',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
     @job_id = @AgentJobID,
     @step_name = 'Check for and move files';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC PGA_Kaggle_CreateRawSplitTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC PGA_Kaggle_CreateRawSplitTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -60,9 +56,7 @@ EXEC sp_add_jobstep
     @step_name = 'Create raw split table';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -70,21 +64,19 @@ EXEC sp_add_jobstep
     @step_name = 'Create insert view';
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
-    @command = '
-            $files = @(Get-ChildItem -Recurse FileSystem::"C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
+    @command = '$files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
+              Throw "No matching files were found in %SisulaPath%Examples\Golf\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
-                    Move-Item $fullFilename C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"
+                    Move-Item $fullFilename %SisulaPath%Examples\Golf\data\archive -force
+                    Write-Output "Moved file: $fullFilename to %SisulaPath%Examples\Golf\data\archive"
                 }
-            }
-        ',
+            }',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -92,9 +84,7 @@ EXEC sp_add_jobstep
     @step_name = 'Bulk insert';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -102,9 +92,7 @@ EXEC sp_add_jobstep
     @step_name = 'Create split views';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -112,9 +100,7 @@ EXEC sp_add_jobstep
     @step_name = 'Create error views';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -122,9 +108,7 @@ EXEC sp_add_jobstep
     @step_name = 'Create typed tables';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -132,9 +116,7 @@ EXEC sp_add_jobstep
     @step_name = 'Split raw into typed';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.PGA_Kaggle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.PGA_Kaggle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     -- mandatory parameters below and optional ones above this line
     @job_id = @AgentJobID,
@@ -244,9 +226,7 @@ EXEC sp_add_jobstep
     @on_success_action = 3; -- go to the next step
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.[lPL_Player__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.[lPL_Player__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -254,9 +234,7 @@ EXEC sp_add_jobstep
     @step_name = 'Load players';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -264,9 +242,7 @@ EXEC sp_add_jobstep
     @step_name = 'Load statistic groups';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.[lST_Statistic__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.[lST_Statistic__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -274,9 +250,7 @@ EXEC sp_add_jobstep
     @step_name = 'Load statistic';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -284,9 +258,7 @@ EXEC sp_add_jobstep
     @step_name = 'Load measurement (instance)';
 EXEC sp_add_jobstep
     @subsystem = 'TSQL',
-    @command = '
-            EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        ',
+    @command = 'EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))',
     @database_name = 'GolfStage',
     @on_success_action = 3,
     -- mandatory parameters below and optional ones above this line
@@ -344,22 +316,7 @@ EXEC sp_update_jobstep
     @on_success_step_id = 7;
 -- end of job creation
 -- The workflow definition used when generating the above
-DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow">
-	<variable name="stage" value="GolfStage"/>
-	<variable name="incomingPath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"/>
-	<variable name="workPath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\work"/>
-	<variable name="archivePath" value="C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"/>
-	<variable name="filenamePattern" value=".*\.csv"/>
-	<variable name="quitWithSuccess" value="1"/>
-	<variable name="quitWithFailure" value="2"/>
-	<variable name="goToTheNextStep" value="3"/>
-	<variable name="goToStepWithId" value="4"/>
-	<variable name="queryTimeout" value="0"/>
-	<variable name="extraOptions" value="-Recurse"/>
-	<variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))"/>
-	<job name="PGA_Kaggle_Staging">
-		<variable name="tableName" value="MyTable"/>
-		<jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="3">
+DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow"><variable name="stage" value="GolfStage" /><variable name="incomingPath" value="%SisulaPath%Examples\Golf\data\incoming" /><variable name="workPath" value="%SisulaPath%Examples\Golf\data\work" /><variable name="archivePath" value="%SisulaPath%Examples\Golf\data\archive" /><variable name="filenamePattern" value=".*\.csv" /><variable name="quitWithSuccess" value="1" /><variable name="quitWithFailure" value="2" /><variable name="goToTheNextStep" value="3" /><variable name="goToStepWithId" value="4" /><variable name="queryTimeout" value="0" /><variable name="extraOptions" value="-Recurse" /><variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" /><job name="PGA_Kaggle_Staging"><variable name="tableName" value="MyTable" /><jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="3">
             $files = @(Get-ChildItem FileSystem::"%SisulaPath%Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
               Throw "No matching files were found in %SisulaPath%Examples\Golf\data\incoming"
@@ -370,14 +327,11 @@ DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow">
                     Write-Output "Moved file: $fullFilename to %SisulaPath%Examples\Golf\data\work"
                 }
             }
-        </jobstep>
-		<jobstep name="Create raw split table" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Create raw split table" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC PGA_Kaggle_CreateRawSplitTable @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Create insert view" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Create insert view" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Bulk insert" database_name="%SourceDatabase%" subsystem="PowerShell" on_success_action="3">
+        </jobstep><jobstep name="Bulk insert" database_name="GolfStage" subsystem="PowerShell" on_success_action="3">
             $files = @(Get-ChildItem -Recurse FileSystem::"%SisulaPath%Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
               Throw "No matching files were found in %SisulaPath%Examples\Golf\data\work"
@@ -385,48 +339,33 @@ DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow">
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
-                    Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "%SourceDatabase%" -ErrorAction Stop -QueryTimeout 0
+                    Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
                     Move-Item $fullFilename %SisulaPath%Examples\Golf\data\archive -force
                     Write-Output "Moved file: $fullFilename to %SisulaPath%Examples\Golf\data\archive"
                 }
             }
-        </jobstep>
-		<jobstep name="Create split views" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Create split views" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_CreateSplitViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Create error views" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Create error views" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_CreateErrorViews @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Create typed tables" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Create typed tables" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_CreateTypedTables @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Split raw into typed" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Split raw into typed" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_SplitRawIntoTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Add keys to typed" database_name="%SourceDatabase%" subsystem="TSQL">
+        </jobstep><jobstep name="Add keys to typed" database_name="GolfStage" subsystem="TSQL">
             EXEC dbo.PGA_Kaggle_AddKeysToTyped @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-	</job>
-	<job name="PGA_Kaggle_Loading">
-		<jobstep name="Load players" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep></job><job name="PGA_Kaggle_Loading"><jobstep name="Load players" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.[lPL_Player__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Load statistic groups" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Load statistic groups" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Load statistic" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Load statistic" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.[lST_Statistic__PGA_Kaggle_Stats_Typed] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Load measurement (instance)" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Load measurement (instance)" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-		<jobstep name="Load measurement (value)" database_name="%SourceDatabase%" subsystem="TSQL" on_success_action="3">
+        </jobstep><jobstep name="Load measurement (value)" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
-        </jobstep>
-	</job>
-</workflow>
-';
+        </jobstep></job></workflow>';
 DECLARE @name varchar(255) = @xml.value('/workflow[1]/@name', 'varchar(255)');
 DECLARE @CF_ID int;
 SELECT

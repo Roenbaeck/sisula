@@ -6,13 +6,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lST_Street__NYPD_Vehicle_Collision_Typed
 -- Source: NYPD_Vehicle_Collision_Typed
--- Target: lST_Street
+-- Target: lST_Street (merge)
 --
 -- Map: StreetName to ST_NAM_Street_Name (as natural key)
 -- Map: metadata_CO_ID to Metadata_ST (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_Street__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -51,7 +51,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
     @sourceCreated = DEFAULT,
     @targetCreated = DEFAULT;
     -- Preparations before the merge -----------------
-        -- preparations can be put here
+    -- preparations can be put here
     -- Perform the actual merge ----------------------
     MERGE INTO [Traffic].[dbo].[lST_Street] AS [target]
     USING (
@@ -77,7 +77,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
     ON (
         [source].[StreetName] = [target].[ST_NAM_Street_Name]
     AND (
-            [target].ST_NAM_Street_Name != 'TESTING CONDITIONS'
+        [target].ST_NAM_Street_Name != 'TESTING CONDITIONS'
         )
     )
     WHEN NOT MATCHED THEN INSERT (
@@ -100,7 +100,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
     EXEC Traffic.metadata._WorkSetUpdates @workId, @operationsId, @updates;
     EXEC Traffic.metadata._WorkSetDeletes @workId, @operationsId, @deletes;
     -- Post processing after the merge ---------------
-        -- post processing can be put here
+    -- post processing can be put here
     EXEC Traffic.metadata._WorkStopping @workId, 'Success';
 END TRY
 BEGIN CATCH
@@ -129,13 +129,13 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed__1
 -- Source: NYPD_Vehicle_Collision_Typed
--- Target: lIS_Intersection
+-- Target: lIS_Intersection (merge)
 --
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: metadata_CO_ID to Metadata_IS (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__1] (
     @agentJobId uniqueidentifier = null,
@@ -205,7 +205,7 @@ EXEC Traffic.metadata._WorkSourceToTarget
         on
             stst.ST_ID_intersecting = st_i.ST_ID
         and
-            stst.ST_ID_crossing = st_c.ST_ID 
+            stst.ST_ID_crossing = st_c.ST_ID
     ) AS [source]
     ON (
         [source].[IS_ID_of] = [target].[IS_ID]
@@ -255,15 +255,15 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed
 -- Source: NYPD_Vehicle_Collision_Typed
--- Target: lST_intersecting_IS_of_ST_crossing
+-- Target: lST_intersecting_IS_of_ST_crossing (merge)
 --
 -- Map: ST_ID_intersecting to ST_ID_intersecting (as natural key)
 -- Map: ST_ID_crossing to ST_ID_crossing (as natural key)
 -- Map: IS_ID_of to IS_ID_of 
 -- Map: metadata_CO_ID to Metadata_ST_intersecting_IS_of_ST_crossing (as metadata)
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lST_intersecting_IS_of_ST_crossing__NYPD_Vehicle_Collision_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -420,7 +420,7 @@ GO
 --------------------------------------------------------------------------
 -- Procedure: lIS_Intersection__NYPD_Vehicle_Collision_Typed__2
 -- Source: NYPD_Vehicle_Collision_Typed
--- Target: lIS_Intersection
+-- Target: lIS_Intersection (merge)
 --
 -- Map: IS_ID_of to IS_ID (as surrogate key)
 -- Map: CollisionCount to IS_COL_Intersection_CollisionCount 
@@ -432,8 +432,8 @@ GO
 -- Map: CollisionKilledCount to IS_KIL_Intersection_KilledCount 
 -- Map: ChangedAt to IS_KIL_ChangedAt 
 -- 
--- Generated: Thu Nov 7 13:16:18 UTC+0100 2019 by <username>
--- From: <computer> in the <domainname> domain
+-- Generated: Thu Aug 28 2025 10:01:07 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [etl].[lIS_Intersection__NYPD_Vehicle_Collision_Typed__2] (
     @agentJobId uniqueidentifier = null,
@@ -589,9 +589,7 @@ END CATCH
 END
 GO
 -- The target definition used when generating the above
-DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
-	<load source="NYPD_Vehicle_Collision_Typed" target="lST_Street">
-		<sql position="before">
+DECLARE @xml XML = N'<target name="Traffic" database="Traffic"><load source="NYPD_Vehicle_Collision_Typed" target="lST_Street"><sql position="before">
         -- preparations can be put here
         </sql>
         select
@@ -612,16 +610,11 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         ) s
         group by
             StreetName
-        <map source="StreetName" target="ST_NAM_Street_Name" as="natural key"/>
-		<map source="metadata_CO_ID" target="Metadata_ST" as="metadata"/>
-		<condition>
+        <map source="StreetName" target="ST_NAM_Street_Name" as="natural key" /><map source="metadata_CO_ID" target="Metadata_ST" as="metadata" /><condition>
             [target].ST_NAM_Street_Name != ''TESTING CONDITIONS''
-        </condition>
-		<sql position="after">
+        </condition><sql position="after">
         -- post processing can be put here
-        </sql>
-	</load>
-	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="1">
+        </sql></load><load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="1">
         select 
             src.IntersectingStreet,
             src.CrossStreet,
@@ -652,10 +645,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
             stst.ST_ID_intersecting = st_i.ST_ID
         and
             stst.ST_ID_crossing = st_c.ST_ID 
-        <map source="IS_ID_of" target="IS_ID" as="surrogate key"/>
-		<map source="metadata_CO_ID" target="Metadata_IS" as="metadata"/>
-	</load>
-	<load source="NYPD_Vehicle_Collision_Typed" target="lST_intersecting_IS_of_ST_crossing">
+        <map source="IS_ID_of" target="IS_ID" as="surrogate key" /><map source="metadata_CO_ID" target="Metadata_IS" as="metadata" /></load><load source="NYPD_Vehicle_Collision_Typed" target="lST_intersecting_IS_of_ST_crossing">
         select
             i.IS_ID_of,
             t.ST_ID_intersecting,
@@ -708,12 +698,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         ) t
         on
             t._rowId = i._rowId
-        <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key"/>
-		<map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key"/>
-		<map source="IS_ID_of" target="IS_ID_of"/>
-		<map source="metadata_CO_ID" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata"/>
-	</load>
-	<load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="2">
+        <map source="ST_ID_intersecting" target="ST_ID_intersecting" as="natural key" /><map source="ST_ID_crossing" target="ST_ID_crossing" as="natural key" /><map source="IS_ID_of" target="IS_ID_of" /><map source="metadata_CO_ID" target="Metadata_ST_intersecting_IS_of_ST_crossing" as="metadata" /></load><load source="NYPD_Vehicle_Collision_Typed" target="lIS_Intersection" pass="2">
         select
             md.ChangedAt,
             stst.IS_ID_of,
@@ -744,18 +729,7 @@ DECLARE @xml XML = N'<target name="Traffic" database="Traffic">
         group by
             md.ChangedAt,
             stst.IS_ID_of
-        <map source="IS_ID_of" target="IS_ID" as="surrogate key"/>
-		<map source="CollisionCount" target="IS_COL_Intersection_CollisionCount"/>
-		<map source="ChangedAt" target="IS_COL_ChangedAt"/>
-		<map source="CollisionVehicleCount" target="IS_VEH_Intersection_VehicleCount"/>
-		<map source="ChangedAt" target="IS_VEH_ChangedAt"/>
-		<map source="CollisionInjuredCount" target="IS_INJ_Intersection_InjuredCount"/>
-		<map source="ChangedAt" target="IS_INJ_ChangedAt"/>
-		<map source="CollisionKilledCount" target="IS_KIL_Intersection_KilledCount"/>
-		<map source="ChangedAt" target="IS_KIL_ChangedAt"/>
-	</load>
-</target>
-';
+        <map source="IS_ID_of" target="IS_ID" as="surrogate key" /><map source="CollisionCount" target="IS_COL_Intersection_CollisionCount" /><map source="ChangedAt" target="IS_COL_ChangedAt" /><map source="CollisionVehicleCount" target="IS_VEH_Intersection_VehicleCount" /><map source="ChangedAt" target="IS_VEH_ChangedAt" /><map source="CollisionInjuredCount" target="IS_INJ_Intersection_InjuredCount" /><map source="ChangedAt" target="IS_INJ_ChangedAt" /><map source="CollisionKilledCount" target="IS_KIL_Intersection_KilledCount" /><map source="ChangedAt" target="IS_KIL_ChangedAt" /></load></target>';
 DECLARE @name varchar(255) = @xml.value('/target[1]/@name', 'varchar(255)');
 DECLARE @CF_ID int;
 SELECT

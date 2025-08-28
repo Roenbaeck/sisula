@@ -55,14 +55,14 @@ IF EXISTS (
 )
 BEGIN TRY
 	ALTER ASSEMBLY Utilities
-	FROM 'C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM 'undefinedcode\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
-	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.'
+	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.';
 END TRY BEGIN CATCH 
 	DECLARE @msg VARCHAR(2000) = ERROR_MESSAGE();
-	IF(PATINDEX('%identical%', @msg) = 0) 
+	IF(PATINDEX('%identical%', @msg) > 0) 
 	BEGIN 
-		PRINT ERROR_MESSAGE();
+		PRINT 'The .NET CLR for SQL Server ' + @version + ' has already been installed.';
 	END
 	ELSE
 	BEGIN TRY
@@ -72,13 +72,20 @@ END TRY BEGIN CATCH
 		PRINT ERROR_MESSAGE();
 	END CATCH
 END CATCH
-ELSE -- assembly does not exist
+IF NOT EXISTS (
+	SELECT
+		*
+	FROM
+		sys.assemblies
+	WHERE
+		name = 'Utilities'
+)
 BEGIN TRY
     -- since some version of 2017 assemblies must be explicitly whitelisted
     IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
     BEGIN
 		CREATE TABLE #hash([hash] varbinary(64));
-		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''undefinedcode\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
 		DECLARE @hash varbinary(64);
 		SELECT @hash = [hash] FROM #hash;
         IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
@@ -86,7 +93,7 @@ BEGIN TRY
 	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'C:\Users\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM 'undefinedcode\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
 END TRY BEGIN CATCH 
@@ -102,7 +109,8 @@ GO
 CREATE FUNCTION [dbo].MultiSplitter(@row AS nvarchar(max), @pattern AS nvarchar(4000))
 RETURNS TABLE (
 	[match] nvarchar(max),
-	[index] int
+	[index] int, 
+	[group] nvarchar(max)
 ) AS EXTERNAL NAME Utilities.MultiSplitter.InitMethod;
 GO
 CREATE FUNCTION [dbo].IsType(@dataValue AS nvarchar(max), @dataType AS nvarchar(4000))
@@ -158,8 +166,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_RawSplit
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateRawSplitTable] (
     @agentJobId uniqueidentifier = null,
@@ -236,8 +244,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -310,8 +318,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_BulkInsert] (
 	@filename varchar(2000),
@@ -358,7 +366,6 @@ EXEC GolfDW.metadata._WorkSourceToTarget
             FORMAT = ''CSV'',
             CODEPAGE = ''ACP'',
             FIELDQUOTE = ''"'',
-            FORMATFILE = ''C:\Users\e-lronnback\GitHub\sisula\Examples\Golf\formats\source.xml'',
             FIRSTROW = 2,
             TABLOCK
         );
@@ -442,8 +449,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Split
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -585,8 +592,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Error
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -671,8 +678,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Typed
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -744,8 +751,8 @@ GO
 --
 -- Load: PGA_Kaggle_Stats_Split into PGA_Kaggle_Stats_Typed
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -805,6 +812,16 @@ EXEC GolfDW.metadata._WorkSourceToTarget
         [dbo].[PGA_Kaggle_Stats_Split]
     WHERE
         statKey_Duplicate = 0
+    AND
+        [Player Name_Error] is null
+    AND
+        [Date_Error] is null
+    AND
+        [Statistic_Error] is null
+    AND
+        [Variable_Error] is null
+    AND
+        [Value_Error] is null;
     SET @insert = @insert + @@ROWCOUNT;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @insert;
     SET @JB_ID = ISNULL((
@@ -863,8 +880,8 @@ GO
 -- Key: Player Name (as primary key)
 -- Key: Date (as primary key)
 --
--- Generated: Fri Feb 17 10:36:15 UTC+0100 2023 by e-lronnback
--- From: TSE-5GYVY33 in the CORPNET domain
+-- Generated: Thu Aug 28 2025 09:55:18 GMT+02:00 by eldle
+-- From: WARP in the WARP domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,
@@ -919,23 +936,7 @@ END CATCH
 END
 GO
 -- The source definition used when generating the above
-DECLARE @xml XML = N'
-<source name="Kaggle" codepage="ACP" format="CSV" fieldquote="&quot;" datafiletype="char" fieldterminator="\n" rowlength="1000" split="bulk" firstrow="2">
-	<part name="Stats" nulls="" typeCheck="false" keyCheck="true">
-		<term name="Player Name" delimiter="," format="varchar(555)"/>
-		<term name="Date" delimiter="," format="date"/>
-		<term name="Statistic" delimiter="," format="varchar(555)"/>
-		<term name="Variable" delimiter="," format="varchar(555)"/>
-		<term name="Value" format="varchar(555)"/>
-		<key name="statKey" type="primary key">
-			<component of="Statistic"/>
-			<component of="Variable"/>
-			<component of="Player Name"/>
-			<component of="Date"/>
-		</key>
-	</part>
-</source>
-';
+DECLARE @xml XML = N'<source name="Kaggle" codepage="ACP" format="CSV" fieldquote="&quot;" datafiletype="char" fieldterminator="\n" rowlength="1000" split="bulk" firstrow="2"><part name="Stats" nulls="" typeCheck="false" keyCheck="true"><term name="Player Name" delimiter="," format="varchar(555)" /><term name="Date" delimiter="," format="date" /><term name="Statistic" delimiter="," format="varchar(555)" /><term name="Variable" delimiter="," format="varchar(555)" /><term name="Value" format="varchar(555)" /><key name="statKey" type="primary key"><component of="Statistic" /><component of="Variable" /><component of="Player Name" /><component of="Date" /></key></part></source>';
 DECLARE @name varchar(255) = @xml.value('/source[1]/@name', 'varchar(255)');
 DECLARE @CF_ID int;
 SELECT
