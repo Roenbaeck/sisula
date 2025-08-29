@@ -158,3 +158,72 @@ Evaluates a JavaScript condition. If true, outputs `true_value`; otherwise, outp
 1.  **Data Preparation First:** Sisulets listed first in a `.directive` file (like `Helpers.js`) should focus on preparing data and defining functions. Sisulets listed later should focus on using those functions to generate output.
 2.  **Context Scoping:** Variables defined in `VARIABLES` are global. The `workflow/Variables.js` script demonstrates best practice for creating scoped copies of variables for nested elements like jobs (`job.VARIABLES = copyVariables(workflow.VARIABLES);`), preventing child elements from accidentally modifying the parent's context.
 3.  **Variable Resolution Order:** Be aware that variable substitution can be order-dependent. The `replaceVariables` function should be called strategically to resolve placeholders within data *before* that data is used to resolve placeholders in templates. (As we saw with the multi-stage replacement fix for workflows).
+
+---
+
+### Sisula Project Structure: A Guide
+
+A Sisula project is organized into a standardized folder structure. The main `Sisulate.ps1` script is designed to look for files in specific subdirectories based on the filters (`S`, `T`, `W`) you provide. Adhering to this structure is essential for the tool to work correctly.
+
+Based on the provided examples, here is the standard project layout:
+
+```
+<Your_Project_Folder>/
+|
+|-- sources/
+|   |-- SourceFile1.xml
+|   `-- SourceFile2.xml
+|
+|-- targets/
+|   |-- TargetTable1.xml
+|   `-- TargetTable2.xml
+|
+|-- workflows/
+|   |-- MainWorkflow.xml
+|   `-- ...
+|
+|-- formats/
+|   |-- (This is an OUTPUT directory)
+|   `-- ...
+|
+|-- biml/
+|   |-- (This is an OUTPUT directory)
+|   `-- ...
+|
+|-- scripts/
+|   |-- HelperScript1.ps1
+|   `-- ...
+|
+`-- Variables.BAT
+```
+
+#### Folder and File Descriptions
+
+*   **`sources/` (Input)**
+    *   **Purpose:** Contains the XML definitions of your raw data sources. Each XML file typically describes a flat file or another data source, detailing its columns, data types, and delimiters.
+    *   **Used by Filter:** `S`
+    *   **Generates:** BCP format files in `formats/` and source-loading SQL procedures in `sources/` (e.g., `SourceFile1.sql`).
+
+*   **`targets/` (Input)**
+    *   **Purpose:** Contains the XML definitions of your destination tables in the data warehouse. These files define the table structure and, most importantly, the mapping logic from one or more sources to the target.
+    *   **Used by Filter:** `T`
+    *   **Generates:** Target-loading SQL procedures in `targets/` (e.g., `TargetTable1.sql`) and Business Intelligence Markup Language files in `biml/`.
+
+*   **`workflows/` (Input)**
+    *   **Purpose:** Contains the XML definitions of the orchestration logic. These files describe the sequence of tasks to be performed, which are then transformed into SQL Server Agent Jobs. This is where you define the steps of your ETL process (e.g., "Run source A load, then run target B load").
+    *   **Used by Filter:** `W`
+    *   **Generates:** SQL scripts in `workflows/` that create the corresponding SQL Server Agent Jobs.
+
+*   **`formats/` (Output)**
+    *   **Purpose:** This is an **output-only** directory. The Sisulator engine places the generated BCP (Bulk Copy Program) format files here. These XML-based format files are used by SQL Server to efficiently bulk-load data from flat files.
+    *   **Generated from:** `sources/`
+
+*   **`biml/` (Output)**
+    *   **Purpose:** This is an **output-only** directory. The engine places the generated BIML files here. BIML is a dialect of XML used to declare business intelligence assets. These files are typically used by tools like BimlStudio to automatically generate SSIS (SQL Server Integration Services) packages.
+    *   **Generated from:** `targets/`
+
+*   **`scripts/` (Supporting Files)**
+    *   **Purpose:** A conventional location for any external helper scripts (e.g., PowerShell `.ps1`, Python `.py`, command files `.cmd`) that are executed by the steps in your workflows. For example, a job step generated from `workflows/MainWorkflow.xml` might call `PowerShell %ProjectDirectory%\scripts\HelperScript1.ps1`. The Sisulator engine itself does not directly read this folder, but the generated artifacts often rely on it.
+
+*   **`Variables.BAT` (Configuration)**
+    *   **Purpose:** This is the central configuration file for the entire project. It is used to define key-value pairs that control the behavior of the transformations. Common variables include database names (`SourceDatabase`, `TargetDatabase`), server names, and file paths (`WorkDataDirectory`, `ArchiveDataDirectory`). These variables are loaded into the `VARIABLES` object and are accessible in all sisulets, allowing for environment-specific configuration without changing the core transformation logic.
