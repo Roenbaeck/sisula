@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETL XML Editor</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #22d3ee;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-dark: #0f172a;
+            --bg-medium: #1e293b;
+            --bg-light: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #475569;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions { display: flex; gap: 1rem; }
+        .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; font-weight: 500; cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
+        .btn-secondary { background: var(--bg-light); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-medium); }
+        .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+
+        .main-container { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; padding: 1.5rem; max-width: 1600px; width: 100%; margin: 0 auto; overflow: hidden; }
+        .main-content { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 1.5rem; }
+        .target-settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .editor-container { flex: 1; background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(10px); border-radius: 1rem; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-height: 250px; }
+        .editor { flex: 1; padding: 1.5rem; font-family: 'Fira Code', 'Consolas', monospace; font-size: 14px; line-height: 1.6; overflow: auto; position: relative; }
+        .form-group { margin-bottom: 0; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; }
+        .form-control { width: 100%; padding: 0.5rem 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--text-primary); font-size: 0.875rem; transition: all 0.3s ease; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        .section-title { font-size: 1.25rem; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+
+        .loads-table-wrapper { overflow-x: auto; }
+        .loads-table { width: 100%; border-collapse: collapse; }
+        .loads-table th, .loads-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        .loads-table th { font-weight: 600; font-size: 0.875rem; color: var(--text-secondary); }
+        .loads-table tbody tr:hover { background-color: rgba(255, 255, 255, 0.05); }
+        .loads-table td.actions { text-align: right; }
+        .loads-table .actions .btn-icon { margin-left: 0.5rem; }
+
+        .btn-icon { padding: 0.375rem; background: transparent; border: 1px solid var(--border); border-radius: 0.375rem; color: var(--text-secondary); cursor: pointer; transition: all 0.3s ease; }
+        .btn-icon:hover { background: var(--bg-light); color: var(--text-primary); }
+        .btn-danger { color: var(--danger); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); }
+
+        #xmlOutput { white-space: pre; overflow-x: auto; tab-size: 2; }
+        .xml-tag { color: #22d3ee; }
+        .xml-attr-name { color: #f59e0b; }
+        .xml-attr-value { color: #10b981; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        
+        /* --- IMPROVED MODAL STYLES --- */
+        .modal-content {
+            background: var(--bg-medium);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 0; /* Padding moved to inner elements */
+            width: 95%;
+            max-width: 1200px; /* Increased max-width */
+            height: 90vh;      /* Increased height */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent the whole modal from scrolling */
+        }
+        .modal-header { padding: 1.5rem 2rem 1rem; border-bottom: 1px solid var(--border); }
+        .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+        .modal-body { flex-grow: 1; padding: 1.5rem 2rem; overflow-y: auto; }
+        .modal-footer { padding: 1rem 2rem; border-top: 1px solid var(--border); display: flex; gap: 1rem; justify-content: flex-end; }
+        /* --- END IMPROVED MODAL STYLES --- */
+
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { position: absolute; left: -9999px; }
+        .file-input-label { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--bg-light); border: 1px solid var(--border); border-radius: 0.5rem; cursor: pointer; transition: all 0.3s ease; }
+        .file-input-label:hover { background: var(--bg-dark); border-color: var(--primary); }
+        
+        .tabs { display: flex; gap: 0.5rem; padding: 0 1.5rem; background: rgba(15, 23, 42, 0.5); border-bottom: 1px solid var(--border); }
+        .tab { padding: 0.75rem 1rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease; }
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        
+        .modal-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .modal-tab { padding: 0.5rem 1rem; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.3s ease; }
+        .modal-tab:hover { color: var(--text-primary); }
+        .modal-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .modal-tab-pane { display: none; }
+        .modal-tab-pane.active { display: block; }
+        
+        .mappings-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .mappings-table th, .mappings-table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .mappings-table th { font-size: 0.75rem; color: var(--text-secondary); }
+        .mappings-table .form-control { font-size: 0.8rem; padding: 0.3rem 0.5rem; }
+        .mappings-table td.actions { width: 1%; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><span>⚡</span><span>ETL XML Editor</span></div>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="newFile()"><span>📄</span> New</button>
+            <div class="file-input-wrapper"><input type="file" id="fileInput" accept=".xml" onchange="loadFile(event)"><label for="fileInput" class="file-input-label"><span>📁</span> Load XML</label></div>
+            <button class="btn btn-success" onclick="downloadXML()"><span>💾</span> Download</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="main-content">
+            <div class="target-settings-grid">
+                <div class="form-group"><label>Target Name</label><input type="text" class="form-control" id="targetName" placeholder="e.g., RAKEL_Sitestatistik" onchange="updateXML()"></div>
+                <div class="form-group"><label>Database</label><input type="text" class="form-control" id="targetDatabase" placeholder="e.g., %TargetDatabase%" onchange="updateXML()"></div>
+                <div class="form-group"><label>Temporalization</label><select class="form-control" id="temporalization" onchange="updateXML()"><option value="">None</option><option value="uni">Uni</option><option value="crt">CRT</option></select></div>
+            </div>
+            <div>
+                <div class="section-title"><span>Loads</span><button class="btn btn-primary" onclick="showAddLoadModal()"><span>➕</span> Add Load</button></div>
+                <div class="loads-table-wrapper"><table class="loads-table"><thead><tr><th>Source</th><th>Target</th><th>Type</th><th>Anchor</th><th>Pass</th><th>Mappings</th><th class="actions">Actions</th></tr></thead><tbody id="loadsList"></tbody></table></div>
+            </div>
+        </div>
+        <div class="editor-container">
+            <div class="tabs"><button class="tab active" onclick="switchTab('xml', event)">XML Output</button><button class="tab" onclick="switchTab('preview', event)">Tree View</button></div>
+            <div class="editor"><div id="xmlOutput"></div><div id="treeView" style="display: none;"></div></div>
+        </div>
+    </div>
+
+    <!-- Add Load Modal (Simple version, no change needed) -->
+    <div id="addLoadModal" class="modal"><div class="modal-content" style="height: auto; max-width: 600px;"><div class="modal-header"><h2 class="modal-title">Add Load</h2></div><div class="modal-body"><div class="form-group" style="margin-bottom: 1.5rem;"><label>Source</label><input type="text" class="form-control" id="loadSource" placeholder="e.g., Netboss"></div><div class="form-group" style="margin-bottom: 1.5rem;"><label>Target</label><input type="text" class="form-control" id="loadTarget" placeholder="e.g., lME_Measurement"></div><div class="form-group" style="margin-bottom: 1.5rem;"><label>Anchor (optional)</label><input type="text" class="form-control" id="loadAnchor" placeholder="e.g., ME_Measurement"></div><div class="form-group" style="margin-bottom: 1.5rem;"><label>Type</label><select class="form-control" id="loadType"><option value="">Default</option><option value="merge">Merge</option><option value="insert">Insert</option></select></div><div class="form-group" style="margin-bottom: 1.5rem;"><label>Pass (optional)</label><input type="number" class="form-control" id="loadPass" min="1" placeholder="1"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('addLoadModal')">Cancel</button><button class="btn btn-primary" onclick="addLoad()">Add Load</button></div></div></div>
+
+    <!-- Edit Load Modal (REDESIGNED with smart scrolling) -->
+    <div id="editLoadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Load</h2>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editLoadIndex">
+                
+                <!-- SQL Tabs -->
+                <div class="modal-tabs">
+                    <button class="modal-tab" onclick="switchModalTab('before', this)">SQL Before</button>
+                    <button class="modal-tab active" onclick="switchModalTab('select', this)">SELECT</button>
+                    <button class="modal-tab" onclick="switchModalTab('after', this)">SQL After</button>
+                </div>
+                <div class="modal-tab-content">
+                    <div id="pane-before" class="modal-tab-pane"><textarea class="form-control" id="sqlBefore" placeholder="Enter SQL to execute before load..." style="min-height: 200px; font-family: 'Fira Code', monospace;"></textarea></div>
+                    <div id="pane-select" class="modal-tab-pane active"><textarea class="form-control" id="selectStatement" placeholder="Enter SELECT statement..." style="min-height: 200px; font-family: 'Fira Code', monospace;"></textarea></div>
+                    <div id="pane-after" class="modal-tab-pane"><textarea class="form-control" id="sqlAfter" placeholder="Enter SQL to execute after load..." style="min-height: 200px; font-family: 'Fira Code', monospace;"></textarea></div>
+                </div>
+                
+                <!-- Mappings Table -->
+                <div class="section-title" style="margin-top: 1.5rem;">
+                    <span>Mappings</span>
+                    <button class="btn btn-primary btn-sm" onclick="addMapping()"><span>➕</span> Add Mapping</button>
+                </div>
+                <div class="loads-table-wrapper">
+                    <table class="mappings-table">
+                        <thead><tr><th>Source</th><th>Target</th><th>As</th><th>Attribute</th><th class="actions"></th></tr></thead>
+                        <tbody id="mappingsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('editLoadModal')">Close</button>
+                <button class="btn btn-success" onclick="saveLoadDetails()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // No changes to the JavaScript are needed for this layout improvement.
+        // All existing functions from the previous step remain the same.
+        
+        let targetData = { name: '', database: '', temporalization: '', loads: [] };
+        let currentTab = 'xml';
+
+        function switchTab(tabName, event) { currentTab = tabName; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); if (tabName === 'xml') { document.getElementById('xmlOutput').style.display = 'block'; document.getElementById('treeView').style.display = 'none'; updateXML(); } else { document.getElementById('xmlOutput').style.display = 'none'; document.getElementById('treeView').style.display = 'block'; document.getElementById('treeView').innerHTML = "Tree view not implemented."; } }
+        function newFile() { if (confirm('Create a new file? Current changes will be lost.')) { targetData = { name: '', database: '', temporalization: '', loads: [] }; document.getElementById('targetName').value = ''; document.getElementById('targetDatabase').value = ''; document.getElementById('temporalization').value = ''; updateLoadsList(); updateXML(); } }
+        function loadFile(event) { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(e) { parseXML(e.target.result); }; reader.readAsText(file); } }
+        function parseXML(xmlText) { const parser = new DOMParser(); const xmlDoc = parser.parseFromString(xmlText, "text/xml"); const target = xmlDoc.querySelector("target"); if (target) { targetData.name = target.getAttribute("name") || ""; targetData.database = target.getAttribute("database") || ""; targetData.temporalization = target.getAttribute("temporalization") || ""; document.getElementById("targetName").value = targetData.name; document.getElementById("targetDatabase").value = targetData.database; document.getElementById("temporalization").value = targetData.temporalization; targetData.loads = []; const loads = target.querySelectorAll("load"); loads.forEach(load => { const loadObj = { source: load.getAttribute("source") || "", target: load.getAttribute("target") || "", anchor: load.getAttribute("anchor") || "", type: load.getAttribute("type") || "", pass: load.getAttribute("pass") || "", sqlBefore: "", sqlAfter: "", selectStatement: "", mappings: [] }; const sqlElements = load.querySelectorAll("sql"); sqlElements.forEach(sql => { const position = sql.getAttribute("position"); if (position === "before") { loadObj.sqlBefore = sql.textContent.trim(); } else if (position === "after") { loadObj.sqlAfter = sql.textContent.trim(); } }); const textNodes = Array.from(load.childNodes).filter(node => node.nodeType === 3 && node.textContent.trim()); if (textNodes.length > 0) { loadObj.selectStatement = textNodes.map(n => n.textContent).join("\n").trim(); } const maps = load.querySelectorAll("map"); maps.forEach(map => { loadObj.mappings.push({ source: map.getAttribute("source") || "", target: map.getAttribute("target") || "", as: map.getAttribute("as") || "", attribute: map.getAttribute("attribute") || "", deletable: map.getAttribute("deletable") === "true" }); }); targetData.loads.push(loadObj); }); updateLoadsList(); updateXML(); } }
+        function showAddLoadModal() { document.getElementById('addLoadModal').classList.add('active'); }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
+        function addLoad() { const load = { source: document.getElementById('loadSource').value, target: document.getElementById('loadTarget').value, anchor: document.getElementById('loadAnchor').value, type: document.getElementById('loadType').value, pass: document.getElementById('loadPass').value, sqlBefore: '', sqlAfter: '', selectStatement: 'SELECT\n\t*\nFROM\n\tSourceTable', mappings: [] }; targetData.loads.push(load); updateLoadsList(); updateXML(); closeModal('addLoadModal'); document.getElementById('loadSource').value = ''; document.getElementById('loadTarget').value = ''; document.getElementById('loadAnchor').value = ''; document.getElementById('loadType').value = ''; document.getElementById('loadPass').value = ''; }
+        function editLoad(index) { const load = targetData.loads[index]; document.getElementById('editLoadIndex').value = index; document.getElementById('sqlBefore').value = load.sqlBefore || ''; document.getElementById('sqlAfter').value = load.sqlAfter || ''; document.getElementById('selectStatement').value = load.selectStatement || ''; document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.modal-tab-pane').forEach(p => p.classList.remove('active')); document.querySelector('.modal-tab[onclick*="select"]').classList.add('active'); document.getElementById('pane-select').classList.add('active'); updateMappingsTable(load.mappings || []); document.getElementById('editLoadModal').classList.add('active'); }
+        function switchModalTab(tabName, element) { document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active')); element.classList.add('active'); document.querySelectorAll('.modal-tab-pane').forEach(p => p.classList.remove('active')); document.getElementById(`pane-${tabName}`).classList.add('active'); }
+        function updateMappingsTable(mappings) { const tbody = document.getElementById('mappingsTableBody'); tbody.innerHTML = ''; mappings.forEach((mapping, index) => { const tr = document.createElement('tr'); tr.innerHTML = `<td><input type="text" class="form-control mapping-source" value="${escapeHtml(mapping.source || '')}"></td><td><input type="text" class="form-control mapping-target" value="${escapeHtml(mapping.target || '')}"></td><td><select class="form-control mapping-as"><option value="">None</option><option value="natural key" ${mapping.as === 'natural key' ? 'selected' : ''}>Natural Key</option><option value="surrogate key" ${mapping.as === 'surrogate key' ? 'selected' : ''}>Surrogate Key</option><option value="metadata" ${mapping.as === 'metadata' ? 'selected' : ''}>Metadata</option><option value="history" ${mapping.as === 'history' ? 'selected' : ''}>History</option><option value="static" ${mapping.as === 'static' ? 'selected' : ''}>Static</option><option value="opinion" ${mapping.as === 'opinion' ? 'selected' : ''}>Opinion</option></select></td><td><input type="text" class="form-control mapping-attribute" value="${escapeHtml(mapping.attribute || '')}"></td><td class="actions"><button class="btn-icon btn-danger" onclick="removeMapping(${index})" title="Remove Mapping">🗑️</button></td>`; tbody.appendChild(tr); }); }
+        function addMapping() { const loadIndex = document.getElementById('editLoadIndex').value; if (!targetData.loads[loadIndex].mappings) { targetData.loads[loadIndex].mappings = []; } targetData.loads[loadIndex].mappings.push({ source: '', target: '', as: '', attribute: '' }); updateMappingsTable(targetData.loads[loadIndex].mappings); }
+        function removeMapping(mapIndex) { const loadIndex = document.getElementById('editLoadIndex').value; targetData.loads[loadIndex].mappings.splice(mapIndex, 1); updateMappingsTable(targetData.loads[loadIndex].mappings); }
+        function saveLoadDetails() { const loadIndex = document.getElementById('editLoadIndex').value; const load = targetData.loads[loadIndex]; load.sqlBefore = document.getElementById('sqlBefore').value; load.sqlAfter = document.getElementById('sqlAfter').value; load.selectStatement = document.getElementById('selectStatement').value; const newMappings = []; document.querySelectorAll('#mappingsTableBody tr').forEach(tr => { newMappings.push({ source: tr.querySelector('.mapping-source').value, target: tr.querySelector('.mapping-target').value, as: tr.querySelector('.mapping-as').value, attribute: tr.querySelector('.mapping-attribute').value }); }); load.mappings = newMappings; updateLoadsList(); updateXML(); closeModal('editLoadModal'); }
+        function removeLoad(index) { if (confirm('Are you sure you want to remove this load?')) { targetData.loads.splice(index, 1); updateLoadsList(); updateXML(); } }
+        function updateLoadsList() { const tbody = document.getElementById('loadsList'); tbody.innerHTML = ''; if (targetData.loads.length === 0) { tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No loads defined. Click 'Add Load' to get started.</td></tr>`; return; } targetData.loads.forEach((load, index) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${escapeHtml(load.source)}</td><td>${escapeHtml(load.target)}</td><td>${load.type ? `<span style="background:var(--primary);color:white;padding:2px 6px;border-radius:4px;font-size:0.7rem;">${load.type.toUpperCase()}</span>` : 'Default'}</td><td>${escapeHtml(load.anchor || 'N/A')}</td><td>${escapeHtml(load.pass || 'N/A')}</td><td>${load.mappings ? load.mappings.length : 0}</td><td class="actions"><button class="btn-icon" onclick="editLoad(${index})" title="Edit Load">✏️</button><button class="btn-icon btn-danger" onclick="removeLoad(${index})" title="Remove Load">🗑️</button></td>`; tbody.appendChild(tr); }); }
+        function generateXML() { targetData.name = document.getElementById('targetName').value; targetData.database = document.getElementById('targetDatabase').value; targetData.temporalization = document.getElementById('temporalization').value; let xml = `<target name="${targetData.name}" database="${targetData.database}"`; if (targetData.temporalization) { xml += ` temporalization="${targetData.temporalization}"`; } xml += '>\n'; targetData.loads.forEach(load => { xml += `    <load source="${load.source}" target="${load.target}"`; if (load.anchor) xml += ` anchor="${load.anchor}"`; if (load.type) xml += ` type="${load.type}"`; if (load.pass) xml += ` pass="${load.pass}"`; xml += '>\n'; if (load.sqlBefore) { xml += `        <sql position="before"><![CDATA[\n${load.sqlBefore}\n        ]]></sql>\n`; } if (load.mappings && load.mappings.length > 0) { load.mappings.forEach(map => { xml += `        <map source="${map.source}" target="${map.target}"`; if (map.as) xml += ` as="${map.as}"`; if (map.attribute) xml += ` attribute="${map.attribute}"`; xml += '/>\n'; }); } if (load.selectStatement) { xml += `        <![CDATA[\n${load.selectStatement}\n        ]]>\n`; } if (load.sqlAfter) { xml += `        <sql position="after"><![CDATA[\n${load.sqlAfter}\n        ]]></sql>\n`; } xml += '    </load>\n'; }); xml += '</target>'; return xml; }
+        function updateXML() { const rawXml = generateXML(); document.getElementById('xmlOutput').innerHTML = syntaxHighlightXML(rawXml); }
+        function downloadXML() { const xml = generateXML(); const blob = new Blob([xml], { type: 'application/xml' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${targetData.name || 'output'}.xml`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+        function escapeHtml(text) { return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
+        function syntaxHighlightXML(xml) { let escaped = escapeHtml(xml); return escaped.replace(/(&lt;!\[CDATA\[|\]\]&gt;)/g, '<span style="color:var(--text-secondary); font-style: italic;">$&</span>').replace(/(&lt;\??)(\/?\w+)/g, '<span class="xml-tag">$1$2</span>').replace(/(\w+)=(&quot;.*?&quot;)/g, '<span class="xml-attr-name">$1</span>=<span class="xml-attr-value">$2</span>'); }
+        window.onload = function() { updateXML(); updateLoadsList(); }
+    </script>
+</body>
+</html>```
