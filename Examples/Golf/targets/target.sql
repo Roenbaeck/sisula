@@ -12,8 +12,8 @@ GO
 -- Map: Birth Date to PL_BID_Player_BirthDate (as static)
 -- Map: WorkId to Metadata_PL (as metadata)
 -- 
--- Generated: Thu Aug 28 2025 11:49:16 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lPL_Player__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -134,8 +134,8 @@ GO
 -- Map: Statistic to SGR_StatisticGroup (as natural key)
 -- Map: WorkId to Metadata_SGR (as metadata)
 -- 
--- Generated: Thu Aug 28 2025 11:49:16 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -242,8 +242,8 @@ GO
 -- Map: Variable to ST_DET_Statistic_Detail (as natural key)
 -- Map: WorkId to Metadata_ST (as metadata)
 -- 
--- Generated: Thu Aug 28 2025 11:49:16 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lST_Statistic__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -354,8 +354,8 @@ GO
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Thu Aug 28 2025 11:49:16 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] (
     @agentJobId uniqueidentifier = null,
@@ -575,8 +575,8 @@ GO
 -- Map: Date to ME_VAL_ChangedAt (as history)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Thu Aug 28 2025 11:49:16 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] (
     @agentJobId uniqueidentifier = null,

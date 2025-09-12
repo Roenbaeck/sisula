@@ -55,7 +55,7 @@ IF EXISTS (
 )
 BEGIN TRY
 	ALTER ASSEMBLY Utilities
-	FROM 'C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM '\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was updated.';
 END TRY BEGIN CATCH 
@@ -85,7 +85,7 @@ BEGIN TRY
     IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
     BEGIN
 		CREATE TABLE #hash([hash] varbinary(64));
-		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
+		EXEC('INSERT INTO #hash SELECT CONVERT(varbinary(64), ''0x'' + H, 1) FROM OPENROWSET(BULK ''\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.SHA512'', SINGLE_CLOB) T(H);');
 		DECLARE @hash varbinary(64);
 		SELECT @hash = [hash] FROM #hash;
         IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = @hash)
@@ -93,7 +93,7 @@ BEGIN TRY
 	END
 	CREATE ASSEMBLY Utilities
 	AUTHORIZATION dbo
-	FROM 'C:\Users\eldle\OneDrive\Documents\GitHub\sisula\code\Utilities' + @version + '.dll'
+	FROM '\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\code\Utilities' + @version + '.dll'
 	WITH PERMISSION_SET = SAFE;
 	PRINT 'The .NET CLR for SQL Server ' + @version + ' was installed.'
 END TRY BEGIN CATCH 
@@ -166,8 +166,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_RawSplit
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateRawSplitTable] (
     @agentJobId uniqueidentifier = null,
@@ -244,8 +244,8 @@ GO
 -- the target of the BULK INSERT operation, since it cannot insert
 -- into a table with multiple columns without a format file.
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateInsertView] (
     @agentJobId uniqueidentifier = null,
@@ -318,8 +318,8 @@ GO
 -- This job may called multiple times in a workflow when more than
 -- one file matching a given filename pattern is found.
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_BulkInsert] (
 	@filename varchar(2000),
@@ -366,6 +366,7 @@ EXEC GolfDW.metadata._WorkSourceToTarget
             FORMAT = ''CSV'',
             CODEPAGE = ''ACP'',
             FIELDQUOTE = ''"'',
+            FORMATFILE = ''Microsoft.PowerShell.Core\FileSystem::\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\formats\source.xml'',
             FIRSTROW = 2,
             TABLOCK
         );
@@ -449,8 +450,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Split
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateSplitViews] (
     @agentJobId uniqueidentifier = null,
@@ -592,8 +593,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Error
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateErrorViews] (
     @agentJobId uniqueidentifier = null,
@@ -678,8 +679,8 @@ GO
 --
 -- Create: PGA_Kaggle_Stats_Typed
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_CreateTypedTables] (
     @agentJobId uniqueidentifier = null,
@@ -751,8 +752,8 @@ GO
 --
 -- Load: PGA_Kaggle_Stats_Split into PGA_Kaggle_Stats_Typed
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_SplitRawIntoTyped] (
     @agentJobId uniqueidentifier = null,
@@ -880,8 +881,8 @@ GO
 -- Key: Player Name (as primary key)
 -- Key: Date (as primary key)
 --
--- Generated: Thu Aug 28 2025 11:49:21 GMT+02:00 by eldle
--- From: WARP in the WARP domain
+-- Generated: Fri Sep 12 2025 12:59:40 GMT+02:00 by e-lronnback
+-- From: TSE-PF40XEEZ in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[PGA_Kaggle_AddKeysToTyped] (
     @agentJobId uniqueidentifier = null,

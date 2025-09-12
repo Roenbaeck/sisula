@@ -1,4 +1,4 @@
-﻿#
+#
 # Sisulator.ps1 - Modern PowerShell-based ETL Generation Tool (Jint Edition)
 #
 # Replaces the legacy Sisulate.bat and Sisulator.hta with a single, self-contained script.
@@ -162,7 +162,7 @@ try {
             $result = $Engine.Execute($jsExecutionCode)
             $completionValue = $result.GetCompletionValue()
             
-            if ($completionValue -eq $null) {
+            if ($null -eq $completionValue) {
                 throw "JavaScript execution returned null result"
             }
             
@@ -179,6 +179,36 @@ try {
     catch {
         throw "JavaScript transformation failed: $($_.Exception.Message)"
     }
+}
+
+#-------------------------------------------------------------------
+# Helper Function to safely write text files
+#-------------------------------------------------------------------
+function Write-TextFileUtf8NoBom {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        
+        [Parameter(Mandatory = $true)]
+        [string]$Content
+    )
+    
+    # Resolve the directory path (this works even if the file doesn't exist)
+    $directory = Split-Path -Path $FilePath -Parent
+    $resolvedDirectory = Convert-Path -Path $directory
+    
+    # Ensure the directory exists
+    if (-not (Test-Path -Path $resolvedDirectory)) {
+        New-Item -Path $resolvedDirectory -ItemType Directory -Force | Out-Null
+    }
+    
+    # Build the full resolved file path
+    $fileName = Split-Path -Path $FilePath -Leaf
+    $resolvedFilePath = Join-Path -Path $resolvedDirectory -ChildPath $fileName
+    
+    # Write the file using UTF-8 without BOM
+    [System.IO.File]::WriteAllText($resolvedFilePath, $Content, (New-Object System.Text.UTF8Encoding($false)))
 }
 
 #===================================================================
@@ -282,27 +312,29 @@ try {
         $sourcesDir = Join-Path -Path $FolderPath -ChildPath "sources"
         $formatsDir = Join-Path -Path $FolderPath -ChildPath "formats"
         if ((Test-Path $sourcesDir) -and (Test-Path $formatsDir)) {
-            Write-Host "`n  + Creating bulk format files..." -ForegroundColor Cyan
+            Write-Host "`n  + Creating bulk format files and..." -ForegroundColor Cyan
             foreach ($file in (Get-ChildItem -Path $sourcesDir -Filter "*.xml")) {
                 $outputFile = Join-Path -Path $formatsDir -ChildPath "$($file.BaseName).xml"
                 Write-Host "  * Transforming $($file.Name) -> $($outputFile.Replace($FolderPath, '...'))"
                 # --- REFACTORED --- Pass the single engine instance to the function
                 $result = Invoke-Sisulation -Engine $jintEngine -XmlFilePath $file.FullName -MappingType "Source" -DirectiveFilePath "format.directive" -ContextVariables $scriptContextVariables
-                [System.IO.File]::WriteAllText((Convert-Path $outputFile), $result, (New-Object System.Text.UTF8Encoding($false)))
-            }
+                Write-TextFileUtf8NoBom -FilePath $outputFile -Content $result            }
         }
     }
 
     # Create source loading SQL code
     if ($filtersNormalized -like '*S*') {
         $sourcesDir = Join-Path -Path $FolderPath -ChildPath "sources"
+        $formatsDir = Join-Path -Path $FolderPath -ChildPath "formats"
         if (Test-Path $sourcesDir) {
             Write-Host "`n  + Creating source loading procedures..." -ForegroundColor Cyan
             foreach ($file in (Get-ChildItem -Path $sourcesDir -Filter "*.xml")) {
                 $outputFile = Join-Path -Path $sourcesDir -ChildPath "$($file.BaseName).sql"
+                $formatFile = Join-Path -Path $formatsDir -ChildPath "$($file.BaseName).xml"
+                $scriptContextVariables['FormatFile'] = "$formatFile"
                 Write-Host "  * Transforming $($file.Name) -> $($outputFile.Replace($FolderPath, '...'))"
                 $result = Invoke-Sisulation -Engine $jintEngine -XmlFilePath $file.FullName -MappingType "Source" -DirectiveFilePath "source.directive" -ContextVariables $scriptContextVariables
-                [System.IO.File]::WriteAllText((Convert-Path $outputFile), $result, (New-Object System.Text.UTF8Encoding($false)))
+                Write-TextFileUtf8NoBom -FilePath $outputFile -Content $result
                 $sqlFiles.Add($outputFile)
             }
         }
@@ -317,7 +349,7 @@ try {
                 $outputFile = Join-Path -Path $targetsDir -ChildPath "$($file.BaseName).sql"
                 Write-Host "  * Transforming $($file.Name) -> $($outputFile.Replace($FolderPath, '...'))"
                 $result = Invoke-Sisulation -Engine $jintEngine -XmlFilePath $file.FullName -MappingType "Target" -DirectiveFilePath "target.directive" -ContextVariables $scriptContextVariables
-                [System.IO.File]::WriteAllText((Convert-Path $outputFile), $result, (New-Object System.Text.UTF8Encoding($false)))
+                Write-TextFileUtf8NoBom -FilePath $outputFile -Content $result
                 $sqlFiles.Add($outputFile)
             }
         }
@@ -347,7 +379,7 @@ try {
                 $outputFile = Join-Path -Path $workflowsDir -ChildPath "$($file.BaseName).sql"
                 Write-Host "  * Transforming $($file.Name) -> $($outputFile.Replace($FolderPath, '...'))"
                 $result = Invoke-Sisulation -Engine $jintEngine -XmlFilePath $file.FullName -MappingType "Workflow" -DirectiveFilePath "workflow.directive" -ContextVariables $scriptContextVariables
-                [System.IO.File]::WriteAllText((Convert-Path $outputFile), $result, (New-Object System.Text.UTF8Encoding($false)))
+                Write-TextFileUtf8NoBom -FilePath $outputFile -Content $result
                 $sqlFiles.Add($outputFile)
             }
         }
@@ -380,3 +412,35 @@ finally {
     Write-Host "Cleaning up resources..."
     Pop-Location
 }
+# SIG # Begin signature block
+# MIIFeQYJKoZIhvcNAQcCoIIFajCCBWYCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU3S1qrl6fVgDTnwKIfAzREhQj
+# 5aygggMQMIIDDDCCAfSgAwIBAgIQHU3dWBuwiqpO+545AJHyKTANBgkqhkiG9w0B
+# AQUFADAeMRwwGgYDVQQDDBNTaXN1bGF0ZUNvZGVTaWduaW5nMB4XDTI1MDkxMjEw
+# MzUwMloXDTMwMDkxMjEwNDUwMlowHjEcMBoGA1UEAwwTU2lzdWxhdGVDb2RlU2ln
+# bmluZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALbnGJEww67aPRwR
+# +BsD/MY57GdRdFQCVO3XIeagZiIydc8o17oUL9aIZJ29LdXtvJmBcwg69iOQ8xV7
+# WtG4lg6wf4GZJ8VWQCvpuPZVyY4OPLZjbH6au82cTzDvPJspDuwNIEllebqcVP/e
+# DZA+N4TEA4UQ40ajay+HHykC+xBOfCdEqbbLBnix/LxbYupG9YY/ttJja0oqvryb
+# cVkDKFNnmW3UVVxf5Bz294QhIUaemwjpdXwUwSj7+eMrGvPdyHk+SLdUaIp73QRt
+# i214PROMdsQm5OCGEc5pxzsSj0TBTtbmePJ7Cy8Mrcx1JiR917M3hFdBCjqILr3r
+# tjm5GR0CAwEAAaNGMEQwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUF
+# BwMDMB0GA1UdDgQWBBSha3nEvNvddhH1v1vS+fQYXP7C9jANBgkqhkiG9w0BAQUF
+# AAOCAQEAIVuzXhOWitzwaW6cXrpaXMpKrX3RDxoAgEuueJlR2EAoNqR5bsdFSFHJ
+# xSF+Pq8jm+2wgt+CicrgEZWO1Qvv+bYEq7+t7l6V9KZ/m+pZjjV7hCZdv/eNWav8
+# KDDtQJP+PY/Cxjj3P/gCjq1crNtPXhqmKv2fyiotYy/tNOlzLV/Oho+CPQBi5Cot
+# tBE30AR/x1XACGoc6siTkrfzVq3/NQWhUeK0EpX6B7+sPxoRs3rHEbI+DaQN/Rfs
+# GEdGL9/o4IV5Oy2Fl3XJ0YYWglw66PlRhVjPL6deKTlXVt7OJRKfr9WFhm6iVgHq
+# cmzCkB7zWbu36x9UXC9w7EIL0+ykozGCAdMwggHPAgEBMDIwHjEcMBoGA1UEAwwT
+# U2lzdWxhdGVDb2RlU2lnbmluZwIQHU3dWBuwiqpO+545AJHyKTAJBgUrDgMCGgUA
+# oHgwGAYKKwYBBAGCNwIBDDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYB
+# BAGCNwIBBDAcBgorBgEEAYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0B
+# CQQxFgQUiq8t1MdEYwqbQM77xQE7xmvOTs4wDQYJKoZIhvcNAQEBBQAEggEAPfBo
+# 5KTSHRkj1NK9aVrtanIbnE2HpMtP0hxfK5eZTZbznd9rsCCwgOJMYhsi1/qhQ38N
+# My22Pk0XOV/2WGDVYnFdBL531XOrXBssd5bPiHontArpCXZ3H5PrlXKWBU/ayguc
+# YCcRUv/nUbr5sa5noChPgF8SoZBFI1aYy+xqZ2ylhNG5ThqXTP20ML+xnRqrXi8+
+# 3XeD5Apq1xGl/yPYdzXFmulh4J1tMY4RmTfVZbV6ekX2pJj/F+KnsuhLIJMPmr4t
+# zuyQAITc82BI6ccuorB3QiOMWNyBiwEBKAvql7YXZeUMP+SCOLaOEg25tSR27vIc
+# YQ9wex2iK24G4Md48w==
+# SIG # End signature block

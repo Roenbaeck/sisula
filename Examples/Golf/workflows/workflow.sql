@@ -32,14 +32,14 @@ EXEC sp_add_jobstep
     @on_success_action = 3; -- go to the next step
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
-    @command = '$files = @(Get-ChildItem FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
+    @command = '$files = @(Get-ChildItem FileSystem::"\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming"
+              Throw "No matching files were found in \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+                    Move-Item $fullFilename \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work -force
+                    Write-Output "Moved file: $fullFilename to \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
                 }
             }',
     @on_success_action = 3,
@@ -64,17 +64,17 @@ EXEC sp_add_jobstep
     @step_name = 'Create insert view';
 EXEC sp_add_jobstep
     @subsystem = 'PowerShell',
-    @command = '$files = @(Get-ChildItem -Recurse FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
+    @command = '$files = @(Get-ChildItem -Recurse FileSystem::"\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+              Throw "No matching files were found in \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive"
+                    Move-Item $fullFilename \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\archive -force
+                    Write-Output "Moved file: $fullFilename to \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"
                 }
             }',
     @database_name = 'GolfStage',
@@ -316,15 +316,15 @@ EXEC sp_update_jobstep
     @on_success_step_id = 7;
 -- end of job creation
 -- The workflow definition used when generating the above
-DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow"><variable name="stage" value="GolfStage" /><variable name="incomingPath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming" /><variable name="workPath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work" /><variable name="archivePath" value="C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive" /><variable name="filenamePattern" value=".*\.csv" /><variable name="quitWithSuccess" value="1" /><variable name="quitWithFailure" value="2" /><variable name="goToTheNextStep" value="3" /><variable name="goToStepWithId" value="4" /><variable name="queryTimeout" value="0" /><variable name="extraOptions" value="-Recurse" /><variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" /><job name="PGA_Kaggle_Staging"><variable name="tableName" value="MyTable" /><jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="3">
-            $files = @(Get-ChildItem FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
+DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow"><variable name="stage" value="GolfStage" /><variable name="incomingPath" value="\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming" /><variable name="workPath" value="\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work" /><variable name="archivePath" value="\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\archive" /><variable name="filenamePattern" value=".*\.csv" /><variable name="quitWithSuccess" value="1" /><variable name="quitWithFailure" value="2" /><variable name="goToTheNextStep" value="3" /><variable name="goToStepWithId" value="4" /><variable name="queryTimeout" value="0" /><variable name="extraOptions" value="-Recurse" /><variable name="parameters" value="@agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" /><job name="PGA_Kaggle_Staging"><variable name="tableName" value="MyTable" /><jobstep name="Check for and move files" subsystem="PowerShell" on_success_action="3">
+            $files = @(Get-ChildItem FileSystem::"\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\incoming"
+              Throw "No matching files were found in \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\incoming"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+                    Move-Item $fullFilename \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work -force
+                    Write-Output "Moved file: $fullFilename to \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
                 }
             }
         </jobstep><jobstep name="Create raw split table" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
@@ -332,17 +332,17 @@ DECLARE @xml XML = N'<workflow name="PGA_Kaggle_Workflow"><variable name="stage"
         </jobstep><jobstep name="Create insert view" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
             EXEC dbo.PGA_Kaggle_CreateInsertView @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))
         </jobstep><jobstep name="Bulk insert" database_name="GolfStage" subsystem="PowerShell" on_success_action="3">
-            $files = @(Get-ChildItem -Recurse FileSystem::"C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
+            $files = @(Get-ChildItem -Recurse FileSystem::"\\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work" | Where-Object {$_.Name -match ".*\.csv"})
             If ($files.length -eq 0) {
-              Throw "No matching files were found in C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\work"
+              Throw "No matching files were found in \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\work"
             } Else {
                 ForEach ($file in $files) {
                     $fullFilename = $file.FullName
                     $modifiedDate = $file.LastWriteTime
                     Invoke-Sqlcmd "EXEC dbo.PGA_Kaggle_BulkInsert ''$fullFilename'', ''$modifiedDate'', @agentJobId = $(ESCAPE_NONE(JOBID)), @agentStepId = $(ESCAPE_NONE(STEPID))" -Database "GolfStage" -ErrorAction Stop -QueryTimeout 0
                     Write-Output "Loaded file: $fullFilename"
-                    Move-Item $fullFilename C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive -force
-                    Write-Output "Moved file: $fullFilename to C:\Users\eldle\OneDrive\Documents\GitHub\sisula\Examples\Golf\data\archive"
+                    Move-Item $fullFilename \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\archive -force
+                    Write-Output "Moved file: $fullFilename to \\corpnet\home\Teracom_SE\e-lronnback\GitHub\sisula\Examples\Golf\data\archive"
                 }
             }
         </jobstep><jobstep name="Create split views" database_name="GolfStage" subsystem="TSQL" on_success_action="3">
