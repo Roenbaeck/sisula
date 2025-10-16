@@ -390,9 +390,22 @@ try {
         Write-Host "`n  + Installing SQL files on server '$Server'..." -ForegroundColor Yellow
         foreach ($sqlFile in $sqlFiles) {
             Write-Host "  * Installing $($sqlFile.Replace($FolderPath, '...'))"
-            sqlcmd -S $Server -i $sqlFile -f 65001 -I -x -b -r1 
-            if ($LASTEXITCODE -ne 0) {
-                throw "sqlcmd failed with exit code $LASTEXITCODE while installing $sqlFile"
+            
+            # Copy the SQL file to a local temp directory to avoid UNC path issues with sqlcmd
+            $tempFile = Join-Path -Path $env:TEMP -ChildPath ([System.IO.Path]::GetRandomFileName() + ".sql")
+            try {
+                Copy-Item -Path $sqlFile -Destination $tempFile -Force
+                
+                sqlcmd -S $Server -i $tempFile -f 65001 -I -x -b -r1 
+                if ($LASTEXITCODE -ne 0) {
+                    throw "sqlcmd failed with exit code $LASTEXITCODE while installing $sqlFile"
+                }
+            }
+            finally {
+                # Clean up the temporary file
+                if (Test-Path $tempFile) {
+                    Remove-Item -Path $tempFile -Force
+                }
             }
         }
     }
