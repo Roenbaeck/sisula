@@ -51,7 +51,9 @@ begin
 		set @AID_ID = (
 			select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = (
 				select top 1 JB_AID_AID_AgentJobId
-				from metadata.lJB_Job where JB_NAM_JON_ID = @JON_ID
+				from metadata.lJB_Job 
+				where JB_NAM_JON_ID = @JON_ID
+				order by JB_ID desc
 			)
 		);
 	end
@@ -60,32 +62,34 @@ begin
 		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
 	);
 
+	declare @recent datetime2(7) = dateadd(day, -1, @start);
+
+	drop table if exists #running_job_candidates;
+	create table #running_job_candidates (
+		JB_ID int not null primary key clustered
+	);
+
+	-- use hot index to produce a candidate set
+	declare @SQL varchar(max) = '
+		select JB_EST_JB_ID 
+		from metadata.JB_EST_Job_ExecutionStatus 
+		where JB_EST_EST_ID = ' + cast(@EST_ID as varchar(10)) + '
+		and JB_EST_ChangedAt >= ''' + convert(char(27), @recent, 121) + ''' 
+	';
+
+	insert into #running_job_candidates
+	exec (@SQL);
+
 	-- is this job already started?
-	select 
-		@JB_ID = JB_EST_JB_ID
-	from (
-		select top 1 
-			est.JB_EST_JB_ID, 
-			est.JB_EST_EST_ID
-		from 
-			metadata.JB_AID_Job_AgentJobId aid
-		join 
-			metadata.JB_NAM_Job_Name nam
-		on 
-			nam.JB_NAM_JB_ID = aid.JB_AID_JB_ID
-		and 
-			nam.JB_NAM_JON_ID = @JON_ID
-		join
-			metadata.JB_EST_Job_ExecutionStatus est 
-		on
-			est.JB_EST_JB_ID = nam.JB_NAM_JB_ID
-		where
-			aid.JB_AID_AID_ID = @AID_ID
-		order by 
-			est.JB_EST_ChangedAt desc
-	) jb
-	where 
-		jb.JB_EST_EST_ID = @EST_ID;
+	set @JB_ID = (
+		select top 1 jb.JB_ID
+		from #running_job_candidates c
+		join metadata.lJB_Job jb
+		on jb.JB_ID = c.JB_ID
+		and jb.JB_AID_AID_ID = @AID_ID
+		and jb.JB_EST_EST_ID = @EST_ID
+		order by jb.JB_ID desc
+	);
 
 	-- start it if it is not running
 	if(@JB_ID is null)
@@ -206,37 +210,38 @@ begin
 		select JON_ID from metadata.JON_JobName where JON_JobName = @name
 	);
 
-	declare @AID_ID int = (
-		select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = @agentJobId
-	);
-
-	if @AID_ID is null
-	begin
-		set @AID_ID = (
-			select AID_ID from metadata.AID_AgentJobId where AID_AgentJobId = (
-				select top 1 JB_AID_AID_AgentJobId
-				from metadata.lJB_Job where JB_NAM_JON_ID = @JON_ID
-			)
-		);
-	end
-
 	declare @EST_ID tinyint = (
 		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
 	);
 
+	declare @recent datetime2(7) = dateadd(day, -1, @stop);
+
+	drop table if exists #running_job_candidates;
+	create table #running_job_candidates (
+		JB_ID int not null primary key clustered
+	);
+
+	-- use hot index to produce a candidate set
+	declare @SQL varchar(max) = '
+		select JB_EST_JB_ID 
+		from metadata.JB_EST_Job_ExecutionStatus 
+		where JB_EST_EST_ID = ' + cast(@EST_ID as varchar(10)) + '
+		and JB_EST_ChangedAt >= ''' + convert(char(27), @recent, 121) + ''' 
+	';
+
+	insert into #running_job_candidates
+	exec (@SQL);
 
 	-- ensure this job is running!
-	select top 1 
-		@agentJobId = JB_AID_AID_AgentJobId,
-		@JB_ID = JB_ID
-	from
-		metadata.lJB_Job
-	where
-		JB_NAM_JON_ID = @JON_ID
-	and
-		JB_EST_EST_ID = @EST_ID
-	order by
-		JB_ID desc;
+	set @JB_ID = (
+		select top 1 jb.JB_ID
+		from #running_job_candidates c
+		join metadata.lJB_Job jb
+		on jb.JB_ID = c.JB_ID
+		and jb.JB_NAM_JON_ID = @JON_ID
+		and jb.JB_EST_EST_ID = @EST_ID
+		order by jb.JB_ID desc
+	);
 
 	if(@JB_ID is not null)
 	begin
@@ -391,21 +396,32 @@ begin
 		select EST_ID from metadata.EST_ExecutionStatus where EST_ExecutionStatus = 'Running'
 	);
 
+	declare @recent datetime2(7) = dateadd(day, -1, @start);
+
 	-- find the running job
-	set @JB_ID = (
-		select top 1 
-			aid.JB_AID_JB_ID
-		from metadata.JB_AID_Job_AgentJobId aid
-		cross apply (
-			select top 1 JB_EST_EST_ID
-			from metadata.JB_EST_Job_ExecutionStatus
-			where JB_EST_JB_ID = aid.JB_AID_JB_ID
-			order by JB_EST_ChangedAt desc
-		) est
-		where aid.JB_AID_AID_ID = @AID_ID
-		and est.JB_EST_EST_ID = @EST_ID
-		order by aid.JB_AID_JB_ID desc
+	drop table if exists #running_job_candidates;
+	create table #running_job_candidates (
+		JB_ID int not null primary key clustered
 	);
+
+	-- use hot index to produce a candidate set
+	declare @SQL varchar(max) = '
+		select JB_EST_JB_ID 
+		from metadata.JB_EST_Job_ExecutionStatus 
+		where JB_EST_EST_ID = ' + cast(@EST_ID as varchar(10)) + '
+		and JB_EST_ChangedAt >= ''' + convert(char(27), @recent, 121) + ''' 
+	';
+
+	insert into #running_job_candidates
+	exec (@SQL);
+
+	select 
+		@JB_ID = jb.JB_ID
+	from #running_job_candidates c
+	join metadata.lJB_Job jb
+	on jb.JB_ID = c.JB_ID
+	and jb.JB_AID_AID_ID = @AID_ID
+	and jb.JB_EST_EST_ID = @EST_ID;
 
 	-- find if this work is running and connected
 	set @WO_ID = (
