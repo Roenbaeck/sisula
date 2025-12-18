@@ -2,15 +2,12 @@
 ------------------------------- $workflow.name -------------------------------
 USE msdb;
 GO
-
-DECLARE @AgentJobID uniqueidentifier;
 ~*/
 
 var job, step, id, lastId;
 while(job = workflow.nextJob()) {
 /*~
--- check for existing job
-SET @AgentJobID = (
+DECLARE @AgentJobID uniqueidentifier = (
     select job_id from [dbo].[sysjobs] where name = '$job.name'
 );
 
@@ -103,34 +100,86 @@ EXEC sp_add_jobstep
     @database_name      = '${METADATABASE}$',
     @command            = 'EXEC metadata._JobStopping @name = ''$job.name'', @status = ''Failure''',
     @on_success_action  = 2; -- quit with failure
-~*/
-        id = 2;
-        lastId = job.jobsteps.length;
-        while(step = job.nextStep()) {
-          if(step.on_fail_action) {
-            id++; // skip already assigned actions
-          }
-          else {
-/*~
-EXEC sp_update_jobstep
-    @job_id             = @AgentJobID,
-    @step_id            = ${(id++)}$,
-    -- ensure logging when any step fails
-    @on_fail_action     = 4, -- go to step with id
-    @on_fail_step_id    = ${(lastId + 3)}$;
-~*/
-          }
-        }
-/*~
-EXEC sp_update_jobstep
-    @job_id             = @AgentJobID,
-    @step_id            = ${(lastId + 1)}$,
-    -- ensure logging when last step succeeds
-    @on_success_action  = 4, -- go to step with id
-    @on_success_step_id = ${(lastId + 2)}$;
+
+declare @log_success_step_id int = (
+    select step_id 
+    from msdb.dbo.sysjobs j
+    join msdb.dbo.sysjobsteps s
+    on s.job_id = j.job_id
+    and s.step_name = 'Log success of job'
+    where j.job_id = @AgentJobID
+);
+
+declare @log_failure_step_id int = (
+    select step_id 
+    from msdb.dbo.sysjobs j
+    join msdb.dbo.sysjobsteps s
+    on s.job_id = j.job_id
+    and s.step_name = 'Log failure of job'
+    where j.job_id = @AgentJobID
+);
+
+declare @step_id int = 0;
+declare @on_success_action int;
+declare @on_fail_action int;
+
+while @step_id is not null
+begin 
+    set @step_id = null;
+    select top 1 
+        @step_id = s.step_id, 
+        @on_success_action = s.on_success_action,
+        @on_fail_action = s.on_fail_action
+    from msdb.dbo.sysjobs j
+    join msdb.dbo.sysjobsteps s
+    on s.job_id = j.job_id
+    and (
+        -- quit job with success (1) or fail (2)
+        s.on_success_action in (1, 2) 
+     or s.on_fail_action in (1, 2)
+    )
+    and s.step_name not in (
+        'Log starting of job',
+        'Log success of job',
+        'Log failure of job'
+    )
+    where j.job_id = @AgentJobID;
+
+    if @step_id is not null
+    begin
+        if @on_success_action = 1       
+        exec msdb.dbo.sp_update_jobstep
+            @job_id             = @AgentJobID,
+            @step_id            = @step_id,
+            @on_success_action  = 4, -- go to step with id
+            @on_success_step_id = @log_success_step_id
+
+        if @on_success_action = 2       
+        exec msdb.dbo.sp_update_jobstep
+            @job_id             = @AgentJobID,
+            @step_id            = @step_id,
+            @on_success_action  = 4, -- go to step with id
+            @on_success_step_id = @log_failure_step_id
+
+        if @on_fail_action = 1      
+        exec msdb.dbo.sp_update_jobstep
+            @job_id             = @AgentJobID,
+            @step_id            = @step_id,
+            @on_fail_action     = 4, -- go to step with id
+            @on_fail_step_id    = @log_success_step_id
+
+        if @on_fail_action = 2      
+        exec msdb.dbo.sp_update_jobstep
+            @job_id             = @AgentJobID,
+            @step_id            = @step_id,
+            @on_fail_action     = 4, -- go to step with id
+            @on_fail_step_id    = @log_failure_step_id
+    end
+end
 ~*/
     }
 /*~
+GO
 -- end of job creation
 ~*/
 }
