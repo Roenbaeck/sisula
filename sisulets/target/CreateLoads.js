@@ -74,7 +74,6 @@ DECLARE @actions TABLE (
         "'Table'",                      // targetType
         null                            // targetCreated
     ); 
-    var log = true; // workaround for "Protocol error in TDS stream" bug (set <load log="ignore">)
 
     if(sql = load.sql ? load.sql.before : null) {
 /*~
@@ -238,26 +237,22 @@ DECLARE @actions TABLE (
                 }
             }    
         } // end of if nonkeys
-        if (load.log == 'ignore') { /*~;~*/ log = false; }
-        else {
 /*~
     OUTPUT
         LEFT($$action, 1) INTO @actions;
 
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
 ~*/
-        }
     } // end of type = "merge" (default)
-    if (log) {
-        setInsertsMetadata('@inserts');
-        setUpdatesMetadata('@updates');
-        setDeletesMetadata('@deletes');
-    }
+    setInsertsMetadata('@inserts');
+    setUpdatesMetadata('@updates');
+    setDeletesMetadata('@deletes');
     if(sql = load.sql ? load.sql.after : null) {
 /*~
     -- Post processing after the merge ---------------
