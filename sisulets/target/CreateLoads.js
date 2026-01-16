@@ -74,6 +74,7 @@ DECLARE @actions TABLE (
         "'Table'",                      // targetType
         null                            // targetCreated
     ); 
+    var log = true; // workaround for "Protocol error in TDS stream" bug (set <load log="ignore">)
 
     if(sql = load.sql ? load.sql.before : null) {
 /*~
@@ -237,6 +238,8 @@ DECLARE @actions TABLE (
                 }
             }    
         } // end of if nonkeys
+        if (load.log == 'ignore') { /*~;~*/ log = false; }
+        else {
 /*~
     OUTPUT
         LEFT($$action, 1) INTO @actions;
@@ -248,11 +251,13 @@ DECLARE @actions TABLE (
     FROM
         @actions;
 ~*/
+        }
     } // end of type = "merge" (default)
-    setInsertsMetadata('@inserts');
-    setUpdatesMetadata('@updates');
-    setDeletesMetadata('@deletes');
-
+    if (log) {
+        setInsertsMetadata('@inserts');
+        setUpdatesMetadata('@updates');
+        setDeletesMetadata('@deletes');
+    }
     if(sql = load.sql ? load.sql.after : null) {
 /*~
     -- Post processing after the merge ---------------
