@@ -4,7 +4,7 @@
 # Replaces the legacy Sisulate.bat and Sisulator.hta with a single, self-contained script.
 # Uses Jint JavaScript engine instead of headless Edge for better enterprise compatibility.
 #
-# Version: 2.0 (Optimized & Bundled)
+# Version: 2.0.3 (Optimized & Bundled)
 #
 
 [CmdletBinding()]
@@ -18,6 +18,8 @@ param(
     [Parameter(Position = 2, HelpMessage = "Optional. Filters to run only specific parts: S=sources, T=targets, W=workflows.")]
     [string]$Filters = "STW" # Default from the original batch file
 )
+
+$VERSION = "2.0.3"
 
 # --- REFACTORED ---
 # The JsConsole class is now defined once at the script level for clarity.
@@ -194,20 +196,16 @@ function Write-TextFileUtf8NoBom {
         [string]$Content
     )
     
-    # Resolve the directory path (this works even if the file doesn't exist)
-    $directory = Split-Path -Path $FilePath -Parent
-    $resolvedDirectory = Convert-Path -Path $directory
-    
-    # Ensure the directory exists
-    if (-not (Test-Path -Path $resolvedDirectory)) {
-        New-Item -Path $resolvedDirectory -ItemType Directory -Force | Out-Null
+    # Get an absolute path without requiring the target file to already exist.
+    $resolvedFilePath = [System.IO.Path]::GetFullPath($FilePath)
+
+    # Ensure the target directory exists.
+    $directory = Split-Path -Path $resolvedFilePath -Parent
+    if (-not [string]::IsNullOrWhiteSpace($directory) -and -not (Test-Path -Path $directory)) {
+        New-Item -Path $directory -ItemType Directory -Force | Out-Null
     }
-    
-    # Build the full resolved file path
-    $fileName = Split-Path -Path $FilePath -Leaf
-    $resolvedFilePath = Join-Path -Path $resolvedDirectory -ChildPath $fileName
-    
-    # Write the file using UTF-8 without BOM
+
+    # Write the file using UTF-8 without BOM.
     [System.IO.File]::WriteAllText($resolvedFilePath, $Content, (New-Object System.Text.UTF8Encoding($false)))
 }
 
@@ -230,7 +228,7 @@ if (-not $PSBoundParameters.ContainsKey('FolderPath')) {
 
 # --- Print Header ---
 Write-Host "-------------------------------------------------------------------"
-Write-Host " sisula ETL Metadata Driven DW Automation Framework (v2.0)         "
+Write-Host " sisula ETL Metadata Driven DW Automation Framework (v$VERSION)"
 Write-Host "-------------------------------------------------------------------"
 
 # --- Validate FolderPath ---
@@ -365,7 +363,7 @@ try {
                 $outputFile = Join-Path -Path $bimlDir -ChildPath "$($file.BaseName).biml"
                 Write-Host "  * Transforming $($file.Name) -> $($outputFile.Replace($FolderPath, '...'))"
                 $result = Invoke-Sisulation -Engine $jintEngine -XmlFilePath $file.FullName -MappingType "Target" -DirectiveFilePath "biml.directive" -ContextVariables $scriptContextVariables
-                [System.IO.File]::WriteAllText((Convert-Path $outputFile), $result, (New-Object System.Text.UTF8Encoding($false)))
+                Write-TextFileUtf8NoBom -FilePath $outputFile -Content $result
             }
         }
     }

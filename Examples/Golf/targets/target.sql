@@ -12,8 +12,8 @@ GO
 -- Map: Birth Date to PL_BID_Player_BirthDate (as static)
 -- Map: WorkId to Metadata_PL (as metadata)
 -- 
--- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
--- From: TSE-PF40XEEZ in the CORPNET domain
+-- Generated: Fri Jun 12 2026 12:57:22 GMT+02:00 by e-lronnback
+-- From: TSE-PF45DV1J in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lPL_Player__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -90,10 +90,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
         [target].[Metadata_PL] = [source].[WorkId]
     OUTPUT
         LEFT($action, 1) INTO @actions;
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @inserts;
@@ -134,8 +135,8 @@ GO
 -- Map: Statistic to SGR_StatisticGroup (as natural key)
 -- Map: WorkId to Metadata_SGR (as metadata)
 -- 
--- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
--- From: TSE-PF40XEEZ in the CORPNET domain
+-- Generated: Fri Jun 12 2026 12:57:22 GMT+02:00 by e-lronnback
+-- From: TSE-PF45DV1J in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[SGR_StatisticGroup__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -197,10 +198,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @inserts;
@@ -242,8 +244,8 @@ GO
 -- Map: Variable to ST_DET_Statistic_Detail (as natural key)
 -- Map: WorkId to Metadata_ST (as metadata)
 -- 
--- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
--- From: TSE-PF40XEEZ in the CORPNET domain
+-- Generated: Fri Jun 12 2026 12:57:22 GMT+02:00 by e-lronnback
+-- From: TSE-PF45DV1J in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lST_Statistic__PGA_Kaggle_Stats_Typed] (
     @agentJobId uniqueidentifier = null,
@@ -310,10 +312,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @inserts;
@@ -354,8 +357,8 @@ GO
 -- Map: ME_ID to ME_ID (as surrogate key)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
--- From: TSE-PF40XEEZ in the CORPNET domain
+-- Generated: Fri Jun 12 2026 12:57:22 GMT+02:00 by e-lronnback
+-- From: TSE-PF45DV1J in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Instance] (
     @agentJobId uniqueidentifier = null,
@@ -466,10 +469,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
     )
     OUTPUT
         LEFT($action, 1) INTO @actions;
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @inserts;
@@ -575,8 +579,8 @@ GO
 -- Map: Date to ME_VAL_ChangedAt (as history)
 -- Map: WorkId to Metadata_ME (as metadata)
 -- 
--- Generated: Fri Sep 12 2025 12:59:50 GMT+02:00 by e-lronnback
--- From: TSE-PF40XEEZ in the CORPNET domain
+-- Generated: Fri Jun 12 2026 12:57:22 GMT+02:00 by e-lronnback
+-- From: TSE-PF45DV1J in the CORPNET domain
 --------------------------------------------------------------------------
 CREATE PROCEDURE [dbo].[lME_Measurement__PGA_Kaggle_Stats_Typed__Value] (
     @agentJobId uniqueidentifier = null,
@@ -670,10 +674,11 @@ EXEC GolfDW.metadata._WorkSourceToTarget
         [target].[Metadata_ME] = [source].[WorkId]
     OUTPUT
         LEFT($action, 1) INTO @actions;
+    -- workaround for "Protocol error in TDS stream" bug
     SELECT
-        @inserts = NULLIF(COUNT(CASE WHEN [action] = 'I' THEN 1 END), 0),
-        @updates = NULLIF(COUNT(CASE WHEN [action] = 'U' THEN 1 END), 0),
-        @deletes = NULLIF(COUNT(CASE WHEN [action] = 'D' THEN 1 END), 0)
+        @inserts = NULLIF(SUM(CASE WHEN [action] = 'I' THEN 1 ELSE 0 END), 0),
+        @updates = NULLIF(SUM(CASE WHEN [action] = 'U' THEN 1 ELSE 0 END), 0),
+        @deletes = NULLIF(SUM(CASE WHEN [action] = 'D' THEN 1 ELSE 0 END), 0)
     FROM
         @actions;
     EXEC GolfDW.metadata._WorkSetInserts @workId, @operationsId, @inserts;
