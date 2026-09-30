@@ -1,0 +1,335 @@
+[
+  {
+    "name": "Simple token",
+    "template": "Hello $name$!",
+    "bindings": {
+      "name": "World"
+    },
+    "expected": "Hello World!"
+  },
+  {
+    "name": "Nested token",
+    "template": "By: $V.USER$ on $V.COMP$",
+    "bindings": {
+      "V": {
+        "USER": "Lars",
+        "COMP": "Mac"
+      }
+    },
+    "expected": "By: Lars on Mac"
+  },
+  {
+    "name": "Foreach",
+    "template": "$/ foreach t in tables\n-- $t.table$\n$/ endfor",
+    "bindings": {
+      "tables": [
+        {
+          "table": "A"
+        },
+        {
+          "table": "B"
+        }
+      ]
+    },
+    "expected": "-- A\n-- B\n"
+  },
+  {
+    "name": "Foreach order by",
+    "template": "$/ foreach c in columns order by c.ordinal\n$c.name$\n$/ endfor",
+    "bindings": {
+      "columns": [
+        {
+          "ordinal": 3,
+          "name": "C"
+        },
+        {
+          "ordinal": 1,
+          "name": "A"
+        },
+        {
+          "ordinal": 2,
+          "name": "B"
+        }
+      ]
+    },
+    "expected": "A\nB\nC\n"
+  },
+  {
+    "name": "Foreach where",
+    "template": "$/ foreach c in columns where c.ordinal > 1\n$c.name$\n$/ endfor",
+    "bindings": {
+      "columns": [
+        {
+          "ordinal": 1,
+          "name": "A"
+        },
+        {
+          "ordinal": 2,
+          "name": "B"
+        },
+        {
+          "ordinal": 3,
+          "name": "C"
+        }
+      ]
+    },
+    "expected": "B\nC\n"
+  },
+  {
+    "name": "If/else true",
+    "template": "$/ if x\nYES\n$/ else\nNO\n$/ endif",
+    "bindings": {
+      "x": true
+    },
+    "expected": "YES\n"
+  },
+  {
+    "name": "If/else false",
+    "template": "$/ if x\nYES\n$/ else\nNO\n$/ endif",
+    "bindings": {
+      "x": false
+    },
+    "expected": "NO\n"
+  },
+  {
+    "name": "Loop metadata",
+    "template": "$/ foreach c in columns\n$c.index()$: $c.name$ $/ if c.first() (F) $/ endif $/ if c.last() (L) $/ endif\n$/ endfor",
+    "bindings": {
+      "columns": [
+        {
+          "name": "A"
+        },
+        {
+          "name": "B"
+        },
+        {
+          "name": "C"
+        }
+      ]
+    },
+    "expected": "0: A (F) \n1: B \n2: C (L) \n"
+  },
+  {
+    "name": "Inline if",
+    "template": "$/ foreach c in cols\nCol $c.name$ $/ if c.active Active $/ else Inactive $/ endif\n$/ endfor",
+    "bindings": {
+      "cols": [
+        {
+          "name": "id",
+          "active": true
+        },
+        {
+          "name": "del",
+          "active": false
+        }
+      ]
+    },
+    "expected": "Col id Active \nCol del Inactive \n"
+  },
+  {
+    "name": "Line comment",
+    "template": "$- hidden\nvisible",
+    "bindings": {},
+    "expected": "visible"
+  },
+  {
+    "name": "Inline comment",
+    "template": "A $- comment -$ B",
+    "bindings": {},
+    "expected": "A  B"
+  },
+  {
+    "name": "Block mode",
+    "template": "PREFIX /*~\n$/ foreach t in tables\n-- $t.table$\n$/ endfor\n~*/ SUFFIX",
+    "bindings": {
+      "tables": [
+        {
+          "table": "A"
+        },
+        {
+          "table": "B"
+        }
+      ]
+    },
+    "expected": "PREFIX \n-- A\n-- B\n SUFFIX"
+  },
+  {
+    "name": "contains()",
+    "template": "$/ foreach c in columns\n$/ if contains(c.type,\"char\")\n$c.name$\n$/ endif\n$/ endfor",
+    "bindings": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "int"
+        },
+        {
+          "name": "code",
+          "type": "char(20)"
+        }
+      ]
+    },
+    "expected": "code\n"
+  },
+  {
+    "name": "and/or",
+    "template": "$/ foreach item in items where item.price > 50 and item.category == \"electronics\"\n$item.name$\n$/ endfor",
+    "bindings": {
+      "items": [
+        {
+          "name": "Laptop",
+          "price": 999,
+          "category": "electronics"
+        },
+        {
+          "name": "Mouse",
+          "price": 25,
+          "category": "electronics"
+        }
+      ]
+    },
+    "expected": "Laptop\n"
+  },
+  {
+    "name": "Bracket index",
+    "template": "First: $tables[0].table$, Second: $tables[1].table$",
+    "bindings": {
+      "tables": [
+        {
+          "table": "A"
+        },
+        {
+          "table": "B"
+        }
+      ]
+    },
+    "expected": "First: A, Second: B"
+  },
+  {
+    "name": "Inline IF OR",
+    "template": "$/ foreach c in columns\n-- Found ordinal $c.ordinal$ $/ if c.type = \"untyped\" or c.type == \"varchar(1000) null\" with expected type $/ endif\n$/ endfor",
+    "bindings": {
+      "columns": [
+        {
+          "ordinal": 10,
+          "name": "b",
+          "type": "untyped"
+        }
+      ]
+    },
+    "expected": "-- Found ordinal 10 with expected type \n"
+  },
+  {
+    "name": "startswith",
+    "template": "$/ if startswith(name,\"test\")\nMATCH\n$/ endif",
+    "bindings": {
+      "name": "test_table"
+    },
+    "expected": "MATCH\n"
+  },
+  {
+    "name": "endswith",
+    "template": "$/ if endswith(name,\"_table\")\nMATCH\n$/ endif",
+    "bindings": {
+      "name": "test_table"
+    },
+    "expected": "MATCH\n"
+  },
+  {
+    "name": "count token",
+    "template": "$/ foreach t in tables\nCount: $t.count()$\n$/ endfor",
+    "bindings": {
+      "tables": [
+        {
+          "table": "A"
+        },
+        {
+          "table": "B"
+        }
+      ]
+    },
+    "expected": "Count: 2\nCount: 2\n"
+  },
+  {
+    "name": "Nested loops",
+    "template": "$/ foreach t in tables\n$/ foreach c in t.columns\n$t.table$.$c.name$\n$/ endfor\n$/ endfor",
+    "bindings": {
+      "tables": [
+        {
+          "table": "T1",
+          "columns": [
+            {
+              "name": "C1"
+            },
+            {
+              "name": "C2"
+            }
+          ]
+        }
+      ]
+    },
+    "expected": "T1.C1\nT1.C2\n"
+  },
+  {
+    "name": "SQL literal quote",
+    "template": "COMMENT = $'d'$",
+    "bindings": {
+      "d": "O'Brien"
+    },
+    "expected": "COMMENT = 'O''Brien'"
+  },
+  {
+    "name": "SQL literal newline",
+    "template": "$'d'$",
+    "bindings": {
+      "d": "line1\nline2"
+    },
+    "expected": "'line1\\nline2'"
+  },
+  {
+    "name": "SQL literal backslash",
+    "template": "$'d'$",
+    "bindings": {
+      "d": "a\\b"
+    },
+    "expected": "'a\\\\b'"
+  },
+  {
+    "name": "SQL literal dollar",
+    "template": "$'d'$",
+    "bindings": {
+      "d": "a$b"
+    },
+    "expected": "'a\\x24b'"
+  },
+  {
+    "name": "SQL literal missing path",
+    "template": "COMMENT = $'nope'$",
+    "bindings": {},
+    "expected": "COMMENT = ''"
+  },
+  {
+    "name": "Comment token newline",
+    "template": "-- $|d|$",
+    "bindings": {
+      "d": "line1\nline2"
+    },
+    "expected": "-- line1 line2"
+  },
+  {
+    "name": "Comment token dollars",
+    "template": "-- $|d|$",
+    "bindings": {
+      "d": "a$$b"
+    },
+    "expected": "-- a$ $b"
+  },
+  {
+    "name": "No rescan of rendered dollars",
+    "template": "$|d|$ and $name$",
+    "bindings": {
+      "d": "$name$",
+      "name": "Bob"
+    },
+    "expected": "$name$ and Bob"
+  }
+]
