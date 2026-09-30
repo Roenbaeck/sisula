@@ -1,0 +1,26 @@
+-- ANCHORS ------------------------------------------------------------------------------------------------------------
+--
+-- Anchors are used to store the identities of entities.
+-- Anchors are immutable.
+--
+$/ foreach anchor in schema.anchors
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- $anchor.name$ table (with $/ if anchor.attributes $anchor.attributes.length$ $/ else 0 $/ endif attributes)
+-----------------------------------------------------------------------------------------------------------------------
+$/ if anchor.isGenerator
+CREATE SEQUENCE IF NOT EXISTS $anchor.capsule$.$anchor.identitySequenceName$ START 1 INCREMENT 1;
+$/ endif
+CREATE TABLE IF NOT EXISTS $anchor.capsule$.$anchor.name$ (
+$/ if anchor.isGenerator
+    $anchor.identityColumnName$ $anchor.identity$ default $anchor.capsule$.$anchor.identitySequenceName$.nextval not null,
+$/ else
+    $anchor.identityColumnName$ $anchor.identity$ not null,
+$/ endif
+$/ if schema.METADATA
+    $anchor.metadataColumnName$ $schema.metadata.metadataType$ not null,
+$/ endif
+    constraint pk$anchor.name$ primary key (
+        $anchor.identityColumnName$
+    )
+) CLUSTER BY ($anchor.identityColumnName$);
+$/ endfor
