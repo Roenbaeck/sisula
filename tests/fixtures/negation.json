@@ -1,0 +1,122 @@
+[
+  {
+    "name": "not on a path",
+    "template": "$/ if not x\nNEG\n$/ else\nPOS\n$/ endif\n",
+    "bindings": { "x": true },
+    "expected": "POS\n"
+  },
+  {
+    "name": "not on a false path",
+    "template": "$/ if not x\nNEG\n$/ endif\n",
+    "bindings": { "x": false },
+    "expected": "NEG\n"
+  },
+  {
+    "name": "! is the same as not",
+    "template": "$/ if !x\nNEG\n$/ endif\n",
+    "bindings": { "x": false },
+    "expected": "NEG\n"
+  },
+  {
+    "name": "! with a space after it",
+    "template": "$/ if ! x\nNEG\n$/ endif\n",
+    "bindings": { "x": false },
+    "expected": "NEG\n"
+  },
+  {
+    "name": "!= is still a comparison",
+    "template": "$/ if a != b\nDIFF\n$/ endif\n",
+    "bindings": { "a": "1", "b": "2" },
+    "expected": "DIFF\n"
+  },
+  {
+    "name": "not is case-insensitive",
+    "template": "$/ if NOT x\nNEG\n$/ endif\n",
+    "bindings": { "x": false },
+    "expected": "NEG\n"
+  },
+  {
+    "name": "not on a function call",
+    "template": "$/ if not contains(name,\"temp\")\nKEEP\n$/ endif\n",
+    "bindings": { "name": "real_table" },
+    "expected": "KEEP\n"
+  },
+  {
+    "name": "not on a comparison negates the whole comparison",
+    "template": "$/ if not a == b\nDIFF\n$/ endif\n",
+    "bindings": { "a": "1", "b": "2" },
+    "expected": "DIFF\n"
+  },
+  {
+    "name": "not binds tighter than and",
+    "template": "$/ if not a and b\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "a": false, "b": true },
+    "expected": "YES\n"
+  },
+  {
+    "name": "not binds tighter than or",
+    "template": "$/ if not a or b\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "a": true, "b": false },
+    "expected": "NO\n"
+  },
+  {
+    "name": "not after and",
+    "template": "$/ if a and not b\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "a": true, "b": false },
+    "expected": "YES\n"
+  },
+  {
+    "name": "not on loop metadata as a separator",
+    "template": "$/ foreach i in list\n$i.n$$/ if not i.last() ,$/ endif\n$/ endfor\n",
+    "bindings": { "list": [ { "n": "a" }, { "n": "b" }, { "n": "c" } ] },
+    "expected": "a,\nb,\nc\n"
+  },
+  {
+    "name": "not or last keeps the separator on a historized list",
+    "template": "$/ foreach i in list\n$i.n$$/ if not i.last() or tail ,$/ endif\n$/ endfor\n",
+    "bindings": { "tail": true, "list": [ { "n": "a" }, { "n": "b" } ] },
+    "expected": "a,\nb,\n"
+  },
+  {
+    "name": "not in a foreach where",
+    "template": "$/ foreach i in list where not i.hidden\n$i.n$\n$/ endfor\n",
+    "bindings": { "list": [ { "n": "a", "hidden": true }, { "n": "b", "hidden": false }, { "n": "c" } ] },
+    "expected": "b\nc\n"
+  },
+  {
+    "name": "not in an inline if",
+    "template": "A$/ if not x B $/ else C $/ endif D",
+    "bindings": { "x": false },
+    "expected": "AB D"
+  },
+  {
+    "name": "not in an inline if, true side of the path",
+    "template": "A$/ if not x B $/ else C $/ endif D",
+    "bindings": { "x": true },
+    "expected": "AC D"
+  },
+  {
+    "name": "an empty array is falsy",
+    "template": "$/ if list\nHAS\n$/ else\nNONE\n$/ endif\n",
+    "bindings": { "list": [] },
+    "expected": "NONE\n"
+  },
+  {
+    "name": "a non-empty array is truthy",
+    "template": "$/ if list\nHAS\n$/ else\nNONE\n$/ endif\n",
+    "bindings": { "list": [ { "n": "a" } ] },
+    "expected": "HAS\n"
+  },
+  {
+    "name": "not on an empty array",
+    "template": "$/ if not list\nNONE\n$/ endif\n",
+    "bindings": { "list": [] },
+    "expected": "NONE\n"
+  },
+  {
+    "name": "a condition that cannot be parsed is an error, not false",
+    "template": "$/ if x y z\nNEVER\n$/ endif\n",
+    "bindings": { "x": true },
+    "error": "cannot parse condition"
+  }
+]

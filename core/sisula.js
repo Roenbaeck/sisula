@@ -28,6 +28,8 @@ var TOKEN_PATTERN = new RegExp(
 var RE_FUNC_CALL = /^(\w+)\s*\(([\s\S]*)\)$/;
 var RE_METHOD_CALL = /^(\w+)\.(first|last|index|count)\s*\(\s*\)\s*$/i;
 var RE_PATH_PROP = /^(\w+)\.(.+)$/;
+// Negation of one term: "not x" or "!x". Binds tighter than and/or; "!=" is a comparison, not a negation.
+var RE_NOT = /^(?:not\s+|!(?!=)\s*)([\s\S]+)$/i;
 
 var COMPARISON_OPS = ["==", "!=", "=", ">=", "<=", ">", "<"];
 
@@ -579,6 +581,9 @@ function evalConditionOnItem(itemObj, varName, expr, loopVars) {
         return true;
     }
 
+    var mNotItem = RE_NOT.exec(expr);
+    if (mNotItem) return !evalConditionOnItem(itemObj, varName, mNotItem[1].trim(), loopVars);
+
     var mFunc = RE_FUNC_CALL.exec(expr);
     if (mFunc) {
         var fname = mFunc[1].toLowerCase();
@@ -615,6 +620,12 @@ function evalConditionOnItem(itemObj, varName, expr, loopVars) {
         }
     }
 
+    // Only a single path is left at this point. Anything with whitespace outside a literal is an
+    // expression this engine does not understand; failing loudly beats silently evaluating false.
+    if (/\s/.test(expr) && expr.indexOf('"') < 0) {
+        throw new Error('Sisula: cannot parse condition: ' + expr);
+    }
+
     var metaCheck = tryResolveLoopMetadata(loopVars, expr, varName);
     if (metaCheck !== null) return truthy(metaCheck);
 
@@ -641,6 +652,9 @@ function evalConditionInContext(expr, ctx, loopVars) {
         }
         return true;
     }
+
+    var mNotCtx = RE_NOT.exec(expr);
+    if (mNotCtx) return !evalConditionInContext(mNotCtx[1].trim(), ctx, loopVars);
 
     var mFuncCheck = RE_FUNC_CALL.exec(expr);
     if (mFuncCheck) {
@@ -997,6 +1011,7 @@ function truthy(v) {
     var num = parseFloat(s);
     if (!isNaN(num) && num === 0 && String(num) === s) return false;
     if (s.toLowerCase() === "null") return false;
+    if (s === "[]") return false; // an empty array, as stringified from the bindings
     return true;
 }
 
@@ -1118,7 +1133,7 @@ function endsWithLogicalOperator(text, idx) {
     if (start > end) return false;
     var word = text.substring(start, end + 1);
     var lower = word.toLowerCase();
-    return lower === "and" || lower === "or";
+    return lower === "and" || lower === "or" || lower === "not";
 }
 
 function rtrim(s) {

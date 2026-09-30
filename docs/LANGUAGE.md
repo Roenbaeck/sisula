@@ -52,10 +52,12 @@ Loop metadata
 Expression language
 - Comparison operators: `==, !=, >=, <=, >, <`.
 - Logical operators: `and`, `or` (case-insensitive). Operator precedence: `and` is evaluated before `or`.
+- Negation: `not x` or `!x` (case-insensitive) negates the single term that follows it, which can be a path, a loop-metadata call, a function call or a comparison (`not a == b` means `not (a == b)`). `not` binds tighter than `and` and `or`, so `not a or b` is `(not a) or b`. There are no parentheses.
 - Functions: `contains(x,"y")`, `startswith(x,"y")`, `endswith(x,"y")`.
 - String literals use double quotes (`"value"`). Escape a double quote inside a literal with `""`.
 - Single-quoted literals are not supported (use double quotes exclusively).
-- Truthy checks on paths: null/empty/false/"0"/"null" are falsey.
+- Truthy checks on paths: null/empty/false/"0"/"null" and an empty array are falsey. Any other array or object is truthy.
+- A condition the renderer cannot parse, for example `x y z`, is an error. It is never silently treated as false.
 - Expressions are used by `$/ if` and `foreach where`.
 
 JSON binding and resolution

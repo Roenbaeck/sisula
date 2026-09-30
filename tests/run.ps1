@@ -24,11 +24,17 @@ $engine.Execute(@'
 function runFixtures(text, file) {
     var cases = JSON.parse(text), failures = [], n = 0;
     for (var i = 0; i < cases.length; i++) {
-        var c = cases[i];
-        var actual = sisulate(c.template, JSON.stringify(c.bindings));
+        var c = cases[i], actual, thrown = null;
+        try { actual = sisulate(c.template, JSON.stringify(c.bindings)); }
+        catch (e) { thrown = String(e && e.message || e); }
         n++;
-        if (actual !== c.expected) {
-            failures.push('FAIL ' + file + ': ' + c.name + '\n  expected: ' + JSON.stringify(c.expected) + '\n  actual:   ' + JSON.stringify(actual));
+        var ok = (c.error !== undefined)
+            ? (thrown !== null && thrown.indexOf(c.error) >= 0)
+            : (thrown === null && actual === c.expected);
+        if (!ok) {
+            failures.push('FAIL ' + file + ': ' + c.name + '\n  expected: ' +
+                (c.error !== undefined ? 'error containing ' + JSON.stringify(c.error) : JSON.stringify(c.expected)) +
+                '\n  actual:   ' + (thrown !== null ? 'threw ' + JSON.stringify(thrown) : JSON.stringify(actual)));
         }
     }
     return JSON.stringify({ total: n, failures: failures });
