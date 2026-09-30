@@ -95,30 +95,64 @@ CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
         UTL_Utilization
     )
 ) CLUSTER BY (UTL_ID);
--- Knot table ---------------------------------------------------------------------------------------------------------
--- ONG_Ongoing table
+-- Knot identity table ------------------------------------------------------------------------------------------------
+-- ONG_Ongoing_ID table
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.ONG_Ongoing (
+CREATE TABLE IF NOT EXISTS public.ONG_Ongoing_ID (
     ONG_ID tinyint not null,
+     bit null,
+    constraint pkONG_Ongoing_ID primary key (
+        ONG_ID
+    )
+) CLUSTER BY (ONG_ID);
+-- Knot value table ---------------------------------------------------------------------------------------------------
+-- ONG_Ongoing_EQ table
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.ONG_Ongoing_EQ (
+    ONG_ID tinyint not null,
+    ONG_EQ tinyint not null,
     ONG_Ongoing varchar(3) not null,
-    constraint pkONG_Ongoing primary key (
+     bit null,
+    constraint fkONG_Ongoing_EQ foreign key (
+        ONG_ID
+    ) references public.ONG_Ongoing_ID(ONG_ID),
+    constraint pkONG_Ongoing_EQ primary key (
+        ONG_EQ,
         ONG_ID
     ),
-    constraint uqONG_Ongoing unique (
+    constraint uqONG_Ongoing_EQ unique (
+        ONG_EQ,
         ONG_Ongoing
     )
 ) CLUSTER BY (ONG_ID);
--- Knot table ---------------------------------------------------------------------------------------------------------
--- RAT_Rating table
+-- Knot identity table ------------------------------------------------------------------------------------------------
+-- RAT_Rating_ID table
 -----------------------------------------------------------------------------------------------------------------------
 CREATE SEQUENCE IF NOT EXISTS public.RAT_Rating_ID_SEQ START 1 INCREMENT 1;
-CREATE TABLE IF NOT EXISTS public.RAT_Rating (
+CREATE TABLE IF NOT EXISTS public.RAT_Rating_ID (
     RAT_ID tinyint default public.RAT_Rating_ID_SEQ.nextval not null, 
+     bit null,
+    constraint pkRAT_Rating_ID primary key (
+        RAT_ID
+    )
+) CLUSTER BY (RAT_ID);
+-- Knot value table ---------------------------------------------------------------------------------------------------
+-- RAT_Rating_EQ table
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.RAT_Rating_EQ (
+    RAT_ID tinyint not null,
+    RAT_EQ tinyint not null,
     RAT_Rating varchar(42) not null,
-    constraint pkRAT_Rating primary key (
+     bit null,
+    constraint fkRAT_Rating_EQ foreign key (
+        RAT_ID
+    ) references public.RAT_Rating_ID(RAT_ID),
+    constraint pkRAT_Rating_EQ primary key (
+        RAT_EQ,
         RAT_ID
     ),
-    constraint uqRAT_Rating unique (
+    constraint uqRAT_Rating_EQ unique (
+        RAT_EQ,
         RAT_Rating
     )
 ) CLUSTER BY (RAT_ID);

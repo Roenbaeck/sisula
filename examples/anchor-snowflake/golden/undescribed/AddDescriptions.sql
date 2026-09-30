@@ -1,0 +1,6 @@
+-- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
+--
+-- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and
+-- references, making them available to catalogs and semantic layers. Views get their comments when they are
+-- created, since Snowflake does not allow comments on view columns to be added afterwards.
+--

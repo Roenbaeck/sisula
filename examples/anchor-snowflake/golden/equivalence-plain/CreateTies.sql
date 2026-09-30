@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently (
     ) references public.AC_Actor(AC_ID), 
     constraint AC_partner_AC_with_ONG_currently_fkONG_currently foreign key (
         ONG_ID_currently
-    ) references public.ONG_Ongoing(ONG_ID),
+    ) references public.ONG_Ongoing_ID(ONG_ID),
     constraint AC_partner_AC_with_ONG_currently_uqAC_partner unique (
         AC_ID_partner,
         AC_partner_AC_with_ONG_currently_ChangedAt
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got (
     ) references public.PR_Program(PR_ID), 
     constraint AC_part_PR_in_RAT_got_fkRAT_got foreign key (
         RAT_ID_got
-    ) references public.RAT_Rating(RAT_ID),
+    ) references public.RAT_Rating_ID(RAT_ID),
     constraint pkAC_part_PR_in_RAT_got primary key (
         AC_ID_part,
         PR_ID_in,

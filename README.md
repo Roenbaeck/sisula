@@ -11,7 +11,9 @@ This repository holds the **core engine**: one renderer, one language reference 
 | `docs/LANGUAGE.md` | The language reference. |
 | `tests/fixtures/*.json` | Conformance cases: `{ name, template, bindings, expected }`. Language-neutral, so other implementations can run them too. |
 | `tests/run.js` | Runs the fixtures with Node: `node tests/run.js`. |
-| `tests/run.ps1` | Runs the fixtures with Jint, where Node is not installed. Needs `Jint.dll` (2.x); pass `-JintPath` if it is not in the sibling `sisula` checkout. |
+| `tests/run.ps1` | Runs the fixtures with Jint, where Node is not installed: `powershell -File tests\run.ps1`. |
+| `lib/` | Jint 2.11.58 (BSD 2-Clause), the ES5 engine the PowerShell runners use. See `lib/README.md`. |
+| `examples/anchor-snowflake/` | The Anchor Modeler's Snowflake uni-temporal generator as Sisula templates, byte-identical to the modeler's output. See its README. |
 
 ### Hosts
 

@@ -16,21 +16,12 @@ $/ if knot.isGenerator
 CREATE SEQUENCE IF NOT EXISTS $knot.capsule$.$knot.identitySequenceName$ START 1 INCREMENT 1;
 $/ endif
 CREATE TABLE IF NOT EXISTS $knot.capsule$.$knot.identityName$ (
-$/ if knot.isGenerator
-    $knot.identityColumnName$ $knot.identity$ default $knot.capsule$.$knot.identitySequenceName$.nextval not null,
-$/ else
-    $knot.identityColumnName$ $knot.identity$ not null,
-$/ endif
-$/ if schema.METADATA
-    $knot.metadataColumnName$ $schema.metadata.metadataType$ not null,
-$/ else
-    $knot.dummyColumnName$ bit null,
-$/ endif
+    $knot.identityColumnName$ $/ if knot.isGenerator $knot.identity$ default $knot.capsule$.$knot.identitySequenceName$.nextval not null, $/ else $knot.identity$ not null,$/ endif
+    $/ if schema.METADATA $knot.metadataColumnName$ $schema.metadata.metadataType$ not null, $/ else $knot.dummyColumnName$ bit null,$/ endif
     constraint pk$knot.identityName$ primary key (
         $knot.identityColumnName$
     )
 ) CLUSTER BY ($knot.identityColumnName$);
-
 -- Knot value table ---------------------------------------------------------------------------------------------------
 -- $knot.equivalentName$ table
 -----------------------------------------------------------------------------------------------------------------------
@@ -41,11 +32,7 @@ CREATE TABLE IF NOT EXISTS $knot.capsule$.$knot.equivalentName$ (
 $/ if knot.hasChecksum
     $knot.checksumColumnName$ numeric(19,0) default hash($knot.valueColumnName$),
 $/ endif
-$/ if schema.METADATA
-    $knot.metadataColumnName$ $schema.metadata.metadataType$ not null,
-$/ else
-    $knot.dummyColumnName$ bit null,
-$/ endif
+    $/ if schema.METADATA $knot.metadataColumnName$ $schema.metadata.metadataType$ not null, $/ else $knot.dummyColumnName$ bit null,$/ endif
     constraint fk$knot.equivalentName$ foreign key (
         $knot.identityColumnName$
     ) references $knot.capsule$.$knot.identityName$($knot.identityColumnName$),
@@ -55,11 +42,7 @@ $/ endif
     ),
     constraint uq$knot.equivalentName$ unique (
         $knot.equivalentColumnName$,
-$/ if knot.hasChecksum
-        $knot.checksumColumnName$
-$/ else
-        $knot.valueColumnName$
-$/ endif
+        $/ if knot.hasChecksum $knot.checksumColumnName$ $/ else $knot.valueColumnName$$/ endif
     )
 ) CLUSTER BY ($knot.identityColumnName$);
 $/ else
@@ -70,11 +53,7 @@ $/ if knot.isGenerator
 CREATE SEQUENCE IF NOT EXISTS $knot.capsule$.$knot.identitySequenceName$ START 1 INCREMENT 1;
 $/ endif
 CREATE TABLE IF NOT EXISTS $knot.capsule$.$knot.name$ (
-$/ if knot.isGenerator
-    $knot.identityColumnName$ $knot.identity$ default $knot.capsule$.$knot.identitySequenceName$.nextval not null,
-$/ else
-    $knot.identityColumnName$ $knot.identity$ not null,
-$/ endif
+    $knot.identityColumnName$ $/ if knot.isGenerator $knot.identity$ default $knot.capsule$.$knot.identitySequenceName$.nextval not null, $/ else $knot.identity$ not null,$/ endif
     $knot.valueColumnName$ $knot.dataRange$ not null,
 $/ if knot.hasChecksum
     $knot.checksumColumnName$ numeric(19,0) default hash($knot.valueColumnName$),
@@ -86,11 +65,7 @@ $/ endif
         $knot.identityColumnName$
     ),
     constraint uq$knot.name$ unique (
-$/ if knot.hasChecksum
-        $knot.checksumColumnName$
-$/ else
-        $knot.valueColumnName$
-$/ endif
+        $/ if knot.hasChecksum $knot.checksumColumnName$ $/ else $knot.valueColumnName$$/ endif
     )
 ) CLUSTER BY ($knot.identityColumnName$);
 $/ endif

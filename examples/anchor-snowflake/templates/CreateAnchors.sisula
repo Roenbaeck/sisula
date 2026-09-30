@@ -11,11 +11,7 @@ $/ if anchor.isGenerator
 CREATE SEQUENCE IF NOT EXISTS $anchor.capsule$.$anchor.identitySequenceName$ START 1 INCREMENT 1;
 $/ endif
 CREATE TABLE IF NOT EXISTS $anchor.capsule$.$anchor.name$ (
-$/ if anchor.isGenerator
-    $anchor.identityColumnName$ $anchor.identity$ default $anchor.capsule$.$anchor.identitySequenceName$.nextval not null,
-$/ else
-    $anchor.identityColumnName$ $anchor.identity$ not null,
-$/ endif
+    $anchor.identityColumnName$ $/ if anchor.isGenerator $anchor.identity$ default $anchor.capsule$.$anchor.identitySequenceName$.nextval not null, $/ else $anchor.identity$ not null,$/ endif
 $/ if schema.METADATA
     $anchor.metadataColumnName$ $schema.metadata.metadataType$ not null,
 $/ endif

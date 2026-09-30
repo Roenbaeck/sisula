@@ -23,13 +23,9 @@ $/ endif
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS $tie.capsule$.$tie.name$ (
 $/ foreach role in tie.roles
-$/ if role.entity
-    $role.columnName$ $role.entity.identity$ not null,
-$/ else
-    $role.columnName$ $role.knot.identity$ not null,
-$/ endif
+    $role.columnName$ $/ if role.entity $role.entity.identity$ not null, $/ else $role.knot.identity$ not null,$/ endif
 $/ endfor
-$/ if tie.timeRange
+$/ if tie.isHistorized
     $tie.changingColumnName$ $tie.timeRange$ not null,
 $/ endif
 $/ if schema.METADATA
@@ -39,7 +35,7 @@ $/ foreach role in tie.roles
     constraint $tie.name$_fk$role.name$ foreign key (
         $role.columnName$
 $/ if role.entity
-    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$),
+    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$), $--$
 $/ else
 $/ if role.knot.isEquivalent
     ) references $role.knot.capsule$.$role.knot.identityName$($role.knot.identityColumnName$),

@@ -8,12 +8,14 @@
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.EV_DAT_Event_Date (
     EV_DAT_EV_ID int not null,
+    EV_DAT_EQ tinyint not null,
     EV_DAT_Event_Date datetime not null,
     Metadata_EV_DAT int not null,
     constraint fkEV_DAT_Event_Date foreign key (
         EV_DAT_EV_ID
     ) references public.EV_Event(EV_ID),
     constraint pkEV_DAT_Event_Date primary key (
+        EV_DAT_EQ,
         EV_DAT_EV_ID
     )
 ) CLUSTER BY (EV_DAT_EV_ID);
@@ -36,12 +38,14 @@ CREATE TABLE IF NOT EXISTS public.EV_AUD_Event_Audience (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.EV_REV_Event_Revenue (
     EV_REV_EV_ID int not null,
+    EV_REV_EQ tinyint not null,
     EV_REV_Event_Revenue number(19,4) not null,
     Metadata_EV_REV int not null,
     constraint fkEV_REV_Event_Revenue foreign key (
         EV_REV_EV_ID
     ) references public.EV_Event(EV_ID),
     constraint pkEV_REV_Event_Revenue primary key (
+        EV_REV_EQ,
         EV_REV_EV_ID
     )
 ) CLUSTER BY (EV_REV_EV_ID);
