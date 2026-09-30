@@ -94,6 +94,17 @@ function renderBlock(block, ctx, loopVars) {
     return renderScript(block, ctx, loopVars);
 }
 
+// A line opens a block only when the directive is alone on it. "$/ if c A $/ endif" and
+// "$/ foreach x in xs A $/ endfor" close on the same line, so they are inline and must not change
+// the nesting depth while a block's body is being scanned for its end.
+function opensBlockIf(line) {
+    return RE_IF.test(line) && !/\$\/\s*endif/i.test(line);
+}
+
+function opensBlockForeach(line) {
+    return RE_FOREACH.test(line) && !/\$\/\s*endfor/i.test(line);
+}
+
 function renderScript(text, ctx, loopVars) {
     if (!text) return "";
     var sb = [];
@@ -136,7 +147,7 @@ function renderScript(text, ctx, loopVars) {
                 if (stopTrim > pos && text[stopTrim - 1] === "\r") stopTrim--;
                 var innerLine = text.substring(pos, stopTrim);
 
-                if (RE_FOREACH.test(innerLine)) depth++;
+                if (opensBlockForeach(innerLine)) depth++;
                 else if (RE_ENDFOR.test(innerLine)) {
                     depth--;
                     if (depth === 0) {
@@ -220,7 +231,7 @@ function renderScript(text, ctx, loopVars) {
                 if (stopTrim > pos && text[stopTrim - 1] === "\r") stopTrim--;
                 var innerLine = text.substring(pos, stopTrim);
 
-                if (RE_IF.test(innerLine)) depth++;
+                if (opensBlockIf(innerLine)) depth++;
                 else if (depth === 1 && RE_ELSE.test(innerLine)) {
                     elseFound = true;
                     trueBodyEnd = pos;

@@ -36,10 +36,10 @@ Line directives
 - If:
     - Block form: `$/ if <condition>` ... `[ $/ else ... ]` ... `$/ endif` — optional `$/ else` renders an alternate branch when the condition is false.
     - Single-line form (inline-if): `$/ if <cond> <when-true> $/ else <when-false> $/ endif` — optional `$/ else` controls the false branch; omit it to render nothing on false. The inline content respects the indentation where the directive appears.
-        - Inline-if directives can also appear inside a content line to add or remove inline fragments (useful for trailing commas or comments that depend on metadata). Nested inline directives can use `$/ else` as well.
+        - Inline-if directives can also appear inside a content line to add or remove inline fragments (useful for trailing commas or comments that depend on metadata). An inline if cannot contain another inline if; use block ifs for nested choices.
 
 Comments
-- Line comments: start a line with `$-` (optionally indented) to remove it from the rendered output.
+- Line comments: start a line with `$-` (optionally indented) to remove it, newline and all, from the rendered output.
 - Inline comments: wrap comment text as `$- ... -$` to drop the span while keeping the surrounding content.
 - Comments are stripped before token or directive evaluation.
 
@@ -171,4 +171,10 @@ Small templates often rely on precise spacing when embedding inline directives. 
 - When an inline directive is embedded in a larger inline `foreach`/`if`, spacing between directives is treated as separation, not as part of a branch. In practice this means you can add a single space before/after branch content as a separator and it will be preserved consistently.
     - The inline-if parser avoids splitting the condition at whitespace that is adjacent to logical operators (`and`/`or`) or binary operators (`==`, `=`, `!=`, `>=` etc.). This prevents accidental branch splitting for expressions like `c.type == "varchar" or c.type == "char"`.
 
-If you need separators only between items (but not after the final item) prefer using a conditional that inspects `varName.last()` or generate separators in a separate `foreach` pass.
+- Whitespace after `$/ endif` is swallowed, and so is the whitespace between an inline condition and its first branch. Put spaces that belong to the output inside a branch: `$/ if x $x.count$ $/ else 0 $/ endif items`.
+- In `$/ if c A $/ else B$/ endif` the true branch keeps the space before `$/ else`, and the false branch keeps anything before `$/ endif`.
+- A line that holds only an inline if renders as an empty line when the chosen branch is empty. Use a block if to leave out a whole line.
+- To end a line with a space that an editor might trim, write it before an empty inline comment: `x $--$` renders as `x ` followed by the newline.
+- A line that holds a complete inline `if` or `foreach` never opens a block, so it is safe inside the body of a block `if` or `foreach`.
+
+If you need separators only between items (but not after the final item) prefer using a conditional that inspects `varName.last()`, for example `$c.name$$/ if not c.last() ,$/ endif`, or generate separators in a separate `foreach` pass.

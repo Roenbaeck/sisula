@@ -1,0 +1,38 @@
+[
+  {
+    "name": "an inline if alone on a line inside a block if does not hide the block's else",
+    "template": "$/ if a\n  $/ if b X$/ else Y$/ endif\n$/ else\nZ\n$/ endif\n",
+    "bindings": { "a": false, "b": true },
+    "expected": "Z\n"
+  },
+  {
+    "name": "an inline if alone on a line inside a block if, true branch",
+    "template": "$/ if a\n  $/ if b X$/ else Y$/ endif\n$/ else\nZ\n$/ endif\n",
+    "bindings": { "a": true, "b": true },
+    "expected": "  X\n"
+  },
+  {
+    "name": "an inline if alone on a line inside a block if, false branch",
+    "template": "$/ if a\n  $/ if b X$/ else Y$/ endif\n$/ else\nZ\n$/ endif\n",
+    "bindings": { "a": true, "b": false },
+    "expected": "  Y\n"
+  },
+  {
+    "name": "an inline if that closes mid-line inside a block if",
+    "template": "$/ if a\n$/ if b X $/ endif tail\n$/ else\nZ\n$/ endif\n",
+    "bindings": { "a": true, "b": true },
+    "expected": "X tail\n"
+  },
+  {
+    "name": "an inline if alone on a line inside a nested block if",
+    "template": "$/ if a\n$/ if c\n  $/ if b X$/ else Y$/ endif\n$/ endif\nafter\n$/ else\nZ\n$/ endif\n",
+    "bindings": { "a": true, "b": false, "c": true },
+    "expected": "  Y\nafter\n"
+  },
+  {
+    "name": "an inline foreach alone on a line inside a block foreach",
+    "template": "$/ foreach t in ts\n$/ foreach c in t.cs $c.v$,$/ endfor\n$/ endfor\ndone\n",
+    "bindings": { "ts": [ { "cs": [ { "v": 1 }, { "v": 2 } ] }, { "cs": [ { "v": 3 } ] } ] },
+    "expected": "1,2,\n3,\ndone\n"
+  }
+]
