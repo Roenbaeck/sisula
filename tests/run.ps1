@@ -12,9 +12,9 @@ param(
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
-# Jint 2.x is not vendored here. Point -JintPath at a copy, or rely on the sibling checkout.
+# Jint 2.x is vendored in lib/; -JintPath overrides it.
 if (-not $JintPath) {
-    $JintPath = Join-Path $PSScriptRoot '..\..\sisula\code\DLL\Jint.2.11.58.dll'
+    $JintPath = Join-Path $PSScriptRoot '..\lib\Jint.2.11.58.dll'
 }
 Add-Type -Path (Resolve-Path $JintPath)
 $engine = New-Object Jint.Engine
