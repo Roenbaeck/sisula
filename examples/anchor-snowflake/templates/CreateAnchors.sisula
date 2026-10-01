@@ -17,6 +17,6 @@ $/ if schema.METADATA
 $/ endif
     constraint pk$anchor.name$ primary key (
         $anchor.identityColumnName$
-    )
+    ) RELY
 ) CLUSTER BY ($anchor.identityColumnName$);
 $/ endfor

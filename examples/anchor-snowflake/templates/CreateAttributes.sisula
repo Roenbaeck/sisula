@@ -23,14 +23,14 @@ $/ if schema.METADATA
 $/ endif
     constraint fk$attribute.name$ foreign key (
         $attribute.entityReferenceName$
-    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$),
+    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$) RELY,
     constraint pk$attribute.name$ primary key (
 $/ if attribute.isEquivalent
         $attribute.equivalentColumnName$,
 $/ endif
         $attribute.entityReferenceName$,
         $attribute.changingColumnName$
-    )
+    ) RELY
 ) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ if attribute.isHistorized and attribute.isKnotted
@@ -46,18 +46,18 @@ $/ if schema.METADATA
 $/ endif
     constraint fk_A_$attribute.name$ foreign key (
         $attribute.entityReferenceName$
-    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$),
+    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$) RELY,
     constraint fk_K_$attribute.name$ foreign key (
         $attribute.knotReferenceName$
 $/ if attribute.knot.isEquivalent
-    ) references $attribute.knot.capsule$.$attribute.knot.identityName$($attribute.knot.identityColumnName$),
+    ) references $attribute.knot.capsule$.$attribute.knot.identityName$($attribute.knot.identityColumnName$) RELY,
 $/ else
-    ) references $attribute.knot.capsule$.$attribute.knot.name$($attribute.knot.identityColumnName$),
+    ) references $attribute.knot.capsule$.$attribute.knot.name$($attribute.knot.identityColumnName$) RELY,
 $/ endif
     constraint pk$attribute.name$ primary key (
         $attribute.entityReferenceName$,
         $attribute.changingColumnName$
-    )
+    ) RELY
 ) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ if not attribute.isHistorized and attribute.isKnotted
@@ -72,17 +72,17 @@ $/ if schema.METADATA
 $/ endif
     constraint fk_A_$attribute.name$ foreign key (
         $attribute.entityReferenceName$
-    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$),
+    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$) RELY,
     constraint fk_K_$attribute.name$ foreign key (
         $attribute.knotReferenceName$
 $/ if attribute.knot.isEquivalent
-    ) references $attribute.knot.capsule$.$attribute.knot.identityName$($attribute.knot.identityColumnName$),
+    ) references $attribute.knot.capsule$.$attribute.knot.identityName$($attribute.knot.identityColumnName$) RELY,
 $/ else
-    ) references $attribute.knot.capsule$.$attribute.knot.name$($attribute.knot.identityColumnName$),
+    ) references $attribute.knot.capsule$.$attribute.knot.name$($attribute.knot.identityColumnName$) RELY,
 $/ endif
     constraint pk$attribute.name$ primary key (
         $attribute.entityReferenceName$
-    )
+    ) RELY
 ) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ if not attribute.isHistorized and not attribute.isKnotted
@@ -103,13 +103,13 @@ $/ if schema.METADATA
 $/ endif
     constraint fk$attribute.name$ foreign key (
         $attribute.entityReferenceName$
-    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$),
+    ) references $attribute.parent.capsule$.$attribute.parent.name$($attribute.parent.identityColumnName$) RELY,
     constraint pk$attribute.name$ primary key (
 $/ if attribute.isEquivalent
         $attribute.equivalentColumnName$,
 $/ endif
         $attribute.entityReferenceName$
-    )
+    ) RELY
 ) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ endfor

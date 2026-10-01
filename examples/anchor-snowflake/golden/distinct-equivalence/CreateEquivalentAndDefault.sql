@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS dw._EQ (
     EQ tinyint not null,
     constraint pk_EQ primary key (
         EQ 
-    )
+    ) RELY
 );
 MERGE INTO dw._EQ e
 USING ( SELECT 0 AS _defaultEquivalent ) d

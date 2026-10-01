@@ -200,7 +200,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pST_Stage(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pST_Stage(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -486,7 +486,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pAC_Actor(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pAC_Actor(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -684,7 +684,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pPR_Program(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pPR_Program(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------

@@ -192,7 +192,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pST_Stage(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pST_Stage(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epST_Stage(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -451,7 +451,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epST_Stage(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_Actor(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_Actor(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -847,7 +847,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_Actor(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -966,7 +966,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_Actor(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -1148,7 +1148,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pPR_Program(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pPR_Program(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1207,7 +1207,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epPR_Program(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1272,7 +1272,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epPR_Program(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------

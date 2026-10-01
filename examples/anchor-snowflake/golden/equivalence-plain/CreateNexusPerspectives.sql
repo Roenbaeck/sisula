@@ -115,7 +115,7 @@ CREATE OR REPLACE VIEW public.nEV_Event AS
 SELECT
     *
 FROM
-    TABLE(public.pEV_Event(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pEV_Event(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -255,6 +255,6 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epEV_Event(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epEV_Event(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;

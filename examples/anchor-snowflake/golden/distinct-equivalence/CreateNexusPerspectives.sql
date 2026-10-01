@@ -299,7 +299,7 @@ CREATE OR REPLACE VIEW nexuses.nEV_Event AS
 SELECT
     *
 FROM
-    TABLE(nexuses.pEV_Event(current_timestamp()::timestamp_ntz(9)))
+    TABLE(nexuses.pEV_Event(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -810,7 +810,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(nexuses.epEV_Event(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(nexuses.epEV_Event(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------

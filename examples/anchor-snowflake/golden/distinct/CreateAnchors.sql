@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS anchors.PN_Person (
     Metadata_PN int not null,
     constraint pkPN_Person primary key (
         PN_ID
-    )
+    ) RELY
 ) CLUSTER BY (PN_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- ST_Stage table (with 4 attributes)
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS anchors.ST_Stage (
     Metadata_ST int not null,
     constraint pkST_Stage primary key (
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- AC_Actor table (with 3 attributes)
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS anchors.AC_Actor (
     Metadata_AC int not null,
     constraint pkAC_Actor primary key (
         AC_ID
-    )
+    ) RELY
 ) CLUSTER BY (AC_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- PR_Program table (with 2 attributes)
@@ -43,5 +43,5 @@ CREATE TABLE IF NOT EXISTS anchors.PR_Program (
     Metadata_PR int not null,
     constraint pkPR_Program primary key (
         PR_ID
-    )
+    ) RELY
 ) CLUSTER BY (PR_ID);

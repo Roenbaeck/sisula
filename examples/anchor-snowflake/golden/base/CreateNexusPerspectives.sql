@@ -127,5 +127,5 @@ CREATE OR REPLACE VIEW public.nEV_Event AS
 SELECT
     *
 FROM
-    TABLE(public.pEV_Event(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pEV_Event(sysdate()::timestamp_ntz(9)))
 ;

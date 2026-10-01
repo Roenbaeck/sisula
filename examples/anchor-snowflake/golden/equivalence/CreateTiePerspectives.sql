@@ -98,7 +98,7 @@ CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_partner_AC_with_ONG_currently(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_partner_AC_with_ONG_currently(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_subset_PN_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_subset_PN_of(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -329,7 +329,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_subset_PN_of(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -368,7 +368,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_subset_PN_of(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
 SELECT
     *
 FROM
-    TABLE(public.pEV_in_AC_wasCast(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pEV_in_AC_wasCast(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -429,7 +429,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epEV_in_AC_wasCast(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -468,7 +468,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epEV_in_AC_wasCast(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -564,7 +564,7 @@ CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_part_PR_in_RAT_got(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_part_PR_in_RAT_got(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -623,7 +623,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -694,7 +694,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -804,7 +804,7 @@ CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
 SELECT
     *
 FROM
-    TABLE(public.pST_at_PR_isPlaying(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pST_at_PR_isPlaying(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -847,7 +847,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epST_at_PR_isPlaying(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -902,7 +902,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epST_at_PR_isPlaying(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -996,7 +996,7 @@ CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_parent_AC_child_PAT_having(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_parent_AC_child_PAT_having(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1017,7 +1017,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1072,7 +1072,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -1120,7 +1120,7 @@ CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
 SELECT
     *
 FROM
-    TABLE(public.pPR_content_ST_location_EV_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pPR_content_ST_location_EV_of(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1138,7 +1138,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epPR_content_ST_location_EV_of(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1180,6 +1180,6 @@ $$
 SELECT
     *
 FROM
-    TABLE(public.epPR_content_ST_location_EV_of(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
