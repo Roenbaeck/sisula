@@ -169,17 +169,13 @@ C# implementation:
 ## Observations about the original
 
 Reproduced as they are, since the output must match. They are worth fixing in Anchor, after
-which the golden files and templates change together.
+which the golden files and templates change together. (Defects that made the generated SQL
+invalid have been fixed, in the original sisulets and the templates together; they are listed in
+Anchor's `HANDOVER-sisula-port.md`. These remain.)
 
-- `CreateEquivalentAndDefault.js` writes `$schema.metadata.encapsulation._$schema.metadata.equivalentSuffix`,
-  meaning `public._EQ`, but the tokenizer ends the first token at the second `$`. The generated
-  SQL creates and merges into a table literally named `schema.metadata.equivalentSuffix`.
 - `tie.isKnotted()` in `Helpers.js` returns `!!this['knotRole']`, but `knotRole` is set to `{}`
   for every tie, so every tie is knotted. Ties without a knot role get the header comment
   "Knotted static tie table". Only the comment is affected.
-- With the original naming convention, knotted attributes and knot roles have no
-  `knotEquivalentColumnName` or `knotChecksumColumnName`, so the perspectives emit empty column
-  names, such as a line reading `    ,`, for equivalent or checksummed knots.
 - Several sisulets test `knot.isEquivalent()` without `schema.EQUIVALENCE`, so a knot marked
   equivalent in a model with equivalence off is referenced through tables and functions that are
   never created. The modeler never saves such a model; a hand-written file can contain one.
