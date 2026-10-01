@@ -390,6 +390,24 @@ function getOrderKey(itemObj, varName, orderPath) {
     return String(val);
 }
 
+function isArray(v) {
+    return Object.prototype.toString.call(v) === "[object Array]";
+}
+
+// A path reaches only what the JSON itself holds: the properties of an object and, by index, the
+// elements of an array. The members every JavaScript value has (length, constructor, toString)
+// are not data, and a host that reads the JSON with another tool, such as SQL Server's JSON
+// functions, cannot see them. Reading them here would let a template work in one host only.
+function memberOf(obj, name) {
+    if (obj === null || typeof obj !== "object" || isArray(obj)) return undefined;
+    return Object.prototype.hasOwnProperty.call(obj, name) ? obj[name] : undefined;
+}
+
+function elementOf(arr, index) {
+    if (!isArray(arr) || index !== index || index < 0 || index >= arr.length) return undefined;
+    return arr[index];
+}
+
 function resolvePathValue(obj, path) {
     if (obj === null || obj === undefined) return null;
     if (!path || path === "$") return obj;
@@ -399,12 +417,9 @@ function resolvePathValue(obj, path) {
         var seg = segments[i];
         if (current === null || current === undefined) return null;
         if (typeof current !== "object") return null;
-        if (seg.index !== null) {
-            current = current[seg.name];
-            if (current === undefined) return null;
-            current = current[seg.index];
-        } else {
-            current = current[seg.name];
+        current = memberOf(current, seg.name);
+        if (seg.index !== null && current !== undefined && current !== null) {
+            current = elementOf(current, seg.index);
         }
     }
     if (current === undefined) return null;

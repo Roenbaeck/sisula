@@ -1,0 +1,41 @@
+[
+  {
+    "name": "a foreach keeps the order of the array when it has more than ten items",
+    "template": "$/ foreach i in list\n$i.n$\n$/ endfor\n",
+    "bindings": { "list": [
+      { "n": "a" }, { "n": "b" }, { "n": "c" }, { "n": "d" }, { "n": "e" }, { "n": "f" },
+      { "n": "g" }, { "n": "h" }, { "n": "i" }, { "n": "j" }, { "n": "k" }, { "n": "l" }
+    ] },
+    "expected": "a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\n"
+  },
+  {
+    "name": "an inline foreach keeps the order of the array when it has more than ten items",
+    "template": "$/ foreach i in list $i.n$ $/ endfor",
+    "bindings": { "list": [
+      { "n": 0 }, { "n": 1 }, { "n": 2 }, { "n": 3 }, { "n": 4 }, { "n": 5 },
+      { "n": 6 }, { "n": 7 }, { "n": 8 }, { "n": 9 }, { "n": 10 }, { "n": 11 }
+    ] },
+    "expected": "0 1 2 3 4 5 6 7 8 9 10 11 "
+  },
+  {
+    "name": "loop metadata counts through more than ten items",
+    "template": "$/ foreach i in list\n$i.index()$/$i.count()$$/ if i.last() !$/ endif\n$/ endfor\n",
+    "bindings": { "list": [
+      { "n": 0 }, { "n": 1 }, { "n": 2 }, { "n": 3 }, { "n": 4 }, { "n": 5 },
+      { "n": 6 }, { "n": 7 }, { "n": 8 }, { "n": 9 }, { "n": 10 }, { "n": 11 }
+    ] },
+    "expected": "0/12\n1/12\n2/12\n3/12\n4/12\n5/12\n6/12\n7/12\n8/12\n9/12\n10/12\n11/12!\n"
+  },
+  {
+    "name": "order by sorts numbers as numbers, not as text",
+    "template": "$/ foreach i in list order by i.n\n$i.n$\n$/ endfor\n",
+    "bindings": { "list": [ { "n": 10 }, { "n": 9 }, { "n": 100 }, { "n": 1 }, { "n": 2 } ] },
+    "expected": "1\n2\n9\n10\n100\n"
+  },
+  {
+    "name": "order by desc reverses the numeric order",
+    "template": "$/ foreach i in list order by i.n desc\n$i.n$\n$/ endfor\n",
+    "bindings": { "list": [ { "n": 10 }, { "n": 9 }, { "n": 100 }, { "n": 1 }, { "n": 2 } ] },
+    "expected": "100\n10\n9\n2\n1\n"
+  }
+]

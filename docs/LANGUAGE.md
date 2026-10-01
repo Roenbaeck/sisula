@@ -50,7 +50,7 @@ Loop metadata
   - Only the method form is supported to avoid ambiguity in nested loops and path parsing.
 
 Expression language
-- Comparison operators: `==, !=, >=, <=, >, <`.
+- Comparison operators: `==, !=, >=, <=, >, <`. A single `=` means the same as `==`. Numbers are compared as numbers and everything else as text, ignoring case.
 - Logical operators: `and`, `or` (case-insensitive). Operator precedence: `and` is evaluated before `or`.
 - Negation: `not x` or `!x` (case-insensitive) negates the single term that follows it, which can be a path, a loop-metadata call, a function call or a comparison (`not a == b` means `not (a == b)`). `not` binds tighter than `and` and `or`, so `not a or b` is `(not a) or b`. There are no parentheses.
 - Functions: `contains(x,"y")`, `startswith(x,"y")`, `endswith(x,"y")`.
@@ -62,9 +62,11 @@ Expression language
 
 JSON binding and resolution
 - Bindings are passed as a single JSON document: `sisulate(template, bindingsJson)`. Hosts wrap this as they see fit (`SISULATE` in Snowflake, `fn_sisulate` in SQL Server).
-- Resolution uses native JavaScript JSON parsing (no external libraries).
-- `foreach` iterates over JSON arrays directly; path resolution traverses the parsed JSON object.
-- Scalar values are returned as strings; complex values (objects/arrays) are JSON-stringified.
+- `foreach` iterates over a JSON array.
+- Scalar values are returned as strings; complex values (objects/arrays) are returned as JSON text.
+- **A path reaches only what the JSON itself holds**: the properties of an object, and the elements of an array by index, `[n]`. A path that names anything else, such as a property that is not there, an index past the end, a name on an array or a segment below a scalar, has no value, and renders as an empty string. In particular there is no `length`: an array has no named members, and neither does a string. Where a template needs a count, put the count in the bindings. This is what lets the same template give the same output in every host: the JavaScript implementation reads the document as JavaScript objects, which have members JSON does not (`length`, `constructor`, `toString`), and the SQL Server implementation reads it with `JSON_VALUE`, `JSON_QUERY` and `OPENJSON`, which do not see them.
+- A property whose name happens to be `length` is an ordinary property and is read like any other.
+- Hosts differ in limits that are not part of the language. SQL Server reads a scalar through `JSON_VALUE`, which returns at most 4000 characters, so a longer scalar renders as an empty string there.
 
 Examples
 

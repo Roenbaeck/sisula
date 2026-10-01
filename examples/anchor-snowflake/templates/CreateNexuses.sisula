@@ -5,7 +5,7 @@
 --
 $/ foreach nexus in schema.nexuses
 -- Nexus table --------------------------------------------------------------------------------------------------------
--- $nexus.name$ table (with $/ if nexus.attributes $nexus.attributes.length$ $/ else 0 $/ endif attributes and $/ if nexus.roles $nexus.roles.length$ $/ else 0 $/ endif roles)
+-- $nexus.name$ table (with $nexus.attributeCount$ attributes and $nexus.roleCount$ roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS $nexus.capsule$.$nexus.name$ (
     $nexus.identityColumnName$ $/ if nexus.isGenerator $nexus.identity$ IDENTITY(1,1) not null, $/ else $nexus.identity$ not null,$/ endif

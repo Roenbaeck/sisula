@@ -30,9 +30,10 @@ model.xml --xml-to-tree--> neutral tree --dom-facade--> DOM
   back-references (`parent`, `knot`, `entity`, ...) become shallow summaries. Templates never see
   a function or a cycle.
 - `derive.js` runs in the same scope, after the naming conventions. It computes what the
-  sisulets compute with helper functions at generation time. For Snowflake uni that is only the
-  description as the body of a string literal, `comment`, which is what `describe()` returns.
-  The templates write the `COMMENT` clauses themselves.
+  sisulets compute with helper functions and small expressions at generation time. For Snowflake
+  uni that is the description as the body of a string literal, `comment`, which is what
+  `describe()` returns (the templates write the `COMMENT` clauses themselves), and the number of
+  attributes and roles of the constructs that print one in a header comment.
 - `templates/*.sisula` are the ports, one per sisulet, rendered in the order of
   `templates/Snowflake_uni.directive`. `check.ps1` fails if that order differs from Anchor's
   directive.
@@ -117,6 +118,7 @@ final text directly, trailing spaces included. The patterns:
 | `!c`, `a && b`, `a \|\| b` | `not c`, `a and b`, `a or b` |
 | `var t = c ? x : y` used later | the condition at the point of use |
 | `$$$$` (an escaped `$$`) | `$$` |
+| `x.attributes ? x.attributes.length : 0` | `$x.attributeCount$`, from `derive.js`: a path reaches only what the JSON holds, and JSON arrays have no `length` |
 | `columnCommentClause(x)` | `$/ if x.hasComment $x.name$ COMMENT '$x.comment$'$/ else $x.name$$/ endif` |
 
 Whitespace rules to know:

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "an array has no length",
+    "template": "n=$list.length$.",
+    "bindings": { "list": [ 1, 2, 3 ] },
+    "expected": "n=."
+  },
+  {
+    "name": "a string has no length",
+    "template": "n=$s.length$.",
+    "bindings": { "s": "abc" },
+    "expected": "n=."
+  },
+  {
+    "name": "an object property named length is data like any other",
+    "template": "n=$o.length$.",
+    "bindings": { "o": { "length": 5 } },
+    "expected": "n=5."
+  },
+  {
+    "name": "members that every JavaScript object has are not data",
+    "template": "a=$x.constructor$ b=$x.toString$ c=$x.hasOwnProperty$ d=$x.valueOf$.",
+    "bindings": { "x": { "y": 1 } },
+    "expected": "a= b= c= d=."
+  },
+  {
+    "name": "an array has no named members, only elements",
+    "template": "a=$list.first$ b=$list.map$ c=$list[1]$.",
+    "bindings": { "list": [ "p", "q" ] },
+    "expected": "a= b= c=q."
+  },
+  {
+    "name": "an index past the end of an array is empty",
+    "template": "a=$list[5]$.",
+    "bindings": { "list": [ "p", "q" ] },
+    "expected": "a=."
+  },
+  {
+    "name": "an element of an array of objects is reached by index and name",
+    "template": "$items[1].name$",
+    "bindings": { "items": [ { "name": "A" }, { "name": "B" } ] },
+    "expected": "B"
+  },
+  {
+    "name": "an array property of an object is reached through the object",
+    "template": "$o.tags[0]$ and $o.tags[1]$",
+    "bindings": { "o": { "tags": [ "x", "y" ] } },
+    "expected": "x and y"
+  },
+  {
+    "name": "a missing property inside a loop variable is empty",
+    "template": "$/ foreach i in list\n[$i.nope$]\n$/ endfor\n",
+    "bindings": { "list": [ { "a": 1 } ] },
+    "expected": "[]\n"
+  },
+  {
+    "name": "length of an array is not available in a condition either",
+    "template": "$/ if list.length\nHAS\n$/ else\nNONE\n$/ endif\n",
+    "bindings": { "list": [ 1, 2 ] },
+    "expected": "NONE\n"
+  }
+]

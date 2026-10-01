@@ -19,7 +19,7 @@ $/ endif
 $/ if not tie.isHistorized and not tie.isKnotted
 -- Static tie table ---------------------------------------------------------------------------------------------------
 $/ endif
--- $tie.name$ table (having $tie.roles.length$ roles)
+-- $tie.name$ table (having $tie.roleCount$ roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS $tie.capsule$.$tie.name$ (
 $/ foreach role in tie.roles

@@ -5,7 +5,7 @@
 --
 $/ foreach anchor in schema.anchors
 -- Anchor table -------------------------------------------------------------------------------------------------------
--- $anchor.name$ table (with $/ if anchor.attributes $anchor.attributes.length$ $/ else 0 $/ endif attributes)
+-- $anchor.name$ table (with $anchor.attributeCount$ attributes)
 -----------------------------------------------------------------------------------------------------------------------
 $/ if anchor.isGenerator
 CREATE SEQUENCE IF NOT EXISTS $anchor.capsule$.$anchor.identitySequenceName$ START 1 INCREMENT 1;
