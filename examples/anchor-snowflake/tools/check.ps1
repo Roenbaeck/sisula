@@ -1,12 +1,13 @@
 <#
-    Renders the dialect B templates for a model and compares them, byte for byte, with the output
-    of the original engine (made by golden.ps1).
+    Renders Anchor's Sisula templates for a model and compares them, byte for byte, with the output
+    of the original engine (made by golden.ps1). The templates, the directive that lists them and
+    the engine all come from the Anchor checkout.
 
     Usage:
       check.ps1 [-Variant <name>] [-Name CreateKnots,...] [-Loose] [-KeepBindings <file>] [-KeepOutput <dir>]
 
     The model is models/<Variant>.xml and the golden files are golden/<Variant>/. Every template
-    in templates/Snowflake_uni.directive is rendered and compared with golden/<Variant>/<Name>.sql,
+    in Anchor's Snowflake_uni.directive is rendered and compared with golden/<Variant>/<Name>.sql,
     and then the whole output, the templates concatenated in directive order, with _full.sql.
     -Name renders only some templates and skips the whole-output comparison.
 
@@ -57,15 +58,22 @@ function Read-Directive([string] $path) {
     (Read-Text $path) -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }
 }
 
-# The templates, in order. They must be the enabled sisulets of the original directive, in its order.
-$directive = @(Read-Directive (Join-Path $root 'templates\Snowflake_uni.directive'))
-$original = @(Read-Directive (Join-Path $Anchor 'Snowflake_uni.directive') |
+# What the modeler reads: Anchor's directive. The scripts that prepare the schema come first
+# (Helpers.js, the naming conventions, derive.js), and then the templates, in the order to render.
+$entries = @(Read-Directive (Join-Path $Anchor 'Snowflake_uni.directive'))
+$prelude = @($entries | Where-Object { $_ -match '(^|/)(Helpers|NamingConvention|derive)\.js$' })
+$directive = @($entries | Where-Object { $_ -like '*.sisula' } | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
+$templatePaths = @{}
+foreach ($e in ($entries | Where-Object { $_ -like '*.sisula' })) { $templatePaths[[IO.Path]::GetFileNameWithoutExtension($e)] = Join-Path $Anchor $e }
+# The golden files come from the legacy directive. They only mean something for the templates if both
+# list the same ones, in the same order.
+$original = @(Read-Directive (Join-Path $Anchor 'Snowflake_uni.legacy.directive') |
     Where-Object { $_ -like 'SQL/Snowflake/uni/*' } |
     ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
 if ($directive.Count -eq 0 -or ($directive -join ',') -cne ($original -join ',')) {
-    Write-Host "FAIL  templates/Snowflake_uni.directive does not list the sisulets of Anchor's Snowflake_uni.directive:"
-    Write-Host ("        templates: {0}" -f ($directive -join ', '))
-    Write-Host ("        original:  {0}" -f ($original -join ', '))
+    Write-Host "FAIL  Snowflake_uni.directive does not list the same templates as Snowflake_uni.legacy.directive, which the golden files come from:"
+    Write-Host ("        directive: {0}" -f ($directive -join ', '))
+    Write-Host ("        legacy:    {0}" -f ($original -join ', '))
     exit 1
 }
 $whole = -not $Name
@@ -78,18 +86,22 @@ $engine.SetValue('host', (New-Object SisulaGoldenHost $Anchor)) | Out-Null
 $engine.Execute('var XPathResult;') | Out-Null
 $engine.Execute((Read-Text (Join-Path $here 'dom-facade.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Map.js'))) | Out-Null
+# Anchor's own Sisulator.objectify and Resolver. The Sisulator also holds the original engine, whose
+# async/await Jint 2 cannot parse; it is not used here, so they are stripped, as golden.ps1 does.
+$engine.Execute(((Read-Text (Join-Path $Anchor 'modules\Sisulator.js')) -replace '\basync\s+', '' -replace '\bawait\s+', '')) | Out-Null
+$engine.Execute((Read-Text (Join-Path $Anchor 'modules\Resolver.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $here 'resolve-model.js'))) | Out-Null
-$engine.Execute((Read-Text (Join-Path $root '..\..\core\sisula.js'))) | Out-Null
+$engine.Execute((Read-Text (Join-Path $Anchor 'modules\sisula.js'))) | Out-Null
 
-# Resolve the model once: Anchor's prelude, unchanged, then derive.js. Every template renders
+# Resolve the model once, with the scripts that the directive starts with. Every template renders
 # against the same bindings.
 $engine.SetValue('treeJson', (Convert-XmlFileToTreeJson $Model)) | Out-Null
-$engine.SetValue('deriveText', (Read-Text (Join-Path $root 'derive.js'))) | Out-Null
+$engine.SetValue('preludeNames', ($prelude -join '|')) | Out-Null
 $engine.Execute(@'
 var bindingsJson = JSON.stringify(resolveModel(
     buildDom(JSON.parse(treeJson)),
     MAP,
-    [host.Read('SQL/Helpers.js'), host.Read('SQL/NamingConvention.js'), host.Read('SQL/Snowflake/NamingConvention.js'), deriveText]
+    preludeNames.split('|').map(function (name) { return host.Read(name); })
 ), null, 2);
 '@) | Out-Null
 $bindings = $engine.GetValue('bindingsJson').AsString()
@@ -129,7 +141,8 @@ function Compare-Text([string] $label, [string] $expected, [string] $actual) {
 $failed = 0
 $outputs = New-Object System.Collections.Generic.List[string]
 foreach ($n in $Name) {
-    $templatePath = Join-Path $root "templates\$n.sisula"
+    $templatePath = $templatePaths[$n]
+    if (-not $templatePath) { $templatePath = Join-Path $Anchor "SQL\Snowflake\uni\$n.sisula" }
     if (-not (Test-Path $templatePath)) { Write-Host ("FAIL  {0}/{1}: no template" -f $Variant, $n); $failed++; $whole = $false; continue }
     $engine.SetValue('templateText', (Read-Text $templatePath)) | Out-Null
     try {

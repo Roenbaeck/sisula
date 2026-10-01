@@ -3,40 +3,51 @@
 The Anchor Modeler's Snowflake uni-temporal generator, ported from JScript sisulets that are
 `eval`'d against a live object graph to declarative Sisula templates over JSON.
 
-The port is complete for what the modeler generates: the thirteen sisulets that
-`Snowflake_uni.directive` enables. For every model in `models/` the output is **byte-identical**
-to the Anchor Modeler's, checked three ways:
+**The templates live in the Anchor repository now**, as `SQL/Snowflake/uni/*.sisula`, listed by
+Anchor's `Snowflake_uni.directive`, and the modeler renders them with the vendored engine
+(`modules/sisula.js`). This folder is what proves them: the models, the golden files made by the
+original engine, and the tools that compare. Anchor's `Snowflake_uni.legacy.directive` and the
+original `.js` sisulets are kept for as long as the golden files are made from them.
+
+The port is complete for what the modeler generates: the thirteen templates that
+`Snowflake_uni.directive` lists. For every model in `models/` the output is **byte-identical**
+to the original engine's, checked three ways:
 
 | Check | Compares | Needs |
 |---|---|---|
-| `tools\run-all.ps1` | the templates' output, per template and as a whole, with the golden files | PowerShell |
-| `tools\regenerate-golden.ps1` | makes the golden files: the modeler's own engine and sisulets, run under Jint | an Anchor checkout |
+| `tools\run-all.ps1` | Anchor's templates' output, per template and as a whole, with the golden files | PowerShell, an Anchor checkout |
+| `tools\regenerate-golden.ps1` | makes the golden files: the modeler's original engine and sisulets, run under Jint | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 
-The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell.
+The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
+the Anchor checkout next to this repository.
 The engines run under the Jint in `../../lib`; there is no Node on the development machine.
 
 ## How it works
 
 ```
 model.xml --xml-to-tree--> neutral tree --dom-facade--> DOM
-   DOM --objectify, then Helpers.js and the naming conventions (Anchor's, unchanged), then derive.js--> schema
-   schema --serializeSchema--> bindings JSON --sisulate(template), in directive order--> SQL
+   DOM --Sisulator.objectify, then the scripts the directive starts with--> schema
+   schema --Resolver.resolve--> bindings JSON --sisulate(template), in directive order--> SQL
 ```
 
-- `tools/resolve-model.js` builds the `schema` object the modeler builds by running Anchor's
-  own `Helpers.js`, `NamingConvention.js` and `Snowflake/NamingConvention.js` unchanged, and then
+All of it is Anchor's own code, read from the checkout; the tools here only supply a DOM (Jint has
+none) and compare.
+
+- `Resolver.resolve` (Anchor's `modules/Resolver.js`) builds the `schema` object the modeler
+  builds by running the scripts that the directive starts with: `Helpers.js`,
+  `NamingConvention.js`, `Snowflake/NamingConvention.js` and `Snowflake/derive.js`. Then it
   flattens it: keyed maps and id lists become arrays, `isX()`/`hasX()` predicates become booleans,
   back-references (`parent`, `knot`, `entity`, ...) become shallow summaries. Templates never see
-  a function or a cycle.
-- `derive.js` runs in the same scope, after the naming conventions. It computes what the
-  sisulets compute with helper functions and small expressions at generation time. For Snowflake
+  a function or a cycle. `tools/resolve-model.js` is the few lines that call it.
+- `SQL/Snowflake/derive.js` runs in the same scope, after the naming conventions. It computes what
+  the sisulets compute with helper functions and small expressions at generation time. For Snowflake
   uni that is the description as the body of a string literal, `comment`, which is what
   `describe()` returns (the templates write the `COMMENT` clauses themselves), and the number of
   attributes and roles of the constructs that print one in a header comment.
-- `templates/*.sisula` are the ports, one per sisulet, rendered in the order of
-  `templates/Snowflake_uni.directive`. `check.ps1` fails if that order differs from Anchor's
-  directive.
+- `SQL/Snowflake/uni/*.sisula` are the ports, one per sisulet, rendered in the order of Anchor's
+  `Snowflake_uni.directive`. `check.ps1` fails if that list differs from the legacy directive's,
+  which the golden files come from.
 
 Helper functions become data, never language features: a helper's result is a fact about the
 model, so the resolver computes it once and passes it along in the JSON. That keeps the language
