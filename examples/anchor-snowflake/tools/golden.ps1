@@ -49,7 +49,9 @@ function Read-AnchorFile([string] $relative) {
 }
 
 $treeJson = Convert-XmlFileToTreeJson $Model
-$directiveText = Read-AnchorFile $Directive
+# A directive is read from the checkout, unless it is given as a full path.
+if ([IO.Path]::IsPathRooted($Directive)) { $directiveText = [IO.File]::ReadAllText($Directive, [Text.Encoding]::UTF8) }
+else { $directiveText = Read-AnchorFile $Directive }
 $sisulator = (Read-AnchorFile 'modules\Sisulator.js') -replace '\basync\s+', '' -replace '\bawait\s+', ''
 
 # Runs the whole directive in a fresh engine. With -Marked, every script in it starts by
@@ -76,7 +78,7 @@ if (!String.prototype.padStart) {
     $engine.Execute([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'dom-facade.js'))) | Out-Null
     $engine.Execute((Read-AnchorFile 'modules\Map.js')) | Out-Null
     $engine.Execute($sisulator) | Out-Null
-    $engine.Execute(@'
+    $run = @'
 function loadScript(name) {
     if (!name) return directiveText;
     var text = host.Read(name);
@@ -85,7 +87,13 @@ function loadScript(name) {
     return marked ? '_sisula_ += "\\n\\u00a7SISULET:' + name + '\\u00a7\\n";\n' + text : text;
 }
 var goldenResult = Sisulator.sisulate(buildDom(JSON.parse(treeJson)), MAP, loadScript);
-'@) | Out-Null
+'@
+    try { $engine.Execute($run) | Out-Null }
+    catch {
+        # The Sisulator reports which script failed, and where, through console.error.
+        $diag = $engine.Execute('diagnostics.join("\n");').GetCompletionValue().ToObject()
+        throw "The original engine failed.`n$diag`n$($_.Exception.Message)"
+    }
     $diag = $engine.Execute('diagnostics.join("\n");').GetCompletionValue().ToObject()
     if ($diag) { Write-Warning "Engine diagnostics:`n$diag" }
     $engine.GetValue('goldenResult').ToObject()
