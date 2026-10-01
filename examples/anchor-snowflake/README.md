@@ -85,6 +85,7 @@ powershell -File tools\run-all.ps1                      # the templates against 
 powershell -File tools\check.ps1 -Variant base -Loose   # one model, ignoring blank lines and trailing spaces
 powershell -File tools\regenerate-golden.ps1            # after a change to Anchor's sisulets
 powershell -File tools\browser-check.ps1                # the golden files against the modeler
+powershell -File tools\browser-check.ps1 -Bindings      # the modeler's Generate > JSON bindings against the resolver's
 powershell -File tools\make-variants.ps1                # after a change to base.xml
 ```
 
