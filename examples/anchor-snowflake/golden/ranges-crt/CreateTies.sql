@@ -49,12 +49,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_partner_AC_with_ONG_currently_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_partner_AC_with_ONG_currently bigint not null,
     constraint fkAC_partner_AC_with_ONG_currently_Meta foreign key (
         AC_partner_AC_with_ONG_currently_ID
@@ -102,12 +96,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_subset_PN_of_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_subset_PN_of bigint not null,
     constraint fkAC_subset_PN_of_Meta foreign key (
         AC_subset_PN_of_ID
@@ -149,12 +137,6 @@ CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Meta (
             when EV_in_AC_wasCast_Confidence > 0.25 then '+'
             when EV_in_AC_wasCast_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_in_AC_wasCast_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_in_AC_wasCast bigint not null,
@@ -208,12 +190,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_part_PR_in_RAT_got_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_part_PR_in_RAT_got bigint not null,
     constraint fkAC_part_PR_in_RAT_got_Meta foreign key (
         AC_part_PR_in_RAT_got_ID
@@ -258,12 +234,6 @@ CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Meta (
             when ST_at_PR_isPlaying_Confidence > 0.25 then '+'
             when ST_at_PR_isPlaying_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_at_PR_isPlaying_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_at_PR_isPlaying bigint not null,
@@ -313,12 +283,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Meta (
             when AC_parent_AC_child_PAT_having_Confidence > 0.25 then '+'
             when AC_parent_AC_child_PAT_having_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_parent_AC_child_PAT_having_Confidence < then 0
-            else 1
         end
     ),
     Metadata_AC_parent_AC_child_PAT_having bigint not null,
@@ -376,12 +340,6 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Meta (
             when PR_content_ST_location_EV_of_Confidence > 0.25 then '+'
             when PR_content_ST_location_EV_of_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_content_ST_location_EV_of_Confidence < then 0
-            else 1
         end
     ),
     Metadata_PR_content_ST_location_EV_of bigint not null,

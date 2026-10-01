@@ -82,7 +82,7 @@ FROM
     public.ST_Stage ST
 LEFT JOIN
     TABLE(public.rST_NAM_Stage_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -91,7 +91,7 @@ ON
             sub.ST_NAM_ID
         FROM
             TABLE(public.rST_NAM_Stage_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -105,7 +105,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rST_LOC_Stage_Location(
-        :,
         positingTimepoint::datetime
     )) LOC
 ON
@@ -114,7 +113,6 @@ ON
             sub.ST_LOC_ID
         FROM
             TABLE(public.rST_LOC_Stage_Location(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -127,7 +125,7 @@ ON
     )
 LEFT JOIN
     TABLE(public.rST_AVG_Stage_Average(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) AVG
 ON
@@ -136,7 +134,7 @@ ON
             sub.ST_AVG_ID
         FROM
             TABLE(public.rST_AVG_Stage_Average(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -154,7 +152,6 @@ ON
     kAVG.UTL_ID = AVG.ST_AVG_UTL_ID
 LEFT JOIN
     TABLE(public.rST_MIN_Stage_Minimum(
-        :,
         positingTimepoint::datetime
     )) MIN
 ON
@@ -163,7 +160,6 @@ ON
             sub.ST_MIN_ID
         FROM
             TABLE(public.rST_MIN_Stage_Minimum(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -460,7 +456,7 @@ FROM
     public.AC_Actor AC
 LEFT JOIN
     TABLE(public.rAC_NAM_Actor_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -469,7 +465,7 @@ ON
             sub.AC_NAM_ID
         FROM
             TABLE(public.rAC_NAM_Actor_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -483,7 +479,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rAC_GEN_Actor_Gender(
-        :,
         positingTimepoint::datetime
     )) GEN
 ON
@@ -492,7 +487,6 @@ ON
             sub.AC_GEN_ID
         FROM
             TABLE(public.rAC_GEN_Actor_Gender(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -509,7 +503,7 @@ ON
     kGEN.GEN_ID = GEN.AC_GEN_GEN_ID
 LEFT JOIN
     TABLE(public.rAC_PLV_Actor_ProfessionalLevel(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) PLV
 ON
@@ -518,7 +512,7 @@ ON
             sub.AC_PLV_ID
         FROM
             TABLE(public.rAC_PLV_Actor_ProfessionalLevel(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -768,7 +762,6 @@ FROM
     public.PR_Program PR
 LEFT JOIN
     TABLE(public.rPR_NAM_Program_Name(
-        :,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -777,7 +770,6 @@ ON
             sub.PR_NAM_ID
         FROM
             TABLE(public.rPR_NAM_Program_Name(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -790,7 +782,7 @@ ON
     )
 LEFT JOIN
     TABLE(public.rPR_LEN_Program_Length(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LEN
 ON
@@ -799,7 +791,7 @@ ON
             sub.PR_LEN_ID
         FROM
             TABLE(public.rPR_LEN_Program_Length(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE

@@ -27,7 +27,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -36,7 +35,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -45,7 +43,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -55,7 +52,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -64,7 +60,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -76,7 +71,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -100,7 +94,6 @@ SELECT
     DAT.EV_DAT_Who,
     DAT.EV_DAT_Confidence,
     DAT.EV_DAT_Stance,
-    DAT.,
     DAT.EV_DAT_Event_Date,
     AUD.EV_AUD_EV_ID,
     AUD.Metadata_EV_AUD,
@@ -109,7 +102,6 @@ SELECT
     AUD.EV_AUD_Who,
     AUD.EV_AUD_Confidence,
     AUD.EV_AUD_Stance,
-    AUD.,
     AUD.EV_AUD_Event_Audience,
     REV.EV_REV_EV_ID,
     REV.Metadata_EV_REV,
@@ -118,7 +110,6 @@ SELECT
     REV.EV_REV_Who,
     REV.EV_REV_Confidence,
     REV.EV_REV_Stance,
-    REV.,
     REV.EV_REV_Event_Revenue,
     STA.EV_STA_EV_ID,
     STA.Metadata_EV_STA,
@@ -128,7 +119,6 @@ SELECT
     STA.EV_STA_Who,
     STA.EV_STA_Confidence,
     STA.EV_STA_Stance,
-    STA.,
     STA.EV_STA_Event_Status,
     UTL.EV_UTL_EV_ID,
     UTL.Metadata_EV_UTL,
@@ -137,7 +127,6 @@ SELECT
     UTL.EV_UTL_Who,
     UTL.EV_UTL_Confidence,
     UTL.EV_UTL_Stance,
-    UTL.,
     kUTL.UTL_Utilization AS EV_UTL_UTL_Utilization,
     kUTL.Metadata_UTL AS EV_UTL_Metadata_UTL,
     UTL.EV_UTL_UTL_ID,
@@ -149,7 +138,6 @@ SELECT
     LVL.EV_LVL_Who,
     LVL.EV_LVL_Confidence,
     LVL.EV_LVL_Stance,
-    LVL.,
     kLVL.PLV_Checksum AS EV_LVL_PLV_Checksum,
     kLVL.PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     kLVL.Metadata_PLV AS EV_LVL_Metadata_PLV,
@@ -163,7 +151,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) DAT
 ON
@@ -173,7 +160,6 @@ ON
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -187,7 +173,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) AUD
 ON
@@ -197,7 +182,6 @@ ON
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -211,7 +195,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) REV
 ON
@@ -221,7 +204,6 @@ ON
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -235,7 +217,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) STA
 ON
@@ -245,7 +227,7 @@ ON
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -260,7 +242,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) UTL
 ON
@@ -270,7 +251,6 @@ ON
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -288,7 +268,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
         positor,
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::timestamp_ntz(3)
     )) LVL
 ON
@@ -298,7 +278,7 @@ ON
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
                 positor,
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -321,7 +301,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.lEV_Event AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.*
 FROM
     dw._Who p
@@ -356,7 +336,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -365,7 +344,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -374,7 +352,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -384,7 +361,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -393,7 +369,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -405,7 +380,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -415,7 +389,7 @@ AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.EV_ID,
     EV.Metadata_EV,
     EV.ST_ID_wasHeldAt,
@@ -431,7 +405,6 @@ SELECT
     EV.EV_DAT_Who,
     EV.EV_DAT_Confidence,
     EV.EV_DAT_Stance,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.EV_AUD_EV_ID,
     EV.Metadata_EV_AUD,
@@ -440,7 +413,6 @@ SELECT
     EV.EV_AUD_Who,
     EV.EV_AUD_Confidence,
     EV.EV_AUD_Stance,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.EV_REV_EV_ID,
     EV.Metadata_EV_REV,
@@ -449,7 +421,6 @@ SELECT
     EV.EV_REV_Who,
     EV.EV_REV_Confidence,
     EV.EV_REV_Stance,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.EV_STA_EV_ID,
     EV.Metadata_EV_STA,
@@ -459,7 +430,6 @@ SELECT
     EV.EV_STA_Who,
     EV.EV_STA_Confidence,
     EV.EV_STA_Stance,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.EV_UTL_EV_ID,
     EV.Metadata_EV_UTL,
@@ -468,7 +438,6 @@ SELECT
     EV.EV_UTL_Who,
     EV.EV_UTL_Confidence,
     EV.EV_UTL_Stance,
-    EV.,
     EV.EV_UTL_UTL_Utilization,
     EV.EV_UTL_Metadata_UTL,
     EV.EV_UTL_UTL_ID,
@@ -480,7 +449,6 @@ SELECT
     EV.EV_LVL_Who,
     EV.EV_LVL_Confidence,
     EV.EV_LVL_Stance,
-    EV.,
     EV.EV_LVL_PLV_Checksum,
     EV.EV_LVL_PLV_ProfessionalLevel,
     EV.EV_LVL_Metadata_PLV,
@@ -501,7 +469,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.nEV_Event AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.*
 FROM
     dw._Who p
@@ -538,7 +506,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -547,7 +514,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -556,7 +522,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -566,7 +531,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -575,7 +539,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -587,7 +550,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -613,7 +575,6 @@ SELECT
     EV.EV_DAT_Who,
     EV.EV_DAT_Confidence,
     EV.EV_DAT_Stance,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.EV_AUD_EV_ID,
     EV.Metadata_EV_AUD,
@@ -622,7 +583,6 @@ SELECT
     EV.EV_AUD_Who,
     EV.EV_AUD_Confidence,
     EV.EV_AUD_Stance,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.EV_REV_EV_ID,
     EV.Metadata_EV_REV,
@@ -631,7 +591,6 @@ SELECT
     EV.EV_REV_Who,
     EV.EV_REV_Confidence,
     EV.EV_REV_Stance,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.EV_STA_EV_ID,
     EV.Metadata_EV_STA,
@@ -641,7 +600,6 @@ SELECT
     EV.EV_STA_Who,
     EV.EV_STA_Confidence,
     EV.EV_STA_Stance,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.EV_UTL_EV_ID,
     EV.Metadata_EV_UTL,
@@ -650,7 +608,6 @@ SELECT
     EV.EV_UTL_Who,
     EV.EV_UTL_Confidence,
     EV.EV_UTL_Stance,
-    EV.,
     EV.EV_UTL_UTL_Utilization,
     EV.EV_UTL_Metadata_UTL,
     EV.EV_UTL_UTL_ID,
@@ -662,7 +619,6 @@ SELECT
     EV.EV_LVL_Who,
     EV.EV_LVL_Confidence,
     EV.EV_LVL_Stance,
-    EV.,
     EV.EV_LVL_PLV_Checksum,
     EV.EV_LVL_PLV_ProfessionalLevel,
     EV.EV_LVL_Metadata_PLV,

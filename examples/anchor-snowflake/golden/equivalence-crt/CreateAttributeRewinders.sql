@@ -22,8 +22,7 @@ RETURNS TABLE (
     EV_DAT_PositedAt datetime,
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
-    EV_DAT_Assertion string,
-     int
+    EV_DAT_Assertion string
 )
 AS
 $$
@@ -33,7 +32,7 @@ SELECT
     EV_DAT_PositedAt,
     EV_DAT_Positor,
     EV_DAT_Reliability,
-    EV_DAT_Assertion,
+    EV_DAT_Assertion
 FROM
     public.EV_DAT_Event_Date_Annex
 WHERE
@@ -53,7 +52,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_EV_ID int,
     EV_DAT_Event_Date datetime
 )
@@ -66,7 +64,6 @@ SELECT
     a.EV_DAT_Positor,
     a.EV_DAT_Reliability,
     a.EV_DAT_Assertion,
-    a.,
     p.EV_DAT_EV_ID,
     p.EV_DAT_Event_Date
 FROM
@@ -95,8 +92,7 @@ RETURNS TABLE (
     EV_AUD_PositedAt datetime,
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
-    EV_AUD_Assertion string,
-     int
+    EV_AUD_Assertion string
 )
 AS
 $$
@@ -106,7 +102,7 @@ SELECT
     EV_AUD_PositedAt,
     EV_AUD_Positor,
     EV_AUD_Reliability,
-    EV_AUD_Assertion,
+    EV_AUD_Assertion
 FROM
     public.EV_AUD_Event_Audience_Annex
 WHERE
@@ -126,7 +122,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_EV_ID int,
     EV_AUD_Event_Audience int
 )
@@ -139,7 +134,6 @@ SELECT
     a.EV_AUD_Positor,
     a.EV_AUD_Reliability,
     a.EV_AUD_Assertion,
-    a.,
     p.EV_AUD_EV_ID,
     p.EV_AUD_Event_Audience
 FROM
@@ -168,8 +162,7 @@ RETURNS TABLE (
     EV_REV_PositedAt datetime,
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
-    EV_REV_Assertion string,
-     int
+    EV_REV_Assertion string
 )
 AS
 $$
@@ -179,7 +172,7 @@ SELECT
     EV_REV_PositedAt,
     EV_REV_Positor,
     EV_REV_Reliability,
-    EV_REV_Assertion,
+    EV_REV_Assertion
 FROM
     public.EV_REV_Event_Revenue_Annex
 WHERE
@@ -199,7 +192,6 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_EV_ID int,
     EV_REV_Event_Revenue number(19,4)
 )
@@ -212,7 +204,6 @@ SELECT
     a.EV_REV_Positor,
     a.EV_REV_Reliability,
     a.EV_REV_Assertion,
-    a.,
     p.EV_REV_EV_ID,
     p.EV_REV_Event_Revenue
 FROM
@@ -293,8 +284,7 @@ RETURNS TABLE (
     ST_NAM_PositedAt datetime,
     ST_NAM_Positor tinyint,
     ST_NAM_Reliability decimal(5,2),
-    ST_NAM_Assertion string,
-     int
+    ST_NAM_Assertion string
 )
 AS
 $$
@@ -304,7 +294,7 @@ SELECT
     ST_NAM_PositedAt,
     ST_NAM_Positor,
     ST_NAM_Reliability,
-    ST_NAM_Assertion,
+    ST_NAM_Assertion
 FROM
     public.ST_NAM_Stage_Name_Annex
 WHERE
@@ -325,7 +315,6 @@ RETURNS TABLE (
     ST_NAM_Positor tinyint,
     ST_NAM_Reliability decimal(5,2),
     ST_NAM_Assertion string,
-     int,
     ST_NAM_ST_ID int,
     ST_NAM_Checksum numeric(19,0),
     ST_NAM_Stage_Name varchar(42),
@@ -340,7 +329,6 @@ SELECT
     a.ST_NAM_Positor,
     a.ST_NAM_Reliability,
     a.ST_NAM_Assertion,
-    a.,
     p.ST_NAM_ST_ID,
     p.ST_NAM_Checksum,
     p.ST_NAM_Stage_Name,
@@ -374,7 +362,6 @@ RETURNS TABLE (
     ST_NAM_Positor tinyint,
     ST_NAM_Reliability decimal(5,2),
     ST_NAM_Assertion string,
-     int,
     ST_NAM_ST_ID int,
     ST_NAM_Checksum numeric(19,0),
     ST_NAM_Stage_Name varchar(42),
@@ -389,7 +376,6 @@ SELECT
     a.ST_NAM_Positor,
     a.ST_NAM_Reliability,
     a.ST_NAM_Assertion,
-    a.,
     p.ST_NAM_ST_ID,
     p.ST_NAM_Checksum,
     p.ST_NAM_Stage_Name,
@@ -476,8 +462,7 @@ RETURNS TABLE (
     ST_LOC_PositedAt datetime,
     ST_LOC_Positor tinyint,
     ST_LOC_Reliability decimal(5,2),
-    ST_LOC_Assertion string,
-     int
+    ST_LOC_Assertion string
 )
 AS
 $$
@@ -487,7 +472,7 @@ SELECT
     ST_LOC_PositedAt,
     ST_LOC_Positor,
     ST_LOC_Reliability,
-    ST_LOC_Assertion,
+    ST_LOC_Assertion
 FROM
     public.ST_LOC_Stage_Location_Annex
 WHERE
@@ -507,7 +492,6 @@ RETURNS TABLE (
     ST_LOC_Positor tinyint,
     ST_LOC_Reliability decimal(5,2),
     ST_LOC_Assertion string,
-     int,
     ST_LOC_ST_ID int,
     ST_LOC_Checksum numeric(19,0),
     ST_LOC_Stage_Location geography
@@ -521,7 +505,6 @@ SELECT
     a.ST_LOC_Positor,
     a.ST_LOC_Reliability,
     a.ST_LOC_Assertion,
-    a.,
     p.ST_LOC_ST_ID,
     p.ST_LOC_Checksum,
     p.ST_LOC_Stage_Location
@@ -599,8 +582,7 @@ RETURNS TABLE (
     ST_AVG_PositedAt datetime,
     ST_AVG_Positor tinyint,
     ST_AVG_Reliability decimal(5,2),
-    ST_AVG_Assertion string,
-     int
+    ST_AVG_Assertion string
 )
 AS
 $$
@@ -610,7 +592,7 @@ SELECT
     ST_AVG_PositedAt,
     ST_AVG_Positor,
     ST_AVG_Reliability,
-    ST_AVG_Assertion,
+    ST_AVG_Assertion
 FROM
     public.ST_AVG_Stage_Average_Annex
 WHERE
@@ -631,7 +613,6 @@ RETURNS TABLE (
     ST_AVG_Positor tinyint,
     ST_AVG_Reliability decimal(5,2),
     ST_AVG_Assertion string,
-     int,
     ST_AVG_ST_ID int,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
@@ -645,7 +626,6 @@ SELECT
     a.ST_AVG_Positor,
     a.ST_AVG_Reliability,
     a.ST_AVG_Assertion,
-    a.,
     p.ST_AVG_ST_ID,
     p.ST_AVG_UTL_ID,
     p.ST_AVG_ChangedAt
@@ -678,7 +658,6 @@ RETURNS TABLE (
     ST_AVG_Positor tinyint,
     ST_AVG_Reliability decimal(5,2),
     ST_AVG_Assertion string,
-     int,
     ST_AVG_ST_ID int,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
@@ -692,7 +671,6 @@ SELECT
     a.ST_AVG_Positor,
     a.ST_AVG_Reliability,
     a.ST_AVG_Assertion,
-    a.,
     p.ST_AVG_ST_ID,
     p.ST_AVG_UTL_ID,
     p.ST_AVG_ChangedAt
@@ -778,8 +756,7 @@ RETURNS TABLE (
     ST_MIN_PositedAt datetime,
     ST_MIN_Positor tinyint,
     ST_MIN_Reliability decimal(5,2),
-    ST_MIN_Assertion string,
-     int
+    ST_MIN_Assertion string
 )
 AS
 $$
@@ -789,7 +766,7 @@ SELECT
     ST_MIN_PositedAt,
     ST_MIN_Positor,
     ST_MIN_Reliability,
-    ST_MIN_Assertion,
+    ST_MIN_Assertion
 FROM
     public.ST_MIN_Stage_Minimum_Annex
 WHERE
@@ -809,7 +786,6 @@ RETURNS TABLE (
     ST_MIN_Positor tinyint,
     ST_MIN_Reliability decimal(5,2),
     ST_MIN_Assertion string,
-     int,
     ST_MIN_ST_ID int,
     ST_MIN_UTL_ID tinyint 
 )
@@ -822,7 +798,6 @@ SELECT
     a.ST_MIN_Positor,
     a.ST_MIN_Reliability,
     a.ST_MIN_Assertion,
-    a.,
     p.ST_MIN_ST_ID,
     p.ST_MIN_UTL_ID
 FROM
@@ -903,8 +878,7 @@ RETURNS TABLE (
     AC_NAM_PositedAt datetime,
     AC_NAM_Positor tinyint,
     AC_NAM_Reliability decimal(5,2),
-    AC_NAM_Assertion string,
-     int
+    AC_NAM_Assertion string
 )
 AS
 $$
@@ -914,7 +888,7 @@ SELECT
     AC_NAM_PositedAt,
     AC_NAM_Positor,
     AC_NAM_Reliability,
-    AC_NAM_Assertion,
+    AC_NAM_Assertion
 FROM
     public.AC_NAM_Actor_Name_Annex
 WHERE
@@ -935,7 +909,6 @@ RETURNS TABLE (
     AC_NAM_Positor tinyint,
     AC_NAM_Reliability decimal(5,2),
     AC_NAM_Assertion string,
-     int,
     AC_NAM_AC_ID int,
     AC_NAM_Checksum numeric(19,0),
     AC_NAM_Actor_Name varchar(42),
@@ -950,7 +923,6 @@ SELECT
     a.AC_NAM_Positor,
     a.AC_NAM_Reliability,
     a.AC_NAM_Assertion,
-    a.,
     p.AC_NAM_AC_ID,
     p.AC_NAM_Checksum,
     p.AC_NAM_Actor_Name,
@@ -984,7 +956,6 @@ RETURNS TABLE (
     AC_NAM_Positor tinyint,
     AC_NAM_Reliability decimal(5,2),
     AC_NAM_Assertion string,
-     int,
     AC_NAM_AC_ID int,
     AC_NAM_Checksum numeric(19,0),
     AC_NAM_Actor_Name varchar(42),
@@ -999,7 +970,6 @@ SELECT
     a.AC_NAM_Positor,
     a.AC_NAM_Reliability,
     a.AC_NAM_Assertion,
-    a.,
     p.AC_NAM_AC_ID,
     p.AC_NAM_Checksum,
     p.AC_NAM_Actor_Name,
@@ -1086,8 +1056,7 @@ RETURNS TABLE (
     AC_GEN_PositedAt datetime,
     AC_GEN_Positor tinyint,
     AC_GEN_Reliability decimal(5,2),
-    AC_GEN_Assertion string,
-     int
+    AC_GEN_Assertion string
 )
 AS
 $$
@@ -1097,7 +1066,7 @@ SELECT
     AC_GEN_PositedAt,
     AC_GEN_Positor,
     AC_GEN_Reliability,
-    AC_GEN_Assertion,
+    AC_GEN_Assertion
 FROM
     public.AC_GEN_Actor_Gender_Annex
 WHERE
@@ -1117,7 +1086,6 @@ RETURNS TABLE (
     AC_GEN_Positor tinyint,
     AC_GEN_Reliability decimal(5,2),
     AC_GEN_Assertion string,
-     int,
     AC_GEN_AC_ID int,
     AC_GEN_GEN_ID number(1,0) 
 )
@@ -1130,7 +1098,6 @@ SELECT
     a.AC_GEN_Positor,
     a.AC_GEN_Reliability,
     a.AC_GEN_Assertion,
-    a.,
     p.AC_GEN_AC_ID,
     p.AC_GEN_GEN_ID
 FROM
@@ -1207,8 +1174,7 @@ RETURNS TABLE (
     AC_PLV_PositedAt datetime,
     AC_PLV_Positor tinyint,
     AC_PLV_Reliability decimal(5,2),
-    AC_PLV_Assertion string,
-     int
+    AC_PLV_Assertion string
 )
 AS
 $$
@@ -1218,7 +1184,7 @@ SELECT
     AC_PLV_PositedAt,
     AC_PLV_Positor,
     AC_PLV_Reliability,
-    AC_PLV_Assertion,
+    AC_PLV_Assertion
 FROM
     public.AC_PLV_Actor_ProfessionalLevel_Annex
 WHERE
@@ -1239,7 +1205,6 @@ RETURNS TABLE (
     AC_PLV_Positor tinyint,
     AC_PLV_Reliability decimal(5,2),
     AC_PLV_Assertion string,
-     int,
     AC_PLV_AC_ID int,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
@@ -1253,7 +1218,6 @@ SELECT
     a.AC_PLV_Positor,
     a.AC_PLV_Reliability,
     a.AC_PLV_Assertion,
-    a.,
     p.AC_PLV_AC_ID,
     p.AC_PLV_PLV_ID,
     p.AC_PLV_ChangedAt
@@ -1286,7 +1250,6 @@ RETURNS TABLE (
     AC_PLV_Positor tinyint,
     AC_PLV_Reliability decimal(5,2),
     AC_PLV_Assertion string,
-     int,
     AC_PLV_AC_ID int,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
@@ -1300,7 +1263,6 @@ SELECT
     a.AC_PLV_Positor,
     a.AC_PLV_Reliability,
     a.AC_PLV_Assertion,
-    a.,
     p.AC_PLV_AC_ID,
     p.AC_PLV_PLV_ID,
     p.AC_PLV_ChangedAt
@@ -1386,8 +1348,7 @@ RETURNS TABLE (
     PR_NAM_PositedAt datetime,
     PR_NAM_Positor tinyint,
     PR_NAM_Reliability decimal(5,2),
-    PR_NAM_Assertion string,
-     int
+    PR_NAM_Assertion string
 )
 AS
 $$
@@ -1397,7 +1358,7 @@ SELECT
     PR_NAM_PositedAt,
     PR_NAM_Positor,
     PR_NAM_Reliability,
-    PR_NAM_Assertion,
+    PR_NAM_Assertion
 FROM
     public.PR_NAM_Program_Name_Annex
 WHERE
@@ -1417,7 +1378,6 @@ RETURNS TABLE (
     PR_NAM_Positor tinyint,
     PR_NAM_Reliability decimal(5,2),
     PR_NAM_Assertion string,
-     int,
     PR_NAM_PR_ID int,
     PR_NAM_Program_Name varchar(42)
 )
@@ -1430,7 +1390,6 @@ SELECT
     a.PR_NAM_Positor,
     a.PR_NAM_Reliability,
     a.PR_NAM_Assertion,
-    a.,
     p.PR_NAM_PR_ID,
     p.PR_NAM_Program_Name
 FROM
@@ -1507,8 +1466,7 @@ RETURNS TABLE (
     PR_LEN_PositedAt datetime,
     PR_LEN_Positor tinyint,
     PR_LEN_Reliability decimal(5,2),
-    PR_LEN_Assertion string,
-     int
+    PR_LEN_Assertion string
 )
 AS
 $$
@@ -1518,7 +1476,7 @@ SELECT
     PR_LEN_PositedAt,
     PR_LEN_Positor,
     PR_LEN_Reliability,
-    PR_LEN_Assertion,
+    PR_LEN_Assertion
 FROM
     public.PR_LEN_Program_Length_Annex
 WHERE
@@ -1539,7 +1497,6 @@ RETURNS TABLE (
     PR_LEN_Positor tinyint,
     PR_LEN_Reliability decimal(5,2),
     PR_LEN_Assertion string,
-     int,
     PR_LEN_PR_ID int,
     PR_LEN_Program_Length time,
     PR_LEN_ChangedAt date
@@ -1553,7 +1510,6 @@ SELECT
     a.PR_LEN_Positor,
     a.PR_LEN_Reliability,
     a.PR_LEN_Assertion,
-    a.,
     p.PR_LEN_PR_ID,
     p.PR_LEN_Program_Length,
     p.PR_LEN_ChangedAt
@@ -1586,7 +1542,6 @@ RETURNS TABLE (
     PR_LEN_Positor tinyint,
     PR_LEN_Reliability decimal(5,2),
     PR_LEN_Assertion string,
-     int,
     PR_LEN_PR_ID int,
     PR_LEN_Program_Length time,
     PR_LEN_ChangedAt date
@@ -1600,7 +1555,6 @@ SELECT
     a.PR_LEN_Positor,
     a.PR_LEN_Reliability,
     a.PR_LEN_Assertion,
-    a.,
     p.PR_LEN_PR_ID,
     p.PR_LEN_Program_Length,
     p.PR_LEN_ChangedAt

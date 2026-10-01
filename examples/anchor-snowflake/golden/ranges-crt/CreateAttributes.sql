@@ -36,12 +36,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_DAT_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_DAT bigint not null,
     constraint fkEV_DAT_Event_Date_Meta foreign key (
         EV_DAT_ID
@@ -85,12 +79,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_AUD_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_AUD bigint not null,
     constraint fkEV_AUD_Event_Audience_Meta foreign key (
         EV_AUD_ID
@@ -132,12 +120,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Meta (
             when EV_REV_Confidence > 0.25 then '+'
             when EV_REV_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_REV_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_REV bigint not null,
@@ -185,12 +167,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_STA_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_STA bigint not null,
     constraint fkEV_STA_Event_Status_Meta foreign key (
         EV_STA_ID
@@ -235,12 +211,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Meta (
             when EV_UTL_Confidence > 0.25 then '+'
             when EV_UTL_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_UTL_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_UTL bigint not null,
@@ -291,12 +261,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_LVL_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_LVL bigint not null,
     constraint fkEV_LVL_Event_Level_Meta foreign key (
         EV_LVL_ID
@@ -342,12 +306,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_NAM_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_ST_NAM bigint not null,
     constraint fkST_NAM_Stage_Name_Meta foreign key (
         ST_NAM_ID
@@ -390,12 +348,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Meta (
             when ST_LOC_Confidence > 0.25 then '+'
             when ST_LOC_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_LOC_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_LOC bigint not null,
@@ -446,12 +398,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_AVG_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_ST_AVG bigint not null,
     constraint fkST_AVG_Stage_Average_Meta foreign key (
         ST_AVG_ID
@@ -496,12 +442,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Meta (
             when ST_MIN_Confidence > 0.25 then '+'
             when ST_MIN_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_MIN_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_MIN bigint not null,
@@ -549,12 +489,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_NAM_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_NAM bigint not null,
     constraint fkAC_NAM_Actor_Name_Meta foreign key (
         AC_NAM_ID
@@ -599,12 +533,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Meta (
             when AC_GEN_Confidence > 0.25 then '+'
             when AC_GEN_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_GEN_Confidence < then 0
-            else 1
         end
     ),
     Metadata_AC_GEN bigint not null,
@@ -655,12 +583,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_PLV_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_PLV bigint not null,
     constraint fkAC_PLV_Actor_ProfessionalLevel_Meta foreign key (
         AC_PLV_ID
@@ -702,12 +624,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name_Meta (
             when PR_NAM_Confidence > 0.25 then '+'
             when PR_NAM_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_NAM_Confidence < then 0
-            else 1
         end
     ),
     Metadata_PR_NAM bigint not null,
@@ -753,12 +669,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length_Meta (
             when PR_LEN_Confidence > 0.25 then '+'
             when PR_LEN_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_LEN_Confidence < then 0
-            else 1
         end
     ),
     Metadata_PR_LEN bigint not null,

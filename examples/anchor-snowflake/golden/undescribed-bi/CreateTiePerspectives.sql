@@ -34,7 +34,7 @@ SELECT
     t.ONG_ID_currently
 FROM
     TABLE(public.rAC_partner_AC_with_ONG_currently(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -49,7 +49,7 @@ AND
             sub.AC_partner_AC_with_ONG_currently_ID
         FROM
             TABLE(public.rAC_partner_AC_with_ONG_currently(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -179,7 +179,6 @@ SELECT
     t.PN_ID_of
 FROM
     TABLE(public.rAC_subset_PN_of(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -190,7 +189,6 @@ AND
             sub.AC_subset_PN_of_ID
         FROM
             TABLE(public.rAC_subset_PN_of(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -273,7 +271,6 @@ SELECT
     t.AC_ID_wasCast
 FROM
     TABLE(public.rEV_in_AC_wasCast(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -284,7 +281,6 @@ AND
             sub.EV_in_AC_wasCast_ID
         FROM
             TABLE(public.rEV_in_AC_wasCast(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -373,7 +369,7 @@ SELECT
     t.RAT_ID_got
 FROM
     TABLE(public.rAC_part_PR_in_RAT_got(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -388,7 +384,7 @@ AND
             sub.AC_part_PR_in_RAT_got_ID
         FROM
             TABLE(public.rAC_part_PR_in_RAT_got(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -518,7 +514,7 @@ SELECT
     t.PR_ID_isPlaying
 FROM
     TABLE(public.rST_at_PR_isPlaying(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -529,7 +525,7 @@ AND
             sub.ST_at_PR_isPlaying_ID
         FROM
             TABLE(public.rST_at_PR_isPlaying(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -651,7 +647,6 @@ SELECT
     t.PAT_ID_having
 FROM
     TABLE(public.rAC_parent_AC_child_PAT_having(
-        :,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -666,7 +661,6 @@ AND
             sub.AC_parent_AC_child_PAT_having_ID
         FROM
             TABLE(public.rAC_parent_AC_child_PAT_having(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -757,7 +751,6 @@ SELECT
     t.EV_ID_of
 FROM
     TABLE(public.rPR_content_ST_location_EV_of(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -768,7 +761,6 @@ AND
             sub.PR_content_ST_location_EV_of_ID
         FROM
             TABLE(public.rPR_content_ST_location_EV_of(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE

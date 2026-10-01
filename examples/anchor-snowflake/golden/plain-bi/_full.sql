@@ -1828,7 +1828,7 @@ FROM
     public.ST_Stage ST
 LEFT JOIN
     TABLE(public.rST_NAM_Stage_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -1837,7 +1837,7 @@ ON
             sub.ST_NAM_ID
         FROM
             TABLE(public.rST_NAM_Stage_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -1851,7 +1851,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rST_LOC_Stage_Location(
-        :,
         positingTimepoint::datetime
     )) LOC
 ON
@@ -1860,7 +1859,6 @@ ON
             sub.ST_LOC_ID
         FROM
             TABLE(public.rST_LOC_Stage_Location(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -1873,7 +1871,7 @@ ON
     )
 LEFT JOIN
     TABLE(public.rST_AVG_Stage_Average(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) AVG
 ON
@@ -1882,7 +1880,7 @@ ON
             sub.ST_AVG_ID
         FROM
             TABLE(public.rST_AVG_Stage_Average(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -1900,7 +1898,6 @@ ON
     kAVG.UTL_ID = AVG.UTL_ID
 LEFT JOIN
     TABLE(public.rST_MIN_Stage_Minimum(
-        :,
         positingTimepoint::datetime
     )) MIN
 ON
@@ -1909,7 +1906,6 @@ ON
             sub.ST_MIN_ID
         FROM
             TABLE(public.rST_MIN_Stage_Minimum(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2115,7 +2111,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     PLV_ID tinyint
 )
@@ -2137,14 +2133,14 @@ SELECT
     PLV.AC_PLV_ChangedAt,
     PLV.AC_PLV_PositedAt,
     PLV.AC_PLV_Reliability,
-    kPLV.PLV_Checksum AS ,
+    kPLV.PLV_Checksum AS PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     PLV.PLV_ID
 FROM
     public.AC_Actor AC
 LEFT JOIN
     TABLE(public.rAC_NAM_Actor_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -2153,7 +2149,7 @@ ON
             sub.AC_NAM_ID
         FROM
             TABLE(public.rAC_NAM_Actor_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2167,7 +2163,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rAC_GEN_Actor_Gender(
-        :,
         positingTimepoint::datetime
     )) GEN
 ON
@@ -2176,7 +2171,6 @@ ON
             sub.AC_GEN_ID
         FROM
             TABLE(public.rAC_GEN_Actor_Gender(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2193,7 +2187,7 @@ ON
     kGEN.GEN_ID = GEN.GEN_ID
 LEFT JOIN
     TABLE(public.rAC_PLV_Actor_ProfessionalLevel(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) PLV
 ON
@@ -2202,7 +2196,7 @@ ON
             sub.AC_PLV_ID
         FROM
             TABLE(public.rAC_PLV_Actor_ProfessionalLevel(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2250,7 +2244,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     PLV_ID tinyint
 )
@@ -2273,7 +2267,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.PLV_ID
 FROM
@@ -2315,7 +2309,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     PLV_ID tinyint
 )
@@ -2338,7 +2332,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.PLV_ID
 FROM (
@@ -2406,7 +2400,6 @@ FROM
     public.PR_Program PR
 LEFT JOIN
     TABLE(public.rPR_NAM_Program_Name(
-        :,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -2415,7 +2408,6 @@ ON
             sub.PR_NAM_ID
         FROM
             TABLE(public.rPR_NAM_Program_Name(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2428,7 +2420,7 @@ ON
     )
 LEFT JOIN
     TABLE(public.rPR_LEN_Program_Length(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LEN
 ON
@@ -2437,7 +2429,7 @@ ON
             sub.PR_LEN_ID
         FROM
             TABLE(public.rPR_LEN_Program_Length(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2617,7 +2609,6 @@ ON
     kETY_of.ETY_ID = EV.ETY_ID_of
 LEFT JOIN
     TABLE(public.rEV_DAT_Event_Date(
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -2626,7 +2617,6 @@ ON
             sub.EV_DAT_ID
         FROM
             TABLE(public.rEV_DAT_Event_Date(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2639,7 +2629,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rEV_AUD_Event_Audience(
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -2648,7 +2637,6 @@ ON
             sub.EV_AUD_ID
         FROM
             TABLE(public.rEV_AUD_Event_Audience(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2661,7 +2649,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rEV_REV_Event_Revenue(
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -2670,7 +2657,6 @@ ON
             sub.EV_REV_ID
         FROM
             TABLE(public.rEV_REV_Event_Revenue(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3812,7 +3798,7 @@ SELECT
     t.ONG_ID_currently
 FROM
     TABLE(public.rAC_partner_AC_with_ONG_currently(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -3827,7 +3813,7 @@ AND
             sub.AC_partner_AC_with_ONG_currently_ID
         FROM
             TABLE(public.rAC_partner_AC_with_ONG_currently(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3947,7 +3933,6 @@ SELECT
     t.PN_ID_of
 FROM
     TABLE(public.rAC_subset_PN_of(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -3958,7 +3943,6 @@ AND
             sub.AC_subset_PN_of_ID
         FROM
             TABLE(public.rAC_subset_PN_of(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -4037,7 +4021,6 @@ SELECT
     t.AC_ID_wasCast
 FROM
     TABLE(public.rEV_in_AC_wasCast(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -4048,7 +4031,6 @@ AND
             sub.EV_in_AC_wasCast_ID
         FROM
             TABLE(public.rEV_in_AC_wasCast(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -4131,7 +4113,7 @@ SELECT
     t.RAT_ID_got
 FROM
     TABLE(public.rAC_part_PR_in_RAT_got(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -4146,7 +4128,7 @@ AND
             sub.AC_part_PR_in_RAT_got_ID
         FROM
             TABLE(public.rAC_part_PR_in_RAT_got(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -4266,7 +4248,7 @@ SELECT
     t.PR_ID_isPlaying
 FROM
     TABLE(public.rST_at_PR_isPlaying(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -4277,7 +4259,7 @@ AND
             sub.ST_at_PR_isPlaying_ID
         FROM
             TABLE(public.rST_at_PR_isPlaying(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -4391,7 +4373,6 @@ SELECT
     t.PAT_ID_having
 FROM
     TABLE(public.rAC_parent_AC_child_PAT_having(
-        :,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -4406,7 +4387,6 @@ AND
             sub.AC_parent_AC_child_PAT_having_ID
         FROM
             TABLE(public.rAC_parent_AC_child_PAT_having(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -4491,7 +4471,6 @@ SELECT
     t.EV_ID_of
 FROM
     TABLE(public.rPR_content_ST_location_EV_of(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -4502,7 +4481,6 @@ AND
             sub.PR_content_ST_location_EV_of_ID
         FROM
             TABLE(public.rPR_content_ST_location_EV_of(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE

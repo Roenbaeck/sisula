@@ -8,6 +8,7 @@ CREATE SEQUENCE IF NOT EXISTS public.PAT_ParentalType_ID_SEQ START 1 INCREMENT 1
 CREATE TABLE IF NOT EXISTS public.PAT_ParentalType (
     PAT_ID tinyint default public.PAT_ParentalType_ID_SEQ.nextval not null, 
     PAT_ParentalType varchar(42) not null,
+    Metadata_PAT int not null,
     constraint pkPAT_ParentalType primary key (
         PAT_ID
     ) RELY,
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.PAT_ParentalType (
 CREATE TABLE IF NOT EXISTS public.GEN_Gender (
     GEN_ID number(1,0) not null,
     GEN_Gender varchar(42) not null,
+    Metadata_GEN int not null,
     constraint pkGEN_Gender primary key (
         GEN_ID
     ) RELY,
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.PLV_ProfessionalLevel (
     PLV_ID tinyint not null,
     PLV_ProfessionalLevel string not null,
     PLV_Checksum numeric(19,0) default hash(PLV_ProfessionalLevel),
+    Metadata_PLV int not null,
     constraint pkPLV_ProfessionalLevel primary key (
         PLV_ID
     ) RELY,
@@ -45,6 +48,7 @@ CREATE TABLE IF NOT EXISTS public.PLV_ProfessionalLevel (
 CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
     UTL_ID tinyint not null,
     UTL_Utilization tinyint not null,
+    Metadata_UTL int not null,
     constraint pkUTL_Utilization primary key (
         UTL_ID
     ) RELY,
@@ -57,6 +61,7 @@ CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
 CREATE TABLE IF NOT EXISTS public.ONG_Ongoing (
     ONG_ID tinyint not null,
     ONG_Ongoing varchar(3) not null,
+    Metadata_ONG int not null,
     constraint pkONG_Ongoing primary key (
         ONG_ID
     ) RELY,
@@ -70,6 +75,7 @@ CREATE SEQUENCE IF NOT EXISTS public.RAT_Rating_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.RAT_Rating (
     RAT_ID tinyint default public.RAT_Rating_ID_SEQ.nextval not null, 
     RAT_Rating varchar(42) not null,
+    Metadata_RAT int not null,
     constraint pkRAT_Rating primary key (
         RAT_ID
     ) RELY,
@@ -82,6 +88,7 @@ CREATE TABLE IF NOT EXISTS public.RAT_Rating (
 CREATE TABLE IF NOT EXISTS public.ETY_EventType (
     ETY_ID tinyint not null,
     ETY_EventType varchar(42) not null,
+    Metadata_ETY int not null,
     constraint pkETY_EventType primary key (
         ETY_ID
     ) RELY,

@@ -122,7 +122,6 @@ ON
     kETY_of.ETY_ID = EV.ETY_ID_of
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) DAT
 ON
@@ -131,7 +130,6 @@ ON
             sub.EV_DAT_ID
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -144,7 +142,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) AUD
 ON
@@ -153,7 +150,6 @@ ON
             sub.EV_AUD_ID
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -166,7 +162,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) REV
 ON
@@ -175,7 +170,6 @@ ON
             sub.EV_REV_ID
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -188,7 +182,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) STA
 ON
@@ -197,7 +191,7 @@ ON
             sub.EV_STA_ID
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -211,7 +205,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) UTL
 ON
@@ -220,7 +213,6 @@ ON
             sub.EV_UTL_ID
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -237,7 +229,7 @@ ON
     kUTL.UTL_ID = UTL.EV_UTL_UTL_ID
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::timestamp_ntz(3)
     )) LVL
 ON
@@ -246,7 +238,7 @@ ON
             sub.EV_LVL_ID
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE

@@ -59,8 +59,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -70,7 +69,7 @@ SELECT
     AC_partner_AC_with_ONG_currently_PositedAt,
     AC_partner_AC_with_ONG_currently_Who,
     AC_partner_AC_with_ONG_currently_Confidence,
-    AC_partner_AC_with_ONG_currently_Stance,
+    AC_partner_AC_with_ONG_currently_Stance
 FROM
     ties.AC_partner_AC_with_ONG_currently_Meta
 WHERE
@@ -92,8 +91,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -107,8 +105,7 @@ SELECT
     a.AC_partner_AC_with_ONG_currently_PositedAt,
     a.AC_partner_AC_with_ONG_currently_Who,
     a.AC_partner_AC_with_ONG_currently_Confidence,
-    a.AC_partner_AC_with_ONG_currently_Stance,
-    a.
+    a.AC_partner_AC_with_ONG_currently_Stance
 FROM
     TABLE(ties.rAC_partner_AC_with_ONG_currently_Fact(changingTimepoint)) p 
 JOIN
@@ -139,8 +136,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -154,8 +150,7 @@ SELECT
     a.AC_partner_AC_with_ONG_currently_PositedAt,
     a.AC_partner_AC_with_ONG_currently_Who,
     a.AC_partner_AC_with_ONG_currently_Confidence,
-    a.AC_partner_AC_with_ONG_currently_Stance,
-    a.
+    a.AC_partner_AC_with_ONG_currently_Stance
 FROM
     TABLE(ties.fAC_partner_AC_with_ONG_currently_Fact(changingTimepoint)) p 
 JOIN
@@ -180,8 +175,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -191,7 +185,7 @@ SELECT
     AC_subset_PN_of_PositedAt,
     AC_subset_PN_of_Who,
     AC_subset_PN_of_Confidence,
-    AC_subset_PN_of_Stance,
+    AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Meta
 WHERE
@@ -210,8 +204,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -223,8 +216,7 @@ SELECT
     a.AC_subset_PN_of_PositedAt,
     a.AC_subset_PN_of_Who,
     a.AC_subset_PN_of_Confidence,
-    a.AC_subset_PN_of_Stance,
-    a.
+    a.AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Fact p
 JOIN
@@ -252,8 +244,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -265,8 +256,7 @@ SELECT
     a.AC_subset_PN_of_PositedAt,
     a.AC_subset_PN_of_Who,
     a.AC_subset_PN_of_Confidence,
-    a.AC_subset_PN_of_Stance,
-    a.
+    a.AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Fact p
 JOIN
@@ -291,8 +281,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -302,7 +291,7 @@ SELECT
     EV_in_AC_wasCast_PositedAt,
     EV_in_AC_wasCast_Who,
     EV_in_AC_wasCast_Confidence,
-    EV_in_AC_wasCast_Stance,
+    EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Meta
 WHERE
@@ -321,8 +310,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -334,8 +322,7 @@ SELECT
     a.EV_in_AC_wasCast_PositedAt,
     a.EV_in_AC_wasCast_Who,
     a.EV_in_AC_wasCast_Confidence,
-    a.EV_in_AC_wasCast_Stance,
-    a.
+    a.EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Fact p
 JOIN
@@ -363,8 +350,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -376,8 +362,7 @@ SELECT
     a.EV_in_AC_wasCast_PositedAt,
     a.EV_in_AC_wasCast_Who,
     a.EV_in_AC_wasCast_Confidence,
-    a.EV_in_AC_wasCast_Stance,
-    a.
+    a.EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Fact p
 JOIN
@@ -450,8 +435,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -461,7 +445,7 @@ SELECT
     AC_part_PR_in_RAT_got_PositedAt,
     AC_part_PR_in_RAT_got_Who,
     AC_part_PR_in_RAT_got_Confidence,
-    AC_part_PR_in_RAT_got_Stance,
+    AC_part_PR_in_RAT_got_Stance
 FROM
     ties.AC_part_PR_in_RAT_got_Meta
 WHERE
@@ -483,8 +467,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -498,8 +481,7 @@ SELECT
     a.AC_part_PR_in_RAT_got_PositedAt,
     a.AC_part_PR_in_RAT_got_Who,
     a.AC_part_PR_in_RAT_got_Confidence,
-    a.AC_part_PR_in_RAT_got_Stance,
-    a.
+    a.AC_part_PR_in_RAT_got_Stance
 FROM
     TABLE(ties.rAC_part_PR_in_RAT_got_Fact(changingTimepoint)) p 
 JOIN
@@ -530,8 +512,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -545,8 +526,7 @@ SELECT
     a.AC_part_PR_in_RAT_got_PositedAt,
     a.AC_part_PR_in_RAT_got_Who,
     a.AC_part_PR_in_RAT_got_Confidence,
-    a.AC_part_PR_in_RAT_got_Stance,
-    a.
+    a.AC_part_PR_in_RAT_got_Stance
 FROM
     TABLE(ties.fAC_part_PR_in_RAT_got_Fact(changingTimepoint)) p 
 JOIN
@@ -615,8 +595,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -626,7 +605,7 @@ SELECT
     ST_at_PR_isPlaying_PositedAt,
     ST_at_PR_isPlaying_Who,
     ST_at_PR_isPlaying_Confidence,
-    ST_at_PR_isPlaying_Stance,
+    ST_at_PR_isPlaying_Stance
 FROM
     ties.ST_at_PR_isPlaying_Meta
 WHERE
@@ -647,8 +626,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -661,8 +639,7 @@ SELECT
     a.ST_at_PR_isPlaying_PositedAt,
     a.ST_at_PR_isPlaying_Who,
     a.ST_at_PR_isPlaying_Confidence,
-    a.ST_at_PR_isPlaying_Stance,
-    a.
+    a.ST_at_PR_isPlaying_Stance
 FROM
     TABLE(ties.rST_at_PR_isPlaying_Fact(changingTimepoint)) p 
 JOIN
@@ -692,8 +669,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -706,8 +682,7 @@ SELECT
     a.ST_at_PR_isPlaying_PositedAt,
     a.ST_at_PR_isPlaying_Who,
     a.ST_at_PR_isPlaying_Confidence,
-    a.ST_at_PR_isPlaying_Stance,
-    a.
+    a.ST_at_PR_isPlaying_Stance
 FROM
     TABLE(ties.fST_at_PR_isPlaying_Fact(changingTimepoint)) p 
 JOIN
@@ -732,8 +707,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -743,7 +717,7 @@ SELECT
     AC_parent_AC_child_PAT_having_PositedAt,
     AC_parent_AC_child_PAT_having_Who,
     AC_parent_AC_child_PAT_having_Confidence,
-    AC_parent_AC_child_PAT_having_Stance,
+    AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Meta
 WHERE
@@ -763,8 +737,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -777,8 +750,7 @@ SELECT
     a.AC_parent_AC_child_PAT_having_PositedAt,
     a.AC_parent_AC_child_PAT_having_Who,
     a.AC_parent_AC_child_PAT_having_Confidence,
-    a.AC_parent_AC_child_PAT_having_Stance,
-    a.
+    a.AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Fact p
 JOIN
@@ -807,8 +779,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -821,8 +792,7 @@ SELECT
     a.AC_parent_AC_child_PAT_having_PositedAt,
     a.AC_parent_AC_child_PAT_having_Who,
     a.AC_parent_AC_child_PAT_having_Confidence,
-    a.AC_parent_AC_child_PAT_having_Stance,
-    a.
+    a.AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Fact p
 JOIN
@@ -895,8 +865,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -906,7 +875,7 @@ SELECT
     PR_content_ST_location_EV_of_PositedAt,
     PR_content_ST_location_EV_of_Who,
     PR_content_ST_location_EV_of_Confidence,
-    PR_content_ST_location_EV_of_Stance,
+    PR_content_ST_location_EV_of_Stance
 FROM
     ties.PR_content_ST_location_EV_of_Meta
 WHERE
@@ -928,8 +897,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -943,8 +911,7 @@ SELECT
     a.PR_content_ST_location_EV_of_PositedAt,
     a.PR_content_ST_location_EV_of_Who,
     a.PR_content_ST_location_EV_of_Confidence,
-    a.PR_content_ST_location_EV_of_Stance,
-    a.
+    a.PR_content_ST_location_EV_of_Stance
 FROM
     TABLE(ties.rPR_content_ST_location_EV_of_Fact(changingTimepoint)) p 
 JOIN
@@ -975,8 +942,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -990,8 +956,7 @@ SELECT
     a.PR_content_ST_location_EV_of_PositedAt,
     a.PR_content_ST_location_EV_of_Who,
     a.PR_content_ST_location_EV_of_Confidence,
-    a.PR_content_ST_location_EV_of_Stance,
-    a.
+    a.PR_content_ST_location_EV_of_Stance
 FROM
     TABLE(ties.fPR_content_ST_location_EV_of_Fact(changingTimepoint)) p 
 JOIN

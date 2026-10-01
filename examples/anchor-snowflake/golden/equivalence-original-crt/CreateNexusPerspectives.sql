@@ -26,7 +26,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_Event_Date datetime,
     Metadata_EV_AUD int,
     EV_AUD_ID int,
@@ -34,7 +33,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_Event_Audience int,
     Metadata_EV_REV int,
     EV_REV_ID int,
@@ -42,7 +40,6 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -51,7 +48,6 @@ RETURNS TABLE (
     EV_STA_Positor tinyint,
     EV_STA_Reliability decimal(5,2),
     EV_STA_Assertion string,
-     int,
     EV_STA_Event_Status varchar(20),
     Metadata_EV_UTL int,
     EV_UTL_ID int,
@@ -59,7 +55,6 @@ RETURNS TABLE (
     EV_UTL_Positor tinyint,
     EV_UTL_Reliability decimal(5,2),
     EV_UTL_Assertion string,
-     int,
     UTL_Utilization tinyint,
     Metadata_UTL int,
     UTL_ID tinyint,
@@ -70,8 +65,7 @@ RETURNS TABLE (
     EV_LVL_Positor tinyint,
     EV_LVL_Reliability decimal(5,2),
     EV_LVL_Assertion string,
-     int,
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -93,7 +87,6 @@ SELECT
     DAT.EV_DAT_Positor,
     DAT.EV_DAT_Reliability,
     DAT.EV_DAT_Assertion,
-    DAT.,
     DAT.EV_DAT_Event_Date,
     AUD.Metadata_EV_AUD,
     AUD.EV_AUD_ID,
@@ -101,7 +94,6 @@ SELECT
     AUD.EV_AUD_Positor,
     AUD.EV_AUD_Reliability,
     AUD.EV_AUD_Assertion,
-    AUD.,
     AUD.EV_AUD_Event_Audience,
     REV.Metadata_EV_REV,
     REV.EV_REV_ID,
@@ -109,7 +101,6 @@ SELECT
     REV.EV_REV_Positor,
     REV.EV_REV_Reliability,
     REV.EV_REV_Assertion,
-    REV.,
     REV.EV_REV_Event_Revenue,
     STA.Metadata_EV_STA,
     STA.EV_STA_ID,
@@ -118,7 +109,6 @@ SELECT
     STA.EV_STA_Positor,
     STA.EV_STA_Reliability,
     STA.EV_STA_Assertion,
-    STA.,
     STA.EV_STA_Event_Status,
     UTL.Metadata_EV_UTL,
     UTL.EV_UTL_ID,
@@ -126,7 +116,6 @@ SELECT
     UTL.EV_UTL_Positor,
     UTL.EV_UTL_Reliability,
     UTL.EV_UTL_Assertion,
-    UTL.,
     kUTL.UTL_Utilization AS UTL_Utilization,
     kUTL.Metadata_UTL AS Metadata_UTL,
     UTL.UTL_ID,
@@ -137,8 +126,7 @@ SELECT
     LVL.EV_LVL_Positor,
     LVL.EV_LVL_Reliability,
     LVL.EV_LVL_Assertion,
-    LVL.,
-    kLVL.PLV_Checksum AS ,
+    kLVL.PLV_Checksum AS PLV_Checksum,
     kLVL.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     kLVL.Metadata_PLV AS Metadata_PLV,
     LVL.PLV_ID
@@ -151,7 +139,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
         positor,
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -161,7 +148,6 @@ ON
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -175,7 +161,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
         positor,
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -185,7 +170,6 @@ ON
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -199,7 +183,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
         positor,
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -209,7 +192,6 @@ ON
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -223,7 +205,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) STA
 ON
@@ -233,7 +215,7 @@ ON
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -248,7 +230,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
         positor,
-        :,
         positingTimepoint::datetime
     )) UTL
 ON
@@ -258,7 +239,6 @@ ON
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -276,7 +256,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
         positor,
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LVL
 ON
@@ -286,7 +266,7 @@ ON
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
                 positor,
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -309,7 +289,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.lEV_Event AS
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
     dw._Positor p
@@ -343,7 +323,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_Event_Date datetime,
     Metadata_EV_AUD int,
     EV_AUD_ID int,
@@ -351,7 +330,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_Event_Audience int,
     Metadata_EV_REV int,
     EV_REV_ID int,
@@ -359,7 +337,6 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -368,7 +345,6 @@ RETURNS TABLE (
     EV_STA_Positor tinyint,
     EV_STA_Reliability decimal(5,2),
     EV_STA_Assertion string,
-     int,
     EV_STA_Event_Status varchar(20),
     Metadata_EV_UTL int,
     EV_UTL_ID int,
@@ -376,7 +352,6 @@ RETURNS TABLE (
     EV_UTL_Positor tinyint,
     EV_UTL_Reliability decimal(5,2),
     EV_UTL_Assertion string,
-     int,
     UTL_Utilization tinyint,
     Metadata_UTL int,
     UTL_ID tinyint,
@@ -387,8 +362,7 @@ RETURNS TABLE (
     EV_LVL_Positor tinyint,
     EV_LVL_Reliability decimal(5,2),
     EV_LVL_Assertion string,
-     int,
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -397,7 +371,7 @@ AS
 $$
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.EV_ID,
     EV.Metadata_EV,
     EV.ST_ID_wasHeldAt,
@@ -412,7 +386,6 @@ SELECT
     EV.EV_DAT_Positor,
     EV.EV_DAT_Reliability,
     EV.EV_DAT_Assertion,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.Metadata_EV_AUD,
     EV.EV_AUD_ID,
@@ -420,7 +393,6 @@ SELECT
     EV.EV_AUD_Positor,
     EV.EV_AUD_Reliability,
     EV.EV_AUD_Assertion,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.Metadata_EV_REV,
     EV.EV_REV_ID,
@@ -428,7 +400,6 @@ SELECT
     EV.EV_REV_Positor,
     EV.EV_REV_Reliability,
     EV.EV_REV_Assertion,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.Metadata_EV_STA,
     EV.EV_STA_ID,
@@ -437,7 +408,6 @@ SELECT
     EV.EV_STA_Positor,
     EV.EV_STA_Reliability,
     EV.EV_STA_Assertion,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.Metadata_EV_UTL,
     EV.EV_UTL_ID,
@@ -445,7 +415,6 @@ SELECT
     EV.EV_UTL_Positor,
     EV.EV_UTL_Reliability,
     EV.EV_UTL_Assertion,
-    EV.,
     EV.UTL_Utilization,
     EV.Metadata_UTL,
     EV.UTL_ID,
@@ -456,8 +425,7 @@ SELECT
     EV.EV_LVL_Positor,
     EV.EV_LVL_Reliability,
     EV.EV_LVL_Assertion,
-    EV.,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID
@@ -477,7 +445,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.nEV_Event AS
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
     dw._Positor p
@@ -513,7 +481,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_Event_Date datetime,
     Metadata_EV_AUD int,
     EV_AUD_ID int,
@@ -521,7 +488,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_Event_Audience int,
     Metadata_EV_REV int,
     EV_REV_ID int,
@@ -529,7 +495,6 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -538,7 +503,6 @@ RETURNS TABLE (
     EV_STA_Positor tinyint,
     EV_STA_Reliability decimal(5,2),
     EV_STA_Assertion string,
-     int,
     EV_STA_Event_Status varchar(20),
     Metadata_EV_UTL int,
     EV_UTL_ID int,
@@ -546,7 +510,6 @@ RETURNS TABLE (
     EV_UTL_Positor tinyint,
     EV_UTL_Reliability decimal(5,2),
     EV_UTL_Assertion string,
-     int,
     UTL_Utilization tinyint,
     Metadata_UTL int,
     UTL_ID tinyint,
@@ -557,8 +520,7 @@ RETURNS TABLE (
     EV_LVL_Positor tinyint,
     EV_LVL_Reliability decimal(5,2),
     EV_LVL_Assertion string,
-     int,
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -582,7 +544,6 @@ SELECT
     EV.EV_DAT_Positor,
     EV.EV_DAT_Reliability,
     EV.EV_DAT_Assertion,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.Metadata_EV_AUD,
     EV.EV_AUD_ID,
@@ -590,7 +551,6 @@ SELECT
     EV.EV_AUD_Positor,
     EV.EV_AUD_Reliability,
     EV.EV_AUD_Assertion,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.Metadata_EV_REV,
     EV.EV_REV_ID,
@@ -598,7 +558,6 @@ SELECT
     EV.EV_REV_Positor,
     EV.EV_REV_Reliability,
     EV.EV_REV_Assertion,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.Metadata_EV_STA,
     EV.EV_STA_ID,
@@ -607,7 +566,6 @@ SELECT
     EV.EV_STA_Positor,
     EV.EV_STA_Reliability,
     EV.EV_STA_Assertion,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.Metadata_EV_UTL,
     EV.EV_UTL_ID,
@@ -615,7 +573,6 @@ SELECT
     EV.EV_UTL_Positor,
     EV.EV_UTL_Reliability,
     EV.EV_UTL_Assertion,
-    EV.,
     EV.UTL_Utilization,
     EV.Metadata_UTL,
     EV.UTL_ID,
@@ -626,8 +583,7 @@ SELECT
     EV.EV_LVL_Positor,
     EV.EV_LVL_Reliability,
     EV.EV_LVL_Assertion,
-    EV.,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID

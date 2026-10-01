@@ -237,7 +237,7 @@ CREATE OR REPLACE VIEW public.lAC_Actor (
     GEN_Gender COMMENT 'Gender of the actor.',
     GEN_ID COMMENT 'Gender of the actor.',
     AC_PLV_ChangedAt,
-    ,
+    PLV_Checksum,
     PLV_ProfessionalLevel COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     PLV_ID COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
 ) COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
@@ -249,7 +249,7 @@ SELECT
     kGEN.GEN_Gender AS GEN_Gender,
     GEN.GEN_ID,
     PLV.AC_PLV_ChangedAt,
-    kPLV.PLV_Checksum AS ,
+    kPLV.PLV_Checksum AS PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     PLV.PLV_ID
 FROM
@@ -304,7 +304,7 @@ RETURNS TABLE (
     GEN_Gender varchar(42),
     GEN_ID number(1,0),
     AC_PLV_ChangedAt datetime,
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     PLV_ID tinyint
 )
@@ -317,7 +317,7 @@ SELECT
     kGEN.GEN_Gender AS GEN_Gender,
     GEN.GEN_ID,
     PLV.AC_PLV_ChangedAt,
-    kPLV.PLV_Checksum AS ,
+    kPLV.PLV_Checksum AS PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     PLV.PLV_ID
 FROM
@@ -387,7 +387,7 @@ RETURNS TABLE (
     GEN_Gender varchar(42),
     GEN_ID number(1,0),
     AC_PLV_ChangedAt datetime,
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     PLV_ID tinyint
 )
@@ -402,7 +402,7 @@ SELECT DISTINCT
     pAC.GEN_Gender,
     pAC.GEN_ID,
     pAC.AC_PLV_ChangedAt,
-    pAC.,
+    pAC.PLV_Checksum,
     pAC.PLV_ProfessionalLevel,
     pAC.PLV_ID
 FROM
@@ -424,7 +424,7 @@ SELECT DISTINCT
     pAC.GEN_Gender,
     pAC.GEN_ID,
     pAC.AC_PLV_ChangedAt,
-    pAC.,
+    pAC.PLV_Checksum,
     pAC.PLV_ProfessionalLevel,
     pAC.PLV_ID
 FROM

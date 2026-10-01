@@ -49,7 +49,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -98,7 +98,7 @@ SELECT
     LVL.EV_LVL_ChangedAt,
     LVL.EV_LVL_PositedAt,
     LVL.EV_LVL_Reliability,
-    kLVL.PLV_Checksum AS ,
+    kLVL.PLV_Checksum AS PLV_Checksum,
     kLVL.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     kLVL.Metadata_PLV AS Metadata_PLV,
     LVL.PLV_ID
@@ -110,7 +110,6 @@ ON
     kETY_of.ETY_ID = EV.ETY_ID_of
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -119,7 +118,6 @@ ON
             sub.EV_DAT_ID
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -132,7 +130,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -141,7 +138,6 @@ ON
             sub.EV_AUD_ID
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -154,7 +150,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -163,7 +158,6 @@ ON
             sub.EV_REV_ID
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -176,7 +170,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) STA
 ON
@@ -185,7 +179,7 @@ ON
             sub.EV_STA_ID
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -199,7 +193,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
-        :,
         positingTimepoint::datetime
     )) UTL
 ON
@@ -208,7 +201,6 @@ ON
             sub.EV_UTL_ID
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -225,7 +217,7 @@ ON
     kUTL.UTL_ID = UTL.UTL_ID
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LVL
 ON
@@ -234,7 +226,7 @@ ON
             sub.EV_LVL_ID
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -308,7 +300,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -358,7 +350,7 @@ SELECT
     EV.EV_LVL_ChangedAt,
     EV.EV_LVL_PositedAt,
     EV.EV_LVL_Reliability,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID
@@ -427,7 +419,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -477,7 +469,7 @@ SELECT
     EV.EV_LVL_ChangedAt,
     EV.EV_LVL_PositedAt,
     EV.EV_LVL_Reliability,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID

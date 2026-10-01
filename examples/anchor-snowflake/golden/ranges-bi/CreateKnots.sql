@@ -7,6 +7,7 @@
 CREATE TABLE IF NOT EXISTS knots.PAT_ParentalType (
     PAT_ID tinyint not null,
     PAT_ParentalType varchar(42) not null,
+    Metadata_PAT bigint not null,
     constraint pkPAT_ParentalType primary key (
         PAT_ID
     ) RELY,
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS knots.GEN_Gender (
     GEN_ID number(1,0) not null,
     GEN_Gender varchar(42) not null,
     GEN_Checksum numeric(19,0) default hash(GEN_Gender),
+    Metadata_GEN bigint not null,
     constraint pkGEN_Gender primary key (
         GEN_ID
     ) RELY,
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS knots.PLV_ProfessionalLevel (
     PLV_ID tinyint not null,
     PLV_ProfessionalLevel string not null,
     PLV_Checksum numeric(19,0) default hash(PLV_ProfessionalLevel),
+    Metadata_PLV bigint not null,
     constraint pkPLV_ProfessionalLevel primary key (
         PLV_ID
     ) RELY,
@@ -45,6 +48,7 @@ CREATE TABLE IF NOT EXISTS knots.PLV_ProfessionalLevel (
 CREATE TABLE IF NOT EXISTS knots.UTL_Utilization (
     UTL_ID tinyint not null,
     UTL_Utilization tinyint not null,
+    Metadata_UTL bigint not null,
     constraint pkUTL_Utilization primary key (
         UTL_ID
     ) RELY,
@@ -57,6 +61,7 @@ CREATE TABLE IF NOT EXISTS knots.UTL_Utilization (
 CREATE TABLE IF NOT EXISTS knots.ONG_Ongoing (
     ONG_ID tinyint not null,
     ONG_Ongoing varchar(3) not null,
+    Metadata_ONG bigint not null,
     constraint pkONG_Ongoing primary key (
         ONG_ID
     ) RELY,
@@ -71,6 +76,7 @@ CREATE TABLE IF NOT EXISTS knots.RAT_Rating (
     RAT_ID tinyint default knots.RAT_Rating_ID_SEQ.nextval not null, 
     RAT_Rating varchar(42) not null,
     RAT_Checksum numeric(19,0) default hash(RAT_Rating),
+    Metadata_RAT bigint not null,
     constraint pkRAT_Rating primary key (
         RAT_ID
     ) RELY,
@@ -84,6 +90,7 @@ CREATE TABLE IF NOT EXISTS knots.ETY_EventType (
     ETY_ID tinyint not null,
     ETY_EventType varchar(42) not null,
     ETY_Checksum numeric(19,0) default hash(ETY_EventType),
+    Metadata_ETY bigint not null,
     constraint pkETY_EventType primary key (
         ETY_ID
     ) RELY,

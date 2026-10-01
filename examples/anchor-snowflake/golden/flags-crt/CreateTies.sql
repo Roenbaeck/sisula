@@ -49,12 +49,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_partner_AC_with_ONG_currently_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_AC_partner_AC_with_ONG_currently int not null,
     constraint fkAC_partner_AC_with_ONG_currently_Annex foreign key (
         AC_partner_AC_with_ONG_currently_ID
@@ -102,12 +96,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_subset_PN_of_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_AC_subset_PN_of int not null,
     constraint fkAC_subset_PN_of_Annex foreign key (
         AC_subset_PN_of_ID
@@ -149,12 +137,6 @@ CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Annex (
             when EV_in_AC_wasCast_Reliability > 0 then '+'
             when EV_in_AC_wasCast_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_in_AC_wasCast_Reliability < then 0
-            else 1
         end
     ),
     Metadata_EV_in_AC_wasCast int not null,
@@ -208,12 +190,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_part_PR_in_RAT_got_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_AC_part_PR_in_RAT_got int not null,
     constraint fkAC_part_PR_in_RAT_got_Annex foreign key (
         AC_part_PR_in_RAT_got_ID
@@ -258,12 +234,6 @@ CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Annex (
             when ST_at_PR_isPlaying_Reliability > 0 then '+'
             when ST_at_PR_isPlaying_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_at_PR_isPlaying_Reliability < then 0
-            else 1
         end
     ),
     Metadata_ST_at_PR_isPlaying int not null,
@@ -313,12 +283,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Annex (
             when AC_parent_AC_child_PAT_having_Reliability > 0 then '+'
             when AC_parent_AC_child_PAT_having_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_parent_AC_child_PAT_having_Reliability < then 0
-            else 1
         end
     ),
     Metadata_AC_parent_AC_child_PAT_having int not null,
@@ -376,12 +340,6 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Annex (
             when PR_content_ST_location_EV_of_Reliability > 0 then '+'
             when PR_content_ST_location_EV_of_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_content_ST_location_EV_of_Reliability < then 0
-            else 1
         end
     ),
     Metadata_PR_content_ST_location_EV_of int not null,

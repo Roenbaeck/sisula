@@ -36,12 +36,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_DAT_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_EV_DAT int not null,
     constraint fkEV_DAT_Event_Date_Annex foreign key (
         EV_DAT_ID
@@ -85,12 +79,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_AUD_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_EV_AUD int not null,
     constraint fkEV_AUD_Event_Audience_Annex foreign key (
         EV_AUD_ID
@@ -132,12 +120,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Annex (
             when EV_REV_Reliability > 0 then '+'
             when EV_REV_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_REV_Reliability < then 0
-            else 1
         end
     ),
     Metadata_EV_REV int not null,
@@ -185,12 +167,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_STA_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_EV_STA int not null,
     constraint fkEV_STA_Event_Status_Annex foreign key (
         EV_STA_ID
@@ -235,12 +211,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Annex (
             when EV_UTL_Reliability > 0 then '+'
             when EV_UTL_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_UTL_Reliability < then 0
-            else 1
         end
     ),
     Metadata_EV_UTL int not null,
@@ -291,12 +261,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_LVL_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_EV_LVL int not null,
     constraint fkEV_LVL_Event_Level_Annex foreign key (
         EV_LVL_ID
@@ -342,12 +306,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_NAM_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_ST_NAM int not null,
     constraint fkST_NAM_Stage_Name_Annex foreign key (
         ST_NAM_ID
@@ -390,12 +348,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Annex (
             when ST_LOC_Reliability > 0 then '+'
             when ST_LOC_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_LOC_Reliability < then 0
-            else 1
         end
     ),
     Metadata_ST_LOC int not null,
@@ -446,12 +398,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_AVG_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_ST_AVG int not null,
     constraint fkST_AVG_Stage_Average_Annex foreign key (
         ST_AVG_ID
@@ -496,12 +442,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Annex (
             when ST_MIN_Reliability > 0 then '+'
             when ST_MIN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_MIN_Reliability < then 0
-            else 1
         end
     ),
     Metadata_ST_MIN int not null,
@@ -549,12 +489,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_NAM_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_AC_NAM int not null,
     constraint fkAC_NAM_Actor_Name_Annex foreign key (
         AC_NAM_ID
@@ -599,12 +533,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Annex (
             when AC_GEN_Reliability > 0 then '+'
             when AC_GEN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_GEN_Reliability < then 0
-            else 1
         end
     ),
     Metadata_AC_GEN int not null,
@@ -655,12 +583,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_PLV_Reliability < then 0
-            else 1
-        end
-    ),
     Metadata_AC_PLV int not null,
     constraint fkAC_PLV_Actor_ProfessionalLevel_Annex foreign key (
         AC_PLV_ID
@@ -702,12 +624,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name_Annex (
             when PR_NAM_Reliability > 0 then '+'
             when PR_NAM_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_NAM_Reliability < then 0
-            else 1
         end
     ),
     Metadata_PR_NAM int not null,
@@ -753,12 +669,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length_Annex (
             when PR_LEN_Reliability > 0 then '+'
             when PR_LEN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_LEN_Reliability < then 0
-            else 1
         end
     ),
     Metadata_PR_LEN int not null,

@@ -26,7 +26,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID int,
     Metadata_EV_AUD int,
@@ -35,7 +34,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID int,
     Metadata_EV_REV int,
@@ -44,7 +42,6 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_Event_Revenue number(19,4)
 )
 AS
@@ -64,7 +61,6 @@ SELECT
     DAT.EV_DAT_Positor,
     DAT.EV_DAT_Reliability,
     DAT.EV_DAT_Assertion,
-    DAT.,
     DAT.EV_DAT_Event_Date,
     AUD.EV_AUD_EV_ID,
     AUD.Metadata_EV_AUD,
@@ -73,7 +69,6 @@ SELECT
     AUD.EV_AUD_Positor,
     AUD.EV_AUD_Reliability,
     AUD.EV_AUD_Assertion,
-    AUD.,
     AUD.EV_AUD_Event_Audience,
     REV.EV_REV_EV_ID,
     REV.Metadata_EV_REV,
@@ -82,7 +77,6 @@ SELECT
     REV.EV_REV_Positor,
     REV.EV_REV_Reliability,
     REV.EV_REV_Assertion,
-    REV.,
     REV.EV_REV_Event_Revenue
 FROM
     public.EV_Event EV
@@ -93,7 +87,6 @@ ON
 LEFT JOIN
     TABLE(public.rEV_DAT_Event_Date(
         positor,
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -103,7 +96,6 @@ ON
         FROM
             TABLE(public.rEV_DAT_Event_Date(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -117,7 +109,6 @@ ON
 LEFT JOIN
     TABLE(public.rEV_AUD_Event_Audience(
         positor,
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -127,7 +118,6 @@ ON
         FROM
             TABLE(public.rEV_AUD_Event_Audience(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -141,7 +131,6 @@ ON
 LEFT JOIN
     TABLE(public.rEV_REV_Event_Revenue(
         positor,
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -151,7 +140,6 @@ ON
         FROM
             TABLE(public.rEV_REV_Event_Revenue(
                 positor,
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -169,7 +157,7 @@ $$
 CREATE OR REPLACE VIEW public.lEV_Event AS
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
     public._Positor p
@@ -203,7 +191,6 @@ RETURNS TABLE (
     EV_DAT_Positor tinyint,
     EV_DAT_Reliability decimal(5,2),
     EV_DAT_Assertion string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID int,
     Metadata_EV_AUD int,
@@ -212,7 +199,6 @@ RETURNS TABLE (
     EV_AUD_Positor tinyint,
     EV_AUD_Reliability decimal(5,2),
     EV_AUD_Assertion string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID int,
     Metadata_EV_REV int,
@@ -221,14 +207,13 @@ RETURNS TABLE (
     EV_REV_Positor tinyint,
     EV_REV_Reliability decimal(5,2),
     EV_REV_Assertion string,
-     int,
     EV_REV_Event_Revenue number(19,4)
 )
 AS
 $$
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.EV_ID,
     EV.Metadata_EV,
     EV.ST_ID_wasHeldAt,
@@ -243,7 +228,6 @@ SELECT
     EV.EV_DAT_Positor,
     EV.EV_DAT_Reliability,
     EV.EV_DAT_Assertion,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.EV_AUD_EV_ID,
     EV.Metadata_EV_AUD,
@@ -252,7 +236,6 @@ SELECT
     EV.EV_AUD_Positor,
     EV.EV_AUD_Reliability,
     EV.EV_AUD_Assertion,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.EV_REV_EV_ID,
     EV.Metadata_EV_REV,
@@ -261,7 +244,6 @@ SELECT
     EV.EV_REV_Positor,
     EV.EV_REV_Reliability,
     EV.EV_REV_Assertion,
-    EV.,
     EV.EV_REV_Event_Revenue
 FROM
     public._Positor p
@@ -279,7 +261,7 @@ $$
 CREATE OR REPLACE VIEW public.nEV_Event AS
 SELECT
     p.Positor,
-     AS Reliability,
+    cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
     public._Positor p

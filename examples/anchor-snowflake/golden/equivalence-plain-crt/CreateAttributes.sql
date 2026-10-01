@@ -36,12 +36,6 @@ CREATE TABLE IF NOT EXISTS public.EV_DAT_Event_Date_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_DAT_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkEV_DAT_Event_Date_Annex foreign key (
         EV_DAT_ID
     ) references public.EV_DAT_Event_Date_Posit(EV_DAT_ID) RELY,
@@ -84,12 +78,6 @@ CREATE TABLE IF NOT EXISTS public.EV_AUD_Event_Audience_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_AUD_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkEV_AUD_Event_Audience_Annex foreign key (
         EV_AUD_ID
     ) references public.EV_AUD_Event_Audience_Posit(EV_AUD_ID) RELY,
@@ -130,12 +118,6 @@ CREATE TABLE IF NOT EXISTS public.EV_REV_Event_Revenue_Annex (
             when EV_REV_Reliability > 0 then '+'
             when EV_REV_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_REV_Reliability < then 0
-            else 1
         end
     ),
     constraint fkEV_REV_Event_Revenue_Annex foreign key (
@@ -183,12 +165,6 @@ CREATE TABLE IF NOT EXISTS public.ST_NAM_Stage_Name_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_NAM_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkST_NAM_Stage_Name_Annex foreign key (
         ST_NAM_ID
     ) references public.ST_NAM_Stage_Name_Posit(ST_NAM_ID) RELY,
@@ -230,12 +206,6 @@ CREATE TABLE IF NOT EXISTS public.ST_LOC_Stage_Location_Annex (
             when ST_LOC_Reliability > 0 then '+'
             when ST_LOC_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_LOC_Reliability < then 0
-            else 1
         end
     ),
     constraint fkST_LOC_Stage_Location_Annex foreign key (
@@ -285,12 +255,6 @@ CREATE TABLE IF NOT EXISTS public.ST_AVG_Stage_Average_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_AVG_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkST_AVG_Stage_Average_Annex foreign key (
         ST_AVG_ID
     ) references public.ST_AVG_Stage_Average_Posit(ST_AVG_ID) RELY,
@@ -334,12 +298,6 @@ CREATE TABLE IF NOT EXISTS public.ST_MIN_Stage_Minimum_Annex (
             when ST_MIN_Reliability > 0 then '+'
             when ST_MIN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_MIN_Reliability < then 0
-            else 1
         end
     ),
     constraint fkST_MIN_Stage_Minimum_Annex foreign key (
@@ -387,12 +345,6 @@ CREATE TABLE IF NOT EXISTS public.AC_NAM_Actor_Name_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_NAM_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_NAM_Actor_Name_Annex foreign key (
         AC_NAM_ID
     ) references public.AC_NAM_Actor_Name_Posit(AC_NAM_ID) RELY,
@@ -436,12 +388,6 @@ CREATE TABLE IF NOT EXISTS public.AC_GEN_Actor_Gender_Annex (
             when AC_GEN_Reliability > 0 then '+'
             when AC_GEN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_GEN_Reliability < then 0
-            else 1
         end
     ),
     constraint fkAC_GEN_Actor_Gender_Annex foreign key (
@@ -491,12 +437,6 @@ CREATE TABLE IF NOT EXISTS public.AC_PLV_Actor_ProfessionalLevel_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_PLV_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_PLV_Actor_ProfessionalLevel_Annex foreign key (
         AC_PLV_ID
     ) references public.AC_PLV_Actor_ProfessionalLevel_Posit(AC_PLV_ID) RELY,
@@ -537,12 +477,6 @@ CREATE TABLE IF NOT EXISTS public.PR_NAM_Program_Name_Annex (
             when PR_NAM_Reliability > 0 then '+'
             when PR_NAM_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_NAM_Reliability < then 0
-            else 1
         end
     ),
     constraint fkPR_NAM_Program_Name_Annex foreign key (
@@ -587,12 +521,6 @@ CREATE TABLE IF NOT EXISTS public.PR_LEN_Program_Length_Annex (
             when PR_LEN_Reliability > 0 then '+'
             when PR_LEN_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_LEN_Reliability < then 0
-            else 1
         end
     ),
     constraint fkPR_LEN_Program_Length_Annex foreign key (

@@ -49,12 +49,6 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_partner_AC_with_ONG_currently_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_partner_AC_with_ONG_currently_Annex foreign key (
         AC_partner_AC_with_ONG_currently_ID
     ) references public.AC_partner_AC_with_ONG_currently_Posit(AC_partner_AC_with_ONG_currently_ID) RELY,
@@ -101,12 +95,6 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_subset_PN_of_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_subset_PN_of_Annex foreign key (
         AC_subset_PN_of_ID
     ) references public.AC_subset_PN_of_Posit(AC_subset_PN_of_ID) RELY,
@@ -147,12 +135,6 @@ CREATE TABLE IF NOT EXISTS public.EV_in_AC_wasCast_Annex (
             when EV_in_AC_wasCast_Reliability > 0 then '+'
             when EV_in_AC_wasCast_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_in_AC_wasCast_Reliability < then 0
-            else 1
         end
     ),
     constraint fkEV_in_AC_wasCast_Annex foreign key (
@@ -205,12 +187,6 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_part_PR_in_RAT_got_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_part_PR_in_RAT_got_Annex foreign key (
         AC_part_PR_in_RAT_got_ID
     ) references public.AC_part_PR_in_RAT_got_Posit(AC_part_PR_in_RAT_got_ID) RELY,
@@ -254,12 +230,6 @@ CREATE TABLE IF NOT EXISTS public.ST_at_PR_isPlaying_Annex (
             when ST_at_PR_isPlaying_Reliability > 0 then '+'
             when ST_at_PR_isPlaying_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_at_PR_isPlaying_Reliability < then 0
-            else 1
         end
     ),
     constraint fkST_at_PR_isPlaying_Annex foreign key (
@@ -310,12 +280,6 @@ CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Annex (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_parent_AC_child_PAT_having_Reliability < then 0
-            else 1
-        end
-    ),
     constraint fkAC_parent_AC_child_PAT_having_Annex foreign key (
         AC_parent_AC_child_PAT_having_ID
     ) references public.AC_parent_AC_child_PAT_having_Posit(AC_parent_AC_child_PAT_having_ID) RELY,
@@ -360,12 +324,6 @@ CREATE TABLE IF NOT EXISTS public.PR_content_ST_location_EV_of_Annex (
             when PR_content_ST_location_EV_of_Reliability > 0 then '+'
             when PR_content_ST_location_EV_of_Reliability = 0 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_content_ST_location_EV_of_Reliability < then 0
-            else 1
         end
     ),
     constraint fkPR_content_ST_location_EV_of_Annex foreign key (

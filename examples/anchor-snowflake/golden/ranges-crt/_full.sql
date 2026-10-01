@@ -245,12 +245,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_DAT_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_DAT bigint not null,
     constraint fkEV_DAT_Event_Date_Meta foreign key (
         EV_DAT_ID
@@ -294,12 +288,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_AUD_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_AUD bigint not null,
     constraint fkEV_AUD_Event_Audience_Meta foreign key (
         EV_AUD_ID
@@ -341,12 +329,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Meta (
             when EV_REV_Confidence > 0.25 then '+'
             when EV_REV_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_REV_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_REV bigint not null,
@@ -394,12 +376,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_STA_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_STA bigint not null,
     constraint fkEV_STA_Event_Status_Meta foreign key (
         EV_STA_ID
@@ -444,12 +420,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Meta (
             when EV_UTL_Confidence > 0.25 then '+'
             when EV_UTL_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_UTL_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_UTL bigint not null,
@@ -500,12 +470,6 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when EV_LVL_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_EV_LVL bigint not null,
     constraint fkEV_LVL_Event_Level_Meta foreign key (
         EV_LVL_ID
@@ -551,12 +515,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_NAM_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_ST_NAM bigint not null,
     constraint fkST_NAM_Stage_Name_Meta foreign key (
         ST_NAM_ID
@@ -599,12 +557,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Meta (
             when ST_LOC_Confidence > 0.25 then '+'
             when ST_LOC_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_LOC_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_LOC bigint not null,
@@ -655,12 +607,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when ST_AVG_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_ST_AVG bigint not null,
     constraint fkST_AVG_Stage_Average_Meta foreign key (
         ST_AVG_ID
@@ -705,12 +651,6 @@ CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Meta (
             when ST_MIN_Confidence > 0.25 then '+'
             when ST_MIN_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_MIN_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_MIN bigint not null,
@@ -758,12 +698,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_NAM_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_NAM bigint not null,
     constraint fkAC_NAM_Actor_Name_Meta foreign key (
         AC_NAM_ID
@@ -808,12 +742,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Meta (
             when AC_GEN_Confidence > 0.25 then '+'
             when AC_GEN_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_GEN_Confidence < then 0
-            else 1
         end
     ),
     Metadata_AC_GEN bigint not null,
@@ -864,12 +792,6 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_PLV_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_PLV bigint not null,
     constraint fkAC_PLV_Actor_ProfessionalLevel_Meta foreign key (
         AC_PLV_ID
@@ -911,12 +833,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name_Meta (
             when PR_NAM_Confidence > 0.25 then '+'
             when PR_NAM_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_NAM_Confidence < then 0
-            else 1
         end
     ),
     Metadata_PR_NAM bigint not null,
@@ -964,12 +880,6 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when PR_LEN_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_PR_LEN bigint not null,
     constraint fkPR_LEN_Program_Length_Meta foreign key (
         PR_LEN_ID
@@ -1004,8 +914,7 @@ RETURNS TABLE (
     EV_DAT_PositedAt timestamp_ntz(3),
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
-    EV_DAT_Stance string,
-     int
+    EV_DAT_Stance string
 )
 AS
 $$
@@ -1015,7 +924,7 @@ SELECT
     EV_DAT_PositedAt,
     EV_DAT_Who,
     EV_DAT_Confidence,
-    EV_DAT_Stance,
+    EV_DAT_Stance
 FROM
     attributes.EV_DAT_Event_Date_Meta
 WHERE
@@ -1035,7 +944,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_EV_ID numeric(12,0),
     EV_DAT_Event_Date datetime
 )
@@ -1048,7 +956,6 @@ SELECT
     a.EV_DAT_Who,
     a.EV_DAT_Confidence,
     a.EV_DAT_Stance,
-    a.,
     p.EV_DAT_EV_ID,
     p.EV_DAT_Event_Date
 FROM
@@ -1077,8 +984,7 @@ RETURNS TABLE (
     EV_AUD_PositedAt timestamp_ntz(3),
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
-    EV_AUD_Stance string,
-     int
+    EV_AUD_Stance string
 )
 AS
 $$
@@ -1088,7 +994,7 @@ SELECT
     EV_AUD_PositedAt,
     EV_AUD_Who,
     EV_AUD_Confidence,
-    EV_AUD_Stance,
+    EV_AUD_Stance
 FROM
     attributes.EV_AUD_Event_Audience_Meta
 WHERE
@@ -1108,7 +1014,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_EV_ID numeric(12,0),
     EV_AUD_Event_Audience int
 )
@@ -1121,7 +1026,6 @@ SELECT
     a.EV_AUD_Who,
     a.EV_AUD_Confidence,
     a.EV_AUD_Stance,
-    a.,
     p.EV_AUD_EV_ID,
     p.EV_AUD_Event_Audience
 FROM
@@ -1150,8 +1054,7 @@ RETURNS TABLE (
     EV_REV_PositedAt timestamp_ntz(3),
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
-    EV_REV_Stance string,
-     int
+    EV_REV_Stance string
 )
 AS
 $$
@@ -1161,7 +1064,7 @@ SELECT
     EV_REV_PositedAt,
     EV_REV_Who,
     EV_REV_Confidence,
-    EV_REV_Stance,
+    EV_REV_Stance
 FROM
     attributes.EV_REV_Event_Revenue_Meta
 WHERE
@@ -1181,7 +1084,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_EV_ID numeric(12,0),
     EV_REV_Event_Revenue number(19,4)
 )
@@ -1194,7 +1096,6 @@ SELECT
     a.EV_REV_Who,
     a.EV_REV_Confidence,
     a.EV_REV_Stance,
-    a.,
     p.EV_REV_EV_ID,
     p.EV_REV_Event_Revenue
 FROM
@@ -1271,8 +1172,7 @@ RETURNS TABLE (
     EV_STA_PositedAt timestamp_ntz(3),
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
-    EV_STA_Stance string,
-     int
+    EV_STA_Stance string
 )
 AS
 $$
@@ -1282,7 +1182,7 @@ SELECT
     EV_STA_PositedAt,
     EV_STA_Who,
     EV_STA_Confidence,
-    EV_STA_Stance,
+    EV_STA_Stance
 FROM
     attributes.EV_STA_Event_Status_Meta
 WHERE
@@ -1303,7 +1203,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_EV_ID numeric(12,0),
     EV_STA_Event_Status varchar(20),
     EV_STA_ChangedAt datetime
@@ -1317,7 +1216,6 @@ SELECT
     a.EV_STA_Who,
     a.EV_STA_Confidence,
     a.EV_STA_Stance,
-    a.,
     p.EV_STA_EV_ID,
     p.EV_STA_Event_Status,
     p.EV_STA_ChangedAt
@@ -1350,7 +1248,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_EV_ID numeric(12,0),
     EV_STA_Event_Status varchar(20),
     EV_STA_ChangedAt datetime
@@ -1364,7 +1261,6 @@ SELECT
     a.EV_STA_Who,
     a.EV_STA_Confidence,
     a.EV_STA_Stance,
-    a.,
     p.EV_STA_EV_ID,
     p.EV_STA_Event_Status,
     p.EV_STA_ChangedAt
@@ -1450,8 +1346,7 @@ RETURNS TABLE (
     EV_UTL_PositedAt timestamp_ntz(3),
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
-    EV_UTL_Stance string,
-     int
+    EV_UTL_Stance string
 )
 AS
 $$
@@ -1461,7 +1356,7 @@ SELECT
     EV_UTL_PositedAt,
     EV_UTL_Who,
     EV_UTL_Confidence,
-    EV_UTL_Stance,
+    EV_UTL_Stance
 FROM
     attributes.EV_UTL_Event_Utilization_Meta
 WHERE
@@ -1481,7 +1376,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_EV_ID numeric(12,0),
     EV_UTL_UTL_ID tinyint 
 )
@@ -1494,7 +1388,6 @@ SELECT
     a.EV_UTL_Who,
     a.EV_UTL_Confidence,
     a.EV_UTL_Stance,
-    a.,
     p.EV_UTL_EV_ID,
     p.EV_UTL_UTL_ID
 FROM
@@ -1571,8 +1464,7 @@ RETURNS TABLE (
     EV_LVL_PositedAt timestamp_ntz(3),
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
-    EV_LVL_Stance string,
-     int
+    EV_LVL_Stance string
 )
 AS
 $$
@@ -1582,7 +1474,7 @@ SELECT
     EV_LVL_PositedAt,
     EV_LVL_Who,
     EV_LVL_Confidence,
-    EV_LVL_Stance,
+    EV_LVL_Stance
 FROM
     attributes.EV_LVL_Event_Level_Meta
 WHERE
@@ -1603,7 +1495,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_EV_ID numeric(12,0),
     EV_LVL_PLV_ID tinyint, 
     EV_LVL_ChangedAt date
@@ -1617,7 +1508,6 @@ SELECT
     a.EV_LVL_Who,
     a.EV_LVL_Confidence,
     a.EV_LVL_Stance,
-    a.,
     p.EV_LVL_EV_ID,
     p.EV_LVL_PLV_ID,
     p.EV_LVL_ChangedAt
@@ -1650,7 +1540,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_EV_ID numeric(12,0),
     EV_LVL_PLV_ID tinyint, 
     EV_LVL_ChangedAt date
@@ -1664,7 +1553,6 @@ SELECT
     a.EV_LVL_Who,
     a.EV_LVL_Confidence,
     a.EV_LVL_Stance,
-    a.,
     p.EV_LVL_EV_ID,
     p.EV_LVL_PLV_ID,
     p.EV_LVL_ChangedAt
@@ -1798,8 +1686,7 @@ RETURNS TABLE (
     ST_NAM_PositedAt timestamp_ntz(3),
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
-    ST_NAM_Stance string,
-     int
+    ST_NAM_Stance string
 )
 AS
 $$
@@ -1809,7 +1696,7 @@ SELECT
     ST_NAM_PositedAt,
     ST_NAM_Who,
     ST_NAM_Confidence,
-    ST_NAM_Stance,
+    ST_NAM_Stance
 FROM
     attributes.ST_NAM_Stage_Name_Meta
 WHERE
@@ -1830,7 +1717,6 @@ RETURNS TABLE (
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
     ST_NAM_Stance string,
-     int,
     ST_NAM_ST_ID int,
     ST_NAM_Stage_Name varchar(42),
     ST_NAM_ChangedAt datetime
@@ -1844,7 +1730,6 @@ SELECT
     a.ST_NAM_Who,
     a.ST_NAM_Confidence,
     a.ST_NAM_Stance,
-    a.,
     p.ST_NAM_ST_ID,
     p.ST_NAM_Stage_Name,
     p.ST_NAM_ChangedAt
@@ -1877,7 +1762,6 @@ RETURNS TABLE (
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
     ST_NAM_Stance string,
-     int,
     ST_NAM_ST_ID int,
     ST_NAM_Stage_Name varchar(42),
     ST_NAM_ChangedAt datetime
@@ -1891,7 +1775,6 @@ SELECT
     a.ST_NAM_Who,
     a.ST_NAM_Confidence,
     a.ST_NAM_Stance,
-    a.,
     p.ST_NAM_ST_ID,
     p.ST_NAM_Stage_Name,
     p.ST_NAM_ChangedAt
@@ -1977,8 +1860,7 @@ RETURNS TABLE (
     ST_LOC_PositedAt timestamp_ntz(3),
     ST_LOC_Who smallint,
     ST_LOC_Confidence decimal(7,3),
-    ST_LOC_Stance string,
-     int
+    ST_LOC_Stance string
 )
 AS
 $$
@@ -1988,7 +1870,7 @@ SELECT
     ST_LOC_PositedAt,
     ST_LOC_Who,
     ST_LOC_Confidence,
-    ST_LOC_Stance,
+    ST_LOC_Stance
 FROM
     attributes.ST_LOC_Stage_Location_Meta
 WHERE
@@ -2008,7 +1890,6 @@ RETURNS TABLE (
     ST_LOC_Who smallint,
     ST_LOC_Confidence decimal(7,3),
     ST_LOC_Stance string,
-     int,
     ST_LOC_ST_ID int,
     ST_LOC_Checksum numeric(19,0),
     ST_LOC_Stage_Location geography
@@ -2022,7 +1903,6 @@ SELECT
     a.ST_LOC_Who,
     a.ST_LOC_Confidence,
     a.ST_LOC_Stance,
-    a.,
     p.ST_LOC_ST_ID,
     p.ST_LOC_Checksum,
     p.ST_LOC_Stage_Location
@@ -2100,8 +1980,7 @@ RETURNS TABLE (
     ST_AVG_PositedAt timestamp_ntz(3),
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
-    ST_AVG_Stance string,
-     int
+    ST_AVG_Stance string
 )
 AS
 $$
@@ -2111,7 +1990,7 @@ SELECT
     ST_AVG_PositedAt,
     ST_AVG_Who,
     ST_AVG_Confidence,
-    ST_AVG_Stance,
+    ST_AVG_Stance
 FROM
     attributes.ST_AVG_Stage_Average_Meta
 WHERE
@@ -2132,7 +2011,6 @@ RETURNS TABLE (
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
     ST_AVG_Stance string,
-     int,
     ST_AVG_ST_ID int,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
@@ -2146,7 +2024,6 @@ SELECT
     a.ST_AVG_Who,
     a.ST_AVG_Confidence,
     a.ST_AVG_Stance,
-    a.,
     p.ST_AVG_ST_ID,
     p.ST_AVG_UTL_ID,
     p.ST_AVG_ChangedAt
@@ -2179,7 +2056,6 @@ RETURNS TABLE (
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
     ST_AVG_Stance string,
-     int,
     ST_AVG_ST_ID int,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
@@ -2193,7 +2069,6 @@ SELECT
     a.ST_AVG_Who,
     a.ST_AVG_Confidence,
     a.ST_AVG_Stance,
-    a.,
     p.ST_AVG_ST_ID,
     p.ST_AVG_UTL_ID,
     p.ST_AVG_ChangedAt
@@ -2279,8 +2154,7 @@ RETURNS TABLE (
     ST_MIN_PositedAt timestamp_ntz(3),
     ST_MIN_Who smallint,
     ST_MIN_Confidence decimal(7,3),
-    ST_MIN_Stance string,
-     int
+    ST_MIN_Stance string
 )
 AS
 $$
@@ -2290,7 +2164,7 @@ SELECT
     ST_MIN_PositedAt,
     ST_MIN_Who,
     ST_MIN_Confidence,
-    ST_MIN_Stance,
+    ST_MIN_Stance
 FROM
     attributes.ST_MIN_Stage_Minimum_Meta
 WHERE
@@ -2310,7 +2184,6 @@ RETURNS TABLE (
     ST_MIN_Who smallint,
     ST_MIN_Confidence decimal(7,3),
     ST_MIN_Stance string,
-     int,
     ST_MIN_ST_ID int,
     ST_MIN_UTL_ID tinyint 
 )
@@ -2323,7 +2196,6 @@ SELECT
     a.ST_MIN_Who,
     a.ST_MIN_Confidence,
     a.ST_MIN_Stance,
-    a.,
     p.ST_MIN_ST_ID,
     p.ST_MIN_UTL_ID
 FROM
@@ -2400,8 +2272,7 @@ RETURNS TABLE (
     AC_NAM_PositedAt timestamp_ntz(3),
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
-    AC_NAM_Stance string,
-     int
+    AC_NAM_Stance string
 )
 AS
 $$
@@ -2411,7 +2282,7 @@ SELECT
     AC_NAM_PositedAt,
     AC_NAM_Who,
     AC_NAM_Confidence,
-    AC_NAM_Stance,
+    AC_NAM_Stance
 FROM
     attributes.AC_NAM_Actor_Name_Meta
 WHERE
@@ -2432,7 +2303,6 @@ RETURNS TABLE (
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
     AC_NAM_Stance string,
-     int,
     AC_NAM_AC_ID smallint,
     AC_NAM_Actor_Name varbinary(max),
     AC_NAM_ChangedAt datetime
@@ -2446,7 +2316,6 @@ SELECT
     a.AC_NAM_Who,
     a.AC_NAM_Confidence,
     a.AC_NAM_Stance,
-    a.,
     p.AC_NAM_AC_ID,
     p.AC_NAM_Actor_Name,
     p.AC_NAM_ChangedAt
@@ -2479,7 +2348,6 @@ RETURNS TABLE (
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
     AC_NAM_Stance string,
-     int,
     AC_NAM_AC_ID smallint,
     AC_NAM_Actor_Name varbinary(max),
     AC_NAM_ChangedAt datetime
@@ -2493,7 +2361,6 @@ SELECT
     a.AC_NAM_Who,
     a.AC_NAM_Confidence,
     a.AC_NAM_Stance,
-    a.,
     p.AC_NAM_AC_ID,
     p.AC_NAM_Actor_Name,
     p.AC_NAM_ChangedAt
@@ -2579,8 +2446,7 @@ RETURNS TABLE (
     AC_GEN_PositedAt timestamp_ntz(3),
     AC_GEN_Who smallint,
     AC_GEN_Confidence decimal(7,3),
-    AC_GEN_Stance string,
-     int
+    AC_GEN_Stance string
 )
 AS
 $$
@@ -2590,7 +2456,7 @@ SELECT
     AC_GEN_PositedAt,
     AC_GEN_Who,
     AC_GEN_Confidence,
-    AC_GEN_Stance,
+    AC_GEN_Stance
 FROM
     attributes.AC_GEN_Actor_Gender_Meta
 WHERE
@@ -2610,7 +2476,6 @@ RETURNS TABLE (
     AC_GEN_Who smallint,
     AC_GEN_Confidence decimal(7,3),
     AC_GEN_Stance string,
-     int,
     AC_GEN_AC_ID smallint,
     AC_GEN_GEN_ID number(1,0) 
 )
@@ -2623,7 +2488,6 @@ SELECT
     a.AC_GEN_Who,
     a.AC_GEN_Confidence,
     a.AC_GEN_Stance,
-    a.,
     p.AC_GEN_AC_ID,
     p.AC_GEN_GEN_ID
 FROM
@@ -2700,8 +2564,7 @@ RETURNS TABLE (
     AC_PLV_PositedAt timestamp_ntz(3),
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
-    AC_PLV_Stance string,
-     int
+    AC_PLV_Stance string
 )
 AS
 $$
@@ -2711,7 +2574,7 @@ SELECT
     AC_PLV_PositedAt,
     AC_PLV_Who,
     AC_PLV_Confidence,
-    AC_PLV_Stance,
+    AC_PLV_Stance
 FROM
     attributes.AC_PLV_Actor_ProfessionalLevel_Meta
 WHERE
@@ -2732,7 +2595,6 @@ RETURNS TABLE (
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
     AC_PLV_Stance string,
-     int,
     AC_PLV_AC_ID smallint,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
@@ -2746,7 +2608,6 @@ SELECT
     a.AC_PLV_Who,
     a.AC_PLV_Confidence,
     a.AC_PLV_Stance,
-    a.,
     p.AC_PLV_AC_ID,
     p.AC_PLV_PLV_ID,
     p.AC_PLV_ChangedAt
@@ -2779,7 +2640,6 @@ RETURNS TABLE (
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
     AC_PLV_Stance string,
-     int,
     AC_PLV_AC_ID smallint,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
@@ -2793,7 +2653,6 @@ SELECT
     a.AC_PLV_Who,
     a.AC_PLV_Confidence,
     a.AC_PLV_Stance,
-    a.,
     p.AC_PLV_AC_ID,
     p.AC_PLV_PLV_ID,
     p.AC_PLV_ChangedAt
@@ -2879,8 +2738,7 @@ RETURNS TABLE (
     PR_NAM_PositedAt timestamp_ntz(3),
     PR_NAM_Who smallint,
     PR_NAM_Confidence decimal(7,3),
-    PR_NAM_Stance string,
-     int
+    PR_NAM_Stance string
 )
 AS
 $$
@@ -2890,7 +2748,7 @@ SELECT
     PR_NAM_PositedAt,
     PR_NAM_Who,
     PR_NAM_Confidence,
-    PR_NAM_Stance,
+    PR_NAM_Stance
 FROM
     attributes.PR_NAM_Program_Name_Meta
 WHERE
@@ -2910,7 +2768,6 @@ RETURNS TABLE (
     PR_NAM_Who smallint,
     PR_NAM_Confidence decimal(7,3),
     PR_NAM_Stance string,
-     int,
     PR_NAM_PR_ID number(10,0),
     PR_NAM_Program_Name varchar(42)
 )
@@ -2923,7 +2780,6 @@ SELECT
     a.PR_NAM_Who,
     a.PR_NAM_Confidence,
     a.PR_NAM_Stance,
-    a.,
     p.PR_NAM_PR_ID,
     p.PR_NAM_Program_Name
 FROM
@@ -3000,8 +2856,7 @@ RETURNS TABLE (
     PR_LEN_PositedAt timestamp_ntz(3),
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
-    PR_LEN_Stance string,
-     int
+    PR_LEN_Stance string
 )
 AS
 $$
@@ -3011,7 +2866,7 @@ SELECT
     PR_LEN_PositedAt,
     PR_LEN_Who,
     PR_LEN_Confidence,
-    PR_LEN_Stance,
+    PR_LEN_Stance
 FROM
     attributes.PR_LEN_Program_Length_Meta
 WHERE
@@ -3032,7 +2887,6 @@ RETURNS TABLE (
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
     PR_LEN_Stance string,
-     int,
     PR_LEN_PR_ID number(10,0),
     PR_LEN_Program_Length time,
     PR_LEN_ChangedAt date
@@ -3046,7 +2900,6 @@ SELECT
     a.PR_LEN_Who,
     a.PR_LEN_Confidence,
     a.PR_LEN_Stance,
-    a.,
     p.PR_LEN_PR_ID,
     p.PR_LEN_Program_Length,
     p.PR_LEN_ChangedAt
@@ -3079,7 +2932,6 @@ RETURNS TABLE (
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
     PR_LEN_Stance string,
-     int,
     PR_LEN_PR_ID number(10,0),
     PR_LEN_Program_Length time,
     PR_LEN_ChangedAt date
@@ -3093,7 +2945,6 @@ SELECT
     a.PR_LEN_Who,
     a.PR_LEN_Confidence,
     a.PR_LEN_Stance,
-    a.,
     p.PR_LEN_PR_ID,
     p.PR_LEN_Program_Length,
     p.PR_LEN_ChangedAt
@@ -3219,12 +3070,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_partner_AC_with_ONG_currently_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_partner_AC_with_ONG_currently bigint not null,
     constraint fkAC_partner_AC_with_ONG_currently_Meta foreign key (
         AC_partner_AC_with_ONG_currently_ID
@@ -3272,12 +3117,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_subset_PN_of_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_subset_PN_of bigint not null,
     constraint fkAC_subset_PN_of_Meta foreign key (
         AC_subset_PN_of_ID
@@ -3319,12 +3158,6 @@ CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Meta (
             when EV_in_AC_wasCast_Confidence > 0.25 then '+'
             when EV_in_AC_wasCast_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when EV_in_AC_wasCast_Confidence < then 0
-            else 1
         end
     ),
     Metadata_EV_in_AC_wasCast bigint not null,
@@ -3378,12 +3211,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Meta (
             else '-'
         end
     ),
-     int default (
-        case
-            when AC_part_PR_in_RAT_got_Confidence < then 0
-            else 1
-        end
-    ),
     Metadata_AC_part_PR_in_RAT_got bigint not null,
     constraint fkAC_part_PR_in_RAT_got_Meta foreign key (
         AC_part_PR_in_RAT_got_ID
@@ -3428,12 +3255,6 @@ CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Meta (
             when ST_at_PR_isPlaying_Confidence > 0.25 then '+'
             when ST_at_PR_isPlaying_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when ST_at_PR_isPlaying_Confidence < then 0
-            else 1
         end
     ),
     Metadata_ST_at_PR_isPlaying bigint not null,
@@ -3483,12 +3304,6 @@ CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Meta (
             when AC_parent_AC_child_PAT_having_Confidence > 0.25 then '+'
             when AC_parent_AC_child_PAT_having_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when AC_parent_AC_child_PAT_having_Confidence < then 0
-            else 1
         end
     ),
     Metadata_AC_parent_AC_child_PAT_having bigint not null,
@@ -3546,12 +3361,6 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Meta (
             when PR_content_ST_location_EV_of_Confidence > 0.25 then '+'
             when PR_content_ST_location_EV_of_Confidence = 0.25 then '?'
             else '-'
-        end
-    ),
-     int default (
-        case
-            when PR_content_ST_location_EV_of_Confidence < then 0
-            else 1
         end
     ),
     Metadata_PR_content_ST_location_EV_of bigint not null,
@@ -3625,8 +3434,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -3636,7 +3444,7 @@ SELECT
     AC_partner_AC_with_ONG_currently_PositedAt,
     AC_partner_AC_with_ONG_currently_Who,
     AC_partner_AC_with_ONG_currently_Confidence,
-    AC_partner_AC_with_ONG_currently_Stance,
+    AC_partner_AC_with_ONG_currently_Stance
 FROM
     ties.AC_partner_AC_with_ONG_currently_Meta
 WHERE
@@ -3658,8 +3466,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -3673,8 +3480,7 @@ SELECT
     a.AC_partner_AC_with_ONG_currently_PositedAt,
     a.AC_partner_AC_with_ONG_currently_Who,
     a.AC_partner_AC_with_ONG_currently_Confidence,
-    a.AC_partner_AC_with_ONG_currently_Stance,
-    a.
+    a.AC_partner_AC_with_ONG_currently_Stance
 FROM
     TABLE(ties.rAC_partner_AC_with_ONG_currently_Fact(changingTimepoint)) p 
 JOIN
@@ -3705,8 +3511,7 @@ RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -3720,8 +3525,7 @@ SELECT
     a.AC_partner_AC_with_ONG_currently_PositedAt,
     a.AC_partner_AC_with_ONG_currently_Who,
     a.AC_partner_AC_with_ONG_currently_Confidence,
-    a.AC_partner_AC_with_ONG_currently_Stance,
-    a.
+    a.AC_partner_AC_with_ONG_currently_Stance
 FROM
     TABLE(ties.fAC_partner_AC_with_ONG_currently_Fact(changingTimepoint)) p 
 JOIN
@@ -3746,8 +3550,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -3757,7 +3560,7 @@ SELECT
     AC_subset_PN_of_PositedAt,
     AC_subset_PN_of_Who,
     AC_subset_PN_of_Confidence,
-    AC_subset_PN_of_Stance,
+    AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Meta
 WHERE
@@ -3776,8 +3579,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -3789,8 +3591,7 @@ SELECT
     a.AC_subset_PN_of_PositedAt,
     a.AC_subset_PN_of_Who,
     a.AC_subset_PN_of_Confidence,
-    a.AC_subset_PN_of_Stance,
-    a.
+    a.AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Fact p
 JOIN
@@ -3818,8 +3619,7 @@ RETURNS TABLE (
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
@@ -3831,8 +3631,7 @@ SELECT
     a.AC_subset_PN_of_PositedAt,
     a.AC_subset_PN_of_Who,
     a.AC_subset_PN_of_Confidence,
-    a.AC_subset_PN_of_Stance,
-    a.
+    a.AC_subset_PN_of_Stance
 FROM
     ties.AC_subset_PN_of_Fact p
 JOIN
@@ -3857,8 +3656,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -3868,7 +3666,7 @@ SELECT
     EV_in_AC_wasCast_PositedAt,
     EV_in_AC_wasCast_Who,
     EV_in_AC_wasCast_Confidence,
-    EV_in_AC_wasCast_Stance,
+    EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Meta
 WHERE
@@ -3887,8 +3685,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -3900,8 +3697,7 @@ SELECT
     a.EV_in_AC_wasCast_PositedAt,
     a.EV_in_AC_wasCast_Who,
     a.EV_in_AC_wasCast_Confidence,
-    a.EV_in_AC_wasCast_Stance,
-    a.
+    a.EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Fact p
 JOIN
@@ -3929,8 +3725,7 @@ RETURNS TABLE (
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
@@ -3942,8 +3737,7 @@ SELECT
     a.EV_in_AC_wasCast_PositedAt,
     a.EV_in_AC_wasCast_Who,
     a.EV_in_AC_wasCast_Confidence,
-    a.EV_in_AC_wasCast_Stance,
-    a.
+    a.EV_in_AC_wasCast_Stance
 FROM
     ties.EV_in_AC_wasCast_Fact p
 JOIN
@@ -4016,8 +3810,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -4027,7 +3820,7 @@ SELECT
     AC_part_PR_in_RAT_got_PositedAt,
     AC_part_PR_in_RAT_got_Who,
     AC_part_PR_in_RAT_got_Confidence,
-    AC_part_PR_in_RAT_got_Stance,
+    AC_part_PR_in_RAT_got_Stance
 FROM
     ties.AC_part_PR_in_RAT_got_Meta
 WHERE
@@ -4049,8 +3842,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -4064,8 +3856,7 @@ SELECT
     a.AC_part_PR_in_RAT_got_PositedAt,
     a.AC_part_PR_in_RAT_got_Who,
     a.AC_part_PR_in_RAT_got_Confidence,
-    a.AC_part_PR_in_RAT_got_Stance,
-    a.
+    a.AC_part_PR_in_RAT_got_Stance
 FROM
     TABLE(ties.rAC_part_PR_in_RAT_got_Fact(changingTimepoint)) p 
 JOIN
@@ -4096,8 +3887,7 @@ RETURNS TABLE (
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -4111,8 +3901,7 @@ SELECT
     a.AC_part_PR_in_RAT_got_PositedAt,
     a.AC_part_PR_in_RAT_got_Who,
     a.AC_part_PR_in_RAT_got_Confidence,
-    a.AC_part_PR_in_RAT_got_Stance,
-    a.
+    a.AC_part_PR_in_RAT_got_Stance
 FROM
     TABLE(ties.fAC_part_PR_in_RAT_got_Fact(changingTimepoint)) p 
 JOIN
@@ -4181,8 +3970,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -4192,7 +3980,7 @@ SELECT
     ST_at_PR_isPlaying_PositedAt,
     ST_at_PR_isPlaying_Who,
     ST_at_PR_isPlaying_Confidence,
-    ST_at_PR_isPlaying_Stance,
+    ST_at_PR_isPlaying_Stance
 FROM
     ties.ST_at_PR_isPlaying_Meta
 WHERE
@@ -4213,8 +4001,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -4227,8 +4014,7 @@ SELECT
     a.ST_at_PR_isPlaying_PositedAt,
     a.ST_at_PR_isPlaying_Who,
     a.ST_at_PR_isPlaying_Confidence,
-    a.ST_at_PR_isPlaying_Stance,
-    a.
+    a.ST_at_PR_isPlaying_Stance
 FROM
     TABLE(ties.rST_at_PR_isPlaying_Fact(changingTimepoint)) p 
 JOIN
@@ -4258,8 +4044,7 @@ RETURNS TABLE (
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -4272,8 +4057,7 @@ SELECT
     a.ST_at_PR_isPlaying_PositedAt,
     a.ST_at_PR_isPlaying_Who,
     a.ST_at_PR_isPlaying_Confidence,
-    a.ST_at_PR_isPlaying_Stance,
-    a.
+    a.ST_at_PR_isPlaying_Stance
 FROM
     TABLE(ties.fST_at_PR_isPlaying_Fact(changingTimepoint)) p 
 JOIN
@@ -4298,8 +4082,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -4309,7 +4092,7 @@ SELECT
     AC_parent_AC_child_PAT_having_PositedAt,
     AC_parent_AC_child_PAT_having_Who,
     AC_parent_AC_child_PAT_having_Confidence,
-    AC_parent_AC_child_PAT_having_Stance,
+    AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Meta
 WHERE
@@ -4329,8 +4112,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -4343,8 +4125,7 @@ SELECT
     a.AC_parent_AC_child_PAT_having_PositedAt,
     a.AC_parent_AC_child_PAT_having_Who,
     a.AC_parent_AC_child_PAT_having_Confidence,
-    a.AC_parent_AC_child_PAT_having_Stance,
-    a.
+    a.AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Fact p
 JOIN
@@ -4373,8 +4154,7 @@ RETURNS TABLE (
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -4387,8 +4167,7 @@ SELECT
     a.AC_parent_AC_child_PAT_having_PositedAt,
     a.AC_parent_AC_child_PAT_having_Who,
     a.AC_parent_AC_child_PAT_having_Confidence,
-    a.AC_parent_AC_child_PAT_having_Stance,
-    a.
+    a.AC_parent_AC_child_PAT_having_Stance
 FROM
     ties.AC_parent_AC_child_PAT_having_Fact p
 JOIN
@@ -4461,8 +4240,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -4472,7 +4250,7 @@ SELECT
     PR_content_ST_location_EV_of_PositedAt,
     PR_content_ST_location_EV_of_Who,
     PR_content_ST_location_EV_of_Confidence,
-    PR_content_ST_location_EV_of_Stance,
+    PR_content_ST_location_EV_of_Stance
 FROM
     ties.PR_content_ST_location_EV_of_Meta
 WHERE
@@ -4494,8 +4272,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -4509,8 +4286,7 @@ SELECT
     a.PR_content_ST_location_EV_of_PositedAt,
     a.PR_content_ST_location_EV_of_Who,
     a.PR_content_ST_location_EV_of_Confidence,
-    a.PR_content_ST_location_EV_of_Stance,
-    a.
+    a.PR_content_ST_location_EV_of_Stance
 FROM
     TABLE(ties.rPR_content_ST_location_EV_of_Fact(changingTimepoint)) p 
 JOIN
@@ -4541,8 +4317,7 @@ RETURNS TABLE (
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -4556,8 +4331,7 @@ SELECT
     a.PR_content_ST_location_EV_of_PositedAt,
     a.PR_content_ST_location_EV_of_Who,
     a.PR_content_ST_location_EV_of_Confidence,
-    a.PR_content_ST_location_EV_of_Stance,
-    a.
+    a.PR_content_ST_location_EV_of_Stance
 FROM
     TABLE(ties.fPR_content_ST_location_EV_of_Fact(changingTimepoint)) p 
 JOIN
@@ -4596,7 +4370,6 @@ RETURNS TABLE (
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
     ST_NAM_Stance string,
-     int,
     ST_NAM_Stage_Name varchar(42),
     ST_LOC_ST_ID int,
     Metadata_ST_LOC bigint,
@@ -4605,7 +4378,6 @@ RETURNS TABLE (
     ST_LOC_Who smallint,
     ST_LOC_Confidence decimal(7,3),
     ST_LOC_Stance string,
-     int,
     ST_LOC_Checksum numeric(19,0),
     ST_LOC_Stage_Location geography,
     ST_AVG_ST_ID int,
@@ -4616,7 +4388,6 @@ RETURNS TABLE (
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
     ST_AVG_Stance string,
-     int,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL bigint,
     ST_AVG_UTL_ID tinyint,
@@ -4627,7 +4398,6 @@ RETURNS TABLE (
     ST_MIN_Who smallint,
     ST_MIN_Confidence decimal(7,3),
     ST_MIN_Stance string,
-     int,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL bigint,
     ST_MIN_UTL_ID tinyint
@@ -4645,7 +4415,6 @@ SELECT
     NAM.ST_NAM_Who,
     NAM.ST_NAM_Confidence,
     NAM.ST_NAM_Stance,
-    NAM.,
     NAM.ST_NAM_Stage_Name,
     LOC.ST_LOC_ST_ID,
     LOC.Metadata_ST_LOC,
@@ -4654,7 +4423,6 @@ SELECT
     LOC.ST_LOC_Who,
     LOC.ST_LOC_Confidence,
     LOC.ST_LOC_Stance,
-    LOC.,
     LOC.ST_LOC_Checksum,
     LOC.ST_LOC_Stage_Location,
     AVG.ST_AVG_ST_ID,
@@ -4665,7 +4433,6 @@ SELECT
     AVG.ST_AVG_Who,
     AVG.ST_AVG_Confidence,
     AVG.ST_AVG_Stance,
-    AVG.,
     kAVG.UTL_Utilization AS ST_AVG_UTL_Utilization,
     kAVG.Metadata_UTL AS ST_AVG_Metadata_UTL,
     AVG.ST_AVG_UTL_ID,
@@ -4676,7 +4443,6 @@ SELECT
     MIN.ST_MIN_Who,
     MIN.ST_MIN_Confidence,
     MIN.ST_MIN_Stance,
-    MIN.,
     kMIN.UTL_Utilization AS ST_MIN_UTL_Utilization,
     kMIN.Metadata_UTL AS ST_MIN_Metadata_UTL,
     MIN.ST_MIN_UTL_ID
@@ -4685,7 +4451,7 @@ FROM
 LEFT JOIN
     TABLE(attributes.rST_NAM_Stage_Name(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -4695,7 +4461,7 @@ ON
         FROM
             TABLE(attributes.rST_NAM_Stage_Name(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -4710,7 +4476,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rST_LOC_Stage_Location(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) LOC
 ON
@@ -4720,7 +4485,6 @@ ON
         FROM
             TABLE(attributes.rST_LOC_Stage_Location(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -4734,7 +4498,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rST_AVG_Stage_Average(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) AVG
 ON
@@ -4744,7 +4508,7 @@ ON
         FROM
             TABLE(attributes.rST_AVG_Stage_Average(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -4763,7 +4527,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rST_MIN_Stage_Minimum(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) MIN
 ON
@@ -4773,7 +4536,6 @@ ON
         FROM
             TABLE(attributes.rST_MIN_Stage_Minimum(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -4795,7 +4557,7 @@ $$
 CREATE OR REPLACE VIEW anchors.lST_Stage AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     ST.*
 FROM
     dw._Who p
@@ -4825,7 +4587,6 @@ RETURNS TABLE (
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
     ST_NAM_Stance string,
-     int,
     ST_NAM_Stage_Name varchar(42),
     ST_LOC_ST_ID int,
     Metadata_ST_LOC bigint,
@@ -4834,7 +4595,6 @@ RETURNS TABLE (
     ST_LOC_Who smallint,
     ST_LOC_Confidence decimal(7,3),
     ST_LOC_Stance string,
-     int,
     ST_LOC_Checksum numeric(19,0),
     ST_LOC_Stage_Location geography,
     ST_AVG_ST_ID int,
@@ -4845,7 +4605,6 @@ RETURNS TABLE (
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
     ST_AVG_Stance string,
-     int,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL bigint,
     ST_AVG_UTL_ID tinyint,
@@ -4856,7 +4615,6 @@ RETURNS TABLE (
     ST_MIN_Who smallint,
     ST_MIN_Confidence decimal(7,3),
     ST_MIN_Stance string,
-     int,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL bigint,
     ST_MIN_UTL_ID tinyint
@@ -4865,7 +4623,7 @@ AS
 $$
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     ST.ST_ID,
     ST.Metadata_ST,
     ST.ST_NAM_ST_ID,
@@ -4876,7 +4634,6 @@ SELECT
     ST.ST_NAM_Who,
     ST.ST_NAM_Confidence,
     ST.ST_NAM_Stance,
-    ST.,
     ST.ST_NAM_Stage_Name,
     ST.ST_LOC_ST_ID,
     ST.Metadata_ST_LOC,
@@ -4885,7 +4642,6 @@ SELECT
     ST.ST_LOC_Who,
     ST.ST_LOC_Confidence,
     ST.ST_LOC_Stance,
-    ST.,
     ST.ST_LOC_Checksum,
     ST.ST_LOC_Stage_Location,
     ST.ST_AVG_ST_ID,
@@ -4896,7 +4652,6 @@ SELECT
     ST.ST_AVG_Who,
     ST.ST_AVG_Confidence,
     ST.ST_AVG_Stance,
-    ST.,
     ST.ST_AVG_UTL_Utilization,
     ST.ST_AVG_Metadata_UTL,
     ST.ST_AVG_UTL_ID,
@@ -4907,7 +4662,6 @@ SELECT
     ST.ST_MIN_Who,
     ST.ST_MIN_Confidence,
     ST.ST_MIN_Stance,
-    ST.,
     ST.ST_MIN_UTL_Utilization,
     ST.ST_MIN_Metadata_UTL,
     ST.ST_MIN_UTL_ID
@@ -4927,7 +4681,7 @@ $$
 CREATE OR REPLACE VIEW anchors.nST_Stage AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     ST.*
 FROM
     dw._Who p
@@ -4959,7 +4713,6 @@ RETURNS TABLE (
     ST_NAM_Who smallint,
     ST_NAM_Confidence decimal(7,3),
     ST_NAM_Stance string,
-     int,
     ST_NAM_Stage_Name varchar(42),
     ST_LOC_ST_ID int,
     Metadata_ST_LOC bigint,
@@ -4968,7 +4721,6 @@ RETURNS TABLE (
     ST_LOC_Who smallint,
     ST_LOC_Confidence decimal(7,3),
     ST_LOC_Stance string,
-     int,
     ST_LOC_Checksum numeric(19,0),
     ST_LOC_Stage_Location geography,
     ST_AVG_ST_ID int,
@@ -4979,7 +4731,6 @@ RETURNS TABLE (
     ST_AVG_Who smallint,
     ST_AVG_Confidence decimal(7,3),
     ST_AVG_Stance string,
-     int,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL bigint,
     ST_AVG_UTL_ID tinyint,
@@ -4990,7 +4741,6 @@ RETURNS TABLE (
     ST_MIN_Who smallint,
     ST_MIN_Confidence decimal(7,3),
     ST_MIN_Stance string,
-     int,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL bigint,
     ST_MIN_UTL_ID tinyint
@@ -5010,7 +4760,6 @@ SELECT
     ST.ST_NAM_Who,
     ST.ST_NAM_Confidence,
     ST.ST_NAM_Stance,
-    ST.,
     ST.ST_NAM_Stage_Name,
     ST.ST_LOC_ST_ID,
     ST.Metadata_ST_LOC,
@@ -5019,7 +4768,6 @@ SELECT
     ST.ST_LOC_Who,
     ST.ST_LOC_Confidence,
     ST.ST_LOC_Stance,
-    ST.,
     ST.ST_LOC_Checksum,
     ST.ST_LOC_Stage_Location,
     ST.ST_AVG_ST_ID,
@@ -5030,7 +4778,6 @@ SELECT
     ST.ST_AVG_Who,
     ST.ST_AVG_Confidence,
     ST.ST_AVG_Stance,
-    ST.,
     ST.ST_AVG_UTL_Utilization,
     ST.ST_AVG_Metadata_UTL,
     ST.ST_AVG_UTL_ID,
@@ -5041,7 +4788,6 @@ SELECT
     ST.ST_MIN_Who,
     ST.ST_MIN_Confidence,
     ST.ST_MIN_Stance,
-    ST.,
     ST.ST_MIN_UTL_Utilization,
     ST.ST_MIN_Metadata_UTL,
     ST.ST_MIN_UTL_ID
@@ -5105,7 +4851,6 @@ RETURNS TABLE (
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
     AC_NAM_Stance string,
-     int,
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN bigint,
@@ -5114,7 +4859,6 @@ RETURNS TABLE (
     AC_GEN_Who smallint,
     AC_GEN_Confidence decimal(7,3),
     AC_GEN_Stance string,
-     int,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN bigint,
@@ -5127,7 +4871,6 @@ RETURNS TABLE (
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
     AC_PLV_Stance string,
-     int,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_ProfessionalLevel string,
     AC_PLV_Metadata_PLV bigint,
@@ -5146,7 +4889,6 @@ SELECT
     NAM.AC_NAM_Who,
     NAM.AC_NAM_Confidence,
     NAM.AC_NAM_Stance,
-    NAM.,
     NAM.AC_NAM_Actor_Name,
     GEN.AC_GEN_AC_ID,
     GEN.Metadata_AC_GEN,
@@ -5155,7 +4897,6 @@ SELECT
     GEN.AC_GEN_Who,
     GEN.AC_GEN_Confidence,
     GEN.AC_GEN_Stance,
-    GEN.,
     kGEN.GEN_Checksum AS AC_GEN_GEN_Checksum,
     kGEN.GEN_Gender AS AC_GEN_GEN_Gender,
     kGEN.Metadata_GEN AS AC_GEN_Metadata_GEN,
@@ -5168,7 +4909,6 @@ SELECT
     PLV.AC_PLV_Who,
     PLV.AC_PLV_Confidence,
     PLV.AC_PLV_Stance,
-    PLV.,
     kPLV.PLV_Checksum AS AC_PLV_PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
     kPLV.Metadata_PLV AS AC_PLV_Metadata_PLV,
@@ -5178,7 +4918,7 @@ FROM
 LEFT JOIN
     TABLE(attributes.rAC_NAM_Actor_Name(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -5188,7 +4928,7 @@ ON
         FROM
             TABLE(attributes.rAC_NAM_Actor_Name(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -5203,7 +4943,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rAC_GEN_Actor_Gender(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) GEN
 ON
@@ -5213,7 +4952,6 @@ ON
         FROM
             TABLE(attributes.rAC_GEN_Actor_Gender(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -5231,7 +4969,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) PLV
 ON
@@ -5241,7 +4979,7 @@ ON
         FROM
             TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -5264,7 +5002,7 @@ $$
 CREATE OR REPLACE VIEW anchors.lAC_Actor AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     AC.*
 FROM
     dw._Who p
@@ -5294,7 +5032,6 @@ RETURNS TABLE (
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
     AC_NAM_Stance string,
-     int,
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN bigint,
@@ -5303,7 +5040,6 @@ RETURNS TABLE (
     AC_GEN_Who smallint,
     AC_GEN_Confidence decimal(7,3),
     AC_GEN_Stance string,
-     int,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN bigint,
@@ -5316,7 +5052,6 @@ RETURNS TABLE (
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
     AC_PLV_Stance string,
-     int,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_ProfessionalLevel string,
     AC_PLV_Metadata_PLV bigint,
@@ -5326,7 +5061,7 @@ AS
 $$
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     AC.AC_ID,
     AC.Metadata_AC,
     AC.AC_NAM_AC_ID,
@@ -5337,7 +5072,6 @@ SELECT
     AC.AC_NAM_Who,
     AC.AC_NAM_Confidence,
     AC.AC_NAM_Stance,
-    AC.,
     AC.AC_NAM_Actor_Name,
     AC.AC_GEN_AC_ID,
     AC.Metadata_AC_GEN,
@@ -5346,7 +5080,6 @@ SELECT
     AC.AC_GEN_Who,
     AC.AC_GEN_Confidence,
     AC.AC_GEN_Stance,
-    AC.,
     AC.AC_GEN_GEN_Checksum,
     AC.AC_GEN_GEN_Gender,
     AC.AC_GEN_Metadata_GEN,
@@ -5359,7 +5092,6 @@ SELECT
     AC.AC_PLV_Who,
     AC.AC_PLV_Confidence,
     AC.AC_PLV_Stance,
-    AC.,
     AC.AC_PLV_PLV_Checksum,
     AC.AC_PLV_PLV_ProfessionalLevel,
     AC.AC_PLV_Metadata_PLV,
@@ -5380,7 +5112,7 @@ $$
 CREATE OR REPLACE VIEW anchors.nAC_Actor AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     AC.*
 FROM
     dw._Who p
@@ -5412,7 +5144,6 @@ RETURNS TABLE (
     AC_NAM_Who smallint,
     AC_NAM_Confidence decimal(7,3),
     AC_NAM_Stance string,
-     int,
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN bigint,
@@ -5421,7 +5152,6 @@ RETURNS TABLE (
     AC_GEN_Who smallint,
     AC_GEN_Confidence decimal(7,3),
     AC_GEN_Stance string,
-     int,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN bigint,
@@ -5434,7 +5164,6 @@ RETURNS TABLE (
     AC_PLV_Who smallint,
     AC_PLV_Confidence decimal(7,3),
     AC_PLV_Stance string,
-     int,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_ProfessionalLevel string,
     AC_PLV_Metadata_PLV bigint,
@@ -5455,7 +5184,6 @@ SELECT
     AC.AC_NAM_Who,
     AC.AC_NAM_Confidence,
     AC.AC_NAM_Stance,
-    AC.,
     AC.AC_NAM_Actor_Name,
     AC.AC_GEN_AC_ID,
     AC.Metadata_AC_GEN,
@@ -5464,7 +5192,6 @@ SELECT
     AC.AC_GEN_Who,
     AC.AC_GEN_Confidence,
     AC.AC_GEN_Stance,
-    AC.,
     AC.AC_GEN_GEN_Checksum,
     AC.AC_GEN_GEN_Gender,
     AC.AC_GEN_Metadata_GEN,
@@ -5477,7 +5204,6 @@ SELECT
     AC.AC_PLV_Who,
     AC.AC_PLV_Confidence,
     AC.AC_PLV_Stance,
-    AC.,
     AC.AC_PLV_PLV_Checksum,
     AC.AC_PLV_PLV_ProfessionalLevel,
     AC.AC_PLV_Metadata_PLV,
@@ -5541,7 +5267,6 @@ RETURNS TABLE (
     PR_NAM_Who smallint,
     PR_NAM_Confidence decimal(7,3),
     PR_NAM_Stance string,
-     int,
     PR_NAM_Program_Name varchar(42),
     PR_LEN_PR_ID number(10,0),
     Metadata_PR_LEN bigint,
@@ -5551,7 +5276,6 @@ RETURNS TABLE (
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
     PR_LEN_Stance string,
-     int,
     PR_LEN_Program_Length time
 )
 AS
@@ -5566,7 +5290,6 @@ SELECT
     NAM.PR_NAM_Who,
     NAM.PR_NAM_Confidence,
     NAM.PR_NAM_Stance,
-    NAM.,
     NAM.PR_NAM_Program_Name,
     LEN.PR_LEN_PR_ID,
     LEN.Metadata_PR_LEN,
@@ -5576,14 +5299,12 @@ SELECT
     LEN.PR_LEN_Who,
     LEN.PR_LEN_Confidence,
     LEN.PR_LEN_Stance,
-    LEN.,
     LEN.PR_LEN_Program_Length
 FROM
     anchors.PR_Program PR
 LEFT JOIN
     TABLE(attributes.rPR_NAM_Program_Name(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -5593,7 +5314,6 @@ ON
         FROM
             TABLE(attributes.rPR_NAM_Program_Name(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -5607,7 +5327,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rPR_LEN_Program_Length(
         positor,
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::timestamp_ntz(3)
     )) LEN
 ON
@@ -5617,7 +5337,7 @@ ON
         FROM
             TABLE(attributes.rPR_LEN_Program_Length(
                 positor,
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -5636,7 +5356,7 @@ $$
 CREATE OR REPLACE VIEW anchors.lPR_Program AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     PR.*
 FROM
     dw._Who p
@@ -5665,7 +5385,6 @@ RETURNS TABLE (
     PR_NAM_Who smallint,
     PR_NAM_Confidence decimal(7,3),
     PR_NAM_Stance string,
-     int,
     PR_NAM_Program_Name varchar(42),
     PR_LEN_PR_ID number(10,0),
     Metadata_PR_LEN bigint,
@@ -5675,14 +5394,13 @@ RETURNS TABLE (
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
     PR_LEN_Stance string,
-     int,
     PR_LEN_Program_Length time
 )
 AS
 $$
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     PR.PR_ID,
     PR.Metadata_PR,
     PR.PR_NAM_PR_ID,
@@ -5692,7 +5410,6 @@ SELECT
     PR.PR_NAM_Who,
     PR.PR_NAM_Confidence,
     PR.PR_NAM_Stance,
-    PR.,
     PR.PR_NAM_Program_Name,
     PR.PR_LEN_PR_ID,
     PR.Metadata_PR_LEN,
@@ -5702,7 +5419,6 @@ SELECT
     PR.PR_LEN_Who,
     PR.PR_LEN_Confidence,
     PR.PR_LEN_Stance,
-    PR.,
     PR.PR_LEN_Program_Length
 FROM
     dw._Who p
@@ -5720,7 +5436,7 @@ $$
 CREATE OR REPLACE VIEW anchors.nPR_Program AS
 SELECT
     p.Who,
-     as Confidence,
+    cast(null as decimal(7,3)) as Confidence,
     PR.*
 FROM
     dw._Who p
@@ -5751,7 +5467,6 @@ RETURNS TABLE (
     PR_NAM_Who smallint,
     PR_NAM_Confidence decimal(7,3),
     PR_NAM_Stance string,
-     int,
     PR_NAM_Program_Name varchar(42),
     PR_LEN_PR_ID number(10,0),
     Metadata_PR_LEN bigint,
@@ -5761,7 +5476,6 @@ RETURNS TABLE (
     PR_LEN_Who smallint,
     PR_LEN_Confidence decimal(7,3),
     PR_LEN_Stance string,
-     int,
     PR_LEN_Program_Length time
 )
 AS
@@ -5778,7 +5492,6 @@ SELECT
     PR.PR_NAM_Who,
     PR.PR_NAM_Confidence,
     PR.PR_NAM_Stance,
-    PR.,
     PR.PR_NAM_Program_Name,
     PR.PR_LEN_PR_ID,
     PR.Metadata_PR_LEN,
@@ -5788,7 +5501,6 @@ SELECT
     PR.PR_LEN_Who,
     PR.PR_LEN_Confidence,
     PR.PR_LEN_Stance,
-    PR.,
     PR.PR_LEN_Program_Length
 FROM
     dw._Who p
@@ -5848,7 +5560,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -5857,7 +5568,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -5866,7 +5576,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -5876,7 +5585,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -5885,7 +5593,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -5897,7 +5604,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -5921,7 +5627,6 @@ SELECT
     DAT.EV_DAT_Who,
     DAT.EV_DAT_Confidence,
     DAT.EV_DAT_Stance,
-    DAT.,
     DAT.EV_DAT_Event_Date,
     AUD.EV_AUD_EV_ID,
     AUD.Metadata_EV_AUD,
@@ -5930,7 +5635,6 @@ SELECT
     AUD.EV_AUD_Who,
     AUD.EV_AUD_Confidence,
     AUD.EV_AUD_Stance,
-    AUD.,
     AUD.EV_AUD_Event_Audience,
     REV.EV_REV_EV_ID,
     REV.Metadata_EV_REV,
@@ -5939,7 +5643,6 @@ SELECT
     REV.EV_REV_Who,
     REV.EV_REV_Confidence,
     REV.EV_REV_Stance,
-    REV.,
     REV.EV_REV_Event_Revenue,
     STA.EV_STA_EV_ID,
     STA.Metadata_EV_STA,
@@ -5949,7 +5652,6 @@ SELECT
     STA.EV_STA_Who,
     STA.EV_STA_Confidence,
     STA.EV_STA_Stance,
-    STA.,
     STA.EV_STA_Event_Status,
     UTL.EV_UTL_EV_ID,
     UTL.Metadata_EV_UTL,
@@ -5958,7 +5660,6 @@ SELECT
     UTL.EV_UTL_Who,
     UTL.EV_UTL_Confidence,
     UTL.EV_UTL_Stance,
-    UTL.,
     kUTL.UTL_Utilization AS EV_UTL_UTL_Utilization,
     kUTL.Metadata_UTL AS EV_UTL_Metadata_UTL,
     UTL.EV_UTL_UTL_ID,
@@ -5970,7 +5671,6 @@ SELECT
     LVL.EV_LVL_Who,
     LVL.EV_LVL_Confidence,
     LVL.EV_LVL_Stance,
-    LVL.,
     kLVL.PLV_Checksum AS EV_LVL_PLV_Checksum,
     kLVL.PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     kLVL.Metadata_PLV AS EV_LVL_Metadata_PLV,
@@ -5984,7 +5684,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) DAT
 ON
@@ -5994,7 +5693,6 @@ ON
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6008,7 +5706,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) AUD
 ON
@@ -6018,7 +5715,6 @@ ON
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6032,7 +5728,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) REV
 ON
@@ -6042,7 +5737,6 @@ ON
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6056,7 +5750,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) STA
 ON
@@ -6066,7 +5760,7 @@ ON
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
                 positor,
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6081,7 +5775,6 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) UTL
 ON
@@ -6091,7 +5784,6 @@ ON
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
                 positor,
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6109,7 +5801,7 @@ ON
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
         positor,
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::timestamp_ntz(3)
     )) LVL
 ON
@@ -6119,7 +5811,7 @@ ON
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
                 positor,
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -6142,7 +5834,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.lEV_Event AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.*
 FROM
     dw._Who p
@@ -6177,7 +5869,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -6186,7 +5877,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -6195,7 +5885,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -6205,7 +5894,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -6214,7 +5902,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -6226,7 +5913,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -6236,7 +5922,7 @@ AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.EV_ID,
     EV.Metadata_EV,
     EV.ST_ID_wasHeldAt,
@@ -6252,7 +5938,6 @@ SELECT
     EV.EV_DAT_Who,
     EV.EV_DAT_Confidence,
     EV.EV_DAT_Stance,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.EV_AUD_EV_ID,
     EV.Metadata_EV_AUD,
@@ -6261,7 +5946,6 @@ SELECT
     EV.EV_AUD_Who,
     EV.EV_AUD_Confidence,
     EV.EV_AUD_Stance,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.EV_REV_EV_ID,
     EV.Metadata_EV_REV,
@@ -6270,7 +5954,6 @@ SELECT
     EV.EV_REV_Who,
     EV.EV_REV_Confidence,
     EV.EV_REV_Stance,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.EV_STA_EV_ID,
     EV.Metadata_EV_STA,
@@ -6280,7 +5963,6 @@ SELECT
     EV.EV_STA_Who,
     EV.EV_STA_Confidence,
     EV.EV_STA_Stance,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.EV_UTL_EV_ID,
     EV.Metadata_EV_UTL,
@@ -6289,7 +5971,6 @@ SELECT
     EV.EV_UTL_Who,
     EV.EV_UTL_Confidence,
     EV.EV_UTL_Stance,
-    EV.,
     EV.EV_UTL_UTL_Utilization,
     EV.EV_UTL_Metadata_UTL,
     EV.EV_UTL_UTL_ID,
@@ -6301,7 +5982,6 @@ SELECT
     EV.EV_LVL_Who,
     EV.EV_LVL_Confidence,
     EV.EV_LVL_Stance,
-    EV.,
     EV.EV_LVL_PLV_Checksum,
     EV.EV_LVL_PLV_ProfessionalLevel,
     EV.EV_LVL_Metadata_PLV,
@@ -6322,7 +6002,7 @@ $$
 CREATE OR REPLACE VIEW nexuses.nEV_Event AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     EV.*
 FROM
     dw._Who p
@@ -6359,7 +6039,6 @@ RETURNS TABLE (
     EV_DAT_Who smallint,
     EV_DAT_Confidence decimal(7,3),
     EV_DAT_Stance string,
-     int,
     EV_DAT_Event_Date datetime,
     EV_AUD_EV_ID numeric(12,0),
     Metadata_EV_AUD bigint,
@@ -6368,7 +6047,6 @@ RETURNS TABLE (
     EV_AUD_Who smallint,
     EV_AUD_Confidence decimal(7,3),
     EV_AUD_Stance string,
-     int,
     EV_AUD_Event_Audience int,
     EV_REV_EV_ID numeric(12,0),
     Metadata_EV_REV bigint,
@@ -6377,7 +6055,6 @@ RETURNS TABLE (
     EV_REV_Who smallint,
     EV_REV_Confidence decimal(7,3),
     EV_REV_Stance string,
-     int,
     EV_REV_Event_Revenue number(19,4),
     EV_STA_EV_ID numeric(12,0),
     Metadata_EV_STA bigint,
@@ -6387,7 +6064,6 @@ RETURNS TABLE (
     EV_STA_Who smallint,
     EV_STA_Confidence decimal(7,3),
     EV_STA_Stance string,
-     int,
     EV_STA_Event_Status varchar(20),
     EV_UTL_EV_ID numeric(12,0),
     Metadata_EV_UTL bigint,
@@ -6396,7 +6072,6 @@ RETURNS TABLE (
     EV_UTL_Who smallint,
     EV_UTL_Confidence decimal(7,3),
     EV_UTL_Stance string,
-     int,
     EV_UTL_UTL_Utilization tinyint,
     EV_UTL_Metadata_UTL bigint,
     EV_UTL_UTL_ID tinyint,
@@ -6408,7 +6083,6 @@ RETURNS TABLE (
     EV_LVL_Who smallint,
     EV_LVL_Confidence decimal(7,3),
     EV_LVL_Stance string,
-     int,
     EV_LVL_PLV_Checksum numeric(19,0),
     EV_LVL_PLV_ProfessionalLevel string,
     EV_LVL_Metadata_PLV bigint,
@@ -6434,7 +6108,6 @@ SELECT
     EV.EV_DAT_Who,
     EV.EV_DAT_Confidence,
     EV.EV_DAT_Stance,
-    EV.,
     EV.EV_DAT_Event_Date,
     EV.EV_AUD_EV_ID,
     EV.Metadata_EV_AUD,
@@ -6443,7 +6116,6 @@ SELECT
     EV.EV_AUD_Who,
     EV.EV_AUD_Confidence,
     EV.EV_AUD_Stance,
-    EV.,
     EV.EV_AUD_Event_Audience,
     EV.EV_REV_EV_ID,
     EV.Metadata_EV_REV,
@@ -6452,7 +6124,6 @@ SELECT
     EV.EV_REV_Who,
     EV.EV_REV_Confidence,
     EV.EV_REV_Stance,
-    EV.,
     EV.EV_REV_Event_Revenue,
     EV.EV_STA_EV_ID,
     EV.Metadata_EV_STA,
@@ -6462,7 +6133,6 @@ SELECT
     EV.EV_STA_Who,
     EV.EV_STA_Confidence,
     EV.EV_STA_Stance,
-    EV.,
     EV.EV_STA_Event_Status,
     EV.EV_UTL_EV_ID,
     EV.Metadata_EV_UTL,
@@ -6471,7 +6141,6 @@ SELECT
     EV.EV_UTL_Who,
     EV.EV_UTL_Confidence,
     EV.EV_UTL_Stance,
-    EV.,
     EV.EV_UTL_UTL_Utilization,
     EV.EV_UTL_Metadata_UTL,
     EV.EV_UTL_UTL_ID,
@@ -6483,7 +6152,6 @@ SELECT
     EV.EV_LVL_Who,
     EV.EV_LVL_Confidence,
     EV.EV_LVL_Stance,
-    EV.,
     EV.EV_LVL_PLV_Checksum,
     EV.EV_LVL_PLV_ProfessionalLevel,
     EV.EV_LVL_Metadata_PLV,
@@ -6547,13 +6215,12 @@ RETURNS TABLE (
     AC_ID_with smallint,
     currently_ONG_Ongoing varchar(3),
     currently_Metadata_ONG bigint,
-    ONG_ID_currently tinyint
+    ONG_ID_currently tinyint,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -6563,17 +6230,16 @@ SELECT
     t.AC_ID_with,
     kONG_currently.ONG_Ongoing AS currently_ONG_Ongoing,
     kONG_currently.Metadata_ONG AS currently_Metadata_ONG,
-    t.ONG_ID_currently
+    t.ONG_ID_currently,
     t.AC_partner_AC_with_ONG_currently_ChangedAt,
     t.AC_partner_AC_with_ONG_currently_PositedAt,
     t.AC_partner_AC_with_ONG_currently_Who,
     t.AC_partner_AC_with_ONG_currently_Confidence,
-    t.AC_partner_AC_with_ONG_currently_Stance,
-    t.
+    t.AC_partner_AC_with_ONG_currently_Stance
 FROM
     TABLE(ties.rAC_partner_AC_with_ONG_currently(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -6589,7 +6255,7 @@ $$
 CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6614,31 +6280,29 @@ RETURNS TABLE (
     AC_ID_with smallint,
     currently_ONG_Ongoing varchar(3),
     currently_Metadata_ONG bigint,
-    ONG_ID_currently tinyint
+    ONG_ID_currently tinyint,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_AC_partner_AC_with_ONG_currently,
     t.AC_ID_partner,
     t.AC_ID_with,
     t.currently_ONG_Ongoing,
     t.currently_Metadata_ONG,
-    t.ONG_ID_currently
+    t.ONG_ID_currently,
     t.AC_partner_AC_with_ONG_currently_ChangedAt,
     t.AC_partner_AC_with_ONG_currently_PositedAt,
     t.AC_partner_AC_with_ONG_currently_Who,
     t.AC_partner_AC_with_ONG_currently_Confidence,
-    t.AC_partner_AC_with_ONG_currently_Stance,
-    t.
+    t.AC_partner_AC_with_ONG_currently_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -6655,7 +6319,7 @@ $$
 CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6681,13 +6345,12 @@ RETURNS TABLE (
     AC_ID_with smallint,
     currently_ONG_Ongoing varchar(3),
     currently_Metadata_ONG bigint,
-    ONG_ID_currently tinyint
+    ONG_ID_currently tinyint,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_partner_AC_with_ONG_currently_PositedAt timestamp_ntz(3),
     AC_partner_AC_with_ONG_currently_Who smallint,
     AC_partner_AC_with_ONG_currently_Confidence decimal(7,3),
-    AC_partner_AC_with_ONG_currently_Stance string,
-     int
+    AC_partner_AC_with_ONG_currently_Stance string
 )
 AS
 $$
@@ -6699,13 +6362,12 @@ SELECT
     t.AC_ID_with,
     t.currently_ONG_Ongoing,
     t.currently_Metadata_ONG,
-    t.ONG_ID_currently
+    t.ONG_ID_currently,
     t.AC_partner_AC_with_ONG_currently_ChangedAt,
     t.AC_partner_AC_with_ONG_currently_PositedAt,
     t.AC_partner_AC_with_ONG_currently_Who,
     t.AC_partner_AC_with_ONG_currently_Confidence,
-    t.AC_partner_AC_with_ONG_currently_Stance,
-    t.
+    t.AC_partner_AC_with_ONG_currently_Stance
 FROM
     dw._Who p
 JOIN (
@@ -6739,28 +6401,25 @@ CREATE OR REPLACE FUNCTION ties.tAC_subset_PN_of (
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_ID_subset smallint,
-    PN_ID_of bigint
+    PN_ID_of bigint,
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
 SELECT
     t.Metadata_AC_subset_PN_of,
     t.AC_ID_subset,
-    t.PN_ID_of
+    t.PN_ID_of,
     t.AC_subset_PN_of_PositedAt,
     t.AC_subset_PN_of_Who,
     t.AC_subset_PN_of_Confidence,
-    t.AC_subset_PN_of_Stance,
-    t.
+    t.AC_subset_PN_of_Stance
 FROM
     TABLE(ties.rAC_subset_PN_of(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -6772,7 +6431,7 @@ $$
 CREATE OR REPLACE VIEW ties.lAC_subset_PN_of AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6794,26 +6453,24 @@ RETURNS TABLE (
     Confidence decimal(7,3),
     Metadata_AC_subset_PN_of bigint,
     AC_ID_subset smallint,
-    PN_ID_of bigint
+    PN_ID_of bigint,
     AC_subset_PN_of_PositedAt timestamp_ntz(3),
     AC_subset_PN_of_Who smallint,
     AC_subset_PN_of_Confidence decimal(7,3),
-    AC_subset_PN_of_Stance string,
-     int
+    AC_subset_PN_of_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_AC_subset_PN_of,
     t.AC_ID_subset,
-    t.PN_ID_of
+    t.PN_ID_of,
     t.AC_subset_PN_of_PositedAt,
     t.AC_subset_PN_of_Who,
     t.AC_subset_PN_of_Confidence,
-    t.AC_subset_PN_of_Stance,
-    t.
+    t.AC_subset_PN_of_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -6830,7 +6487,7 @@ $$
 CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6853,28 +6510,25 @@ CREATE OR REPLACE FUNCTION ties.tEV_in_AC_wasCast (
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_ID_in numeric(12,0),
-    AC_ID_wasCast smallint
+    AC_ID_wasCast smallint,
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
 SELECT
     t.Metadata_EV_in_AC_wasCast,
     t.EV_ID_in,
-    t.AC_ID_wasCast
+    t.AC_ID_wasCast,
     t.EV_in_AC_wasCast_PositedAt,
     t.EV_in_AC_wasCast_Who,
     t.EV_in_AC_wasCast_Confidence,
-    t.EV_in_AC_wasCast_Stance,
-    t.
+    t.EV_in_AC_wasCast_Stance
 FROM
     TABLE(ties.rEV_in_AC_wasCast(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -6886,7 +6540,7 @@ $$
 CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6908,26 +6562,24 @@ RETURNS TABLE (
     Confidence decimal(7,3),
     Metadata_EV_in_AC_wasCast bigint,
     EV_ID_in numeric(12,0),
-    AC_ID_wasCast smallint
+    AC_ID_wasCast smallint,
     EV_in_AC_wasCast_PositedAt timestamp_ntz(3),
     EV_in_AC_wasCast_Who smallint,
     EV_in_AC_wasCast_Confidence decimal(7,3),
-    EV_in_AC_wasCast_Stance string,
-     int
+    EV_in_AC_wasCast_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_EV_in_AC_wasCast,
     t.EV_ID_in,
-    t.AC_ID_wasCast
+    t.AC_ID_wasCast,
     t.EV_in_AC_wasCast_PositedAt,
     t.EV_in_AC_wasCast_Who,
     t.EV_in_AC_wasCast_Confidence,
-    t.EV_in_AC_wasCast_Stance,
-    t.
+    t.EV_in_AC_wasCast_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -6944,7 +6596,7 @@ $$
 CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -6971,13 +6623,12 @@ RETURNS TABLE (
     got_RAT_Checksum numeric(19,0),
     got_RAT_Rating varchar(42),
     got_Metadata_RAT bigint,
-    RAT_ID_got tinyint
+    RAT_ID_got tinyint,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -6988,17 +6639,16 @@ SELECT
     kRAT_got.RAT_Checksum AS got_RAT_Checksum,
     kRAT_got.RAT_Rating AS got_RAT_Rating,
     kRAT_got.Metadata_RAT AS got_Metadata_RAT,
-    t.RAT_ID_got
+    t.RAT_ID_got,
     t.AC_part_PR_in_RAT_got_ChangedAt,
     t.AC_part_PR_in_RAT_got_PositedAt,
     t.AC_part_PR_in_RAT_got_Who,
     t.AC_part_PR_in_RAT_got_Confidence,
-    t.AC_part_PR_in_RAT_got_Stance,
-    t.
+    t.AC_part_PR_in_RAT_got_Stance
 FROM
     TABLE(ties.rAC_part_PR_in_RAT_got(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -7014,7 +6664,7 @@ $$
 CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7040,32 +6690,30 @@ RETURNS TABLE (
     got_RAT_Checksum numeric(19,0),
     got_RAT_Rating varchar(42),
     got_Metadata_RAT bigint,
-    RAT_ID_got tinyint
+    RAT_ID_got tinyint,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_AC_part_PR_in_RAT_got,
     t.AC_ID_part,
     t.PR_ID_in,
     t.got_RAT_Checksum,
     t.got_RAT_Rating,
     t.got_Metadata_RAT,
-    t.RAT_ID_got
+    t.RAT_ID_got,
     t.AC_part_PR_in_RAT_got_ChangedAt,
     t.AC_part_PR_in_RAT_got_PositedAt,
     t.AC_part_PR_in_RAT_got_Who,
     t.AC_part_PR_in_RAT_got_Confidence,
-    t.AC_part_PR_in_RAT_got_Stance,
-    t.
+    t.AC_part_PR_in_RAT_got_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -7082,7 +6730,7 @@ $$
 CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7109,13 +6757,12 @@ RETURNS TABLE (
     got_RAT_Checksum numeric(19,0),
     got_RAT_Rating varchar(42),
     got_Metadata_RAT bigint,
-    RAT_ID_got tinyint
+    RAT_ID_got tinyint,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_part_PR_in_RAT_got_PositedAt timestamp_ntz(3),
     AC_part_PR_in_RAT_got_Who smallint,
     AC_part_PR_in_RAT_got_Confidence decimal(7,3),
-    AC_part_PR_in_RAT_got_Stance string,
-     int
+    AC_part_PR_in_RAT_got_Stance string
 )
 AS
 $$
@@ -7128,13 +6775,12 @@ SELECT
     t.got_RAT_Checksum,
     t.got_RAT_Rating,
     t.got_Metadata_RAT,
-    t.RAT_ID_got
+    t.RAT_ID_got,
     t.AC_part_PR_in_RAT_got_ChangedAt,
     t.AC_part_PR_in_RAT_got_PositedAt,
     t.AC_part_PR_in_RAT_got_Who,
     t.AC_part_PR_in_RAT_got_Confidence,
-    t.AC_part_PR_in_RAT_got_Stance,
-    t.
+    t.AC_part_PR_in_RAT_got_Stance
 FROM
     dw._Who p
 JOIN (
@@ -7168,30 +6814,28 @@ CREATE OR REPLACE FUNCTION ties.tST_at_PR_isPlaying (
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_ID_at int,
-    PR_ID_isPlaying number(10,0)
+    PR_ID_isPlaying number(10,0),
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
 SELECT
     t.Metadata_ST_at_PR_isPlaying,
     t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t.PR_ID_isPlaying,
     t.ST_at_PR_isPlaying_ChangedAt,
     t.ST_at_PR_isPlaying_PositedAt,
     t.ST_at_PR_isPlaying_Who,
     t.ST_at_PR_isPlaying_Confidence,
-    t.ST_at_PR_isPlaying_Stance,
-    t.
+    t.ST_at_PR_isPlaying_Stance
 FROM
     TABLE(ties.rST_at_PR_isPlaying(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -7203,7 +6847,7 @@ $$
 CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7225,28 +6869,26 @@ RETURNS TABLE (
     Confidence decimal(7,3),
     Metadata_ST_at_PR_isPlaying bigint,
     ST_ID_at int,
-    PR_ID_isPlaying number(10,0)
+    PR_ID_isPlaying number(10,0),
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_ST_at_PR_isPlaying,
     t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t.PR_ID_isPlaying,
     t.ST_at_PR_isPlaying_ChangedAt,
     t.ST_at_PR_isPlaying_PositedAt,
     t.ST_at_PR_isPlaying_Who,
     t.ST_at_PR_isPlaying_Confidence,
-    t.ST_at_PR_isPlaying_Stance,
-    t.
+    t.ST_at_PR_isPlaying_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -7263,7 +6905,7 @@ $$
 CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7286,13 +6928,12 @@ RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     Metadata_ST_at_PR_isPlaying bigint,
     ST_ID_at int,
-    PR_ID_isPlaying number(10,0)
+    PR_ID_isPlaying number(10,0),
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_at_PR_isPlaying_PositedAt timestamp_ntz(3),
     ST_at_PR_isPlaying_Who smallint,
     ST_at_PR_isPlaying_Confidence decimal(7,3),
-    ST_at_PR_isPlaying_Stance string,
-     int
+    ST_at_PR_isPlaying_Stance string
 )
 AS
 $$
@@ -7301,13 +6942,12 @@ SELECT
     tp.inspectedTimepoint,
     t.Metadata_ST_at_PR_isPlaying,
     t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t.PR_ID_isPlaying,
     t.ST_at_PR_isPlaying_ChangedAt,
     t.ST_at_PR_isPlaying_PositedAt,
     t.ST_at_PR_isPlaying_Who,
     t.ST_at_PR_isPlaying_Confidence,
-    t.ST_at_PR_isPlaying_Stance,
-    t.
+    t.ST_at_PR_isPlaying_Stance
 FROM
     dw._Who p
 JOIN (
@@ -7344,12 +6984,11 @@ RETURNS TABLE (
     AC_ID_child smallint,
     having_PAT_ParentalType varchar(42),
     having_Metadata_PAT bigint,
-    PAT_ID_having tinyint
+    PAT_ID_having tinyint,
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
@@ -7359,16 +6998,14 @@ SELECT
     t.AC_ID_child,
     kPAT_having.PAT_ParentalType AS having_PAT_ParentalType,
     kPAT_having.Metadata_PAT AS having_Metadata_PAT,
-    t.PAT_ID_having
+    t.PAT_ID_having,
     t.AC_parent_AC_child_PAT_having_PositedAt,
     t.AC_parent_AC_child_PAT_having_Who,
     t.AC_parent_AC_child_PAT_having_Confidence,
-    t.AC_parent_AC_child_PAT_having_Stance,
-    t.
+    t.AC_parent_AC_child_PAT_having_Stance
 FROM
     TABLE(ties.rAC_parent_AC_child_PAT_having(
         positor,
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -7384,7 +7021,7 @@ $$
 CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7409,29 +7046,27 @@ RETURNS TABLE (
     AC_ID_child smallint,
     having_PAT_ParentalType varchar(42),
     having_Metadata_PAT bigint,
-    PAT_ID_having tinyint
+    PAT_ID_having tinyint,
     AC_parent_AC_child_PAT_having_PositedAt timestamp_ntz(3),
     AC_parent_AC_child_PAT_having_Who smallint,
     AC_parent_AC_child_PAT_having_Confidence decimal(7,3),
-    AC_parent_AC_child_PAT_having_Stance string,
-     int
+    AC_parent_AC_child_PAT_having_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_AC_parent_AC_child_PAT_having,
     t.AC_ID_parent,
     t.AC_ID_child,
     t.having_PAT_ParentalType,
     t.having_Metadata_PAT,
-    t.PAT_ID_having
+    t.PAT_ID_having,
     t.AC_parent_AC_child_PAT_having_PositedAt,
     t.AC_parent_AC_child_PAT_having_Who,
     t.AC_parent_AC_child_PAT_having_Confidence,
-    t.AC_parent_AC_child_PAT_having_Stance,
-    t.
+    t.AC_parent_AC_child_PAT_having_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -7448,7 +7083,7 @@ $$
 CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7472,13 +7107,12 @@ RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_ID_content number(10,0),
     ST_ID_location int,
-    EV_ID_of numeric(12,0)
+    EV_ID_of numeric(12,0),
     PR_content_ST_location_EV_of_ChangedAt datetime,
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -7486,17 +7120,16 @@ SELECT
     t.Metadata_PR_content_ST_location_EV_of,
     t.PR_ID_content,
     t.ST_ID_location,
-    t.EV_ID_of
+    t.EV_ID_of,
     t.PR_content_ST_location_EV_of_ChangedAt,
     t.PR_content_ST_location_EV_of_PositedAt,
     t.PR_content_ST_location_EV_of_Who,
     t.PR_content_ST_location_EV_of_Confidence,
-    t.PR_content_ST_location_EV_of_Stance,
-    t.
+    t.PR_content_ST_location_EV_of_Stance
 FROM
     TABLE(ties.rPR_content_ST_location_EV_of(
         positor,
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -7508,7 +7141,7 @@ $$
 CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7531,29 +7164,27 @@ RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_ID_content number(10,0),
     ST_ID_location int,
-    EV_ID_of numeric(12,0)
+    EV_ID_of numeric(12,0),
     PR_content_ST_location_EV_of_ChangedAt datetime,
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.Metadata_PR_content_ST_location_EV_of,
     t.PR_ID_content,
     t.ST_ID_location,
-    t.EV_ID_of
+    t.EV_ID_of,
     t.PR_content_ST_location_EV_of_ChangedAt,
     t.PR_content_ST_location_EV_of_PositedAt,
     t.PR_content_ST_location_EV_of_Who,
     t.PR_content_ST_location_EV_of_Confidence,
-    t.PR_content_ST_location_EV_of_Stance,
-    t.
+    t.PR_content_ST_location_EV_of_Stance
 FROM
     dw._Who p
 CROSS JOIN LATERAL
@@ -7570,7 +7201,7 @@ $$
 CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
 SELECT
     p.Who,
-     AS Confidence,
+    cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
     dw._Who p
@@ -7594,13 +7225,12 @@ RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_ID_content number(10,0),
     ST_ID_location int,
-    EV_ID_of numeric(12,0)
+    EV_ID_of numeric(12,0),
     PR_content_ST_location_EV_of_ChangedAt datetime,
     PR_content_ST_location_EV_of_PositedAt timestamp_ntz(3),
     PR_content_ST_location_EV_of_Who smallint,
     PR_content_ST_location_EV_of_Confidence decimal(7,3),
-    PR_content_ST_location_EV_of_Stance string,
-     int
+    PR_content_ST_location_EV_of_Stance string
 )
 AS
 $$
@@ -7610,13 +7240,12 @@ SELECT
     t.Metadata_PR_content_ST_location_EV_of,
     t.PR_ID_content,
     t.ST_ID_location,
-    t.EV_ID_of
+    t.EV_ID_of,
     t.PR_content_ST_location_EV_of_ChangedAt,
     t.PR_content_ST_location_EV_of_PositedAt,
     t.PR_content_ST_location_EV_of_Who,
     t.PR_content_ST_location_EV_of_Confidence,
-    t.PR_content_ST_location_EV_of_Stance,
-    t.
+    t.PR_content_ST_location_EV_of_Stance
 FROM
     dw._Who p
 JOIN (

@@ -82,7 +82,7 @@ FROM
     anchors.ST_Stage ST
 LEFT JOIN
     TABLE(attributes.rST_NAM_Stage_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -91,7 +91,7 @@ ON
             sub.ST_NAM_ID
         FROM
             TABLE(attributes.rST_NAM_Stage_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -105,7 +105,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_LOC_Stage_Location(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) LOC
 ON
@@ -114,7 +113,6 @@ ON
             sub.ST_LOC_ID
         FROM
             TABLE(attributes.rST_LOC_Stage_Location(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -127,7 +125,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_AVG_Stage_Average(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) AVG
 ON
@@ -136,7 +134,7 @@ ON
             sub.ST_AVG_ID
         FROM
             TABLE(attributes.rST_AVG_Stage_Average(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -154,7 +152,6 @@ ON
     kAVG.UTL_ID = AVG.ST_AVG_UTL_ID
 LEFT JOIN
     TABLE(attributes.rST_MIN_Stage_Minimum(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) MIN
 ON
@@ -163,7 +160,6 @@ ON
             sub.ST_MIN_ID
         FROM
             TABLE(attributes.rST_MIN_Stage_Minimum(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -462,7 +458,7 @@ FROM
     anchors.AC_Actor AC
 LEFT JOIN
     TABLE(attributes.rAC_NAM_Actor_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -471,7 +467,7 @@ ON
             sub.AC_NAM_ID
         FROM
             TABLE(attributes.rAC_NAM_Actor_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -485,7 +481,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rAC_GEN_Actor_Gender(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) GEN
 ON
@@ -494,7 +489,6 @@ ON
             sub.AC_GEN_ID
         FROM
             TABLE(attributes.rAC_GEN_Actor_Gender(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -511,7 +505,7 @@ ON
     kGEN.GEN_ID = GEN.AC_GEN_GEN_ID
 LEFT JOIN
     TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) PLV
 ON
@@ -520,7 +514,7 @@ ON
             sub.AC_PLV_ID
         FROM
             TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -774,7 +768,6 @@ FROM
     anchors.PR_Program PR
 LEFT JOIN
     TABLE(attributes.rPR_NAM_Program_Name(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) NAM
 ON
@@ -783,7 +776,6 @@ ON
             sub.PR_NAM_ID
         FROM
             TABLE(attributes.rPR_NAM_Program_Name(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -796,7 +788,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rPR_LEN_Program_Length(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::timestamp_ntz(3)
     )) LEN
 ON
@@ -805,7 +797,7 @@ ON
             sub.PR_LEN_ID
         FROM
             TABLE(attributes.rPR_LEN_Program_Length(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.EV_Event (
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
     ) references public.ETY_EventType(ETY_ID) RELY,
-    EV_Dummy bit null,
+    EV_Dummy boolean null,
     constraint pkEV_Event primary key (
         EV_ID
     ) RELY

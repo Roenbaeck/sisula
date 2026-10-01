@@ -70,7 +70,6 @@ ON
     kETY_of.ETY_ID = EV.ETY_ID_of
 LEFT JOIN
     TABLE(public.rEV_DAT_Event_Date(
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -79,7 +78,6 @@ ON
             sub.EV_DAT_ID
         FROM
             TABLE(public.rEV_DAT_Event_Date(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -92,7 +90,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rEV_AUD_Event_Audience(
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -101,7 +98,6 @@ ON
             sub.EV_AUD_ID
         FROM
             TABLE(public.rEV_AUD_Event_Audience(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -114,7 +110,6 @@ ON
     )
 LEFT JOIN
     TABLE(public.rEV_REV_Event_Revenue(
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -123,7 +118,6 @@ ON
             sub.EV_REV_ID
         FROM
             TABLE(public.rEV_REV_Event_Revenue(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE

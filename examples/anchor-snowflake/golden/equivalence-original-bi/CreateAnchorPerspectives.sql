@@ -74,7 +74,7 @@ FROM
     anchors.ST_Stage ST
 LEFT JOIN
     TABLE(attributes.rST_NAM_Stage_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -83,7 +83,7 @@ ON
             sub.ST_NAM_ID
         FROM
             TABLE(attributes.rST_NAM_Stage_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -97,7 +97,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_LOC_Stage_Location(
-        :,
         positingTimepoint::datetime
     )) LOC
 ON
@@ -106,7 +105,6 @@ ON
             sub.ST_LOC_ID
         FROM
             TABLE(attributes.rST_LOC_Stage_Location(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -119,7 +117,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_AVG_Stage_Average(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) AVG
 ON
@@ -128,7 +126,7 @@ ON
             sub.ST_AVG_ID
         FROM
             TABLE(attributes.rST_AVG_Stage_Average(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -146,7 +144,6 @@ ON
     kAVG.UTL_ID = AVG.UTL_ID
 LEFT JOIN
     TABLE(attributes.rST_MIN_Stage_Minimum(
-        :,
         positingTimepoint::datetime
     )) MIN
 ON
@@ -155,7 +152,6 @@ ON
             sub.ST_MIN_ID
         FROM
             TABLE(attributes.rST_MIN_Stage_Minimum(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -386,7 +382,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -395,7 +391,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -415,7 +411,7 @@ SELECT
     GEN.AC_GEN_ID,
     GEN.AC_GEN_PositedAt,
     GEN.AC_GEN_Reliability,
-    kGEN.GEN_Checksum AS ,
+    kGEN.GEN_Checksum AS GEN_Checksum,
     kGEN.GEN_Gender AS GEN_Gender,
     kGEN.Metadata_GEN AS Metadata_GEN,
     GEN.GEN_ID,
@@ -424,7 +420,7 @@ SELECT
     PLV.AC_PLV_ChangedAt,
     PLV.AC_PLV_PositedAt,
     PLV.AC_PLV_Reliability,
-    kPLV.PLV_Checksum AS ,
+    kPLV.PLV_Checksum AS PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     kPLV.Metadata_PLV AS Metadata_PLV,
     PLV.PLV_ID
@@ -432,7 +428,7 @@ FROM
     anchors.AC_Actor AC
 LEFT JOIN
     TABLE(attributes.rAC_NAM_Actor_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -441,7 +437,7 @@ ON
             sub.AC_NAM_ID
         FROM
             TABLE(attributes.rAC_NAM_Actor_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -455,7 +451,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rAC_GEN_Actor_Gender(
-        :,
         positingTimepoint::datetime
     )) GEN
 ON
@@ -464,7 +459,6 @@ ON
             sub.AC_GEN_ID
         FROM
             TABLE(attributes.rAC_GEN_Actor_Gender(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -481,7 +475,7 @@ ON
     kGEN.GEN_ID = GEN.GEN_ID
 LEFT JOIN
     TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) PLV
 ON
@@ -490,7 +484,7 @@ ON
             sub.AC_PLV_ID
         FROM
             TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -535,7 +529,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -544,7 +538,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -565,7 +559,7 @@ SELECT
     AC.AC_GEN_ID,
     AC.AC_GEN_PositedAt,
     AC.AC_GEN_Reliability,
-    AC.,
+    AC.GEN_Checksum,
     AC.GEN_Gender,
     AC.Metadata_GEN,
     AC.GEN_ID,
@@ -574,7 +568,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.Metadata_PLV,
     AC.PLV_ID
@@ -614,7 +608,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -623,7 +617,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -644,7 +638,7 @@ SELECT
     AC.AC_GEN_ID,
     AC.AC_GEN_PositedAt,
     AC.AC_GEN_Reliability,
-    AC.,
+    AC.GEN_Checksum,
     AC.GEN_Gender,
     AC.Metadata_GEN,
     AC.GEN_ID,
@@ -653,7 +647,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.Metadata_PLV,
     AC.PLV_ID
@@ -728,7 +722,6 @@ FROM
     anchors.PR_Program PR
 LEFT JOIN
     TABLE(attributes.rPR_NAM_Program_Name(
-        :,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -737,7 +730,6 @@ ON
             sub.PR_NAM_ID
         FROM
             TABLE(attributes.rPR_NAM_Program_Name(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -750,7 +742,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rPR_LEN_Program_Length(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LEN
 ON
@@ -759,7 +751,7 @@ ON
             sub.PR_LEN_ID
         FROM
             TABLE(attributes.rPR_LEN_Program_Length(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE

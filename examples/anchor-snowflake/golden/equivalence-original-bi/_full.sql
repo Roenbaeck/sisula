@@ -7,6 +7,7 @@
 CREATE TABLE IF NOT EXISTS knots.PAT_ParentalType (
     PAT_ID tinyint not null,
     PAT_ParentalType varchar(42) not null,
+    Metadata_PAT int not null,
     constraint pkPAT_ParentalType primary key (
         PAT_ID
     ) RELY,
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS knots.GEN_Gender (
     GEN_ID number(1,0) not null,
     GEN_Gender varchar(42) not null,
     GEN_Checksum numeric(19,0) default hash(GEN_Gender),
+    Metadata_GEN int not null,
     constraint pkGEN_Gender primary key (
         GEN_ID
     ) RELY,
@@ -33,6 +35,7 @@ CREATE TABLE IF NOT EXISTS knots.PLV_ProfessionalLevel (
     PLV_ID tinyint not null,
     PLV_ProfessionalLevel string not null,
     PLV_Checksum numeric(19,0) default hash(PLV_ProfessionalLevel),
+    Metadata_PLV int not null,
     constraint pkPLV_ProfessionalLevel primary key (
         PLV_ID
     ) RELY,
@@ -45,6 +48,7 @@ CREATE TABLE IF NOT EXISTS knots.PLV_ProfessionalLevel (
 CREATE TABLE IF NOT EXISTS knots.UTL_Utilization (
     UTL_ID tinyint not null,
     UTL_Utilization tinyint not null,
+    Metadata_UTL int not null,
     constraint pkUTL_Utilization primary key (
         UTL_ID
     ) RELY,
@@ -57,6 +61,7 @@ CREATE TABLE IF NOT EXISTS knots.UTL_Utilization (
 CREATE TABLE IF NOT EXISTS knots.ONG_Ongoing (
     ONG_ID tinyint not null,
     ONG_Ongoing varchar(3) not null,
+    Metadata_ONG int not null,
     constraint pkONG_Ongoing primary key (
         ONG_ID
     ) RELY,
@@ -71,6 +76,7 @@ CREATE TABLE IF NOT EXISTS knots.RAT_Rating (
     RAT_ID tinyint default knots.RAT_Rating_ID_SEQ.nextval not null, 
     RAT_Rating varchar(42) not null,
     RAT_Checksum numeric(19,0) default hash(RAT_Rating),
+    Metadata_RAT int not null,
     constraint pkRAT_Rating primary key (
         RAT_ID
     ) RELY,
@@ -84,6 +90,7 @@ CREATE TABLE IF NOT EXISTS knots.ETY_EventType (
     ETY_ID tinyint not null,
     ETY_EventType varchar(42) not null,
     ETY_Checksum numeric(19,0) default hash(ETY_EventType),
+    Metadata_ETY int not null,
     constraint pkETY_EventType primary key (
         ETY_ID
     ) RELY,
@@ -2439,7 +2446,7 @@ FROM
     anchors.ST_Stage ST
 LEFT JOIN
     TABLE(attributes.rST_NAM_Stage_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -2448,7 +2455,7 @@ ON
             sub.ST_NAM_ID
         FROM
             TABLE(attributes.rST_NAM_Stage_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2462,7 +2469,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_LOC_Stage_Location(
-        :,
         positingTimepoint::datetime
     )) LOC
 ON
@@ -2471,7 +2477,6 @@ ON
             sub.ST_LOC_ID
         FROM
             TABLE(attributes.rST_LOC_Stage_Location(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2484,7 +2489,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rST_AVG_Stage_Average(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) AVG
 ON
@@ -2493,7 +2498,7 @@ ON
             sub.ST_AVG_ID
         FROM
             TABLE(attributes.rST_AVG_Stage_Average(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2511,7 +2516,6 @@ ON
     kAVG.UTL_ID = AVG.UTL_ID
 LEFT JOIN
     TABLE(attributes.rST_MIN_Stage_Minimum(
-        :,
         positingTimepoint::datetime
     )) MIN
 ON
@@ -2520,7 +2524,6 @@ ON
             sub.ST_MIN_ID
         FROM
             TABLE(attributes.rST_MIN_Stage_Minimum(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2751,7 +2754,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -2760,7 +2763,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -2780,7 +2783,7 @@ SELECT
     GEN.AC_GEN_ID,
     GEN.AC_GEN_PositedAt,
     GEN.AC_GEN_Reliability,
-    kGEN.GEN_Checksum AS ,
+    kGEN.GEN_Checksum AS GEN_Checksum,
     kGEN.GEN_Gender AS GEN_Gender,
     kGEN.Metadata_GEN AS Metadata_GEN,
     GEN.GEN_ID,
@@ -2789,7 +2792,7 @@ SELECT
     PLV.AC_PLV_ChangedAt,
     PLV.AC_PLV_PositedAt,
     PLV.AC_PLV_Reliability,
-    kPLV.PLV_Checksum AS ,
+    kPLV.PLV_Checksum AS PLV_Checksum,
     kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     kPLV.Metadata_PLV AS Metadata_PLV,
     PLV.PLV_ID
@@ -2797,7 +2800,7 @@ FROM
     anchors.AC_Actor AC
 LEFT JOIN
     TABLE(attributes.rAC_NAM_Actor_Name(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -2806,7 +2809,7 @@ ON
             sub.AC_NAM_ID
         FROM
             TABLE(attributes.rAC_NAM_Actor_Name(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2820,7 +2823,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rAC_GEN_Actor_Gender(
-        :,
         positingTimepoint::datetime
     )) GEN
 ON
@@ -2829,7 +2831,6 @@ ON
             sub.AC_GEN_ID
         FROM
             TABLE(attributes.rAC_GEN_Actor_Gender(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2846,7 +2847,7 @@ ON
     kGEN.GEN_ID = GEN.GEN_ID
 LEFT JOIN
     TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) PLV
 ON
@@ -2855,7 +2856,7 @@ ON
             sub.AC_PLV_ID
         FROM
             TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -2900,7 +2901,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -2909,7 +2910,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -2930,7 +2931,7 @@ SELECT
     AC.AC_GEN_ID,
     AC.AC_GEN_PositedAt,
     AC.AC_GEN_Reliability,
-    AC.,
+    AC.GEN_Checksum,
     AC.GEN_Gender,
     AC.Metadata_GEN,
     AC.GEN_ID,
@@ -2939,7 +2940,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.Metadata_PLV,
     AC.PLV_ID
@@ -2979,7 +2980,7 @@ RETURNS TABLE (
     AC_GEN_ID int,
     AC_GEN_PositedAt datetime,
     AC_GEN_Reliability decimal(5,2),
-     numeric(19,0),
+    GEN_Checksum numeric(19,0),
     GEN_Gender varchar(42),
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -2988,7 +2989,7 @@ RETURNS TABLE (
     AC_PLV_ChangedAt datetime,
     AC_PLV_PositedAt datetime,
     AC_PLV_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -3009,7 +3010,7 @@ SELECT
     AC.AC_GEN_ID,
     AC.AC_GEN_PositedAt,
     AC.AC_GEN_Reliability,
-    AC.,
+    AC.GEN_Checksum,
     AC.GEN_Gender,
     AC.Metadata_GEN,
     AC.GEN_ID,
@@ -3018,7 +3019,7 @@ SELECT
     AC.AC_PLV_ChangedAt,
     AC.AC_PLV_PositedAt,
     AC.AC_PLV_Reliability,
-    AC.,
+    AC.PLV_Checksum,
     AC.PLV_ProfessionalLevel,
     AC.Metadata_PLV,
     AC.PLV_ID
@@ -3093,7 +3094,6 @@ FROM
     anchors.PR_Program PR
 LEFT JOIN
     TABLE(attributes.rPR_NAM_Program_Name(
-        :,
         positingTimepoint::datetime
     )) NAM
 ON
@@ -3102,7 +3102,6 @@ ON
             sub.PR_NAM_ID
         FROM
             TABLE(attributes.rPR_NAM_Program_Name(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3115,7 +3114,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rPR_LEN_Program_Length(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LEN
 ON
@@ -3124,7 +3123,7 @@ ON
             sub.PR_LEN_ID
         FROM
             TABLE(attributes.rPR_LEN_Program_Length(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3311,7 +3310,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -3360,7 +3359,7 @@ SELECT
     LVL.EV_LVL_ChangedAt,
     LVL.EV_LVL_PositedAt,
     LVL.EV_LVL_Reliability,
-    kLVL.PLV_Checksum AS ,
+    kLVL.PLV_Checksum AS PLV_Checksum,
     kLVL.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
     kLVL.Metadata_PLV AS Metadata_PLV,
     LVL.PLV_ID
@@ -3372,7 +3371,6 @@ ON
     kETY_of.ETY_ID = EV.ETY_ID_of
 LEFT JOIN
     TABLE(attributes.rEV_DAT_Event_Date(
-        :,
         positingTimepoint::datetime
     )) DAT
 ON
@@ -3381,7 +3379,6 @@ ON
             sub.EV_DAT_ID
         FROM
             TABLE(attributes.rEV_DAT_Event_Date(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3394,7 +3391,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_AUD_Event_Audience(
-        :,
         positingTimepoint::datetime
     )) AUD
 ON
@@ -3403,7 +3399,6 @@ ON
             sub.EV_AUD_ID
         FROM
             TABLE(attributes.rEV_AUD_Event_Audience(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3416,7 +3411,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_REV_Event_Revenue(
-        :,
         positingTimepoint::datetime
     )) REV
 ON
@@ -3425,7 +3419,6 @@ ON
             sub.EV_REV_ID
         FROM
             TABLE(attributes.rEV_REV_Event_Revenue(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3438,7 +3431,7 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_STA_Event_Status(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) STA
 ON
@@ -3447,7 +3440,7 @@ ON
             sub.EV_STA_ID
         FROM
             TABLE(attributes.rEV_STA_Event_Status(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3461,7 +3454,6 @@ ON
     )
 LEFT JOIN
     TABLE(attributes.rEV_UTL_Event_Utilization(
-        :,
         positingTimepoint::datetime
     )) UTL
 ON
@@ -3470,7 +3462,6 @@ ON
             sub.EV_UTL_ID
         FROM
             TABLE(attributes.rEV_UTL_Event_Utilization(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3487,7 +3478,7 @@ ON
     kUTL.UTL_ID = UTL.UTL_ID
 LEFT JOIN
     TABLE(attributes.rEV_LVL_Event_Level(
-        changingTimepoint
+        changingTimepoint::date,
         positingTimepoint::datetime
     )) LVL
 ON
@@ -3496,7 +3487,7 @@ ON
             sub.EV_LVL_ID
         FROM
             TABLE(attributes.rEV_LVL_Event_Level(
-                changingTimepoint
+                changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -3570,7 +3561,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -3620,7 +3611,7 @@ SELECT
     EV.EV_LVL_ChangedAt,
     EV.EV_LVL_PositedAt,
     EV.EV_LVL_Reliability,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID
@@ -3689,7 +3680,7 @@ RETURNS TABLE (
     EV_LVL_ChangedAt date,
     EV_LVL_PositedAt datetime,
     EV_LVL_Reliability decimal(5,2),
-     numeric(19,0),
+    PLV_Checksum numeric(19,0),
     PLV_ProfessionalLevel string,
     Metadata_PLV int,
     PLV_ID tinyint
@@ -3739,7 +3730,7 @@ SELECT
     EV.EV_LVL_ChangedAt,
     EV.EV_LVL_PositedAt,
     EV.EV_LVL_Reliability,
-    EV.,
+    EV.PLV_Checksum,
     EV.PLV_ProfessionalLevel,
     EV.Metadata_PLV,
     EV.PLV_ID
@@ -4950,7 +4941,7 @@ SELECT
     t.ONG_ID_currently
 FROM
     TABLE(ties.rAC_partner_AC_with_ONG_currently(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -4965,7 +4956,7 @@ AND
             sub.AC_partner_AC_with_ONG_currently_ID
         FROM
             TABLE(ties.rAC_partner_AC_with_ONG_currently(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5095,7 +5086,6 @@ SELECT
     t.PN_ID_of
 FROM
     TABLE(ties.rAC_subset_PN_of(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -5106,7 +5096,6 @@ AND
             sub.AC_subset_PN_of_ID
         FROM
             TABLE(ties.rAC_subset_PN_of(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5189,7 +5178,6 @@ SELECT
     t.AC_ID_wasCast
 FROM
     TABLE(ties.rEV_in_AC_wasCast(
-        :,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -5200,7 +5188,6 @@ AND
             sub.EV_in_AC_wasCast_ID
         FROM
             TABLE(ties.rEV_in_AC_wasCast(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5289,7 +5276,7 @@ SELECT
     t.RAT_ID_got
 FROM
     TABLE(ties.rAC_part_PR_in_RAT_got(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -5304,7 +5291,7 @@ AND
             sub.AC_part_PR_in_RAT_got_ID
         FROM
             TABLE(ties.rAC_part_PR_in_RAT_got(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5434,7 +5421,7 @@ SELECT
     t.PR_ID_isPlaying
 FROM
     TABLE(ties.rST_at_PR_isPlaying(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -5445,7 +5432,7 @@ AND
             sub.ST_at_PR_isPlaying_ID
         FROM
             TABLE(ties.rST_at_PR_isPlaying(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5567,7 +5554,6 @@ SELECT
     t.PAT_ID_having
 FROM
     TABLE(ties.rAC_parent_AC_child_PAT_having(
-        :,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
@@ -5582,7 +5568,6 @@ AND
             sub.AC_parent_AC_child_PAT_having_ID
         FROM
             TABLE(ties.rAC_parent_AC_child_PAT_having(
-                :,
                 positingTimepoint::datetime
             )) sub
         WHERE
@@ -5675,7 +5660,7 @@ SELECT
     t.EV_ID_of
 FROM
     TABLE(ties.rPR_content_ST_location_EV_of(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 WHERE
@@ -5686,7 +5671,7 @@ AND
             sub.PR_content_ST_location_EV_of_ID
         FROM
             TABLE(ties.rPR_content_ST_location_EV_of(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE

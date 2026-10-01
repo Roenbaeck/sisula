@@ -34,7 +34,7 @@ SELECT
     t.ONG_ID_currently
 FROM
     TABLE(ties.rAC_partner_AC_with_ONG_currently(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -49,7 +49,7 @@ AND
             sub.AC_partner_AC_with_ONG_currently_ID
         FROM
             TABLE(ties.rAC_partner_AC_with_ONG_currently(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -179,7 +179,6 @@ SELECT
     t.PN_ID_of
 FROM
     TABLE(ties.rAC_subset_PN_of(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -190,7 +189,6 @@ AND
             sub.AC_subset_PN_of_ID
         FROM
             TABLE(ties.rAC_subset_PN_of(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -273,7 +271,6 @@ SELECT
     t.AC_ID_wasCast
 FROM
     TABLE(ties.rEV_in_AC_wasCast(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -284,7 +281,6 @@ AND
             sub.EV_in_AC_wasCast_ID
         FROM
             TABLE(ties.rEV_in_AC_wasCast(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -373,7 +369,7 @@ SELECT
     t.RAT_ID_got
 FROM
     TABLE(ties.rAC_part_PR_in_RAT_got(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -388,7 +384,7 @@ AND
             sub.AC_part_PR_in_RAT_got_ID
         FROM
             TABLE(ties.rAC_part_PR_in_RAT_got(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -518,7 +514,7 @@ SELECT
     t.PR_ID_isPlaying
 FROM
     TABLE(ties.rST_at_PR_isPlaying(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -529,7 +525,7 @@ AND
             sub.ST_at_PR_isPlaying_ID
         FROM
             TABLE(ties.rST_at_PR_isPlaying(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -651,7 +647,6 @@ SELECT
     t.PAT_ID_having
 FROM
     TABLE(ties.rAC_parent_AC_child_PAT_having(
-        :,
         positingTimepoint::timestamp_ntz(3)
     )) t
 LEFT JOIN
@@ -666,7 +661,6 @@ AND
             sub.AC_parent_AC_child_PAT_having_ID
         FROM
             TABLE(ties.rAC_parent_AC_child_PAT_having(
-                :,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
@@ -759,7 +753,7 @@ SELECT
     t.EV_ID_of
 FROM
     TABLE(ties.rPR_content_ST_location_EV_of(
-        changingTimepoint
+        changingTimepoint::datetime,
         positingTimepoint::timestamp_ntz(3)
     )) t
 WHERE
@@ -770,7 +764,7 @@ AND
             sub.PR_content_ST_location_EV_of_ID
         FROM
             TABLE(ties.rPR_content_ST_location_EV_of(
-                changingTimepoint
+                changingTimepoint::datetime,
                 positingTimepoint::timestamp_ntz(3)
             )) sub
         WHERE
