@@ -39,6 +39,7 @@ if (-not $Model)      { $Model = Join-Path $root (Join-Path 'models' ($Variant +
 if (-not $GoldenDir)  { $GoldenDir = Join-Path $root (Join-Path 'golden' $Variant) }
 $Anchor = (Resolve-Path $Anchor).Path
 . (Join-Path $here 'xml-to-tree.ps1')
+. (Join-Path $here 'directive.ps1')
 
 Add-Type -Path (Resolve-Path $JintPath)
 if (-not ('SisulaGoldenHost' -as [type])) {
@@ -58,24 +59,16 @@ function Read-Directive([string] $path) {
     (Read-Text $path) -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') }
 }
 
-# What the modeler reads: Anchor's directive. The scripts that prepare the schema come first
-# (Helpers.js, the naming conventions, derive.js), and then the templates, in the order to render.
-$entries = @(Read-Directive (Join-Path $Anchor 'Snowflake_uni.directive'))
-$prelude = @($entries | Where-Object { $_ -match '(^|/)(Helpers|NamingConvention|derive)\.js$' })
-$directive = @($entries | Where-Object { $_ -like '*.sisula' } | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
+# What the model asks for decides the directive: the scripts that prepare the schema (Helpers.js, the
+# naming conventions, derive.js) and then the templates, in the order to render. Once a
+# temporalization has been switched to the Sisula engine its directive has to list exactly these.
+$temporalization = Get-ModelTemporalization $Model
+try { $info = Get-DirectiveInfo $Anchor $temporalization }
+catch { Write-Host "FAIL  $($_.Exception.Message)"; exit 1 }
+$prelude = $info.Prelude
+$directive = @($info.Templates | ForEach-Object { $_.Name })
 $templatePaths = @{}
-foreach ($e in ($entries | Where-Object { $_ -like '*.sisula' })) { $templatePaths[[IO.Path]::GetFileNameWithoutExtension($e)] = Join-Path $Anchor $e }
-# The golden files come from the legacy directive. They only mean something for the templates if both
-# list the same ones, in the same order.
-$original = @(Read-Directive (Join-Path $Anchor 'Snowflake_uni.legacy.directive') |
-    Where-Object { $_ -like 'SQL/Snowflake/uni/*' } |
-    ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
-if ($directive.Count -eq 0 -or ($directive -join ',') -cne ($original -join ',')) {
-    Write-Host "FAIL  Snowflake_uni.directive does not list the same templates as Snowflake_uni.legacy.directive, which the golden files come from:"
-    Write-Host ("        directive: {0}" -f ($directive -join ', '))
-    Write-Host ("        legacy:    {0}" -f ($original -join ', '))
-    exit 1
-}
+foreach ($t in $info.Templates) { $templatePaths[$t.Name] = Join-Path $Anchor $t.Path }
 $whole = -not $Name
 if (-not $Name) { $Name = $directive }
 # powershell -File passes "A,B" as one string.
@@ -142,7 +135,7 @@ $failed = 0
 $outputs = New-Object System.Collections.Generic.List[string]
 foreach ($n in $Name) {
     $templatePath = $templatePaths[$n]
-    if (-not $templatePath) { $templatePath = Join-Path $Anchor "SQL\Snowflake\uni\$n.sisula" }
+    if (-not $templatePath) { $templatePath = Join-Path $Anchor "SQL\Snowflake\$temporalization\$n.sisula" }
     if (-not (Test-Path $templatePath)) { Write-Host ("FAIL  {0}/{1}: no template" -f $Variant, $n); $failed++; $whole = $false; continue }
     $engine.SetValue('templateText', (Read-Text $templatePath)) | Out-Null
     try {

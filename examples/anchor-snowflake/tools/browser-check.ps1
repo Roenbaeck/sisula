@@ -65,7 +65,7 @@ if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
     # the modeler reads it differently; it is only compared with the original engine.
     $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name |
-        ForEach-Object { $_.BaseName } | Where-Object { $_ -ne 'handwritten' }
+        ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' }
 }
 $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $utf8 = New-Object Text.UTF8Encoding($false)
@@ -95,6 +95,7 @@ $harness = @'
 (function () {
     var MODEL = __MODEL__;
     var MODE = __MODE__;
+    var TEMPORALIZATION = __TEMPORALIZATION__;
     function report(text) { document.getElementById('sisula-result').textContent = text; }
     function toBase64(s) { return btoa(unescape(encodeURIComponent(s))); }
     window.alert = function () {};
@@ -124,8 +125,8 @@ $harness = @'
                     report('BASE64:' + toBase64(new XMLSerializer().serializeToString(Model.toXML(false))));
                     return;
                 }
-                if (Defaults.databaseTarget !== 'Snowflake' || Defaults.temporalization !== 'uni') {
-                    report('ERROR the model did not select Snowflake uni: ' + Defaults.databaseTarget + ' ' + Defaults.temporalization);
+                if (Defaults.databaseTarget !== 'Snowflake' || Defaults.temporalization !== TEMPORALIZATION) {
+                    report('ERROR the model did not select Snowflake ' + TEMPORALIZATION + ': ' + Defaults.databaseTarget + ' ' + Defaults.temporalization);
                     return;
                 }
                 var display = Actions.preformat;
@@ -148,7 +149,7 @@ $harness = @'
 function Invoke-Modeler([string] $name, [string] $model, [string] $mode) {
     # The model goes into the page as a JavaScript string literal.
     $literal = '"' + ($model -replace '\\', '\\' -replace '"', '\"' -replace "`r", '\r' -replace "`n", '\n' -replace '</', '<\/') + '"'
-    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'"))
+    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'").Replace('__TEMPORALIZATION__', "'$(([regex]::Match($model, 'temporalization="(\w+)"')).Groups[1].Value)'"))
     $pagePath = Join-Path $work "$name.html"
     [IO.File]::WriteAllText($pagePath, $html, $utf8)
     $profileDir = Join-Path $work "profile-$name"
@@ -246,7 +247,7 @@ try {
             $expected = $serializer.DeserializeObject([IO.File]::ReadAllText($reference, [Text.Encoding]::UTF8))
             $wrapper = ($actual.Keys | Sort-Object) -join ','
             if ($wrapper -cne 'bindingsVersion,database,schema,temporalization' -or $actual['bindingsVersion'] -ne 1 -or
-                $actual['database'] -cne 'Snowflake' -or $actual['temporalization'] -cne 'uni') {
+                $actual['database'] -cne 'Snowflake' -or $actual['temporalization'] -cne ([regex]::Match($model, 'temporalization="(\w+)"').Groups[1].Value)) {
                 Write-Host ("FAIL  {0}: unexpected wrapper ({1}; {2} {3})" -f $v, $wrapper, $actual['database'], $actual['temporalization'])
                 $failed++; continue
             }

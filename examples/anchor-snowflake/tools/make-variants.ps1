@@ -28,6 +28,17 @@
       equivalence-original   distinct-equivalence with the original naming convention, where
                              knotted columns have no equivalent or checksum names
 
+    Then, for every model above and for these two, a copy for each of the other temporalizations, named
+    <model>-bi and <model>-crt, which differ only in metadata/@temporalization. A model says which
+    temporalization it is for, and the tools take their directive from that. (The tools do not need the
+    uni models to be derived from base; they only need each model to say what it is.)
+
+      flags                  distinct-equivalence with restatability, idempotency, assertiveness and
+                             decisiveness turned over, so the code that tests them is reached both ways
+      ranges                 distinct with a type and a suffix of its own for everything that belongs to
+                             the posit, positor and reliability columns, so a template that takes one from
+                             the wrong place shows
+
     One model is deliberately left as edited and not saved through the modeler:
 
       handwritten            distinct-equivalence with equivalence off, so knots and attributes
@@ -42,6 +53,8 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $models = Join-Path (Split-Path -Parent $PSScriptRoot) 'models'
 $base = [IO.File]::ReadAllText((Join-Path $models 'base.xml'))
+# What was written, by name, for the bi and crt copies below.
+$written = [ordered]@{ base = $base }
 
 function Edit([string] $text, [string] $pattern, [string] $replacement, [int] $expected = 1) {
     $count = [regex]::Matches($text, $pattern).Count
@@ -50,6 +63,7 @@ function Edit([string] $text, [string] $pattern, [string] $replacement, [int] $e
 }
 function Save([string] $name, [string] $text) {
     [IO.File]::WriteAllText((Join-Path $models "$name.xml"), $text, (New-Object Text.UTF8Encoding($false)))
+    $script:written[$name] = $text
     Write-Host "wrote models\$name.xml"
 }
 
@@ -142,7 +156,40 @@ Save 'handwritten' (Edit $t 'equivalence="true"' 'equivalence="false"')
 # equivalence-original
 Save 'equivalence-original' (Edit $t 'naming="improved"' 'naming="original"')
 
+# flags: the switches of the temporal behaviour, all turned over (restatement, idempotency, assertion,
+# decisiveness), on a model with equivalence, so that the code that tests them is reached both ways
+$t = $written['distinct-equivalence']
+$t = Edit $t 'restatability="true"' 'restatability="false"'
+$t = Edit $t 'idempotency="false"' 'idempotency="true"'
+$t = Edit $t 'assertiveness="true"' 'assertiveness="false"'
+$t = Edit $t 'decisiveness="true"' 'decisiveness="false"'
+Save 'flags' $t
+
+# ranges: every type and suffix that belongs to the positing, positor and reliability columns set to
+# something of its own, so that a template that takes one from the wrong place shows
+$t = $written['distinct']
+$t = Edit $t 'deleteReliability="0"' 'deleteReliability="0.25"'
+$t = Edit $t 'defaultReliability="1"' 'defaultReliability="0.75"'
+$t = Edit $t 'reliabilityRange="decimal\(5,2\)"' 'reliabilityRange="decimal(7,3)"'
+$t = Edit $t 'positorRange="tinyint"' 'positorRange="smallint"'
+$t = Edit $t 'positingRange="datetime"' 'positingRange="timestamp_ntz(3)"'
+$t = Edit $t 'positIdentity="int"' 'positIdentity="bigint"'
+$t = Edit $t 'metadataType="int"' 'metadataType="bigint"'
+$t = Edit $t 'positorSuffix="Positor"' 'positorSuffix="Who"'
+$t = Edit $t 'reliabilitySuffix="Reliability"' 'reliabilitySuffix="Confidence"'
+$t = Edit $t 'positSuffix="Posit"' 'positSuffix="Fact"'
+$t = Edit $t 'annexSuffix="Annex"' 'annexSuffix="Meta"'
+$t = Edit $t 'assertionSuffix="Assertion"' 'assertionSuffix="Stance"'
+Save 'ranges' $t
+
+# The same models for the other temporalizations: only the setting differs.
+foreach ($temporalization in 'bi', 'crt') {
+    foreach ($name in @($written.Keys | Where-Object { $_ -notmatch '-(bi|crt)$' })) {
+        Save "$name-$temporalization" (Edit $written[$name] 'temporalization="uni"' "temporalization=`"$temporalization`"")
+    }
+}
+
 # Save every variant except base and handwritten the way the modeler would.
-$canonical = 'equivalence', 'equivalence-plain', 'plain', 'undescribed', 'distinct', 'distinct-equivalence', 'equivalence-original'
+$canonical = @($written.Keys | Where-Object { $_ -ne 'base' -and $_ -notmatch '^handwritten' })
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'browser-check.ps1') -Canonicalize -Variant ($canonical -join ',')
 if ($LASTEXITCODE -ne 0) { throw 'Saving the variants through the modeler failed.' }

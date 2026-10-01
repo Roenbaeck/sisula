@@ -5,7 +5,7 @@
     stripping `async`/`await`, which Jint 2 cannot parse; the directives are read synchronously.
 
     Usage:
-      golden.ps1 -Model <model.xml> -OutDir <dir> [-Anchor <checkout>] [-Directive Snowflake_uni.legacy.directive]
+      golden.ps1 -Model <model.xml> -OutDir <dir> [-Anchor <checkout>] [-Directive <name>]
 
     Writes <dir>/_full.sql, the engine's output for the whole directive exactly as it returns it,
     and <dir>/<Sisulet>.sql, the part of that output each sisulet produced. The split comes from a
@@ -17,8 +17,7 @@ param(
     [Parameter(Mandatory)] [string] $Model,
     [Parameter(Mandatory)] [string] $OutDir,
     [string] $Anchor,
-    [string] $Directive = 'Snowflake_uni.legacy.directive',
-    [string[]] $Prelude = @('SQL/Helpers.js', 'SQL/NamingConvention.js', 'SQL/Snowflake/NamingConvention.js'),
+    [string] $Directive,
     [string] $JintPath
 )
 
@@ -28,6 +27,7 @@ if (-not $Anchor) { $Anchor = Join-Path $PSScriptRoot '..\..\..\..\anchor' }
 if (-not $JintPath) { $JintPath = Join-Path $PSScriptRoot '..\..\..\lib\Jint.2.11.58.dll' }
 $Anchor = (Resolve-Path $Anchor).Path
 . (Join-Path $PSScriptRoot 'xml-to-tree.ps1')
+. (Join-Path $PSScriptRoot 'directive.ps1')
 Add-Type -Path (Resolve-Path $JintPath)
 
 # Host services for the engine. Jint cannot call a delegate built from a script block, so the
@@ -50,6 +50,7 @@ function Read-AnchorFile([string] $relative) {
 
 $treeJson = Convert-XmlFileToTreeJson $Model
 # A directive is read from the checkout, unless it is given as a full path.
+if (-not $Directive) { $Directive = (Get-DirectiveInfo $Anchor (Get-ModelTemporalization $Model)).LegacyFile }
 if ([IO.Path]::IsPathRooted($Directive)) { $directiveText = [IO.File]::ReadAllText($Directive, [Text.Encoding]::UTF8) }
 else { $directiveText = Read-AnchorFile $Directive }
 $sisulator = (Read-AnchorFile 'modules\Sisulator.js') -replace '\basync\s+', '' -replace '\bawait\s+', ''
@@ -137,7 +138,7 @@ $utf8 = New-Object Text.UTF8Encoding($false)
 [IO.File]::WriteAllText((Join-Path $OutDir '_full.sql'), $full, $utf8)
 $written = 0
 foreach ($part in $parts) {
-    if ($Prelude -contains $part.Script) {
+    if ($part.Script -match $PreludePattern) {
         if ($texts[$part.Script] -ne '') { throw "The prelude script $($part.Script) produced output." }
         continue
     }
