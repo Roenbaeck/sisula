@@ -16,10 +16,10 @@ CREATE TABLE IF NOT EXISTS public.PAT_ParentalType (
     Metadata_PAT int not null,
     constraint pkPAT_ParentalType primary key (
         PAT_ID
-    ),
+    ) RELY,
     constraint uqPAT_ParentalType unique (
         PAT_ParentalType
-    )
+    ) RELY
 ) CLUSTER BY (PAT_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- GEN_Gender table
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS public.GEN_Gender (
     Metadata_GEN int not null,
     constraint pkGEN_Gender primary key (
         GEN_ID
-    ),
+    ) RELY,
     constraint uqGEN_Gender unique (
         GEN_Gender
-    )
+    ) RELY
 ) CLUSTER BY (GEN_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- PLV_ProfessionalLevel table
@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS public.PLV_ProfessionalLevel (
     Metadata_PLV int not null,
     constraint pkPLV_ProfessionalLevel primary key (
         PLV_ID
-    ),
+    ) RELY,
     constraint uqPLV_ProfessionalLevel unique (
         PLV_Checksum 
-    )
+    ) RELY
 ) CLUSTER BY (PLV_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- UTL_Utilization table
@@ -59,10 +59,10 @@ CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
     Metadata_UTL int not null,
     constraint pkUTL_Utilization primary key (
         UTL_ID
-    ),
+    ) RELY,
     constraint uqUTL_Utilization unique (
         UTL_Utilization
-    )
+    ) RELY
 ) CLUSTER BY (UTL_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- ONG_Ongoing table
@@ -73,10 +73,10 @@ CREATE TABLE IF NOT EXISTS public.ONG_Ongoing (
     Metadata_ONG int not null,
     constraint pkONG_Ongoing primary key (
         ONG_ID
-    ),
+    ) RELY,
     constraint uqONG_Ongoing unique (
         ONG_Ongoing
-    )
+    ) RELY
 ) CLUSTER BY (ONG_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- RAT_Rating table
@@ -87,10 +87,10 @@ CREATE TABLE IF NOT EXISTS public.RAT_Rating (
     Metadata_RAT int not null,
     constraint pkRAT_Rating primary key (
         RAT_ID
-    ),
+    ) RELY,
     constraint uqRAT_Rating unique (
         RAT_Rating
-    )
+    ) RELY
 ) CLUSTER BY (RAT_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- ETY_EventType table
@@ -101,8 +101,8 @@ CREATE TABLE IF NOT EXISTS public.ETY_EventType (
     Metadata_ETY int not null,
     constraint pkETY_EventType primary key (
         ETY_ID
-    ),
+    ) RELY,
     constraint uqETY_EventType unique (
         ETY_EventType
-    )
+    ) RELY
 ) CLUSTER BY (ETY_ID);

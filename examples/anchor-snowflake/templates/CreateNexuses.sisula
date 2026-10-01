@@ -16,18 +16,18 @@ $/ foreach role in nexus.roles
     constraint $nexus.name$_fk$role.name$ foreign key (
         $role.columnName$
 $/ if role.entity
-    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$), $--$
+    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$) RELY, $--$
 $/ else
 $/ if role.knot.isEquivalent
-    ) references $role.knot.capsule$.$role.knot.identityName$($role.knot.identityColumnName$),
+    ) references $role.knot.capsule$.$role.knot.identityName$($role.knot.identityColumnName$) RELY,
 $/ else
-    ) references $role.knot.capsule$.$role.knot.name$($role.knot.identityColumnName$),
+    ) references $role.knot.capsule$.$role.knot.name$($role.knot.identityColumnName$) RELY,
 $/ endif
 $/ endif
 $/ endfor
     $/ if schema.METADATA $nexus.metadataColumnName$ $schema.metadata.metadataType$ not null, $/ else $nexus.dummyColumnName$ bit null,$/ endif
     constraint pk$nexus.name$ primary key (
         $nexus.identityColumnName$
-    )
+    ) RELY
 ) CLUSTER BY ($nexus.identityColumnName$);
 $/ endfor

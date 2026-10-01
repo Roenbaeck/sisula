@@ -94,7 +94,7 @@ CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
 SELECT
     *
 FROM
-    TABLE(ties.pAC_partner_AC_with_ONG_currently(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pAC_partner_AC_with_ONG_currently(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -172,7 +172,7 @@ CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
 SELECT
     *
 FROM
-    TABLE(ties.pAC_subset_PN_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pAC_subset_PN_of(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -215,7 +215,7 @@ CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
 SELECT
     *
 FROM
-    TABLE(ties.pEV_in_AC_wasCast(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pEV_in_AC_wasCast(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -310,7 +310,7 @@ CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
 SELECT
     *
 FROM
-    TABLE(ties.pAC_part_PR_in_RAT_got(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pAC_part_PR_in_RAT_got(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -418,7 +418,7 @@ CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
 SELECT
     *
 FROM
-    TABLE(ties.pST_at_PR_isPlaying(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pST_at_PR_isPlaying(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -506,7 +506,7 @@ CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
 SELECT
     *
 FROM
-    TABLE(ties.pAC_parent_AC_child_PAT_having(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pAC_parent_AC_child_PAT_having(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -583,7 +583,7 @@ CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
 SELECT
     *
 FROM
-    TABLE(ties.pPR_content_ST_location_EV_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(ties.pPR_content_ST_location_EV_of(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------

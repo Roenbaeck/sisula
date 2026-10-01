@@ -35,12 +35,12 @@ $/ foreach role in tie.roles
     constraint $tie.name$_fk$role.name$ foreign key (
         $role.columnName$
 $/ if role.entity
-    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$), $--$
+    ) references $role.entity.capsule$.$role.entity.name$($role.entity.identityColumnName$) RELY, $--$
 $/ else
 $/ if role.knot.isEquivalent
-    ) references $role.knot.capsule$.$role.knot.identityName$($role.knot.identityColumnName$),
+    ) references $role.knot.capsule$.$role.knot.identityName$($role.knot.identityColumnName$) RELY,
 $/ else
-    ) references $role.knot.capsule$.$role.knot.name$($role.knot.identityColumnName$),
+    ) references $role.knot.capsule$.$role.knot.name$($role.knot.identityColumnName$) RELY,
 $/ endif
 $/ endif
 $/ endfor
@@ -50,11 +50,11 @@ $/ if tie.isHistorized
     constraint $tie.name$_uq$role.name$ unique (
         $role.columnName$,
         $tie.changingColumnName$
-    ),
+    ) RELY,
 $/ else
     constraint $tie.name$_uq$role.name$ unique (
         $role.columnName$
-    ),
+    ) RELY,
 $/ endif
 $/ endfor
 $/ endif
@@ -71,7 +71,7 @@ $/ endif
 $/ if tie.isHistorized
         $tie.changingColumnName$
 $/ endif
-    )
+    ) RELY
 ) CLUSTER BY (
 $/ foreach role in tie.roles where role.anchor
     $role.columnName$$/ if not role.last() ,$/ endif

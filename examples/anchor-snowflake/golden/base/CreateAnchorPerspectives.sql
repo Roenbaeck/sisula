@@ -200,7 +200,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pST_Stage(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pST_Stage(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -482,7 +482,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_Actor(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_Actor(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -677,7 +677,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pPR_Program(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pPR_Program(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------

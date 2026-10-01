@@ -12,10 +12,10 @@ CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date (
     Metadata_EV_DAT int not null,
     constraint fkEV_DAT_Event_Date foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint pkEV_DAT_Event_Date primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- EV_AUD_Event_Audience table (on EV_Event)
@@ -27,11 +27,11 @@ CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience (
     Metadata_EV_AUD int not null,
     constraint fkEV_AUD_Event_Audience foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint pkEV_AUD_Event_Audience primary key (
         EV_AUD_EQ,
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- EV_REV_Event_Revenue table (on EV_Event)
@@ -43,11 +43,11 @@ CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue (
     Metadata_EV_REV int not null,
     constraint fkEV_REV_Event_Revenue foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint pkEV_REV_Event_Revenue primary key (
         EV_REV_EQ,
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- EV_STA_Event_Status table (on EV_Event)
@@ -60,13 +60,13 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status (
     Metadata_EV_STA int not null,
     constraint fkEV_STA_Event_Status foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint pkEV_STA_Event_Status primary key (
         EV_STA_EQ,
         EV_ID,
         EV_STA_ChangedAt
-    )
-) CLUSTER BY (EV_ID, EV_STA_ChangedAt);
+    ) RELY
+) CLUSTER BY (EV_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- EV_UTL_Event_Utilization table (on EV_Event)
 -----------------------------------------------------------------------------------------------------------------------
@@ -76,13 +76,13 @@ CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization (
     Metadata_EV_UTL int not null,
     constraint fk_A_EV_UTL_Event_Utilization foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint fk_K_EV_UTL_Event_Utilization foreign key (
         UTL_ID
-    ) references knots.UTL_Utilization(UTL_ID),
+    ) references knots.UTL_Utilization(UTL_ID) RELY,
     constraint pkEV_UTL_Event_Utilization primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
 -- EV_LVL_Event_Level table (on EV_Event)
@@ -94,15 +94,15 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level (
     Metadata_EV_LVL int not null,
     constraint fk_A_EV_LVL_Event_Level foreign key (
         EV_ID
-    ) references nexuses.EV_Event(EV_ID),
+    ) references nexuses.EV_Event(EV_ID) RELY,
     constraint fk_K_EV_LVL_Event_Level foreign key (
         PLV_ID
-    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID),
+    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID) RELY,
     constraint pkEV_LVL_Event_Level primary key (
         EV_ID,
         EV_LVL_ChangedAt
-    )
-) CLUSTER BY (EV_ID, EV_LVL_ChangedAt);
+    ) RELY
+) CLUSTER BY (EV_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -114,13 +114,13 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name (
     Metadata_ST_NAM int not null,
     constraint fkST_NAM_Stage_Name foreign key (
         ST_ID
-    ) references anchors.ST_Stage(ST_ID),
+    ) references anchors.ST_Stage(ST_ID) RELY,
     constraint pkST_NAM_Stage_Name primary key (
         ST_NAM_EQ,
         ST_ID,
         ST_NAM_ChangedAt
-    )
-) CLUSTER BY (ST_ID, ST_NAM_ChangedAt);
+    ) RELY
+) CLUSTER BY (ST_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -132,11 +132,11 @@ CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location (
     Metadata_ST_LOC int not null,
     constraint fkST_LOC_Stage_Location foreign key (
         ST_ID
-    ) references anchors.ST_Stage(ST_ID),
+    ) references anchors.ST_Stage(ST_ID) RELY,
     constraint pkST_LOC_Stage_Location primary key (
         ST_LOC_EQ,
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
 -- ST_AVG_Stage_Average table (on ST_Stage)
@@ -148,15 +148,15 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average (
     Metadata_ST_AVG int not null,
     constraint fk_A_ST_AVG_Stage_Average foreign key (
         ST_ID
-    ) references anchors.ST_Stage(ST_ID),
+    ) references anchors.ST_Stage(ST_ID) RELY,
     constraint fk_K_ST_AVG_Stage_Average foreign key (
         UTL_ID
-    ) references knots.UTL_Utilization(UTL_ID),
+    ) references knots.UTL_Utilization(UTL_ID) RELY,
     constraint pkST_AVG_Stage_Average primary key (
         ST_ID,
         ST_AVG_ChangedAt
-    )
-) CLUSTER BY (ST_ID, ST_AVG_ChangedAt);
+    ) RELY
+) CLUSTER BY (ST_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- ST_MIN_Stage_Minimum table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -166,13 +166,13 @@ CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum (
     Metadata_ST_MIN int not null,
     constraint fk_A_ST_MIN_Stage_Minimum foreign key (
         ST_ID
-    ) references anchors.ST_Stage(ST_ID),
+    ) references anchors.ST_Stage(ST_ID) RELY,
     constraint fk_K_ST_MIN_Stage_Minimum foreign key (
         UTL_ID
-    ) references knots.UTL_Utilization(UTL_ID),
+    ) references knots.UTL_Utilization(UTL_ID) RELY,
     constraint pkST_MIN_Stage_Minimum primary key (
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name table (on AC_Actor)
@@ -184,12 +184,12 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name (
     Metadata_AC_NAM int not null,
     constraint fkAC_NAM_Actor_Name foreign key (
         AC_ID
-    ) references anchors.AC_Actor(AC_ID),
+    ) references anchors.AC_Actor(AC_ID) RELY,
     constraint pkAC_NAM_Actor_Name primary key (
         AC_ID,
         AC_NAM_ChangedAt
-    )
-) CLUSTER BY (AC_ID, AC_NAM_ChangedAt);
+    ) RELY
+) CLUSTER BY (AC_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- AC_GEN_Actor_Gender table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -199,13 +199,13 @@ CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender (
     Metadata_AC_GEN int not null,
     constraint fk_A_AC_GEN_Actor_Gender foreign key (
         AC_ID
-    ) references anchors.AC_Actor(AC_ID),
+    ) references anchors.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_GEN_Actor_Gender foreign key (
         GEN_ID
-    ) references knots.GEN_Gender(GEN_ID),
+    ) references knots.GEN_Gender(GEN_ID) RELY,
     constraint pkAC_GEN_Actor_Gender primary key (
         AC_ID
-    )
+    ) RELY
 ) CLUSTER BY (AC_ID);
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
 -- AC_PLV_Actor_ProfessionalLevel table (on AC_Actor)
@@ -217,15 +217,15 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel (
     Metadata_AC_PLV int not null,
     constraint fk_A_AC_PLV_Actor_ProfessionalLevel foreign key (
         AC_ID
-    ) references anchors.AC_Actor(AC_ID),
+    ) references anchors.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_PLV_Actor_ProfessionalLevel foreign key (
         PLV_ID
-    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID),
+    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID) RELY,
     constraint pkAC_PLV_Actor_ProfessionalLevel primary key (
         AC_ID,
         AC_PLV_ChangedAt
-    )
-) CLUSTER BY (AC_ID, AC_PLV_ChangedAt);
+    ) RELY
+) CLUSTER BY (AC_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- PR_NAM_Program_Name table (on PR_Program)
 -----------------------------------------------------------------------------------------------------------------------
@@ -235,10 +235,10 @@ CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name (
     Metadata_PR_NAM int not null,
     constraint fkPR_NAM_Program_Name foreign key (
         PR_ID
-    ) references anchors.PR_Program(PR_ID),
+    ) references anchors.PR_Program(PR_ID) RELY,
     constraint pkPR_NAM_Program_Name primary key (
         PR_ID
-    )
+    ) RELY
 ) CLUSTER BY (PR_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- PR_LEN_Program_Length table (on PR_Program)
@@ -251,10 +251,10 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length (
     Metadata_PR_LEN int not null,
     constraint fkPR_LEN_Program_Length foreign key (
         PR_ID
-    ) references anchors.PR_Program(PR_ID),
+    ) references anchors.PR_Program(PR_ID) RELY,
     constraint pkPR_LEN_Program_Length primary key (
         PR_LEN_EQ,
         PR_ID,
         PR_LEN_ChangedAt
-    )
-) CLUSTER BY (PR_ID, PR_LEN_ChangedAt);
+    ) RELY
+) CLUSTER BY (PR_ID);

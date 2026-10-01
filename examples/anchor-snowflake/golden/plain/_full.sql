@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS public.PAT_ParentalType (
     PAT_ParentalType varchar(42) not null,
     constraint pkPAT_ParentalType primary key (
         PAT_ID
-    ),
+    ) RELY,
     constraint uqPAT_ParentalType unique (
         PAT_ParentalType
-    )
+    ) RELY
 ) CLUSTER BY (PAT_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- GEN_Gender table
@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS public.GEN_Gender (
     GEN_Gender varchar(42) not null,
     constraint pkGEN_Gender primary key (
         GEN_ID
-    ),
+    ) RELY,
     constraint uqGEN_Gender unique (
         GEN_Gender
-    )
+    ) RELY
 ) CLUSTER BY (GEN_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- PLV_ProfessionalLevel table
@@ -42,10 +42,10 @@ CREATE TABLE IF NOT EXISTS public.PLV_ProfessionalLevel (
     PLV_Checksum numeric(19,0) default hash(PLV_ProfessionalLevel),
     constraint pkPLV_ProfessionalLevel primary key (
         PLV_ID
-    ),
+    ) RELY,
     constraint uqPLV_ProfessionalLevel unique (
         PLV_Checksum 
-    )
+    ) RELY
 ) CLUSTER BY (PLV_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- UTL_Utilization table
@@ -55,10 +55,10 @@ CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
     UTL_Utilization tinyint not null,
     constraint pkUTL_Utilization primary key (
         UTL_ID
-    ),
+    ) RELY,
     constraint uqUTL_Utilization unique (
         UTL_Utilization
-    )
+    ) RELY
 ) CLUSTER BY (UTL_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- ONG_Ongoing table
@@ -68,10 +68,10 @@ CREATE TABLE IF NOT EXISTS public.ONG_Ongoing (
     ONG_Ongoing varchar(3) not null,
     constraint pkONG_Ongoing primary key (
         ONG_ID
-    ),
+    ) RELY,
     constraint uqONG_Ongoing unique (
         ONG_Ongoing
-    )
+    ) RELY
 ) CLUSTER BY (ONG_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- RAT_Rating table
@@ -81,10 +81,10 @@ CREATE TABLE IF NOT EXISTS public.RAT_Rating (
     RAT_Rating varchar(42) not null,
     constraint pkRAT_Rating primary key (
         RAT_ID
-    ),
+    ) RELY,
     constraint uqRAT_Rating unique (
         RAT_Rating
-    )
+    ) RELY
 ) CLUSTER BY (RAT_ID);
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -- ETY_EventType table
@@ -94,10 +94,10 @@ CREATE TABLE IF NOT EXISTS public.ETY_EventType (
     ETY_EventType varchar(42) not null,
     constraint pkETY_EventType primary key (
         ETY_ID
-    ),
+    ) RELY,
     constraint uqETY_EventType unique (
         ETY_EventType
-    )
+    ) RELY
 ) CLUSTER BY (ETY_ID);
 -- ANCHORS ------------------------------------------------------------------------------------------------------------
 --
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS public.PN_Person (
     PN_ID int default public.PN_Person_ID_SEQ.nextval not null, 
     constraint pkPN_Person primary key (
         PN_ID
-    )
+    ) RELY
 ) CLUSTER BY (PN_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- ST_Stage table (with 4 attributes)
@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS public.ST_Stage (
     ST_ID int default public.ST_Stage_ID_SEQ.nextval not null, 
     constraint pkST_Stage primary key (
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- AC_Actor table (with 3 attributes)
@@ -132,7 +132,7 @@ CREATE TABLE IF NOT EXISTS public.AC_Actor (
     AC_ID int default public.AC_Actor_ID_SEQ.nextval not null, 
     constraint pkAC_Actor primary key (
         AC_ID
-    )
+    ) RELY
 ) CLUSTER BY (AC_ID);
 -- Anchor table -------------------------------------------------------------------------------------------------------
 -- PR_Program table (with 2 attributes)
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS public.PR_Program (
     PR_ID int default public.PR_Program_ID_SEQ.nextval not null, 
     constraint pkPR_Program primary key (
         PR_ID
-    )
+    ) RELY
 ) CLUSTER BY (PR_ID);
 -- NEXUSES ------------------------------------------------------------------------------------------------------------
 --
@@ -159,17 +159,17 @@ CREATE TABLE IF NOT EXISTS public.EV_Event (
     ETY_ID_of tinyint not null,
     constraint EV_Event_fkST_wasHeldAt foreign key (
         ST_ID_wasHeldAt
-    ) references public.ST_Stage(ST_ID), 
+    ) references public.ST_Stage(ST_ID) RELY, 
     constraint EV_Event_fkPR_wasPlayed foreign key (
         PR_ID_wasPlayed
-    ) references public.PR_Program(PR_ID), 
+    ) references public.PR_Program(PR_ID) RELY, 
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
-    ) references public.ETY_EventType(ETY_ID),
+    ) references public.ETY_EventType(ETY_ID) RELY,
     EV_Dummy bit null,
     constraint pkEV_Event primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- ATTRIBUTES ---------------------------------------------------------------------------------------------------------
 --
@@ -184,10 +184,10 @@ CREATE TABLE IF NOT EXISTS public.EV_DAT_Event_Date (
     EV_DAT_Event_Date datetime not null,
     constraint fkEV_DAT_Event_Date foreign key (
         EV_ID
-    ) references public.EV_Event(EV_ID),
+    ) references public.EV_Event(EV_ID) RELY,
     constraint pkEV_DAT_Event_Date primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- EV_AUD_Event_Audience table (on EV_Event)
@@ -197,10 +197,10 @@ CREATE TABLE IF NOT EXISTS public.EV_AUD_Event_Audience (
     EV_AUD_Event_Audience int not null,
     constraint fkEV_AUD_Event_Audience foreign key (
         EV_ID
-    ) references public.EV_Event(EV_ID),
+    ) references public.EV_Event(EV_ID) RELY,
     constraint pkEV_AUD_Event_Audience primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- EV_REV_Event_Revenue table (on EV_Event)
@@ -210,10 +210,10 @@ CREATE TABLE IF NOT EXISTS public.EV_REV_Event_Revenue (
     EV_REV_Event_Revenue number(19,4) not null,
     constraint fkEV_REV_Event_Revenue foreign key (
         EV_ID
-    ) references public.EV_Event(EV_ID),
+    ) references public.EV_Event(EV_ID) RELY,
     constraint pkEV_REV_Event_Revenue primary key (
         EV_ID
-    )
+    ) RELY
 ) CLUSTER BY (EV_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name table (on ST_Stage)
@@ -224,12 +224,12 @@ CREATE TABLE IF NOT EXISTS public.ST_NAM_Stage_Name (
     ST_NAM_ChangedAt datetime not null,
     constraint fkST_NAM_Stage_Name foreign key (
         ST_ID
-    ) references public.ST_Stage(ST_ID),
+    ) references public.ST_Stage(ST_ID) RELY,
     constraint pkST_NAM_Stage_Name primary key (
         ST_ID,
         ST_NAM_ChangedAt
-    )
-) CLUSTER BY (ST_ID, ST_NAM_ChangedAt);
+    ) RELY
+) CLUSTER BY (ST_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -239,10 +239,10 @@ CREATE TABLE IF NOT EXISTS public.ST_LOC_Stage_Location (
     ST_LOC_Checksum numeric(19,0) default hash(ST_LOC_Stage_Location),
     constraint fkST_LOC_Stage_Location foreign key (
         ST_ID
-    ) references public.ST_Stage(ST_ID),
+    ) references public.ST_Stage(ST_ID) RELY,
     constraint pkST_LOC_Stage_Location primary key (
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
 -- ST_AVG_Stage_Average table (on ST_Stage)
@@ -253,15 +253,15 @@ CREATE TABLE IF NOT EXISTS public.ST_AVG_Stage_Average (
     ST_AVG_ChangedAt datetime not null,
     constraint fk_A_ST_AVG_Stage_Average foreign key (
         ST_ID
-    ) references public.ST_Stage(ST_ID),
+    ) references public.ST_Stage(ST_ID) RELY,
     constraint fk_K_ST_AVG_Stage_Average foreign key (
         UTL_ID
-    ) references public.UTL_Utilization(UTL_ID),
+    ) references public.UTL_Utilization(UTL_ID) RELY,
     constraint pkST_AVG_Stage_Average primary key (
         ST_ID,
         ST_AVG_ChangedAt
-    )
-) CLUSTER BY (ST_ID, ST_AVG_ChangedAt);
+    ) RELY
+) CLUSTER BY (ST_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- ST_MIN_Stage_Minimum table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -270,13 +270,13 @@ CREATE TABLE IF NOT EXISTS public.ST_MIN_Stage_Minimum (
     UTL_ID tinyint not null,
     constraint fk_A_ST_MIN_Stage_Minimum foreign key (
         ST_ID
-    ) references public.ST_Stage(ST_ID),
+    ) references public.ST_Stage(ST_ID) RELY,
     constraint fk_K_ST_MIN_Stage_Minimum foreign key (
         UTL_ID
-    ) references public.UTL_Utilization(UTL_ID),
+    ) references public.UTL_Utilization(UTL_ID) RELY,
     constraint pkST_MIN_Stage_Minimum primary key (
         ST_ID
-    )
+    ) RELY
 ) CLUSTER BY (ST_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name table (on AC_Actor)
@@ -287,12 +287,12 @@ CREATE TABLE IF NOT EXISTS public.AC_NAM_Actor_Name (
     AC_NAM_ChangedAt datetime not null,
     constraint fkAC_NAM_Actor_Name foreign key (
         AC_ID
-    ) references public.AC_Actor(AC_ID),
+    ) references public.AC_Actor(AC_ID) RELY,
     constraint pkAC_NAM_Actor_Name primary key (
         AC_ID,
         AC_NAM_ChangedAt
-    )
-) CLUSTER BY (AC_ID, AC_NAM_ChangedAt);
+    ) RELY
+) CLUSTER BY (AC_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- AC_GEN_Actor_Gender table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -301,13 +301,13 @@ CREATE TABLE IF NOT EXISTS public.AC_GEN_Actor_Gender (
     GEN_ID number(1,0) not null,
     constraint fk_A_AC_GEN_Actor_Gender foreign key (
         AC_ID
-    ) references public.AC_Actor(AC_ID),
+    ) references public.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_GEN_Actor_Gender foreign key (
         GEN_ID
-    ) references public.GEN_Gender(GEN_ID),
+    ) references public.GEN_Gender(GEN_ID) RELY,
     constraint pkAC_GEN_Actor_Gender primary key (
         AC_ID
-    )
+    ) RELY
 ) CLUSTER BY (AC_ID);
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
 -- AC_PLV_Actor_ProfessionalLevel table (on AC_Actor)
@@ -318,15 +318,15 @@ CREATE TABLE IF NOT EXISTS public.AC_PLV_Actor_ProfessionalLevel (
     AC_PLV_ChangedAt datetime not null,
     constraint fk_A_AC_PLV_Actor_ProfessionalLevel foreign key (
         AC_ID
-    ) references public.AC_Actor(AC_ID),
+    ) references public.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_PLV_Actor_ProfessionalLevel foreign key (
         PLV_ID
-    ) references public.PLV_ProfessionalLevel(PLV_ID),
+    ) references public.PLV_ProfessionalLevel(PLV_ID) RELY,
     constraint pkAC_PLV_Actor_ProfessionalLevel primary key (
         AC_ID,
         AC_PLV_ChangedAt
-    )
-) CLUSTER BY (AC_ID, AC_PLV_ChangedAt);
+    ) RELY
+) CLUSTER BY (AC_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- PR_NAM_Program_Name table (on PR_Program)
 -----------------------------------------------------------------------------------------------------------------------
@@ -335,10 +335,10 @@ CREATE TABLE IF NOT EXISTS public.PR_NAM_Program_Name (
     PR_NAM_Program_Name varchar(42) not null,
     constraint fkPR_NAM_Program_Name foreign key (
         PR_ID
-    ) references public.PR_Program(PR_ID),
+    ) references public.PR_Program(PR_ID) RELY,
     constraint pkPR_NAM_Program_Name primary key (
         PR_ID
-    )
+    ) RELY
 ) CLUSTER BY (PR_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- PR_LEN_Program_Length table (on PR_Program)
@@ -349,12 +349,12 @@ CREATE TABLE IF NOT EXISTS public.PR_LEN_Program_Length (
     PR_LEN_ChangedAt date not null,
     constraint fkPR_LEN_Program_Length foreign key (
         PR_ID
-    ) references public.PR_Program(PR_ID),
+    ) references public.PR_Program(PR_ID) RELY,
     constraint pkPR_LEN_Program_Length primary key (
         PR_ID,
         PR_LEN_ChangedAt
-    )
-) CLUSTER BY (PR_ID, PR_LEN_ChangedAt);
+    ) RELY
+) CLUSTER BY (PR_ID);
 -- TIES ---------------------------------------------------------------------------------------------------------------
 --
 -- Ties are used to represent relationships between entities.
@@ -373,27 +373,27 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime not null,
     constraint AC_partner_AC_with_ONG_currently_fkAC_partner foreign key (
         AC_ID_partner
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_partner_AC_with_ONG_currently_fkAC_with foreign key (
         AC_ID_with
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_partner_AC_with_ONG_currently_fkONG_currently foreign key (
         ONG_ID_currently
-    ) references public.ONG_Ongoing(ONG_ID),
+    ) references public.ONG_Ongoing(ONG_ID) RELY,
     constraint AC_partner_AC_with_ONG_currently_uqAC_partner unique (
         AC_ID_partner,
         AC_partner_AC_with_ONG_currently_ChangedAt
-    ),
+    ) RELY,
     constraint AC_partner_AC_with_ONG_currently_uqAC_with unique (
         AC_ID_with,
         AC_partner_AC_with_ONG_currently_ChangedAt
-    ),
+    ) RELY,
     constraint pkAC_partner_AC_with_ONG_currently primary key (
         AC_ID_partner,
         AC_ID_with,
         ONG_ID_currently,
         AC_partner_AC_with_ONG_currently_ChangedAt
-    )
+    ) RELY
 ) CLUSTER BY (
     AC_ID_partner,
     AC_ID_with
@@ -406,20 +406,20 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of (
     PN_ID_of int not null, 
     constraint AC_subset_PN_of_fkAC_subset foreign key (
         AC_ID_subset
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_subset_PN_of_fkPN_of foreign key (
         PN_ID_of
-    ) references public.PN_Person(PN_ID), 
+    ) references public.PN_Person(PN_ID) RELY, 
     constraint AC_subset_PN_of_uqAC_subset unique (
         AC_ID_subset
-    ),
+    ) RELY,
     constraint AC_subset_PN_of_uqPN_of unique (
         PN_ID_of
-    ),
+    ) RELY,
     constraint pkAC_subset_PN_of primary key (
         AC_ID_subset,
         PN_ID_of
-    )
+    ) RELY
 ) CLUSTER BY (
     AC_ID_subset,
     PN_ID_of
@@ -432,14 +432,14 @@ CREATE TABLE IF NOT EXISTS public.EV_in_AC_wasCast (
     AC_ID_wasCast int not null, 
     constraint EV_in_AC_wasCast_fkEV_in foreign key (
         EV_ID_in
-    ) references public.EV_Event(EV_ID), 
+    ) references public.EV_Event(EV_ID) RELY, 
     constraint EV_in_AC_wasCast_fkAC_wasCast foreign key (
         AC_ID_wasCast
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint pkEV_in_AC_wasCast primary key (
         EV_ID_in,
         AC_ID_wasCast
-    )
+    ) RELY
 ) CLUSTER BY (
     AC_ID_wasCast
 );
@@ -453,18 +453,18 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got (
     AC_part_PR_in_RAT_got_ChangedAt datetime not null,
     constraint AC_part_PR_in_RAT_got_fkAC_part foreign key (
         AC_ID_part
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_part_PR_in_RAT_got_fkPR_in foreign key (
         PR_ID_in
-    ) references public.PR_Program(PR_ID), 
+    ) references public.PR_Program(PR_ID) RELY, 
     constraint AC_part_PR_in_RAT_got_fkRAT_got foreign key (
         RAT_ID_got
-    ) references public.RAT_Rating(RAT_ID),
+    ) references public.RAT_Rating(RAT_ID) RELY,
     constraint pkAC_part_PR_in_RAT_got primary key (
         AC_ID_part,
         PR_ID_in,
         AC_part_PR_in_RAT_got_ChangedAt
-    )
+    ) RELY
 ) CLUSTER BY (
     AC_ID_part,
     PR_ID_in
@@ -478,15 +478,15 @@ CREATE TABLE IF NOT EXISTS public.ST_at_PR_isPlaying (
     ST_at_PR_isPlaying_ChangedAt datetime not null,
     constraint ST_at_PR_isPlaying_fkST_at foreign key (
         ST_ID_at
-    ) references public.ST_Stage(ST_ID), 
+    ) references public.ST_Stage(ST_ID) RELY, 
     constraint ST_at_PR_isPlaying_fkPR_isPlaying foreign key (
         PR_ID_isPlaying
-    ) references public.PR_Program(PR_ID), 
+    ) references public.PR_Program(PR_ID) RELY, 
     constraint pkST_at_PR_isPlaying primary key (
         ST_ID_at,
         PR_ID_isPlaying,
         ST_at_PR_isPlaying_ChangedAt
-    )
+    ) RELY
 ) CLUSTER BY (
     ST_ID_at,
     PR_ID_isPlaying
@@ -500,18 +500,18 @@ CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having (
     PAT_ID_having tinyint not null,
     constraint AC_parent_AC_child_PAT_having_fkAC_parent foreign key (
         AC_ID_parent
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_parent_AC_child_PAT_having_fkAC_child foreign key (
         AC_ID_child
-    ) references public.AC_Actor(AC_ID), 
+    ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_parent_AC_child_PAT_having_fkPAT_having foreign key (
         PAT_ID_having
-    ) references public.PAT_ParentalType(PAT_ID),
+    ) references public.PAT_ParentalType(PAT_ID) RELY,
     constraint pkAC_parent_AC_child_PAT_having primary key (
         AC_ID_parent,
         AC_ID_child,
         PAT_ID_having
-    )
+    ) RELY
 ) CLUSTER BY (
     AC_ID_parent,
     AC_ID_child
@@ -525,16 +525,16 @@ CREATE TABLE IF NOT EXISTS public.PR_content_ST_location_EV_of (
     EV_ID_of int not null, 
     constraint PR_content_ST_location_EV_of_fkPR_content foreign key (
         PR_ID_content
-    ) references public.PR_Program(PR_ID), 
+    ) references public.PR_Program(PR_ID) RELY, 
     constraint PR_content_ST_location_EV_of_fkST_location foreign key (
         ST_ID_location
-    ) references public.ST_Stage(ST_ID), 
+    ) references public.ST_Stage(ST_ID) RELY, 
     constraint PR_content_ST_location_EV_of_fkEV_of foreign key (
         EV_ID_of
-    ) references public.EV_Event(EV_ID), 
+    ) references public.EV_Event(EV_ID) RELY, 
     constraint pkPR_content_ST_location_EV_of primary key (
         EV_ID_of
-    )
+    ) RELY
 ) CLUSTER BY (
     PR_ID_content,
     ST_ID_location
@@ -835,7 +835,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pST_Stage(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pST_Stage(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1048,7 +1048,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_Actor(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_Actor(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1196,7 +1196,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(public.pPR_Program(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pPR_Program(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1330,7 +1330,7 @@ CREATE OR REPLACE VIEW public.nEV_Event AS
 SELECT
     *
 FROM
-    TABLE(public.pEV_Event(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pEV_Event(sysdate()::timestamp_ntz(9)))
 ;
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
 --
@@ -1420,7 +1420,7 @@ CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_partner_AC_with_ONG_currently(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_partner_AC_with_ONG_currently(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1490,7 +1490,7 @@ CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_subset_PN_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_subset_PN_of(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1529,7 +1529,7 @@ CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
 SELECT
     *
 FROM
-    TABLE(public.pEV_in_AC_wasCast(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pEV_in_AC_wasCast(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1612,7 +1612,7 @@ CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_part_PR_in_RAT_got(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_part_PR_in_RAT_got(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1710,7 +1710,7 @@ CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
 SELECT
     *
 FROM
-    TABLE(public.pST_at_PR_isPlaying(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pST_at_PR_isPlaying(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1788,7 +1788,7 @@ CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
 SELECT
     *
 FROM
-    TABLE(public.pAC_parent_AC_child_PAT_having(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pAC_parent_AC_child_PAT_having(sysdate()::timestamp_ntz(9)))
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1831,7 +1831,7 @@ CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
 SELECT
     *
 FROM
-    TABLE(public.pPR_content_ST_location_EV_of(current_timestamp()::timestamp_ntz(9)))
+    TABLE(public.pPR_content_ST_location_EV_of(sysdate()::timestamp_ntz(9)))
 ;
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
 --

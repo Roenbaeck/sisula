@@ -200,7 +200,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pST_Stage(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pST_Stage(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -338,7 +338,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epST_Stage(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -473,7 +473,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epST_Stage(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -761,7 +761,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pAC_Actor(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pAC_Actor(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -891,7 +891,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epAC_Actor(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1016,7 +1016,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epAC_Actor(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
@@ -1212,7 +1212,7 @@ AS
 SELECT
     *
 FROM
-    TABLE(anchors.pPR_Program(current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.pPR_Program(sysdate()::timestamp_ntz(9)))
 ;
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1277,7 +1277,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epPR_Program(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1348,7 +1348,7 @@ $$
 SELECT
     *
 FROM
-    TABLE(anchors.epPR_Program(equivalent, current_timestamp()::timestamp_ntz(9)))
+    TABLE(anchors.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Difference equivalence perspective ---------------------------------------------------------------------------------
