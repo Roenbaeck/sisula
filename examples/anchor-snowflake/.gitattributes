@@ -1,4 +1,3 @@
-# Golden files, templates and models are compared byte for byte; keep them LF on every checkout.
+# Golden files and models are compared byte for byte; keep them LF on every checkout.
 golden/** text eol=lf
-templates/** text eol=lf
 models/** text eol=lf

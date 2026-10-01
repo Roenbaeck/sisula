@@ -5,7 +5,7 @@
     stripping `async`/`await`, which Jint 2 cannot parse; the directives are read synchronously.
 
     Usage:
-      golden.ps1 -Model <model.xml> -OutDir <dir> [-Anchor <checkout>] [-Directive Snowflake_uni.directive]
+      golden.ps1 -Model <model.xml> -OutDir <dir> [-Anchor <checkout>] [-Directive Snowflake_uni.legacy.directive]
 
     Writes <dir>/_full.sql, the engine's output for the whole directive exactly as it returns it,
     and <dir>/<Sisulet>.sql, the part of that output each sisulet produced. The split comes from a
@@ -17,7 +17,7 @@ param(
     [Parameter(Mandatory)] [string] $Model,
     [Parameter(Mandatory)] [string] $OutDir,
     [string] $Anchor,
-    [string] $Directive = 'Snowflake_uni.directive',
+    [string] $Directive = 'Snowflake_uni.legacy.directive',
     [string[]] $Prelude = @('SQL/Helpers.js', 'SQL/NamingConvention.js', 'SQL/Snowflake/NamingConvention.js'),
     [string] $JintPath
 )

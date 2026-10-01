@@ -20,8 +20,14 @@
     mean something else to the modeler than to a direct reading. A canonical model is one the
     modeler would have saved itself, so both readings agree.
 
+      -Bindings    calls the modeler's own "JSON bindings" (Actions.bindings, the Generate menu) and
+                   compares what it produces with the bindings that check.ps1 resolves for the
+                   same model with the resolver in tools/resolve-model.js. Both start from the
+                   same Anchor scripts; this shows that the modeler, with a real DOM, produces
+                   exactly the JSON that the templates were verified against.
+
     Usage:
-      browser-check.ps1 [-Variant <name>,...] [-Canonicalize] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
+      browser-check.ps1 [-Variant <name>,...] [-Canonicalize | -Bindings] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
 
     Nothing is written to the Anchor checkout. A copy of index.html is made in a temporary folder
     with a <base> pointing at the checkout, so every script, directive and sisulet is read from it
@@ -38,6 +44,7 @@
 param(
     [string[]] $Variant,
     [switch] $Canonicalize,
+    [switch] $Bindings,
     [string] $Anchor,
     [string] $Edge,
     [string] $KeepOutput,
@@ -108,6 +115,11 @@ $harness = @'
         setTimeout(function () {
             try {
                 Actions._applyLoadedModel(new DOMParser().parseFromString(MODEL, 'text/xml'), false);
+                if (MODE === 'bindings') {
+                    Actions.bindings().then(function (json) { report('BASE64:' + toBase64(json)); },
+                                            function (e) { report('ERROR ' + (e && e.stack || e)); });
+                    return;
+                }
                 if (MODE === 'save') {
                     report('BASE64:' + toBase64(new XMLSerializer().serializeToString(Model.toXML(false))));
                     return;
@@ -173,6 +185,31 @@ function Invoke-Modeler([string] $name, [string] $model, [string] $mode) {
     $utf8.GetString([Convert]::FromBase64String($result.Substring(7)))
 }
 
+# The first difference between two parsed JSON values, as a path and the two values, or $null.
+function Compare-Json($a, $b, [string] $path) {
+    if ($null -eq $a -or $null -eq $b) {
+        if ($null -eq $a -and $null -eq $b) { return $null }
+        return "$path`: modeler [$a] resolver [$b]"
+    }
+    if ($a -is [System.Collections.IDictionary] -or $b -is [System.Collections.IDictionary]) {
+        if (-not ($a -is [System.Collections.IDictionary] -and $b -is [System.Collections.IDictionary])) { return "$path`: object against non-object" }
+        foreach ($k in $a.Keys) { if (-not $b.ContainsKey($k)) { return "$path.$k`: only in the modeler's JSON" } }
+        foreach ($k in $b.Keys) { if (-not $a.ContainsKey($k)) { return "$path.$k`: only in the resolver's JSON" } }
+        foreach ($k in $a.Keys) { $d = Compare-Json $a[$k] $b[$k] "$path.$k"; if ($d) { return $d } }
+        return $null
+    }
+    if (($a -is [System.Collections.IEnumerable] -and $a -isnot [string]) -or ($b -is [System.Collections.IEnumerable] -and $b -isnot [string])) {
+        if (-not (($a -is [System.Collections.IEnumerable] -and $a -isnot [string]) -and ($b -is [System.Collections.IEnumerable] -and $b -isnot [string]))) { return "$path`: array against non-array" }
+        $x = @($a); $y = @($b)
+        if ($x.Count -ne $y.Count) { return "$path`: modeler has $($x.Count) items, resolver $($y.Count)" }
+        for ($i = 0; $i -lt $x.Count; $i++) { $d = Compare-Json $x[$i] $y[$i] "$path[$i]"; if ($d) { return $d } }
+        return $null
+    }
+    if ($a.GetType() -ne $b.GetType() -or $a -cne $b) { return "$path`: modeler [$a] ($($a.GetType().Name)) resolver [$b] ($($b.GetType().Name))" }
+    return $null
+}
+
+Add-Type -AssemblyName System.Web.Extensions
 $failed = 0
 try {
     foreach ($v in $Variant) {
@@ -194,6 +231,48 @@ try {
             $changed = $saved -cne ($model -replace "`r`n", "`n")
             [IO.File]::WriteAllText($modelPath, $saved, $utf8)
             Write-Host ("{0}  {1}: saved as the modeler would save it" -f $(if ($changed) { 'WROTE' } else { 'SAME ' }), $v)
+            continue
+        }
+        if ($Bindings) {
+            $json = Invoke-Modeler $v $model 'bindings'
+            if ($null -eq $json) { $failed++; continue }
+            if ($KeepOutput) { [IO.File]::WriteAllText((Join-Path $KeepOutput "$v.bindings.json"), $json, $utf8) }
+            $reference = Join-Path $work "$v.reference.json"
+            & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'check.ps1') -Variant $v -Name CreateAnchors -KeepBindings $reference | Out-Null
+            $serializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+            $serializer.MaxJsonLength = [int]::MaxValue
+            $serializer.RecursionLimit = 1000
+            $actual = $serializer.DeserializeObject($json)
+            $expected = $serializer.DeserializeObject([IO.File]::ReadAllText($reference, [Text.Encoding]::UTF8))
+            $wrapper = ($actual.Keys | Sort-Object) -join ','
+            if ($wrapper -cne 'bindingsVersion,database,schema,temporalization' -or $actual['bindingsVersion'] -ne 1 -or
+                $actual['database'] -cne 'Snowflake' -or $actual['temporalization'] -cne 'uni') {
+                Write-Host ("FAIL  {0}: unexpected wrapper ({1}; {2} {3})" -f $v, $wrapper, $actual['database'], $actual['temporalization'])
+                $failed++; continue
+            }
+            # The modeler's input to generation embeds the model's own XML, with a time stamp, as
+            # schema.serialization (SQL Server and PostgreSQL schema tracking read it). The models
+            # the resolver reads are plain files without it, so check that it is there and leave it out.
+            $embedded = $actual['schema']['serialization']
+            if ($null -eq $embedded -or -not ([string]$embedded['_serialization']).StartsWith('<schema ')) {
+                Write-Host ("FAIL  {0}: schema.serialization is missing or is not the model's XML" -f $v)
+                $failed++; continue
+            }
+            $actual['schema'].Remove('serialization') | Out-Null
+            # The stamps that the modeler writes when it saves: its version and the date and time.
+            # No generator reads them, and a model file keeps the ones from when it was saved.
+            foreach ($stamp in 'format', 'date', 'time') {
+                $actual['schema'].Remove($stamp) | Out-Null
+                $expected['schema'].Remove($stamp) | Out-Null
+            }
+            # Key order inside an object is not significant to a template; order of arrays is.
+            $difference = Compare-Json $actual['schema'] $expected['schema'] 'schema'
+            if ($null -eq $difference) {
+                Write-Host ("PASS  {0}: the modeler's JSON bindings equal the resolver's ({1:N0} characters)" -f $v, $json.Length)
+            } else {
+                Write-Host ("FAIL  {0}: {1}" -f $v, $difference)
+                $failed++
+            }
             continue
         }
         $sql = Invoke-Modeler $v $model 'sql'
