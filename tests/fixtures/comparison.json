@@ -1,0 +1,86 @@
+[
+  {
+    "name": ">= is true when equal",
+    "template": "$/ if x >= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 3 },
+    "expected": "YES\n"
+  },
+  {
+    "name": ">= is true when greater",
+    "template": "$/ if x >= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 4 },
+    "expected": "YES\n"
+  },
+  {
+    "name": ">= is false when less",
+    "template": "$/ if x >= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 2 },
+    "expected": "NO\n"
+  },
+  {
+    "name": "<= is true when equal",
+    "template": "$/ if x <= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 3 },
+    "expected": "YES\n"
+  },
+  {
+    "name": "<= is true when less",
+    "template": "$/ if x <= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 2 },
+    "expected": "YES\n"
+  },
+  {
+    "name": "<= is false when greater",
+    "template": "$/ if x <= 3\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "x": 4 },
+    "expected": "NO\n"
+  },
+  {
+    "name": "a single = is the same as ==",
+    "template": "$/ if y = \"a\"\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "y": "a" },
+    "expected": "YES\n"
+  },
+  {
+    "name": "a single = is false when different",
+    "template": "$/ if y = \"a\"\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "y": "b" },
+    "expected": "NO\n"
+  },
+  {
+    "name": "!= is true when different",
+    "template": "$/ if y != \"a\"\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "y": "b" },
+    "expected": "YES\n"
+  },
+  {
+    "name": "the operator inside a quoted string is not an operator",
+    "template": "$/ if y == \"a>=b\"\nYES\n$/ else\nNO\n$/ endif\n",
+    "bindings": { "y": "a>=b" },
+    "expected": "YES\n"
+  },
+  {
+    "name": ">= in a foreach where",
+    "template": "$/ foreach i in list where i.n >= 2\n$i.n$\n$/ endfor\n",
+    "bindings": { "list": [ { "n": 1 }, { "n": 2 }, { "n": 3 } ] },
+    "expected": "2\n3\n"
+  },
+  {
+    "name": "<= in an inline if",
+    "template": "A$/ if x <= 3 B $/ else C $/ endif D",
+    "bindings": { "x": 3 },
+    "expected": "AB D"
+  },
+  {
+    "name": ">= joined with and",
+    "template": "$/ if x >= 3 and x <= 5\nIN\n$/ else\nOUT\n$/ endif\n",
+    "bindings": { "x": 5 },
+    "expected": "IN\n"
+  },
+  {
+    "name": ">= joined with and, outside the range",
+    "template": "$/ if x >= 3 and x <= 5\nIN\n$/ else\nOUT\n$/ endif\n",
+    "bindings": { "x": 6 },
+    "expected": "OUT\n"
+  }
+]

@@ -31,7 +31,8 @@ var RE_PATH_PROP = /^(\w+)\.(.+)$/;
 // Negation of one term: "not x" or "!x". Binds tighter than and/or; "!=" is a comparison, not a negation.
 var RE_NOT = /^(?:not\s+|!(?!=)\s*)([\s\S]+)$/i;
 
-var COMPARISON_OPS = ["==", "!=", "=", ">=", "<=", ">", "<"];
+// Longest first: ">=" and "<=" contain "=", so "=" must be tried after them, and ">" and "<" last.
+var COMPARISON_OPS = ["==", "!=", ">=", "<=", "=", ">", "<"];
 
 function sisulate(template, bindings) {
     if (template == null) return null;
