@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status (
         EV_STA_EV_ID,
         EV_STA_ChangedAt
     )
-) CLUSTER BY (EV_STA_EV_ID, EV_STA_ChangedAt);
+) CLUSTER BY (EV_STA_EV_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- EV_UTL_Event_Utilization table (on EV_Event)
 -----------------------------------------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level (
         EV_LVL_EV_ID,
         EV_LVL_ChangedAt
     )
-) CLUSTER BY (EV_LVL_EV_ID, EV_LVL_ChangedAt);
+) CLUSTER BY (EV_LVL_EV_ID);
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name (
         ST_NAM_ST_ID,
         ST_NAM_ChangedAt
     )
-) CLUSTER BY (ST_NAM_ST_ID, ST_NAM_ChangedAt);
+) CLUSTER BY (ST_NAM_ST_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average (
         ST_AVG_ST_ID,
         ST_AVG_ChangedAt
     )
-) CLUSTER BY (ST_AVG_ST_ID, ST_AVG_ChangedAt);
+) CLUSTER BY (ST_AVG_ST_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- ST_MIN_Stage_Minimum table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name (
         AC_NAM_AC_ID,
         AC_NAM_ChangedAt
     )
-) CLUSTER BY (AC_NAM_AC_ID, AC_NAM_ChangedAt);
+) CLUSTER BY (AC_NAM_AC_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- AC_GEN_Actor_Gender table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel (
         AC_PLV_AC_ID,
         AC_PLV_ChangedAt
     )
-) CLUSTER BY (AC_PLV_AC_ID, AC_PLV_ChangedAt);
+) CLUSTER BY (AC_PLV_AC_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- PR_NAM_Program_Name table (on PR_Program)
 -----------------------------------------------------------------------------------------------------------------------
@@ -253,4 +253,4 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length (
         PR_LEN_PR_ID,
         PR_LEN_ChangedAt
     )
-) CLUSTER BY (PR_LEN_PR_ID, PR_LEN_ChangedAt);
+) CLUSTER BY (PR_LEN_PR_ID);

@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS public.ST_NAM_Stage_Name (
         ST_ID,
         ST_NAM_ChangedAt
     )
-) CLUSTER BY (ST_ID, ST_NAM_ChangedAt);
+) CLUSTER BY (ST_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS public.ST_AVG_Stage_Average (
         ST_ID,
         ST_AVG_ChangedAt
     )
-) CLUSTER BY (ST_ID, ST_AVG_ChangedAt);
+) CLUSTER BY (ST_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- ST_MIN_Stage_Minimum table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ CREATE TABLE IF NOT EXISTS public.AC_NAM_Actor_Name (
         AC_ID,
         AC_NAM_ChangedAt
     )
-) CLUSTER BY (AC_ID, AC_NAM_ChangedAt);
+) CLUSTER BY (AC_ID);
 -- Knotted static attribute table -------------------------------------------------------------------------------------
 -- AC_GEN_Actor_Gender table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -326,7 +326,7 @@ CREATE TABLE IF NOT EXISTS public.AC_PLV_Actor_ProfessionalLevel (
         AC_ID,
         AC_PLV_ChangedAt
     )
-) CLUSTER BY (AC_ID, AC_PLV_ChangedAt);
+) CLUSTER BY (AC_ID);
 -- Static attribute table ---------------------------------------------------------------------------------------------
 -- PR_NAM_Program_Name table (on PR_Program)
 -----------------------------------------------------------------------------------------------------------------------
@@ -354,7 +354,7 @@ CREATE TABLE IF NOT EXISTS public.PR_LEN_Program_Length (
         PR_ID,
         PR_LEN_ChangedAt
     )
-) CLUSTER BY (PR_ID, PR_LEN_ChangedAt);
+) CLUSTER BY (PR_ID);
 -- TIES ---------------------------------------------------------------------------------------------------------------
 --
 -- Ties are used to represent relationships between entities.

@@ -31,7 +31,7 @@ $/ endif
         $attribute.entityReferenceName$,
         $attribute.changingColumnName$
     )
-) CLUSTER BY ($attribute.entityReferenceName$, $attribute.changingColumnName$);
+) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ if attribute.isHistorized and attribute.isKnotted
 -- Knotted historized attribute table ---------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ $/ endif
         $attribute.entityReferenceName$,
         $attribute.changingColumnName$
     )
-) CLUSTER BY ($attribute.entityReferenceName$, $attribute.changingColumnName$);
+) CLUSTER BY ($attribute.entityReferenceName$);
 $/ endif
 $/ if not attribute.isHistorized and attribute.isKnotted
 -- Knotted static attribute table -------------------------------------------------------------------------------------
