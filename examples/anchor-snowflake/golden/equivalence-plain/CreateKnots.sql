@@ -13,7 +13,7 @@
 CREATE SEQUENCE IF NOT EXISTS public.PAT_ParentalType_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.PAT_ParentalType_ID (
     PAT_ID tinyint default public.PAT_ParentalType_ID_SEQ.nextval not null, 
-     bit null,
+    PAT_Dummy boolean null,
     constraint pkPAT_ParentalType_ID primary key (
         PAT_ID
     ) RELY
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.PAT_ParentalType_EQ (
     PAT_ID tinyint not null,
     PAT_EQ tinyint not null,
     PAT_ParentalType varchar(42) not null,
-     bit null,
+    PAT_Dummy boolean null,
     constraint fkPAT_ParentalType_EQ foreign key (
         PAT_ID
     ) references public.PAT_ParentalType_ID(PAT_ID) RELY,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS public.PAT_ParentalType_EQ (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.GEN_Gender_ID (
     GEN_ID number(1,0) not null,
-     bit null,
+    GEN_Dummy boolean null,
     constraint pkGEN_Gender_ID primary key (
         GEN_ID
     ) RELY
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS public.GEN_Gender_EQ (
     GEN_ID number(1,0) not null,
     GEN_EQ tinyint not null,
     GEN_Gender varchar(42) not null,
-     bit null,
+    GEN_Dummy boolean null,
     constraint fkGEN_Gender_EQ foreign key (
         GEN_ID
     ) references public.GEN_Gender_ID(GEN_ID) RELY,
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS public.UTL_Utilization (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.ONG_Ongoing_ID (
     ONG_ID tinyint not null,
-     bit null,
+    ONG_Dummy boolean null,
     constraint pkONG_Ongoing_ID primary key (
         ONG_ID
     ) RELY
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS public.ONG_Ongoing_EQ (
     ONG_ID tinyint not null,
     ONG_EQ tinyint not null,
     ONG_Ongoing varchar(3) not null,
-     bit null,
+    ONG_Dummy boolean null,
     constraint fkONG_Ongoing_EQ foreign key (
         ONG_ID
     ) references public.ONG_Ongoing_ID(ONG_ID) RELY,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS public.ONG_Ongoing_EQ (
 CREATE SEQUENCE IF NOT EXISTS public.RAT_Rating_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.RAT_Rating_ID (
     RAT_ID tinyint default public.RAT_Rating_ID_SEQ.nextval not null, 
-     bit null,
+    RAT_Dummy boolean null,
     constraint pkRAT_Rating_ID primary key (
         RAT_ID
     ) RELY
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS public.RAT_Rating_EQ (
     RAT_ID tinyint not null,
     RAT_EQ tinyint not null,
     RAT_Rating varchar(42) not null,
-     bit null,
+    RAT_Dummy boolean null,
     constraint fkRAT_Rating_EQ foreign key (
         RAT_ID
     ) references public.RAT_Rating_ID(RAT_ID) RELY,

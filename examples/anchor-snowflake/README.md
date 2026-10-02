@@ -1,21 +1,23 @@
-# Anchor to Snowflake, uni-temporal, in Sisula dialect B
+# Anchor to Snowflake, in Sisula dialect B
 
-The Anchor Modeler's Snowflake uni-temporal generator, ported from JScript sisulets that are
-`eval`'d against a live object graph to declarative Sisula templates over JSON.
+The Anchor Modeler's Snowflake generators (uni-, bi- and concurrent-reliance-temporal), ported from
+JScript sisulets that are `eval`'d against a live object graph to declarative Sisula templates
+over JSON.
 
-**The templates live in the Anchor repository now**, as `SQL/Snowflake/uni/*.sisula`, listed by
-Anchor's `Snowflake_uni.directive`, and the modeler renders them with the vendored engine
+**The templates live in the Anchor repository now**, as `SQL/Snowflake/{uni,bi,crt}/*.sisula`, listed by
+Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with the vendored engine
 (`modules/sisula.js`). This folder is what proves them: the models, the golden files made by the
-original engine, and the tools that compare. Anchor's `Snowflake_uni.legacy.directive` and the
+original engine, and the tools that compare. Anchor's `Snowflake_*.legacy.directive` and the
 original `.js` sisulets are kept for as long as the golden files are made from them.
 
-The port is complete for what the modeler generates: the thirteen templates that
-`Snowflake_uni.directive` lists. For every model in `models/` the output is **byte-identical**
-to the original engine's, checked three ways:
+The port is complete for what the modeler generates: 13 templates for uni, 10 for bi and 11 for crt
+(bi and crt share uni's `AddDescriptions`). For every model in `models/` the output is
+**byte-identical** to the original engine's, checked these ways:
 
 | Check | Compares | Needs |
 |---|---|---|
 | `tools\run-all.ps1` | Anchor's templates' output, per template and as a whole, with the golden files | PowerShell, an Anchor checkout |
+| `tools\csharp-check.ps1` | the same templates and bindings through the C# renderer that runs inside SQL Server | an Anchor checkout, `sisula-mssql`'s `FixtureRunner.exe` |
 | `tools\regenerate-golden.ps1` | makes the golden files: the modeler's original engine and sisulets, run under Jint | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 
@@ -65,6 +67,14 @@ all of it when it saves. A hand-edited file can therefore mean something else to
 than to the engine reading it directly. Saving it once through the modeler removes that
 difference; saving it again changes nothing, and `base.xml` itself comes back byte-identical.
 
+**A model says which temporalization it is for** (`metadata/@temporalization`), and the tools take
+the directive, the scripts that prepare the schema and the templates from that (`tools/directive.ps1`).
+There are 11 models for each of uni, bi and crt: the models below, named `<name>-bi` and `<name>-crt`
+for the other two, which differ from the uni ones only in that setting, and `flags` and `ranges`, which
+exist for all three (listed after the table). The original sisulets of bi and crt failed with a syntax
+error in four of them when this was begun, so the golden files for those two exist because eight
+places were corrected first; the defects that remain are listed in Anchor's `HANDOVER-sisula-port.md`.
+
 | Model | Reaches |
 |---|---|
 | `base` | all four attribute flavours, knotted and historized ties, identifiers and one-to-one ties, a nexus with anchor and knot roles, a tie with a nexus role, checksums, descriptions |
@@ -76,6 +86,8 @@ difference; saving it again changes nothing, and `base.xml` itself comes back by
 | `distinct-equivalence` | distinct with equivalence on and equivalent knots and attributes of every kind, nexus attributes included |
 | `equivalence-original` | distinct-equivalence with the original naming convention, where knotted columns have no equivalent or checksum names |
 | `handwritten` | not saved through the modeler, on purpose: equivalent flags with equivalence off, roles without descriptions. Checked against the original engine only, which shows the templates test exactly what the sisulets test, also on files the modeler did not write |
+| `flags` | `distinct-equivalence` with restatement, idempotency, assertiveness and decisiveness turned over, so the code that tests them is reached both ways |
+| `ranges` | `distinct` with a type and a suffix of its own for everything that belongs to the posit, positor and reliability columns, so a template that takes one from the wrong place shows |
 
 To see that these models can tell a correct template from a wrong one, five plausible bugs were
 planted in the templates one at a time. Each was caught by at least one model, and none by
@@ -157,17 +169,13 @@ C# implementation:
 ## Observations about the original
 
 Reproduced as they are, since the output must match. They are worth fixing in Anchor, after
-which the golden files and templates change together.
+which the golden files and templates change together. (Defects that made the generated SQL
+invalid have been fixed, in the original sisulets and the templates together; they are listed in
+Anchor's `HANDOVER-sisula-port.md`. These remain.)
 
-- `CreateEquivalentAndDefault.js` writes `$schema.metadata.encapsulation._$schema.metadata.equivalentSuffix`,
-  meaning `public._EQ`, but the tokenizer ends the first token at the second `$`. The generated
-  SQL creates and merges into a table literally named `schema.metadata.equivalentSuffix`.
 - `tie.isKnotted()` in `Helpers.js` returns `!!this['knotRole']`, but `knotRole` is set to `{}`
   for every tie, so every tie is knotted. Ties without a knot role get the header comment
   "Knotted static tie table". Only the comment is affected.
-- With the original naming convention, knotted attributes and knot roles have no
-  `knotEquivalentColumnName` or `knotChecksumColumnName`, so the perspectives emit empty column
-  names, such as a line reading `    ,`, for equivalent or checksummed knots.
 - Several sisulets test `knot.isEquivalent()` without `schema.EQUIVALENCE`, so a knot marked
   equivalent in a model with equivalence off is referenced through tables and functions that are
   never created. The modeler never saves such a model; a hand-written file can contain one.
@@ -184,7 +192,8 @@ which the golden files and templates change together.
 
 ## Not done
 
-- `bi` and `crt`.
+- The planted-bug check above was done for uni only. For bi and crt the agreement with the original
+  engine on 11 models each is the evidence; no bugs were planted.
 - The Snowflake sisulets that the directive does not enable: triggers, key generators,
   restatement constraints, business perspectives and schema tracking. The modeler does not
   generate them for Snowflake.
