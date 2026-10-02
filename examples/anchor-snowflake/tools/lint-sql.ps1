@@ -21,6 +21,7 @@ param(
 )
 Set-StrictMode -Version 2.0
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'lint-columns.ps1')
 
 $types = 'int|tinyint|smallint|bigint|integer|decimal\(\d+,\s*\d+\)|number\(\d+(,\s*\d+)?\)|numeric\(\d+(,\s*\d+)?\)|timestamp_ntz(\(\d+\))?|timestamp(\(\d+\))?|datetime|date|string|text|varchar(\(\d+\))?|char(\(\d+\))?|boolean|bit|geography|binary'
 $column = "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b[^,]*$"          # a column definition with no comma at its end
@@ -89,6 +90,7 @@ function Test-Sql([string] $text) {
     foreach ($name in $missing.Keys) {
         $found.Add("line $($missing[$name].Line): refers to $name ($($missing[$name].Count) times), which the script never creates: [$($missing[$name].Text.Trim())]")
     }
+    Test-Columns $code $lines $found
     $joined = ($code -join "`n")
     $open = ([regex]::Matches($joined, '\(')).Count; $close = ([regex]::Matches($joined, '\)')).Count
     if ($open -ne $close) { $found.Add("unbalanced parentheses: $open open, $close close") }

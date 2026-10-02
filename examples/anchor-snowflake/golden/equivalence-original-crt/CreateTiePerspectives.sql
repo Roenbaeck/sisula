@@ -177,7 +177,7 @@ JOIN (
         AC_partner_AC_with_ONG_currently_Positor AS positor,
         AC_partner_AC_with_ONG_currently_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.AC_partner_AC_with_ONG_currently_Posit
+        ties.AC_partner_AC_with_ONG_currently
     WHERE
         AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
@@ -587,7 +587,7 @@ JOIN (
         AC_part_PR_in_RAT_got_Positor AS positor,
         AC_part_PR_in_RAT_got_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.AC_part_PR_in_RAT_got_Posit
+        ties.AC_part_PR_in_RAT_got
     WHERE
         AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
@@ -753,7 +753,7 @@ JOIN (
         ST_at_PR_isPlaying_Positor AS positor,
         ST_at_PR_isPlaying_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.ST_at_PR_isPlaying_Posit
+        ties.ST_at_PR_isPlaying
     WHERE
         ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
@@ -1049,7 +1049,7 @@ JOIN (
         PR_content_ST_location_EV_of_Positor AS positor,
         PR_content_ST_location_EV_of_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.PR_content_ST_location_EV_of_Posit
+        ties.PR_content_ST_location_EV_of
     WHERE
         PR_content_ST_location_EV_of_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
