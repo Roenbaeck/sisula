@@ -46,7 +46,6 @@ COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_EV_ID numeric(12,0),
-    EV_LVL_EQ tinyint,
     EV_LVL_PLV_ID tinyint, 
     EV_LVL_ChangedAt date
 )
@@ -55,7 +54,6 @@ $$
     SELECT
         Metadata_EV_LVL,
         EV_LVL_EV_ID,
-        EV_LVL_EQ,
         EV_LVL_PLV_ID,
         EV_LVL_ChangedAt
     FROM
@@ -103,7 +101,6 @@ COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ST_ID int,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
 )
@@ -112,7 +109,6 @@ $$
     SELECT
         Metadata_ST_AVG,
         ST_AVG_ST_ID,
-        ST_AVG_EQ,
         ST_AVG_UTL_ID,
         ST_AVG_ChangedAt
     FROM
@@ -157,7 +153,6 @@ COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_AC_ID smallint,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
 )
@@ -166,7 +161,6 @@ $$
     SELECT
         Metadata_AC_PLV,
         AC_PLV_AC_ID,
-        AC_PLV_EQ,
         AC_PLV_PLV_ID,
         AC_PLV_ChangedAt
     FROM

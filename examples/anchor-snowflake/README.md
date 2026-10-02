@@ -64,7 +64,7 @@ the others from it by text edits and then saves each one through the modeler its
 fills every flag the file leaves out from its defaults (a knot without `equivalent` becomes
 equivalent when the model's equivalence setting is on), applies its own rules (a knotted
 attribute is never equivalent, a tie role without a description gets its anchor's), and writes
-all of it when it saves. A hand-edited file can therefore mean something else to the modeler
+all of it when it saves. (One of those rules, that a knotted attribute is never equivalent, was not applied to the flags read from a file until the modeler was fixed, so some models here still say equivalent="true" on a knotted attribute; the generators ignore it, which is what keeps that case tested.) A hand-edited file can therefore mean something else to the modeler
 than to the engine reading it directly. Saving it once through the modeler removes that
 difference; saving it again changes nothing, and `base.xml` itself comes back byte-identical.
 
