@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently (
     currently_ONG_Ongoing,
     currently_Metadata_ONG,
     ONG_ID_currently
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_AC_partner_AC_with_ONG_currently,
@@ -46,6 +46,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -90,7 +91,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -102,6 +103,7 @@ CREATE OR REPLACE FUNCTION public.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -137,7 +139,7 @@ CREATE OR REPLACE VIEW public.lAC_subset_PN_of (
     Metadata_AC_subset_PN_of,
     AC_ID_subset,
     PN_ID_of
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_AC_subset_PN_of,
@@ -151,6 +153,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of int,
     AC_ID_subset int,
@@ -168,7 +171,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW public.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -180,7 +183,7 @@ CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast (
     Metadata_EV_in_AC_wasCast,
     EV_ID_in,
     AC_ID_wasCast
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_EV_in_AC_wasCast,
@@ -194,6 +197,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast int,
     EV_ID_in int,
@@ -211,7 +215,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -227,7 +231,7 @@ CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got (
     got_RAT_Rating,
     got_Metadata_RAT,
     RAT_ID_got
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_AC_part_PR_in_RAT_got,
@@ -260,6 +264,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -302,7 +307,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -314,6 +319,7 @@ CREATE OR REPLACE FUNCTION public.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -350,7 +356,7 @@ CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying (
     ST_at_PR_isPlaying_ChangedAt,
     ST_ID_at,
     PR_ID_isPlaying
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_ST_at_PR_isPlaying,
@@ -376,6 +382,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -408,7 +415,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -420,6 +427,7 @@ CREATE OR REPLACE FUNCTION public.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -448,7 +456,7 @@ CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having (
     having_PAT_ParentalType,
     having_Metadata_PAT,
     PAT_ID_having
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_AC_parent_AC_child_PAT_having,
@@ -469,6 +477,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having int,
     AC_ID_parent int,
@@ -496,7 +505,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -509,7 +518,7 @@ CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of (
     PR_ID_content,
     ST_ID_location,
     EV_ID_of
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_PR_content_ST_location_EV_of,
@@ -524,6 +533,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of int,
     PR_ID_content int,
@@ -543,7 +553,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM

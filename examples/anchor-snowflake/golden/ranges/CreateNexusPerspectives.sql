@@ -39,7 +39,7 @@ CREATE OR REPLACE VIEW nexuses.lEV_Event (
     EV_LVL_PLV_ProfessionalLevel COMMENT 'Professional level required for the event, over time.',
     EV_LVL_Metadata_PLV,
     EV_LVL_PLV_ID COMMENT 'Professional level required for the event, over time.'
-) COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
+) COPY GRANTS COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
 AS
 SELECT
     EV.EV_ID,
@@ -136,6 +136,7 @@ ON
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV bigint,
@@ -267,7 +268,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     *
 FROM
@@ -280,6 +281,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,

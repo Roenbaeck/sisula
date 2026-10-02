@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION anchors.tST_Stage (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST int,
@@ -197,7 +198,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lST_Stage AS
+CREATE OR REPLACE VIEW anchors.lST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -217,6 +218,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -313,7 +315,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nST_Stage AS
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -335,6 +337,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -467,6 +470,7 @@ CREATE OR REPLACE FUNCTION anchors.tAC_Actor (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC int,
@@ -620,7 +624,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lAC_Actor AS
+CREATE OR REPLACE VIEW anchors.lAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -640,6 +644,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -724,7 +729,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nAC_Actor AS
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -746,6 +751,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -866,6 +872,7 @@ CREATE OR REPLACE FUNCTION anchors.tPR_Program (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR int,
@@ -958,7 +965,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lPR_Program AS
+CREATE OR REPLACE VIEW anchors.lPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -978,6 +985,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -1034,7 +1042,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nPR_Program AS
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -1056,6 +1064,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),

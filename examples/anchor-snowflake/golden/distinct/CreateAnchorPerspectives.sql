@@ -27,7 +27,7 @@ CREATE OR REPLACE VIEW anchors.lST_Stage (
     ST_MIN_UTL_Utilization COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.',
     ST_MIN_Metadata_UTL,
     ST_MIN_UTL_ID COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.'
-) COMMENT = 'A stage or venue where programs are played and events are held.'
+) COPY GRANTS COMMENT = 'A stage or venue where programs are played and events are held.'
 AS
 SELECT
     ST.ST_ID,
@@ -100,6 +100,7 @@ ON
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST int,
@@ -195,7 +196,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nST_Stage
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS
 AS
 SELECT
     *
@@ -209,6 +210,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -327,7 +329,7 @@ CREATE OR REPLACE VIEW anchors.lAC_Actor (
     AC_PLV_PLV_ProfessionalLevel COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     AC_PLV_Metadata_PLV,
     AC_PLV_PLV_ID COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
-) COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
+) COPY GRANTS COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
 AS
 SELECT
     AC.AC_ID,
@@ -394,6 +396,7 @@ ON
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC int,
@@ -481,7 +484,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nAC_Actor
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS
 AS
 SELECT
     *
@@ -495,6 +498,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -597,7 +601,7 @@ CREATE OR REPLACE VIEW anchors.lPR_Program (
     Metadata_PR_LEN,
     PR_LEN_ChangedAt,
     PR_LEN_Program_Length COMMENT 'Running time of the program. Historized, since the program may be shortened or extended over time.'
-) 
+) COPY GRANTS 
 AS
 SELECT
     PR.PR_ID,
@@ -633,6 +637,7 @@ AND
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR int,
@@ -679,7 +684,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nPR_Program
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS
 AS
 SELECT
     *
@@ -693,6 +698,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,

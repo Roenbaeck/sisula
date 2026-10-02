@@ -568,6 +568,7 @@ CREATE TABLE IF NOT EXISTS public.PR_content_ST_location_EV_of (
 CREATE OR REPLACE FUNCTION public.rST_NAM_Stage_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     ST_NAM_Stage_Name varchar(42),
@@ -591,6 +592,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rST_AVG_Stage_Average (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     UTL_ID tinyint, 
@@ -614,6 +616,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_NAM_Actor_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     AC_NAM_Actor_Name varchar(42),
@@ -637,6 +640,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     PLV_ID tinyint, 
@@ -660,6 +664,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rPR_LEN_Program_Length (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID int,
     PR_LEN_Program_Length time,
@@ -695,7 +700,7 @@ CREATE OR REPLACE VIEW public.lST_Stage (
     UTL_ID COMMENT 'Average utilization of the stage capacity, recalculated over time.',
     UTL_Utilization COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.',
     UTL_ID COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.'
-) COMMENT = 'A stage or venue where programs are played and events are held.'
+) COPY GRANTS COMMENT = 'A stage or venue where programs are played and events are held.'
 AS
 SELECT
     ST.ST_ID,
@@ -757,6 +762,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     ST_NAM_ChangedAt datetime,
@@ -830,7 +836,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nST_Stage
+CREATE OR REPLACE VIEW public.nST_Stage COPY GRANTS
 AS
 SELECT
     *
@@ -844,6 +850,7 @@ CREATE OR REPLACE FUNCTION public.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -919,7 +926,7 @@ CREATE OR REPLACE VIEW public.lAC_Actor (
     PLV_Checksum,
     PLV_ProfessionalLevel COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     PLV_ID COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
-) COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
+) COPY GRANTS COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
 AS
 SELECT
     AC.AC_ID,
@@ -976,6 +983,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     AC_NAM_ChangedAt datetime,
@@ -1043,7 +1051,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_Actor
+CREATE OR REPLACE VIEW public.nAC_Actor COPY GRANTS
 AS
 SELECT
     *
@@ -1057,6 +1065,7 @@ CREATE OR REPLACE FUNCTION public.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1124,7 +1133,7 @@ CREATE OR REPLACE VIEW public.lPR_Program (
     PR_NAM_Program_Name COMMENT 'Name or title of the program.',
     PR_LEN_ChangedAt,
     PR_LEN_Program_Length COMMENT 'Running time of the program. Historized, since the program may be shortened or extended over time.'
-) COMMENT = 'A program, such as a play, show or concert, that can be played on stages.'
+) COPY GRANTS COMMENT = 'A program, such as a play, show or concert, that can be played on stages.'
 AS
 SELECT
     PR.PR_ID,
@@ -1155,6 +1164,7 @@ AND
 CREATE OR REPLACE FUNCTION public.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID int,
     PR_NAM_Program_Name varchar(42),
@@ -1191,7 +1201,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nPR_Program
+CREATE OR REPLACE VIEW public.nPR_Program COPY GRANTS
 AS
 SELECT
     *
@@ -1205,6 +1215,7 @@ CREATE OR REPLACE FUNCTION public.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1249,7 +1260,7 @@ CREATE OR REPLACE VIEW public.lEV_Event (
     EV_DAT_Event_Date COMMENT 'Date and time when the event took place.',
     EV_AUD_Event_Audience COMMENT 'Number of people in the audience at the event.',
     EV_REV_Event_Revenue COMMENT 'Revenue from ticket sales for the event.'
-) COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
+) COPY GRANTS COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
 AS
 SELECT
     EV.EV_ID,
@@ -1283,6 +1294,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -1326,7 +1338,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_Event AS
+CREATE OR REPLACE VIEW public.nEV_Event COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1345,7 +1357,7 @@ CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently (
     AC_ID_with COMMENT 'The other actor in the partnership.',
     ONG_Ongoing COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).',
     ONG_ID_currently COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).'
-) COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
+) COPY GRANTS COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
 AS
 SELECT
     tie.AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -1376,6 +1388,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -1416,7 +1429,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1428,6 +1441,7 @@ CREATE OR REPLACE FUNCTION public.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -1458,7 +1472,7 @@ $$
 CREATE OR REPLACE VIEW public.lAC_subset_PN_of (
     AC_ID_subset COMMENT 'The actor.',
     PN_ID_of COMMENT 'The person who is the actor.'
-) COMMENT = 'Connects an actor to the person that the actor is. Every actor is a person, but not every person is an actor.'
+) COPY GRANTS COMMENT = 'Connects an actor to the person that the actor is. Every actor is a person, but not every person is an actor.'
 AS
 SELECT
     tie.AC_ID_subset,
@@ -1471,6 +1485,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_subset int,
     PN_ID_of int
@@ -1486,7 +1501,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW public.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1497,7 +1512,7 @@ FROM
 CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast (
     EV_ID_in COMMENT 'The event the actor was cast in.',
     AC_ID_wasCast COMMENT 'An actor cast in the event.'
-) COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
+) COPY GRANTS COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
 AS
 SELECT
     tie.EV_ID_in,
@@ -1510,6 +1525,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID_in int,
     AC_ID_wasCast int
@@ -1525,7 +1541,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1539,7 +1555,7 @@ CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got (
     PR_ID_in COMMENT 'The program the actor has a part in.',
     RAT_Rating COMMENT 'The rating the actor got for the part.',
     RAT_ID_got COMMENT 'The rating the actor got for the part.'
-) COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
+) COPY GRANTS COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
 AS
 SELECT
     tie.AC_part_PR_in_RAT_got_ChangedAt,
@@ -1570,6 +1586,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -1608,7 +1625,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1620,6 +1637,7 @@ CREATE OR REPLACE FUNCTION public.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -1651,7 +1669,7 @@ CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying (
     ST_at_PR_isPlaying_ChangedAt,
     ST_ID_at COMMENT 'The stage where the program is playing.',
     PR_ID_isPlaying COMMENT 'The program playing at the stage.'
-) COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
+) COPY GRANTS COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
 AS
 SELECT
     tie.ST_at_PR_isPlaying_ChangedAt,
@@ -1676,6 +1694,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -1706,7 +1725,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1718,6 +1737,7 @@ CREATE OR REPLACE FUNCTION public.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -1742,7 +1762,7 @@ CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having (
     AC_ID_child COMMENT 'The actor who is the child.',
     PAT_ParentalType COMMENT 'The type of parental relationship.',
     PAT_ID_having COMMENT 'The type of parental relationship.'
-) COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
+) COPY GRANTS COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
 AS
 SELECT
     tie.AC_ID_parent,
@@ -1761,6 +1781,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_parent int,
     AC_ID_child int,
@@ -1784,7 +1805,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1796,7 +1817,7 @@ CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of (
     PR_ID_content COMMENT 'The program that made up the content of the event.',
     ST_ID_location COMMENT 'The stage where the event was located.',
     EV_ID_of COMMENT 'The event.'
-) COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
+) COPY GRANTS COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
 AS
 SELECT
     tie.PR_ID_content,
@@ -1810,6 +1831,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID_content int,
     ST_ID_location int,
@@ -1827,7 +1849,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM

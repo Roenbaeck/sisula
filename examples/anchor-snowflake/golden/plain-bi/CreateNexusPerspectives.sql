@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION public.tEV_Event (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -114,7 +115,7 @@ ON
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lEV_Event AS
+CREATE OR REPLACE VIEW public.lEV_Event COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     EV.*
@@ -127,6 +128,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Reliability decimal(5,2),
     EV_ID int,
@@ -175,7 +177,7 @@ FROM
     )) EV
 $$
 ;
-CREATE OR REPLACE VIEW public.nEV_Event AS
+CREATE OR REPLACE VIEW public.nEV_Event COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     EV.*

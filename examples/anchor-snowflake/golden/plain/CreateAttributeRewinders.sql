@@ -13,6 +13,7 @@
 CREATE OR REPLACE FUNCTION public.rST_NAM_Stage_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     ST_NAM_Stage_Name varchar(42),
@@ -36,6 +37,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rST_AVG_Stage_Average (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     UTL_ID tinyint, 
@@ -59,6 +61,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_NAM_Actor_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     AC_NAM_Actor_Name varchar(42),
@@ -82,6 +85,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     PLV_ID tinyint, 
@@ -105,6 +109,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rPR_LEN_Program_Length (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID int,
     PR_LEN_Program_Length time,

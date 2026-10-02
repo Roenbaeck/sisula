@@ -664,6 +664,7 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of (
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA bigint,
     EV_STA_EV_ID numeric(12,0),
@@ -689,6 +690,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL bigint,
     EV_LVL_EV_ID numeric(12,0),
@@ -714,6 +716,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM bigint,
     ST_NAM_ST_ID int,
@@ -739,6 +742,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG bigint,
     ST_AVG_ST_ID int,
@@ -764,6 +768,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM bigint,
     AC_NAM_AC_ID smallint,
@@ -789,6 +794,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV bigint,
     AC_PLV_AC_ID smallint,
@@ -814,6 +820,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN bigint,
     PR_LEN_PR_ID number(10,0),
@@ -862,7 +869,7 @@ CREATE OR REPLACE VIEW anchors.lST_Stage (
     ST_MIN_UTL_Utilization COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.',
     ST_MIN_Metadata_UTL,
     ST_MIN_UTL_ID COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.'
-) COMMENT = 'A stage or venue where programs are played and events are held.'
+) COPY GRANTS COMMENT = 'A stage or venue where programs are played and events are held.'
 AS
 SELECT
     ST.ST_ID,
@@ -935,6 +942,7 @@ ON
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST bigint,
@@ -1030,7 +1038,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nST_Stage
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS
 AS
 SELECT
     *
@@ -1044,6 +1052,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1162,7 +1171,7 @@ CREATE OR REPLACE VIEW anchors.lAC_Actor (
     AC_PLV_PLV_ProfessionalLevel COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     AC_PLV_Metadata_PLV,
     AC_PLV_PLV_ID COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
-) COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
+) COPY GRANTS COMMENT = 'An actor, a person who performs parts in programs and is cast in events.'
 AS
 SELECT
     AC.AC_ID,
@@ -1229,6 +1238,7 @@ ON
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC bigint,
@@ -1316,7 +1326,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nAC_Actor
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS
 AS
 SELECT
     *
@@ -1330,6 +1340,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1432,7 +1443,7 @@ CREATE OR REPLACE VIEW anchors.lPR_Program (
     Metadata_PR_LEN,
     PR_LEN_ChangedAt,
     PR_LEN_Program_Length COMMENT 'Running time of the program. Historized, since the program may be shortened or extended over time.'
-) 
+) COPY GRANTS 
 AS
 SELECT
     PR.PR_ID,
@@ -1468,6 +1479,7 @@ AND
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR bigint,
@@ -1514,7 +1526,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nPR_Program
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS
 AS
 SELECT
     *
@@ -1528,6 +1540,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1607,7 +1620,7 @@ CREATE OR REPLACE VIEW nexuses.lEV_Event (
     EV_LVL_PLV_ProfessionalLevel COMMENT 'Professional level required for the event, over time.',
     EV_LVL_Metadata_PLV,
     EV_LVL_PLV_ID COMMENT 'Professional level required for the event, over time.'
-) COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
+) COPY GRANTS COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
 AS
 SELECT
     EV.EV_ID,
@@ -1704,6 +1717,7 @@ ON
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV bigint,
@@ -1835,7 +1849,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1848,6 +1862,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -1995,7 +2010,7 @@ CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently (
     currently_ONG_Ongoing COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).',
     currently_Metadata_ONG,
     ONG_ID_currently COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).'
-) COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
+) COPY GRANTS COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
 AS
 SELECT
     tie.Metadata_AC_partner_AC_with_ONG_currently,
@@ -2028,6 +2043,7 @@ WHERE
 CREATE OR REPLACE FUNCTION ties.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -2072,7 +2088,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2084,6 +2100,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -2119,7 +2136,7 @@ CREATE OR REPLACE VIEW ties.lAC_subset_PN_of (
     Metadata_AC_subset_PN_of,
     AC_ID_subset COMMENT 'An actor, a person who performs parts in programs and is cast in events.',
     PN_ID_of COMMENT 'The person who is the actor.'
-) 
+) COPY GRANTS 
 AS
 SELECT
     tie.Metadata_AC_subset_PN_of,
@@ -2133,6 +2150,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_ID_subset smallint,
@@ -2150,7 +2168,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2162,7 +2180,7 @@ CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast (
     Metadata_EV_in_AC_wasCast,
     EV_ID_in COMMENT 'The event the actor was cast in.',
     AC_ID_wasCast COMMENT 'An actor cast in the event.'
-) COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
+) COPY GRANTS COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
 AS
 SELECT
     tie.Metadata_EV_in_AC_wasCast,
@@ -2176,6 +2194,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_ID_in numeric(12,0),
@@ -2193,7 +2212,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2210,7 +2229,7 @@ CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got (
     got_RAT_Rating COMMENT 'The rating the actor got for the part.',
     got_Metadata_RAT,
     RAT_ID_got COMMENT 'The rating the actor got for the part.'
-) COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
+) COPY GRANTS COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
 AS
 SELECT
     tie.Metadata_AC_part_PR_in_RAT_got,
@@ -2244,6 +2263,7 @@ WHERE
 CREATE OR REPLACE FUNCTION ties.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -2288,7 +2308,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2300,6 +2320,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -2338,7 +2359,7 @@ CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying (
     ST_at_PR_isPlaying_ChangedAt,
     ST_ID_at COMMENT 'The stage where the program is playing.',
     PR_ID_isPlaying COMMENT 'The program playing at the stage.'
-) COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
+) COPY GRANTS COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
 AS
 SELECT
     tie.Metadata_ST_at_PR_isPlaying,
@@ -2364,6 +2385,7 @@ WHERE
 CREATE OR REPLACE FUNCTION ties.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -2396,7 +2418,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2408,6 +2430,7 @@ CREATE OR REPLACE FUNCTION ties.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -2436,7 +2459,7 @@ CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having (
     having_PAT_ParentalType COMMENT 'The type of parental relationship.',
     having_Metadata_PAT,
     PAT_ID_having COMMENT 'The type of parental relationship.'
-) COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
+) COPY GRANTS COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
 AS
 SELECT
     tie.Metadata_AC_parent_AC_child_PAT_having,
@@ -2457,6 +2480,7 @@ ON
 CREATE OR REPLACE FUNCTION ties.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having bigint,
     AC_ID_parent smallint,
@@ -2484,7 +2508,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2498,7 +2522,7 @@ CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of (
     PR_ID_content COMMENT 'The program that made up the content of the event.',
     ST_ID_location COMMENT 'The stage where the event was located.',
     EV_ID_of COMMENT 'The event.'
-) COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
+) COPY GRANTS COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
 AS
 SELECT
     tie.Metadata_PR_content_ST_location_EV_of,
@@ -2525,6 +2549,7 @@ WHERE
 CREATE OR REPLACE FUNCTION ties.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_content_ST_location_EV_of_ChangedAt datetime,
@@ -2561,7 +2586,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -2573,6 +2598,7 @@ CREATE OR REPLACE FUNCTION ties.dPR_content_ST_location_EV_of (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_content_ST_location_EV_of_ChangedAt datetime,

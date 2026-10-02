@@ -10,6 +10,7 @@
 CREATE OR REPLACE FUNCTION attributes.eEV_AUD_Event_Audience (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_AUD_EV_ID numeric(12,0),
     EV_AUD_EQ tinyint,
@@ -35,6 +36,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.eEV_REV_Event_Revenue (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_REV_EV_ID numeric(12,0),
     EV_REV_EQ tinyint,
@@ -60,6 +62,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.eEV_STA_Event_Status (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_STA_EV_ID numeric(12,0),
     EV_STA_EQ tinyint,
@@ -87,6 +90,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.eST_NAM_Stage_Name (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ST_ID int,
     ST_NAM_EQ tinyint,
@@ -114,6 +118,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.eST_LOC_Stage_Location (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_LOC_ST_ID int,
     ST_LOC_EQ tinyint,
@@ -141,6 +146,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.ePR_LEN_Program_Length (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_LEN_PR_ID number(10,0),
     PR_LEN_EQ tinyint,

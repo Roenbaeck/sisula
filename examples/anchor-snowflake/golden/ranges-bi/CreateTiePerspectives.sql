@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID bigint,
     Metadata_AC_partner_AC_with_ONG_currently bigint,
@@ -65,7 +66,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -77,6 +78,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID bigint,
     Metadata_AC_partner_AC_with_ONG_currently bigint,
@@ -109,7 +111,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -122,6 +124,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID bigint,
     Metadata_AC_partner_AC_with_ONG_currently bigint,
@@ -160,6 +163,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID bigint,
     Metadata_AC_subset_PN_of bigint,
@@ -203,7 +207,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.lAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -215,6 +219,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID bigint,
     Metadata_AC_subset_PN_of bigint,
@@ -239,7 +244,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -252,6 +257,7 @@ CREATE OR REPLACE FUNCTION ties.tEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID bigint,
     Metadata_EV_in_AC_wasCast bigint,
@@ -293,7 +299,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -305,6 +311,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID bigint,
     Metadata_EV_in_AC_wasCast bigint,
@@ -329,7 +336,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -342,6 +349,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID bigint,
     Metadata_AC_part_PR_in_RAT_got bigint,
@@ -398,7 +406,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -410,6 +418,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID bigint,
     Metadata_AC_part_PR_in_RAT_got bigint,
@@ -442,7 +451,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -455,6 +464,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID bigint,
     Metadata_AC_part_PR_in_RAT_got bigint,
@@ -493,6 +503,7 @@ CREATE OR REPLACE FUNCTION ties.tST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID bigint,
     Metadata_ST_at_PR_isPlaying bigint,
@@ -539,7 +550,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -551,6 +562,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID bigint,
     Metadata_ST_at_PR_isPlaying bigint,
@@ -577,7 +589,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -590,6 +602,7 @@ CREATE OR REPLACE FUNCTION ties.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID bigint,
     Metadata_ST_at_PR_isPlaying bigint,
@@ -622,6 +635,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID bigint,
     Metadata_AC_parent_AC_child_PAT_having bigint,
@@ -675,7 +689,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -687,6 +701,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID bigint,
     Metadata_AC_parent_AC_child_PAT_having bigint,
@@ -717,7 +732,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -730,6 +745,7 @@ CREATE OR REPLACE FUNCTION ties.tPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID bigint,
     Metadata_PR_content_ST_location_EV_of bigint,
@@ -780,7 +796,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -792,6 +808,7 @@ FROM
 CREATE OR REPLACE FUNCTION ties.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID bigint,
     Metadata_PR_content_ST_location_EV_of bigint,
@@ -820,7 +837,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -833,6 +850,7 @@ CREATE OR REPLACE FUNCTION ties.dPR_content_ST_location_EV_of (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID bigint,
     Metadata_PR_content_ST_location_EV_of bigint,

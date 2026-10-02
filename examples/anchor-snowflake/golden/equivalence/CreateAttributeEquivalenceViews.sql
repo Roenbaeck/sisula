@@ -10,6 +10,7 @@
 CREATE OR REPLACE FUNCTION public.eEV_DAT_Event_Date (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_DAT_EV_ID int,
     EV_DAT_EQ tinyint,
@@ -35,6 +36,7 @@ $$
 CREATE OR REPLACE FUNCTION public.eEV_REV_Event_Revenue (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_REV_EV_ID int,
     EV_REV_EQ tinyint,
@@ -60,6 +62,7 @@ $$
 CREATE OR REPLACE FUNCTION public.eST_NAM_Stage_Name (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ST_ID int,
     ST_NAM_EQ tinyint,
@@ -89,6 +92,7 @@ $$
 CREATE OR REPLACE FUNCTION public.eST_LOC_Stage_Location (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_LOC_ST_ID int,
     ST_LOC_EQ tinyint,
@@ -116,6 +120,7 @@ $$
 CREATE OR REPLACE FUNCTION public.eAC_NAM_Actor_Name (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_NAM_AC_ID int,
     AC_NAM_EQ tinyint,

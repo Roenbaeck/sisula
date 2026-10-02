@@ -13,7 +13,7 @@ CREATE OR REPLACE VIEW public.PAT_ParentalType (
     PAT_ID,
     PAT_EQ,
     PAT_ParentalType COMMENT 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
-) COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
+) COPY GRANTS COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
 AS
 SELECT
     i.PAT_ID,
@@ -29,6 +29,7 @@ ON
 CREATE OR REPLACE FUNCTION public.ePAT_ParentalType (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     PAT_ID tinyint,
     PAT_EQ tinyint,
@@ -53,7 +54,7 @@ CREATE OR REPLACE VIEW public.GEN_Gender (
     GEN_ID,
     GEN_EQ,
     GEN_Gender COMMENT 'Gender of an actor.'
-) COMMENT = 'Gender of an actor.'
+) COPY GRANTS COMMENT = 'Gender of an actor.'
 AS
 SELECT
     i.GEN_ID,
@@ -69,6 +70,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eGEN_Gender (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     GEN_ID number(1,0),
     GEN_EQ tinyint,
@@ -93,7 +95,7 @@ CREATE OR REPLACE VIEW public.ONG_Ongoing (
     ONG_ID,
     ONG_EQ,
     ONG_Ongoing COMMENT 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
-) COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
+) COPY GRANTS COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
 AS
 SELECT
     i.ONG_ID,
@@ -109,6 +111,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eONG_Ongoing (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ONG_ID tinyint,
     ONG_EQ tinyint,
@@ -133,7 +136,7 @@ CREATE OR REPLACE VIEW public.RAT_Rating (
     RAT_ID,
     RAT_EQ,
     RAT_Rating COMMENT 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
-) COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
+) COPY GRANTS COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
 AS
 SELECT
     i.RAT_ID,
@@ -149,6 +152,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eRAT_Rating (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     RAT_ID tinyint,
     RAT_EQ tinyint,

@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION public.tST_Stage (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST int,
@@ -205,7 +206,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.lST_Stage AS
+CREATE OR REPLACE VIEW public.lST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -225,6 +226,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION public.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -329,7 +331,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nST_Stage AS
+CREATE OR REPLACE VIEW public.nST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -351,6 +353,7 @@ CREATE OR REPLACE FUNCTION public.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -491,6 +494,7 @@ CREATE OR REPLACE FUNCTION public.tAC_Actor (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID int,
     Metadata_AC int,
@@ -648,7 +652,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.lAC_Actor AS
+CREATE OR REPLACE VIEW public.lAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -668,6 +672,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION public.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -756,7 +761,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_Actor AS
+CREATE OR REPLACE VIEW public.nAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -778,6 +783,7 @@ CREATE OR REPLACE FUNCTION public.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -902,6 +908,7 @@ CREATE OR REPLACE FUNCTION public.tPR_Program (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID int,
     Metadata_PR int,
@@ -998,7 +1005,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.lPR_Program AS
+CREATE OR REPLACE VIEW public.lPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -1018,6 +1025,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION public.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -1078,7 +1086,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nPR_Program AS
+CREATE OR REPLACE VIEW public.nPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -1100,6 +1108,7 @@ CREATE OR REPLACE FUNCTION public.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),

@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION nexuses.tEV_Event (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -244,7 +245,7 @@ ON
     kLVL.PLV_ID = LVL.PLV_ID
 $$
 ;
-CREATE OR REPLACE VIEW nexuses.lEV_Event AS
+CREATE OR REPLACE VIEW nexuses.lEV_Event COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     EV.*
@@ -257,6 +258,7 @@ FROM
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Reliability decimal(5,2),
     EV_ID numeric(12,0),
@@ -361,7 +363,7 @@ FROM
     )) EV
 $$
 ;
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     EV.*
@@ -376,6 +378,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     EV_ID numeric(12,0),

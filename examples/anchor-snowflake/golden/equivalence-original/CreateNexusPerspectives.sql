@@ -40,7 +40,7 @@ CREATE OR REPLACE VIEW nexuses.lEV_Event (
     PLV_ProfessionalLevel COMMENT 'Professional level required for the event, over time.',
     Metadata_PLV,
     PLV_ID COMMENT 'Professional level required for the event, over time.'
-) COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
+) COPY GRANTS COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
 AS
 SELECT
     EV.EV_ID,
@@ -138,6 +138,7 @@ ON
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -271,7 +272,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     *
 FROM
@@ -284,6 +285,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,
@@ -424,6 +426,7 @@ $$
 CREATE OR REPLACE FUNCTION nexuses.elEV_Event (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -561,6 +564,7 @@ CREATE OR REPLACE FUNCTION nexuses.epEV_Event (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -697,6 +701,7 @@ $$
 CREATE OR REPLACE FUNCTION nexuses.enEV_Event (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -749,6 +754,7 @@ CREATE OR REPLACE FUNCTION nexuses.edEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     mnemonic string,

@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION nexuses.tEV_Event (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV bigint,
@@ -298,7 +299,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.lEV_Event AS
+CREATE OR REPLACE VIEW nexuses.lEV_Event COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -318,6 +319,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -466,7 +468,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -488,6 +490,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
