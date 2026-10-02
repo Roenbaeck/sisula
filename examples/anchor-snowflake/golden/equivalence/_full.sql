@@ -1484,46 +1484,6 @@ AND
     pST.ST_ID = hAVG.ST_AVG_ST_ID
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elST_Stage (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    ST_ID int,
-    Metadata_ST int,
-    ST_NAM_ST_ID int,
-    Metadata_ST_NAM int,
-    ST_NAM_ChangedAt datetime,
-    ST_NAM_EQ tinyint,
-    ST_NAM_Checksum numeric(19,0),
-    ST_NAM_Stage_Name varchar(42),
-    ST_LOC_ST_ID int,
-    Metadata_ST_LOC int,
-    ST_LOC_EQ tinyint,
-    ST_LOC_Checksum numeric(19,0),
-    ST_LOC_Stage_Location geography,
-    ST_AVG_ST_ID int,
-    Metadata_ST_AVG int,
-    ST_AVG_ChangedAt datetime,
-    ST_AVG_UTL_Utilization tinyint,
-    ST_AVG_Metadata_UTL int,
-    ST_AVG_UTL_ID tinyint,
-    ST_MIN_ST_ID int,
-    Metadata_ST_MIN int,
-    ST_MIN_UTL_Utilization tinyint,
-    ST_MIN_Metadata_UTL int,
-    ST_MIN_UTL_ID tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epST_Stage (
@@ -1628,6 +1588,46 @@ LEFT JOIN
     public.UTL_Utilization kMIN
 ON
     kMIN.UTL_ID = MIN.ST_MIN_UTL_ID
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elST_Stage (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    ST_ID int,
+    Metadata_ST int,
+    ST_NAM_ST_ID int,
+    Metadata_ST_NAM int,
+    ST_NAM_ChangedAt datetime,
+    ST_NAM_EQ tinyint,
+    ST_NAM_Checksum numeric(19,0),
+    ST_NAM_Stage_Name varchar(42),
+    ST_LOC_ST_ID int,
+    Metadata_ST_LOC int,
+    ST_LOC_EQ tinyint,
+    ST_LOC_Checksum numeric(19,0),
+    ST_LOC_Stage_Location geography,
+    ST_AVG_ST_ID int,
+    Metadata_ST_AVG int,
+    ST_AVG_ChangedAt datetime,
+    ST_AVG_UTL_Utilization tinyint,
+    ST_AVG_Metadata_UTL int,
+    ST_AVG_UTL_ID tinyint,
+    ST_MIN_ST_ID int,
+    Metadata_ST_MIN int,
+    ST_MIN_UTL_Utilization tinyint,
+    ST_MIN_Metadata_UTL int,
+    ST_MIN_UTL_ID tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -2080,43 +2080,6 @@ AND
     pAC.AC_ID = hPLV.AC_PLV_AC_ID
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elAC_Actor (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    AC_ID int,
-    Metadata_AC int,
-    AC_NAM_AC_ID int,
-    Metadata_AC_NAM int,
-    AC_NAM_ChangedAt datetime,
-    AC_NAM_EQ tinyint,
-    AC_NAM_Checksum numeric(19,0),
-    AC_NAM_Actor_Name varchar(42),
-    AC_GEN_AC_ID int,
-    Metadata_AC_GEN int,
-    AC_GEN_GEN_EQ tinyint,
-    AC_GEN_GEN_Gender varchar(42),
-    AC_GEN_Metadata_GEN int,
-    AC_GEN_GEN_ID number(1,0),
-    AC_PLV_AC_ID int,
-    Metadata_AC_PLV int,
-    AC_PLV_ChangedAt datetime,
-    AC_PLV_PLV_Checksum numeric(19,0),
-    AC_PLV_PLV_ProfessionalLevel string,
-    AC_PLV_Metadata_PLV int,
-    AC_PLV_PLV_ID tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epAC_Actor (
@@ -2211,6 +2174,43 @@ LEFT JOIN
     public.PLV_ProfessionalLevel kPLV
 ON
     kPLV.PLV_ID = PLV.AC_PLV_PLV_ID
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elAC_Actor (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    AC_ID int,
+    Metadata_AC int,
+    AC_NAM_AC_ID int,
+    Metadata_AC_NAM int,
+    AC_NAM_ChangedAt datetime,
+    AC_NAM_EQ tinyint,
+    AC_NAM_Checksum numeric(19,0),
+    AC_NAM_Actor_Name varchar(42),
+    AC_GEN_AC_ID int,
+    Metadata_AC_GEN int,
+    AC_GEN_GEN_EQ tinyint,
+    AC_GEN_GEN_Gender varchar(42),
+    AC_GEN_Metadata_GEN int,
+    AC_GEN_GEN_ID number(1,0),
+    AC_PLV_AC_ID int,
+    Metadata_AC_PLV int,
+    AC_PLV_ChangedAt datetime,
+    AC_PLV_PLV_Checksum numeric(19,0),
+    AC_PLV_PLV_ProfessionalLevel string,
+    AC_PLV_Metadata_PLV int,
+    AC_PLV_PLV_ID tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -2503,31 +2503,6 @@ AND
     pPR.PR_ID = hLEN.PR_LEN_PR_ID
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elPR_Program (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    PR_ID int,
-    Metadata_PR int,
-    PR_NAM_PR_ID int,
-    Metadata_PR_NAM int,
-    PR_NAM_Program_Name varchar(42),
-    PR_LEN_PR_ID int,
-    Metadata_PR_LEN int,
-    PR_LEN_ChangedAt date,
-    PR_LEN_Program_Length time
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epPR_Program (
@@ -2577,6 +2552,31 @@ AND
         WHERE
             sub.PR_LEN_PR_ID = PR.PR_ID
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elPR_Program (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    PR_ID int,
+    Metadata_PR int,
+    PR_NAM_PR_ID int,
+    Metadata_PR_NAM int,
+    PR_NAM_Program_Name varchar(42),
+    PR_LEN_PR_ID int,
+    Metadata_PR_LEN int,
+    PR_LEN_ChangedAt date,
+    PR_LEN_Program_Length time
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3101,30 +3101,6 @@ WHERE
     tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elAC_partner_AC_with_ONG_currently (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_partner_AC_with_ONG_currently int,
-    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
-    AC_ID_partner int,
-    AC_ID_with int,
-    currently_ONG_Ongoing varchar(3),
-    currently_ONG_EQ tinyint,
-    currently_Metadata_ONG int,
-    ONG_ID_currently tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epAC_partner_AC_with_ONG_currently (
@@ -3174,6 +3150,30 @@ WHERE
         AND
             sub.AC_partner_AC_with_ONG_currently_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elAC_partner_AC_with_ONG_currently (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_partner_AC_with_ONG_currently int,
+    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
+    AC_ID_partner int,
+    AC_ID_with int,
+    currently_ONG_Ongoing varchar(3),
+    currently_ONG_EQ tinyint,
+    currently_Metadata_ONG int,
+    ONG_ID_currently tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3283,25 +3283,6 @@ SELECT
 FROM
     TABLE(public.pAC_subset_PN_of(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elAC_subset_PN_of (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_subset_PN_of int,
-    AC_ID_subset int,
-    PN_ID_of int
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epAC_subset_PN_of (
@@ -3322,6 +3303,25 @@ SELECT
     tie.PN_ID_of
 FROM
     public.AC_subset_PN_of tie
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elAC_subset_PN_of (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_subset_PN_of int,
+    AC_ID_subset int,
+    PN_ID_of int
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3387,25 +3387,6 @@ SELECT
 FROM
     TABLE(public.pEV_in_AC_wasCast(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elEV_in_AC_wasCast (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_EV_in_AC_wasCast int,
-    EV_ID_in int,
-    AC_ID_wasCast int
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epEV_in_AC_wasCast (
@@ -3426,6 +3407,25 @@ SELECT
     tie.AC_ID_wasCast
 FROM
     public.EV_in_AC_wasCast tie
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elEV_in_AC_wasCast (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_EV_in_AC_wasCast int,
+    EV_ID_in int,
+    AC_ID_wasCast int
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3581,30 +3581,6 @@ WHERE
     tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elAC_part_PR_in_RAT_got (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_part_PR_in_RAT_got int,
-    AC_part_PR_in_RAT_got_ChangedAt datetime,
-    AC_ID_part int,
-    PR_ID_in int,
-    got_RAT_Rating varchar(42),
-    got_RAT_EQ tinyint,
-    got_Metadata_RAT int,
-    RAT_ID_got tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epAC_part_PR_in_RAT_got (
@@ -3652,6 +3628,30 @@ WHERE
         AND
             sub.AC_part_PR_in_RAT_got_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elAC_part_PR_in_RAT_got (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_part_PR_in_RAT_got int,
+    AC_part_PR_in_RAT_got_ChangedAt datetime,
+    AC_ID_part int,
+    PR_ID_in int,
+    got_RAT_Rating varchar(42),
+    got_RAT_EQ tinyint,
+    got_Metadata_RAT int,
+    RAT_ID_got tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3815,26 +3815,6 @@ WHERE
     tie.ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elST_at_PR_isPlaying (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_ST_at_PR_isPlaying int,
-    ST_at_PR_isPlaying_ChangedAt datetime,
-    ST_ID_at int,
-    PR_ID_isPlaying int
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epST_at_PR_isPlaying (
@@ -3870,6 +3850,26 @@ WHERE
         AND
             sub.ST_at_PR_isPlaying_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elST_at_PR_isPlaying (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_ST_at_PR_isPlaying int,
+    ST_at_PR_isPlaying_ChangedAt datetime,
+    ST_ID_at int,
+    PR_ID_isPlaying int
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -3987,29 +3987,6 @@ SELECT
 FROM
     TABLE(public.pAC_parent_AC_child_PAT_having(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elAC_parent_AC_child_PAT_having (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_parent_AC_child_PAT_having int,
-    AC_ID_parent int,
-    AC_ID_child int,
-    having_PAT_ParentalType varchar(42),
-    having_PAT_EQ tinyint,
-    having_Metadata_PAT int,
-    PAT_ID_having tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epAC_parent_AC_child_PAT_having (
@@ -4042,6 +4019,29 @@ LEFT JOIN
     TABLE(public.ePAT_ParentalType(equivalent)) PAT_having
 ON
     PAT_having.PAT_ID = tie.PAT_ID_having
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elAC_parent_AC_child_PAT_having (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_parent_AC_child_PAT_having int,
+    AC_ID_parent int,
+    AC_ID_child int,
+    having_PAT_ParentalType varchar(42),
+    having_PAT_EQ tinyint,
+    having_Metadata_PAT int,
+    PAT_ID_having tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -4115,26 +4115,6 @@ SELECT
 FROM
     TABLE(public.pPR_content_ST_location_EV_of(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.elPR_content_ST_location_EV_of (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_PR_content_ST_location_EV_of int,
-    PR_ID_content int,
-    ST_ID_location int,
-    EV_ID_of int
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(public.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.epPR_content_ST_location_EV_of (
@@ -4157,6 +4137,26 @@ SELECT
     tie.EV_ID_of
 FROM
     public.PR_content_ST_location_EV_of tie
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.elPR_content_ST_location_EV_of (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_PR_content_ST_location_EV_of int,
+    PR_ID_content int,
+    ST_ID_location int,
+    EV_ID_of int
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(public.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------

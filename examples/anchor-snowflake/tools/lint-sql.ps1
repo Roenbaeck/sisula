@@ -70,13 +70,18 @@ function Test-Sql([string] $text) {
     }
     # every table, view, function and sequence that the script refers to as schema.name must be created by it
     $created = @{}; $schemas = @{}
-    foreach ($l in $code) {
-        if ($l -match '^CREATE (?:OR REPLACE )?(?:TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
-            $created[($Matches[1] + '.' + $Matches[2]).ToLower()] = $true; $schemas[$Matches[1].ToLower()] = $true
+    for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($code[$i] -match '^CREATE (?:OR REPLACE )?(?:TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
+            $key = ($Matches[1] + '.' + $Matches[2]).ToLower()
+            if (-not $created.ContainsKey($key)) { $created[$key] = $i }   # where the first statement that creates it starts
+            $schemas[$Matches[1].ToLower()] = $true
         }
     }
     $missing = [ordered]@{}
+    $tooEarly = [ordered]@{}
+    $statement = -1
     for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($code[$i] -match '^CREATE ') { $statement = $i }
         foreach ($m in [regex]::Matches($code[$i], '\b(\w+)\.(\w+)\b')) {
             $schema = $m.Groups[1].Value.ToLower()
             if (-not $schemas.ContainsKey($schema)) { continue }
@@ -85,7 +90,14 @@ function Test-Sql([string] $text) {
                 if (-not $missing.Contains($name)) { $missing[$name] = @{ Line = $i + 1; Count = 0; Text = $lines[$i] } }
                 $missing[$name].Count++
             }
+            elseif ($statement -ge 0 -and $created[$name] -gt $statement) {
+                # Snowflake needs the table that a foreign key names, and the function or view that a function or view uses, to exist
+                if (-not $tooEarly.Contains($name)) { $tooEarly[$name] = @{ Line = $i + 1; Created = $created[$name] + 1; Text = $lines[$i] } }
+            }
         }
+    }
+    foreach ($name in $tooEarly.Keys) {
+        $found.Add("line $($tooEarly[$name].Line): uses $name, which the script creates later, at line $($tooEarly[$name].Created): [$($tooEarly[$name].Text.Trim())]")
     }
     foreach ($name in $missing.Keys) {
         $found.Add("line $($missing[$name].Line): refers to $name ($($missing[$name].Count) times), which the script never creates: [$($missing[$name].Text.Trim())]")

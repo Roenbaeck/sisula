@@ -139,30 +139,6 @@ WHERE
     tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elAC_partner_AC_with_ONG_currently (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_partner_AC_with_ONG_currently int,
-    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
-    AC_ID_partner smallint,
-    AC_ID_with smallint,
-    ONG_Ongoing varchar(3),
-    ONG_EQ tinyint,
-    Metadata_ONG int,
-    ONG_ID_currently tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epAC_partner_AC_with_ONG_currently (
@@ -212,6 +188,30 @@ WHERE
         AND
             sub.AC_partner_AC_with_ONG_currently_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elAC_partner_AC_with_ONG_currently (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_partner_AC_with_ONG_currently int,
+    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
+    AC_ID_partner smallint,
+    AC_ID_with smallint,
+    ONG_Ongoing varchar(3),
+    ONG_EQ tinyint,
+    Metadata_ONG int,
+    ONG_ID_currently tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epAC_partner_AC_with_ONG_currently(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -321,25 +321,6 @@ SELECT
 FROM
     TABLE(ties.pAC_subset_PN_of(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elAC_subset_PN_of (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_subset_PN_of int,
-    AC_ID_subset smallint,
-    PN_ID_of bigint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epAC_subset_PN_of (
@@ -360,6 +341,25 @@ SELECT
     tie.PN_ID_of
 FROM
     ties.AC_subset_PN_of tie
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elAC_subset_PN_of (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_subset_PN_of int,
+    AC_ID_subset smallint,
+    PN_ID_of bigint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epAC_subset_PN_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -425,25 +425,6 @@ SELECT
 FROM
     TABLE(ties.pEV_in_AC_wasCast(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elEV_in_AC_wasCast (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_EV_in_AC_wasCast int,
-    EV_ID_in numeric(12,0),
-    AC_ID_wasCast smallint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epEV_in_AC_wasCast (
@@ -464,6 +445,25 @@ SELECT
     tie.AC_ID_wasCast
 FROM
     ties.EV_in_AC_wasCast tie
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elEV_in_AC_wasCast (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_EV_in_AC_wasCast int,
+    EV_ID_in numeric(12,0),
+    AC_ID_wasCast smallint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epEV_in_AC_wasCast(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -625,31 +625,6 @@ WHERE
     tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elAC_part_PR_in_RAT_got (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_part_PR_in_RAT_got int,
-    AC_part_PR_in_RAT_got_ChangedAt datetime,
-    AC_ID_part smallint,
-    PR_ID_in number(10,0),
-    RAT_Checksum numeric(19,0),
-    RAT_Rating varchar(42),
-    RAT_EQ tinyint,
-    Metadata_RAT int,
-    RAT_ID_got tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epAC_part_PR_in_RAT_got (
@@ -699,6 +674,31 @@ WHERE
         AND
             sub.AC_part_PR_in_RAT_got_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elAC_part_PR_in_RAT_got (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_part_PR_in_RAT_got int,
+    AC_part_PR_in_RAT_got_ChangedAt datetime,
+    AC_ID_part smallint,
+    PR_ID_in number(10,0),
+    RAT_Checksum numeric(19,0),
+    RAT_Rating varchar(42),
+    RAT_EQ tinyint,
+    Metadata_RAT int,
+    RAT_ID_got tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epAC_part_PR_in_RAT_got(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -865,26 +865,6 @@ WHERE
     tie.ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elST_at_PR_isPlaying (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_ST_at_PR_isPlaying int,
-    ST_at_PR_isPlaying_ChangedAt datetime,
-    ST_ID_at int,
-    PR_ID_isPlaying number(10,0)
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epST_at_PR_isPlaying (
@@ -920,6 +900,26 @@ WHERE
         AND
             sub.ST_at_PR_isPlaying_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elST_at_PR_isPlaying (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_ST_at_PR_isPlaying int,
+    ST_at_PR_isPlaying_ChangedAt datetime,
+    ST_ID_at int,
+    PR_ID_isPlaying number(10,0)
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epST_at_PR_isPlaying(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -1037,29 +1037,6 @@ SELECT
 FROM
     TABLE(ties.pAC_parent_AC_child_PAT_having(sysdate()::timestamp_ntz(9)))
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elAC_parent_AC_child_PAT_having (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_AC_parent_AC_child_PAT_having int,
-    AC_ID_parent smallint,
-    AC_ID_child smallint,
-    PAT_ParentalType varchar(42),
-    PAT_EQ tinyint,
-    Metadata_PAT int,
-    PAT_ID_having tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epAC_parent_AC_child_PAT_having (
@@ -1092,6 +1069,29 @@ LEFT JOIN
     TABLE(knots.ePAT_ParentalType(equivalent)) PAT_having
 ON
     PAT_having.PAT_ID = tie.PAT_ID_having
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elAC_parent_AC_child_PAT_having (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_AC_parent_AC_child_PAT_having int,
+    AC_ID_parent smallint,
+    AC_ID_child smallint,
+    PAT_ParentalType varchar(42),
+    PAT_EQ tinyint,
+    Metadata_PAT int,
+    PAT_ID_having tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epAC_parent_AC_child_PAT_having(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
@@ -1223,27 +1223,6 @@ WHERE
     tie.PR_content_ST_location_EV_of_ChangedAt BETWEEN intervalStart AND intervalEnd
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION ties.elPR_content_ST_location_EV_of (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    Metadata_PR_content_ST_location_EV_of int,
-    PR_content_ST_location_EV_of_ChangedAt datetime,
-    PR_ID_content number(10,0),
-    ST_ID_location int,
-    EV_ID_of numeric(12,0)
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(ties.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION ties.epPR_content_ST_location_EV_of (
@@ -1283,6 +1262,27 @@ WHERE
         AND
             sub.PR_content_ST_location_EV_of_ChangedAt <= changingTimepoint
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties.elPR_content_ST_location_EV_of (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    Metadata_PR_content_ST_location_EV_of int,
+    PR_content_ST_location_EV_of_ChangedAt datetime,
+    PR_ID_content number(10,0),
+    ST_ID_location int,
+    EV_ID_of numeric(12,0)
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(ties.epPR_content_ST_location_EV_of(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
