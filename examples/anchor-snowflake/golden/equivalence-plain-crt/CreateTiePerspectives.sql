@@ -57,8 +57,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -100,8 +99,7 @@ SELECT
     t.AC_partner_AC_with_ONG_currently_Reliability,
     t.AC_partner_AC_with_ONG_currently_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -118,8 +116,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -168,13 +165,12 @@ JOIN (
         AC_partner_AC_with_ONG_currently_Positor AS positor,
         AC_partner_AC_with_ONG_currently_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.AC_partner_AC_with_ONG_currently_Posit
+        public.AC_partner_AC_with_ONG_currently
     WHERE
         AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -226,8 +222,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -263,8 +258,7 @@ SELECT
     t.AC_subset_PN_of_Reliability,
     t.AC_subset_PN_of_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -281,8 +275,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -333,8 +326,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -370,8 +362,7 @@ SELECT
     t.EV_in_AC_wasCast_Reliability,
     t.EV_in_AC_wasCast_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -388,8 +379,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -451,8 +441,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -494,8 +483,7 @@ SELECT
     t.AC_part_PR_in_RAT_got_Reliability,
     t.AC_part_PR_in_RAT_got_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -512,8 +500,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -562,13 +549,12 @@ JOIN (
         AC_part_PR_in_RAT_got_Positor AS positor,
         AC_part_PR_in_RAT_got_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.AC_part_PR_in_RAT_got_Posit
+        public.AC_part_PR_in_RAT_got
     WHERE
         AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tAC_part_PR_in_RAT_got(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -623,8 +609,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -662,8 +647,7 @@ SELECT
     t.ST_at_PR_isPlaying_Reliability,
     t.ST_at_PR_isPlaying_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -680,8 +664,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -726,13 +709,12 @@ JOIN (
         ST_at_PR_isPlaying_Positor AS positor,
         ST_at_PR_isPlaying_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.ST_at_PR_isPlaying_Posit
+        public.ST_at_PR_isPlaying
     WHERE
         ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tST_at_PR_isPlaying(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -792,8 +774,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -833,8 +814,7 @@ SELECT
     t.AC_parent_AC_child_PAT_having_Reliability,
     t.AC_parent_AC_child_PAT_having_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -851,8 +831,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -905,8 +884,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -944,8 +922,7 @@ SELECT
     t.PR_content_ST_location_EV_of_Reliability,
     t.PR_content_ST_location_EV_of_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -962,8 +939,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         sysdate()::timestamp_ntz(9),

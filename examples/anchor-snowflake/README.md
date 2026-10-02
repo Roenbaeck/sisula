@@ -10,7 +10,7 @@ Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with t
 original engine, and the tools that compare. Anchor's `Snowflake_*.legacy.directive` and the
 original `.js` sisulets are kept for as long as the golden files are made from them.
 
-The port is complete for what the modeler generates: 13 templates for uni, 10 for bi and 11 for crt
+The port is complete for what the modeler generates: 13 templates for uni, 11 for bi and 12 for crt
 (bi and crt share uni's `AddDescriptions`). For every model in `models/` the output is
 **byte-identical** to the original engine's, checked these ways:
 
@@ -18,6 +18,7 @@ The port is complete for what the modeler generates: 13 templates for uni, 10 fo
 |---|---|---|
 | `tools\run-all.ps1` | Anchor's templates' output, per template and as a whole, with the golden files | PowerShell, an Anchor checkout |
 | `tools\csharp-check.ps1` | the same templates and bindings through the C# renderer that runs inside SQL Server | an Anchor checkout, `sisula-mssql`'s `FixtureRunner.exe` |
+| `tools\lint-sql.ps1` | the golden SQL, for defects that made generated Snowflake SQL invalid: nameless columns, a stray colon, missing or dangling commas, a table or function that is used but never created, a replaced function or view without `COPY GRANTS`, and constructs that Snowflake was found to reject. It cannot say that SQL is valid, only that these are absent | PowerShell |
 | `tools\regenerate-golden.ps1` | makes the golden files: the modeler's original engine and sisulets, run under Jint | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 
@@ -63,7 +64,7 @@ the others from it by text edits and then saves each one through the modeler its
 fills every flag the file leaves out from its defaults (a knot without `equivalent` becomes
 equivalent when the model's equivalence setting is on), applies its own rules (a knotted
 attribute is never equivalent, a tie role without a description gets its anchor's), and writes
-all of it when it saves. A hand-edited file can therefore mean something else to the modeler
+all of it when it saves. (One of those rules, that a knotted attribute is never equivalent, was not applied to the flags read from a file until the modeler was fixed, so some models here still say equivalent="true" on a knotted attribute; the generators ignore it, which is what keeps that case tested.) A hand-edited file can therefore mean something else to the modeler
 than to the engine reading it directly. Saving it once through the modeler removes that
 difference; saving it again changes nothing, and `base.xml` itself comes back byte-identical.
 

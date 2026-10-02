@@ -9,7 +9,7 @@
     There is no Snowflake on the development machine, so this is the stand-in.
 
     Usage:
-      lint-sql.ps1 [-Variant <name>,...] [-Show <n>]      lints golden/<name>/_full.sql, every model by default
+      lint-sql.ps1 [-Variant <name>,...] [-Show <n>]      lints golden/<name>/_full.sql, every model but handwritten* by default
       lint-sql.ps1 -Path <file.sql>                       lints one file
     Exits 1 if anything is found.
 #>
@@ -21,6 +21,7 @@ param(
 )
 Set-StrictMode -Version 2.0
 $root = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'lint-columns.ps1')
 
 $types = 'int|tinyint|smallint|bigint|integer|decimal\(\d+,\s*\d+\)|number\(\d+(,\s*\d+)?\)|numeric\(\d+(,\s*\d+)?\)|timestamp_ntz(\(\d+\))?|timestamp(\(\d+\))?|datetime|date|string|text|varchar(\(\d+\))?|char(\(\d+\))?|boolean|bit|geography|binary'
 $column = "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b[^,]*$"          # a column definition with no comma at its end
@@ -39,10 +40,13 @@ function Test-Sql([string] $text) {
         if ($l -match '\b[A-Za-z_][A-Za-z0-9_]*\.(\s*,|\s*$|\s*\))') { $found.Add("line ${n}: a qualifier with no column after it: [$($lines[$i])]") }
         if ($l -match '[<>=]\s+(then|else|end|and|or|when)\b') { $found.Add("line ${n}: an operator with nothing after it: [$($lines[$i])]") }
         if ($l -match '^\s+as\s+\w+\s*,?\s*$') { $found.Add("line ${n}: an alias with no expression: [$($lines[$i])]") }
+        # found by running the generated SQL on Snowflake: a SQL function body does not accept it; a comma join does the same
+        if ($l -match '\bCROSS JOIN LATERAL\b') { $found.Add("line ${n}: CROSS JOIN LATERAL, which Snowflake rejects in a SQL function body (use a comma join): [$($lines[$i])]") }
         # the next line that is code
         $j = $i + 1; while ($j -lt $code.Count -and $code[$j] -notmatch '\S') { $j++ }
         if ($j -lt $code.Count) {
             $next = $code[$j]
+            if ($l -match 'CLUSTER BY \(\s*$' -and $next -match '^\s*\)') { $found.Add("line ${n}: an empty CLUSTER BY: [$($lines[$i])]") }
             if ($l -match ',\s*$' -and $next -match '^\s*((FROM|WHERE|GROUP|ORDER|UNION|HAVING|LIMIT)(\s|$)|\)|;)') { $found.Add("line ${n}: a comma before ""$($next.Trim())"": [$($lines[$i])]") }
             if (($l -match $column -and $next -match "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b") -or
                 ($l -match $selectItem -and $next -match '^\s+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\s*,?\s*$')) {
@@ -64,6 +68,41 @@ function Test-Sql([string] $text) {
         if ($head -notmatch 'COPY GRANTS') { $found.Add("line $($i + 1): a $kind that is replaced without COPY GRANTS: [$($lines[$i])]") }
         elseif ($kind -eq 'VIEW' -and $head -match 'COMMENT\s*=.*COPY GRANTS') { $found.Add("line $($i + 1): COPY GRANTS after COMMENT in a view: [$($lines[$i])]") }
     }
+    # every table, view, function and sequence that the script refers to as schema.name must be created by it
+    $created = @{}; $schemas = @{}
+    for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($code[$i] -match '^CREATE (?:OR REPLACE )?(?:TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
+            $key = ($Matches[1] + '.' + $Matches[2]).ToLower()
+            if (-not $created.ContainsKey($key)) { $created[$key] = $i }   # where the first statement that creates it starts
+            $schemas[$Matches[1].ToLower()] = $true
+        }
+    }
+    $missing = [ordered]@{}
+    $tooEarly = [ordered]@{}
+    $statement = -1
+    for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($code[$i] -match '^CREATE ') { $statement = $i }
+        foreach ($m in [regex]::Matches($code[$i], '\b(\w+)\.(\w+)\b')) {
+            $schema = $m.Groups[1].Value.ToLower()
+            if (-not $schemas.ContainsKey($schema)) { continue }
+            $name = $schema + '.' + $m.Groups[2].Value.ToLower()
+            if (-not $created.ContainsKey($name)) {
+                if (-not $missing.Contains($name)) { $missing[$name] = @{ Line = $i + 1; Count = 0; Text = $lines[$i] } }
+                $missing[$name].Count++
+            }
+            elseif ($statement -ge 0 -and $created[$name] -gt $statement) {
+                # Snowflake needs the table that a foreign key names, and the function or view that a function or view uses, to exist
+                if (-not $tooEarly.Contains($name)) { $tooEarly[$name] = @{ Line = $i + 1; Created = $created[$name] + 1; Text = $lines[$i] } }
+            }
+        }
+    }
+    foreach ($name in $tooEarly.Keys) {
+        $found.Add("line $($tooEarly[$name].Line): uses $name, which the script creates later, at line $($tooEarly[$name].Created): [$($tooEarly[$name].Text.Trim())]")
+    }
+    foreach ($name in $missing.Keys) {
+        $found.Add("line $($missing[$name].Line): refers to $name ($($missing[$name].Count) times), which the script never creates: [$($missing[$name].Text.Trim())]")
+    }
+    Test-Columns $code $lines $found
     $joined = ($code -join "`n")
     $open = ([regex]::Matches($joined, '\(')).Count; $close = ([regex]::Matches($joined, '\)')).Count
     if ($open -ne $close) { $found.Add("unbalanced parentheses: $open open, $close close") }
@@ -72,7 +111,8 @@ function Test-Sql([string] $text) {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } }
+    # handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
 }

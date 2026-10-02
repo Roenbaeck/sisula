@@ -200,8 +200,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -295,8 +294,7 @@ SELECT
     ST.ST_MIN_UTL_Utilization,
     ST.ST_MIN_UTL_ID
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -313,8 +311,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -438,8 +435,7 @@ JOIN
         ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tST_Stage(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -612,8 +608,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -693,8 +688,7 @@ SELECT
     AC.AC_PLV_PLV_ProfessionalLevel,
     AC.AC_PLV_PLV_ID
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -711,8 +705,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -822,8 +815,7 @@ JOIN
         AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tAC_Actor(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -939,8 +931,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -996,8 +987,7 @@ SELECT
     PR.PR_LEN_Assertion,
     PR.PR_LEN_Program_Length
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -1014,8 +1004,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -1089,8 +1078,7 @@ JOIN
         PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tPR_Program(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),

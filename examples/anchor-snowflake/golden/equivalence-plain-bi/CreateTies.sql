@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
     ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_partner_AC_with_ONG_currently_Posit_fkONG_currently foreign key (
         ONG_ID_currently
-    ) references public.ONG_Ongoing_ID(ONG_ID) RELY,
+    ) references public.ONG_Ongoing(ONG_ID) RELY,
     constraint AC_partner_AC_with_ONG_currently_Posit_uqAC_partner unique (
         AC_ID_partner,
         AC_partner_AC_with_ONG_currently_ChangedAt
@@ -35,6 +35,9 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
         ONG_ID_currently
     ) RELY
 ) CLUSTER BY (
+    AC_ID_partner,
+    AC_ID_with,
+    ONG_ID_currently,
     AC_partner_AC_with_ONG_currently_ChangedAt
 );
 CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Annex (
@@ -73,6 +76,8 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Posit (
         PN_ID_of
     ) RELY
 ) CLUSTER BY (
+    AC_ID_subset,
+    PN_ID_of
 );
 CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Annex (
     AC_subset_PN_of_ID int not null,
@@ -133,7 +138,7 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Posit (
     ) references public.PR_Program(PR_ID) RELY, 
     constraint AC_part_PR_in_RAT_got_Posit_fkRAT_got foreign key (
         RAT_ID_got
-    ) references public.RAT_Rating_ID(RAT_ID) RELY,
+    ) references public.RAT_Rating(RAT_ID) RELY,
     constraint pkAC_part_PR_in_RAT_got_Posit primary key (
         AC_part_PR_in_RAT_got_ID
     ) RELY,
@@ -209,7 +214,7 @@ CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Posit (
     ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_parent_AC_child_PAT_having_Posit_fkPAT_having foreign key (
         PAT_ID_having
-    ) references public.PAT_ParentalType_ID(PAT_ID) RELY,
+    ) references public.PAT_ParentalType(PAT_ID) RELY,
     constraint pkAC_parent_AC_child_PAT_having_Posit primary key (
         AC_parent_AC_child_PAT_having_ID
     ) RELY,

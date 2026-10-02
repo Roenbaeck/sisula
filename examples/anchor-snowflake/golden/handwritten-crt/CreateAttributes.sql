@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Posit (
     ) references nexuses.EV_Event(EV_ID) RELY,
     constraint fk_K_EV_LVL_Event_Level_Posit foreign key (
         EV_LVL_PLV_ID
-    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID) RELY,
+    ) references knots.PLV_ProfessionalLevel(PLV_ID) RELY,
     constraint pkEV_LVL_Event_Level_Posit primary key (
         EV_LVL_ID
     ) RELY,
@@ -558,7 +558,7 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Posit (
     ) references anchors.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_PLV_Actor_ProfessionalLevel_Posit foreign key (
         AC_PLV_PLV_ID
-    ) references knots.PLV_ProfessionalLevel_ID(PLV_ID) RELY,
+    ) references knots.PLV_ProfessionalLevel(PLV_ID) RELY,
     constraint pkAC_PLV_Actor_ProfessionalLevel_Posit primary key (
         AC_PLV_ID
     ) RELY,

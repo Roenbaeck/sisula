@@ -5,15 +5,18 @@
 -- created, since Snowflake does not allow comments on view columns to be added afterwards.
 --
 COMMENT ON SCHEMA dw IS 'Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.';
-COMMENT ON TABLE knots.PAT_ParentalType_ID IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON TABLE knots.PAT_ParentalType IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON COLUMN knots.PAT_ParentalType.PAT_ParentalType IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
 COMMENT ON TABLE knots.GEN_Gender IS 'Gender of an actor.';
 COMMENT ON COLUMN knots.GEN_Gender.GEN_Gender IS 'Gender of an actor.';
-COMMENT ON TABLE knots.PLV_ProfessionalLevel_ID IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
+COMMENT ON TABLE knots.PLV_ProfessionalLevel IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
+COMMENT ON COLUMN knots.PLV_ProfessionalLevel.PLV_ProfessionalLevel IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
 COMMENT ON TABLE knots.UTL_Utilization IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
 COMMENT ON COLUMN knots.UTL_Utilization.UTL_Utilization IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
 COMMENT ON TABLE knots.ONG_Ongoing IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
 COMMENT ON COLUMN knots.ONG_Ongoing.ONG_Ongoing IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
-COMMENT ON TABLE knots.RAT_Rating_ID IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON TABLE knots.RAT_Rating IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON COLUMN knots.RAT_Rating.RAT_Rating IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
 COMMENT ON COLUMN attributes.EV_DAT_Event_Date_Posit.EV_DAT_Event_Date IS 'Date and time when the event took place.';
 COMMENT ON COLUMN attributes.EV_AUD_Event_Audience_Posit.EV_AUD_Event_Audience IS 'Number of people in the audience at the event.';
 COMMENT ON COLUMN attributes.EV_REV_Event_Revenue_Posit.EV_REV_Event_Revenue IS 'Revenue from ticket sales for the event.';

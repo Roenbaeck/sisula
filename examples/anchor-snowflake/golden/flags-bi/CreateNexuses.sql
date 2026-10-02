@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS nexuses.EV_Event (
     ) references anchors.PR_Program(PR_ID) RELY, 
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
-    ) references knots.ETY_EventType_ID(ETY_ID) RELY,
+    ) references knots.ETY_EventType(ETY_ID) RELY,
     Metadata_EV int not null, 
     constraint pkEV_Event primary key (
         EV_ID

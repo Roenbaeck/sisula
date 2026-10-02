@@ -61,8 +61,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_partner_AC_with_ONG_currently(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -108,8 +107,7 @@ SELECT
     t.AC_partner_AC_with_ONG_currently_Confidence,
     t.AC_partner_AC_with_ONG_currently_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_partner_AC_with_ONG_currently(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -126,8 +124,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_partner_AC_with_ONG_currently(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -180,13 +177,12 @@ JOIN (
         AC_partner_AC_with_ONG_currently_Who AS positor,
         AC_partner_AC_with_ONG_currently_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.AC_partner_AC_with_ONG_currently_Fact
+        ties.AC_partner_AC_with_ONG_currently
     WHERE
         AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Who
-CROSS JOIN LATERAL
+    tp.positor = p.Who,
     TABLE(ties.tAC_partner_AC_with_ONG_currently(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -240,8 +236,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_subset_PN_of(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -279,8 +274,7 @@ SELECT
     t.AC_subset_PN_of_Confidence,
     t.AC_subset_PN_of_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_subset_PN_of(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -297,8 +291,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_subset_PN_of(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -351,8 +344,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tEV_in_AC_wasCast(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -390,8 +382,7 @@ SELECT
     t.EV_in_AC_wasCast_Confidence,
     t.EV_in_AC_wasCast_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tEV_in_AC_wasCast(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -408,8 +399,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tEV_in_AC_wasCast(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -477,8 +467,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_part_PR_in_RAT_got(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -526,8 +515,7 @@ SELECT
     t.AC_part_PR_in_RAT_got_Confidence,
     t.AC_part_PR_in_RAT_got_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_part_PR_in_RAT_got(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -544,8 +532,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_part_PR_in_RAT_got(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -600,13 +587,12 @@ JOIN (
         AC_part_PR_in_RAT_got_Who AS positor,
         AC_part_PR_in_RAT_got_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.AC_part_PR_in_RAT_got_Fact
+        ties.AC_part_PR_in_RAT_got
     WHERE
         AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Who
-CROSS JOIN LATERAL
+    tp.positor = p.Who,
     TABLE(ties.tAC_part_PR_in_RAT_got(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -663,8 +649,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tST_at_PR_isPlaying(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -704,8 +689,7 @@ SELECT
     t.ST_at_PR_isPlaying_Confidence,
     t.ST_at_PR_isPlaying_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tST_at_PR_isPlaying(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -722,8 +706,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tST_at_PR_isPlaying(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -770,13 +753,12 @@ JOIN (
         ST_at_PR_isPlaying_Who AS positor,
         ST_at_PR_isPlaying_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.ST_at_PR_isPlaying_Fact
+        ties.ST_at_PR_isPlaying
     WHERE
         ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Who
-CROSS JOIN LATERAL
+    tp.positor = p.Who,
     TABLE(ties.tST_at_PR_isPlaying(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -840,8 +822,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_parent_AC_child_PAT_having(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -885,8 +866,7 @@ SELECT
     t.AC_parent_AC_child_PAT_having_Confidence,
     t.AC_parent_AC_child_PAT_having_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_parent_AC_child_PAT_having(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -903,8 +883,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tAC_parent_AC_child_PAT_having(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -962,8 +941,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tPR_content_ST_location_EV_of(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -1005,8 +983,7 @@ SELECT
     t.PR_content_ST_location_EV_of_Confidence,
     t.PR_content_ST_location_EV_of_Stance
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tPR_content_ST_location_EV_of(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -1023,8 +1000,7 @@ SELECT
     cast(null as decimal(7,3)) AS Confidence,
     t.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(ties.tPR_content_ST_location_EV_of(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -1073,13 +1049,12 @@ JOIN (
         PR_content_ST_location_EV_of_Who AS positor,
         PR_content_ST_location_EV_of_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        ties.PR_content_ST_location_EV_of_Fact
+        ties.PR_content_ST_location_EV_of
     WHERE
         PR_content_ST_location_EV_of_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Who
-CROSS JOIN LATERAL
+    tp.positor = p.Who,
     TABLE(ties.tPR_content_ST_location_EV_of(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),

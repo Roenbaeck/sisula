@@ -212,8 +212,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     ST.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tST_Stage(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -319,8 +318,7 @@ SELECT
     ST.ST_MIN_Metadata_UTL,
     ST.ST_MIN_UTL_ID
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tST_Stage(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -337,8 +335,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     ST.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tST_Stage(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -474,8 +471,7 @@ JOIN
         ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Who
-CROSS JOIN LATERAL
+    timepoints.positor = p.Who,
     TABLE(anchors.tST_Stage(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -660,8 +656,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     AC.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tAC_Actor(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -753,8 +748,7 @@ SELECT
     AC.AC_PLV_Metadata_PLV,
     AC.AC_PLV_PLV_ID
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tAC_Actor(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -771,8 +765,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     AC.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tAC_Actor(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -894,8 +887,7 @@ JOIN
         AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Who
-CROSS JOIN LATERAL
+    timepoints.positor = p.Who,
     TABLE(anchors.tAC_Actor(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -1017,8 +1009,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     PR.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tPR_Program(
         p.Who,
         '9999-12-31'::timestamp_ntz(9),
@@ -1080,8 +1071,7 @@ SELECT
     PR.PR_LEN_Stance,
     PR.PR_LEN_Program_Length
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tPR_Program(
         p.Who,
         changingTimepoint::timestamp_ntz(9),
@@ -1098,8 +1088,7 @@ SELECT
     cast(null as decimal(7,3)) as Confidence,
     PR.*
 FROM
-    dw._Who p
-CROSS JOIN LATERAL
+    dw._Who p,
     TABLE(anchors.tPR_Program(
         p.Who,
         sysdate()::timestamp_ntz(9),
@@ -1179,8 +1168,7 @@ JOIN
         PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Who
-CROSS JOIN LATERAL
+    timepoints.positor = p.Who,
     TABLE(anchors.tPR_Program(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),

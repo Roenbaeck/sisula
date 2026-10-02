@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS public.AC_GEN_Actor_Gender_Posit (
     ) references public.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_GEN_Actor_Gender_Posit foreign key (
         AC_GEN_GEN_ID
-    ) references public.GEN_Gender_ID(GEN_ID) RELY,
+    ) references public.GEN_Gender(GEN_ID) RELY,
     constraint pkAC_GEN_Actor_Gender_Posit primary key (
         AC_GEN_ID
     ) RELY,

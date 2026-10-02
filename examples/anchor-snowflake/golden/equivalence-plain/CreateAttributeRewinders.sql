@@ -45,7 +45,6 @@ CREATE OR REPLACE FUNCTION public.rST_AVG_Stage_Average (
 COPY GRANTS
 RETURNS TABLE (
     ST_AVG_ST_ID int,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_ID tinyint, 
     ST_AVG_ChangedAt datetime
 )
@@ -53,7 +52,6 @@ AS
 $$
     SELECT
         ST_AVG_ST_ID,
-        ST_AVG_EQ,
         ST_AVG_UTL_ID,
         ST_AVG_ChangedAt
     FROM
@@ -100,7 +98,6 @@ CREATE OR REPLACE FUNCTION public.rAC_PLV_Actor_ProfessionalLevel (
 COPY GRANTS
 RETURNS TABLE (
     AC_PLV_AC_ID int,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_ID tinyint, 
     AC_PLV_ChangedAt datetime
 )
@@ -108,7 +105,6 @@ AS
 $$
     SELECT
         AC_PLV_AC_ID,
-        AC_PLV_EQ,
         AC_PLV_PLV_ID,
         AC_PLV_ChangedAt
     FROM

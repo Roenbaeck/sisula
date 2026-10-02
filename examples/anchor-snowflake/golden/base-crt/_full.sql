@@ -749,6 +749,221 @@ CREATE TABLE IF NOT EXISTS public.PR_LEN_Program_Length_Annex (
         PR_LEN_PositedAt
     ) RELY
 ) CLUSTER BY (PR_LEN_ID, PR_LEN_Positor, PR_LEN_PositedAt);
+-- ATTRIBUTE ASSEMBLED VIEWS ------------------------------------------------------------------------------------------
+--
+-- The assembled view of an attribute combines its posit and annex tables. It has the name that the
+-- attribute table has in uni-temporal modeling, and the difference perspectives read it.
+--
+CREATE OR REPLACE VIEW public.EV_DAT_Event_Date COPY GRANTS AS
+SELECT
+    a.Metadata_EV_DAT,
+    p.EV_DAT_ID,
+    p.EV_DAT_EV_ID,
+    p.EV_DAT_Event_Date,
+    a.EV_DAT_PositedAt,
+    a.EV_DAT_Positor,
+    a.EV_DAT_Reliability,
+    a.EV_DAT_Assertion
+FROM
+    public.EV_DAT_Event_Date_Posit p
+JOIN
+    public.EV_DAT_Event_Date_Annex a
+ON
+    a.EV_DAT_ID = p.EV_DAT_ID
+;
+CREATE OR REPLACE VIEW public.EV_AUD_Event_Audience COPY GRANTS AS
+SELECT
+    a.Metadata_EV_AUD,
+    p.EV_AUD_ID,
+    p.EV_AUD_EV_ID,
+    p.EV_AUD_Event_Audience,
+    a.EV_AUD_PositedAt,
+    a.EV_AUD_Positor,
+    a.EV_AUD_Reliability,
+    a.EV_AUD_Assertion
+FROM
+    public.EV_AUD_Event_Audience_Posit p
+JOIN
+    public.EV_AUD_Event_Audience_Annex a
+ON
+    a.EV_AUD_ID = p.EV_AUD_ID
+;
+CREATE OR REPLACE VIEW public.EV_REV_Event_Revenue COPY GRANTS AS
+SELECT
+    a.Metadata_EV_REV,
+    p.EV_REV_ID,
+    p.EV_REV_EV_ID,
+    p.EV_REV_Event_Revenue,
+    a.EV_REV_PositedAt,
+    a.EV_REV_Positor,
+    a.EV_REV_Reliability,
+    a.EV_REV_Assertion
+FROM
+    public.EV_REV_Event_Revenue_Posit p
+JOIN
+    public.EV_REV_Event_Revenue_Annex a
+ON
+    a.EV_REV_ID = p.EV_REV_ID
+;
+CREATE OR REPLACE VIEW public.ST_NAM_Stage_Name COPY GRANTS AS
+SELECT
+    a.Metadata_ST_NAM,
+    p.ST_NAM_ID,
+    p.ST_NAM_ST_ID,
+    p.ST_NAM_Stage_Name,
+    p.ST_NAM_ChangedAt,
+    a.ST_NAM_PositedAt,
+    a.ST_NAM_Positor,
+    a.ST_NAM_Reliability,
+    a.ST_NAM_Assertion
+FROM
+    public.ST_NAM_Stage_Name_Posit p
+JOIN
+    public.ST_NAM_Stage_Name_Annex a
+ON
+    a.ST_NAM_ID = p.ST_NAM_ID
+;
+CREATE OR REPLACE VIEW public.ST_LOC_Stage_Location COPY GRANTS AS
+SELECT
+    a.Metadata_ST_LOC,
+    p.ST_LOC_ID,
+    p.ST_LOC_ST_ID,
+    p.ST_LOC_Checksum,
+    p.ST_LOC_Stage_Location,
+    a.ST_LOC_PositedAt,
+    a.ST_LOC_Positor,
+    a.ST_LOC_Reliability,
+    a.ST_LOC_Assertion
+FROM
+    public.ST_LOC_Stage_Location_Posit p
+JOIN
+    public.ST_LOC_Stage_Location_Annex a
+ON
+    a.ST_LOC_ID = p.ST_LOC_ID
+;
+CREATE OR REPLACE VIEW public.ST_AVG_Stage_Average COPY GRANTS AS
+SELECT
+    a.Metadata_ST_AVG,
+    p.ST_AVG_ID,
+    p.ST_AVG_ST_ID,
+    p.ST_AVG_UTL_ID,
+    p.ST_AVG_ChangedAt,
+    a.ST_AVG_PositedAt,
+    a.ST_AVG_Positor,
+    a.ST_AVG_Reliability,
+    a.ST_AVG_Assertion
+FROM
+    public.ST_AVG_Stage_Average_Posit p
+JOIN
+    public.ST_AVG_Stage_Average_Annex a
+ON
+    a.ST_AVG_ID = p.ST_AVG_ID
+;
+CREATE OR REPLACE VIEW public.ST_MIN_Stage_Minimum COPY GRANTS AS
+SELECT
+    a.Metadata_ST_MIN,
+    p.ST_MIN_ID,
+    p.ST_MIN_ST_ID,
+    p.ST_MIN_UTL_ID,
+    a.ST_MIN_PositedAt,
+    a.ST_MIN_Positor,
+    a.ST_MIN_Reliability,
+    a.ST_MIN_Assertion
+FROM
+    public.ST_MIN_Stage_Minimum_Posit p
+JOIN
+    public.ST_MIN_Stage_Minimum_Annex a
+ON
+    a.ST_MIN_ID = p.ST_MIN_ID
+;
+CREATE OR REPLACE VIEW public.AC_NAM_Actor_Name COPY GRANTS AS
+SELECT
+    a.Metadata_AC_NAM,
+    p.AC_NAM_ID,
+    p.AC_NAM_AC_ID,
+    p.AC_NAM_Actor_Name,
+    p.AC_NAM_ChangedAt,
+    a.AC_NAM_PositedAt,
+    a.AC_NAM_Positor,
+    a.AC_NAM_Reliability,
+    a.AC_NAM_Assertion
+FROM
+    public.AC_NAM_Actor_Name_Posit p
+JOIN
+    public.AC_NAM_Actor_Name_Annex a
+ON
+    a.AC_NAM_ID = p.AC_NAM_ID
+;
+CREATE OR REPLACE VIEW public.AC_GEN_Actor_Gender COPY GRANTS AS
+SELECT
+    a.Metadata_AC_GEN,
+    p.AC_GEN_ID,
+    p.AC_GEN_AC_ID,
+    p.AC_GEN_GEN_ID,
+    a.AC_GEN_PositedAt,
+    a.AC_GEN_Positor,
+    a.AC_GEN_Reliability,
+    a.AC_GEN_Assertion
+FROM
+    public.AC_GEN_Actor_Gender_Posit p
+JOIN
+    public.AC_GEN_Actor_Gender_Annex a
+ON
+    a.AC_GEN_ID = p.AC_GEN_ID
+;
+CREATE OR REPLACE VIEW public.AC_PLV_Actor_ProfessionalLevel COPY GRANTS AS
+SELECT
+    a.Metadata_AC_PLV,
+    p.AC_PLV_ID,
+    p.AC_PLV_AC_ID,
+    p.AC_PLV_PLV_ID,
+    p.AC_PLV_ChangedAt,
+    a.AC_PLV_PositedAt,
+    a.AC_PLV_Positor,
+    a.AC_PLV_Reliability,
+    a.AC_PLV_Assertion
+FROM
+    public.AC_PLV_Actor_ProfessionalLevel_Posit p
+JOIN
+    public.AC_PLV_Actor_ProfessionalLevel_Annex a
+ON
+    a.AC_PLV_ID = p.AC_PLV_ID
+;
+CREATE OR REPLACE VIEW public.PR_NAM_Program_Name COPY GRANTS AS
+SELECT
+    a.Metadata_PR_NAM,
+    p.PR_NAM_ID,
+    p.PR_NAM_PR_ID,
+    p.PR_NAM_Program_Name,
+    a.PR_NAM_PositedAt,
+    a.PR_NAM_Positor,
+    a.PR_NAM_Reliability,
+    a.PR_NAM_Assertion
+FROM
+    public.PR_NAM_Program_Name_Posit p
+JOIN
+    public.PR_NAM_Program_Name_Annex a
+ON
+    a.PR_NAM_ID = p.PR_NAM_ID
+;
+CREATE OR REPLACE VIEW public.PR_LEN_Program_Length COPY GRANTS AS
+SELECT
+    a.Metadata_PR_LEN,
+    p.PR_LEN_ID,
+    p.PR_LEN_PR_ID,
+    p.PR_LEN_Program_Length,
+    p.PR_LEN_ChangedAt,
+    a.PR_LEN_PositedAt,
+    a.PR_LEN_Positor,
+    a.PR_LEN_Reliability,
+    a.PR_LEN_Assertion
+FROM
+    public.PR_LEN_Program_Length_Posit p
+JOIN
+    public.PR_LEN_Program_Length_Annex a
+ON
+    a.PR_LEN_ID = p.PR_LEN_ID
+;
 -- ATTRIBUTE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------
 --
 -- These table valued functions rewind an attribute posit table to the given
@@ -2450,6 +2665,9 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
         ONG_ID_currently
     ) RELY
 ) CLUSTER BY (
+    AC_ID_partner,
+    AC_ID_with,
+    ONG_ID_currently,
     AC_partner_AC_with_ONG_currently_ChangedAt
 );
 CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Annex (
@@ -2498,6 +2716,8 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Posit (
         PN_ID_of
     ) RELY
 ) CLUSTER BY (
+    AC_ID_subset,
+    PN_ID_of
 );
 CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Annex (
     AC_subset_PN_of_ID int not null,
@@ -2757,6 +2977,137 @@ CREATE TABLE IF NOT EXISTS public.PR_content_ST_location_EV_of_Annex (
         PR_content_ST_location_EV_of_PositedAt
     ) RELY
 ) CLUSTER BY (PR_content_ST_location_EV_of_ID, PR_content_ST_location_EV_of_Positor, PR_content_ST_location_EV_of_PositedAt);
+-- TIE ASSEMBLED VIEWS ------------------------------------------------------------------------------------------------
+--
+-- The assembled view of a tie combines its posit and annex tables. It has the name that the tie table has
+-- in uni-temporal modeling, and the difference perspectives read it.
+--
+CREATE OR REPLACE VIEW public.AC_partner_AC_with_ONG_currently COPY GRANTS AS
+SELECT
+    a.Metadata_AC_partner_AC_with_ONG_currently,
+    p.AC_partner_AC_with_ONG_currently_ID,
+    p.AC_ID_partner,
+    p.AC_ID_with,
+    p.ONG_ID_currently,
+    p.AC_partner_AC_with_ONG_currently_ChangedAt,
+    a.AC_partner_AC_with_ONG_currently_PositedAt,
+    a.AC_partner_AC_with_ONG_currently_Positor,
+    a.AC_partner_AC_with_ONG_currently_Reliability,
+    a.AC_partner_AC_with_ONG_currently_Assertion
+FROM
+    public.AC_partner_AC_with_ONG_currently_Posit p
+JOIN
+    public.AC_partner_AC_with_ONG_currently_Annex a
+ON
+    a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+;
+CREATE OR REPLACE VIEW public.AC_subset_PN_of COPY GRANTS AS
+SELECT
+    a.Metadata_AC_subset_PN_of,
+    p.AC_subset_PN_of_ID,
+    p.AC_ID_subset,
+    p.PN_ID_of,
+    a.AC_subset_PN_of_PositedAt,
+    a.AC_subset_PN_of_Positor,
+    a.AC_subset_PN_of_Reliability,
+    a.AC_subset_PN_of_Assertion
+FROM
+    public.AC_subset_PN_of_Posit p
+JOIN
+    public.AC_subset_PN_of_Annex a
+ON
+    a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+;
+CREATE OR REPLACE VIEW public.EV_in_AC_wasCast COPY GRANTS AS
+SELECT
+    a.Metadata_EV_in_AC_wasCast,
+    p.EV_in_AC_wasCast_ID,
+    p.EV_ID_in,
+    p.AC_ID_wasCast,
+    a.EV_in_AC_wasCast_PositedAt,
+    a.EV_in_AC_wasCast_Positor,
+    a.EV_in_AC_wasCast_Reliability,
+    a.EV_in_AC_wasCast_Assertion
+FROM
+    public.EV_in_AC_wasCast_Posit p
+JOIN
+    public.EV_in_AC_wasCast_Annex a
+ON
+    a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+;
+CREATE OR REPLACE VIEW public.AC_part_PR_in_RAT_got COPY GRANTS AS
+SELECT
+    a.Metadata_AC_part_PR_in_RAT_got,
+    p.AC_part_PR_in_RAT_got_ID,
+    p.AC_ID_part,
+    p.PR_ID_in,
+    p.RAT_ID_got,
+    p.AC_part_PR_in_RAT_got_ChangedAt,
+    a.AC_part_PR_in_RAT_got_PositedAt,
+    a.AC_part_PR_in_RAT_got_Positor,
+    a.AC_part_PR_in_RAT_got_Reliability,
+    a.AC_part_PR_in_RAT_got_Assertion
+FROM
+    public.AC_part_PR_in_RAT_got_Posit p
+JOIN
+    public.AC_part_PR_in_RAT_got_Annex a
+ON
+    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+;
+CREATE OR REPLACE VIEW public.ST_at_PR_isPlaying COPY GRANTS AS
+SELECT
+    a.Metadata_ST_at_PR_isPlaying,
+    p.ST_at_PR_isPlaying_ID,
+    p.ST_ID_at,
+    p.PR_ID_isPlaying,
+    p.ST_at_PR_isPlaying_ChangedAt,
+    a.ST_at_PR_isPlaying_PositedAt,
+    a.ST_at_PR_isPlaying_Positor,
+    a.ST_at_PR_isPlaying_Reliability,
+    a.ST_at_PR_isPlaying_Assertion
+FROM
+    public.ST_at_PR_isPlaying_Posit p
+JOIN
+    public.ST_at_PR_isPlaying_Annex a
+ON
+    a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+;
+CREATE OR REPLACE VIEW public.AC_parent_AC_child_PAT_having COPY GRANTS AS
+SELECT
+    a.Metadata_AC_parent_AC_child_PAT_having,
+    p.AC_parent_AC_child_PAT_having_ID,
+    p.AC_ID_parent,
+    p.AC_ID_child,
+    p.PAT_ID_having,
+    a.AC_parent_AC_child_PAT_having_PositedAt,
+    a.AC_parent_AC_child_PAT_having_Positor,
+    a.AC_parent_AC_child_PAT_having_Reliability,
+    a.AC_parent_AC_child_PAT_having_Assertion
+FROM
+    public.AC_parent_AC_child_PAT_having_Posit p
+JOIN
+    public.AC_parent_AC_child_PAT_having_Annex a
+ON
+    a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+;
+CREATE OR REPLACE VIEW public.PR_content_ST_location_EV_of COPY GRANTS AS
+SELECT
+    a.Metadata_PR_content_ST_location_EV_of,
+    p.PR_content_ST_location_EV_of_ID,
+    p.PR_ID_content,
+    p.ST_ID_location,
+    p.EV_ID_of,
+    a.PR_content_ST_location_EV_of_PositedAt,
+    a.PR_content_ST_location_EV_of_Positor,
+    a.PR_content_ST_location_EV_of_Reliability,
+    a.PR_content_ST_location_EV_of_Assertion
+FROM
+    public.PR_content_ST_location_EV_of_Posit p
+JOIN
+    public.PR_content_ST_location_EV_of_Annex a
+ON
+    a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+;
 -- TIE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------------
 --
 -- CRT rewinders over changing and positing time with positor-aware annex selection.
@@ -3918,8 +4269,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -4025,8 +4375,7 @@ SELECT
     ST.ST_MIN_Metadata_UTL,
     ST.ST_MIN_UTL_ID
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -4043,8 +4392,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_Stage(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -4180,8 +4528,7 @@ JOIN
         ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tST_Stage(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -4364,8 +4711,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -4455,8 +4801,7 @@ SELECT
     AC.AC_PLV_Metadata_PLV,
     AC.AC_PLV_PLV_ID
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -4473,8 +4818,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_Actor(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -4594,8 +4938,7 @@ JOIN
         AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tAC_Actor(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -4717,8 +5060,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -4780,8 +5122,7 @@ SELECT
     PR.PR_LEN_Assertion,
     PR.PR_LEN_Program_Length
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -4798,8 +5139,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_Program(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -4879,8 +5219,7 @@ JOIN
         PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p.Positor
-CROSS JOIN LATERAL
+    timepoints.positor = p.Positor,
     TABLE(public.tPR_Program(
         timepoints.positor,
         timepoints.inspectedTimepoint::timestamp_ntz(9),
@@ -5054,8 +5393,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5141,8 +5479,7 @@ SELECT
     EV.EV_REV_Assertion,
     EV.EV_REV_Event_Revenue
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5159,8 +5496,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5231,8 +5567,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5278,8 +5613,7 @@ SELECT
     t.AC_partner_AC_with_ONG_currently_Reliability,
     t.AC_partner_AC_with_ONG_currently_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5296,8 +5630,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5350,13 +5683,12 @@ JOIN (
         AC_partner_AC_with_ONG_currently_Positor AS positor,
         AC_partner_AC_with_ONG_currently_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.AC_partner_AC_with_ONG_currently_Posit
+        public.AC_partner_AC_with_ONG_currently
     WHERE
         AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tAC_partner_AC_with_ONG_currently(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -5410,8 +5742,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5449,8 +5780,7 @@ SELECT
     t.AC_subset_PN_of_Reliability,
     t.AC_subset_PN_of_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5467,8 +5797,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_subset_PN_of(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5521,8 +5850,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5560,8 +5888,7 @@ SELECT
     t.EV_in_AC_wasCast_Reliability,
     t.EV_in_AC_wasCast_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5578,8 +5905,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_in_AC_wasCast(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5645,8 +5971,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5692,8 +6017,7 @@ SELECT
     t.AC_part_PR_in_RAT_got_Reliability,
     t.AC_part_PR_in_RAT_got_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5710,8 +6034,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_part_PR_in_RAT_got(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5764,13 +6087,12 @@ JOIN (
         AC_part_PR_in_RAT_got_Positor AS positor,
         AC_part_PR_in_RAT_got_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.AC_part_PR_in_RAT_got_Posit
+        public.AC_part_PR_in_RAT_got
     WHERE
         AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tAC_part_PR_in_RAT_got(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -5827,8 +6149,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -5868,8 +6189,7 @@ SELECT
     t.ST_at_PR_isPlaying_Reliability,
     t.ST_at_PR_isPlaying_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -5886,8 +6206,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tST_at_PR_isPlaying(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -5934,13 +6253,12 @@ JOIN (
         ST_at_PR_isPlaying_Positor AS positor,
         ST_at_PR_isPlaying_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint
     FROM
-        public.ST_at_PR_isPlaying_Posit
+        public.ST_at_PR_isPlaying
     WHERE
         ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(public.tST_at_PR_isPlaying(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),
@@ -6004,8 +6322,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -6049,8 +6366,7 @@ SELECT
     t.AC_parent_AC_child_PAT_having_Reliability,
     t.AC_parent_AC_child_PAT_having_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -6067,8 +6383,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tAC_parent_AC_child_PAT_having(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -6123,8 +6438,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -6164,8 +6478,7 @@ SELECT
     t.PR_content_ST_location_EV_of_Reliability,
     t.PR_content_ST_location_EV_of_Assertion
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -6182,8 +6495,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     t.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tPR_content_ST_location_EV_of(
         p.Positor,
         sysdate()::timestamp_ntz(9),

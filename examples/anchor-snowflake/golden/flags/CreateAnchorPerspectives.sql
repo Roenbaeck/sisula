@@ -21,13 +21,11 @@ CREATE OR REPLACE VIEW anchors.lST_Stage (
     ST_AVG_ST_ID,
     Metadata_ST_AVG,
     ST_AVG_ChangedAt,
-    ST_AVG_EQ,
     ST_AVG_UTL_Utilization COMMENT 'Average utilization of the stage capacity, recalculated over time.',
     ST_AVG_Metadata_UTL,
     ST_AVG_UTL_ID COMMENT 'Average utilization of the stage capacity, recalculated over time.',
     ST_MIN_ST_ID,
     Metadata_ST_MIN,
-    ST_MIN_EQ,
     ST_MIN_UTL_Utilization COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.',
     ST_MIN_Metadata_UTL,
     ST_MIN_UTL_ID COMMENT 'Minimum utilization of the stage capacity required for a performance to take place.'
@@ -49,13 +47,11 @@ SELECT
     AVG.ST_AVG_ST_ID,
     AVG.Metadata_ST_AVG,
     AVG.ST_AVG_ChangedAt,
-    AVG.ST_AVG_EQ,
     kAVG.UTL_Utilization AS ST_AVG_UTL_Utilization,
     kAVG.Metadata_UTL AS ST_AVG_Metadata_UTL,
     AVG.ST_AVG_UTL_ID,
     MIN.ST_MIN_ST_ID,
     MIN.Metadata_ST_MIN,
-    MIN.ST_MIN_EQ,
     kMIN.UTL_Utilization AS ST_MIN_UTL_Utilization,
     kMIN.Metadata_UTL AS ST_MIN_Metadata_UTL,
     MIN.ST_MIN_UTL_ID
@@ -125,13 +121,11 @@ RETURNS TABLE (
     ST_AVG_ST_ID int,
     Metadata_ST_AVG int,
     ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL int,
     ST_AVG_UTL_ID tinyint,
     ST_MIN_ST_ID int,
     Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL int,
     ST_MIN_UTL_ID tinyint
@@ -154,13 +148,11 @@ SELECT
     AVG.ST_AVG_ST_ID,
     AVG.Metadata_ST_AVG,
     AVG.ST_AVG_ChangedAt,
-    AVG.ST_AVG_EQ,
     kAVG.UTL_Utilization AS ST_AVG_UTL_Utilization,
     kAVG.Metadata_UTL AS ST_AVG_Metadata_UTL,
     AVG.ST_AVG_UTL_ID,
     MIN.ST_MIN_ST_ID,
     MIN.Metadata_ST_MIN,
-    MIN.ST_MIN_EQ,
     kMIN.UTL_Utilization AS ST_MIN_UTL_Utilization,
     kMIN.Metadata_UTL AS ST_MIN_Metadata_UTL,
     MIN.ST_MIN_UTL_ID
@@ -245,13 +237,11 @@ RETURNS TABLE (
     ST_AVG_ST_ID int,
     Metadata_ST_AVG int,
     ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL int,
     ST_AVG_UTL_ID tinyint,
     ST_MIN_ST_ID int,
     Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL int,
     ST_MIN_UTL_ID tinyint
@@ -276,13 +266,11 @@ SELECT DISTINCT
     pST.ST_AVG_ST_ID,
     pST.Metadata_ST_AVG,
     pST.ST_AVG_ChangedAt,
-    pST.ST_AVG_EQ,
     pST.ST_AVG_UTL_Utilization,
     pST.ST_AVG_Metadata_UTL,
     pST.ST_AVG_UTL_ID,
     pST.ST_MIN_ST_ID,
     pST.Metadata_ST_MIN,
-    pST.ST_MIN_EQ,
     pST.ST_MIN_UTL_Utilization,
     pST.ST_MIN_Metadata_UTL,
     pST.ST_MIN_UTL_ID
@@ -314,13 +302,11 @@ SELECT DISTINCT
     pST.ST_AVG_ST_ID,
     pST.Metadata_ST_AVG,
     pST.ST_AVG_ChangedAt,
-    pST.ST_AVG_EQ,
     pST.ST_AVG_UTL_Utilization,
     pST.ST_AVG_Metadata_UTL,
     pST.ST_AVG_UTL_ID,
     pST.ST_MIN_ST_ID,
     pST.Metadata_ST_MIN,
-    pST.ST_MIN_EQ,
     pST.ST_MIN_UTL_Utilization,
     pST.ST_MIN_Metadata_UTL,
     pST.ST_MIN_UTL_ID
@@ -333,47 +319,6 @@ AND
     hAVG.ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
 AND
     pST.ST_ID = hAVG.ST_AVG_ST_ID
-$$
-;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION anchors.elST_Stage (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    ST_ID int,
-    Metadata_ST int,
-    ST_NAM_ST_ID int,
-    Metadata_ST_NAM int,
-    ST_NAM_ChangedAt datetime,
-    ST_NAM_EQ tinyint,
-    ST_NAM_Stage_Name varchar(42),
-    ST_LOC_ST_ID int,
-    Metadata_ST_LOC int,
-    ST_LOC_EQ tinyint,
-    ST_LOC_Checksum numeric(19,0),
-    ST_LOC_Stage_Location geography,
-    ST_AVG_ST_ID int,
-    Metadata_ST_AVG int,
-    ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
-    ST_AVG_UTL_Utilization tinyint,
-    ST_AVG_Metadata_UTL int,
-    ST_AVG_UTL_ID tinyint,
-    ST_MIN_ST_ID int,
-    Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
-    ST_MIN_UTL_Utilization tinyint,
-    ST_MIN_Metadata_UTL int,
-    ST_MIN_UTL_ID tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(anchors.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -399,13 +344,11 @@ RETURNS TABLE (
     ST_AVG_ST_ID int,
     Metadata_ST_AVG int,
     ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL int,
     ST_AVG_UTL_ID tinyint,
     ST_MIN_ST_ID int,
     Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL int,
     ST_MIN_UTL_ID tinyint
@@ -428,13 +371,11 @@ SELECT
     AVG.ST_AVG_ST_ID,
     AVG.Metadata_ST_AVG,
     AVG.ST_AVG_ChangedAt,
-    AVG.ST_AVG_EQ,
     kAVG.UTL_Utilization AS ST_AVG_UTL_Utilization,
     kAVG.Metadata_UTL AS ST_AVG_Metadata_UTL,
     AVG.ST_AVG_UTL_ID,
     MIN.ST_MIN_ST_ID,
     MIN.Metadata_ST_MIN,
-    MIN.ST_MIN_EQ,
     kMIN.UTL_Utilization AS ST_MIN_UTL_Utilization,
     kMIN.Metadata_UTL AS ST_MIN_Metadata_UTL,
     MIN.ST_MIN_UTL_ID
@@ -484,6 +425,45 @@ ON
     kMIN.UTL_ID = MIN.ST_MIN_UTL_ID
 $$
 ;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors.elST_Stage (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    ST_ID int,
+    Metadata_ST int,
+    ST_NAM_ST_ID int,
+    Metadata_ST_NAM int,
+    ST_NAM_ChangedAt datetime,
+    ST_NAM_EQ tinyint,
+    ST_NAM_Stage_Name varchar(42),
+    ST_LOC_ST_ID int,
+    Metadata_ST_LOC int,
+    ST_LOC_EQ tinyint,
+    ST_LOC_Checksum numeric(19,0),
+    ST_LOC_Stage_Location geography,
+    ST_AVG_ST_ID int,
+    Metadata_ST_AVG int,
+    ST_AVG_ChangedAt datetime,
+    ST_AVG_UTL_Utilization tinyint,
+    ST_AVG_Metadata_UTL int,
+    ST_AVG_UTL_ID tinyint,
+    ST_MIN_ST_ID int,
+    Metadata_ST_MIN int,
+    ST_MIN_UTL_Utilization tinyint,
+    ST_MIN_Metadata_UTL int,
+    ST_MIN_UTL_ID tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(anchors.epST_Stage(equivalent, sysdate()::timestamp_ntz(9)))
+$$
+;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION anchors.enST_Stage (
@@ -506,13 +486,11 @@ RETURNS TABLE (
     ST_AVG_ST_ID int,
     Metadata_ST_AVG int,
     ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL int,
     ST_AVG_UTL_ID tinyint,
     ST_MIN_ST_ID int,
     Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL int,
     ST_MIN_UTL_ID tinyint
@@ -552,13 +530,11 @@ RETURNS TABLE (
     ST_AVG_ST_ID int,
     Metadata_ST_AVG int,
     ST_AVG_ChangedAt datetime,
-    ST_AVG_EQ tinyint,
     ST_AVG_UTL_Utilization tinyint,
     ST_AVG_Metadata_UTL int,
     ST_AVG_UTL_ID tinyint,
     ST_MIN_ST_ID int,
     Metadata_ST_MIN int,
-    ST_MIN_EQ tinyint,
     ST_MIN_UTL_Utilization tinyint,
     ST_MIN_Metadata_UTL int,
     ST_MIN_UTL_ID tinyint
@@ -583,13 +559,11 @@ SELECT DISTINCT
     pST.ST_AVG_ST_ID,
     pST.Metadata_ST_AVG,
     pST.ST_AVG_ChangedAt,
-    pST.ST_AVG_EQ,
     pST.ST_AVG_UTL_Utilization,
     pST.ST_AVG_Metadata_UTL,
     pST.ST_AVG_UTL_ID,
     pST.ST_MIN_ST_ID,
     pST.Metadata_ST_MIN,
-    pST.ST_MIN_EQ,
     pST.ST_MIN_UTL_Utilization,
     pST.ST_MIN_Metadata_UTL,
     pST.ST_MIN_UTL_ID
@@ -621,13 +595,11 @@ SELECT DISTINCT
     pST.ST_AVG_ST_ID,
     pST.Metadata_ST_AVG,
     pST.ST_AVG_ChangedAt,
-    pST.ST_AVG_EQ,
     pST.ST_AVG_UTL_Utilization,
     pST.ST_AVG_Metadata_UTL,
     pST.ST_AVG_UTL_ID,
     pST.ST_MIN_ST_ID,
     pST.Metadata_ST_MIN,
-    pST.ST_MIN_EQ,
     pST.ST_MIN_UTL_Utilization,
     pST.ST_MIN_Metadata_UTL,
     pST.ST_MIN_UTL_ID
@@ -653,7 +625,6 @@ CREATE OR REPLACE VIEW anchors.lAC_Actor (
     AC_NAM_Actor_Name COMMENT 'Name of the actor, such as a stage name. Historized, since it may change over time.',
     AC_GEN_AC_ID,
     Metadata_AC_GEN,
-    AC_GEN_EQ,
     AC_GEN_GEN_Checksum,
     AC_GEN_GEN_Gender COMMENT 'Gender of the actor.',
     AC_GEN_Metadata_GEN,
@@ -661,7 +632,6 @@ CREATE OR REPLACE VIEW anchors.lAC_Actor (
     AC_PLV_AC_ID,
     Metadata_AC_PLV,
     AC_PLV_ChangedAt,
-    AC_PLV_EQ,
     AC_PLV_PLV_Checksum,
     AC_PLV_PLV_EQ,
     AC_PLV_PLV_ProfessionalLevel COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
@@ -678,7 +648,6 @@ SELECT
     NAM.AC_NAM_Actor_Name,
     GEN.AC_GEN_AC_ID,
     GEN.Metadata_AC_GEN,
-    GEN.AC_GEN_EQ,
     kGEN.GEN_Checksum AS AC_GEN_GEN_Checksum,
     kGEN.GEN_Gender AS AC_GEN_GEN_Gender,
     kGEN.Metadata_GEN AS AC_GEN_Metadata_GEN,
@@ -686,7 +655,6 @@ SELECT
     PLV.AC_PLV_AC_ID,
     PLV.Metadata_AC_PLV,
     PLV.AC_PLV_ChangedAt,
-    PLV.AC_PLV_EQ,
     kPLV.PLV_Checksum AS AC_PLV_PLV_Checksum,
     kPLV.PLV_EQ AS AC_PLV_PLV_EQ,
     kPLV.PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
@@ -747,7 +715,6 @@ RETURNS TABLE (
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN int,
@@ -755,7 +722,6 @@ RETURNS TABLE (
     AC_PLV_AC_ID smallint,
     Metadata_AC_PLV int,
     AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_EQ tinyint,
     AC_PLV_PLV_ProfessionalLevel string,
@@ -773,7 +739,6 @@ SELECT
     NAM.AC_NAM_Actor_Name,
     GEN.AC_GEN_AC_ID,
     GEN.Metadata_AC_GEN,
-    GEN.AC_GEN_EQ,
     kGEN.GEN_Checksum AS AC_GEN_GEN_Checksum,
     kGEN.GEN_Gender AS AC_GEN_GEN_Gender,
     kGEN.Metadata_GEN AS AC_GEN_Metadata_GEN,
@@ -781,7 +746,6 @@ SELECT
     PLV.AC_PLV_AC_ID,
     PLV.Metadata_AC_PLV,
     PLV.AC_PLV_ChangedAt,
-    PLV.AC_PLV_EQ,
     kPLV.PLV_Checksum AS AC_PLV_PLV_Checksum,
     kPLV.PLV_EQ AS AC_PLV_PLV_EQ,
     kPLV.PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
@@ -857,7 +821,6 @@ RETURNS TABLE (
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN int,
@@ -865,7 +828,6 @@ RETURNS TABLE (
     AC_PLV_AC_ID smallint,
     Metadata_AC_PLV int,
     AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_EQ tinyint,
     AC_PLV_PLV_ProfessionalLevel string,
@@ -885,7 +847,6 @@ SELECT DISTINCT
     pAC.AC_NAM_Actor_Name,
     pAC.AC_GEN_AC_ID,
     pAC.Metadata_AC_GEN,
-    pAC.AC_GEN_EQ,
     pAC.AC_GEN_GEN_Checksum,
     pAC.AC_GEN_GEN_Gender,
     pAC.AC_GEN_Metadata_GEN,
@@ -893,7 +854,6 @@ SELECT DISTINCT
     pAC.AC_PLV_AC_ID,
     pAC.Metadata_AC_PLV,
     pAC.AC_PLV_ChangedAt,
-    pAC.AC_PLV_EQ,
     pAC.AC_PLV_PLV_Checksum,
     pAC.AC_PLV_PLV_EQ,
     pAC.AC_PLV_PLV_ProfessionalLevel,
@@ -920,7 +880,6 @@ SELECT DISTINCT
     pAC.AC_NAM_Actor_Name,
     pAC.AC_GEN_AC_ID,
     pAC.Metadata_AC_GEN,
-    pAC.AC_GEN_EQ,
     pAC.AC_GEN_GEN_Checksum,
     pAC.AC_GEN_GEN_Gender,
     pAC.AC_GEN_Metadata_GEN,
@@ -928,7 +887,6 @@ SELECT DISTINCT
     pAC.AC_PLV_AC_ID,
     pAC.Metadata_AC_PLV,
     pAC.AC_PLV_ChangedAt,
-    pAC.AC_PLV_EQ,
     pAC.AC_PLV_PLV_Checksum,
     pAC.AC_PLV_PLV_EQ,
     pAC.AC_PLV_PLV_ProfessionalLevel,
@@ -943,44 +901,6 @@ AND
     hPLV.AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
 AND
     pAC.AC_ID = hPLV.AC_PLV_AC_ID
-$$
-;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION anchors.elAC_Actor (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    AC_ID smallint,
-    Metadata_AC int,
-    AC_NAM_AC_ID smallint,
-    Metadata_AC_NAM int,
-    AC_NAM_ChangedAt datetime,
-    AC_NAM_Actor_Name varbinary(max),
-    AC_GEN_AC_ID smallint,
-    Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
-    AC_GEN_GEN_Checksum numeric(19,0),
-    AC_GEN_GEN_Gender varchar(42),
-    AC_GEN_Metadata_GEN int,
-    AC_GEN_GEN_ID number(1,0),
-    AC_PLV_AC_ID smallint,
-    Metadata_AC_PLV int,
-    AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
-    AC_PLV_PLV_Checksum numeric(19,0),
-    AC_PLV_PLV_EQ tinyint,
-    AC_PLV_PLV_ProfessionalLevel string,
-    AC_PLV_Metadata_PLV int,
-    AC_PLV_PLV_ID tinyint
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(anchors.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -999,7 +919,6 @@ RETURNS TABLE (
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN int,
@@ -1007,7 +926,6 @@ RETURNS TABLE (
     AC_PLV_AC_ID smallint,
     Metadata_AC_PLV int,
     AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_EQ tinyint,
     AC_PLV_PLV_ProfessionalLevel string,
@@ -1025,7 +943,6 @@ SELECT
     NAM.AC_NAM_Actor_Name,
     GEN.AC_GEN_AC_ID,
     GEN.Metadata_AC_GEN,
-    GEN.AC_GEN_EQ,
     kGEN.GEN_Checksum AS AC_GEN_GEN_Checksum,
     kGEN.GEN_Gender AS AC_GEN_GEN_Gender,
     kGEN.Metadata_GEN AS AC_GEN_Metadata_GEN,
@@ -1033,7 +950,6 @@ SELECT
     PLV.AC_PLV_AC_ID,
     PLV.Metadata_AC_PLV,
     PLV.AC_PLV_ChangedAt,
-    PLV.AC_PLV_EQ,
     kPLV.PLV_Checksum AS AC_PLV_PLV_Checksum,
     kPLV.PLV_EQ AS AC_PLV_PLV_EQ,
     kPLV.PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
@@ -1081,6 +997,42 @@ ON
     kPLV.PLV_ID = PLV.AC_PLV_PLV_ID
 $$
 ;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors.elAC_Actor (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    AC_ID smallint,
+    Metadata_AC int,
+    AC_NAM_AC_ID smallint,
+    Metadata_AC_NAM int,
+    AC_NAM_ChangedAt datetime,
+    AC_NAM_Actor_Name varbinary(max),
+    AC_GEN_AC_ID smallint,
+    Metadata_AC_GEN int,
+    AC_GEN_GEN_Checksum numeric(19,0),
+    AC_GEN_GEN_Gender varchar(42),
+    AC_GEN_Metadata_GEN int,
+    AC_GEN_GEN_ID number(1,0),
+    AC_PLV_AC_ID smallint,
+    Metadata_AC_PLV int,
+    AC_PLV_ChangedAt datetime,
+    AC_PLV_PLV_Checksum numeric(19,0),
+    AC_PLV_PLV_EQ tinyint,
+    AC_PLV_PLV_ProfessionalLevel string,
+    AC_PLV_Metadata_PLV int,
+    AC_PLV_PLV_ID tinyint
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(anchors.epAC_Actor(equivalent, sysdate()::timestamp_ntz(9)))
+$$
+;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION anchors.enAC_Actor (
@@ -1096,7 +1048,6 @@ RETURNS TABLE (
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN int,
@@ -1104,7 +1055,6 @@ RETURNS TABLE (
     AC_PLV_AC_ID smallint,
     Metadata_AC_PLV int,
     AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_EQ tinyint,
     AC_PLV_PLV_ProfessionalLevel string,
@@ -1139,7 +1089,6 @@ RETURNS TABLE (
     AC_NAM_Actor_Name varbinary(max),
     AC_GEN_AC_ID smallint,
     Metadata_AC_GEN int,
-    AC_GEN_EQ tinyint,
     AC_GEN_GEN_Checksum numeric(19,0),
     AC_GEN_GEN_Gender varchar(42),
     AC_GEN_Metadata_GEN int,
@@ -1147,7 +1096,6 @@ RETURNS TABLE (
     AC_PLV_AC_ID smallint,
     Metadata_AC_PLV int,
     AC_PLV_ChangedAt datetime,
-    AC_PLV_EQ tinyint,
     AC_PLV_PLV_Checksum numeric(19,0),
     AC_PLV_PLV_EQ tinyint,
     AC_PLV_PLV_ProfessionalLevel string,
@@ -1167,7 +1115,6 @@ SELECT DISTINCT
     pAC.AC_NAM_Actor_Name,
     pAC.AC_GEN_AC_ID,
     pAC.Metadata_AC_GEN,
-    pAC.AC_GEN_EQ,
     pAC.AC_GEN_GEN_Checksum,
     pAC.AC_GEN_GEN_Gender,
     pAC.AC_GEN_Metadata_GEN,
@@ -1175,7 +1122,6 @@ SELECT DISTINCT
     pAC.AC_PLV_AC_ID,
     pAC.Metadata_AC_PLV,
     pAC.AC_PLV_ChangedAt,
-    pAC.AC_PLV_EQ,
     pAC.AC_PLV_PLV_Checksum,
     pAC.AC_PLV_PLV_EQ,
     pAC.AC_PLV_PLV_ProfessionalLevel,
@@ -1202,7 +1148,6 @@ SELECT DISTINCT
     pAC.AC_NAM_Actor_Name,
     pAC.AC_GEN_AC_ID,
     pAC.Metadata_AC_GEN,
-    pAC.AC_GEN_EQ,
     pAC.AC_GEN_GEN_Checksum,
     pAC.AC_GEN_GEN_Gender,
     pAC.AC_GEN_Metadata_GEN,
@@ -1210,7 +1155,6 @@ SELECT DISTINCT
     pAC.AC_PLV_AC_ID,
     pAC.Metadata_AC_PLV,
     pAC.AC_PLV_ChangedAt,
-    pAC.AC_PLV_EQ,
     pAC.AC_PLV_PLV_Checksum,
     pAC.AC_PLV_PLV_EQ,
     pAC.AC_PLV_PLV_ProfessionalLevel,
@@ -1381,32 +1325,6 @@ AND
     pPR.PR_ID = hLEN.PR_LEN_PR_ID
 $$
 ;
--- Latest equivalence perspective -------------------------------------------------------------------------------------
------------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION anchors.elPR_Program (
-    equivalent tinyint
-)
-COPY GRANTS
-RETURNS TABLE (
-    PR_ID number(10,0),
-    Metadata_PR int,
-    PR_NAM_PR_ID number(10,0),
-    Metadata_PR_NAM int,
-    PR_NAM_Program_Name varchar(42),
-    PR_LEN_PR_ID number(10,0),
-    Metadata_PR_LEN int,
-    PR_LEN_ChangedAt date,
-    PR_LEN_EQ tinyint,
-    PR_LEN_Program_Length time
-)
-AS
-$$
-SELECT
-    *
-FROM
-    TABLE(anchors.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
-$$
-;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION anchors.epPR_Program (
@@ -1458,6 +1376,32 @@ AND
         WHERE
             sub.PR_LEN_PR_ID = PR.PR_ID
    )
+$$
+;
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors.elPR_Program (
+    equivalent tinyint
+)
+COPY GRANTS
+RETURNS TABLE (
+    PR_ID number(10,0),
+    Metadata_PR int,
+    PR_NAM_PR_ID number(10,0),
+    Metadata_PR_NAM int,
+    PR_NAM_Program_Name varchar(42),
+    PR_LEN_PR_ID number(10,0),
+    Metadata_PR_LEN int,
+    PR_LEN_ChangedAt date,
+    PR_LEN_EQ tinyint,
+    PR_LEN_Program_Length time
+)
+AS
+$$
+SELECT
+    *
+FROM
+    TABLE(anchors.epPR_Program(equivalent, sysdate()::timestamp_ntz(9)))
 $$
 ;
 -- Now equivalence perspective ----------------------------------------------------------------------------------------

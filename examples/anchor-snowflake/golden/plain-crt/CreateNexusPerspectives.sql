@@ -145,8 +145,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -216,8 +215,7 @@ SELECT
     EV.EV_REV_Assertion,
     EV.EV_REV_Event_Revenue
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -234,8 +232,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    public._Positor p
-CROSS JOIN LATERAL
+    public._Positor p,
     TABLE(public.tEV_Event(
         p.Positor,
         sysdate()::timestamp_ntz(9),
