@@ -2594,6 +2594,9 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
         ONG_ID_currently
     ) RELY
 ) CLUSTER BY (
+    AC_ID_partner,
+    AC_ID_with,
+    ONG_ID_currently,
     AC_partner_AC_with_ONG_currently_ChangedAt
 );
 CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Annex (
@@ -2641,6 +2644,8 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Posit (
         PN_ID_of
     ) RELY
 ) CLUSTER BY (
+    AC_ID_subset,
+    PN_ID_of
 );
 CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Annex (
     AC_subset_PN_of_ID int not null,

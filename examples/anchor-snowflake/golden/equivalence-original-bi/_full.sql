@@ -4114,6 +4114,9 @@ CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Posit (
         ONG_ID_currently
     ) RELY
 ) CLUSTER BY (
+    AC_ID_partner,
+    AC_ID_with,
+    ONG_ID_currently,
     AC_partner_AC_with_ONG_currently_ChangedAt
 );
 CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Annex (
@@ -4153,6 +4156,8 @@ CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Posit (
         PN_ID_of
     ) RELY
 ) CLUSTER BY (
+    AC_ID_subset,
+    PN_ID_of
 );
 CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Annex (
     AC_subset_PN_of_ID int not null,
@@ -4353,6 +4358,9 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Posit (
         EV_ID_of
     ) RELY
 ) CLUSTER BY (
+    PR_ID_content,
+    ST_ID_location,
+    EV_ID_of,
     PR_content_ST_location_EV_of_ChangedAt
 );
 CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Annex (

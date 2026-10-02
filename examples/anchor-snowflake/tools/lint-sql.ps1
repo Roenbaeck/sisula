@@ -45,6 +45,7 @@ function Test-Sql([string] $text) {
         $j = $i + 1; while ($j -lt $code.Count -and $code[$j] -notmatch '\S') { $j++ }
         if ($j -lt $code.Count) {
             $next = $code[$j]
+            if ($l -match 'CLUSTER BY \(\s*$' -and $next -match '^\s*\)') { $found.Add("line ${n}: an empty CLUSTER BY: [$($lines[$i])]") }
             if ($l -match ',\s*$' -and $next -match '^\s*((FROM|WHERE|GROUP|ORDER|UNION|HAVING|LIMIT)(\s|$)|\)|;)') { $found.Add("line ${n}: a comma before ""$($next.Trim())"": [$($lines[$i])]") }
             if (($l -match $column -and $next -match "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b") -or
                 ($l -match $selectItem -and $next -match '^\s+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\s*,?\s*$')) {
