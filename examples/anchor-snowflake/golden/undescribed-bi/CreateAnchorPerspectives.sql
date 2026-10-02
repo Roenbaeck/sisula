@@ -382,8 +382,7 @@ FROM (
         (selection IS NULL OR selection LIKE '%AVG%')
     AND
         ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
-) tp
-CROSS JOIN LATERAL
+) tp,
     TABLE(public.tST_Stage(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
@@ -715,8 +714,7 @@ FROM (
         (selection IS NULL OR selection LIKE '%PLV%')
     AND
         AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
-) tp
-CROSS JOIN LATERAL
+) tp,
     TABLE(public.tAC_Actor(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
@@ -934,8 +932,7 @@ FROM (
         (selection IS NULL OR selection LIKE '%LEN%')
     AND
         PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd
-) tp
-CROSS JOIN LATERAL
+) tp,
     TABLE(public.tPR_Program(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime

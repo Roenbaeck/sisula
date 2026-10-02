@@ -305,8 +305,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    dw._Positor p
-CROSS JOIN LATERAL
+    dw._Positor p,
     TABLE(nexuses.tEV_Event(
         p.Positor,
         '9999-12-31'::timestamp_ntz(9),
@@ -456,8 +455,7 @@ SELECT
     EV.EV_LVL_Metadata_PLV,
     EV.EV_LVL_PLV_ID
 FROM
-    dw._Positor p
-CROSS JOIN LATERAL
+    dw._Positor p,
     TABLE(nexuses.tEV_Event(
         p.Positor,
         changingTimepoint::timestamp_ntz(9),
@@ -474,8 +472,7 @@ SELECT
     cast(null as decimal(5,2)) AS Reliability,
     EV.*
 FROM
-    dw._Positor p
-CROSS JOIN LATERAL
+    dw._Positor p,
     TABLE(nexuses.tEV_Event(
         p.Positor,
         sysdate()::timestamp_ntz(9),
@@ -654,8 +651,7 @@ JOIN (
         EV_LVL_ChangedAt BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p.Positor
-CROSS JOIN LATERAL
+    tp.positor = p.Positor,
     TABLE(nexuses.tEV_Event(
         tp.positor,
         tp.inspectedTimepoint::timestamp_ntz(9),

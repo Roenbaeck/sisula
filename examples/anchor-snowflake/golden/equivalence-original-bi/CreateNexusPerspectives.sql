@@ -498,8 +498,7 @@ FROM (
         (selection IS NULL OR selection LIKE '%LVL%')
     AND
         EV_LVL_ChangedAt BETWEEN intervalStart AND intervalEnd
-) tp
-CROSS JOIN LATERAL
+) tp,
     TABLE(nexuses.tEV_Event(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime

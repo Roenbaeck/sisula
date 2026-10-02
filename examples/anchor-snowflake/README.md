@@ -18,6 +18,7 @@ The port is complete for what the modeler generates: 13 templates for uni, 11 fo
 |---|---|---|
 | `tools\run-all.ps1` | Anchor's templates' output, per template and as a whole, with the golden files | PowerShell, an Anchor checkout |
 | `tools\csharp-check.ps1` | the same templates and bindings through the C# renderer that runs inside SQL Server | an Anchor checkout, `sisula-mssql`'s `FixtureRunner.exe` |
+| `tools\lint-sql.ps1` | the golden SQL, for defects that made generated Snowflake SQL invalid: nameless columns, a stray colon, missing or dangling commas, a table or function that is used but never created, a replaced function or view without `COPY GRANTS`, and constructs that Snowflake was found to reject. It cannot say that SQL is valid, only that these are absent | PowerShell |
 | `tools\regenerate-golden.ps1` | makes the golden files: the modeler's original engine and sisulets, run under Jint | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 
