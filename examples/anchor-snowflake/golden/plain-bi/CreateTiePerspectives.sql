@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION public.tAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -61,7 +62,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -73,6 +74,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -101,7 +103,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -114,6 +116,7 @@ CREATE OR REPLACE FUNCTION public.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
@@ -148,6 +151,7 @@ CREATE OR REPLACE FUNCTION public.tAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID int,
     AC_subset_PN_of_PositedAt datetime,
@@ -189,7 +193,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_subset_PN_of AS
+CREATE OR REPLACE VIEW public.lAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -201,6 +205,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID int,
     AC_subset_PN_of_PositedAt datetime,
@@ -223,7 +228,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW public.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -236,6 +241,7 @@ CREATE OR REPLACE FUNCTION public.tEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID int,
     EV_in_AC_wasCast_PositedAt datetime,
@@ -275,7 +281,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -287,6 +293,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID int,
     EV_in_AC_wasCast_PositedAt datetime,
@@ -309,7 +316,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -322,6 +329,7 @@ CREATE OR REPLACE FUNCTION public.tAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -374,7 +382,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -386,6 +394,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -414,7 +423,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -427,6 +436,7 @@ CREATE OR REPLACE FUNCTION public.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_part_PR_in_RAT_got_ChangedAt datetime,
@@ -461,6 +471,7 @@ CREATE OR REPLACE FUNCTION public.tST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -505,7 +516,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -517,6 +528,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -541,7 +553,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -554,6 +566,7 @@ CREATE OR REPLACE FUNCTION public.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_at_PR_isPlaying_ChangedAt datetime,
@@ -584,6 +597,7 @@ CREATE OR REPLACE FUNCTION public.tAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID int,
     AC_parent_AC_child_PAT_having_PositedAt datetime,
@@ -633,7 +647,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -645,6 +659,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID int,
     AC_parent_AC_child_PAT_having_PositedAt datetime,
@@ -671,7 +686,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -684,6 +699,7 @@ CREATE OR REPLACE FUNCTION public.tPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_content_ST_location_EV_of_PositedAt datetime,
@@ -723,7 +739,7 @@ AND
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -735,6 +751,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_content_ST_location_EV_of_PositedAt datetime,
@@ -759,7 +776,7 @@ FROM
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM

@@ -14,6 +14,7 @@ CREATE OR REPLACE FUNCTION public.rST_NAM_Stage_Name (
     equivalent tinyint,
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ST_ID int,
@@ -43,6 +44,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rST_AVG_Stage_Average (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ST_ID int,
@@ -71,6 +73,7 @@ CREATE OR REPLACE FUNCTION public.rAC_NAM_Actor_Name (
     equivalent tinyint,
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_AC_ID int,
@@ -100,6 +103,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_AC_ID int,
@@ -127,6 +131,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rPR_LEN_Program_Length (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_PR_ID int,

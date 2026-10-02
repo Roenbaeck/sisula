@@ -14,7 +14,7 @@ CREATE OR REPLACE VIEW public.PAT_ParentalType (
     PAT_ID,
     PAT_EQ,
     PAT_ParentalType COMMENT 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
-) COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
+) COPY GRANTS COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
 AS
 SELECT
     v.Metadata_PAT,
@@ -31,6 +31,7 @@ ON
 CREATE OR REPLACE FUNCTION public.ePAT_ParentalType (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PAT int,
     PAT_ID tinyint,
@@ -58,7 +59,7 @@ CREATE OR REPLACE VIEW public.GEN_Gender (
     GEN_ID,
     GEN_EQ,
     GEN_Gender COMMENT 'Gender of an actor.'
-) COMMENT = 'Gender of an actor.'
+) COPY GRANTS COMMENT = 'Gender of an actor.'
 AS
 SELECT
     v.Metadata_GEN,
@@ -75,6 +76,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eGEN_Gender (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_GEN int,
     GEN_ID number(1,0),
@@ -102,7 +104,7 @@ CREATE OR REPLACE VIEW public.ONG_Ongoing (
     ONG_ID,
     ONG_EQ,
     ONG_Ongoing COMMENT 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
-) COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
+) COPY GRANTS COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
 AS
 SELECT
     v.Metadata_ONG,
@@ -119,6 +121,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eONG_Ongoing (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ONG int,
     ONG_ID tinyint,
@@ -146,7 +149,7 @@ CREATE OR REPLACE VIEW public.RAT_Rating (
     RAT_ID,
     RAT_EQ,
     RAT_Rating COMMENT 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
-) COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
+) COPY GRANTS COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
 AS
 SELECT
     v.Metadata_RAT,
@@ -163,6 +166,7 @@ ON
 CREATE OR REPLACE FUNCTION public.eRAT_Rating (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_RAT int,
     RAT_ID tinyint,

@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION anchors.tST_Stage (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST int,
@@ -168,7 +169,7 @@ ON
     kMIN.UTL_ID = MIN.UTL_ID
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lST_Stage AS
+CREATE OR REPLACE VIEW anchors.lST_Stage COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
@@ -181,6 +182,7 @@ FROM
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Reliability decimal(5,2),
     ST_ID int,
@@ -253,7 +255,7 @@ FROM
     )) ST
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nST_Stage AS
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     ST.*
@@ -268,6 +270,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     ST_ID int,
@@ -369,6 +372,7 @@ CREATE OR REPLACE FUNCTION anchors.tAC_Actor (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC int,
@@ -502,7 +506,7 @@ ON
     kPLV.PLV_ID = PLV.PLV_ID
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lAC_Actor AS
+CREATE OR REPLACE VIEW anchors.lAC_Actor COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
@@ -515,6 +519,7 @@ FROM
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Reliability decimal(5,2),
     AC_ID smallint,
@@ -579,7 +584,7 @@ FROM
     )) AC
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nAC_Actor AS
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     AC.*
@@ -594,6 +599,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     AC_ID smallint,
@@ -687,6 +693,7 @@ CREATE OR REPLACE FUNCTION anchors.tPR_Program (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR int,
@@ -765,7 +772,7 @@ ON
     )
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lPR_Program AS
+CREATE OR REPLACE VIEW anchors.lPR_Program COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
@@ -778,6 +785,7 @@ FROM
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Reliability decimal(5,2),
     PR_ID number(10,0),
@@ -818,7 +826,7 @@ FROM
     )) PR
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nPR_Program AS
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     PR.*
@@ -833,6 +841,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
     PR_ID number(10,0),

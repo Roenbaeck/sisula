@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION public.tEV_Event (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -144,7 +145,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.lEV_Event AS
+CREATE OR REPLACE VIEW public.lEV_Event COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -164,6 +165,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION public.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -238,7 +240,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_Event AS
+CREATE OR REPLACE VIEW public.nEV_Event COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,

@@ -19,7 +19,7 @@ CREATE OR REPLACE VIEW public.lEV_Event (
     EV_REV_EV_ID,
     EV_REV_EQ,
     EV_REV_Event_Revenue COMMENT 'Revenue from ticket sales for the event.'
-) COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
+) COPY GRANTS COMMENT = 'An event, a single performance of a program held at a stage at a specific date and time.'
 AS
 SELECT
     EV.EV_ID,
@@ -58,6 +58,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -111,7 +112,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_Event AS
+CREATE OR REPLACE VIEW public.nEV_Event COPY GRANTS AS
 SELECT
     *
 FROM
@@ -122,6 +123,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.elEV_Event (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -179,6 +181,7 @@ CREATE OR REPLACE FUNCTION public.epEV_Event (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,
@@ -235,6 +238,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enEV_Event (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID int,
     ST_ID_wasHeldAt int,

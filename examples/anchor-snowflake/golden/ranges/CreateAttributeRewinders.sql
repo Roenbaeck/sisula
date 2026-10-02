@@ -13,6 +13,7 @@
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA bigint,
     EV_STA_EV_ID numeric(12,0),
@@ -38,6 +39,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL bigint,
     EV_LVL_EV_ID numeric(12,0),
@@ -63,6 +65,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM bigint,
     ST_NAM_ST_ID int,
@@ -88,6 +91,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG bigint,
     ST_AVG_ST_ID int,
@@ -113,6 +117,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM bigint,
     AC_NAM_AC_ID smallint,
@@ -138,6 +143,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV bigint,
     AC_PLV_AC_ID smallint,
@@ -163,6 +169,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN bigint,
     PR_LEN_PR_ID number(10,0),

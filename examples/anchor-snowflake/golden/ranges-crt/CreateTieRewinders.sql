@@ -5,6 +5,7 @@
 CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID bigint,
     AC_ID_partner smallint, 
@@ -29,6 +30,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fAC_partner_AC_with_ONG_currently_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID bigint,
     AC_ID_partner smallint, 
@@ -53,6 +55,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_partner_AC_with_ONG_currently_ID bigint,
@@ -81,6 +84,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_partner_AC_with_ONG_currently_ID bigint,
@@ -126,6 +130,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_partner_AC_with_ONG_currently_ID bigint,
@@ -169,6 +174,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_subset_PN_of_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_subset_PN_of_ID bigint,
@@ -196,6 +202,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_subset_PN_of (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_subset_PN_of_ID bigint,
@@ -236,6 +243,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_subset_PN_of (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_subset_PN_of_ID bigint,
@@ -275,6 +283,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rEV_in_AC_wasCast_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_in_AC_wasCast_ID bigint,
@@ -302,6 +311,7 @@ CREATE OR REPLACE FUNCTION ties.rEV_in_AC_wasCast (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_in_AC_wasCast_ID bigint,
@@ -342,6 +352,7 @@ CREATE OR REPLACE FUNCTION ties.fEV_in_AC_wasCast (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_in_AC_wasCast_ID bigint,
@@ -381,6 +392,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID bigint,
     AC_ID_part smallint, 
@@ -405,6 +417,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fAC_part_PR_in_RAT_got_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID bigint,
     AC_ID_part smallint, 
@@ -429,6 +442,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_part_PR_in_RAT_got_ID bigint,
@@ -457,6 +471,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_part_PR_in_RAT_got_ID bigint,
@@ -502,6 +517,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_part_PR_in_RAT_got_ID bigint,
@@ -545,6 +561,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID bigint,
     ST_ID_at int, 
@@ -567,6 +584,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fST_at_PR_isPlaying_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID bigint,
     ST_ID_at int, 
@@ -589,6 +607,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_at_PR_isPlaying_ID bigint,
@@ -617,6 +636,7 @@ CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_at_PR_isPlaying_ID bigint,
@@ -660,6 +680,7 @@ CREATE OR REPLACE FUNCTION ties.fST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_at_PR_isPlaying_ID bigint,
@@ -701,6 +722,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_parent_AC_child_PAT_having_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having bigint,
     AC_parent_AC_child_PAT_having_ID bigint,
@@ -728,6 +750,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_parent_AC_child_PAT_having (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having bigint,
     AC_parent_AC_child_PAT_having_ID bigint,
@@ -770,6 +793,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_parent_AC_child_PAT_having (
     positor smallint,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having bigint,
     AC_parent_AC_child_PAT_having_ID bigint,
@@ -811,6 +835,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID bigint,
     PR_ID_content number(10,0), 
@@ -835,6 +860,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fPR_content_ST_location_EV_of_Fact (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID bigint,
     PR_ID_content number(10,0), 
@@ -859,6 +885,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of_Meta (
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_content_ST_location_EV_of_ID bigint,
@@ -887,6 +914,7 @@ CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_content_ST_location_EV_of_ID bigint,
@@ -932,6 +960,7 @@ CREATE OR REPLACE FUNCTION ties.fPR_content_ST_location_EV_of (
     changingTimepoint datetime,
     positingTimepoint timestamp_ntz(3)
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_content_ST_location_EV_of_ID bigint,

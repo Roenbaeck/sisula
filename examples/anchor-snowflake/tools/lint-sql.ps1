@@ -50,6 +50,20 @@ function Test-Sql([string] $text) {
             }
         }
     }
+    # a replaced function or view must keep its grants: COPY GRANTS before RETURNS (function), and before
+    # COMMENT and AS (view)
+    for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($code[$i] -notmatch '^CREATE OR REPLACE (FUNCTION|VIEW)\b') { continue }
+        $kind = $Matches[1]
+        $j = $i; $head = ''
+        while ($j -lt $code.Count) {
+            if ($kind -eq 'FUNCTION' -and $code[$j] -match '^RETURNS\b') { break }
+            if ($kind -eq 'VIEW' -and $code[$j] -match '(^|\s)AS\s*$') { $head += ' ' + $code[$j]; break }
+            $head += ' ' + $code[$j]; $j++
+        }
+        if ($head -notmatch 'COPY GRANTS') { $found.Add("line $($i + 1): a $kind that is replaced without COPY GRANTS: [$($lines[$i])]") }
+        elseif ($kind -eq 'VIEW' -and $head -match 'COMMENT\s*=.*COPY GRANTS') { $found.Add("line $($i + 1): COPY GRANTS after COMMENT in a view: [$($lines[$i])]") }
+    }
     $joined = ($code -join "`n")
     $open = ([regex]::Matches($joined, '\(')).Count; $close = ([regex]::Matches($joined, '\)')).Count
     if ($open -ne $close) { $found.Add("unbalanced parentheses: $open open, $close close") }

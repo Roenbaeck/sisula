@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_partner_AC_with_ONG_currently (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently bigint,
     AC_ID_partner smallint,
@@ -54,7 +55,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -74,6 +75,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -118,7 +120,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -139,6 +141,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
@@ -200,6 +203,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_subset_PN_of (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of bigint,
     AC_ID_subset smallint,
@@ -230,7 +234,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.lAC_subset_PN_of COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -250,6 +254,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -286,7 +291,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -309,6 +314,7 @@ CREATE OR REPLACE FUNCTION ties.tEV_in_AC_wasCast (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast bigint,
     EV_ID_in numeric(12,0),
@@ -339,7 +345,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -359,6 +365,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -395,7 +402,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -418,6 +425,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_part_PR_in_RAT_got (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got bigint,
     AC_ID_part smallint,
@@ -463,7 +471,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -483,6 +491,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -529,7 +538,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -550,6 +559,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
@@ -613,6 +623,7 @@ CREATE OR REPLACE FUNCTION ties.tST_at_PR_isPlaying (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying bigint,
     ST_ID_at int,
@@ -646,7 +657,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -666,6 +677,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -704,7 +716,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -725,6 +737,7 @@ CREATE OR REPLACE FUNCTION ties.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
@@ -780,6 +793,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_parent_AC_child_PAT_having (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having bigint,
     AC_ID_parent smallint,
@@ -820,7 +834,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -840,6 +854,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -882,7 +897,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -905,6 +920,7 @@ CREATE OR REPLACE FUNCTION ties.tPR_content_ST_location_EV_of (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of bigint,
     PR_ID_content number(10,0),
@@ -940,7 +956,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -960,6 +976,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -1000,7 +1017,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) AS Confidence,
@@ -1021,6 +1038,7 @@ CREATE OR REPLACE FUNCTION ties.dPR_content_ST_location_EV_of (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),

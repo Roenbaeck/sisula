@@ -5,6 +5,7 @@
 CREATE OR REPLACE FUNCTION attributes.rEV_DAT_Event_Date_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_DAT int,
     EV_DAT_ID ,
@@ -27,6 +28,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_DAT_Event_Date (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_DAT int,
     EV_DAT_ID ,
@@ -60,6 +62,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_AUD_Event_Audience_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_AUD int,
     EV_AUD_ID ,
@@ -82,6 +85,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_AUD_Event_Audience (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_AUD int,
     EV_AUD_ID ,
@@ -115,6 +119,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_REV_Event_Revenue_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_REV int,
     EV_REV_ID ,
@@ -137,6 +142,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_REV_Event_Revenue (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_REV int,
     EV_REV_ID ,
@@ -170,6 +176,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_STA_ID ,
     EV_STA_EV_ID numeric(12,0),
@@ -192,6 +199,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fEV_STA_Event_Status_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_STA_ID ,
     EV_STA_EV_ID numeric(12,0),
@@ -214,6 +222,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID ,
@@ -237,6 +246,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID ,
@@ -273,6 +283,7 @@ CREATE OR REPLACE FUNCTION attributes.fEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID ,
@@ -310,6 +321,7 @@ CREATE OR REPLACE FUNCTION attributes.preEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varchar(20)
 AS
 $$
@@ -334,6 +346,7 @@ CREATE OR REPLACE FUNCTION attributes.folEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varchar(20)
 AS
 $$
@@ -356,6 +369,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_UTL_Event_Utilization_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_UTL int,
     EV_UTL_ID ,
@@ -378,6 +392,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_UTL_Event_Utilization (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_UTL int,
     EV_UTL_ID ,
@@ -411,6 +426,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_LVL_ID ,
     EV_LVL_EV_ID numeric(12,0),
@@ -433,6 +449,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fEV_LVL_Event_Level_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_LVL_ID ,
     EV_LVL_EV_ID numeric(12,0),
@@ -455,6 +472,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID ,
@@ -478,6 +496,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID ,
@@ -514,6 +533,7 @@ CREATE OR REPLACE FUNCTION attributes.fEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID ,
@@ -551,6 +571,7 @@ CREATE OR REPLACE FUNCTION attributes.preEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -575,6 +596,7 @@ CREATE OR REPLACE FUNCTION attributes.folEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -597,6 +619,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ID ,
     ST_NAM_ST_ID int,
@@ -619,6 +642,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fST_NAM_Stage_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ID ,
     ST_NAM_ST_ID int,
@@ -641,6 +665,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID ,
@@ -664,6 +689,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID ,
@@ -700,6 +726,7 @@ CREATE OR REPLACE FUNCTION attributes.fST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID ,
@@ -737,6 +764,7 @@ CREATE OR REPLACE FUNCTION attributes.preST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varchar(42)
 AS
 $$
@@ -761,6 +789,7 @@ CREATE OR REPLACE FUNCTION attributes.folST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varchar(42)
 AS
 $$
@@ -783,6 +812,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_LOC_Stage_Location_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_LOC int,
     ST_LOC_ID ,
@@ -805,6 +835,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_LOC_Stage_Location (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_LOC int,
     ST_LOC_ID ,
@@ -840,6 +871,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_AVG_ID ,
     ST_AVG_ST_ID int,
@@ -862,6 +894,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fST_AVG_Stage_Average_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_AVG_ID ,
     ST_AVG_ST_ID int,
@@ -884,6 +917,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID ,
@@ -907,6 +941,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID ,
@@ -943,6 +978,7 @@ CREATE OR REPLACE FUNCTION attributes.fST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID ,
@@ -980,6 +1016,7 @@ CREATE OR REPLACE FUNCTION attributes.preST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1004,6 +1041,7 @@ CREATE OR REPLACE FUNCTION attributes.folST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1026,6 +1064,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_MIN_Stage_Minimum_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_MIN int,
     ST_MIN_ID ,
@@ -1048,6 +1087,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_MIN_Stage_Minimum (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_MIN int,
     ST_MIN_ID ,
@@ -1081,6 +1121,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_NAM_ID ,
     AC_NAM_AC_ID smallint,
@@ -1103,6 +1144,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fAC_NAM_Actor_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_NAM_ID ,
     AC_NAM_AC_ID smallint,
@@ -1125,6 +1167,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID ,
@@ -1148,6 +1191,7 @@ CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID ,
@@ -1184,6 +1228,7 @@ CREATE OR REPLACE FUNCTION attributes.fAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID ,
@@ -1221,6 +1266,7 @@ CREATE OR REPLACE FUNCTION attributes.preAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varbinary(max)
 AS
 $$
@@ -1245,6 +1291,7 @@ CREATE OR REPLACE FUNCTION attributes.folAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS varbinary(max)
 AS
 $$
@@ -1267,6 +1314,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_GEN_Actor_Gender_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_GEN int,
     AC_GEN_ID ,
@@ -1289,6 +1337,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_GEN_Actor_Gender (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_GEN int,
     AC_GEN_ID ,
@@ -1322,6 +1371,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_PLV_ID ,
     AC_PLV_AC_ID smallint,
@@ -1344,6 +1394,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fAC_PLV_Actor_ProfessionalLevel_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_PLV_ID ,
     AC_PLV_AC_ID smallint,
@@ -1366,6 +1417,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID ,
@@ -1389,6 +1441,7 @@ CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID ,
@@ -1425,6 +1478,7 @@ CREATE OR REPLACE FUNCTION attributes.fAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID ,
@@ -1462,6 +1516,7 @@ CREATE OR REPLACE FUNCTION attributes.preAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1486,6 +1541,7 @@ CREATE OR REPLACE FUNCTION attributes.folAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1508,6 +1564,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_NAM_Program_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_NAM int,
     PR_NAM_ID ,
@@ -1530,6 +1587,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_NAM_Program_Name (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_NAM int,
     PR_NAM_ID ,
@@ -1563,6 +1621,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_LEN_ID ,
     PR_LEN_PR_ID number(10,0),
@@ -1585,6 +1644,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fPR_LEN_Program_Length_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_LEN_ID ,
     PR_LEN_PR_ID number(10,0),
@@ -1607,6 +1667,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID ,
@@ -1630,6 +1691,7 @@ CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID ,
@@ -1666,6 +1728,7 @@ CREATE OR REPLACE FUNCTION attributes.fPR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID ,
@@ -1703,6 +1766,7 @@ CREATE OR REPLACE FUNCTION attributes.prePR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS time
 AS
 $$
@@ -1727,6 +1791,7 @@ CREATE OR REPLACE FUNCTION attributes.folPR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS time
 AS
 $$

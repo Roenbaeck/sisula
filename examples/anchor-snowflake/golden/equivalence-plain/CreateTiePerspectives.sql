@@ -12,7 +12,7 @@ CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently (
     currently_ONG_Ongoing COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).',
     currently_ONG_EQ,
     ONG_ID_currently COMMENT 'Whether the partnership is still ongoing (Yes) or has ended (No).'
-) COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
+) COPY GRANTS COMMENT = 'Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.'
 AS
 SELECT
     tie.AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -44,6 +44,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -86,7 +87,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     *
 FROM
@@ -98,6 +99,7 @@ CREATE OR REPLACE FUNCTION public.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -130,6 +132,7 @@ $$
 CREATE OR REPLACE FUNCTION public.elAC_partner_AC_with_ONG_currently (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -152,6 +155,7 @@ CREATE OR REPLACE FUNCTION public.epAC_partner_AC_with_ONG_currently (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -197,6 +201,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enAC_partner_AC_with_ONG_currently (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -220,6 +225,7 @@ CREATE OR REPLACE FUNCTION public.edAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ChangedAt datetime,
     AC_ID_partner int,
@@ -252,7 +258,7 @@ $$
 CREATE OR REPLACE VIEW public.lAC_subset_PN_of (
     AC_ID_subset COMMENT 'The actor.',
     PN_ID_of COMMENT 'The person who is the actor.'
-) COMMENT = 'Connects an actor to the person that the actor is. Every actor is a person, but not every person is an actor.'
+) COPY GRANTS COMMENT = 'Connects an actor to the person that the actor is. Every actor is a person, but not every person is an actor.'
 AS
 SELECT
     tie.AC_ID_subset,
@@ -265,6 +271,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_subset int,
     PN_ID_of int
@@ -280,7 +287,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW public.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -291,6 +298,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.elAC_subset_PN_of (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_subset int,
     PN_ID_of int
@@ -309,6 +317,7 @@ CREATE OR REPLACE FUNCTION public.epAC_subset_PN_of (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_subset int,
     PN_ID_of int
@@ -327,6 +336,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enAC_subset_PN_of (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_subset int,
     PN_ID_of int
@@ -344,7 +354,7 @@ $$
 CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast (
     EV_ID_in COMMENT 'The event the actor was cast in.',
     AC_ID_wasCast COMMENT 'An actor cast in the event.'
-) COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
+) COPY GRANTS COMMENT = 'The actors that were cast in an event, meaning those who performed at that performance.'
 AS
 SELECT
     tie.EV_ID_in,
@@ -357,6 +367,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID_in int,
     AC_ID_wasCast int
@@ -372,7 +383,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     *
 FROM
@@ -383,6 +394,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.elEV_in_AC_wasCast (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID_in int,
     AC_ID_wasCast int
@@ -401,6 +413,7 @@ CREATE OR REPLACE FUNCTION public.epEV_in_AC_wasCast (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID_in int,
     AC_ID_wasCast int
@@ -419,6 +432,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enEV_in_AC_wasCast (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID_in int,
     AC_ID_wasCast int
@@ -440,7 +454,7 @@ CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got (
     got_RAT_Rating COMMENT 'The rating the actor got for the part.',
     got_RAT_EQ,
     RAT_ID_got COMMENT 'The rating the actor got for the part.'
-) COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
+) COPY GRANTS COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
 AS
 SELECT
     tie.AC_part_PR_in_RAT_got_ChangedAt,
@@ -472,6 +486,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -512,7 +527,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     *
 FROM
@@ -524,6 +539,7 @@ CREATE OR REPLACE FUNCTION public.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -556,6 +572,7 @@ $$
 CREATE OR REPLACE FUNCTION public.elAC_part_PR_in_RAT_got (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -578,6 +595,7 @@ CREATE OR REPLACE FUNCTION public.epAC_part_PR_in_RAT_got (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -621,6 +639,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enAC_part_PR_in_RAT_got (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -644,6 +663,7 @@ CREATE OR REPLACE FUNCTION public.edAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ChangedAt datetime,
     AC_ID_part int,
@@ -677,7 +697,7 @@ CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying (
     ST_at_PR_isPlaying_ChangedAt,
     ST_ID_at COMMENT 'The stage where the program is playing.',
     PR_ID_isPlaying COMMENT 'The program playing at the stage.'
-) COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
+) COPY GRANTS COMMENT = 'Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.'
 AS
 SELECT
     tie.ST_at_PR_isPlaying_ChangedAt,
@@ -702,6 +722,7 @@ WHERE
 CREATE OR REPLACE FUNCTION public.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -732,7 +753,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     *
 FROM
@@ -744,6 +765,7 @@ CREATE OR REPLACE FUNCTION public.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -766,6 +788,7 @@ $$
 CREATE OR REPLACE FUNCTION public.elST_at_PR_isPlaying (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -785,6 +808,7 @@ CREATE OR REPLACE FUNCTION public.epST_at_PR_isPlaying (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -818,6 +842,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enST_at_PR_isPlaying (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -838,6 +863,7 @@ CREATE OR REPLACE FUNCTION public.edST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ChangedAt datetime,
     ST_ID_at int,
@@ -863,7 +889,7 @@ CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having (
     having_PAT_ParentalType COMMENT 'The type of parental relationship.',
     having_PAT_EQ,
     PAT_ID_having COMMENT 'The type of parental relationship.'
-) COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
+) COPY GRANTS COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
 AS
 SELECT
     tie.AC_ID_parent,
@@ -883,6 +909,7 @@ ON
 CREATE OR REPLACE FUNCTION public.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_parent int,
     AC_ID_child int,
@@ -908,7 +935,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     *
 FROM
@@ -919,6 +946,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.elAC_parent_AC_child_PAT_having (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_parent int,
     AC_ID_child int,
@@ -940,6 +968,7 @@ CREATE OR REPLACE FUNCTION public.epAC_parent_AC_child_PAT_having (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_parent int,
     AC_ID_child int,
@@ -968,6 +997,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enAC_parent_AC_child_PAT_having (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID_parent int,
     AC_ID_child int,
@@ -989,7 +1019,7 @@ CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of (
     PR_ID_content COMMENT 'The program that made up the content of the event.',
     ST_ID_location COMMENT 'The stage where the event was located.',
     EV_ID_of COMMENT 'The event.'
-) COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
+) COPY GRANTS COMMENT = 'The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.'
 AS
 SELECT
     tie.PR_ID_content,
@@ -1003,6 +1033,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID_content int,
     ST_ID_location int,
@@ -1020,7 +1051,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     *
 FROM
@@ -1031,6 +1062,7 @@ FROM
 CREATE OR REPLACE FUNCTION public.elPR_content_ST_location_EV_of (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID_content int,
     ST_ID_location int,
@@ -1050,6 +1082,7 @@ CREATE OR REPLACE FUNCTION public.epPR_content_ST_location_EV_of (
     equivalent tinyint,
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID_content int,
     ST_ID_location int,
@@ -1070,6 +1103,7 @@ $$
 CREATE OR REPLACE FUNCTION public.enPR_content_ST_location_EV_of (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID_content int,
     ST_ID_location int,

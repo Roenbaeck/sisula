@@ -908,6 +908,7 @@ CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length_Annex (
 CREATE OR REPLACE FUNCTION attributes.rEV_DAT_Event_Date_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_DAT int,
     EV_DAT_ID int,
@@ -937,6 +938,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_DAT_Event_Date (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_DAT int,
     EV_DAT_ID int,
@@ -978,6 +980,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_AUD_Event_Audience_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_AUD int,
     EV_AUD_ID int,
@@ -1007,6 +1010,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_AUD_Event_Audience (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_AUD int,
     EV_AUD_ID int,
@@ -1048,6 +1052,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_REV_Event_Revenue_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_REV int,
     EV_REV_ID int,
@@ -1077,6 +1082,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_REV_Event_Revenue (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_REV int,
     EV_REV_ID int,
@@ -1118,6 +1124,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_STA_ID int,
     EV_ID numeric(12,0),
@@ -1142,6 +1149,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fEV_STA_Event_Status_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_STA_ID int,
     EV_ID numeric(12,0),
@@ -1166,6 +1174,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -1196,6 +1205,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -1241,6 +1251,7 @@ CREATE OR REPLACE FUNCTION attributes.fEV_STA_Event_Status (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_STA int,
     EV_STA_ID int,
@@ -1288,6 +1299,7 @@ CREATE OR REPLACE FUNCTION attributes.preEV_STA_Event_Status (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varchar(20)
 AS
 $$
@@ -1316,6 +1328,7 @@ CREATE OR REPLACE FUNCTION attributes.folEV_STA_Event_Status (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varchar(20)
 AS
 $$
@@ -1340,6 +1353,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_UTL_Event_Utilization_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_UTL int,
     EV_UTL_ID int,
@@ -1369,6 +1383,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_UTL_Event_Utilization (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_UTL int,
     EV_UTL_ID int,
@@ -1410,6 +1425,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_LVL_ID int,
     EV_ID numeric(12,0),
@@ -1434,6 +1450,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fEV_LVL_Event_Level_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_LVL_ID int,
     EV_ID numeric(12,0),
@@ -1458,6 +1475,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID int,
@@ -1488,6 +1506,7 @@ CREATE OR REPLACE FUNCTION attributes.rEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID int,
@@ -1533,6 +1552,7 @@ CREATE OR REPLACE FUNCTION attributes.fEV_LVL_Event_Level (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_LVL int,
     EV_LVL_ID int,
@@ -1580,6 +1600,7 @@ CREATE OR REPLACE FUNCTION attributes.preEV_LVL_Event_Level (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1608,6 +1629,7 @@ CREATE OR REPLACE FUNCTION attributes.folEV_LVL_Event_Level (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -1632,6 +1654,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ID int,
     ST_ID int,
@@ -1656,6 +1679,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fST_NAM_Stage_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_NAM_ID int,
     ST_ID int,
@@ -1680,6 +1704,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID int,
@@ -1710,6 +1735,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID int,
@@ -1755,6 +1781,7 @@ CREATE OR REPLACE FUNCTION attributes.fST_NAM_Stage_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_NAM int,
     ST_NAM_ID int,
@@ -1802,6 +1829,7 @@ CREATE OR REPLACE FUNCTION attributes.preST_NAM_Stage_Name (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varchar(42)
 AS
 $$
@@ -1830,6 +1858,7 @@ CREATE OR REPLACE FUNCTION attributes.folST_NAM_Stage_Name (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varchar(42)
 AS
 $$
@@ -1854,6 +1883,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_LOC_Stage_Location_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_LOC int,
     ST_LOC_ID int,
@@ -1883,6 +1913,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_LOC_Stage_Location (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_LOC int,
     ST_LOC_ID int,
@@ -1926,6 +1957,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_AVG_ID int,
     ST_ID int,
@@ -1950,6 +1982,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fST_AVG_Stage_Average_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_AVG_ID int,
     ST_ID int,
@@ -1974,6 +2007,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID int,
@@ -2004,6 +2038,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID int,
@@ -2049,6 +2084,7 @@ CREATE OR REPLACE FUNCTION attributes.fST_AVG_Stage_Average (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_AVG int,
     ST_AVG_ID int,
@@ -2096,6 +2132,7 @@ CREATE OR REPLACE FUNCTION attributes.preST_AVG_Stage_Average (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -2124,6 +2161,7 @@ CREATE OR REPLACE FUNCTION attributes.folST_AVG_Stage_Average (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -2148,6 +2186,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rST_MIN_Stage_Minimum_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_MIN int,
     ST_MIN_ID int,
@@ -2177,6 +2216,7 @@ CREATE OR REPLACE FUNCTION attributes.rST_MIN_Stage_Minimum (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_MIN int,
     ST_MIN_ID int,
@@ -2218,6 +2258,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_NAM_ID int,
     AC_ID smallint,
@@ -2242,6 +2283,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fAC_NAM_Actor_Name_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_NAM_ID int,
     AC_ID smallint,
@@ -2266,6 +2308,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID int,
@@ -2296,6 +2339,7 @@ CREATE OR REPLACE FUNCTION attributes.rAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID int,
@@ -2341,6 +2385,7 @@ CREATE OR REPLACE FUNCTION attributes.fAC_NAM_Actor_Name (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_NAM int,
     AC_NAM_ID int,
@@ -2388,6 +2433,7 @@ CREATE OR REPLACE FUNCTION attributes.preAC_NAM_Actor_Name (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varbinary(max)
 AS
 $$
@@ -2416,6 +2462,7 @@ CREATE OR REPLACE FUNCTION attributes.folAC_NAM_Actor_Name (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS varbinary(max)
 AS
 $$
@@ -2440,6 +2487,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_GEN_Actor_Gender_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_GEN int,
     AC_GEN_ID int,
@@ -2469,6 +2517,7 @@ CREATE OR REPLACE FUNCTION attributes.rAC_GEN_Actor_Gender (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_GEN int,
     AC_GEN_ID int,
@@ -2510,6 +2559,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_PLV_ID int,
     AC_ID smallint,
@@ -2534,6 +2584,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fAC_PLV_Actor_ProfessionalLevel_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_PLV_ID int,
     AC_ID smallint,
@@ -2558,6 +2609,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID int,
@@ -2588,6 +2640,7 @@ CREATE OR REPLACE FUNCTION attributes.rAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID int,
@@ -2633,6 +2686,7 @@ CREATE OR REPLACE FUNCTION attributes.fAC_PLV_Actor_ProfessionalLevel (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_PLV int,
     AC_PLV_ID int,
@@ -2680,6 +2734,7 @@ CREATE OR REPLACE FUNCTION attributes.preAC_PLV_Actor_ProfessionalLevel (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -2708,6 +2763,7 @@ CREATE OR REPLACE FUNCTION attributes.folAC_PLV_Actor_ProfessionalLevel (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS tinyint
 AS
 $$
@@ -2732,6 +2788,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_NAM_Program_Name_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_NAM int,
     PR_NAM_ID int,
@@ -2761,6 +2818,7 @@ CREATE OR REPLACE FUNCTION attributes.rPR_NAM_Program_Name (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_NAM int,
     PR_NAM_ID int,
@@ -2802,6 +2860,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_LEN_ID int,
     PR_ID number(10,0),
@@ -2826,6 +2885,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.fPR_LEN_Program_Length_Posit (
     changingTimepoint date
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_LEN_ID int,
     PR_ID number(10,0),
@@ -2850,6 +2910,7 @@ $$
 CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID int,
@@ -2880,6 +2941,7 @@ CREATE OR REPLACE FUNCTION attributes.rPR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID int,
@@ -2925,6 +2987,7 @@ CREATE OR REPLACE FUNCTION attributes.fPR_LEN_Program_Length (
     changingTimepoint date,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_LEN int,
     PR_LEN_ID int,
@@ -2972,6 +3035,7 @@ CREATE OR REPLACE FUNCTION attributes.prePR_LEN_Program_Length (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS time
 AS
 $$
@@ -3000,6 +3064,7 @@ CREATE OR REPLACE FUNCTION attributes.folPR_LEN_Program_Length (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS time
 AS
 $$
@@ -3380,6 +3445,7 @@ CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Annex (
 CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner smallint, 
@@ -3404,6 +3470,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fAC_partner_AC_with_ONG_currently_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner smallint, 
@@ -3428,6 +3495,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_partner_AC_with_ONG_currently_ID int,
@@ -3456,6 +3524,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_partner_AC_with_ONG_currently_ID int,
@@ -3501,6 +3570,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_partner_AC_with_ONG_currently_ID int,
@@ -3544,6 +3614,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_subset_PN_of_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of int,
     AC_subset_PN_of_ID int,
@@ -3571,6 +3642,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_subset_PN_of (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of int,
     AC_subset_PN_of_ID int,
@@ -3611,6 +3683,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_subset_PN_of (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of int,
     AC_subset_PN_of_ID int,
@@ -3650,6 +3723,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rEV_in_AC_wasCast_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast int,
     EV_in_AC_wasCast_ID int,
@@ -3677,6 +3751,7 @@ CREATE OR REPLACE FUNCTION ties.rEV_in_AC_wasCast (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast int,
     EV_in_AC_wasCast_ID int,
@@ -3717,6 +3792,7 @@ CREATE OR REPLACE FUNCTION ties.fEV_in_AC_wasCast (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast int,
     EV_in_AC_wasCast_ID int,
@@ -3756,6 +3832,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part smallint, 
@@ -3780,6 +3857,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fAC_part_PR_in_RAT_got_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part smallint, 
@@ -3804,6 +3882,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_part_PR_in_RAT_got_ID int,
@@ -3832,6 +3911,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_part_PR_in_RAT_got_ID int,
@@ -3877,6 +3957,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_part_PR_in_RAT_got_ID int,
@@ -3920,6 +4001,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -3942,6 +4024,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fST_at_PR_isPlaying_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -3964,6 +4047,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_at_PR_isPlaying_ID int,
@@ -3992,6 +4076,7 @@ CREATE OR REPLACE FUNCTION ties.rST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_at_PR_isPlaying_ID int,
@@ -4035,6 +4120,7 @@ CREATE OR REPLACE FUNCTION ties.fST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_at_PR_isPlaying_ID int,
@@ -4076,6 +4162,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rAC_parent_AC_child_PAT_having_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having int,
     AC_parent_AC_child_PAT_having_ID int,
@@ -4103,6 +4190,7 @@ CREATE OR REPLACE FUNCTION ties.rAC_parent_AC_child_PAT_having (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having int,
     AC_parent_AC_child_PAT_having_ID int,
@@ -4145,6 +4233,7 @@ CREATE OR REPLACE FUNCTION ties.fAC_parent_AC_child_PAT_having (
     positor tinyint,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having int,
     AC_parent_AC_child_PAT_having_ID int,
@@ -4186,6 +4275,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_ID_content number(10,0), 
@@ -4210,6 +4300,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.fPR_content_ST_location_EV_of_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_ID_content number(10,0), 
@@ -4234,6 +4325,7 @@ $$
 CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of int,
     PR_content_ST_location_EV_of_ID int,
@@ -4262,6 +4354,7 @@ CREATE OR REPLACE FUNCTION ties.rPR_content_ST_location_EV_of (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of int,
     PR_content_ST_location_EV_of_ID int,
@@ -4307,6 +4400,7 @@ CREATE OR REPLACE FUNCTION ties.fPR_content_ST_location_EV_of (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of int,
     PR_content_ST_location_EV_of_ID int,
@@ -4359,6 +4453,7 @@ CREATE OR REPLACE FUNCTION anchors.tST_Stage (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST int,
@@ -4546,7 +4641,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lST_Stage AS
+CREATE OR REPLACE VIEW anchors.lST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -4566,6 +4661,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -4662,7 +4758,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nST_Stage AS
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -4684,6 +4780,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -4816,6 +4913,7 @@ CREATE OR REPLACE FUNCTION anchors.tAC_Actor (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC int,
@@ -4969,7 +5067,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lAC_Actor AS
+CREATE OR REPLACE VIEW anchors.lAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -4989,6 +5087,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -5073,7 +5172,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nAC_Actor AS
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -5095,6 +5194,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -5215,6 +5315,7 @@ CREATE OR REPLACE FUNCTION anchors.tPR_Program (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR int,
@@ -5307,7 +5408,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lPR_Program AS
+CREATE OR REPLACE VIEW anchors.lPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -5327,6 +5428,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -5383,7 +5485,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nPR_Program AS
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) as Reliability,
@@ -5405,6 +5507,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -5490,6 +5593,7 @@ CREATE OR REPLACE FUNCTION nexuses.tEV_Event (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_ID numeric(12,0),
     Metadata_EV int,
@@ -5765,7 +5869,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.lEV_Event AS
+CREATE OR REPLACE VIEW nexuses.lEV_Event COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -5785,6 +5889,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION nexuses.pEV_Event (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -5921,7 +6026,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW nexuses.nEV_Event AS
+CREATE OR REPLACE VIEW nexuses.nEV_Event COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -5943,6 +6048,7 @@ CREATE OR REPLACE FUNCTION nexuses.dEV_Event (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -6119,6 +6225,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_partner_AC_with_ONG_currently (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_partner_AC_with_ONG_currently int,
     AC_ID_partner smallint,
@@ -6162,7 +6269,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.lAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6182,6 +6289,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_partner_AC_with_ONG_currently (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6226,7 +6334,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently AS
+CREATE OR REPLACE VIEW ties.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6247,6 +6355,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_partner_AC_with_ONG_currently (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -6308,6 +6417,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_subset_PN_of (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_subset_PN_of int,
     AC_ID_subset smallint,
@@ -6338,7 +6448,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.lAC_subset_PN_of COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6358,6 +6468,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_subset_PN_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6394,7 +6505,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_subset_PN_of AS
+CREATE OR REPLACE VIEW ties.nAC_subset_PN_of COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6417,6 +6528,7 @@ CREATE OR REPLACE FUNCTION ties.tEV_in_AC_wasCast (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_EV_in_AC_wasCast int,
     EV_ID_in numeric(12,0),
@@ -6447,7 +6559,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.lEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6467,6 +6579,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pEV_in_AC_wasCast (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6503,7 +6616,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast AS
+CREATE OR REPLACE VIEW ties.nEV_in_AC_wasCast COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6526,6 +6639,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_part_PR_in_RAT_got (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_part_PR_in_RAT_got int,
     AC_ID_part smallint,
@@ -6571,7 +6685,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.lAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6591,6 +6705,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_part_PR_in_RAT_got (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6637,7 +6752,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got AS
+CREATE OR REPLACE VIEW ties.nAC_part_PR_in_RAT_got COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6658,6 +6773,7 @@ CREATE OR REPLACE FUNCTION ties.dAC_part_PR_in_RAT_got (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -6721,6 +6837,7 @@ CREATE OR REPLACE FUNCTION ties.tST_at_PR_isPlaying (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ST_at_PR_isPlaying int,
     ST_ID_at int,
@@ -6754,7 +6871,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.lST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6774,6 +6891,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pST_at_PR_isPlaying (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6812,7 +6930,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying AS
+CREATE OR REPLACE VIEW ties.nST_at_PR_isPlaying COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6833,6 +6951,7 @@ CREATE OR REPLACE FUNCTION ties.dST_at_PR_isPlaying (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),
@@ -6888,6 +7007,7 @@ CREATE OR REPLACE FUNCTION ties.tAC_parent_AC_child_PAT_having (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_AC_parent_AC_child_PAT_having int,
     AC_ID_parent smallint,
@@ -6928,7 +7048,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.lAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -6948,6 +7068,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pAC_parent_AC_child_PAT_having (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -6990,7 +7111,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having AS
+CREATE OR REPLACE VIEW ties.nAC_parent_AC_child_PAT_having COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -7013,6 +7134,7 @@ CREATE OR REPLACE FUNCTION ties.tPR_content_ST_location_EV_of (
     positingTimepoint datetime,
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PR_content_ST_location_EV_of int,
     PR_ID_content number(10,0),
@@ -7048,7 +7170,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.lPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -7068,6 +7190,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION ties.pPR_content_ST_location_EV_of (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     Reliability decimal(5,2),
@@ -7108,7 +7231,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of AS
+CREATE OR REPLACE VIEW ties.nPR_content_ST_location_EV_of COPY GRANTS AS
 SELECT
     p.Positor,
     cast(null as decimal(5,2)) AS Reliability,
@@ -7129,6 +7252,7 @@ CREATE OR REPLACE FUNCTION ties.dPR_content_ST_location_EV_of (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Positor tinyint,
     inspectedTimepoint timestamp_ntz(9),

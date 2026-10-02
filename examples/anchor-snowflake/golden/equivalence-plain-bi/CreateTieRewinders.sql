@@ -5,6 +5,7 @@
 CREATE OR REPLACE FUNCTION public.rAC_partner_AC_with_ONG_currently_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner int, 
@@ -29,6 +30,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fAC_partner_AC_with_ONG_currently_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner int, 
@@ -53,6 +55,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_partner_AC_with_ONG_currently_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_partner_AC_with_ONG_currently_PositedAt datetime,
@@ -74,6 +77,7 @@ CREATE OR REPLACE FUNCTION public.rAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner int, 
@@ -110,6 +114,7 @@ CREATE OR REPLACE FUNCTION public.fAC_partner_AC_with_ONG_currently (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_partner_AC_with_ONG_currently_ID int,
     AC_ID_partner int, 
@@ -145,6 +150,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_subset_PN_of_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID int,
     AC_subset_PN_of_PositedAt datetime,
@@ -165,6 +171,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_subset_PN_of (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID int,
     AC_ID_subset int, 
@@ -196,6 +203,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fAC_subset_PN_of (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_subset_PN_of_ID int,
     AC_ID_subset int, 
@@ -227,6 +235,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rEV_in_AC_wasCast_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID int,
     EV_in_AC_wasCast_PositedAt datetime,
@@ -247,6 +256,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rEV_in_AC_wasCast (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID int,
     EV_ID_in int, 
@@ -278,6 +288,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fEV_in_AC_wasCast (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     EV_in_AC_wasCast_ID int,
     EV_ID_in int, 
@@ -309,6 +320,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_part_PR_in_RAT_got_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part int, 
@@ -333,6 +345,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fAC_part_PR_in_RAT_got_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part int, 
@@ -357,6 +370,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_part_PR_in_RAT_got_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_part_PR_in_RAT_got_PositedAt datetime,
@@ -378,6 +392,7 @@ CREATE OR REPLACE FUNCTION public.rAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part int, 
@@ -414,6 +429,7 @@ CREATE OR REPLACE FUNCTION public.fAC_part_PR_in_RAT_got (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_part_PR_in_RAT_got_ID int,
     AC_ID_part int, 
@@ -449,6 +465,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rST_at_PR_isPlaying_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -471,6 +488,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fST_at_PR_isPlaying_Posit (
     changingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -493,6 +511,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rST_at_PR_isPlaying_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_at_PR_isPlaying_PositedAt datetime,
@@ -514,6 +533,7 @@ CREATE OR REPLACE FUNCTION public.rST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -548,6 +568,7 @@ CREATE OR REPLACE FUNCTION public.fST_at_PR_isPlaying (
     changingTimepoint datetime,
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_at_PR_isPlaying_ID int,
     ST_ID_at int, 
@@ -581,6 +602,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_parent_AC_child_PAT_having_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID int,
     AC_parent_AC_child_PAT_having_PositedAt datetime,
@@ -601,6 +623,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rAC_parent_AC_child_PAT_having (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID int,
     AC_ID_parent int, 
@@ -634,6 +657,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fAC_parent_AC_child_PAT_having (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_parent_AC_child_PAT_having_ID int,
     AC_ID_parent int, 
@@ -667,6 +691,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rPR_content_ST_location_EV_of_Annex (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_content_ST_location_EV_of_PositedAt datetime,
@@ -687,6 +712,7 @@ $$
 CREATE OR REPLACE FUNCTION public.rPR_content_ST_location_EV_of (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_ID_content int, 
@@ -720,6 +746,7 @@ $$
 CREATE OR REPLACE FUNCTION public.fPR_content_ST_location_EV_of (
     positingTimepoint datetime
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_content_ST_location_EV_of_ID int,
     PR_ID_content int, 

@@ -14,7 +14,7 @@ CREATE OR REPLACE VIEW knots.PAT_ParentalType (
     PAT_ID,
     PAT_EQ,
     PAT_ParentalType COMMENT 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
-) COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
+) COPY GRANTS COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
 AS
 SELECT
     v.Metadata_PAT,
@@ -31,6 +31,7 @@ ON
 CREATE OR REPLACE FUNCTION knots.ePAT_ParentalType (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PAT int,
     PAT_ID tinyint,
@@ -59,7 +60,7 @@ CREATE OR REPLACE VIEW knots.PLV_ProfessionalLevel (
     PLV_EQ,
     PLV_Checksum,
     PLV_ProfessionalLevel COMMENT 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.'
-) COMMENT = 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.'
+) COPY GRANTS COMMENT = 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.'
 AS
 SELECT
     v.Metadata_PLV,
@@ -77,6 +78,7 @@ ON
 CREATE OR REPLACE FUNCTION knots.ePLV_ProfessionalLevel (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_PLV int,
     PLV_ID tinyint,
@@ -106,7 +108,7 @@ CREATE OR REPLACE VIEW knots.ONG_Ongoing (
     ONG_ID,
     ONG_EQ,
     ONG_Ongoing COMMENT 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
-) COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
+) COPY GRANTS COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
 AS
 SELECT
     v.Metadata_ONG,
@@ -123,6 +125,7 @@ ON
 CREATE OR REPLACE FUNCTION knots.eONG_Ongoing (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ONG int,
     ONG_ID tinyint,
@@ -151,7 +154,7 @@ CREATE OR REPLACE VIEW knots.RAT_Rating (
     RAT_EQ,
     RAT_Checksum,
     RAT_Rating COMMENT 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
-) COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
+) COPY GRANTS COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
 AS
 SELECT
     v.Metadata_RAT,
@@ -169,6 +172,7 @@ ON
 CREATE OR REPLACE FUNCTION knots.eRAT_Rating (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_RAT int,
     RAT_ID tinyint,
@@ -199,7 +203,7 @@ CREATE OR REPLACE VIEW knots.ETY_EventType (
     ETY_EQ,
     ETY_Checksum,
     ETY_EventType
-) 
+) COPY GRANTS 
 AS
 SELECT
     v.Metadata_ETY,
@@ -217,6 +221,7 @@ ON
 CREATE OR REPLACE FUNCTION knots.eETY_EventType (
     equivalent tinyint
 )
+COPY GRANTS
 RETURNS TABLE (
     Metadata_ETY int,
     ETY_ID tinyint,

@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION anchors.tST_Stage (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     ST_ID int,
     Metadata_ST bigint,
@@ -205,7 +206,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lST_Stage AS
+CREATE OR REPLACE VIEW anchors.lST_Stage COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -225,6 +226,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pST_Stage (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -329,7 +331,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nST_Stage AS
+CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -351,6 +353,7 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
@@ -491,6 +494,7 @@ CREATE OR REPLACE FUNCTION anchors.tAC_Actor (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     AC_ID smallint,
     Metadata_AC bigint,
@@ -650,7 +654,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lAC_Actor AS
+CREATE OR REPLACE VIEW anchors.lAC_Actor COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -670,6 +674,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -760,7 +765,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nAC_Actor AS
+CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -782,6 +787,7 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
@@ -908,6 +914,7 @@ CREATE OR REPLACE FUNCTION anchors.tPR_Program (
     positingTimepoint timestamp_ntz(3),
     assertion string
 )
+COPY GRANTS
 RETURNS TABLE (
     PR_ID number(10,0),
     Metadata_PR bigint,
@@ -1004,7 +1011,7 @@ $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.lPR_Program AS
+CREATE OR REPLACE VIEW anchors.lPR_Program COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -1024,6 +1031,7 @@ CROSS JOIN LATERAL
 CREATE OR REPLACE FUNCTION anchors.pPR_Program (
     changingTimepoint timestamp_ntz(9)
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     Confidence decimal(7,3),
@@ -1084,7 +1092,7 @@ $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW anchors.nPR_Program AS
+CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS AS
 SELECT
     p.Who,
     cast(null as decimal(7,3)) as Confidence,
@@ -1106,6 +1114,7 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
     intervalEnd timestamp_ntz(9),
     selection string
 )
+COPY GRANTS
 RETURNS TABLE (
     Who smallint,
     inspectedTimepoint timestamp_ntz(9),
