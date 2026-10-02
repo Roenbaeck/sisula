@@ -9,7 +9,7 @@
     There is no Snowflake on the development machine, so this is the stand-in.
 
     Usage:
-      lint-sql.ps1 [-Variant <name>,...] [-Show <n>]      lints golden/<name>/_full.sql, every model by default
+      lint-sql.ps1 [-Variant <name>,...] [-Show <n>]      lints golden/<name>/_full.sql, every model but handwritten* by default
       lint-sql.ps1 -Path <file.sql>                       lints one file
     Exits 1 if anything is found.
 #>
@@ -64,6 +64,28 @@ function Test-Sql([string] $text) {
         if ($head -notmatch 'COPY GRANTS') { $found.Add("line $($i + 1): a $kind that is replaced without COPY GRANTS: [$($lines[$i])]") }
         elseif ($kind -eq 'VIEW' -and $head -match 'COMMENT\s*=.*COPY GRANTS') { $found.Add("line $($i + 1): COPY GRANTS after COMMENT in a view: [$($lines[$i])]") }
     }
+    # every table, view, function and sequence that the script refers to as schema.name must be created by it
+    $created = @{}; $schemas = @{}
+    foreach ($l in $code) {
+        if ($l -match '^CREATE (?:OR REPLACE )?(?:TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
+            $created[($Matches[1] + '.' + $Matches[2]).ToLower()] = $true; $schemas[$Matches[1].ToLower()] = $true
+        }
+    }
+    $missing = [ordered]@{}
+    for ($i = 0; $i -lt $code.Count; $i++) {
+        foreach ($m in [regex]::Matches($code[$i], '\b(\w+)\.(\w+)\b')) {
+            $schema = $m.Groups[1].Value.ToLower()
+            if (-not $schemas.ContainsKey($schema)) { continue }
+            $name = $schema + '.' + $m.Groups[2].Value.ToLower()
+            if (-not $created.ContainsKey($name)) {
+                if (-not $missing.Contains($name)) { $missing[$name] = @{ Line = $i + 1; Count = 0; Text = $lines[$i] } }
+                $missing[$name].Count++
+            }
+        }
+    }
+    foreach ($name in $missing.Keys) {
+        $found.Add("line $($missing[$name].Line): refers to $name ($($missing[$name].Count) times), which the script never creates: [$($missing[$name].Text.Trim())]")
+    }
     $joined = ($code -join "`n")
     $open = ([regex]::Matches($joined, '\(')).Count; $close = ([regex]::Matches($joined, '\)')).Count
     if ($open -ne $close) { $found.Add("unbalanced parentheses: $open open, $close close") }
@@ -72,7 +94,8 @@ function Test-Sql([string] $text) {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } }
+    # handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
 }

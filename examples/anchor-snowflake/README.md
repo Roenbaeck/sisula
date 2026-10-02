@@ -10,7 +10,7 @@ Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with t
 original engine, and the tools that compare. Anchor's `Snowflake_*.legacy.directive` and the
 original `.js` sisulets are kept for as long as the golden files are made from them.
 
-The port is complete for what the modeler generates: 13 templates for uni, 10 for bi and 11 for crt
+The port is complete for what the modeler generates: 13 templates for uni, 11 for bi and 12 for crt
 (bi and crt share uni's `AddDescriptions`). For every model in `models/` the output is
 **byte-identical** to the original engine's, checked these ways:
 

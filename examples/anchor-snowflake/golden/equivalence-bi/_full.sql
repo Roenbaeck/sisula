@@ -417,7 +417,7 @@ CREATE TABLE IF NOT EXISTS public.AC_GEN_Actor_Gender_Posit (
     ) references public.AC_Actor(AC_ID) RELY,
     constraint fk_K_AC_GEN_Actor_Gender_Posit foreign key (
         AC_GEN_GEN_ID
-    ) references public.GEN_Gender_ID(GEN_ID) RELY,
+    ) references public.GEN_Gender(GEN_ID) RELY,
     constraint pkAC_GEN_Actor_Gender_Posit primary key (
         AC_GEN_ID
     ) RELY,
@@ -530,6 +530,199 @@ CREATE TABLE IF NOT EXISTS public.PR_LEN_Program_Length_Annex (
         PR_LEN_PositedAt
     ) RELY
 ) CLUSTER BY (PR_LEN_ID, PR_LEN_PositedAt);
+-- ATTRIBUTE ASSEMBLED VIEWS ------------------------------------------------------------------------------------------
+--
+-- The assembled view of an attribute combines its posit and annex tables. It has the name that the
+-- attribute table has in uni-temporal modeling, and the difference perspectives read it.
+--
+CREATE OR REPLACE VIEW public.EV_DAT_Event_Date COPY GRANTS AS
+SELECT
+    a.Metadata_EV_DAT,
+    p.EV_DAT_ID,
+    p.EV_DAT_EV_ID,
+    p.EV_DAT_Event_Date,
+    a.EV_DAT_PositedAt,
+    a.EV_DAT_Reliability
+FROM
+    public.EV_DAT_Event_Date_Posit p
+JOIN
+    public.EV_DAT_Event_Date_Annex a
+ON
+    a.EV_DAT_ID = p.EV_DAT_ID
+;
+CREATE OR REPLACE VIEW public.EV_AUD_Event_Audience COPY GRANTS AS
+SELECT
+    a.Metadata_EV_AUD,
+    p.EV_AUD_ID,
+    p.EV_AUD_EV_ID,
+    p.EV_AUD_Event_Audience,
+    a.EV_AUD_PositedAt,
+    a.EV_AUD_Reliability
+FROM
+    public.EV_AUD_Event_Audience_Posit p
+JOIN
+    public.EV_AUD_Event_Audience_Annex a
+ON
+    a.EV_AUD_ID = p.EV_AUD_ID
+;
+CREATE OR REPLACE VIEW public.EV_REV_Event_Revenue COPY GRANTS AS
+SELECT
+    a.Metadata_EV_REV,
+    p.EV_REV_ID,
+    p.EV_REV_EV_ID,
+    p.EV_REV_Event_Revenue,
+    a.EV_REV_PositedAt,
+    a.EV_REV_Reliability
+FROM
+    public.EV_REV_Event_Revenue_Posit p
+JOIN
+    public.EV_REV_Event_Revenue_Annex a
+ON
+    a.EV_REV_ID = p.EV_REV_ID
+;
+CREATE OR REPLACE VIEW public.ST_NAM_Stage_Name COPY GRANTS AS
+SELECT
+    a.Metadata_ST_NAM,
+    p.ST_NAM_ID,
+    p.ST_NAM_ST_ID,
+    p.ST_NAM_Checksum,
+    p.ST_NAM_Stage_Name,
+    p.ST_NAM_ChangedAt,
+    a.ST_NAM_PositedAt,
+    a.ST_NAM_Reliability
+FROM
+    public.ST_NAM_Stage_Name_Posit p
+JOIN
+    public.ST_NAM_Stage_Name_Annex a
+ON
+    a.ST_NAM_ID = p.ST_NAM_ID
+;
+CREATE OR REPLACE VIEW public.ST_LOC_Stage_Location COPY GRANTS AS
+SELECT
+    a.Metadata_ST_LOC,
+    p.ST_LOC_ID,
+    p.ST_LOC_ST_ID,
+    p.ST_LOC_Checksum,
+    p.ST_LOC_Stage_Location,
+    a.ST_LOC_PositedAt,
+    a.ST_LOC_Reliability
+FROM
+    public.ST_LOC_Stage_Location_Posit p
+JOIN
+    public.ST_LOC_Stage_Location_Annex a
+ON
+    a.ST_LOC_ID = p.ST_LOC_ID
+;
+CREATE OR REPLACE VIEW public.ST_AVG_Stage_Average COPY GRANTS AS
+SELECT
+    a.Metadata_ST_AVG,
+    p.ST_AVG_ID,
+    p.ST_AVG_ST_ID,
+    p.ST_AVG_UTL_ID,
+    p.ST_AVG_ChangedAt,
+    a.ST_AVG_PositedAt,
+    a.ST_AVG_Reliability
+FROM
+    public.ST_AVG_Stage_Average_Posit p
+JOIN
+    public.ST_AVG_Stage_Average_Annex a
+ON
+    a.ST_AVG_ID = p.ST_AVG_ID
+;
+CREATE OR REPLACE VIEW public.ST_MIN_Stage_Minimum COPY GRANTS AS
+SELECT
+    a.Metadata_ST_MIN,
+    p.ST_MIN_ID,
+    p.ST_MIN_ST_ID,
+    p.ST_MIN_UTL_ID,
+    a.ST_MIN_PositedAt,
+    a.ST_MIN_Reliability
+FROM
+    public.ST_MIN_Stage_Minimum_Posit p
+JOIN
+    public.ST_MIN_Stage_Minimum_Annex a
+ON
+    a.ST_MIN_ID = p.ST_MIN_ID
+;
+CREATE OR REPLACE VIEW public.AC_NAM_Actor_Name COPY GRANTS AS
+SELECT
+    a.Metadata_AC_NAM,
+    p.AC_NAM_ID,
+    p.AC_NAM_AC_ID,
+    p.AC_NAM_Checksum,
+    p.AC_NAM_Actor_Name,
+    p.AC_NAM_ChangedAt,
+    a.AC_NAM_PositedAt,
+    a.AC_NAM_Reliability
+FROM
+    public.AC_NAM_Actor_Name_Posit p
+JOIN
+    public.AC_NAM_Actor_Name_Annex a
+ON
+    a.AC_NAM_ID = p.AC_NAM_ID
+;
+CREATE OR REPLACE VIEW public.AC_GEN_Actor_Gender COPY GRANTS AS
+SELECT
+    a.Metadata_AC_GEN,
+    p.AC_GEN_ID,
+    p.AC_GEN_AC_ID,
+    p.AC_GEN_GEN_ID,
+    a.AC_GEN_PositedAt,
+    a.AC_GEN_Reliability
+FROM
+    public.AC_GEN_Actor_Gender_Posit p
+JOIN
+    public.AC_GEN_Actor_Gender_Annex a
+ON
+    a.AC_GEN_ID = p.AC_GEN_ID
+;
+CREATE OR REPLACE VIEW public.AC_PLV_Actor_ProfessionalLevel COPY GRANTS AS
+SELECT
+    a.Metadata_AC_PLV,
+    p.AC_PLV_ID,
+    p.AC_PLV_AC_ID,
+    p.AC_PLV_PLV_ID,
+    p.AC_PLV_ChangedAt,
+    a.AC_PLV_PositedAt,
+    a.AC_PLV_Reliability
+FROM
+    public.AC_PLV_Actor_ProfessionalLevel_Posit p
+JOIN
+    public.AC_PLV_Actor_ProfessionalLevel_Annex a
+ON
+    a.AC_PLV_ID = p.AC_PLV_ID
+;
+CREATE OR REPLACE VIEW public.PR_NAM_Program_Name COPY GRANTS AS
+SELECT
+    a.Metadata_PR_NAM,
+    p.PR_NAM_ID,
+    p.PR_NAM_PR_ID,
+    p.PR_NAM_Program_Name,
+    a.PR_NAM_PositedAt,
+    a.PR_NAM_Reliability
+FROM
+    public.PR_NAM_Program_Name_Posit p
+JOIN
+    public.PR_NAM_Program_Name_Annex a
+ON
+    a.PR_NAM_ID = p.PR_NAM_ID
+;
+CREATE OR REPLACE VIEW public.PR_LEN_Program_Length COPY GRANTS AS
+SELECT
+    a.Metadata_PR_LEN,
+    p.PR_LEN_ID,
+    p.PR_LEN_PR_ID,
+    p.PR_LEN_Program_Length,
+    p.PR_LEN_ChangedAt,
+    a.PR_LEN_PositedAt,
+    a.PR_LEN_Reliability
+FROM
+    public.PR_LEN_Program_Length_Posit p
+JOIN
+    public.PR_LEN_Program_Length_Annex a
+ON
+    a.PR_LEN_ID = p.PR_LEN_ID
+;
 -- ATTRIBUTE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------
 --
 -- BI rewinders over changing and positing time.
@@ -3113,7 +3306,7 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
     ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_partner_AC_with_ONG_currently_Posit_fkONG_currently foreign key (
         ONG_ID_currently
-    ) references public.ONG_Ongoing_ID(ONG_ID) RELY,
+    ) references public.ONG_Ongoing(ONG_ID) RELY,
     constraint AC_partner_AC_with_ONG_currently_Posit_uqAC_partner unique (
         AC_ID_partner,
         AC_partner_AC_with_ONG_currently_ChangedAt
@@ -3233,7 +3426,7 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Posit (
     ) references public.PR_Program(PR_ID) RELY, 
     constraint AC_part_PR_in_RAT_got_Posit_fkRAT_got foreign key (
         RAT_ID_got
-    ) references public.RAT_Rating_ID(RAT_ID) RELY,
+    ) references public.RAT_Rating(RAT_ID) RELY,
     constraint pkAC_part_PR_in_RAT_got_Posit primary key (
         AC_part_PR_in_RAT_got_ID
     ) RELY,
@@ -3311,7 +3504,7 @@ CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Posit (
     ) references public.AC_Actor(AC_ID) RELY, 
     constraint AC_parent_AC_child_PAT_having_Posit_fkPAT_having foreign key (
         PAT_ID_having
-    ) references public.PAT_ParentalType_ID(PAT_ID) RELY,
+    ) references public.PAT_ParentalType(PAT_ID) RELY,
     constraint pkAC_parent_AC_child_PAT_having_Posit primary key (
         AC_parent_AC_child_PAT_having_ID
     ) RELY,
@@ -5041,14 +5234,18 @@ FROM
 -- created, since Snowflake does not allow comments on view columns to be added afterwards.
 --
 COMMENT ON SCHEMA public IS 'Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.';
-COMMENT ON TABLE public.PAT_ParentalType_ID IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
-COMMENT ON TABLE public.GEN_Gender_ID IS 'Gender of an actor.';
+COMMENT ON TABLE public.PAT_ParentalType IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON COLUMN public.PAT_ParentalType.PAT_ParentalType IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON TABLE public.GEN_Gender IS 'Gender of an actor.';
+COMMENT ON COLUMN public.GEN_Gender.GEN_Gender IS 'Gender of an actor.';
 COMMENT ON TABLE public.PLV_ProfessionalLevel IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
 COMMENT ON COLUMN public.PLV_ProfessionalLevel.PLV_ProfessionalLevel IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
 COMMENT ON TABLE public.UTL_Utilization IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
 COMMENT ON COLUMN public.UTL_Utilization.UTL_Utilization IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
-COMMENT ON TABLE public.ONG_Ongoing_ID IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
-COMMENT ON TABLE public.RAT_Rating_ID IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON TABLE public.ONG_Ongoing IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
+COMMENT ON COLUMN public.ONG_Ongoing.ONG_Ongoing IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
+COMMENT ON TABLE public.RAT_Rating IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON COLUMN public.RAT_Rating.RAT_Rating IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
 COMMENT ON TABLE public.ETY_EventType IS 'Type of event, such as premiere, regular performance, rehearsal or gala.';
 COMMENT ON COLUMN public.ETY_EventType.ETY_EventType IS 'Type of event, such as premiere, regular performance, rehearsal or gala.';
 COMMENT ON COLUMN public.EV_DAT_Event_Date_Posit.EV_DAT_Event_Date IS 'Date and time when the event took place.';
