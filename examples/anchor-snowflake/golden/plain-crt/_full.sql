@@ -175,8 +175,9 @@ CREATE TABLE IF NOT EXISTS public.PR_Program (
 -- Nexus table --------------------------------------------------------------------------------------------------------
 -- EV_Event table (with 3 attributes and 3 roles)
 -----------------------------------------------------------------------------------------------------------------------
+CREATE SEQUENCE IF NOT EXISTS public.EV_Event_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.EV_Event (
-    EV_ID int IDENTITY(1,1) not null, 
+    EV_ID int default public.EV_Event_ID_SEQ.nextval not null, 
     ST_ID_wasHeldAt int not null, 
     PR_ID_wasPlayed int not null, 
     ETY_ID_of tinyint not null,
