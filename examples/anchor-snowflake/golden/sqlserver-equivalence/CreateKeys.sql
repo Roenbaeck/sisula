@@ -345,7 +345,7 @@ IF Object_ID('dbo.EV_Event_1st', 'U') IS NOT NULL
 DROP TABLE [dbo].[EV_Event_1st];
 GO
 CREATE TABLE [dbo].[EV_Event_1st](
-    EV_ID NOT NULL,
+    EV_ID int NOT NULL,
     ST_LOC_Stage_Location geography NULL,
     PR_NAM_Program_Name nvarchar(42) NULL,
     EVschema.metadata.equivalentSuffix tinyint NOT NULL,

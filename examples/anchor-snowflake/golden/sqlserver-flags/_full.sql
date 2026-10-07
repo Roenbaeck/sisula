@@ -1234,7 +1234,7 @@ IF Object_ID('nexuses.EV_Event_1st', 'U') IS NOT NULL
 DROP TABLE [nexuses].[EV_Event_1st];
 GO
 CREATE TABLE [nexuses].[EV_Event_1st](
-    EV_ID NOT NULL,
+    EV_ID numeric(12,0) NOT NULL,
     ST_LOC_Stage_Location geography NULL,
     PR_NAM_Program_Name nvarchar(42) NULL,
     EVschema.metadata.equivalentSuffix tinyint NOT NULL,
@@ -4387,7 +4387,7 @@ SELECT
     [ETY_of].ETY_EventType AS of_ETY_EventType,
     [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_Event_Date,
@@ -4491,7 +4491,7 @@ SELECT
     [ETY_of].ETY_EventType AS of_ETY_EventType,
     [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_Event_Date,
@@ -4753,7 +4753,7 @@ SELECT
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].of_ETY_EventType AS [of_EventType]
+    [EV].of_ETY_EventType AS [of_EventType],
     [EV].EV_DAT_Event_Date as [Date],
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
@@ -4775,7 +4775,7 @@ SELECT
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].of_ETY_EventType AS [of_EventType]
+    [EV].of_ETY_EventType AS [of_EventType],
     [EV].EV_DAT_Event_Date as [Date],
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],

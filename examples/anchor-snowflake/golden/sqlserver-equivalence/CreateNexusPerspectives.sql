@@ -173,7 +173,7 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_EQ,
@@ -219,7 +219,7 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_EQ,

@@ -320,7 +320,7 @@ SELECT
     [ETY_of].ETY_EventType AS ETY_EventType,
     [ETY_of].ETY_EQ AS ETY_EQ,
     [ETY_of].Metadata_ETY AS Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_Event_Date,
     [AUD].Metadata_EV_AUD,
@@ -418,7 +418,7 @@ SELECT
     [ETY_of].ETY_EventType AS ETY_EventType,
     [ETY_of].ETY_EQ AS ETY_EQ,
     [ETY_of].Metadata_ETY AS Metadata_ETY,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].Metadata_EV_DAT,
     [DAT].EV_DAT_Event_Date,
     [AUD].Metadata_EV_AUD,

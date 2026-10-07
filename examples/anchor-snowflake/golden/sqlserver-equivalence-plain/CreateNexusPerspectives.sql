@@ -161,7 +161,7 @@ SELECT
     [EV].ST_ID_wasHeldAt,
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].EV_DAT_EQ,
     [DAT].EV_DAT_Event_Date,
@@ -202,7 +202,7 @@ SELECT
     [EV].ST_ID_wasHeldAt,
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [EV].ETY_ID_of
+    [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
     [DAT].EV_DAT_EQ,
     [DAT].EV_DAT_Event_Date,

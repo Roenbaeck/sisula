@@ -1098,7 +1098,7 @@ IF Object_ID('nexuses.EV_Event_1st', 'U') IS NOT NULL
 DROP TABLE [nexuses].[EV_Event_1st];
 GO
 CREATE TABLE [nexuses].[EV_Event_1st](
-    EV_ID NOT NULL,
+    EV_ID numeric(12,0) NOT NULL,
     ST_LOC_Stage_Location geography NULL,
     PR_NAM_Program_Name nvarchar(42) NULL,
     Metadata_EV bigint NOT NULL,

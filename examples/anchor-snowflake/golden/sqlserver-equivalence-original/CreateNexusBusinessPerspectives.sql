@@ -119,7 +119,7 @@ SELECT
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].ETY_EventType AS [of_EventType]
+    [EV].ETY_EventType AS [of_EventType],
     [EV].EV_DAT_Event_Date as [Date],
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
@@ -141,7 +141,7 @@ SELECT
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].ETY_EventType AS [of_EventType]
+    [EV].ETY_EventType AS [of_EventType],
     [EV].EV_DAT_Event_Date as [Date],
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
