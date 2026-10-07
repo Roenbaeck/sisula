@@ -25,6 +25,8 @@ these ways:
 | `tools\lint-sql.ps1` | the golden SQL, for defects that made generated Snowflake SQL invalid: nameless columns, a stray colon, missing or dangling commas, a table or function that is used but never created, a replaced function or view without `COPY GRANTS`, and constructs that Snowflake was found to reject. It cannot say that SQL is valid, only that these are absent | PowerShell |
 | `tools\regenerate-golden.ps1` | writes the golden files from the templates (`check.ps1 -Update`); they are approved output, so a change to a template shows in `git diff` and is read before it is committed | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
+| `tools\hosted-check.ps1` | the generator that runs in Snowflake (built by Anchor's `tools\build-snowflake-generator.ps1`), as far as it can run without Snowflake: the JavaScript of `ANCHOR_BINDINGS` and `SISULATE` under Jint, over the model XML as a user would paste it, against the golden files; also the temporalization argument and the error messages. The SQL around the JavaScript (the `CREATE`s, the table, the `LISTAGG`) is only run by Snowflake | an Anchor checkout |
+| `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
 the Anchor checkout next to this repository.
@@ -33,7 +35,7 @@ The engines run under the Jint in `../../lib`; there is no Node on the developme
 ## How it works
 
 ```
-model.xml --xml-to-tree--> neutral tree --dom-facade--> DOM
+model.xml --xml-to-tree--> neutral tree --DomFacade--> DOM
    DOM --Sisulator.objectify, then the scripts the directive starts with--> schema
    schema --Resolver.resolve--> bindings JSON --sisulate(template), in directive order--> SQL
 ```

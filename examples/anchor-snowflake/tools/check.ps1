@@ -78,7 +78,7 @@ $Name = @($Name | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $engine = New-Object Jint.Engine
 $engine.SetValue('host', (New-Object SisulaGoldenHost $Anchor)) | Out-Null
 $engine.Execute('var XPathResult;') | Out-Null
-$engine.Execute((Read-Text (Join-Path $here 'dom-facade.js'))) | Out-Null
+$engine.Execute((Read-Text (Join-Path $Anchor 'modules\DomFacade.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Map.js'))) | Out-Null
 # Anchor's own Sisulator.objectify and Resolver. The Sisulator also holds the original engine, whose
 # async/await Jint 2 cannot parse; it is not used here, so they are stripped.

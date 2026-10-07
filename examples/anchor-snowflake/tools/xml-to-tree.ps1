@@ -1,4 +1,4 @@
-# Converts an XML file to the neutral tree JSON that dom-facade.js consumes.
+# Converts an XML file to the neutral tree JSON that modules/DomFacade.js (in Anchor) consumes.
 # Whitespace-only text nodes are kept, as DOMParser keeps them, because the modeler's
 # objectify records text content and the generated SQL can depend on it.
 
