@@ -44,7 +44,7 @@ $engine = New-Object Jint.Engine
 $engine.Execute("function ANCHOR_BINDINGS(MODEL_XML, TEMPORALIZATION) {`n$bindingsBody`n}") | Out-Null
 $engine.Execute("function SISULATE(TEMPLATE, BINDINGS) {`n$sisulateBody`n}") | Out-Null
 
-if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } }
+if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^sqlserver' } }   # the generator in Snowflake is for Snowflake models
 $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $failed = 0
 

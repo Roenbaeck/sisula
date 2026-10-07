@@ -64,7 +64,7 @@ function Read-Directive([string] $path) {
 # naming conventions, derive.js) and then the templates, in the order to render. Once a
 # temporalization has been switched to the Sisula engine its directive has to list exactly these.
 $temporalization = Get-ModelTemporalization $Model
-try { $info = Get-DirectiveInfo $Anchor $temporalization }
+try { $info = Get-DirectiveInfo $Anchor $temporalization (Get-ModelDatabase $Model) }
 catch { Write-Host "FAIL  $($_.Exception.Message)"; exit 1 }
 $prelude = $info.Prelude
 $directive = @($info.Templates | ForEach-Object { $_.Name })
@@ -89,7 +89,7 @@ $engine.Execute((Read-Text (Join-Path $Anchor 'modules\sisula.js'))) | Out-Null
 
 # Resolve the model once, with the scripts that the directive starts with. Every template renders
 # against the same bindings.
-$engine.SetValue('treeJson', (Convert-XmlFileToTreeJson $Model)) | Out-Null
+$engine.SetValue('treeJson', (Convert-XmlFileToTreeJson $Model -WithSerialization)) | Out-Null
 $engine.SetValue('preludeNames', ($prelude -join '|')) | Out-Null
 $engine.Execute(@'
 var bindingsJson = JSON.stringify(resolveModel(
@@ -142,7 +142,7 @@ $failed = 0
 $outputs = New-Object System.Collections.Generic.List[string]
 foreach ($n in $Name) {
     $templatePath = $templatePaths[$n]
-    if (-not $templatePath) { $templatePath = Join-Path $Anchor "SQL\Snowflake\$temporalization\$n.sisula" }
+    if (-not $templatePath) { $templatePath = Join-Path $Anchor "SQL\$($info.Database)\$temporalization\$n.sisula" }
     if (-not (Test-Path $templatePath)) { Write-Host ("FAIL  {0}/{1}: no template" -f $Variant, $n); $failed++; $whole = $false; continue }
     $engine.SetValue('templateText', (Read-Text $templatePath)) | Out-Null
     try {

@@ -1,0 +1,1184 @@
+-- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each tie. There are four types of perspectives: latest,
+-- point-in-time, difference, and now.
+--
+-- The latest perspective shows the latest available information for each tie.
+-- The now perspective shows the information as it is right now.
+-- The point-in-time perspective lets you travel through the information to the given timepoint.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+--
+-- Under equivalence all these views default to equivalent = 0, however, corresponding
+-- prepended-e perspectives are provided in order to select a specific equivalent.
+--
+-- @equivalent the equivalent for which to retrieve data
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.enAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.epAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.elAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.dAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.nAC_partner_AC_with_ONG_currently', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.pAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.lAC_partner_AC_with_ONG_currently', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_partner_AC_with_ONG_currently];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_partner_AC_with_ONG_currently] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](0) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = (
+        SELECT
+            max(sub.AC_partner_AC_with_ONG_currently_ChangedAt)
+        FROM
+            [ties].[AC_partner_AC_with_ONG_currently] sub
+        WHERE
+            sub.AC_ID_partner = tie.AC_ID_partner
+        OR
+            sub.AC_ID_with = tie.AC_ID_with
+   );
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_partner_AC_with_ONG_currently] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](0) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = (
+        SELECT
+            max(sub.AC_partner_AC_with_ONG_currently_ChangedAt)
+        FROM
+            [ties].[AC_partner_AC_with_ONG_currently] sub
+        WHERE
+        (
+                sub.AC_ID_partner = tie.AC_ID_partner
+            OR
+                sub.AC_ID_with = tie.AC_ID_with
+        )
+        AND
+            sub.AC_partner_AC_with_ONG_currently_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_partner_AC_with_ONG_currently viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_partner_AC_with_ONG_currently]
+AS
+SELECT
+    *
+FROM
+    [ties].[pAC_partner_AC_with_ONG_currently](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dAC_partner_AC_with_ONG_currently showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dAC_partner_AC_with_ONG_currently] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](0) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elAC_partner_AC_with_ONG_currently] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](@equivalent) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = (
+        SELECT
+            max(sub.AC_partner_AC_with_ONG_currently_ChangedAt)
+        FROM
+            [ties].[AC_partner_AC_with_ONG_currently] sub
+        WHERE
+            sub.AC_ID_partner = tie.AC_ID_partner
+        OR
+            sub.AC_ID_with = tie.AC_ID_with
+   );
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epAC_partner_AC_with_ONG_currently] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](@equivalent) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = (
+        SELECT
+            max(sub.AC_partner_AC_with_ONG_currently_ChangedAt)
+        FROM
+            [ties].[AC_partner_AC_with_ONG_currently] sub
+        WHERE
+        (
+                sub.AC_ID_partner = tie.AC_ID_partner
+            OR
+                sub.AC_ID_with = tie.AC_ID_with
+        )
+        AND
+            sub.AC_partner_AC_with_ONG_currently_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enAC_partner_AC_with_ONG_currently viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enAC_partner_AC_with_ONG_currently] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epAC_partner_AC_with_ONG_currently](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- edAC_partner_AC_with_ONG_currently showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[edAC_partner_AC_with_ONG_currently] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS currently_ONG_Ongoing,
+    [ONG_currently].ONG_EQ AS currently_ONG_EQ,
+    [ONG_currently].Metadata_ONG AS currently_Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[eONG_Ongoing](@equivalent) [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edAC_subset_PN_of];
+IF Object_ID('ties.enAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enAC_subset_PN_of];
+IF Object_ID('ties.epAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epAC_subset_PN_of];
+IF Object_ID('ties.elAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elAC_subset_PN_of];
+IF Object_ID('ties.dAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_subset_PN_of];
+IF Object_ID('ties.nAC_subset_PN_of', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_subset_PN_of];
+IF Object_ID('ties.pAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_subset_PN_of];
+IF Object_ID('ties.lAC_subset_PN_of', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_subset_PN_of];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_subset_PN_of] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_AC_subset_PN_of,
+    tie.AC_ID_subset,
+    tie.PN_ID_of
+FROM
+    [ties].[AC_subset_PN_of] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_subset_PN_of] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_subset_PN_of,
+    tie.AC_ID_subset,
+    tie.PN_ID_of
+FROM
+    [ties].[AC_subset_PN_of] tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_subset_PN_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_subset_PN_of]
+AS
+SELECT
+    *
+FROM
+    [ties].[pAC_subset_PN_of](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elAC_subset_PN_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_subset_PN_of,
+    tie.AC_ID_subset,
+    tie.PN_ID_of
+FROM
+    [ties].[AC_subset_PN_of] tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epAC_subset_PN_of] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_subset_PN_of,
+    tie.AC_ID_subset,
+    tie.PN_ID_of
+FROM
+    [ties].[AC_subset_PN_of] tie;
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enAC_subset_PN_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enAC_subset_PN_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epAC_subset_PN_of](@equivalent, sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edEV_in_AC_wasCast];
+IF Object_ID('ties.enEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enEV_in_AC_wasCast];
+IF Object_ID('ties.epEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epEV_in_AC_wasCast];
+IF Object_ID('ties.elEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elEV_in_AC_wasCast];
+IF Object_ID('ties.dEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dEV_in_AC_wasCast];
+IF Object_ID('ties.nEV_in_AC_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[nEV_in_AC_wasCast];
+IF Object_ID('ties.pEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pEV_in_AC_wasCast];
+IF Object_ID('ties.lEV_in_AC_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[lEV_in_AC_wasCast];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lEV_in_AC_wasCast] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_EV_in_AC_wasCast,
+    tie.EV_ID_in,
+    tie.AC_ID_wasCast
+FROM
+    [ties].[EV_in_AC_wasCast] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pEV_in_AC_wasCast] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_EV_in_AC_wasCast,
+    tie.EV_ID_in,
+    tie.AC_ID_wasCast
+FROM
+    [ties].[EV_in_AC_wasCast] tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nEV_in_AC_wasCast viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nEV_in_AC_wasCast]
+AS
+SELECT
+    *
+FROM
+    [ties].[pEV_in_AC_wasCast](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elEV_in_AC_wasCast] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_EV_in_AC_wasCast,
+    tie.EV_ID_in,
+    tie.AC_ID_wasCast
+FROM
+    [ties].[EV_in_AC_wasCast] tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epEV_in_AC_wasCast] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_EV_in_AC_wasCast,
+    tie.EV_ID_in,
+    tie.AC_ID_wasCast
+FROM
+    [ties].[EV_in_AC_wasCast] tie;
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enEV_in_AC_wasCast viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enEV_in_AC_wasCast] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epEV_in_AC_wasCast](@equivalent, sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edAC_part_PR_in_RAT_got];
+IF Object_ID('ties.enAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enAC_part_PR_in_RAT_got];
+IF Object_ID('ties.epAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epAC_part_PR_in_RAT_got];
+IF Object_ID('ties.elAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elAC_part_PR_in_RAT_got];
+IF Object_ID('ties.dAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_part_PR_in_RAT_got];
+IF Object_ID('ties.nAC_part_PR_in_RAT_got', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_part_PR_in_RAT_got];
+IF Object_ID('ties.pAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_part_PR_in_RAT_got];
+IF Object_ID('ties.lAC_part_PR_in_RAT_got', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_part_PR_in_RAT_got];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_part_PR_in_RAT_got] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](0) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt = (
+        SELECT
+            max(sub.AC_part_PR_in_RAT_got_ChangedAt)
+        FROM
+            [ties].[AC_part_PR_in_RAT_got] sub
+        WHERE
+            sub.AC_ID_part = tie.AC_ID_part
+        AND
+            sub.PR_ID_in = tie.PR_ID_in
+   );
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_part_PR_in_RAT_got] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](0) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt = (
+        SELECT
+            max(sub.AC_part_PR_in_RAT_got_ChangedAt)
+        FROM
+            [ties].[AC_part_PR_in_RAT_got] sub
+        WHERE
+            sub.AC_ID_part = tie.AC_ID_part
+        AND
+            sub.PR_ID_in = tie.PR_ID_in
+        AND
+            sub.AC_part_PR_in_RAT_got_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_part_PR_in_RAT_got viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_part_PR_in_RAT_got]
+AS
+SELECT
+    *
+FROM
+    [ties].[pAC_part_PR_in_RAT_got](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dAC_part_PR_in_RAT_got showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dAC_part_PR_in_RAT_got] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](0) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elAC_part_PR_in_RAT_got] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](@equivalent) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt = (
+        SELECT
+            max(sub.AC_part_PR_in_RAT_got_ChangedAt)
+        FROM
+            [ties].[AC_part_PR_in_RAT_got] sub
+        WHERE
+            sub.AC_ID_part = tie.AC_ID_part
+        AND
+            sub.PR_ID_in = tie.PR_ID_in
+   );
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epAC_part_PR_in_RAT_got] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](@equivalent) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt = (
+        SELECT
+            max(sub.AC_part_PR_in_RAT_got_ChangedAt)
+        FROM
+            [ties].[AC_part_PR_in_RAT_got] sub
+        WHERE
+            sub.AC_ID_part = tie.AC_ID_part
+        AND
+            sub.PR_ID_in = tie.PR_ID_in
+        AND
+            sub.AC_part_PR_in_RAT_got_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enAC_part_PR_in_RAT_got viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enAC_part_PR_in_RAT_got] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epAC_part_PR_in_RAT_got](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- edAC_part_PR_in_RAT_got showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[edAC_part_PR_in_RAT_got] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Checksum AS got_RAT_Checksum,
+    [RAT_got].RAT_Rating AS got_RAT_Rating,
+    [RAT_got].RAT_EQ AS got_RAT_EQ,
+    [RAT_got].Metadata_RAT AS got_Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[eRAT_Rating](@equivalent) [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edST_at_PR_isPlaying];
+IF Object_ID('ties.enST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enST_at_PR_isPlaying];
+IF Object_ID('ties.epST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epST_at_PR_isPlaying];
+IF Object_ID('ties.elST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elST_at_PR_isPlaying];
+IF Object_ID('ties.dST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dST_at_PR_isPlaying];
+IF Object_ID('ties.nST_at_PR_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[nST_at_PR_isPlaying];
+IF Object_ID('ties.pST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pST_at_PR_isPlaying];
+IF Object_ID('ties.lST_at_PR_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[lST_at_PR_isPlaying];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lST_at_PR_isPlaying] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt = (
+        SELECT
+            max(sub.ST_at_PR_isPlaying_ChangedAt)
+        FROM
+            [ties].[ST_at_PR_isPlaying] sub
+        WHERE
+            sub.ST_ID_at = tie.ST_ID_at
+        AND
+            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
+   );
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pST_at_PR_isPlaying] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt = (
+        SELECT
+            max(sub.ST_at_PR_isPlaying_ChangedAt)
+        FROM
+            [ties].[ST_at_PR_isPlaying] sub
+        WHERE
+            sub.ST_ID_at = tie.ST_ID_at
+        AND
+            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
+        AND
+            sub.ST_at_PR_isPlaying_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nST_at_PR_isPlaying viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nST_at_PR_isPlaying]
+AS
+SELECT
+    *
+FROM
+    [ties].[pST_at_PR_isPlaying](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dST_at_PR_isPlaying showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dST_at_PR_isPlaying] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elST_at_PR_isPlaying] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt = (
+        SELECT
+            max(sub.ST_at_PR_isPlaying_ChangedAt)
+        FROM
+            [ties].[ST_at_PR_isPlaying] sub
+        WHERE
+            sub.ST_ID_at = tie.ST_ID_at
+        AND
+            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
+   );
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epST_at_PR_isPlaying] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt = (
+        SELECT
+            max(sub.ST_at_PR_isPlaying_ChangedAt)
+        FROM
+            [ties].[ST_at_PR_isPlaying] sub
+        WHERE
+            sub.ST_ID_at = tie.ST_ID_at
+        AND
+            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
+        AND
+            sub.ST_at_PR_isPlaying_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enST_at_PR_isPlaying viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enST_at_PR_isPlaying] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epST_at_PR_isPlaying](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- edST_at_PR_isPlaying showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[edST_at_PR_isPlaying] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.enAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.epAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.elAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.dAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.nAC_parent_AC_child_PAT_having', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.pAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.lAC_parent_AC_child_PAT_having', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_parent_AC_child_PAT_having];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_parent_AC_child_PAT_having] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_AC_parent_AC_child_PAT_having,
+    tie.AC_ID_parent,
+    tie.AC_ID_child,
+    [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
+    [PAT_having].PAT_EQ AS having_PAT_EQ,
+    [PAT_having].Metadata_PAT AS having_Metadata_PAT,
+    tie.PAT_ID_having
+FROM
+    [ties].[AC_parent_AC_child_PAT_having] tie
+LEFT JOIN
+    [knots].[ePAT_ParentalType](0) [PAT_having]
+ON
+    [PAT_having].PAT_ID = tie.PAT_ID_having;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_parent_AC_child_PAT_having] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_parent_AC_child_PAT_having,
+    tie.AC_ID_parent,
+    tie.AC_ID_child,
+    [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
+    [PAT_having].PAT_EQ AS having_PAT_EQ,
+    [PAT_having].Metadata_PAT AS having_Metadata_PAT,
+    tie.PAT_ID_having
+FROM
+    [ties].[AC_parent_AC_child_PAT_having] tie
+LEFT JOIN
+    [knots].[ePAT_ParentalType](0) [PAT_having]
+ON
+    [PAT_having].PAT_ID = tie.PAT_ID_having;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_parent_AC_child_PAT_having viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_parent_AC_child_PAT_having]
+AS
+SELECT
+    *
+FROM
+    [ties].[pAC_parent_AC_child_PAT_having](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elAC_parent_AC_child_PAT_having] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_parent_AC_child_PAT_having,
+    tie.AC_ID_parent,
+    tie.AC_ID_child,
+    [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
+    [PAT_having].PAT_EQ AS having_PAT_EQ,
+    [PAT_having].Metadata_PAT AS having_Metadata_PAT,
+    tie.PAT_ID_having
+FROM
+    [ties].[AC_parent_AC_child_PAT_having] tie
+LEFT JOIN
+    [knots].[ePAT_ParentalType](@equivalent) [PAT_having]
+ON
+    [PAT_having].PAT_ID = tie.PAT_ID_having;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epAC_parent_AC_child_PAT_having] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_AC_parent_AC_child_PAT_having,
+    tie.AC_ID_parent,
+    tie.AC_ID_child,
+    [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
+    [PAT_having].PAT_EQ AS having_PAT_EQ,
+    [PAT_having].Metadata_PAT AS having_Metadata_PAT,
+    tie.PAT_ID_having
+FROM
+    [ties].[AC_parent_AC_child_PAT_having] tie
+LEFT JOIN
+    [knots].[ePAT_ParentalType](@equivalent) [PAT_having]
+ON
+    [PAT_having].PAT_ID = tie.PAT_ID_having;
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enAC_parent_AC_child_PAT_having viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enAC_parent_AC_child_PAT_having] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epAC_parent_AC_child_PAT_having](@equivalent, sysdatetime());
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.edPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[edPR_content_ST_location_EV_of];
+IF Object_ID('ties.enPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[enPR_content_ST_location_EV_of];
+IF Object_ID('ties.epPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[epPR_content_ST_location_EV_of];
+IF Object_ID('ties.elPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[elPR_content_ST_location_EV_of];
+IF Object_ID('ties.dPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dPR_content_ST_location_EV_of];
+IF Object_ID('ties.nPR_content_ST_location_EV_of', 'V') IS NOT NULL
+DROP VIEW [ties].[nPR_content_ST_location_EV_of];
+IF Object_ID('ties.pPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pPR_content_ST_location_EV_of];
+IF Object_ID('ties.lPR_content_ST_location_EV_of', 'V') IS NOT NULL
+DROP VIEW [ties].[lPR_content_ST_location_EV_of];
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lPR_content_ST_location_EV_of] WITH SCHEMABINDING AS
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt = (
+        SELECT
+            max(sub.PR_content_ST_location_EV_of_ChangedAt)
+        FROM
+            [ties].[PR_content_ST_location_EV_of] sub
+        WHERE
+            sub.PR_ID_content = tie.PR_ID_content
+        OR
+            sub.ST_ID_location = tie.ST_ID_location
+   );
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pPR_content_ST_location_EV_of] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt = (
+        SELECT
+            max(sub.PR_content_ST_location_EV_of_ChangedAt)
+        FROM
+            [ties].[PR_content_ST_location_EV_of] sub
+        WHERE
+        (
+                sub.PR_ID_content = tie.PR_ID_content
+            OR
+                sub.ST_ID_location = tie.ST_ID_location
+        )
+        AND
+            sub.PR_content_ST_location_EV_of_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nPR_content_ST_location_EV_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nPR_content_ST_location_EV_of]
+AS
+SELECT
+    *
+FROM
+    [ties].[pPR_content_ST_location_EV_of](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dPR_content_ST_location_EV_of showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dPR_content_ST_location_EV_of] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- elPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[elPR_content_ST_location_EV_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt = (
+        SELECT
+            max(sub.PR_content_ST_location_EV_of_ChangedAt)
+        FROM
+            [ties].[PR_content_ST_location_EV_of] sub
+        WHERE
+            sub.PR_ID_content = tie.PR_ID_content
+        OR
+            sub.ST_ID_location = tie.ST_ID_location
+   );
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------------------
+-- epPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[epPR_content_ST_location_EV_of] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt = (
+        SELECT
+            max(sub.PR_content_ST_location_EV_of_ChangedAt)
+        FROM
+            [ties].[PR_content_ST_location_EV_of] sub
+        WHERE
+        (
+                sub.PR_ID_content = tie.PR_ID_content
+            OR
+                sub.ST_ID_location = tie.ST_ID_location
+        )
+        AND
+            sub.PR_content_ST_location_EV_of_ChangedAt <= @changingTimepoint
+   );
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- enPR_content_ST_location_EV_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[enPR_content_ST_location_EV_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[epPR_content_ST_location_EV_of](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- edPR_content_ST_location_EV_of showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[edPR_content_ST_location_EV_of] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
