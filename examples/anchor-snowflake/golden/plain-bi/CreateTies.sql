@@ -2,8 +2,9 @@
 --
 -- BI ties use posit and annex split with changing/positing time and reliability.
 --
+CREATE SEQUENCE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Posit (
-    AC_partner_AC_with_ONG_currently_ID int IDENTITY(1,1) not null, 
+    AC_partner_AC_with_ONG_currently_ID int default public.AC_partner_AC_with_ONG_currently_Posit_ID_SEQ.nextval not null, 
     AC_ID_partner int not null, 
     AC_ID_with int not null, 
     ONG_ID_currently tinyint not null,
@@ -52,8 +53,9 @@ CREATE TABLE IF NOT EXISTS public.AC_partner_AC_with_ONG_currently_Annex (
         AC_partner_AC_with_ONG_currently_PositedAt
     ) RELY
 ) CLUSTER BY (AC_partner_AC_with_ONG_currently_ID, AC_partner_AC_with_ONG_currently_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.AC_subset_PN_of_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Posit (
-    AC_subset_PN_of_ID int IDENTITY(1,1) not null, 
+    AC_subset_PN_of_ID int default public.AC_subset_PN_of_Posit_ID_SEQ.nextval not null, 
     AC_ID_subset int not null, 
     PN_ID_of int not null, 
     constraint AC_subset_PN_of_Posit_fkAC_subset foreign key (
@@ -91,8 +93,9 @@ CREATE TABLE IF NOT EXISTS public.AC_subset_PN_of_Annex (
         AC_subset_PN_of_PositedAt
     ) RELY
 ) CLUSTER BY (AC_subset_PN_of_ID, AC_subset_PN_of_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.EV_in_AC_wasCast_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.EV_in_AC_wasCast_Posit (
-    EV_in_AC_wasCast_ID int IDENTITY(1,1) not null, 
+    EV_in_AC_wasCast_ID int default public.EV_in_AC_wasCast_Posit_ID_SEQ.nextval not null, 
     EV_ID_in int not null, 
     AC_ID_wasCast int not null, 
     constraint EV_in_AC_wasCast_Posit_fkEV_in foreign key (
@@ -124,8 +127,9 @@ CREATE TABLE IF NOT EXISTS public.EV_in_AC_wasCast_Annex (
         EV_in_AC_wasCast_PositedAt
     ) RELY
 ) CLUSTER BY (EV_in_AC_wasCast_ID, EV_in_AC_wasCast_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Posit (
-    AC_part_PR_in_RAT_got_ID int IDENTITY(1,1) not null, 
+    AC_part_PR_in_RAT_got_ID int default public.AC_part_PR_in_RAT_got_Posit_ID_SEQ.nextval not null, 
     AC_ID_part int not null, 
     PR_ID_in int not null, 
     RAT_ID_got tinyint not null,
@@ -165,8 +169,9 @@ CREATE TABLE IF NOT EXISTS public.AC_part_PR_in_RAT_got_Annex (
         AC_part_PR_in_RAT_got_PositedAt
     ) RELY
 ) CLUSTER BY (AC_part_PR_in_RAT_got_ID, AC_part_PR_in_RAT_got_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.ST_at_PR_isPlaying_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.ST_at_PR_isPlaying_Posit (
-    ST_at_PR_isPlaying_ID int IDENTITY(1,1) not null, 
+    ST_at_PR_isPlaying_ID int default public.ST_at_PR_isPlaying_Posit_ID_SEQ.nextval not null, 
     ST_ID_at int not null, 
     PR_ID_isPlaying int not null, 
     ST_at_PR_isPlaying_ChangedAt datetime not null,
@@ -201,8 +206,9 @@ CREATE TABLE IF NOT EXISTS public.ST_at_PR_isPlaying_Annex (
         ST_at_PR_isPlaying_PositedAt
     ) RELY
 ) CLUSTER BY (ST_at_PR_isPlaying_ID, ST_at_PR_isPlaying_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Posit (
-    AC_parent_AC_child_PAT_having_ID int IDENTITY(1,1) not null, 
+    AC_parent_AC_child_PAT_having_ID int default public.AC_parent_AC_child_PAT_having_Posit_ID_SEQ.nextval not null, 
     AC_ID_parent int not null, 
     AC_ID_child int not null, 
     PAT_ID_having tinyint not null,
@@ -240,8 +246,9 @@ CREATE TABLE IF NOT EXISTS public.AC_parent_AC_child_PAT_having_Annex (
         AC_parent_AC_child_PAT_having_PositedAt
     ) RELY
 ) CLUSTER BY (AC_parent_AC_child_PAT_having_ID, AC_parent_AC_child_PAT_having_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS public.PR_content_ST_location_EV_of_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS public.PR_content_ST_location_EV_of_Posit (
-    PR_content_ST_location_EV_of_ID int IDENTITY(1,1) not null, 
+    PR_content_ST_location_EV_of_ID int default public.PR_content_ST_location_EV_of_Posit_ID_SEQ.nextval not null, 
     PR_ID_content int not null, 
     ST_ID_location int not null, 
     EV_ID_of int not null, 
