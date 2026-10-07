@@ -2,8 +2,9 @@
 --
 -- CRT ties use posit and annex split with changing/positing time, positor, reliability, and assertion.
 --
+CREATE SEQUENCE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Fact (
-    AC_partner_AC_with_ONG_currently_ID bigint IDENTITY(1,1) not null, 
+    AC_partner_AC_with_ONG_currently_ID bigint default ties.AC_partner_AC_with_ONG_currently_Fact_ID_SEQ.nextval not null, 
     AC_ID_partner smallint not null, 
     AC_ID_with smallint not null, 
     ONG_ID_currently tinyint not null,
@@ -62,8 +63,9 @@ CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Meta (
         AC_partner_AC_with_ONG_currently_PositedAt
     ) RELY
 ) CLUSTER BY (AC_partner_AC_with_ONG_currently_ID, AC_partner_AC_with_ONG_currently_Who, AC_partner_AC_with_ONG_currently_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.AC_subset_PN_of_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Fact (
-    AC_subset_PN_of_ID bigint IDENTITY(1,1) not null, 
+    AC_subset_PN_of_ID bigint default ties.AC_subset_PN_of_Fact_ID_SEQ.nextval not null, 
     AC_ID_subset smallint not null, 
     PN_ID_of bigint not null, 
     constraint AC_subset_PN_of_Fact_fkAC_subset foreign key (
@@ -111,8 +113,9 @@ CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Meta (
         AC_subset_PN_of_PositedAt
     ) RELY
 ) CLUSTER BY (AC_subset_PN_of_ID, AC_subset_PN_of_Who, AC_subset_PN_of_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.EV_in_AC_wasCast_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Fact (
-    EV_in_AC_wasCast_ID bigint IDENTITY(1,1) not null, 
+    EV_in_AC_wasCast_ID bigint default ties.EV_in_AC_wasCast_Fact_ID_SEQ.nextval not null, 
     EV_ID_in numeric(12,0) not null, 
     AC_ID_wasCast smallint not null, 
     constraint EV_in_AC_wasCast_Fact_fkEV_in foreign key (
@@ -154,8 +157,9 @@ CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Meta (
         EV_in_AC_wasCast_PositedAt
     ) RELY
 ) CLUSTER BY (EV_in_AC_wasCast_ID, EV_in_AC_wasCast_Who, EV_in_AC_wasCast_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Fact (
-    AC_part_PR_in_RAT_got_ID bigint IDENTITY(1,1) not null, 
+    AC_part_PR_in_RAT_got_ID bigint default ties.AC_part_PR_in_RAT_got_Fact_ID_SEQ.nextval not null, 
     AC_ID_part smallint not null, 
     PR_ID_in number(10,0) not null, 
     RAT_ID_got tinyint not null,
@@ -205,8 +209,9 @@ CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Meta (
         AC_part_PR_in_RAT_got_PositedAt
     ) RELY
 ) CLUSTER BY (AC_part_PR_in_RAT_got_ID, AC_part_PR_in_RAT_got_Who, AC_part_PR_in_RAT_got_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.ST_at_PR_isPlaying_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Fact (
-    ST_at_PR_isPlaying_ID bigint IDENTITY(1,1) not null, 
+    ST_at_PR_isPlaying_ID bigint default ties.ST_at_PR_isPlaying_Fact_ID_SEQ.nextval not null, 
     ST_ID_at int not null, 
     PR_ID_isPlaying number(10,0) not null, 
     ST_at_PR_isPlaying_ChangedAt datetime not null,
@@ -251,8 +256,9 @@ CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Meta (
         ST_at_PR_isPlaying_PositedAt
     ) RELY
 ) CLUSTER BY (ST_at_PR_isPlaying_ID, ST_at_PR_isPlaying_Who, ST_at_PR_isPlaying_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Fact (
-    AC_parent_AC_child_PAT_having_ID bigint IDENTITY(1,1) not null, 
+    AC_parent_AC_child_PAT_having_ID bigint default ties.AC_parent_AC_child_PAT_having_Fact_ID_SEQ.nextval not null, 
     AC_ID_parent smallint not null, 
     AC_ID_child smallint not null, 
     PAT_ID_having tinyint not null,
@@ -300,8 +306,9 @@ CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Meta (
         AC_parent_AC_child_PAT_having_PositedAt
     ) RELY
 ) CLUSTER BY (AC_parent_AC_child_PAT_having_ID, AC_parent_AC_child_PAT_having_Who, AC_parent_AC_child_PAT_having_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Fact_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Fact (
-    PR_content_ST_location_EV_of_ID bigint IDENTITY(1,1) not null, 
+    PR_content_ST_location_EV_of_ID bigint default ties.PR_content_ST_location_EV_of_Fact_ID_SEQ.nextval not null, 
     PR_ID_content number(10,0) not null, 
     ST_ID_location int not null, 
     EV_ID_of numeric(12,0) not null, 

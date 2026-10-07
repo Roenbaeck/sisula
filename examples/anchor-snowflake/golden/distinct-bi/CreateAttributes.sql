@@ -2,8 +2,9 @@
 --
 -- BI attributes use posit and annex split with changing/positing time and reliability.
 --
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_DAT_Event_Date_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date_Posit (
-    EV_DAT_ID int IDENTITY(1,1) not null, 
+    EV_DAT_ID int default attributes.EV_DAT_Event_Date_Posit_ID_SEQ.nextval not null, 
     EV_DAT_EV_ID numeric(12,0) not null,
     EV_DAT_Event_Date datetime not null,
     constraint fkEV_DAT_Event_Date_Posit foreign key (
@@ -30,8 +31,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_DAT_Event_Date_Annex (
         EV_DAT_PositedAt
     ) RELY
 ) CLUSTER BY (EV_DAT_ID, EV_DAT_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Posit (
-    EV_AUD_ID int IDENTITY(1,1) not null, 
+    EV_AUD_ID int default attributes.EV_AUD_Event_Audience_Posit_ID_SEQ.nextval not null, 
     EV_AUD_EV_ID numeric(12,0) not null,
     EV_AUD_Event_Audience int not null,
     constraint fkEV_AUD_Event_Audience_Posit foreign key (
@@ -58,8 +60,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_AUD_Event_Audience_Annex (
         EV_AUD_PositedAt
     ) RELY
 ) CLUSTER BY (EV_AUD_ID, EV_AUD_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Posit (
-    EV_REV_ID int IDENTITY(1,1) not null, 
+    EV_REV_ID int default attributes.EV_REV_Event_Revenue_Posit_ID_SEQ.nextval not null, 
     EV_REV_EV_ID numeric(12,0) not null,
     EV_REV_Event_Revenue number(19,4) not null,
     constraint fkEV_REV_Event_Revenue_Posit foreign key (
@@ -86,8 +89,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_REV_Event_Revenue_Annex (
         EV_REV_PositedAt
     ) RELY
 ) CLUSTER BY (EV_REV_ID, EV_REV_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_STA_Event_Status_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status_Posit (
-    EV_STA_ID int IDENTITY(1,1) not null, 
+    EV_STA_ID int default attributes.EV_STA_Event_Status_Posit_ID_SEQ.nextval not null, 
     EV_STA_EV_ID numeric(12,0) not null,
     EV_STA_Event_Status varchar(20) not null,
     EV_STA_ChangedAt datetime not null,
@@ -116,8 +120,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_STA_Event_Status_Annex (
         EV_STA_PositedAt
     ) RELY
 ) CLUSTER BY (EV_STA_ID, EV_STA_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Posit (
-    EV_UTL_ID int IDENTITY(1,1) not null, 
+    EV_UTL_ID int default attributes.EV_UTL_Event_Utilization_Posit_ID_SEQ.nextval not null, 
     EV_UTL_EV_ID numeric(12,0) not null,
     EV_UTL_UTL_ID tinyint not null,
     constraint fk_A_EV_UTL_Event_Utilization_Posit foreign key (
@@ -147,8 +152,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_UTL_Event_Utilization_Annex (
         EV_UTL_PositedAt
     ) RELY
 ) CLUSTER BY (EV_UTL_ID, EV_UTL_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.EV_LVL_Event_Level_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Posit (
-    EV_LVL_ID int IDENTITY(1,1) not null, 
+    EV_LVL_ID int default attributes.EV_LVL_Event_Level_Posit_ID_SEQ.nextval not null, 
     EV_LVL_EV_ID numeric(12,0) not null,
     EV_LVL_PLV_ID tinyint not null,
     EV_LVL_ChangedAt date not null,
@@ -180,8 +186,9 @@ CREATE TABLE IF NOT EXISTS attributes.EV_LVL_Event_Level_Annex (
         EV_LVL_PositedAt
     ) RELY
 ) CLUSTER BY (EV_LVL_ID, EV_LVL_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Posit (
-    ST_NAM_ID int IDENTITY(1,1) not null, 
+    ST_NAM_ID int default attributes.ST_NAM_Stage_Name_Posit_ID_SEQ.nextval not null, 
     ST_NAM_ST_ID int not null,
     ST_NAM_Stage_Name varchar(42) not null,
     ST_NAM_ChangedAt datetime not null,
@@ -210,8 +217,9 @@ CREATE TABLE IF NOT EXISTS attributes.ST_NAM_Stage_Name_Annex (
         ST_NAM_PositedAt
     ) RELY
 ) CLUSTER BY (ST_NAM_ID, ST_NAM_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Posit (
-    ST_LOC_ID int IDENTITY(1,1) not null, 
+    ST_LOC_ID int default attributes.ST_LOC_Stage_Location_Posit_ID_SEQ.nextval not null, 
     ST_LOC_ST_ID int not null,
     ST_LOC_Stage_Location geography not null,
     ST_LOC_Checksum numeric(19,0) default hash(ST_LOC_Stage_Location),
@@ -239,8 +247,9 @@ CREATE TABLE IF NOT EXISTS attributes.ST_LOC_Stage_Location_Annex (
         ST_LOC_PositedAt
     ) RELY
 ) CLUSTER BY (ST_LOC_ID, ST_LOC_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Posit (
-    ST_AVG_ID int IDENTITY(1,1) not null, 
+    ST_AVG_ID int default attributes.ST_AVG_Stage_Average_Posit_ID_SEQ.nextval not null, 
     ST_AVG_ST_ID int not null,
     ST_AVG_UTL_ID tinyint not null,
     ST_AVG_ChangedAt datetime not null,
@@ -272,8 +281,9 @@ CREATE TABLE IF NOT EXISTS attributes.ST_AVG_Stage_Average_Annex (
         ST_AVG_PositedAt
     ) RELY
 ) CLUSTER BY (ST_AVG_ID, ST_AVG_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Posit (
-    ST_MIN_ID int IDENTITY(1,1) not null, 
+    ST_MIN_ID int default attributes.ST_MIN_Stage_Minimum_Posit_ID_SEQ.nextval not null, 
     ST_MIN_ST_ID int not null,
     ST_MIN_UTL_ID tinyint not null,
     constraint fk_A_ST_MIN_Stage_Minimum_Posit foreign key (
@@ -303,8 +313,9 @@ CREATE TABLE IF NOT EXISTS attributes.ST_MIN_Stage_Minimum_Annex (
         ST_MIN_PositedAt
     ) RELY
 ) CLUSTER BY (ST_MIN_ID, ST_MIN_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Posit (
-    AC_NAM_ID int IDENTITY(1,1) not null, 
+    AC_NAM_ID int default attributes.AC_NAM_Actor_Name_Posit_ID_SEQ.nextval not null, 
     AC_NAM_AC_ID smallint not null,
     AC_NAM_Actor_Name varbinary(max) not null,
     AC_NAM_ChangedAt datetime not null,
@@ -333,8 +344,9 @@ CREATE TABLE IF NOT EXISTS attributes.AC_NAM_Actor_Name_Annex (
         AC_NAM_PositedAt
     ) RELY
 ) CLUSTER BY (AC_NAM_ID, AC_NAM_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Posit (
-    AC_GEN_ID int IDENTITY(1,1) not null, 
+    AC_GEN_ID int default attributes.AC_GEN_Actor_Gender_Posit_ID_SEQ.nextval not null, 
     AC_GEN_AC_ID smallint not null,
     AC_GEN_GEN_ID number(1,0) not null,
     constraint fk_A_AC_GEN_Actor_Gender_Posit foreign key (
@@ -364,8 +376,9 @@ CREATE TABLE IF NOT EXISTS attributes.AC_GEN_Actor_Gender_Annex (
         AC_GEN_PositedAt
     ) RELY
 ) CLUSTER BY (AC_GEN_ID, AC_GEN_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Posit (
-    AC_PLV_ID int IDENTITY(1,1) not null, 
+    AC_PLV_ID int default attributes.AC_PLV_Actor_ProfessionalLevel_Posit_ID_SEQ.nextval not null, 
     AC_PLV_AC_ID smallint not null,
     AC_PLV_PLV_ID tinyint not null,
     AC_PLV_ChangedAt datetime not null,
@@ -397,8 +410,9 @@ CREATE TABLE IF NOT EXISTS attributes.AC_PLV_Actor_ProfessionalLevel_Annex (
         AC_PLV_PositedAt
     ) RELY
 ) CLUSTER BY (AC_PLV_ID, AC_PLV_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.PR_NAM_Program_Name_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name_Posit (
-    PR_NAM_ID int IDENTITY(1,1) not null, 
+    PR_NAM_ID int default attributes.PR_NAM_Program_Name_Posit_ID_SEQ.nextval not null, 
     PR_NAM_PR_ID number(10,0) not null,
     PR_NAM_Program_Name varchar(42) not null,
     constraint fkPR_NAM_Program_Name_Posit foreign key (
@@ -425,8 +439,9 @@ CREATE TABLE IF NOT EXISTS attributes.PR_NAM_Program_Name_Annex (
         PR_NAM_PositedAt
     ) RELY
 ) CLUSTER BY (PR_NAM_ID, PR_NAM_PositedAt);
+CREATE SEQUENCE IF NOT EXISTS attributes.PR_LEN_Program_Length_Posit_ID_SEQ START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes.PR_LEN_Program_Length_Posit (
-    PR_LEN_ID int IDENTITY(1,1) not null, 
+    PR_LEN_ID int default attributes.PR_LEN_Program_Length_Posit_ID_SEQ.nextval not null, 
     PR_LEN_PR_ID number(10,0) not null,
     PR_LEN_Program_Length time not null,
     PR_LEN_ChangedAt date not null,
