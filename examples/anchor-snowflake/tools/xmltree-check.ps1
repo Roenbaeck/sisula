@@ -33,6 +33,7 @@ var results = [];
 results.push(t('<?xml version="1.0"?><!-- c --><a x="1" y=\'2\'><b/><c>t &amp; &lt;u&gt; &#65;&#x42;</c><![CDATA[<raw>]]></a>'));
 results.push(t('<a x=""/>'));
 results.push(t('<a>\r\n<b/>\r\n</a>'));
+results.push(t('﻿<a/>'));
 var errors = [];
 ['<a>', '<a></b>', '<a x=1/>', '', '<a/><b/>', '<a>&nope;</a>'].forEach(function (x) { try { XmlTree.parse(x); errors.push('NO ERROR: ' + x); } catch (e) { errors.push(String(e.message)); } });
 '' + results.join('\n') + '\n--\n' + errors.join('\n');
