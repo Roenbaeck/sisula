@@ -292,7 +292,7 @@ The program the actor has a part in.
 The rating the actor got for the part.
 </description>
 </role>
-<metadata capsule="ties" generator="true" assertive="false" restatable="true" deletable="false" idempotent="false"/>
+<metadata capsule="ties" generator="true" assertive="false" restatable="false" deletable="false" idempotent="false"/>
 <layout x="1253.84" y="330.26" fixed="false"/>
 <description>
 Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.
