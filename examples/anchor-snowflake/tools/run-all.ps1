@@ -1,6 +1,6 @@
 <#
     Checks every model in models/ (see check.ps1): each template's output, and the whole output,
-    must be byte-identical to the original engine's. Exits 1 if anything differs.
+    must be byte-identical to the golden files. Exits 1 if anything differs.
 
     Usage:
       run-all.ps1 [-Variant <name>,...] [-Temporalization uni|bi|crt] [-Name <template>,...] [-Loose] [-Anchor <checkout>]

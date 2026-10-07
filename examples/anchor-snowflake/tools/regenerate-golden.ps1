@@ -1,7 +1,15 @@
 <#
-    Regenerates golden/<variant>/ for every model in models/ with the ORIGINAL Anchor engine (see
-    golden.ps1). Needs an Anchor checkout next to this repository, or -Anchor. The golden files
-    are committed, so the checks themselves do not need to run the original engine.
+    Writes golden/<variant>/ for every model in models/ (or the ones named) from the output of Anchor's
+    Sisula templates, with the engine that Anchor ships (see check.ps1 -Update). Needs an Anchor
+    checkout next to this repository, or -Anchor.
+
+    The golden files are approved output, not an independent check: a change to a template changes them,
+    and the change is read in git diff before it is committed. What checks them independently is
+    lint-sql.ps1 (known defects), csharp-check.ps1 and browser-check.ps1 (other implementations of the
+    engine and of the path from a model to SQL), and above all running the SQL on Snowflake.
+
+    Usage:
+      regenerate-golden.ps1 [-Variant <name>,...] [-Anchor <checkout>]
 #>
 [CmdletBinding()]
 param(
@@ -16,12 +24,8 @@ if (-not $Variant) {
 # powershell -File passes "a,b" as one string.
 $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($v in $Variant) {
-    $outDir = Join-Path $root "golden\$v"
-    # Start from an empty directory, so a sisulet that no longer produces output leaves no stale file.
-    if (Test-Path $outDir) { Remove-Item (Join-Path $outDir '*.sql') }
-    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'golden.ps1'),
-        '-Model', (Join-Path $root "models\$v.xml"), '-OutDir', $outDir)
+    $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $PSScriptRoot 'check.ps1'), '-Variant', $v, '-Update')
     if ($Anchor) { $arguments += @('-Anchor', $Anchor) }
     & powershell @arguments
-    if ($LASTEXITCODE -ne 0) { throw "golden.ps1 failed for $v" }
+    if ($LASTEXITCODE -ne 0) { throw "check.ps1 -Update failed for $v" }
 }

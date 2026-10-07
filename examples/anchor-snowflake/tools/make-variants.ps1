@@ -43,9 +43,9 @@
 
       handwritten            distinct-equivalence with equivalence off, so knots and attributes
                              keep equivalent flags the modeler would drop, and tie and nexus roles
-                             keep the missing descriptions the modeler would fill in. It is checked
-                             against the original engine only: it shows that the templates test
-                             exactly what the sisulets test, also on files the modeler did not write.
+                             keep the missing descriptions the modeler would fill in. It is only run
+                             through the templates, not the modeler: it shows the generators on files
+                             that the modeler did not write.
 #>
 [CmdletBinding()]
 param()
