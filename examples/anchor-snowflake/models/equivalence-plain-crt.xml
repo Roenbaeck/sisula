@@ -79,14 +79,14 @@ Geographic location of the stage as a geography point.
 </description>
 </attribute>
 <attribute mnemonic="AVG" descriptor="Average" identity="int" timeRange="datetime" knotRange="UTL">
-<metadata privacy="Ignore" capsule="public" equivalent="true" generator="true" assertive="true" restatable="false" idempotent="true" deletable="false"/>
+<metadata privacy="Ignore" capsule="public" equivalent="false" generator="true" assertive="true" restatable="false" idempotent="true" deletable="false"/>
 <layout x="1014.22" y="830.84" fixed="false"/>
 <description>
 Average utilization of the stage capacity, recalculated over time.
 </description>
 </attribute>
 <attribute mnemonic="MIN" descriptor="Minimum" identity="int" knotRange="UTL">
-<metadata privacy="Ignore" capsule="public" equivalent="true" generator="true" assertive="true" idempotent="false" deletable="true"/>
+<metadata privacy="Ignore" capsule="public" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="true"/>
 <layout x="987.08" y="804.53" fixed="false"/>
 <description>
 Minimum utilization of the stage capacity required for a performance to take place.
@@ -116,14 +116,14 @@ Name of the actor, such as a stage name. Historized, since it may change over ti
 </description>
 </attribute>
 <attribute mnemonic="GEN" descriptor="Gender" identity="int" knotRange="GEN">
-<metadata privacy="Ignore" capsule="public" equivalent="true" generator="true" assertive="true" idempotent="false" deletable="false"/>
+<metadata privacy="Ignore" capsule="public" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="false"/>
 <layout x="1361.11" y="14.63" fixed="false"/>
 <description>
 Gender of the actor.
 </description>
 </attribute>
 <attribute mnemonic="PLV" descriptor="ProfessionalLevel" identity="int" timeRange="datetime" knotRange="PLV">
-<metadata privacy="Ignore" capsule="public" equivalent="true" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false"/>
+<metadata privacy="Ignore" capsule="public" equivalent="false" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false"/>
 <layout x="1297.57" y="31.67" fixed="false"/>
 <description>
 Professional level of the actor, which may change as the actor gains experience.
