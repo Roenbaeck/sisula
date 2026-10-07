@@ -1,10 +1,10 @@
 <#
-    Renders Anchor's Sisula templates for a model and compares them, byte for byte, with the output
-    of the original engine (made by golden.ps1). The templates, the directive that lists them and
+    Renders Anchor's Sisula templates for a model and compares them, byte for byte, with the golden
+    files (approved output; -Update writes them, see regenerate-golden.ps1). The templates, the directive that lists them and
     the engine all come from the Anchor checkout.
 
     Usage:
-      check.ps1 [-Variant <name>] [-Name CreateKnots,...] [-Loose] [-KeepBindings <file>] [-KeepOutput <dir>]
+      check.ps1 [-Variant <name>] [-Name CreateKnots,...] [-Loose] [-Update] [-KeepBindings <file>] [-KeepOutput <dir>]
 
     The model is models/<Variant>.xml and the golden files are golden/<Variant>/. Every template
     in Anchor's Snowflake_uni.directive is rendered and compared with golden/<Variant>/<Name>.sql,
@@ -21,6 +21,7 @@ param(
     [string] $Model,
     [string[]] $Name,
     [switch] $Loose,
+    [switch] $Update,
     [string] $Anchor,
     [string] $JintPath,
     [string] $KeepBindings,
@@ -80,7 +81,7 @@ $engine.Execute('var XPathResult;') | Out-Null
 $engine.Execute((Read-Text (Join-Path $here 'dom-facade.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Map.js'))) | Out-Null
 # Anchor's own Sisulator.objectify and Resolver. The Sisulator also holds the original engine, whose
-# async/await Jint 2 cannot parse; it is not used here, so they are stripped, as golden.ps1 does.
+# async/await Jint 2 cannot parse; it is not used here, so they are stripped.
 $engine.Execute(((Read-Text (Join-Path $Anchor 'modules\Sisulator.js')) -replace '\basync\s+', '' -replace '\bawait\s+', '')) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Resolver.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $here 'resolve-model.js'))) | Out-Null
@@ -101,6 +102,12 @@ $bindings = $engine.GetValue('bindingsJson').AsString()
 $utf8 = New-Object Text.UTF8Encoding($false)
 if ($KeepBindings) { [IO.File]::WriteAllText($KeepBindings, $bindings, $utf8) }
 if ($KeepOutput) { New-Item -ItemType Directory -Force $KeepOutput | Out-Null }
+# -Update accepts the rendered output as the golden files, instead of comparing with them. For a whole model it first
+# removes the golden files of templates that no longer exist.
+if ($Update) {
+    New-Item -ItemType Directory -Force $GoldenDir | Out-Null
+    if ($whole) { Get-ChildItem $GoldenDir -Filter *.sql | Remove-Item }
+}
 $engine.SetValue('bindingsText', $bindings) | Out-Null
 
 function Get-Lines([string] $text) {
@@ -151,13 +158,15 @@ foreach ($n in $Name) {
     $outputs.Add($actual)
     if ($KeepOutput) { [IO.File]::WriteAllText((Join-Path $KeepOutput "$n.sql"), $actual, $utf8) }
     $goldenPath = Join-Path $GoldenDir "$n.sql"
+    if ($Update) { [IO.File]::WriteAllText($goldenPath, $actual, $utf8); continue }
     if (-not (Compare-Text "$Variant/$n" (Read-Text $goldenPath) $actual)) { $failed++ }
 }
 
 if ($whole) {
     $full = $outputs -join ''
     if ($KeepOutput) { [IO.File]::WriteAllText((Join-Path $KeepOutput '_full.sql'), $full, $utf8) }
-    if (-not (Compare-Text "$Variant/(whole output)" (Read-Text (Join-Path $GoldenDir '_full.sql')) $full)) { $failed++ }
+    if ($Update) { [IO.File]::WriteAllText((Join-Path $GoldenDir '_full.sql'), $full, $utf8); Write-Host ("updated  {0}: {1:N0} characters, {2} templates" -f $Variant, $full.Length, $outputs.Count) }
+    elseif (-not (Compare-Text "$Variant/(whole output)" (Read-Text (Join-Path $GoldenDir '_full.sql')) $full)) { $failed++ }
 }
 
 if ($failed -gt 0) { exit 1 }

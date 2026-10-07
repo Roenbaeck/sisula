@@ -8,7 +8,7 @@
       -Canonicalize  saves the model the way the modeler's "Save model to local file" does, and
                      writes that back to models/<model>.xml.
 
-    The golden files come from golden.ps1, which runs the modeler's engine under Jint with a small
+    The golden files are rendered by check.ps1, which runs the engine under Jint with a small
     DOM, straight from the model file. The default mode closes the remaining gap: a real browser
     engine, a real DOM, and the modeler's own path from file to SQL (Model.fromXML, Model.toXML,
     Actions.generateSQL).
@@ -63,7 +63,7 @@ if (-not $Edge) {
 if (-not $Edge) { throw 'Microsoft Edge was not found; pass -Edge.' }
 if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
-    # the modeler reads it differently; it is only compared with the original engine.
+    # the modeler reads it differently, so it is left out here and only run through check.ps1.
     $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name |
         ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' }
 }

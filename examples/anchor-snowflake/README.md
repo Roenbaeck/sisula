@@ -6,20 +6,24 @@ over JSON.
 
 **The templates live in the Anchor repository now**, as `SQL/Snowflake/{uni,bi,crt}/*.sisula`, listed by
 Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with the vendored engine
-(`modules/sisula.js`). This folder is what proves them: the models, the golden files made by the
-original engine, and the tools that compare. Anchor's `Snowflake_*.legacy.directive` and the
-original `.js` sisulets are kept for as long as the golden files are made from them.
+(`modules/sisula.js`). This folder is what checks them: the models, the golden files, and the tools
+that compare. The golden files used to come from the original JScript sisulets, which were the
+independent check while the templates were written; once the output had been run on Snowflake those
+sisulets, and the legacy directives that listed them, were removed from Anchor. They are in the git
+history of both repositories (`tools/golden.ps1` here, at commit `34d0b93`, shows how they were run),
+and the sisulets of the Snowflake constructs that are not ported yet (triggers, key generators,
+restatement constraints) are still in Anchor as the record of what is missing.
 
 The port is complete for what the modeler generates: 13 templates for uni, 11 for bi and 12 for crt
-(bi and crt share uni's `AddDescriptions`). For every model in `models/` the output is
-**byte-identical** to the original engine's, checked these ways:
+(bi and crt share uni's `AddDescriptions`). For every model in `models/` the generated SQL is checked
+these ways:
 
 | Check | Compares | Needs |
 |---|---|---|
 | `tools\run-all.ps1` | Anchor's templates' output, per template and as a whole, with the golden files | PowerShell, an Anchor checkout |
 | `tools\csharp-check.ps1` | the same templates and bindings through the C# renderer that runs inside SQL Server | an Anchor checkout, `sisula-mssql`'s `FixtureRunner.exe` |
 | `tools\lint-sql.ps1` | the golden SQL, for defects that made generated Snowflake SQL invalid: nameless columns, a stray colon, missing or dangling commas, a table or function that is used but never created, a replaced function or view without `COPY GRANTS`, and constructs that Snowflake was found to reject. It cannot say that SQL is valid, only that these are absent | PowerShell |
-| `tools\regenerate-golden.ps1` | makes the golden files: the modeler's original engine and sisulets, run under Jint | an Anchor checkout |
+| `tools\regenerate-golden.ps1` | writes the golden files from the templates (`check.ps1 -Update`); they are approved output, so a change to a template shows in `git diff` and is read before it is committed | an Anchor checkout |
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -49,8 +53,7 @@ none) and compare.
   `describe()` returns (the templates write the `COMMENT` clauses themselves), and the number of
   attributes and roles of the constructs that print one in a header comment.
 - `SQL/Snowflake/uni/*.sisula` are the ports, one per sisulet, rendered in the order of Anchor's
-  `Snowflake_uni.directive`. `check.ps1` fails if that list differs from the legacy directive's,
-  which the golden files come from.
+  `Snowflake_uni.directive`.
 
 Helper functions become data, never language features: a helper's result is a fact about the
 model, so the resolver computes it once and passes it along in the JSON. That keeps the language
@@ -86,7 +89,7 @@ places were corrected first; the defects that remain are listed in Anchor's `HAN
 | `distinct` | a different capsule for every kind of construct and a different identity type for every anchor and nexus, so a template taking a name or type from the wrong construct shows; non-generator anchors and nexus, checksummed knots, historized and knotted nexus attributes (the nexus difference perspective), a historized tie with a nexus role and no identifiers, an encrypted attribute, some constructs without descriptions |
 | `distinct-equivalence` | distinct with equivalence on and equivalent knots and attributes of every kind, nexus attributes included |
 | `equivalence-original` | distinct-equivalence with the original naming convention, where knotted columns have no equivalent or checksum names |
-| `handwritten` | not saved through the modeler, on purpose: equivalent flags with equivalence off, roles without descriptions. Checked against the original engine only, which shows the templates test exactly what the sisulets test, also on files the modeler did not write |
+| `handwritten` | not saved through the modeler, on purpose: equivalent flags with equivalence off, roles without descriptions. Only run through the templates, not the modeler: it shows the generators on files that the modeler did not write |
 | `flags` | `distinct-equivalence` with restatement, idempotency, assertiveness and decisiveness turned over, so the code that tests them is reached both ways |
 | `ranges` | `distinct` with a type and a suffix of its own for everything that belongs to the posit, positor and reliability columns, so a template that takes one from the wrong place shows |
 
@@ -107,16 +110,17 @@ planted in the templates one at a time. Each was caught by at least one model, a
 ```
 powershell -File tools\run-all.ps1                      # the templates against the golden files
 powershell -File tools\check.ps1 -Variant base -Loose   # one model, ignoring blank lines and trailing spaces
-powershell -File tools\regenerate-golden.ps1            # after a change to Anchor's sisulets
+powershell -File tools\regenerate-golden.ps1            # after a change to a template: then read git diff
 powershell -File tools\browser-check.ps1                # the golden files against the modeler
 powershell -File tools\browser-check.ps1 -Bindings      # the modeler's Generate > JSON bindings against the resolver's
 powershell -File tools\make-variants.ps1                # after a change to base.xml
 ```
 
-`golden.ps1` runs Anchor's `Sisulator.js`, `Map.js`, `Helpers.js` and sisulets, read from the
-checkout, under Jint. The only change is stripping `async`/`await`, which Jint 2 cannot parse. It
-runs the whole directive and splits the output per sisulet by having each one append a marker
-line first; the parts are checked to add up to the unmarked output exactly.
+The golden files are approved output, not an independent check, so what each check can and cannot say matters:
+the templates against the golden files catch an unintended change; `csharp-check.ps1` and `browser-check.ps1`
+are other implementations (the C# renderer, and the modeler's own path from a file to SQL); `lint-sql.ps1`
+looks for the known kinds of invalid SQL; and only running the SQL on Snowflake says that it works. Every
+defect found so far was found that way, and the lint learnt a rule from each.
 
 `browser-check.ps1` leaves the Anchor checkout alone. It copies `index.html` to a temporary
 folder with a `<base>` pointing at the checkout, drops the two Google Fonts links so no network
