@@ -262,6 +262,7 @@ try {
                 $failed++; continue
             }
             $actual['schema'].Remove('serialization') | Out-Null
+            if ($expected['schema'].ContainsKey('serialization')) { $expected['schema'].Remove('serialization') | Out-Null }   # check.ps1 adds it too, from the model file
             # The stamps that the modeler writes when it saves: its version and the date and time.
             # No generator reads them, and a model file keeps the ones from when it was saved.
             foreach ($stamp in 'format', 'date', 'time') {
@@ -282,6 +283,11 @@ try {
         if ($null -eq $sql) { $failed++; continue }
         if ($KeepOutput) { [IO.File]::WriteAllText((Join-Path $KeepOutput "$v.sql"), $sql, $utf8) }
         $golden = [IO.File]::ReadAllText((Join-Path $root "golden\$v\_full.sql"), [Text.Encoding]::UTF8) -replace "`r`n", "`n"
+        # SQL Server's schema tracking embeds the model's own XML as N'<schema ...>...</schema>'. The modeler writes it as the
+        # model is at that moment, with the time of that moment, so that part is compared as a placeholder, not byte for byte.
+        $embeddedModel = '(?s)(N'')<schema [^\r\n]*?>.*?</schema>('';)'
+        $sql = [regex]::Replace($sql, $embeddedModel, '$1(the model)$2')
+        $golden = [regex]::Replace($golden, $embeddedModel, '$1(the model)$2')
         if ($sql -ceq $golden) {
             Write-Host ("PASS  {0}: the modeler's output is identical to the golden file ({1:N0} characters)" -f $v, $sql.Length)
         } else {
