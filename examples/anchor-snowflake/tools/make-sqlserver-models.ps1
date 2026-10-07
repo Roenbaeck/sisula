@@ -73,5 +73,25 @@ foreach ($target in @(@('AC', 'GEN', 'PII'), @('ST', 'NAM', 'Places'))) {
 [IO.File]::WriteAllText((Join-Path $root 'models\sqlserver-encrypted.xml'), $text, $utf8)
 $made.Add('sqlserver-encrypted')
 
+# Roles in another order: no model had a knot role anywhere but last in a tie, and some of the generators treat a role that
+# is not the last differently (a comma follows it). In the tie of the parent and child, the knot role is moved first; in the
+# tie of the part and the program, the knot role is moved between the two anchor roles.
+function Move-Role([string] $text, [string] $tieRole, [string[]] $order) {
+    $tie = [regex]::Match($text, '(?s)<tie\b[^>]*>(?:(?!</tie>).)*role="' + $tieRole + '"(?:(?!</tie>).)*</tie>')
+    if (-not $tie.Success) { throw "no tie with the role $tieRole" }
+    $roles = [regex]::Matches($tie.Value, '(?s)<role role="([^"]*)".*?</role>\r?\n?')
+    $byName = @{}; foreach ($r in $roles) { $byName[$r.Groups[1].Value] = $r.Value }
+    if ($byName.Count -ne $order.Count) { throw "the tie has roles $($byName.Keys -join ', ')" }
+    $first = $roles[0].Index; $last = $roles[$roles.Count - 1].Index + $roles[$roles.Count - 1].Length
+    $reordered = ($order | ForEach-Object { $byName[$_] }) -join ''
+    $moved = $tie.Value.Substring(0, $first) + $reordered + $tie.Value.Substring($last)
+    $text.Replace($tie.Value, $moved)
+}
+$text = [IO.File]::ReadAllText((Join-Path $root 'models\sqlserver-distinct.xml'), $utf8)
+$text = Move-Role $text 'having' @('having', 'parent', 'child')
+$text = Move-Role $text 'got' @('part', 'got', 'in')
+[IO.File]::WriteAllText((Join-Path $root 'models\sqlserver-knotroles.xml'), $text, $utf8)
+$made.Add('sqlserver-knotroles')
+
 Write-Host ('made ' + $made.Count + ' models:')
 Write-Host ($made -join ',')
