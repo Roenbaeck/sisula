@@ -27,10 +27,28 @@ these ways:
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 | `tools\hosted-check.ps1` | the generator that runs in Snowflake (built by Anchor's `tools\build-snowflake-generator.ps1`), as far as it can run without Snowflake: the JavaScript of `ANCHOR_BINDINGS` and `SISULATE` under Jint, over the model XML as a user would paste it, against the golden files; also the temporalization argument and the error messages. The SQL around the JavaScript (the `CREATE`s, the table, the `LISTAGG`) is only run by Snowflake | an Anchor checkout |
 | `tools\converter-check.ps1` | the modeler's data type converter (`modules\DataTypeConverter.js`, with `-Anchor` for a checkout that has the change): the Snowflake and BigQuery mappings against a table of what each type becomes, both ways; every one of the 49 pairs of the six databases and Generic on every model here and on Anchor's `example.xml`, which must stay well-formed and change nothing but the values of the data type attributes; and a model of names that look like types, which must not change | an Anchor checkout |
+| `tools\golden.ps1` | writes the golden files of a model from the original sisulets, run unmodified under Jint (SQL Server, where they still exist) | an Anchor checkout that has the original directive as `<DB>_<t>.legacy.directive` |
+| `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
 the Anchor checkout next to this repository.
+
+## SQL Server too
+
+The same tools check the SQL Server uni templates (`SQL/SQLServer/**/*.sisula`, `SQLServer_uni.directive`): the model says
+which database it is for (`metadata/@databaseTarget`), and the tools take the directive, the prelude and the templates from that.
+The SQL Server models are `models/sqlserver-*.xml`; `tools/make-sqlserver-models.ps1` makes them from the uni models of Snowflake with
+the modeler's data type converter and adds variants for what only SQL Server has (business views and knot aliases, no triggers, partitioning,
+natural keys, deletability, encryption, and the knot roles of two ties moved from last), and each is then saved through the modeler like the
+others. `lint-sql.ps1` and `hosted-check.ps1` leave them out: they are about Snowflake SQL.
+
+Their golden files are the output of the **original sisulets**, which are still in Anchor (`SQLServer_uni.legacy.directive`), run unmodified
+(apart from the defects the port corrected, listed in Anchor's handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()`
+answering its default. So for SQL Server the templates are checked against an independent implementation, which is what Snowflake had until its
+output had been run. `tools/xml-to-tree.ps1 -WithSerialization` gives the tools what the modeler adds when it generates SQL, the model's own XML as
+`schema.serialization`, which the schema tracking embeds; `browser-check.ps1` compares that part as a placeholder, because the modeler writes the
+time of the moment into it.
 The engines run under the Jint in `../../lib`; there is no Node on the development machine.
 
 ## How it works
