@@ -5150,6 +5150,7 @@ BEGIN
     INSERT INTO @PR_LEN_Program_Length
     SELECT
         i.PR_LEN_PR_ID,
+        p.PR_LEN_EQ,
         p.Metadata_PR_LEN,
         p.PR_LEN_ChangedAt,
         p.PR_LEN_Program_Length,
