@@ -1764,7 +1764,7 @@ BEGIN
         p.EV_STA_Event_Status
     FROM (
         SELECT DISTINCT 
-            p.EV_STA_EQ,
+            EV_STA_EQ,
             EV_STA_EV_ID 
         FROM 
             @EV_STA_Event_Status
