@@ -1678,7 +1678,7 @@ BEGIN
         p.AC_NAM_Actor_Name
     FROM (
         SELECT DISTINCT 
-            p.AC_NAM_EQ,
+            AC_NAM_EQ,
             AC_NAM_AC_ID 
         FROM 
             @AC_NAM_Actor_Name
