@@ -36,7 +36,7 @@ $total = 0; $failed = 0
 try {
     foreach ($v in $Variant) {
         $model = Join-Path $root "models\$v.xml"
-        $info = Get-DirectiveInfo $Anchor (Get-ModelTemporalization $model)
+        $info = Get-DirectiveInfo $Anchor (Get-ModelTemporalization $model) (Get-ModelDatabase $model)
         $bindings = Join-Path $work "$v.bindings.json"
         & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'check.ps1') -Variant $v -Name $info.Templates[0].Name -Anchor $Anchor -KeepBindings $bindings | Out-Null
         foreach ($t in $info.Templates) {

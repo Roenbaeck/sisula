@@ -47,10 +47,18 @@ function ConvertTo-NeutralNode([Xml.XmlNode] $node, [Text.StringBuilder] $sb) {
     [void] $sb.Append(']}')
 }
 
-function Convert-XmlFileToTreeJson([string] $Path) {
+# -WithSerialization adds what the modeler adds when it generates SQL (Model.toXML(true)): a <serialization> element
+# that holds the model's own XML as text, which the schema tracking of SQL Server reads. The text is the model as it
+# is in the file, where the modeler would write it as it is at that moment, with the time stamp of the moment.
+function Convert-XmlFileToTreeJson([string] $Path, [switch] $WithSerialization) {
     $doc = New-Object Xml.XmlDocument
     $doc.PreserveWhitespace = $true
     $doc.Load((Resolve-Path $Path).Path)
+    if ($WithSerialization) {
+        $element = $doc.CreateElement('serialization')
+        [void] $element.AppendChild($doc.CreateTextNode($doc.DocumentElement.OuterXml))
+        [void] $doc.DocumentElement.AppendChild($element)
+    }
     $sb = New-Object Text.StringBuilder
     ConvertTo-NeutralNode $doc.DocumentElement $sb
     $sb.ToString()

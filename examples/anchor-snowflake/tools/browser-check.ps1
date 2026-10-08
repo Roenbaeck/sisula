@@ -96,10 +96,12 @@ $harness = @'
     var MODEL = __MODEL__;
     var MODE = __MODE__;
     var TEMPORALIZATION = __TEMPORALIZATION__;
+    var DATABASE = __DATABASE__;
     function report(text) { document.getElementById('sisula-result').textContent = text; }
     function toBase64(s) { return btoa(unescape(encodeURIComponent(s))); }
     window.alert = function () {};
     window.confirm = function () { return true; };
+    window.prompt = function (message, defaultValue) { return defaultValue; };
     window.fetch = function (url) {
         return new Promise(function (resolve, reject) {
             var request = new XMLHttpRequest();
@@ -125,8 +127,8 @@ $harness = @'
                     report('BASE64:' + toBase64(new XMLSerializer().serializeToString(Model.toXML(false))));
                     return;
                 }
-                if (Defaults.databaseTarget !== 'Snowflake' || Defaults.temporalization !== TEMPORALIZATION) {
-                    report('ERROR the model did not select Snowflake ' + TEMPORALIZATION + ': ' + Defaults.databaseTarget + ' ' + Defaults.temporalization);
+                if (Defaults.databaseTarget !== DATABASE || Defaults.temporalization !== TEMPORALIZATION) {
+                    report('ERROR the model did not select ' + DATABASE + ' ' + TEMPORALIZATION + ': ' + Defaults.databaseTarget + ' ' + Defaults.temporalization);
                     return;
                 }
                 var display = Actions.preformat;
@@ -149,7 +151,7 @@ $harness = @'
 function Invoke-Modeler([string] $name, [string] $model, [string] $mode) {
     # The model goes into the page as a JavaScript string literal.
     $literal = '"' + ($model -replace '\\', '\\' -replace '"', '\"' -replace "`r", '\r' -replace "`n", '\n' -replace '</', '<\/') + '"'
-    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'").Replace('__TEMPORALIZATION__', "'$(([regex]::Match($model, 'temporalization="(\w+)"')).Groups[1].Value)'"))
+    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'").Replace('__TEMPORALIZATION__', "'$(([regex]::Match($model, 'temporalization="(\w+)"')).Groups[1].Value)'").Replace('__DATABASE__', "'$(([regex]::Match($model, 'databaseTarget="(\w+)"')).Groups[1].Value)'"))
     $pagePath = Join-Path $work "$name.html"
     [IO.File]::WriteAllText($pagePath, $html, $utf8)
     $profileDir = Join-Path $work "profile-$name"
@@ -247,7 +249,7 @@ try {
             $expected = $serializer.DeserializeObject([IO.File]::ReadAllText($reference, [Text.Encoding]::UTF8))
             $wrapper = ($actual.Keys | Sort-Object) -join ','
             if ($wrapper -cne 'bindingsVersion,database,schema,temporalization' -or $actual['bindingsVersion'] -ne 1 -or
-                $actual['database'] -cne 'Snowflake' -or $actual['temporalization'] -cne ([regex]::Match($model, 'temporalization="(\w+)"').Groups[1].Value)) {
+                $actual['database'] -cne ([regex]::Match($model, 'databaseTarget="(\w+)"').Groups[1].Value) -or $actual['temporalization'] -cne ([regex]::Match($model, 'temporalization="(\w+)"').Groups[1].Value)) {
                 Write-Host ("FAIL  {0}: unexpected wrapper ({1}; {2} {3})" -f $v, $wrapper, $actual['database'], $actual['temporalization'])
                 $failed++; continue
             }
@@ -260,6 +262,7 @@ try {
                 $failed++; continue
             }
             $actual['schema'].Remove('serialization') | Out-Null
+            if ($expected['schema'].ContainsKey('serialization')) { $expected['schema'].Remove('serialization') | Out-Null }   # check.ps1 adds it too, from the model file
             # The stamps that the modeler writes when it saves: its version and the date and time.
             # No generator reads them, and a model file keeps the ones from when it was saved.
             foreach ($stamp in 'format', 'date', 'time') {
@@ -280,6 +283,11 @@ try {
         if ($null -eq $sql) { $failed++; continue }
         if ($KeepOutput) { [IO.File]::WriteAllText((Join-Path $KeepOutput "$v.sql"), $sql, $utf8) }
         $golden = [IO.File]::ReadAllText((Join-Path $root "golden\$v\_full.sql"), [Text.Encoding]::UTF8) -replace "`r`n", "`n"
+        # SQL Server's schema tracking embeds the model's own XML as N'<schema ...>...</schema>'. The modeler writes it as the
+        # model is at that moment, with the time of that moment, so that part is compared as a placeholder, not byte for byte.
+        $embeddedModel = '(?s)(N'')<schema [^\r\n]*?>.*?</schema>('';)'
+        $sql = [regex]::Replace($sql, $embeddedModel, '$1(the model)$2')
+        $golden = [regex]::Replace($golden, $embeddedModel, '$1(the model)$2')
         if ($sql -ceq $golden) {
             Write-Host ("PASS  {0}: the modeler's output is identical to the golden file ({1:N0} characters)" -f $v, $sql.Length)
         } else {
