@@ -3,269 +3,269 @@
 -- Snowflake-native BI anchor perspectives: time traveling (t), latest (l), point-in-time (p),
 -- now (n), and difference (d).
 --
-CREATE OR REPLACE FUNCTION anchors.tST_Stage (
+CREATE OR REPLACE FUNCTION anchors."tST_Stage" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    ST_ID int,
-    Metadata_ST int,
-    Metadata_ST_NAM int,
-    ST_NAM_ID int,
-    ST_NAM_ChangedAt datetime,
-    ST_NAM_PositedAt datetime,
-    ST_NAM_Reliability decimal(5,2),
-    ST_NAM_Stage_Name varchar(42),
-    Metadata_ST_LOC int,
-    ST_LOC_ID int,
-    ST_LOC_PositedAt datetime,
-    ST_LOC_Reliability decimal(5,2),
-    ST_LOC_Checksum numeric(19,0),
-    ST_LOC_Stage_Location geography,
-    Metadata_ST_AVG int,
-    ST_AVG_ID int,
-    ST_AVG_ChangedAt datetime,
-    ST_AVG_PositedAt datetime,
-    ST_AVG_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint,
-    Metadata_ST_MIN int,
-    ST_MIN_ID int,
-    ST_MIN_PositedAt datetime,
-    ST_MIN_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint
+    "ST_ID" int,
+    "Metadata_ST" int,
+    "Metadata_ST_NAM" int,
+    "ST_NAM_ID" int,
+    "ST_NAM_ChangedAt" datetime,
+    "ST_NAM_PositedAt" datetime,
+    "ST_NAM_Reliability" decimal(5,2),
+    "ST_NAM_Stage_Name" varchar(42),
+    "Metadata_ST_LOC" int,
+    "ST_LOC_ID" int,
+    "ST_LOC_PositedAt" datetime,
+    "ST_LOC_Reliability" decimal(5,2),
+    "ST_LOC_Checksum" numeric(19,0),
+    "ST_LOC_Stage_Location" geography,
+    "Metadata_ST_AVG" int,
+    "ST_AVG_ID" int,
+    "ST_AVG_ChangedAt" datetime,
+    "ST_AVG_PositedAt" datetime,
+    "ST_AVG_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint,
+    "Metadata_ST_MIN" int,
+    "ST_MIN_ID" int,
+    "ST_MIN_PositedAt" datetime,
+    "ST_MIN_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint
 )
 AS
 $$
 SELECT
-    ST.ST_ID,
-    ST.Metadata_ST,
-    NAM.Metadata_ST_NAM,
-    NAM.ST_NAM_ID,
-    NAM.ST_NAM_ChangedAt,
-    NAM.ST_NAM_PositedAt,
-    NAM.ST_NAM_Reliability,
-    NAM.ST_NAM_Stage_Name,
-    LOC.Metadata_ST_LOC,
-    LOC.ST_LOC_ID,
-    LOC.ST_LOC_PositedAt,
-    LOC.ST_LOC_Reliability,
-    LOC.ST_LOC_Checksum,
-    LOC.ST_LOC_Stage_Location,
-    AVG.Metadata_ST_AVG,
-    AVG.ST_AVG_ID,
-    AVG.ST_AVG_ChangedAt,
-    AVG.ST_AVG_PositedAt,
-    AVG.ST_AVG_Reliability,
-    kAVG.UTL_Utilization AS UTL_Utilization,
-    kAVG.Metadata_UTL AS Metadata_UTL,
-    AVG.UTL_ID,
-    MIN.Metadata_ST_MIN,
-    MIN.ST_MIN_ID,
-    MIN.ST_MIN_PositedAt,
-    MIN.ST_MIN_Reliability,
-    kMIN.UTL_Utilization AS UTL_Utilization,
-    kMIN.Metadata_UTL AS Metadata_UTL,
-    MIN.UTL_ID
+    "ST"."ST_ID",
+    "ST"."Metadata_ST",
+    "NAM"."Metadata_ST_NAM",
+    "NAM"."ST_NAM_ID",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_PositedAt",
+    "NAM"."ST_NAM_Reliability",
+    "NAM"."ST_NAM_Stage_Name",
+    "LOC"."Metadata_ST_LOC",
+    "LOC"."ST_LOC_ID",
+    "LOC"."ST_LOC_PositedAt",
+    "LOC"."ST_LOC_Reliability",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Stage_Location",
+    "AVG"."Metadata_ST_AVG",
+    "AVG"."ST_AVG_ID",
+    "AVG"."ST_AVG_ChangedAt",
+    "AVG"."ST_AVG_PositedAt",
+    "AVG"."ST_AVG_Reliability",
+    "kAVG"."UTL_Utilization" AS "UTL_Utilization",
+    "kAVG"."Metadata_UTL" AS "Metadata_UTL",
+    "AVG"."UTL_ID",
+    "MIN"."Metadata_ST_MIN",
+    "MIN"."ST_MIN_ID",
+    "MIN"."ST_MIN_PositedAt",
+    "MIN"."ST_MIN_Reliability",
+    "kMIN"."UTL_Utilization" AS "UTL_Utilization",
+    "kMIN"."Metadata_UTL" AS "Metadata_UTL",
+    "MIN"."UTL_ID"
 FROM
-    anchors.ST_Stage ST
+    anchors."ST_Stage" "ST"
 LEFT JOIN
-    TABLE(attributes.rST_NAM_Stage_Name(
+    TABLE(attributes."rST_NAM_Stage_Name"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
-    )) NAM
+    )) "NAM"
 ON
-    NAM.ST_NAM_ID = (
+    "NAM"."ST_NAM_ID" = (
         SELECT
-            sub.ST_NAM_ID
+            sub."ST_NAM_ID"
         FROM
-            TABLE(attributes.rST_NAM_Stage_Name(
+            TABLE(attributes."rST_NAM_Stage_Name"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.ST_ID = ST.ST_ID
+            sub."ST_ID" = "ST"."ST_ID"
         AND
-            sub.ST_NAM_Reliability = 1
+            sub."ST_NAM_Reliability" = 1
         ORDER BY
-            sub.ST_NAM_ChangedAt DESC,
-            sub.ST_NAM_PositedAt DESC
+            sub."ST_NAM_ChangedAt" DESC,
+            sub."ST_NAM_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    TABLE(attributes.rST_LOC_Stage_Location(
+    TABLE(attributes."rST_LOC_Stage_Location"(
         positingTimepoint::datetime
-    )) LOC
+    )) "LOC"
 ON
-    LOC.ST_LOC_ID = (
+    "LOC"."ST_LOC_ID" = (
         SELECT
-            sub.ST_LOC_ID
+            sub."ST_LOC_ID"
         FROM
-            TABLE(attributes.rST_LOC_Stage_Location(
+            TABLE(attributes."rST_LOC_Stage_Location"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.ST_ID = ST.ST_ID
+            sub."ST_ID" = "ST"."ST_ID"
         AND
-            sub.ST_LOC_Reliability = 1
+            sub."ST_LOC_Reliability" = 1
         ORDER BY
-            sub.ST_LOC_PositedAt DESC
+            sub."ST_LOC_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    TABLE(attributes.rST_AVG_Stage_Average(
+    TABLE(attributes."rST_AVG_Stage_Average"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
-    )) AVG
+    )) "AVG"
 ON
-    AVG.ST_AVG_ID = (
+    "AVG"."ST_AVG_ID" = (
         SELECT
-            sub.ST_AVG_ID
+            sub."ST_AVG_ID"
         FROM
-            TABLE(attributes.rST_AVG_Stage_Average(
+            TABLE(attributes."rST_AVG_Stage_Average"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.ST_ID = ST.ST_ID
+            sub."ST_ID" = "ST"."ST_ID"
         AND
-            sub.ST_AVG_Reliability = 1
+            sub."ST_AVG_Reliability" = 1
         ORDER BY
-            sub.ST_AVG_ChangedAt DESC,
-            sub.ST_AVG_PositedAt DESC
+            sub."ST_AVG_ChangedAt" DESC,
+            sub."ST_AVG_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    knots.UTL_Utilization kAVG
+    knots."UTL_Utilization" "kAVG"
 ON
-    kAVG.UTL_ID = AVG.UTL_ID
+    "kAVG"."UTL_ID" = "AVG"."UTL_ID"
 LEFT JOIN
-    TABLE(attributes.rST_MIN_Stage_Minimum(
+    TABLE(attributes."rST_MIN_Stage_Minimum"(
         positingTimepoint::datetime
-    )) MIN
+    )) "MIN"
 ON
-    MIN.ST_MIN_ID = (
+    "MIN"."ST_MIN_ID" = (
         SELECT
-            sub.ST_MIN_ID
+            sub."ST_MIN_ID"
         FROM
-            TABLE(attributes.rST_MIN_Stage_Minimum(
+            TABLE(attributes."rST_MIN_Stage_Minimum"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.ST_ID = ST.ST_ID
+            sub."ST_ID" = "ST"."ST_ID"
         AND
-            sub.ST_MIN_Reliability = 1
+            sub."ST_MIN_Reliability" = 1
         ORDER BY
-            sub.ST_MIN_PositedAt DESC
+            sub."ST_MIN_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    knots.UTL_Utilization kMIN
+    knots."UTL_Utilization" "kMIN"
 ON
-    kMIN.UTL_ID = MIN.UTL_ID
+    "kMIN"."UTL_ID" = "MIN"."UTL_ID"
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lST_Stage COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."lST_Stage" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    ST.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "ST".*
 FROM
-    TABLE(anchors.tST_Stage(
+    TABLE(anchors."tST_Stage"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) ST
+    )) "ST"
 ;
-CREATE OR REPLACE FUNCTION anchors.pST_Stage (
+CREATE OR REPLACE FUNCTION anchors."pST_Stage" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    Reliability decimal(5,2),
-    ST_ID int,
-    Metadata_ST int,
-    Metadata_ST_NAM int,
-    ST_NAM_ID int,
-    ST_NAM_ChangedAt datetime,
-    ST_NAM_PositedAt datetime,
-    ST_NAM_Reliability decimal(5,2),
-    ST_NAM_Stage_Name varchar(42),
-    Metadata_ST_LOC int,
-    ST_LOC_ID int,
-    ST_LOC_PositedAt datetime,
-    ST_LOC_Reliability decimal(5,2),
-    ST_LOC_Checksum numeric(19,0),
-    ST_LOC_Stage_Location geography,
-    Metadata_ST_AVG int,
-    ST_AVG_ID int,
-    ST_AVG_ChangedAt datetime,
-    ST_AVG_PositedAt datetime,
-    ST_AVG_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint,
-    Metadata_ST_MIN int,
-    ST_MIN_ID int,
-    ST_MIN_PositedAt datetime,
-    ST_MIN_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint
+    "Reliability" decimal(5,2),
+    "ST_ID" int,
+    "Metadata_ST" int,
+    "Metadata_ST_NAM" int,
+    "ST_NAM_ID" int,
+    "ST_NAM_ChangedAt" datetime,
+    "ST_NAM_PositedAt" datetime,
+    "ST_NAM_Reliability" decimal(5,2),
+    "ST_NAM_Stage_Name" varchar(42),
+    "Metadata_ST_LOC" int,
+    "ST_LOC_ID" int,
+    "ST_LOC_PositedAt" datetime,
+    "ST_LOC_Reliability" decimal(5,2),
+    "ST_LOC_Checksum" numeric(19,0),
+    "ST_LOC_Stage_Location" geography,
+    "Metadata_ST_AVG" int,
+    "ST_AVG_ID" int,
+    "ST_AVG_ChangedAt" datetime,
+    "ST_AVG_PositedAt" datetime,
+    "ST_AVG_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint,
+    "Metadata_ST_MIN" int,
+    "ST_MIN_ID" int,
+    "ST_MIN_PositedAt" datetime,
+    "ST_MIN_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint
 )
 AS
 $$
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    ST.ST_ID,
-    ST.Metadata_ST,
-    ST.Metadata_ST_NAM,
-    ST.ST_NAM_ID,
-    ST.ST_NAM_ChangedAt,
-    ST.ST_NAM_PositedAt,
-    ST.ST_NAM_Reliability,
-    ST.ST_NAM_Stage_Name,
-    ST.Metadata_ST_LOC,
-    ST.ST_LOC_ID,
-    ST.ST_LOC_PositedAt,
-    ST.ST_LOC_Reliability,
-    ST.ST_LOC_Checksum,
-    ST.ST_LOC_Stage_Location,
-    ST.Metadata_ST_AVG,
-    ST.ST_AVG_ID,
-    ST.ST_AVG_ChangedAt,
-    ST.ST_AVG_PositedAt,
-    ST.ST_AVG_Reliability,
-    ST.UTL_Utilization,
-    ST.Metadata_UTL,
-    ST.UTL_ID,
-    ST.Metadata_ST_MIN,
-    ST.ST_MIN_ID,
-    ST.ST_MIN_PositedAt,
-    ST.ST_MIN_Reliability,
-    ST.UTL_Utilization,
-    ST.Metadata_UTL,
-    ST.UTL_ID
+    cast(null as decimal(5,2)) as "Reliability",
+    "ST"."ST_ID",
+    "ST"."Metadata_ST",
+    "ST"."Metadata_ST_NAM",
+    "ST"."ST_NAM_ID",
+    "ST"."ST_NAM_ChangedAt",
+    "ST"."ST_NAM_PositedAt",
+    "ST"."ST_NAM_Reliability",
+    "ST"."ST_NAM_Stage_Name",
+    "ST"."Metadata_ST_LOC",
+    "ST"."ST_LOC_ID",
+    "ST"."ST_LOC_PositedAt",
+    "ST"."ST_LOC_Reliability",
+    "ST"."ST_LOC_Checksum",
+    "ST"."ST_LOC_Stage_Location",
+    "ST"."Metadata_ST_AVG",
+    "ST"."ST_AVG_ID",
+    "ST"."ST_AVG_ChangedAt",
+    "ST"."ST_AVG_PositedAt",
+    "ST"."ST_AVG_Reliability",
+    "ST"."UTL_Utilization",
+    "ST"."Metadata_UTL",
+    "ST"."UTL_ID",
+    "ST"."Metadata_ST_MIN",
+    "ST"."ST_MIN_ID",
+    "ST"."ST_MIN_PositedAt",
+    "ST"."ST_MIN_Reliability",
+    "ST"."UTL_Utilization",
+    "ST"."Metadata_UTL",
+    "ST"."UTL_ID"
 FROM
-    TABLE(anchors.tST_Stage(
+    TABLE(anchors."tST_Stage"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) ST
+    )) "ST"
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nST_Stage COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."nST_Stage" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    ST.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "ST".*
 FROM
-    TABLE(anchors.tST_Stage(
+    TABLE(anchors."tST_Stage"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) ST
+    )) "ST"
 ;
-CREATE OR REPLACE FUNCTION anchors.dST_Stage (
+CREATE OR REPLACE FUNCTION anchors."dST_Stage" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9),
     selection string
@@ -273,327 +273,327 @@ CREATE OR REPLACE FUNCTION anchors.dST_Stage (
 COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
-    ST_ID int,
-    Metadata_ST int,
-    Metadata_ST_NAM int,
-    ST_NAM_ID int,
-    ST_NAM_ChangedAt datetime,
-    ST_NAM_PositedAt datetime,
-    ST_NAM_Reliability decimal(5,2),
-    ST_NAM_Stage_Name varchar(42),
-    Metadata_ST_LOC int,
-    ST_LOC_ID int,
-    ST_LOC_PositedAt datetime,
-    ST_LOC_Reliability decimal(5,2),
-    ST_LOC_Checksum numeric(19,0),
-    ST_LOC_Stage_Location geography,
-    Metadata_ST_AVG int,
-    ST_AVG_ID int,
-    ST_AVG_ChangedAt datetime,
-    ST_AVG_PositedAt datetime,
-    ST_AVG_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint,
-    Metadata_ST_MIN int,
-    ST_MIN_ID int,
-    ST_MIN_PositedAt datetime,
-    ST_MIN_Reliability decimal(5,2),
-    UTL_Utilization tinyint,
-    Metadata_UTL int,
-    UTL_ID tinyint
+    "ST_ID" int,
+    "Metadata_ST" int,
+    "Metadata_ST_NAM" int,
+    "ST_NAM_ID" int,
+    "ST_NAM_ChangedAt" datetime,
+    "ST_NAM_PositedAt" datetime,
+    "ST_NAM_Reliability" decimal(5,2),
+    "ST_NAM_Stage_Name" varchar(42),
+    "Metadata_ST_LOC" int,
+    "ST_LOC_ID" int,
+    "ST_LOC_PositedAt" datetime,
+    "ST_LOC_Reliability" decimal(5,2),
+    "ST_LOC_Checksum" numeric(19,0),
+    "ST_LOC_Stage_Location" geography,
+    "Metadata_ST_AVG" int,
+    "ST_AVG_ID" int,
+    "ST_AVG_ChangedAt" datetime,
+    "ST_AVG_PositedAt" datetime,
+    "ST_AVG_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint,
+    "Metadata_ST_MIN" int,
+    "ST_MIN_ID" int,
+    "ST_MIN_PositedAt" datetime,
+    "ST_MIN_Reliability" decimal(5,2),
+    "UTL_Utilization" tinyint,
+    "Metadata_UTL" int,
+    "UTL_ID" tinyint
 )
 AS
 $$
 SELECT
     tp.inspectedTimepoint,
-    ST.ST_ID,
-    ST.Metadata_ST,
-    ST.Metadata_ST_NAM,
-    ST.ST_NAM_ID,
-    ST.ST_NAM_ChangedAt,
-    ST.ST_NAM_PositedAt,
-    ST.ST_NAM_Reliability,
-    ST.ST_NAM_Stage_Name,
-    ST.Metadata_ST_LOC,
-    ST.ST_LOC_ID,
-    ST.ST_LOC_PositedAt,
-    ST.ST_LOC_Reliability,
-    ST.ST_LOC_Checksum,
-    ST.ST_LOC_Stage_Location,
-    ST.Metadata_ST_AVG,
-    ST.ST_AVG_ID,
-    ST.ST_AVG_ChangedAt,
-    ST.ST_AVG_PositedAt,
-    ST.ST_AVG_Reliability,
-    ST.UTL_Utilization,
-    ST.Metadata_UTL,
-    ST.UTL_ID,
-    ST.Metadata_ST_MIN,
-    ST.ST_MIN_ID,
-    ST.ST_MIN_PositedAt,
-    ST.ST_MIN_Reliability,
-    ST.UTL_Utilization,
-    ST.Metadata_UTL,
-    ST.UTL_ID
+    "ST"."ST_ID",
+    "ST"."Metadata_ST",
+    "ST"."Metadata_ST_NAM",
+    "ST"."ST_NAM_ID",
+    "ST"."ST_NAM_ChangedAt",
+    "ST"."ST_NAM_PositedAt",
+    "ST"."ST_NAM_Reliability",
+    "ST"."ST_NAM_Stage_Name",
+    "ST"."Metadata_ST_LOC",
+    "ST"."ST_LOC_ID",
+    "ST"."ST_LOC_PositedAt",
+    "ST"."ST_LOC_Reliability",
+    "ST"."ST_LOC_Checksum",
+    "ST"."ST_LOC_Stage_Location",
+    "ST"."Metadata_ST_AVG",
+    "ST"."ST_AVG_ID",
+    "ST"."ST_AVG_ChangedAt",
+    "ST"."ST_AVG_PositedAt",
+    "ST"."ST_AVG_Reliability",
+    "ST"."UTL_Utilization",
+    "ST"."Metadata_UTL",
+    "ST"."UTL_ID",
+    "ST"."Metadata_ST_MIN",
+    "ST"."ST_MIN_ID",
+    "ST"."ST_MIN_PositedAt",
+    "ST"."ST_MIN_Reliability",
+    "ST"."UTL_Utilization",
+    "ST"."Metadata_UTL",
+    "ST"."UTL_ID"
 FROM (
     SELECT DISTINCT
-        ST_ID AS ST_ID,
-        ST_NAM_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint,
+        "ST_ID" AS "ST_ID",
+        "ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        attributes.ST_NAM_Stage_Name
+        attributes."ST_NAM_Stage_Name"
     WHERE
         (selection IS NULL OR selection LIKE '%NAM%')
     AND
-        ST_NAM_ChangedAt BETWEEN intervalStart AND intervalEnd
+        "ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
     UNION
     SELECT DISTINCT
-        ST_ID AS ST_ID,
-        ST_AVG_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint,
+        "ST_ID" AS "ST_ID",
+        "ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'AVG' AS mnemonic
     FROM
-        attributes.ST_AVG_Stage_Average
+        attributes."ST_AVG_Stage_Average"
     WHERE
         (selection IS NULL OR selection LIKE '%AVG%')
     AND
-        ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd
+        "ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp,
-    TABLE(anchors.tST_Stage(
+    TABLE(anchors."tST_Stage"(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) ST
+    )) "ST"
 WHERE
-    ST.ST_ID = tp.ST_ID
+    "ST"."ST_ID" = tp."ST_ID"
 $$
 ;
-CREATE OR REPLACE FUNCTION anchors.tAC_Actor (
+CREATE OR REPLACE FUNCTION anchors."tAC_Actor" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_ID smallint,
-    Metadata_AC int,
-    Metadata_AC_NAM int,
-    AC_NAM_ID int,
-    AC_NAM_ChangedAt datetime,
-    AC_NAM_PositedAt datetime,
-    AC_NAM_Reliability decimal(5,2),
-    AC_NAM_Actor_Name varbinary(max),
-    Metadata_AC_GEN int,
-    AC_GEN_ID int,
-    AC_GEN_PositedAt datetime,
-    AC_GEN_Reliability decimal(5,2),
-    GEN_Checksum numeric(19,0),
-    GEN_Gender varchar(42),
-    Metadata_GEN int,
-    GEN_ID number(1,0),
-    Metadata_AC_PLV int,
-    AC_PLV_ID int,
-    AC_PLV_ChangedAt datetime,
-    AC_PLV_PositedAt datetime,
-    AC_PLV_Reliability decimal(5,2),
-    PLV_Checksum numeric(19,0),
-    PLV_ProfessionalLevel string,
-    Metadata_PLV int,
-    PLV_ID tinyint
+    "AC_ID" smallint,
+    "Metadata_AC" int,
+    "Metadata_AC_NAM" int,
+    "AC_NAM_ID" int,
+    "AC_NAM_ChangedAt" datetime,
+    "AC_NAM_PositedAt" datetime,
+    "AC_NAM_Reliability" decimal(5,2),
+    "AC_NAM_Actor_Name" varbinary(max),
+    "Metadata_AC_GEN" int,
+    "AC_GEN_ID" int,
+    "AC_GEN_PositedAt" datetime,
+    "AC_GEN_Reliability" decimal(5,2),
+    "GEN_Checksum" numeric(19,0),
+    "GEN_Gender" varchar(42),
+    "Metadata_GEN" int,
+    "GEN_ID" number(1,0),
+    "Metadata_AC_PLV" int,
+    "AC_PLV_ID" int,
+    "AC_PLV_ChangedAt" datetime,
+    "AC_PLV_PositedAt" datetime,
+    "AC_PLV_Reliability" decimal(5,2),
+    "PLV_Checksum" numeric(19,0),
+    "PLV_ProfessionalLevel" string,
+    "Metadata_PLV" int,
+    "PLV_ID" tinyint
 )
 AS
 $$
 SELECT
-    AC.AC_ID,
-    AC.Metadata_AC,
-    NAM.Metadata_AC_NAM,
-    NAM.AC_NAM_ID,
-    NAM.AC_NAM_ChangedAt,
-    NAM.AC_NAM_PositedAt,
-    NAM.AC_NAM_Reliability,
-    NAM.AC_NAM_Actor_Name,
-    GEN.Metadata_AC_GEN,
-    GEN.AC_GEN_ID,
-    GEN.AC_GEN_PositedAt,
-    GEN.AC_GEN_Reliability,
-    kGEN.GEN_Checksum AS GEN_Checksum,
-    kGEN.GEN_Gender AS GEN_Gender,
-    kGEN.Metadata_GEN AS Metadata_GEN,
-    GEN.GEN_ID,
-    PLV.Metadata_AC_PLV,
-    PLV.AC_PLV_ID,
-    PLV.AC_PLV_ChangedAt,
-    PLV.AC_PLV_PositedAt,
-    PLV.AC_PLV_Reliability,
-    kPLV.PLV_Checksum AS PLV_Checksum,
-    kPLV.PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
-    kPLV.Metadata_PLV AS Metadata_PLV,
-    PLV.PLV_ID
+    "AC"."AC_ID",
+    "AC"."Metadata_AC",
+    "NAM"."Metadata_AC_NAM",
+    "NAM"."AC_NAM_ID",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_PositedAt",
+    "NAM"."AC_NAM_Reliability",
+    "NAM"."AC_NAM_Actor_Name",
+    "GEN"."Metadata_AC_GEN",
+    "GEN"."AC_GEN_ID",
+    "GEN"."AC_GEN_PositedAt",
+    "GEN"."AC_GEN_Reliability",
+    "kGEN"."GEN_Checksum" AS "GEN_Checksum",
+    "kGEN"."GEN_Gender" AS "GEN_Gender",
+    "kGEN"."Metadata_GEN" AS "Metadata_GEN",
+    "GEN"."GEN_ID",
+    "PLV"."Metadata_AC_PLV",
+    "PLV"."AC_PLV_ID",
+    "PLV"."AC_PLV_ChangedAt",
+    "PLV"."AC_PLV_PositedAt",
+    "PLV"."AC_PLV_Reliability",
+    "kPLV"."PLV_Checksum" AS "PLV_Checksum",
+    "kPLV"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kPLV"."Metadata_PLV" AS "Metadata_PLV",
+    "PLV"."PLV_ID"
 FROM
-    anchors.AC_Actor AC
+    anchors."AC_Actor" "AC"
 LEFT JOIN
-    TABLE(attributes.rAC_NAM_Actor_Name(
+    TABLE(attributes."rAC_NAM_Actor_Name"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
-    )) NAM
+    )) "NAM"
 ON
-    NAM.AC_NAM_ID = (
+    "NAM"."AC_NAM_ID" = (
         SELECT
-            sub.AC_NAM_ID
+            sub."AC_NAM_ID"
         FROM
-            TABLE(attributes.rAC_NAM_Actor_Name(
+            TABLE(attributes."rAC_NAM_Actor_Name"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.AC_ID = AC.AC_ID
+            sub."AC_ID" = "AC"."AC_ID"
         AND
-            sub.AC_NAM_Reliability = 1
+            sub."AC_NAM_Reliability" = 1
         ORDER BY
-            sub.AC_NAM_ChangedAt DESC,
-            sub.AC_NAM_PositedAt DESC
+            sub."AC_NAM_ChangedAt" DESC,
+            sub."AC_NAM_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    TABLE(attributes.rAC_GEN_Actor_Gender(
+    TABLE(attributes."rAC_GEN_Actor_Gender"(
         positingTimepoint::datetime
-    )) GEN
+    )) "GEN"
 ON
-    GEN.AC_GEN_ID = (
+    "GEN"."AC_GEN_ID" = (
         SELECT
-            sub.AC_GEN_ID
+            sub."AC_GEN_ID"
         FROM
-            TABLE(attributes.rAC_GEN_Actor_Gender(
+            TABLE(attributes."rAC_GEN_Actor_Gender"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.AC_ID = AC.AC_ID
+            sub."AC_ID" = "AC"."AC_ID"
         AND
-            sub.AC_GEN_Reliability = 1
+            sub."AC_GEN_Reliability" = 1
         ORDER BY
-            sub.AC_GEN_PositedAt DESC
+            sub."AC_GEN_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    knots.GEN_Gender kGEN
+    knots."GEN_Gender" "kGEN"
 ON
-    kGEN.GEN_ID = GEN.GEN_ID
+    "kGEN"."GEN_ID" = "GEN"."GEN_ID"
 LEFT JOIN
-    TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
+    TABLE(attributes."rAC_PLV_Actor_ProfessionalLevel"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
-    )) PLV
+    )) "PLV"
 ON
-    PLV.AC_PLV_ID = (
+    "PLV"."AC_PLV_ID" = (
         SELECT
-            sub.AC_PLV_ID
+            sub."AC_PLV_ID"
         FROM
-            TABLE(attributes.rAC_PLV_Actor_ProfessionalLevel(
+            TABLE(attributes."rAC_PLV_Actor_ProfessionalLevel"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.AC_ID = AC.AC_ID
+            sub."AC_ID" = "AC"."AC_ID"
         AND
-            sub.AC_PLV_Reliability = 1
+            sub."AC_PLV_Reliability" = 1
         ORDER BY
-            sub.AC_PLV_ChangedAt DESC,
-            sub.AC_PLV_PositedAt DESC
+            sub."AC_PLV_ChangedAt" DESC,
+            sub."AC_PLV_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    knots.PLV_ProfessionalLevel kPLV
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
-    kPLV.PLV_ID = PLV.PLV_ID
+    "kPLV"."PLV_ID" = "PLV"."PLV_ID"
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lAC_Actor COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."lAC_Actor" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    AC.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "AC".*
 FROM
-    TABLE(anchors.tAC_Actor(
+    TABLE(anchors."tAC_Actor"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) AC
+    )) "AC"
 ;
-CREATE OR REPLACE FUNCTION anchors.pAC_Actor (
+CREATE OR REPLACE FUNCTION anchors."pAC_Actor" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    Reliability decimal(5,2),
-    AC_ID smallint,
-    Metadata_AC int,
-    Metadata_AC_NAM int,
-    AC_NAM_ID int,
-    AC_NAM_ChangedAt datetime,
-    AC_NAM_PositedAt datetime,
-    AC_NAM_Reliability decimal(5,2),
-    AC_NAM_Actor_Name varbinary(max),
-    Metadata_AC_GEN int,
-    AC_GEN_ID int,
-    AC_GEN_PositedAt datetime,
-    AC_GEN_Reliability decimal(5,2),
-    GEN_Checksum numeric(19,0),
-    GEN_Gender varchar(42),
-    Metadata_GEN int,
-    GEN_ID number(1,0),
-    Metadata_AC_PLV int,
-    AC_PLV_ID int,
-    AC_PLV_ChangedAt datetime,
-    AC_PLV_PositedAt datetime,
-    AC_PLV_Reliability decimal(5,2),
-    PLV_Checksum numeric(19,0),
-    PLV_ProfessionalLevel string,
-    Metadata_PLV int,
-    PLV_ID tinyint
+    "Reliability" decimal(5,2),
+    "AC_ID" smallint,
+    "Metadata_AC" int,
+    "Metadata_AC_NAM" int,
+    "AC_NAM_ID" int,
+    "AC_NAM_ChangedAt" datetime,
+    "AC_NAM_PositedAt" datetime,
+    "AC_NAM_Reliability" decimal(5,2),
+    "AC_NAM_Actor_Name" varbinary(max),
+    "Metadata_AC_GEN" int,
+    "AC_GEN_ID" int,
+    "AC_GEN_PositedAt" datetime,
+    "AC_GEN_Reliability" decimal(5,2),
+    "GEN_Checksum" numeric(19,0),
+    "GEN_Gender" varchar(42),
+    "Metadata_GEN" int,
+    "GEN_ID" number(1,0),
+    "Metadata_AC_PLV" int,
+    "AC_PLV_ID" int,
+    "AC_PLV_ChangedAt" datetime,
+    "AC_PLV_PositedAt" datetime,
+    "AC_PLV_Reliability" decimal(5,2),
+    "PLV_Checksum" numeric(19,0),
+    "PLV_ProfessionalLevel" string,
+    "Metadata_PLV" int,
+    "PLV_ID" tinyint
 )
 AS
 $$
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    AC.AC_ID,
-    AC.Metadata_AC,
-    AC.Metadata_AC_NAM,
-    AC.AC_NAM_ID,
-    AC.AC_NAM_ChangedAt,
-    AC.AC_NAM_PositedAt,
-    AC.AC_NAM_Reliability,
-    AC.AC_NAM_Actor_Name,
-    AC.Metadata_AC_GEN,
-    AC.AC_GEN_ID,
-    AC.AC_GEN_PositedAt,
-    AC.AC_GEN_Reliability,
-    AC.GEN_Checksum,
-    AC.GEN_Gender,
-    AC.Metadata_GEN,
-    AC.GEN_ID,
-    AC.Metadata_AC_PLV,
-    AC.AC_PLV_ID,
-    AC.AC_PLV_ChangedAt,
-    AC.AC_PLV_PositedAt,
-    AC.AC_PLV_Reliability,
-    AC.PLV_Checksum,
-    AC.PLV_ProfessionalLevel,
-    AC.Metadata_PLV,
-    AC.PLV_ID
+    cast(null as decimal(5,2)) as "Reliability",
+    "AC"."AC_ID",
+    "AC"."Metadata_AC",
+    "AC"."Metadata_AC_NAM",
+    "AC"."AC_NAM_ID",
+    "AC"."AC_NAM_ChangedAt",
+    "AC"."AC_NAM_PositedAt",
+    "AC"."AC_NAM_Reliability",
+    "AC"."AC_NAM_Actor_Name",
+    "AC"."Metadata_AC_GEN",
+    "AC"."AC_GEN_ID",
+    "AC"."AC_GEN_PositedAt",
+    "AC"."AC_GEN_Reliability",
+    "AC"."GEN_Checksum",
+    "AC"."GEN_Gender",
+    "AC"."Metadata_GEN",
+    "AC"."GEN_ID",
+    "AC"."Metadata_AC_PLV",
+    "AC"."AC_PLV_ID",
+    "AC"."AC_PLV_ChangedAt",
+    "AC"."AC_PLV_PositedAt",
+    "AC"."AC_PLV_Reliability",
+    "AC"."PLV_Checksum",
+    "AC"."PLV_ProfessionalLevel",
+    "AC"."Metadata_PLV",
+    "AC"."PLV_ID"
 FROM
-    TABLE(anchors.tAC_Actor(
+    TABLE(anchors."tAC_Actor"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) AC
+    )) "AC"
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nAC_Actor COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."nAC_Actor" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    AC.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "AC".*
 FROM
-    TABLE(anchors.tAC_Actor(
+    TABLE(anchors."tAC_Actor"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) AC
+    )) "AC"
 ;
-CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
+CREATE OR REPLACE FUNCTION anchors."dAC_Actor" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9),
     selection string
@@ -601,240 +601,240 @@ CREATE OR REPLACE FUNCTION anchors.dAC_Actor (
 COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
-    AC_ID smallint,
-    Metadata_AC int,
-    Metadata_AC_NAM int,
-    AC_NAM_ID int,
-    AC_NAM_ChangedAt datetime,
-    AC_NAM_PositedAt datetime,
-    AC_NAM_Reliability decimal(5,2),
-    AC_NAM_Actor_Name varbinary(max),
-    Metadata_AC_GEN int,
-    AC_GEN_ID int,
-    AC_GEN_PositedAt datetime,
-    AC_GEN_Reliability decimal(5,2),
-    GEN_Checksum numeric(19,0),
-    GEN_Gender varchar(42),
-    Metadata_GEN int,
-    GEN_ID number(1,0),
-    Metadata_AC_PLV int,
-    AC_PLV_ID int,
-    AC_PLV_ChangedAt datetime,
-    AC_PLV_PositedAt datetime,
-    AC_PLV_Reliability decimal(5,2),
-    PLV_Checksum numeric(19,0),
-    PLV_ProfessionalLevel string,
-    Metadata_PLV int,
-    PLV_ID tinyint
+    "AC_ID" smallint,
+    "Metadata_AC" int,
+    "Metadata_AC_NAM" int,
+    "AC_NAM_ID" int,
+    "AC_NAM_ChangedAt" datetime,
+    "AC_NAM_PositedAt" datetime,
+    "AC_NAM_Reliability" decimal(5,2),
+    "AC_NAM_Actor_Name" varbinary(max),
+    "Metadata_AC_GEN" int,
+    "AC_GEN_ID" int,
+    "AC_GEN_PositedAt" datetime,
+    "AC_GEN_Reliability" decimal(5,2),
+    "GEN_Checksum" numeric(19,0),
+    "GEN_Gender" varchar(42),
+    "Metadata_GEN" int,
+    "GEN_ID" number(1,0),
+    "Metadata_AC_PLV" int,
+    "AC_PLV_ID" int,
+    "AC_PLV_ChangedAt" datetime,
+    "AC_PLV_PositedAt" datetime,
+    "AC_PLV_Reliability" decimal(5,2),
+    "PLV_Checksum" numeric(19,0),
+    "PLV_ProfessionalLevel" string,
+    "Metadata_PLV" int,
+    "PLV_ID" tinyint
 )
 AS
 $$
 SELECT
     tp.inspectedTimepoint,
-    AC.AC_ID,
-    AC.Metadata_AC,
-    AC.Metadata_AC_NAM,
-    AC.AC_NAM_ID,
-    AC.AC_NAM_ChangedAt,
-    AC.AC_NAM_PositedAt,
-    AC.AC_NAM_Reliability,
-    AC.AC_NAM_Actor_Name,
-    AC.Metadata_AC_GEN,
-    AC.AC_GEN_ID,
-    AC.AC_GEN_PositedAt,
-    AC.AC_GEN_Reliability,
-    AC.GEN_Checksum,
-    AC.GEN_Gender,
-    AC.Metadata_GEN,
-    AC.GEN_ID,
-    AC.Metadata_AC_PLV,
-    AC.AC_PLV_ID,
-    AC.AC_PLV_ChangedAt,
-    AC.AC_PLV_PositedAt,
-    AC.AC_PLV_Reliability,
-    AC.PLV_Checksum,
-    AC.PLV_ProfessionalLevel,
-    AC.Metadata_PLV,
-    AC.PLV_ID
+    "AC"."AC_ID",
+    "AC"."Metadata_AC",
+    "AC"."Metadata_AC_NAM",
+    "AC"."AC_NAM_ID",
+    "AC"."AC_NAM_ChangedAt",
+    "AC"."AC_NAM_PositedAt",
+    "AC"."AC_NAM_Reliability",
+    "AC"."AC_NAM_Actor_Name",
+    "AC"."Metadata_AC_GEN",
+    "AC"."AC_GEN_ID",
+    "AC"."AC_GEN_PositedAt",
+    "AC"."AC_GEN_Reliability",
+    "AC"."GEN_Checksum",
+    "AC"."GEN_Gender",
+    "AC"."Metadata_GEN",
+    "AC"."GEN_ID",
+    "AC"."Metadata_AC_PLV",
+    "AC"."AC_PLV_ID",
+    "AC"."AC_PLV_ChangedAt",
+    "AC"."AC_PLV_PositedAt",
+    "AC"."AC_PLV_Reliability",
+    "AC"."PLV_Checksum",
+    "AC"."PLV_ProfessionalLevel",
+    "AC"."Metadata_PLV",
+    "AC"."PLV_ID"
 FROM (
     SELECT DISTINCT
-        AC_ID AS AC_ID,
-        AC_NAM_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint,
+        "AC_ID" AS "AC_ID",
+        "AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        attributes.AC_NAM_Actor_Name
+        attributes."AC_NAM_Actor_Name"
     WHERE
         (selection IS NULL OR selection LIKE '%NAM%')
     AND
-        AC_NAM_ChangedAt BETWEEN intervalStart AND intervalEnd
+        "AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
     UNION
     SELECT DISTINCT
-        AC_ID AS AC_ID,
-        AC_PLV_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint,
+        "AC_ID" AS "AC_ID",
+        "AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'PLV' AS mnemonic
     FROM
-        attributes.AC_PLV_Actor_ProfessionalLevel
+        attributes."AC_PLV_Actor_ProfessionalLevel"
     WHERE
         (selection IS NULL OR selection LIKE '%PLV%')
     AND
-        AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd
+        "AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp,
-    TABLE(anchors.tAC_Actor(
+    TABLE(anchors."tAC_Actor"(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) AC
+    )) "AC"
 WHERE
-    AC.AC_ID = tp.AC_ID
+    "AC"."AC_ID" = tp."AC_ID"
 $$
 ;
-CREATE OR REPLACE FUNCTION anchors.tPR_Program (
+CREATE OR REPLACE FUNCTION anchors."tPR_Program" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    PR_ID number(10,0),
-    Metadata_PR int,
-    Metadata_PR_NAM int,
-    PR_NAM_ID int,
-    PR_NAM_PositedAt datetime,
-    PR_NAM_Reliability decimal(5,2),
-    PR_NAM_Program_Name varchar(42),
-    Metadata_PR_LEN int,
-    PR_LEN_ID int,
-    PR_LEN_ChangedAt date,
-    PR_LEN_PositedAt datetime,
-    PR_LEN_Reliability decimal(5,2),
-    PR_LEN_Program_Length time
+    "PR_ID" number(10,0),
+    "Metadata_PR" int,
+    "Metadata_PR_NAM" int,
+    "PR_NAM_ID" int,
+    "PR_NAM_PositedAt" datetime,
+    "PR_NAM_Reliability" decimal(5,2),
+    "PR_NAM_Program_Name" varchar(42),
+    "Metadata_PR_LEN" int,
+    "PR_LEN_ID" int,
+    "PR_LEN_ChangedAt" date,
+    "PR_LEN_PositedAt" datetime,
+    "PR_LEN_Reliability" decimal(5,2),
+    "PR_LEN_Program_Length" time
 )
 AS
 $$
 SELECT
-    PR.PR_ID,
-    PR.Metadata_PR,
-    NAM.Metadata_PR_NAM,
-    NAM.PR_NAM_ID,
-    NAM.PR_NAM_PositedAt,
-    NAM.PR_NAM_Reliability,
-    NAM.PR_NAM_Program_Name,
-    LEN.Metadata_PR_LEN,
-    LEN.PR_LEN_ID,
-    LEN.PR_LEN_ChangedAt,
-    LEN.PR_LEN_PositedAt,
-    LEN.PR_LEN_Reliability,
-    LEN.PR_LEN_Program_Length
+    "PR"."PR_ID",
+    "PR"."Metadata_PR",
+    "NAM"."Metadata_PR_NAM",
+    "NAM"."PR_NAM_ID",
+    "NAM"."PR_NAM_PositedAt",
+    "NAM"."PR_NAM_Reliability",
+    "NAM"."PR_NAM_Program_Name",
+    "LEN"."Metadata_PR_LEN",
+    "LEN"."PR_LEN_ID",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_PositedAt",
+    "LEN"."PR_LEN_Reliability",
+    "LEN"."PR_LEN_Program_Length"
 FROM
-    anchors.PR_Program PR
+    anchors."PR_Program" "PR"
 LEFT JOIN
-    TABLE(attributes.rPR_NAM_Program_Name(
+    TABLE(attributes."rPR_NAM_Program_Name"(
         positingTimepoint::datetime
-    )) NAM
+    )) "NAM"
 ON
-    NAM.PR_NAM_ID = (
+    "NAM"."PR_NAM_ID" = (
         SELECT
-            sub.PR_NAM_ID
+            sub."PR_NAM_ID"
         FROM
-            TABLE(attributes.rPR_NAM_Program_Name(
+            TABLE(attributes."rPR_NAM_Program_Name"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.PR_ID = PR.PR_ID
+            sub."PR_ID" = "PR"."PR_ID"
         AND
-            sub.PR_NAM_Reliability = 1
+            sub."PR_NAM_Reliability" = 1
         ORDER BY
-            sub.PR_NAM_PositedAt DESC
+            sub."PR_NAM_PositedAt" DESC
         LIMIT 1
     )
 LEFT JOIN
-    TABLE(attributes.rPR_LEN_Program_Length(
+    TABLE(attributes."rPR_LEN_Program_Length"(
         changingTimepoint::date,
         positingTimepoint::datetime
-    )) LEN
+    )) "LEN"
 ON
-    LEN.PR_LEN_ID = (
+    "LEN"."PR_LEN_ID" = (
         SELECT
-            sub.PR_LEN_ID
+            sub."PR_LEN_ID"
         FROM
-            TABLE(attributes.rPR_LEN_Program_Length(
+            TABLE(attributes."rPR_LEN_Program_Length"(
                 changingTimepoint::date,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.PR_ID = PR.PR_ID
+            sub."PR_ID" = "PR"."PR_ID"
         AND
-            sub.PR_LEN_Reliability = 1
+            sub."PR_LEN_Reliability" = 1
         ORDER BY
-            sub.PR_LEN_ChangedAt DESC,
-            sub.PR_LEN_PositedAt DESC
+            sub."PR_LEN_ChangedAt" DESC,
+            sub."PR_LEN_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW anchors.lPR_Program COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."lPR_Program" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    PR.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "PR".*
 FROM
-    TABLE(anchors.tPR_Program(
+    TABLE(anchors."tPR_Program"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) PR
+    )) "PR"
 ;
-CREATE OR REPLACE FUNCTION anchors.pPR_Program (
+CREATE OR REPLACE FUNCTION anchors."pPR_Program" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    Reliability decimal(5,2),
-    PR_ID number(10,0),
-    Metadata_PR int,
-    Metadata_PR_NAM int,
-    PR_NAM_ID int,
-    PR_NAM_PositedAt datetime,
-    PR_NAM_Reliability decimal(5,2),
-    PR_NAM_Program_Name varchar(42),
-    Metadata_PR_LEN int,
-    PR_LEN_ID int,
-    PR_LEN_ChangedAt date,
-    PR_LEN_PositedAt datetime,
-    PR_LEN_Reliability decimal(5,2),
-    PR_LEN_Program_Length time
+    "Reliability" decimal(5,2),
+    "PR_ID" number(10,0),
+    "Metadata_PR" int,
+    "Metadata_PR_NAM" int,
+    "PR_NAM_ID" int,
+    "PR_NAM_PositedAt" datetime,
+    "PR_NAM_Reliability" decimal(5,2),
+    "PR_NAM_Program_Name" varchar(42),
+    "Metadata_PR_LEN" int,
+    "PR_LEN_ID" int,
+    "PR_LEN_ChangedAt" date,
+    "PR_LEN_PositedAt" datetime,
+    "PR_LEN_Reliability" decimal(5,2),
+    "PR_LEN_Program_Length" time
 )
 AS
 $$
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    PR.PR_ID,
-    PR.Metadata_PR,
-    PR.Metadata_PR_NAM,
-    PR.PR_NAM_ID,
-    PR.PR_NAM_PositedAt,
-    PR.PR_NAM_Reliability,
-    PR.PR_NAM_Program_Name,
-    PR.Metadata_PR_LEN,
-    PR.PR_LEN_ID,
-    PR.PR_LEN_ChangedAt,
-    PR.PR_LEN_PositedAt,
-    PR.PR_LEN_Reliability,
-    PR.PR_LEN_Program_Length
+    cast(null as decimal(5,2)) as "Reliability",
+    "PR"."PR_ID",
+    "PR"."Metadata_PR",
+    "PR"."Metadata_PR_NAM",
+    "PR"."PR_NAM_ID",
+    "PR"."PR_NAM_PositedAt",
+    "PR"."PR_NAM_Reliability",
+    "PR"."PR_NAM_Program_Name",
+    "PR"."Metadata_PR_LEN",
+    "PR"."PR_LEN_ID",
+    "PR"."PR_LEN_ChangedAt",
+    "PR"."PR_LEN_PositedAt",
+    "PR"."PR_LEN_Reliability",
+    "PR"."PR_LEN_Program_Length"
 FROM
-    TABLE(anchors.tPR_Program(
+    TABLE(anchors."tPR_Program"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) PR
+    )) "PR"
 $$
 ;
-CREATE OR REPLACE VIEW anchors.nPR_Program COPY GRANTS AS
+CREATE OR REPLACE VIEW anchors."nPR_Program" COPY GRANTS AS
 SELECT
-    cast(null as decimal(5,2)) as Reliability,
-    PR.*
+    cast(null as decimal(5,2)) as "Reliability",
+    "PR".*
 FROM
-    TABLE(anchors.tPR_Program(
+    TABLE(anchors."tPR_Program"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) PR
+    )) "PR"
 ;
-CREATE OR REPLACE FUNCTION anchors.dPR_Program (
+CREATE OR REPLACE FUNCTION anchors."dPR_Program" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9),
     selection string
@@ -842,54 +842,54 @@ CREATE OR REPLACE FUNCTION anchors.dPR_Program (
 COPY GRANTS
 RETURNS TABLE (
     inspectedTimepoint timestamp_ntz(9),
-    PR_ID number(10,0),
-    Metadata_PR int,
-    Metadata_PR_NAM int,
-    PR_NAM_ID int,
-    PR_NAM_PositedAt datetime,
-    PR_NAM_Reliability decimal(5,2),
-    PR_NAM_Program_Name varchar(42),
-    Metadata_PR_LEN int,
-    PR_LEN_ID int,
-    PR_LEN_ChangedAt date,
-    PR_LEN_PositedAt datetime,
-    PR_LEN_Reliability decimal(5,2),
-    PR_LEN_Program_Length time
+    "PR_ID" number(10,0),
+    "Metadata_PR" int,
+    "Metadata_PR_NAM" int,
+    "PR_NAM_ID" int,
+    "PR_NAM_PositedAt" datetime,
+    "PR_NAM_Reliability" decimal(5,2),
+    "PR_NAM_Program_Name" varchar(42),
+    "Metadata_PR_LEN" int,
+    "PR_LEN_ID" int,
+    "PR_LEN_ChangedAt" date,
+    "PR_LEN_PositedAt" datetime,
+    "PR_LEN_Reliability" decimal(5,2),
+    "PR_LEN_Program_Length" time
 )
 AS
 $$
 SELECT
     tp.inspectedTimepoint,
-    PR.PR_ID,
-    PR.Metadata_PR,
-    PR.Metadata_PR_NAM,
-    PR.PR_NAM_ID,
-    PR.PR_NAM_PositedAt,
-    PR.PR_NAM_Reliability,
-    PR.PR_NAM_Program_Name,
-    PR.Metadata_PR_LEN,
-    PR.PR_LEN_ID,
-    PR.PR_LEN_ChangedAt,
-    PR.PR_LEN_PositedAt,
-    PR.PR_LEN_Reliability,
-    PR.PR_LEN_Program_Length
+    "PR"."PR_ID",
+    "PR"."Metadata_PR",
+    "PR"."Metadata_PR_NAM",
+    "PR"."PR_NAM_ID",
+    "PR"."PR_NAM_PositedAt",
+    "PR"."PR_NAM_Reliability",
+    "PR"."PR_NAM_Program_Name",
+    "PR"."Metadata_PR_LEN",
+    "PR"."PR_LEN_ID",
+    "PR"."PR_LEN_ChangedAt",
+    "PR"."PR_LEN_PositedAt",
+    "PR"."PR_LEN_Reliability",
+    "PR"."PR_LEN_Program_Length"
 FROM (
     SELECT DISTINCT
-        PR_ID AS PR_ID,
-        PR_LEN_ChangedAt::timestamp_ntz(9) AS inspectedTimepoint,
+        "PR_ID" AS "PR_ID",
+        "PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'LEN' AS mnemonic
     FROM
-        attributes.PR_LEN_Program_Length
+        attributes."PR_LEN_Program_Length"
     WHERE
         (selection IS NULL OR selection LIKE '%LEN%')
     AND
-        PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd
+        "PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp,
-    TABLE(anchors.tPR_Program(
+    TABLE(anchors."tPR_Program"(
         tp.inspectedTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
-    )) PR
+    )) "PR"
 WHERE
-    PR.PR_ID = tp.PR_ID
+    "PR"."PR_ID" = tp."PR_ID"
 $$
 ;

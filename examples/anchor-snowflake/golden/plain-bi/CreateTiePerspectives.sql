@@ -3,784 +3,784 @@
 -- Snowflake-native BI tie perspectives: time traveling (t), latest (l), point-in-time (p),
 -- now (n), and difference (d).
 --
-CREATE OR REPLACE FUNCTION public.tAC_partner_AC_with_ONG_currently (
+CREATE OR REPLACE FUNCTION public."tAC_partner_AC_with_ONG_currently" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_partner_AC_with_ONG_currently_ID int,
-    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
-    AC_partner_AC_with_ONG_currently_PositedAt datetime,
-    AC_partner_AC_with_ONG_currently_Reliability decimal(5,2),
-    AC_ID_partner int,
-    AC_ID_with int,
-    ONG_Ongoing varchar(3),
-    ONG_ID_currently tinyint
+    "AC_partner_AC_with_ONG_currently_ID" int,
+    "AC_partner_AC_with_ONG_currently_ChangedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_PositedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_Reliability" decimal(5,2),
+    "AC_ID_partner" int,
+    "AC_ID_with" int,
+    "ONG_Ongoing" varchar(3),
+    "ONG_ID_currently" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_partner_AC_with_ONG_currently_ID,
-    t.AC_partner_AC_with_ONG_currently_ChangedAt,
-    t.AC_partner_AC_with_ONG_currently_PositedAt,
-    t.AC_partner_AC_with_ONG_currently_Reliability,
-    t.AC_ID_partner,
-    t.AC_ID_with,
-    kONG_currently.ONG_Ongoing AS ONG_Ongoing,
-    t.ONG_ID_currently
+    t."AC_partner_AC_with_ONG_currently_ID",
+    t."AC_partner_AC_with_ONG_currently_ChangedAt",
+    t."AC_partner_AC_with_ONG_currently_PositedAt",
+    t."AC_partner_AC_with_ONG_currently_Reliability",
+    t."AC_ID_partner",
+    t."AC_ID_with",
+    "kONG_currently"."ONG_Ongoing" AS "ONG_Ongoing",
+    t."ONG_ID_currently"
 FROM
-    TABLE(public.rAC_partner_AC_with_ONG_currently(
+    TABLE(public."rAC_partner_AC_with_ONG_currently"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
-    public.ONG_Ongoing kONG_currently
+    public."ONG_Ongoing" "kONG_currently"
 ON
-    kONG_currently.ONG_ID = t.ONG_ID_currently
+    "kONG_currently"."ONG_ID" = t."ONG_ID_currently"
 WHERE
-    t.AC_partner_AC_with_ONG_currently_Reliability = 1
+    t."AC_partner_AC_with_ONG_currently_Reliability" = 1
 AND
-    t.AC_partner_AC_with_ONG_currently_ID = (
+    t."AC_partner_AC_with_ONG_currently_ID" = (
         SELECT
-            sub.AC_partner_AC_with_ONG_currently_ID
+            sub."AC_partner_AC_with_ONG_currently_ID"
         FROM
-            TABLE(public.rAC_partner_AC_with_ONG_currently(
+            TABLE(public."rAC_partner_AC_with_ONG_currently"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
             (
-                sub.AC_ID_partner = t.AC_ID_partner
+                sub."AC_ID_partner" = t."AC_ID_partner"
             OR
-                sub.AC_ID_with = t.AC_ID_with
+                sub."AC_ID_with" = t."AC_ID_with"
             )
         ORDER BY
-            sub.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
-            sub.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            sub."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            sub."AC_partner_AC_with_ONG_currently_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lAC_partner_AC_with_ONG_currently" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_partner_AC_with_ONG_currently(
+    TABLE(public."tAC_partner_AC_with_ONG_currently"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pAC_partner_AC_with_ONG_currently (
+CREATE OR REPLACE FUNCTION public."pAC_partner_AC_with_ONG_currently" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_partner_AC_with_ONG_currently_ID int,
-    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
-    AC_partner_AC_with_ONG_currently_PositedAt datetime,
-    AC_partner_AC_with_ONG_currently_Reliability decimal(5,2),
-    AC_ID_partner int,
-    AC_ID_with int,
-    ONG_Ongoing varchar(3),
-    ONG_ID_currently tinyint
+    "AC_partner_AC_with_ONG_currently_ID" int,
+    "AC_partner_AC_with_ONG_currently_ChangedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_PositedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_Reliability" decimal(5,2),
+    "AC_ID_partner" int,
+    "AC_ID_with" int,
+    "ONG_Ongoing" varchar(3),
+    "ONG_ID_currently" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_partner_AC_with_ONG_currently_ID,
-    t.AC_partner_AC_with_ONG_currently_ChangedAt,
-    t.AC_partner_AC_with_ONG_currently_PositedAt,
-    t.AC_partner_AC_with_ONG_currently_Reliability,
-    t.AC_ID_partner,
-    t.AC_ID_with,
-    t.ONG_Ongoing,
-    t.ONG_ID_currently
+    t."AC_partner_AC_with_ONG_currently_ID",
+    t."AC_partner_AC_with_ONG_currently_ChangedAt",
+    t."AC_partner_AC_with_ONG_currently_PositedAt",
+    t."AC_partner_AC_with_ONG_currently_Reliability",
+    t."AC_ID_partner",
+    t."AC_ID_with",
+    t."ONG_Ongoing",
+    t."ONG_ID_currently"
 FROM
-    TABLE(public.tAC_partner_AC_with_ONG_currently(
+    TABLE(public."tAC_partner_AC_with_ONG_currently"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nAC_partner_AC_with_ONG_currently" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_partner_AC_with_ONG_currently(
+    TABLE(public."tAC_partner_AC_with_ONG_currently"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.dAC_partner_AC_with_ONG_currently (
+CREATE OR REPLACE FUNCTION public."dAC_partner_AC_with_ONG_currently" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_partner_AC_with_ONG_currently_ID int,
-    AC_partner_AC_with_ONG_currently_ChangedAt datetime,
-    AC_partner_AC_with_ONG_currently_PositedAt datetime,
-    AC_partner_AC_with_ONG_currently_Reliability decimal(5,2),
-    AC_ID_partner int,
-    AC_ID_with int,
-    ONG_Ongoing varchar(3),
-    ONG_ID_currently tinyint
+    "AC_partner_AC_with_ONG_currently_ID" int,
+    "AC_partner_AC_with_ONG_currently_ChangedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_PositedAt" datetime,
+    "AC_partner_AC_with_ONG_currently_Reliability" decimal(5,2),
+    "AC_ID_partner" int,
+    "AC_ID_with" int,
+    "ONG_Ongoing" varchar(3),
+    "ONG_ID_currently" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_partner_AC_with_ONG_currently_ID,
-    t.AC_partner_AC_with_ONG_currently_ChangedAt,
-    t.AC_partner_AC_with_ONG_currently_PositedAt,
-    t.AC_partner_AC_with_ONG_currently_Reliability,
-    t.AC_ID_partner,
-    t.AC_ID_with,
-    t.ONG_Ongoing,
-    t.ONG_ID_currently
+    t."AC_partner_AC_with_ONG_currently_ID",
+    t."AC_partner_AC_with_ONG_currently_ChangedAt",
+    t."AC_partner_AC_with_ONG_currently_PositedAt",
+    t."AC_partner_AC_with_ONG_currently_Reliability",
+    t."AC_ID_partner",
+    t."AC_ID_with",
+    t."ONG_Ongoing",
+    t."ONG_ID_currently"
 FROM
-    TABLE(public.tAC_partner_AC_with_ONG_currently(
+    TABLE(public."tAC_partner_AC_with_ONG_currently"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 WHERE
-    t.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
+    t."AC_partner_AC_with_ONG_currently_ChangedAt" BETWEEN intervalStart AND intervalEnd
 $$
 ;
-CREATE OR REPLACE FUNCTION public.tAC_subset_PN_of (
+CREATE OR REPLACE FUNCTION public."tAC_subset_PN_of" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_subset_PN_of_ID int,
-    AC_subset_PN_of_PositedAt datetime,
-    AC_subset_PN_of_Reliability decimal(5,2),
-    AC_ID_subset int,
-    PN_ID_of int
+    "AC_subset_PN_of_ID" int,
+    "AC_subset_PN_of_PositedAt" datetime,
+    "AC_subset_PN_of_Reliability" decimal(5,2),
+    "AC_ID_subset" int,
+    "PN_ID_of" int
 )
 AS
 $$
 SELECT
-    t.AC_subset_PN_of_ID,
-    t.AC_subset_PN_of_PositedAt,
-    t.AC_subset_PN_of_Reliability,
-    t.AC_ID_subset,
-    t.PN_ID_of
+    t."AC_subset_PN_of_ID",
+    t."AC_subset_PN_of_PositedAt",
+    t."AC_subset_PN_of_Reliability",
+    t."AC_ID_subset",
+    t."PN_ID_of"
 FROM
-    TABLE(public.rAC_subset_PN_of(
+    TABLE(public."rAC_subset_PN_of"(
         positingTimepoint::datetime
     )) t
 WHERE
-    t.AC_subset_PN_of_Reliability = 1
+    t."AC_subset_PN_of_Reliability" = 1
 AND
-    t.AC_subset_PN_of_ID = (
+    t."AC_subset_PN_of_ID" = (
         SELECT
-            sub.AC_subset_PN_of_ID
+            sub."AC_subset_PN_of_ID"
         FROM
-            TABLE(public.rAC_subset_PN_of(
+            TABLE(public."rAC_subset_PN_of"(
                 positingTimepoint::datetime
             )) sub
         WHERE
             (
-                sub.AC_ID_subset = t.AC_ID_subset
+                sub."AC_ID_subset" = t."AC_ID_subset"
             OR
-                sub.PN_ID_of = t.PN_ID_of
+                sub."PN_ID_of" = t."PN_ID_of"
             )
         ORDER BY
-            sub.AC_subset_PN_of_PositedAt DESC
+            sub."AC_subset_PN_of_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_subset_PN_of COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lAC_subset_PN_of" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_subset_PN_of(
+    TABLE(public."tAC_subset_PN_of"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pAC_subset_PN_of (
+CREATE OR REPLACE FUNCTION public."pAC_subset_PN_of" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_subset_PN_of_ID int,
-    AC_subset_PN_of_PositedAt datetime,
-    AC_subset_PN_of_Reliability decimal(5,2),
-    AC_ID_subset int,
-    PN_ID_of int
+    "AC_subset_PN_of_ID" int,
+    "AC_subset_PN_of_PositedAt" datetime,
+    "AC_subset_PN_of_Reliability" decimal(5,2),
+    "AC_ID_subset" int,
+    "PN_ID_of" int
 )
 AS
 $$
 SELECT
-    t.AC_subset_PN_of_ID,
-    t.AC_subset_PN_of_PositedAt,
-    t.AC_subset_PN_of_Reliability,
-    t.AC_ID_subset,
-    t.PN_ID_of
+    t."AC_subset_PN_of_ID",
+    t."AC_subset_PN_of_PositedAt",
+    t."AC_subset_PN_of_Reliability",
+    t."AC_ID_subset",
+    t."PN_ID_of"
 FROM
-    TABLE(public.tAC_subset_PN_of(
+    TABLE(public."tAC_subset_PN_of"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nAC_subset_PN_of" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_subset_PN_of(
+    TABLE(public."tAC_subset_PN_of"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.tEV_in_AC_wasCast (
+CREATE OR REPLACE FUNCTION public."tEV_in_AC_wasCast" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    EV_in_AC_wasCast_ID int,
-    EV_in_AC_wasCast_PositedAt datetime,
-    EV_in_AC_wasCast_Reliability decimal(5,2),
-    EV_ID_in int,
-    AC_ID_wasCast int
+    "EV_in_AC_wasCast_ID" int,
+    "EV_in_AC_wasCast_PositedAt" datetime,
+    "EV_in_AC_wasCast_Reliability" decimal(5,2),
+    "EV_ID_in" int,
+    "AC_ID_wasCast" int
 )
 AS
 $$
 SELECT
-    t.EV_in_AC_wasCast_ID,
-    t.EV_in_AC_wasCast_PositedAt,
-    t.EV_in_AC_wasCast_Reliability,
-    t.EV_ID_in,
-    t.AC_ID_wasCast
+    t."EV_in_AC_wasCast_ID",
+    t."EV_in_AC_wasCast_PositedAt",
+    t."EV_in_AC_wasCast_Reliability",
+    t."EV_ID_in",
+    t."AC_ID_wasCast"
 FROM
-    TABLE(public.rEV_in_AC_wasCast(
+    TABLE(public."rEV_in_AC_wasCast"(
         positingTimepoint::datetime
     )) t
 WHERE
-    t.EV_in_AC_wasCast_Reliability = 1
+    t."EV_in_AC_wasCast_Reliability" = 1
 AND
-    t.EV_in_AC_wasCast_ID = (
+    t."EV_in_AC_wasCast_ID" = (
         SELECT
-            sub.EV_in_AC_wasCast_ID
+            sub."EV_in_AC_wasCast_ID"
         FROM
-            TABLE(public.rEV_in_AC_wasCast(
+            TABLE(public."rEV_in_AC_wasCast"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.EV_ID_in = t.EV_ID_in
+            sub."EV_ID_in" = t."EV_ID_in"
         AND
-            sub.AC_ID_wasCast = t.AC_ID_wasCast
+            sub."AC_ID_wasCast" = t."AC_ID_wasCast"
         ORDER BY
-            sub.EV_in_AC_wasCast_PositedAt DESC
+            sub."EV_in_AC_wasCast_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lEV_in_AC_wasCast" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tEV_in_AC_wasCast(
+    TABLE(public."tEV_in_AC_wasCast"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pEV_in_AC_wasCast (
+CREATE OR REPLACE FUNCTION public."pEV_in_AC_wasCast" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    EV_in_AC_wasCast_ID int,
-    EV_in_AC_wasCast_PositedAt datetime,
-    EV_in_AC_wasCast_Reliability decimal(5,2),
-    EV_ID_in int,
-    AC_ID_wasCast int
+    "EV_in_AC_wasCast_ID" int,
+    "EV_in_AC_wasCast_PositedAt" datetime,
+    "EV_in_AC_wasCast_Reliability" decimal(5,2),
+    "EV_ID_in" int,
+    "AC_ID_wasCast" int
 )
 AS
 $$
 SELECT
-    t.EV_in_AC_wasCast_ID,
-    t.EV_in_AC_wasCast_PositedAt,
-    t.EV_in_AC_wasCast_Reliability,
-    t.EV_ID_in,
-    t.AC_ID_wasCast
+    t."EV_in_AC_wasCast_ID",
+    t."EV_in_AC_wasCast_PositedAt",
+    t."EV_in_AC_wasCast_Reliability",
+    t."EV_ID_in",
+    t."AC_ID_wasCast"
 FROM
-    TABLE(public.tEV_in_AC_wasCast(
+    TABLE(public."tEV_in_AC_wasCast"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nEV_in_AC_wasCast" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tEV_in_AC_wasCast(
+    TABLE(public."tEV_in_AC_wasCast"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.tAC_part_PR_in_RAT_got (
+CREATE OR REPLACE FUNCTION public."tAC_part_PR_in_RAT_got" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_part_PR_in_RAT_got_ID int,
-    AC_part_PR_in_RAT_got_ChangedAt datetime,
-    AC_part_PR_in_RAT_got_PositedAt datetime,
-    AC_part_PR_in_RAT_got_Reliability decimal(5,2),
-    AC_ID_part int,
-    PR_ID_in int,
-    RAT_Rating varchar(42),
-    RAT_ID_got tinyint
+    "AC_part_PR_in_RAT_got_ID" int,
+    "AC_part_PR_in_RAT_got_ChangedAt" datetime,
+    "AC_part_PR_in_RAT_got_PositedAt" datetime,
+    "AC_part_PR_in_RAT_got_Reliability" decimal(5,2),
+    "AC_ID_part" int,
+    "PR_ID_in" int,
+    "RAT_Rating" varchar(42),
+    "RAT_ID_got" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_part_PR_in_RAT_got_ID,
-    t.AC_part_PR_in_RAT_got_ChangedAt,
-    t.AC_part_PR_in_RAT_got_PositedAt,
-    t.AC_part_PR_in_RAT_got_Reliability,
-    t.AC_ID_part,
-    t.PR_ID_in,
-    kRAT_got.RAT_Rating AS RAT_Rating,
-    t.RAT_ID_got
+    t."AC_part_PR_in_RAT_got_ID",
+    t."AC_part_PR_in_RAT_got_ChangedAt",
+    t."AC_part_PR_in_RAT_got_PositedAt",
+    t."AC_part_PR_in_RAT_got_Reliability",
+    t."AC_ID_part",
+    t."PR_ID_in",
+    "kRAT_got"."RAT_Rating" AS "RAT_Rating",
+    t."RAT_ID_got"
 FROM
-    TABLE(public.rAC_part_PR_in_RAT_got(
+    TABLE(public."rAC_part_PR_in_RAT_got"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 LEFT JOIN
-    public.RAT_Rating kRAT_got
+    public."RAT_Rating" "kRAT_got"
 ON
-    kRAT_got.RAT_ID = t.RAT_ID_got
+    "kRAT_got"."RAT_ID" = t."RAT_ID_got"
 WHERE
-    t.AC_part_PR_in_RAT_got_Reliability = 1
+    t."AC_part_PR_in_RAT_got_Reliability" = 1
 AND
-    t.AC_part_PR_in_RAT_got_ID = (
+    t."AC_part_PR_in_RAT_got_ID" = (
         SELECT
-            sub.AC_part_PR_in_RAT_got_ID
+            sub."AC_part_PR_in_RAT_got_ID"
         FROM
-            TABLE(public.rAC_part_PR_in_RAT_got(
+            TABLE(public."rAC_part_PR_in_RAT_got"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.AC_ID_part = t.AC_ID_part
+            sub."AC_ID_part" = t."AC_ID_part"
         AND
-            sub.PR_ID_in = t.PR_ID_in
+            sub."PR_ID_in" = t."PR_ID_in"
         ORDER BY
-            sub.AC_part_PR_in_RAT_got_ChangedAt DESC,
-            sub.AC_part_PR_in_RAT_got_PositedAt DESC
+            sub."AC_part_PR_in_RAT_got_ChangedAt" DESC,
+            sub."AC_part_PR_in_RAT_got_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lAC_part_PR_in_RAT_got" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_part_PR_in_RAT_got(
+    TABLE(public."tAC_part_PR_in_RAT_got"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pAC_part_PR_in_RAT_got (
+CREATE OR REPLACE FUNCTION public."pAC_part_PR_in_RAT_got" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_part_PR_in_RAT_got_ID int,
-    AC_part_PR_in_RAT_got_ChangedAt datetime,
-    AC_part_PR_in_RAT_got_PositedAt datetime,
-    AC_part_PR_in_RAT_got_Reliability decimal(5,2),
-    AC_ID_part int,
-    PR_ID_in int,
-    RAT_Rating varchar(42),
-    RAT_ID_got tinyint
+    "AC_part_PR_in_RAT_got_ID" int,
+    "AC_part_PR_in_RAT_got_ChangedAt" datetime,
+    "AC_part_PR_in_RAT_got_PositedAt" datetime,
+    "AC_part_PR_in_RAT_got_Reliability" decimal(5,2),
+    "AC_ID_part" int,
+    "PR_ID_in" int,
+    "RAT_Rating" varchar(42),
+    "RAT_ID_got" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_part_PR_in_RAT_got_ID,
-    t.AC_part_PR_in_RAT_got_ChangedAt,
-    t.AC_part_PR_in_RAT_got_PositedAt,
-    t.AC_part_PR_in_RAT_got_Reliability,
-    t.AC_ID_part,
-    t.PR_ID_in,
-    t.RAT_Rating,
-    t.RAT_ID_got
+    t."AC_part_PR_in_RAT_got_ID",
+    t."AC_part_PR_in_RAT_got_ChangedAt",
+    t."AC_part_PR_in_RAT_got_PositedAt",
+    t."AC_part_PR_in_RAT_got_Reliability",
+    t."AC_ID_part",
+    t."PR_ID_in",
+    t."RAT_Rating",
+    t."RAT_ID_got"
 FROM
-    TABLE(public.tAC_part_PR_in_RAT_got(
+    TABLE(public."tAC_part_PR_in_RAT_got"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nAC_part_PR_in_RAT_got" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_part_PR_in_RAT_got(
+    TABLE(public."tAC_part_PR_in_RAT_got"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.dAC_part_PR_in_RAT_got (
+CREATE OR REPLACE FUNCTION public."dAC_part_PR_in_RAT_got" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_part_PR_in_RAT_got_ID int,
-    AC_part_PR_in_RAT_got_ChangedAt datetime,
-    AC_part_PR_in_RAT_got_PositedAt datetime,
-    AC_part_PR_in_RAT_got_Reliability decimal(5,2),
-    AC_ID_part int,
-    PR_ID_in int,
-    RAT_Rating varchar(42),
-    RAT_ID_got tinyint
+    "AC_part_PR_in_RAT_got_ID" int,
+    "AC_part_PR_in_RAT_got_ChangedAt" datetime,
+    "AC_part_PR_in_RAT_got_PositedAt" datetime,
+    "AC_part_PR_in_RAT_got_Reliability" decimal(5,2),
+    "AC_ID_part" int,
+    "PR_ID_in" int,
+    "RAT_Rating" varchar(42),
+    "RAT_ID_got" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_part_PR_in_RAT_got_ID,
-    t.AC_part_PR_in_RAT_got_ChangedAt,
-    t.AC_part_PR_in_RAT_got_PositedAt,
-    t.AC_part_PR_in_RAT_got_Reliability,
-    t.AC_ID_part,
-    t.PR_ID_in,
-    t.RAT_Rating,
-    t.RAT_ID_got
+    t."AC_part_PR_in_RAT_got_ID",
+    t."AC_part_PR_in_RAT_got_ChangedAt",
+    t."AC_part_PR_in_RAT_got_PositedAt",
+    t."AC_part_PR_in_RAT_got_Reliability",
+    t."AC_ID_part",
+    t."PR_ID_in",
+    t."RAT_Rating",
+    t."RAT_ID_got"
 FROM
-    TABLE(public.tAC_part_PR_in_RAT_got(
+    TABLE(public."tAC_part_PR_in_RAT_got"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 WHERE
-    t.AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
+    t."AC_part_PR_in_RAT_got_ChangedAt" BETWEEN intervalStart AND intervalEnd
 $$
 ;
-CREATE OR REPLACE FUNCTION public.tST_at_PR_isPlaying (
+CREATE OR REPLACE FUNCTION public."tST_at_PR_isPlaying" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    ST_at_PR_isPlaying_ID int,
-    ST_at_PR_isPlaying_ChangedAt datetime,
-    ST_at_PR_isPlaying_PositedAt datetime,
-    ST_at_PR_isPlaying_Reliability decimal(5,2),
-    ST_ID_at int,
-    PR_ID_isPlaying int
+    "ST_at_PR_isPlaying_ID" int,
+    "ST_at_PR_isPlaying_ChangedAt" datetime,
+    "ST_at_PR_isPlaying_PositedAt" datetime,
+    "ST_at_PR_isPlaying_Reliability" decimal(5,2),
+    "ST_ID_at" int,
+    "PR_ID_isPlaying" int
 )
 AS
 $$
 SELECT
-    t.ST_at_PR_isPlaying_ID,
-    t.ST_at_PR_isPlaying_ChangedAt,
-    t.ST_at_PR_isPlaying_PositedAt,
-    t.ST_at_PR_isPlaying_Reliability,
-    t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t."ST_at_PR_isPlaying_ID",
+    t."ST_at_PR_isPlaying_ChangedAt",
+    t."ST_at_PR_isPlaying_PositedAt",
+    t."ST_at_PR_isPlaying_Reliability",
+    t."ST_ID_at",
+    t."PR_ID_isPlaying"
 FROM
-    TABLE(public.rST_at_PR_isPlaying(
+    TABLE(public."rST_at_PR_isPlaying"(
         changingTimepoint::datetime,
         positingTimepoint::datetime
     )) t
 WHERE
-    t.ST_at_PR_isPlaying_Reliability = 1
+    t."ST_at_PR_isPlaying_Reliability" = 1
 AND
-    t.ST_at_PR_isPlaying_ID = (
+    t."ST_at_PR_isPlaying_ID" = (
         SELECT
-            sub.ST_at_PR_isPlaying_ID
+            sub."ST_at_PR_isPlaying_ID"
         FROM
-            TABLE(public.rST_at_PR_isPlaying(
+            TABLE(public."rST_at_PR_isPlaying"(
                 changingTimepoint::datetime,
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.ST_ID_at = t.ST_ID_at
+            sub."ST_ID_at" = t."ST_ID_at"
         AND
-            sub.PR_ID_isPlaying = t.PR_ID_isPlaying
+            sub."PR_ID_isPlaying" = t."PR_ID_isPlaying"
         ORDER BY
-            sub.ST_at_PR_isPlaying_ChangedAt DESC,
-            sub.ST_at_PR_isPlaying_PositedAt DESC
+            sub."ST_at_PR_isPlaying_ChangedAt" DESC,
+            sub."ST_at_PR_isPlaying_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lST_at_PR_isPlaying" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tST_at_PR_isPlaying(
+    TABLE(public."tST_at_PR_isPlaying"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pST_at_PR_isPlaying (
+CREATE OR REPLACE FUNCTION public."pST_at_PR_isPlaying" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    ST_at_PR_isPlaying_ID int,
-    ST_at_PR_isPlaying_ChangedAt datetime,
-    ST_at_PR_isPlaying_PositedAt datetime,
-    ST_at_PR_isPlaying_Reliability decimal(5,2),
-    ST_ID_at int,
-    PR_ID_isPlaying int
+    "ST_at_PR_isPlaying_ID" int,
+    "ST_at_PR_isPlaying_ChangedAt" datetime,
+    "ST_at_PR_isPlaying_PositedAt" datetime,
+    "ST_at_PR_isPlaying_Reliability" decimal(5,2),
+    "ST_ID_at" int,
+    "PR_ID_isPlaying" int
 )
 AS
 $$
 SELECT
-    t.ST_at_PR_isPlaying_ID,
-    t.ST_at_PR_isPlaying_ChangedAt,
-    t.ST_at_PR_isPlaying_PositedAt,
-    t.ST_at_PR_isPlaying_Reliability,
-    t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t."ST_at_PR_isPlaying_ID",
+    t."ST_at_PR_isPlaying_ChangedAt",
+    t."ST_at_PR_isPlaying_PositedAt",
+    t."ST_at_PR_isPlaying_Reliability",
+    t."ST_ID_at",
+    t."PR_ID_isPlaying"
 FROM
-    TABLE(public.tST_at_PR_isPlaying(
+    TABLE(public."tST_at_PR_isPlaying"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nST_at_PR_isPlaying" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tST_at_PR_isPlaying(
+    TABLE(public."tST_at_PR_isPlaying"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.dST_at_PR_isPlaying (
+CREATE OR REPLACE FUNCTION public."dST_at_PR_isPlaying" (
     intervalStart timestamp_ntz(9),
     intervalEnd timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    ST_at_PR_isPlaying_ID int,
-    ST_at_PR_isPlaying_ChangedAt datetime,
-    ST_at_PR_isPlaying_PositedAt datetime,
-    ST_at_PR_isPlaying_Reliability decimal(5,2),
-    ST_ID_at int,
-    PR_ID_isPlaying int
+    "ST_at_PR_isPlaying_ID" int,
+    "ST_at_PR_isPlaying_ChangedAt" datetime,
+    "ST_at_PR_isPlaying_PositedAt" datetime,
+    "ST_at_PR_isPlaying_Reliability" decimal(5,2),
+    "ST_ID_at" int,
+    "PR_ID_isPlaying" int
 )
 AS
 $$
 SELECT
-    t.ST_at_PR_isPlaying_ID,
-    t.ST_at_PR_isPlaying_ChangedAt,
-    t.ST_at_PR_isPlaying_PositedAt,
-    t.ST_at_PR_isPlaying_Reliability,
-    t.ST_ID_at,
-    t.PR_ID_isPlaying
+    t."ST_at_PR_isPlaying_ID",
+    t."ST_at_PR_isPlaying_ChangedAt",
+    t."ST_at_PR_isPlaying_PositedAt",
+    t."ST_at_PR_isPlaying_Reliability",
+    t."ST_ID_at",
+    t."PR_ID_isPlaying"
 FROM
-    TABLE(public.tST_at_PR_isPlaying(
+    TABLE(public."tST_at_PR_isPlaying"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 WHERE
-    t.ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
+    t."ST_at_PR_isPlaying_ChangedAt" BETWEEN intervalStart AND intervalEnd
 $$
 ;
-CREATE OR REPLACE FUNCTION public.tAC_parent_AC_child_PAT_having (
+CREATE OR REPLACE FUNCTION public."tAC_parent_AC_child_PAT_having" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_parent_AC_child_PAT_having_ID int,
-    AC_parent_AC_child_PAT_having_PositedAt datetime,
-    AC_parent_AC_child_PAT_having_Reliability decimal(5,2),
-    AC_ID_parent int,
-    AC_ID_child int,
-    PAT_ParentalType varchar(42),
-    PAT_ID_having tinyint
+    "AC_parent_AC_child_PAT_having_ID" int,
+    "AC_parent_AC_child_PAT_having_PositedAt" datetime,
+    "AC_parent_AC_child_PAT_having_Reliability" decimal(5,2),
+    "AC_ID_parent" int,
+    "AC_ID_child" int,
+    "PAT_ParentalType" varchar(42),
+    "PAT_ID_having" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_parent_AC_child_PAT_having_ID,
-    t.AC_parent_AC_child_PAT_having_PositedAt,
-    t.AC_parent_AC_child_PAT_having_Reliability,
-    t.AC_ID_parent,
-    t.AC_ID_child,
-    kPAT_having.PAT_ParentalType AS PAT_ParentalType,
-    t.PAT_ID_having
+    t."AC_parent_AC_child_PAT_having_ID",
+    t."AC_parent_AC_child_PAT_having_PositedAt",
+    t."AC_parent_AC_child_PAT_having_Reliability",
+    t."AC_ID_parent",
+    t."AC_ID_child",
+    "kPAT_having"."PAT_ParentalType" AS "PAT_ParentalType",
+    t."PAT_ID_having"
 FROM
-    TABLE(public.rAC_parent_AC_child_PAT_having(
+    TABLE(public."rAC_parent_AC_child_PAT_having"(
         positingTimepoint::datetime
     )) t
 LEFT JOIN
-    public.PAT_ParentalType kPAT_having
+    public."PAT_ParentalType" "kPAT_having"
 ON
-    kPAT_having.PAT_ID = t.PAT_ID_having
+    "kPAT_having"."PAT_ID" = t."PAT_ID_having"
 WHERE
-    t.AC_parent_AC_child_PAT_having_Reliability = 1
+    t."AC_parent_AC_child_PAT_having_Reliability" = 1
 AND
-    t.AC_parent_AC_child_PAT_having_ID = (
+    t."AC_parent_AC_child_PAT_having_ID" = (
         SELECT
-            sub.AC_parent_AC_child_PAT_having_ID
+            sub."AC_parent_AC_child_PAT_having_ID"
         FROM
-            TABLE(public.rAC_parent_AC_child_PAT_having(
+            TABLE(public."rAC_parent_AC_child_PAT_having"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.AC_ID_parent = t.AC_ID_parent
+            sub."AC_ID_parent" = t."AC_ID_parent"
         AND
-            sub.AC_ID_child = t.AC_ID_child
+            sub."AC_ID_child" = t."AC_ID_child"
         AND
-            sub.PAT_ID_having = t.PAT_ID_having
+            sub."PAT_ID_having" = t."PAT_ID_having"
         ORDER BY
-            sub.AC_parent_AC_child_PAT_having_PositedAt DESC
+            sub."AC_parent_AC_child_PAT_having_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lAC_parent_AC_child_PAT_having" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_parent_AC_child_PAT_having(
+    TABLE(public."tAC_parent_AC_child_PAT_having"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pAC_parent_AC_child_PAT_having (
+CREATE OR REPLACE FUNCTION public."pAC_parent_AC_child_PAT_having" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    AC_parent_AC_child_PAT_having_ID int,
-    AC_parent_AC_child_PAT_having_PositedAt datetime,
-    AC_parent_AC_child_PAT_having_Reliability decimal(5,2),
-    AC_ID_parent int,
-    AC_ID_child int,
-    PAT_ParentalType varchar(42),
-    PAT_ID_having tinyint
+    "AC_parent_AC_child_PAT_having_ID" int,
+    "AC_parent_AC_child_PAT_having_PositedAt" datetime,
+    "AC_parent_AC_child_PAT_having_Reliability" decimal(5,2),
+    "AC_ID_parent" int,
+    "AC_ID_child" int,
+    "PAT_ParentalType" varchar(42),
+    "PAT_ID_having" tinyint
 )
 AS
 $$
 SELECT
-    t.AC_parent_AC_child_PAT_having_ID,
-    t.AC_parent_AC_child_PAT_having_PositedAt,
-    t.AC_parent_AC_child_PAT_having_Reliability,
-    t.AC_ID_parent,
-    t.AC_ID_child,
-    t.PAT_ParentalType,
-    t.PAT_ID_having
+    t."AC_parent_AC_child_PAT_having_ID",
+    t."AC_parent_AC_child_PAT_having_PositedAt",
+    t."AC_parent_AC_child_PAT_having_Reliability",
+    t."AC_ID_parent",
+    t."AC_ID_child",
+    t."PAT_ParentalType",
+    t."PAT_ID_having"
 FROM
-    TABLE(public.tAC_parent_AC_child_PAT_having(
+    TABLE(public."tAC_parent_AC_child_PAT_having"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nAC_parent_AC_child_PAT_having" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tAC_parent_AC_child_PAT_having(
+    TABLE(public."tAC_parent_AC_child_PAT_having"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.tPR_content_ST_location_EV_of (
+CREATE OR REPLACE FUNCTION public."tPR_content_ST_location_EV_of" (
     changingTimepoint timestamp_ntz(9),
     positingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
-    PR_content_ST_location_EV_of_ID int,
-    PR_content_ST_location_EV_of_PositedAt datetime,
-    PR_content_ST_location_EV_of_Reliability decimal(5,2),
-    PR_ID_content int,
-    ST_ID_location int,
-    EV_ID_of int
+    "PR_content_ST_location_EV_of_ID" int,
+    "PR_content_ST_location_EV_of_PositedAt" datetime,
+    "PR_content_ST_location_EV_of_Reliability" decimal(5,2),
+    "PR_ID_content" int,
+    "ST_ID_location" int,
+    "EV_ID_of" int
 )
 AS
 $$
 SELECT
-    t.PR_content_ST_location_EV_of_ID,
-    t.PR_content_ST_location_EV_of_PositedAt,
-    t.PR_content_ST_location_EV_of_Reliability,
-    t.PR_ID_content,
-    t.ST_ID_location,
-    t.EV_ID_of
+    t."PR_content_ST_location_EV_of_ID",
+    t."PR_content_ST_location_EV_of_PositedAt",
+    t."PR_content_ST_location_EV_of_Reliability",
+    t."PR_ID_content",
+    t."ST_ID_location",
+    t."EV_ID_of"
 FROM
-    TABLE(public.rPR_content_ST_location_EV_of(
+    TABLE(public."rPR_content_ST_location_EV_of"(
         positingTimepoint::datetime
     )) t
 WHERE
-    t.PR_content_ST_location_EV_of_Reliability = 1
+    t."PR_content_ST_location_EV_of_Reliability" = 1
 AND
-    t.PR_content_ST_location_EV_of_ID = (
+    t."PR_content_ST_location_EV_of_ID" = (
         SELECT
-            sub.PR_content_ST_location_EV_of_ID
+            sub."PR_content_ST_location_EV_of_ID"
         FROM
-            TABLE(public.rPR_content_ST_location_EV_of(
+            TABLE(public."rPR_content_ST_location_EV_of"(
                 positingTimepoint::datetime
             )) sub
         WHERE
-            sub.EV_ID_of = t.EV_ID_of
+            sub."EV_ID_of" = t."EV_ID_of"
         ORDER BY
-            sub.PR_content_ST_location_EV_of_PositedAt DESC
+            sub."PR_content_ST_location_EV_of_PositedAt" DESC
         LIMIT 1
     )
 $$
 ;
-CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of COPY GRANTS AS
+CREATE OR REPLACE VIEW public."lPR_content_ST_location_EV_of" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tPR_content_ST_location_EV_of(
+    TABLE(public."tPR_content_ST_location_EV_of"(
         '9999-12-31'::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))
 ;
-CREATE OR REPLACE FUNCTION public.pPR_content_ST_location_EV_of (
+CREATE OR REPLACE FUNCTION public."pPR_content_ST_location_EV_of" (
     changingTimepoint timestamp_ntz(9)
 )
 COPY GRANTS
 RETURNS TABLE (
-    PR_content_ST_location_EV_of_ID int,
-    PR_content_ST_location_EV_of_PositedAt datetime,
-    PR_content_ST_location_EV_of_Reliability decimal(5,2),
-    PR_ID_content int,
-    ST_ID_location int,
-    EV_ID_of int
+    "PR_content_ST_location_EV_of_ID" int,
+    "PR_content_ST_location_EV_of_PositedAt" datetime,
+    "PR_content_ST_location_EV_of_Reliability" decimal(5,2),
+    "PR_ID_content" int,
+    "ST_ID_location" int,
+    "EV_ID_of" int
 )
 AS
 $$
 SELECT
-    t.PR_content_ST_location_EV_of_ID,
-    t.PR_content_ST_location_EV_of_PositedAt,
-    t.PR_content_ST_location_EV_of_Reliability,
-    t.PR_ID_content,
-    t.ST_ID_location,
-    t.EV_ID_of
+    t."PR_content_ST_location_EV_of_ID",
+    t."PR_content_ST_location_EV_of_PositedAt",
+    t."PR_content_ST_location_EV_of_Reliability",
+    t."PR_ID_content",
+    t."ST_ID_location",
+    t."EV_ID_of"
 FROM
-    TABLE(public.tPR_content_ST_location_EV_of(
+    TABLE(public."tPR_content_ST_location_EV_of"(
         changingTimepoint::timestamp_ntz(9),
         '9999-12-31'::datetime
     )) t
 $$
 ;
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of COPY GRANTS AS
+CREATE OR REPLACE VIEW public."nPR_content_ST_location_EV_of" COPY GRANTS AS
 SELECT
     *
 FROM
-    TABLE(public.tPR_content_ST_location_EV_of(
+    TABLE(public."tPR_content_ST_location_EV_of"(
         sysdate()::timestamp_ntz(9),
         '9999-12-31'::datetime
     ))

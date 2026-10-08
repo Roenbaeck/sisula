@@ -4,22 +4,22 @@
 --
 -- Nexus table --------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS nexuses.EV_Event (
-    EV_ID numeric(12,0) not null,
-    ST_ID_wasHeldAt int not null, 
-    PR_ID_wasPlayed number(10,0) not null, 
-    ETY_ID_of tinyint not null,
-    constraint EV_Event_fkST_wasHeldAt foreign key (
-        ST_ID_wasHeldAt
-    ) references anchors.ST_Stage(ST_ID) RELY, 
-    constraint EV_Event_fkPR_wasPlayed foreign key (
-        PR_ID_wasPlayed
-    ) references anchors.PR_Program(PR_ID) RELY, 
-    constraint EV_Event_fkETY_of foreign key (
-        ETY_ID_of
-    ) references knots.ETY_EventType(ETY_ID) RELY,
-    Metadata_EV int not null, 
-    constraint pkEV_Event primary key (
-        EV_ID
+CREATE TABLE IF NOT EXISTS nexuses."EV_Event" (
+    "EV_ID" numeric(12,0) not null,
+    "ST_ID_wasHeldAt" int not null, 
+    "PR_ID_wasPlayed" number(10,0) not null, 
+    "ETY_ID_of" tinyint not null,
+    constraint "EV_Event_fkST_wasHeldAt" foreign key (
+        "ST_ID_wasHeldAt"
+    ) references anchors."ST_Stage"("ST_ID") RELY, 
+    constraint "EV_Event_fkPR_wasPlayed" foreign key (
+        "PR_ID_wasPlayed"
+    ) references anchors."PR_Program"("PR_ID") RELY, 
+    constraint "EV_Event_fkETY_of" foreign key (
+        "ETY_ID_of"
+    ) references knots."ETY_EventType"("ETY_ID") RELY,
+    "Metadata_EV" int not null, 
+    constraint "pkEV_Event" primary key (
+        "EV_ID"
     ) RELY
-) CLUSTER BY (EV_ID);
+) CLUSTER BY ("EV_ID");

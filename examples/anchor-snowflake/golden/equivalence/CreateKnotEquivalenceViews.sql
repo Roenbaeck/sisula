@@ -9,180 +9,180 @@
 -- Knot equivalence view ----------------------------------------------------------------------------------------------
 -- PAT_ParentalType view and parametrized view
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.PAT_ParentalType (
-    Metadata_PAT,
-    PAT_ID,
-    PAT_EQ,
-    PAT_ParentalType COMMENT 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
+CREATE OR REPLACE VIEW public."PAT_ParentalType" (
+    "Metadata_PAT",
+    "PAT_ID",
+    "PAT_EQ",
+    "PAT_ParentalType" COMMENT 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
 ) COPY GRANTS COMMENT = 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.'
 AS
 SELECT
-    v.Metadata_PAT,
-    i.PAT_ID,
-    v.PAT_EQ,
-    v.PAT_ParentalType
+    v."Metadata_PAT",
+    i."PAT_ID",
+    v."PAT_EQ",
+    v."PAT_ParentalType"
 FROM
-    public.PAT_ParentalType_ID i
+    public."PAT_ParentalType_ID" i
 JOIN
-    public.PAT_ParentalType_EQ v
+    public."PAT_ParentalType_EQ" v
 ON
-    v.PAT_ID = i.PAT_ID
+    v."PAT_ID" = i."PAT_ID"
 ;
-CREATE OR REPLACE FUNCTION public.ePAT_ParentalType (
+CREATE OR REPLACE FUNCTION public."ePAT_ParentalType" (
     equivalent tinyint
 )
 COPY GRANTS
 RETURNS TABLE (
-    Metadata_PAT int,
-    PAT_ID tinyint,
-    PAT_EQ tinyint,
-    PAT_ParentalType varchar(42)
+    "Metadata_PAT" int,
+    "PAT_ID" tinyint,
+    "PAT_EQ" tinyint,
+    "PAT_ParentalType" varchar(42)
 )
 AS
 $$
     SELECT
-        Metadata_PAT,
-        PAT_ID,
-        PAT_EQ,
-        PAT_ParentalType
+        "Metadata_PAT",
+        "PAT_ID",
+        "PAT_EQ",
+        "PAT_ParentalType"
     FROM
-        public.PAT_ParentalType
+        public."PAT_ParentalType"
     WHERE
-        PAT_EQ = equivalent
+        "PAT_EQ" = equivalent
 $$
 ;
 -- Knot equivalence view ----------------------------------------------------------------------------------------------
 -- GEN_Gender view and parametrized view
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.GEN_Gender (
-    Metadata_GEN,
-    GEN_ID,
-    GEN_EQ,
-    GEN_Gender COMMENT 'Gender of an actor.'
+CREATE OR REPLACE VIEW public."GEN_Gender" (
+    "Metadata_GEN",
+    "GEN_ID",
+    "GEN_EQ",
+    "GEN_Gender" COMMENT 'Gender of an actor.'
 ) COPY GRANTS COMMENT = 'Gender of an actor.'
 AS
 SELECT
-    v.Metadata_GEN,
-    i.GEN_ID,
-    v.GEN_EQ,
-    v.GEN_Gender
+    v."Metadata_GEN",
+    i."GEN_ID",
+    v."GEN_EQ",
+    v."GEN_Gender"
 FROM
-    public.GEN_Gender_ID i
+    public."GEN_Gender_ID" i
 JOIN
-    public.GEN_Gender_EQ v
+    public."GEN_Gender_EQ" v
 ON
-    v.GEN_ID = i.GEN_ID
+    v."GEN_ID" = i."GEN_ID"
 ;
-CREATE OR REPLACE FUNCTION public.eGEN_Gender (
+CREATE OR REPLACE FUNCTION public."eGEN_Gender" (
     equivalent tinyint
 )
 COPY GRANTS
 RETURNS TABLE (
-    Metadata_GEN int,
-    GEN_ID number(1,0),
-    GEN_EQ tinyint,
-    GEN_Gender varchar(42)
+    "Metadata_GEN" int,
+    "GEN_ID" number(1,0),
+    "GEN_EQ" tinyint,
+    "GEN_Gender" varchar(42)
 )
 AS
 $$
     SELECT
-        Metadata_GEN,
-        GEN_ID,
-        GEN_EQ,
-        GEN_Gender
+        "Metadata_GEN",
+        "GEN_ID",
+        "GEN_EQ",
+        "GEN_Gender"
     FROM
-        public.GEN_Gender
+        public."GEN_Gender"
     WHERE
-        GEN_EQ = equivalent
+        "GEN_EQ" = equivalent
 $$
 ;
 -- Knot equivalence view ----------------------------------------------------------------------------------------------
 -- ONG_Ongoing view and parametrized view
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.ONG_Ongoing (
-    Metadata_ONG,
-    ONG_ID,
-    ONG_EQ,
-    ONG_Ongoing COMMENT 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
+CREATE OR REPLACE VIEW public."ONG_Ongoing" (
+    "Metadata_ONG",
+    "ONG_ID",
+    "ONG_EQ",
+    "ONG_Ongoing" COMMENT 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
 ) COPY GRANTS COMMENT = 'Yes or No flag indicating whether a relationship is still ongoing or has ended.'
 AS
 SELECT
-    v.Metadata_ONG,
-    i.ONG_ID,
-    v.ONG_EQ,
-    v.ONG_Ongoing
+    v."Metadata_ONG",
+    i."ONG_ID",
+    v."ONG_EQ",
+    v."ONG_Ongoing"
 FROM
-    public.ONG_Ongoing_ID i
+    public."ONG_Ongoing_ID" i
 JOIN
-    public.ONG_Ongoing_EQ v
+    public."ONG_Ongoing_EQ" v
 ON
-    v.ONG_ID = i.ONG_ID
+    v."ONG_ID" = i."ONG_ID"
 ;
-CREATE OR REPLACE FUNCTION public.eONG_Ongoing (
+CREATE OR REPLACE FUNCTION public."eONG_Ongoing" (
     equivalent tinyint
 )
 COPY GRANTS
 RETURNS TABLE (
-    Metadata_ONG int,
-    ONG_ID tinyint,
-    ONG_EQ tinyint,
-    ONG_Ongoing varchar(3)
+    "Metadata_ONG" int,
+    "ONG_ID" tinyint,
+    "ONG_EQ" tinyint,
+    "ONG_Ongoing" varchar(3)
 )
 AS
 $$
     SELECT
-        Metadata_ONG,
-        ONG_ID,
-        ONG_EQ,
-        ONG_Ongoing
+        "Metadata_ONG",
+        "ONG_ID",
+        "ONG_EQ",
+        "ONG_Ongoing"
     FROM
-        public.ONG_Ongoing
+        public."ONG_Ongoing"
     WHERE
-        ONG_EQ = equivalent
+        "ONG_EQ" = equivalent
 $$
 ;
 -- Knot equivalence view ----------------------------------------------------------------------------------------------
 -- RAT_Rating view and parametrized view
 -----------------------------------------------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.RAT_Rating (
-    Metadata_RAT,
-    RAT_ID,
-    RAT_EQ,
-    RAT_Rating COMMENT 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
+CREATE OR REPLACE VIEW public."RAT_Rating" (
+    "Metadata_RAT",
+    "RAT_ID",
+    "RAT_EQ",
+    "RAT_Rating" COMMENT 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
 ) COPY GRANTS COMMENT = 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.'
 AS
 SELECT
-    v.Metadata_RAT,
-    i.RAT_ID,
-    v.RAT_EQ,
-    v.RAT_Rating
+    v."Metadata_RAT",
+    i."RAT_ID",
+    v."RAT_EQ",
+    v."RAT_Rating"
 FROM
-    public.RAT_Rating_ID i
+    public."RAT_Rating_ID" i
 JOIN
-    public.RAT_Rating_EQ v
+    public."RAT_Rating_EQ" v
 ON
-    v.RAT_ID = i.RAT_ID
+    v."RAT_ID" = i."RAT_ID"
 ;
-CREATE OR REPLACE FUNCTION public.eRAT_Rating (
+CREATE OR REPLACE FUNCTION public."eRAT_Rating" (
     equivalent tinyint
 )
 COPY GRANTS
 RETURNS TABLE (
-    Metadata_RAT int,
-    RAT_ID tinyint,
-    RAT_EQ tinyint,
-    RAT_Rating varchar(42)
+    "Metadata_RAT" int,
+    "RAT_ID" tinyint,
+    "RAT_EQ" tinyint,
+    "RAT_Rating" varchar(42)
 )
 AS
 $$
     SELECT
-        Metadata_RAT,
-        RAT_ID,
-        RAT_EQ,
-        RAT_Rating
+        "Metadata_RAT",
+        "RAT_ID",
+        "RAT_EQ",
+        "RAT_Rating"
     FROM
-        public.RAT_Rating
+        public."RAT_Rating"
     WHERE
-        RAT_EQ = equivalent
+        "RAT_EQ" = equivalent
 $$
 ;
