@@ -4,97 +4,97 @@
 --
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.PAT_ParentalType (
-    PAT_ID tinyint not null,
-    PAT_ParentalType varchar(42) not null,
-    Metadata_PAT int not null,
-    constraint pkPAT_ParentalType primary key (
-        PAT_ID
+CREATE TABLE IF NOT EXISTS knots."PAT_ParentalType" (
+    "PAT_ID" tinyint not null,
+    "PAT_ParentalType" varchar(42) not null,
+    "Metadata_PAT" int not null,
+    constraint "pkPAT_ParentalType" primary key (
+        "PAT_ID"
     ) RELY,
-    constraint uqPAT_ParentalType unique (
-        PAT_ParentalType
+    constraint "uqPAT_ParentalType" unique (
+        "PAT_ParentalType"
     ) RELY
-) CLUSTER BY (PAT_ID);
+) CLUSTER BY ("PAT_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.GEN_Gender (
-    GEN_ID number(1,0) not null,
-    GEN_Gender varchar(42) not null,
-    GEN_Checksum numeric(19,0) default hash(GEN_Gender),
-    Metadata_GEN int not null,
-    constraint pkGEN_Gender primary key (
-        GEN_ID
+CREATE TABLE IF NOT EXISTS knots."GEN_Gender" (
+    "GEN_ID" number(1,0) not null,
+    "GEN_Gender" varchar(42) not null,
+    "GEN_Checksum" numeric(19,0) default hash("GEN_Gender"),
+    "Metadata_GEN" int not null,
+    constraint "pkGEN_Gender" primary key (
+        "GEN_ID"
     ) RELY,
-    constraint uqGEN_Gender unique (
-        GEN_Checksum 
+    constraint "uqGEN_Gender" unique (
+        "GEN_Checksum" 
     ) RELY
-) CLUSTER BY (GEN_ID);
+) CLUSTER BY ("GEN_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.PLV_ProfessionalLevel (
-    PLV_ID tinyint not null,
-    PLV_ProfessionalLevel string not null,
-    PLV_Checksum numeric(19,0) default hash(PLV_ProfessionalLevel),
-    Metadata_PLV int not null,
-    constraint pkPLV_ProfessionalLevel primary key (
-        PLV_ID
+CREATE TABLE IF NOT EXISTS knots."PLV_ProfessionalLevel" (
+    "PLV_ID" tinyint not null,
+    "PLV_ProfessionalLevel" string not null,
+    "PLV_Checksum" numeric(19,0) default hash("PLV_ProfessionalLevel"),
+    "Metadata_PLV" int not null,
+    constraint "pkPLV_ProfessionalLevel" primary key (
+        "PLV_ID"
     ) RELY,
-    constraint uqPLV_ProfessionalLevel unique (
-        PLV_Checksum 
+    constraint "uqPLV_ProfessionalLevel" unique (
+        "PLV_Checksum" 
     ) RELY
-) CLUSTER BY (PLV_ID);
+) CLUSTER BY ("PLV_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.UTL_Utilization (
-    UTL_ID tinyint not null,
-    UTL_Utilization tinyint not null,
-    Metadata_UTL int not null,
-    constraint pkUTL_Utilization primary key (
-        UTL_ID
+CREATE TABLE IF NOT EXISTS knots."UTL_Utilization" (
+    "UTL_ID" tinyint not null,
+    "UTL_Utilization" tinyint not null,
+    "Metadata_UTL" int not null,
+    constraint "pkUTL_Utilization" primary key (
+        "UTL_ID"
     ) RELY,
-    constraint uqUTL_Utilization unique (
-        UTL_Utilization
+    constraint "uqUTL_Utilization" unique (
+        "UTL_Utilization"
     ) RELY
-) CLUSTER BY (UTL_ID);
+) CLUSTER BY ("UTL_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.ONG_Ongoing (
-    ONG_ID tinyint not null,
-    ONG_Ongoing varchar(3) not null,
-    Metadata_ONG int not null,
-    constraint pkONG_Ongoing primary key (
-        ONG_ID
+CREATE TABLE IF NOT EXISTS knots."ONG_Ongoing" (
+    "ONG_ID" tinyint not null,
+    "ONG_Ongoing" varchar(3) not null,
+    "Metadata_ONG" int not null,
+    constraint "pkONG_Ongoing" primary key (
+        "ONG_ID"
     ) RELY,
-    constraint uqONG_Ongoing unique (
-        ONG_Ongoing
+    constraint "uqONG_Ongoing" unique (
+        "ONG_Ongoing"
     ) RELY
-) CLUSTER BY (ONG_ID);
+) CLUSTER BY ("ONG_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE SEQUENCE IF NOT EXISTS knots.RAT_Rating_ID_SEQ START 1 INCREMENT 1;
-CREATE TABLE IF NOT EXISTS knots.RAT_Rating (
-    RAT_ID tinyint default knots.RAT_Rating_ID_SEQ.nextval not null, 
-    RAT_Rating varchar(42) not null,
-    RAT_Checksum numeric(19,0) default hash(RAT_Rating),
-    Metadata_RAT int not null,
-    constraint pkRAT_Rating primary key (
-        RAT_ID
+CREATE SEQUENCE IF NOT EXISTS knots."RAT_Rating_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS knots."RAT_Rating" (
+    "RAT_ID" tinyint default knots."RAT_Rating_ID_SEQ".nextval not null, 
+    "RAT_Rating" varchar(42) not null,
+    "RAT_Checksum" numeric(19,0) default hash("RAT_Rating"),
+    "Metadata_RAT" int not null,
+    constraint "pkRAT_Rating" primary key (
+        "RAT_ID"
     ) RELY,
-    constraint uqRAT_Rating unique (
-        RAT_Checksum 
+    constraint "uqRAT_Rating" unique (
+        "RAT_Checksum" 
     ) RELY
-) CLUSTER BY (RAT_ID);
+) CLUSTER BY ("RAT_ID");
 -- Knot table ---------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS knots.ETY_EventType (
-    ETY_ID tinyint not null,
-    ETY_EventType varchar(42) not null,
-    ETY_Checksum numeric(19,0) default hash(ETY_EventType),
-    Metadata_ETY int not null,
-    constraint pkETY_EventType primary key (
-        ETY_ID
+CREATE TABLE IF NOT EXISTS knots."ETY_EventType" (
+    "ETY_ID" tinyint not null,
+    "ETY_EventType" varchar(42) not null,
+    "ETY_Checksum" numeric(19,0) default hash("ETY_EventType"),
+    "Metadata_ETY" int not null,
+    constraint "pkETY_EventType" primary key (
+        "ETY_ID"
     ) RELY,
-    constraint uqETY_EventType unique (
-        ETY_Checksum 
+    constraint "uqETY_EventType" unique (
+        "ETY_Checksum" 
     ) RELY
-) CLUSTER BY (ETY_ID);
+) CLUSTER BY ("ETY_ID");

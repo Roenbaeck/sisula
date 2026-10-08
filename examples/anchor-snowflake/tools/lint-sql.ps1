@@ -27,7 +27,15 @@ $types = 'int|tinyint|smallint|bigint|integer|decimal\(\d+,\s*\d+\)|number\(\d+(
 $column = "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b[^,]*$"          # a column definition with no comma at its end
 $selectItem = '^\s+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\s*$' # "x.Column" with no comma at its end
 
+# The templates write the names that come from the model inside double quotes ("AC_Actor"), which keeps their case and lets them
+# hold national characters. For this lint a quoted name is the name: the quotes are taken off, and a character that is not a letter,
+# digit or underscore (a space, say) becomes an underscore, so that the name stays one word.
+function Remove-IdentifierQuotes([string] $text) {
+    [regex]::Replace($text, '"([^"\r\n]*)"', { param($m) $m.Groups[1].Value -replace '[^\w$]', '_' })
+}
+
 function Test-Sql([string] $text) {
+    $text = Remove-IdentifierQuotes $text
     $found = New-Object System.Collections.Generic.List[string]
     # comments and string literals are not code
     $lines = $text -split "`r?`n"
