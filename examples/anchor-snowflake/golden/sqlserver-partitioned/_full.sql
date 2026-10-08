@@ -1014,6 +1014,7 @@ GO
 CREATE TABLE [anchors].[ST_Stage_1st](
     ST_ID int NOT NULL,
     ST_LOC_Stage_Location geography NOT NULL,
+    ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     STschema.metadata.equivalentSuffix tinyint NOT NULL,
     Metadata_ST int NOT NULL,
     CONSTRAINT pkST_Stage_1st PRIMARY KEY CLUSTERED (
@@ -1022,7 +1023,7 @@ CREATE TABLE [anchors].[ST_Stage_1st](
     ),
     CONSTRAINT uqST_Stage_1st UNIQUE (
         STschema.metadata.equivalentSuffix,
-        ST_LOC_Stage_Location
+        ST_LOC_Checksum
     )
 );
 GO
@@ -1267,6 +1268,7 @@ GO
 CREATE TABLE [nexuses].[EV_Event_1st](
     EV_ID numeric(12,0) NOT NULL,
     ST_LOC_Stage_Location geography NULL,
+    ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     PR_NAM_Program_Name nvarchar(42) NULL,
     EVschema.metadata.equivalentSuffix tinyint NOT NULL,
     Metadata_EV int NOT NULL,
@@ -1275,8 +1277,8 @@ CREATE TABLE [nexuses].[EV_Event_1st](
     ),
     CONSTRAINT uqEV_Event_1st UNIQUE (
         EVschema.metadata.equivalentSuffix,
-        PR_NAM_Program_Name,
-        ST_LOC_Stage_Location
+        ST_LOC_Checksum,
+        PR_NAM_Program_Name
     )
 );
 GO

@@ -751,6 +751,7 @@ GO
 CREATE TABLE [dbo].[ST_Stage_2nd](
     ST_ID int NOT NULL,
     ST_NAM_Stage_Name nvarchar(42) NOT NULL,
+    ST_NAM_Checksum as cast(dbo.MD5(cast(ST_NAM_Stage_Name as varbinary(max))) as varbinary(16)) persisted,
     ST_ChangedAt datetime2 NOT NULL,
     STschema.metadata.equivalentSuffix tinyint NOT NULL,
     CONSTRAINT pkST_Stage_2nd PRIMARY KEY CLUSTERED (
@@ -760,7 +761,7 @@ CREATE TABLE [dbo].[ST_Stage_2nd](
     ),
     CONSTRAINT uqST_Stage_2nd UNIQUE (
         STschema.metadata.equivalentSuffix,
-        ST_NAM_Stage_Name,
+        ST_NAM_Checksum,
         ST_ChangedAt
     )
 );
@@ -837,6 +838,7 @@ GO
 CREATE TABLE [dbo].[ST_Stage_1st](
     ST_ID int NOT NULL,
     ST_LOC_Stage_Location geography NOT NULL,
+    ST_LOC_Checksum as cast(dbo.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     STschema.metadata.equivalentSuffix tinyint NOT NULL,
     CONSTRAINT pkST_Stage_1st PRIMARY KEY CLUSTERED (
         STschema.metadata.equivalentSuffix,
@@ -844,7 +846,7 @@ CREATE TABLE [dbo].[ST_Stage_1st](
     ),
     CONSTRAINT uqST_Stage_1st UNIQUE (
         STschema.metadata.equivalentSuffix,
-        ST_LOC_Stage_Location
+        ST_LOC_Checksum
     )
 );
 GO
@@ -919,6 +921,7 @@ GO
 CREATE TABLE [dbo].[AC_Actor_1st](
     AC_ID int NOT NULL,
     AC_NAM_Actor_Name nvarchar(42) NOT NULL,
+    AC_NAM_Checksum as cast(dbo.MD5(cast(AC_NAM_Actor_Name as varbinary(max))) as varbinary(16)) persisted,
     AC_ChangedAt datetime2 NOT NULL,
     ACschema.metadata.equivalentSuffix tinyint NOT NULL,
     CONSTRAINT pkAC_Actor_1st PRIMARY KEY CLUSTERED (
@@ -928,7 +931,7 @@ CREATE TABLE [dbo].[AC_Actor_1st](
     ),
     CONSTRAINT uqAC_Actor_1st UNIQUE (
         ACschema.metadata.equivalentSuffix,
-        AC_NAM_Actor_Name,
+        AC_NAM_Checksum,
         AC_ChangedAt
     )
 );
@@ -1087,6 +1090,7 @@ GO
 CREATE TABLE [dbo].[EV_Event_1st](
     EV_ID int NOT NULL,
     ST_LOC_Stage_Location geography NULL,
+    ST_LOC_Checksum as cast(dbo.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     PR_NAM_Program_Name nvarchar(42) NULL,
     EVschema.metadata.equivalentSuffix tinyint NOT NULL,
     CONSTRAINT pkEV_Event_1st PRIMARY KEY CLUSTERED (
@@ -1094,8 +1098,8 @@ CREATE TABLE [dbo].[EV_Event_1st](
     ),
     CONSTRAINT uqEV_Event_1st UNIQUE (
         EVschema.metadata.equivalentSuffix,
-        PR_NAM_Program_Name,
-        ST_LOC_Stage_Location
+        ST_LOC_Checksum,
+        PR_NAM_Program_Name
     )
 );
 GO
