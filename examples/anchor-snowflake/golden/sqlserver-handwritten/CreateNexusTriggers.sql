@@ -24,29 +24,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID numeric(12,0) not null
-    );
-    INSERT INTO [nexuses].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID numeric(12,0) not null,
         Metadata_EV int not null,
@@ -79,31 +56,47 @@ BEGIN
         EV_LVL_Metadata_PLV int null,
         EV_LVL_PLV_ID tinyint null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
         ISNULL(i.EV_AUD_EQ, 0),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
         i.EV_REV_Event_Revenue,
-        ISNULL(ISNULL(i.EV_STA_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_STA_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
         ISNULL(i.EV_STA_EQ, 0),
         i.EV_STA_Event_Status,
-        ISNULL(ISNULL(i.EV_UTL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_UTL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
         i.EV_UTL_UTL_Utilization,
         ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
         i.EV_UTL_UTL_ID,
-        ISNULL(ISNULL(i.EV_LVL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_LVL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
@@ -111,46 +104,45 @@ BEGIN
         ISNULL(i.EV_LVL_PLV_EQ, 0),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            EV_DAT_EV_ID,
-            Metadata_EV_DAT,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            Metadata_EV_AUD,
-            EV_AUD_EQ,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            Metadata_EV_REV,
-            EV_REV_Event_Revenue,
-            EV_STA_EV_ID,
-            Metadata_EV_STA,
-            EV_STA_ChangedAt,
-            EV_STA_EQ,
-            EV_STA_Event_Status,
-            EV_UTL_EV_ID,
-            Metadata_EV_UTL,
-            EV_UTL_UTL_Utilization,
-            EV_UTL_Metadata_UTL,
-            EV_UTL_UTL_ID,
-            EV_LVL_EV_ID,
-            Metadata_EV_LVL,
-            EV_LVL_ChangedAt,
-            EV_LVL_PLV_ProfessionalLevel,
-            EV_LVL_PLV_Checksum,
-            EV_LVL_PLV_EQ,
-            EV_LVL_Metadata_PLV,
-            EV_LVL_PLV_ID,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(i.EV_AUD_EQ, 0),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.EV_STA_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(i.EV_STA_EQ, 0),
+        i.EV_STA_Event_Status,
+        ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        i.EV_UTL_UTL_Utilization,
+        ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
+        i.EV_UTL_UTL_ID,
+        ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        i.EV_LVL_PLV_ProfessionalLevel,
+        ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.EV_LVL_PLV_EQ, 0),
+        ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
+        i.EV_LVL_PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [attributes].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_DAT_EV_ID,

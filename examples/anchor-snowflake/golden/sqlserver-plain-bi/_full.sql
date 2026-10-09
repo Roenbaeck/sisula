@@ -3563,8 +3563,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [dbo].[lST_Stage] [ST];
 GO
@@ -3579,8 +3579,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [dbo].[pST_Stage](@changingTimepoint) [ST]
 GO
@@ -3642,8 +3642,8 @@ CREATE VIEW [dbo].[Latest_Actor] AS
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [dbo].[lAC_Actor] [AC];
 GO
@@ -3657,8 +3657,8 @@ RETURNS TABLE AS RETURN
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [dbo].[pAC_Actor](@changingTimepoint) [AC]
 GO
@@ -7947,29 +7947,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID int not null
-    );
-    INSERT INTO [dbo].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        EV_Dummy
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        null
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID int not null,
         EV_DAT_PositedAt datetime2 null,
@@ -7982,9 +7959,25 @@ BEGIN
         EV_REV_Reliability decimal(5,2) null,
         EV_REV_Event_Revenue decimal(19,4) null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [dbo].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        EV_Dummy
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        null
+    )
+    OUTPUT
+        inserted.EV_ID,
         ISNULL(i.EV_DAT_PositedAt, @now),
         ISNULL(ISNULL(i.EV_DAT_Reliability, i.Reliability), 1),
         i.EV_DAT_Event_Date,
@@ -7994,27 +7987,25 @@ BEGIN
         ISNULL(i.EV_REV_PositedAt, @now),
         ISNULL(ISNULL(i.EV_REV_Reliability, i.Reliability), 1),
         i.EV_REV_Event_Revenue
-    FROM (
-        SELECT
-            Reliability,
-            EV_ID,
-            EV_DAT_PositedAt,
-            EV_DAT_Reliability,
-            EV_DAT_Event_Date,
-            EV_AUD_PositedAt,
-            EV_AUD_Reliability,
-            EV_AUD_Event_Audience,
-            EV_REV_PositedAt,
-            EV_REV_Reliability,
-            EV_REV_Event_Revenue,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        ISNULL(i.EV_DAT_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_DAT_Reliability, i.Reliability), 1),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_AUD_Reliability, i.Reliability), 1),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_REV_Reliability, i.Reliability), 1),
+        i.EV_REV_Event_Revenue
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [dbo].[EV_DAT_Event_Date] (
         EV_ID,
         EV_DAT_Event_Date,

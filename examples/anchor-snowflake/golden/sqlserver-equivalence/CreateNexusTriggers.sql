@@ -24,29 +24,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID int not null
-    );
-    INSERT INTO [dbo].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID int not null,
         Metadata_EV int not null,
@@ -62,44 +39,59 @@ BEGIN
         EV_REV_EQ tinyint null,
         EV_REV_Event_Revenue decimal(19,4) null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [dbo].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         ISNULL(i.EV_DAT_EQ, 0),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
         ISNULL(i.EV_REV_EQ, 0),
         i.EV_REV_Event_Revenue
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            EV_DAT_EV_ID,
-            Metadata_EV_DAT,
-            EV_DAT_EQ,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            Metadata_EV_AUD,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            Metadata_EV_REV,
-            EV_REV_EQ,
-            EV_REV_Event_Revenue,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        ISNULL(i.EV_DAT_EQ, 0),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(i.EV_REV_EQ, 0),
+        i.EV_REV_Event_Revenue
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [dbo].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_DAT_EV_ID,

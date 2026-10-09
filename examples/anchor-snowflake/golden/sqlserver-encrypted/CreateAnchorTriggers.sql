@@ -572,7 +572,7 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_AC_GEN,
         i.AC_GEN_AC_ID,
-        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_GEN_GEN_ID as varbinary(max))) 
+        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID) 
     FROM
         @inserted i
     LEFT JOIN

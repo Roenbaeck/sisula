@@ -3331,8 +3331,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [anchors].[lST_Stage] [ST];
 GO
@@ -3347,8 +3347,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [anchors].[pST_Stage](@changingTimepoint) [ST]
 GO
@@ -3414,8 +3414,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [anchors].[elST_Stage](@equivalent) [ST];
 GO
@@ -3431,8 +3431,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [anchors].[epST_Stage](@equivalent, @changingTimepoint) [ST]
 GO
@@ -3497,8 +3497,8 @@ CREATE VIEW [anchors].[Latest_Actor] AS
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [anchors].[lAC_Actor] [AC];
 GO
@@ -3512,8 +3512,8 @@ RETURNS TABLE AS RETURN
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [anchors].[pAC_Actor](@changingTimepoint) [AC]
 GO
@@ -3578,8 +3578,8 @@ RETURNS TABLE AS RETURN
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [anchors].[elAC_Actor](@equivalent) [AC];
 GO
@@ -3594,8 +3594,8 @@ RETURNS TABLE AS RETURN
 SELECT
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [anchors].[epAC_Actor](@equivalent, @changingTimepoint) [AC]
 GO
@@ -4398,8 +4398,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[lEV_Event] [EV];
 GO
@@ -4419,8 +4419,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[pEV_Event](@changingTimepoint) [EV]
 GO
@@ -4491,8 +4491,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[elEV_Event](@equivalent) [EV];
 GO
@@ -4513,8 +4513,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[epEV_Event](@equivalent, @changingTimepoint) [EV]
 GO
@@ -6894,29 +6894,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID numeric(12,0) not null
-    );
-    INSERT INTO [nexuses].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID numeric(12,0) not null,
         Metadata_EV int not null,
@@ -6944,9 +6921,25 @@ BEGIN
         Metadata_PLV int null,
         PLV_ID tinyint null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         i.EV_DAT_Event_Date,
@@ -6971,41 +6964,40 @@ BEGIN
         ISNULL(i.PLV_EQ, 0),
         ISNULL(i.Metadata_PLV, i.Metadata_EV),
         i.PLV_ID
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            Metadata_EV_DAT,
-            EV_DAT_Event_Date,
-            Metadata_EV_AUD,
-            EV_AUD_EQ,
-            EV_AUD_Event_Audience,
-            Metadata_EV_REV,
-            EV_REV_EQ,
-            EV_REV_Event_Revenue,
-            Metadata_EV_STA,
-            EV_STA_ChangedAt,
-            EV_STA_EQ,
-            EV_STA_Event_Status,
-            Metadata_EV_UTL,
-            UTL_Utilization,
-            Metadata_UTL,
-            UTL_ID,
-            Metadata_EV_LVL,
-            EV_LVL_ChangedAt,
-            PLV_ProfessionalLevel,
-            PLV_Checksum,
-            PLV_EQ,
-            Metadata_PLV,
-            PLV_ID,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(i.EV_AUD_EQ, 0),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(i.EV_REV_EQ, 0),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(i.EV_STA_EQ, 0),
+        i.EV_STA_Event_Status,
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_EV),
+        i.UTL_ID,
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        i.PLV_ProfessionalLevel,
+        ISNULL(i.PLV_Checksum, dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.PLV_EQ, 0),
+        ISNULL(i.Metadata_PLV, i.Metadata_EV),
+        i.PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [attributes].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_ID,

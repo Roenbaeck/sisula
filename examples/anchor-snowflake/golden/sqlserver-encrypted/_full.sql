@@ -39,7 +39,6 @@ BEGIN
 END
 -- GROUP KEY ----------------------------------------------------------------------------------------------------------
 -- An encryption key used to encrypt the data in the attributes: 
---	AC_GEN_Actor_Gender
 --	AC_NAM_Actor_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF NOT EXISTS (SELECT * FROM sys.symmetric_keys WHERE [name] = 'PII')
@@ -1989,7 +1988,7 @@ SELECT
     [kGEN].GEN_Checksum AS AC_GEN_GEN_Checksum,
     [kGEN].GEN_Gender AS AC_GEN_GEN_Gender,
     [kGEN].Metadata_GEN AS AC_GEN_Metadata_GEN,
-    CAST(DECRYPTBYKEY([GEN].AC_GEN_GEN_ID) AS ) AS AC_GEN_GEN_ID,
+    [GEN].AC_GEN_GEN_ID,
     [PLV].AC_PLV_AC_ID,
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
@@ -2057,7 +2056,7 @@ SELECT
     [kGEN].GEN_Checksum AS AC_GEN_GEN_Checksum,
     [kGEN].GEN_Gender AS AC_GEN_GEN_Gender,
     [kGEN].Metadata_GEN AS AC_GEN_Metadata_GEN,
-    CAST(DECRYPTBYKEY([GEN].AC_GEN_GEN_ID) AS ) AS AC_GEN_GEN_ID,
+    [GEN].AC_GEN_GEN_ID,
     [PLV].AC_PLV_AC_ID,
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
@@ -3828,15 +3827,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-        IF NOT EXISTS (
-            SELECT * FROM sys.openkeys 
-            WHERE [key_name] = 'PII' AND [database_id] = DB_ID()
-        ) AND EXISTS (
-            SELECT TOP 1 AC_GEN_AC_ID FROM inserted
-        )
-        BEGIN
-            RAISERROR('The key [PII] must be open in order to modify the attribute AC_GEN_Actor_Gender.', 16, 1);
-        END 
     -- another value for an entity that already has a value is a contradiction
     DECLARE @message varchar(max);
     SET @message = (
@@ -3849,7 +3839,7 @@ BEGIN
         ON
             x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
         WHERE NOT (
-            DECRYPTBYKEY(x.AC_GEN_GEN_ID) = DECRYPTBYKEY(i.AC_GEN_GEN_ID)
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
         )
         FOR XML PATH('')
     );
@@ -3879,7 +3869,7 @@ BEGIN
         WHERE
             x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
         AND
-            DECRYPTBYKEY(x.AC_GEN_GEN_ID) = DECRYPTBYKEY(i.AC_GEN_GEN_ID)
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
     ); 
 END
 GO 
@@ -4744,7 +4734,7 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_AC_GEN,
         i.AC_GEN_AC_ID,
-        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_GEN_GEN_ID as varbinary(max))) 
+        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID) 
     FROM
         @inserted i
     LEFT JOIN
@@ -5223,29 +5213,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID numeric(12,0) not null
-    );
-    INSERT INTO [nexuses].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID numeric(12,0) not null,
         Metadata_EV int not null,
@@ -5275,72 +5242,87 @@ BEGIN
         EV_LVL_Metadata_PLV int null,
         EV_LVL_PLV_ID tinyint null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
         i.EV_REV_Event_Revenue,
-        ISNULL(ISNULL(i.EV_STA_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_STA_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
         i.EV_STA_Event_Status,
-        ISNULL(ISNULL(i.EV_UTL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_UTL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
         i.EV_UTL_UTL_Utilization,
         ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
         i.EV_UTL_UTL_ID,
-        ISNULL(ISNULL(i.EV_LVL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_LVL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            EV_DAT_EV_ID,
-            Metadata_EV_DAT,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            Metadata_EV_AUD,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            Metadata_EV_REV,
-            EV_REV_Event_Revenue,
-            EV_STA_EV_ID,
-            Metadata_EV_STA,
-            EV_STA_ChangedAt,
-            EV_STA_Event_Status,
-            EV_UTL_EV_ID,
-            Metadata_EV_UTL,
-            EV_UTL_UTL_Utilization,
-            EV_UTL_Metadata_UTL,
-            EV_UTL_UTL_ID,
-            EV_LVL_EV_ID,
-            Metadata_EV_LVL,
-            EV_LVL_ChangedAt,
-            EV_LVL_PLV_ProfessionalLevel,
-            EV_LVL_PLV_Checksum,
-            EV_LVL_Metadata_PLV,
-            EV_LVL_PLV_ID,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.EV_STA_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        i.EV_STA_Event_Status,
+        ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        i.EV_UTL_UTL_Utilization,
+        ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
+        i.EV_UTL_UTL_ID,
+        ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        i.EV_LVL_PLV_ProfessionalLevel,
+        ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
+        i.EV_LVL_PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [attributes].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_DAT_EV_ID,
@@ -7708,7 +7690,7 @@ INSERT INTO [dw].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.101.2" date="2026-09-25" time="12:50:25">
+   N'<schema format="0.101.3" date="2026-09-25" time="12:50:25">
 <metadata changingRange="datetime2" encapsulation="dw" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="true" />
 <description>
 Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.
@@ -7823,7 +7805,7 @@ Name of the actor, such as a stage name. Historized, since it may change over ti
 </description>
 </attribute>
 <attribute mnemonic="GEN" descriptor="Gender" knotRange="GEN">
-<metadata privacy="Ignore" encryptionGroup="PII" capsule="attributes" idempotent="false" deletable="false" />
+<metadata privacy="Ignore" capsule="attributes" idempotent="false" deletable="false" />
 <layout x="1361.11" y="14.63" fixed="false" />
 <description>
 Gender of the actor.

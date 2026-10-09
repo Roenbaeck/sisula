@@ -10143,25 +10143,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID int not null
-    );
-    INSERT INTO [dbo].[EV_Event] (
-        SU_ID_for,
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        SU_ID_for,
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID int not null,
         Metadata_EV int not null,
@@ -10172,36 +10153,45 @@ BEGIN
         EV_QTY_Reliability decimal(5,2) null,
         EV_QTY_Event_Quantity int null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [dbo].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        SU_ID_for,
+        Metadata_EV 
+    )
+    VALUES (
+        i.SU_ID_for,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_QTY_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_QTY_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
         ISNULL(ISNULL(i.EV_QTY_Positor, i.Positor), 0),
         ISNULL(i.EV_QTY_PositedAt, @now),
         ISNULL(ISNULL(i.EV_QTY_Reliability, i.Reliability), 1),
         i.EV_QTY_Event_Quantity
-    FROM (
-        SELECT
-            Positor,
-            Reliability,
-            EV_ID,
-            Metadata_EV,
-            EV_QTY_EV_ID,
-            Metadata_EV_QTY,
-            EV_QTY_Positor,
-            EV_QTY_PositedAt,
-            EV_QTY_Reliability,
-            EV_QTY_Event_Quantity,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_QTY_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_QTY_Positor, i.Positor), 0),
+        ISNULL(i.EV_QTY_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_QTY_Reliability, i.Reliability), 1),
+        i.EV_QTY_Event_Quantity
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
         Metadata_EV_QTY,
         EV_QTY_EV_ID,

@@ -31,8 +31,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[lEV_Event] [EV];
 GO
@@ -52,8 +52,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[pEV_Event](@changingTimepoint) [EV]
 GO
@@ -124,8 +124,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[elEV_Event](@equivalent) [EV];
 GO
@@ -146,8 +146,8 @@ SELECT
     [EV].EV_AUD_Event_Audience as [Audience],
     [EV].EV_REV_Event_Revenue as [Revenue],
     [EV].EV_STA_Event_Status as [Status],
-    [EV].UTL_Utilization as [],
-    [EV].PLV_ProfessionalLevel as []
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
 FROM
     [nexuses].[epEV_Event](@equivalent, @changingTimepoint) [EV]
 GO

@@ -85,7 +85,7 @@ GO
 IF Object_ID('dbo.PAT_ParentalType_ID', 'U') IS NULL
 CREATE TABLE [dbo].[PAT_ParentalType_ID] (
     PAT_ID tinyint IDENTITY(1,1) not null,
-     bit null,
+    PAT_Dummy bit null,
     constraint pkPAT_ParentalType_ID primary key (
         PAT_ID asc
     )
@@ -99,7 +99,7 @@ CREATE TABLE [dbo].[PAT_ParentalType_EQ] (
     PAT_ID tinyint not null,
     PAT_EQ tinyint not null,
     PAT_ParentalType nvarchar(42) not null,
-     bit null,
+    PAT_Dummy bit null,
     constraint fkPAT_ParentalType_EQ foreign key (
         PAT_ID
     ) references [dbo].[PAT_ParentalType_ID](PAT_ID),
@@ -119,7 +119,7 @@ GO
 IF Object_ID('dbo.GEN_Gender_ID', 'U') IS NULL
 CREATE TABLE [dbo].[GEN_Gender_ID] (
     GEN_ID tinyint not null,
-     bit null,
+    GEN_Dummy bit null,
     constraint pkGEN_Gender_ID primary key (
         GEN_ID asc
     )
@@ -133,7 +133,7 @@ CREATE TABLE [dbo].[GEN_Gender_EQ] (
     GEN_ID tinyint not null,
     GEN_EQ tinyint not null,
     GEN_Gender nvarchar(42) not null,
-     bit null,
+    GEN_Dummy bit null,
     constraint fkGEN_Gender_EQ foreign key (
         GEN_ID
     ) references [dbo].[GEN_Gender_ID](GEN_ID),
@@ -184,7 +184,7 @@ GO
 IF Object_ID('dbo.ONG_Ongoing_ID', 'U') IS NULL
 CREATE TABLE [dbo].[ONG_Ongoing_ID] (
     ONG_ID tinyint not null,
-     bit null,
+    ONG_Dummy bit null,
     constraint pkONG_Ongoing_ID primary key (
         ONG_ID asc
     )
@@ -198,7 +198,7 @@ CREATE TABLE [dbo].[ONG_Ongoing_EQ] (
     ONG_ID tinyint not null,
     ONG_EQ tinyint not null,
     ONG_Ongoing nvarchar(3) not null,
-     bit null,
+    ONG_Dummy bit null,
     constraint fkONG_Ongoing_EQ foreign key (
         ONG_ID
     ) references [dbo].[ONG_Ongoing_ID](ONG_ID),
@@ -218,7 +218,7 @@ GO
 IF Object_ID('dbo.RAT_Rating_ID', 'U') IS NULL
 CREATE TABLE [dbo].[RAT_Rating_ID] (
     RAT_ID tinyint IDENTITY(1,1) not null,
-     bit null,
+    RAT_Dummy bit null,
     constraint pkRAT_Rating_ID primary key (
         RAT_ID asc
     )
@@ -232,7 +232,7 @@ CREATE TABLE [dbo].[RAT_Rating_EQ] (
     RAT_ID tinyint not null,
     RAT_EQ tinyint not null,
     RAT_Rating nvarchar(42) not null,
-     bit null,
+    RAT_Dummy bit null,
     constraint fkRAT_Rating_EQ foreign key (
         RAT_ID
     ) references [dbo].[RAT_Rating_ID](RAT_ID),
@@ -5911,29 +5911,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID int not null
-    );
-    INSERT INTO [dbo].[EV_Event] (
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        EV_Dummy
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        ST_ID_wasHeldAt,
-        PR_ID_wasPlayed,
-        ETY_ID_of,
-        null
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID int not null,
         EV_DAT_EV_ID int null,
@@ -5945,36 +5922,51 @@ BEGIN
         EV_REV_EQ tinyint null,
         EV_REV_Event_Revenue decimal(19,4) null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [dbo].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        EV_Dummy
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        null
+    )
+    OUTPUT
+        inserted.EV_ID,
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.EV_DAT_EQ, 0),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.EV_REV_EQ, 0),
         i.EV_REV_Event_Revenue
-    FROM (
-        SELECT
-            EV_ID,
-            EV_DAT_EV_ID,
-            EV_DAT_EQ,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            EV_REV_EQ,
-            EV_REV_Event_Revenue,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.EV_DAT_EQ, 0),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.EV_REV_EQ, 0),
+        i.EV_REV_Event_Revenue
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [dbo].[EV_DAT_Event_Date] (
         EV_DAT_EV_ID,
         EV_DAT_Event_Date

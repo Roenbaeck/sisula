@@ -878,15 +878,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-        IF NOT EXISTS (
-            SELECT * FROM sys.openkeys 
-            WHERE [key_name] = 'PII' AND [database_id] = DB_ID()
-        ) AND EXISTS (
-            SELECT TOP 1 AC_GEN_AC_ID FROM inserted
-        )
-        BEGIN
-            RAISERROR('The key [PII] must be open in order to modify the attribute AC_GEN_Actor_Gender.', 16, 1);
-        END 
     -- another value for an entity that already has a value is a contradiction
     DECLARE @message varchar(max);
     SET @message = (
@@ -899,7 +890,7 @@ BEGIN
         ON
             x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
         WHERE NOT (
-            DECRYPTBYKEY(x.AC_GEN_GEN_ID) = DECRYPTBYKEY(i.AC_GEN_GEN_ID)
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
         )
         FOR XML PATH('')
     );
@@ -929,7 +920,7 @@ BEGIN
         WHERE
             x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
         AND
-            DECRYPTBYKEY(x.AC_GEN_GEN_ID) = DECRYPTBYKEY(i.AC_GEN_GEN_ID)
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
     ); 
 END
 GO 
