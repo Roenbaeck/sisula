@@ -724,6 +724,102 @@ GO
 -- defined elsewhere.
 --
 -- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date assembled view of the posit and annex tables,
+-- pkEV_DAT_Event_Date optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_DAT_Event_Date', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_DAT_Event_Date]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_DAT_ID,
+        p.EV_ID,
+        p.EV_DAT_Event_Date,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Reliability
+    FROM
+        [dbo].[EV_DAT_Event_Date_Posit] p
+    JOIN
+        [dbo].[EV_DAT_Event_Date_Annex] a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
+    ON [dbo].[EV_DAT_Event_Date] (
+        EV_ID asc,
+        EV_DAT_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience assembled view of the posit and annex tables,
+-- pkEV_AUD_Event_Audience optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_AUD_Event_Audience', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_AUD_Event_Audience]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_AUD_ID,
+        p.EV_ID,
+        p.EV_AUD_Event_Audience,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Reliability
+    FROM
+        [dbo].[EV_AUD_Event_Audience_Posit] p
+    JOIN
+        [dbo].[EV_AUD_Event_Audience_Annex] a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
+    ON [dbo].[EV_AUD_Event_Audience] (
+        EV_ID asc,
+        EV_AUD_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue assembled view of the posit and annex tables,
+-- pkEV_REV_Event_Revenue optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_REV_Event_Revenue', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_REV_Event_Revenue]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_REV_ID,
+        p.EV_ID,
+        p.EV_REV_Event_Revenue,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Reliability
+    FROM
+        [dbo].[EV_REV_Event_Revenue_Posit] p
+    JOIN
+        [dbo].[EV_REV_Event_Revenue_Annex] a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
+    ON [dbo].[EV_REV_Event_Revenue] (
+        EV_ID asc,
+        EV_REV_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name assembled view of the posit and annex tables,
 -- pkST_NAM_Stage_Name optional temporal consistency constraint
 -----------------------------------------------------------------------------------------------------------------------
@@ -4097,6 +4193,519 @@ GO
 -- the previous or following value are stored. Others are silently ignored in
 -- order to avoid unnecessary temporal duplicates.
 --
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [dbo].[it_EV_DAT_Event_Date] ON [dbo].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_DAT_Event_Date TABLE (
+        EV_ID int not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_StatementType char(1) not null,
+        primary key (
+            EV_ID asc, 
+            EV_DAT_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_DAT_Event_Date
+    SELECT
+        i.EV_ID,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Reliability,
+        i.EV_DAT_Event_Date,
+        CASE 
+            WHEN p.EV_DAT_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_DAT_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    AND
+        p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+    LEFT JOIN 
+        [dbo].[EV_DAT_Event_Date_Annex] a
+    ON 
+        a.EV_DAT_ID = p.EV_DAT_ID
+    AND
+        a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_DAT_ID is null OR a.EV_DAT_ID is null);
+    INSERT INTO @EV_DAT_Event_Date (
+        EV_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    )
+    SELECT
+        i.EV_ID,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Reliability,
+        p.EV_DAT_Event_Date,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_ID FROM @EV_DAT_Event_Date) i
+    JOIN
+        [dbo].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    JOIN 
+        [dbo].[EV_DAT_Event_Date_Annex] a
+    ON 
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    DECLARE @retracted TABLE (
+        EV_ID int not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    )
+    SELECT
+        EV_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_DAT_Reliability as previous_EV_DAT_Reliability, 
+            fol.EV_DAT_Reliability as following_EV_DAT_Reliability
+        FROM
+            @EV_DAT_Event_Date a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_DAT_Reliability
+            FROM
+                @EV_DAT_Event_Date p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_DAT_PositedAt < a.EV_DAT_PositedAt
+            ORDER BY 
+                p.EV_DAT_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_DAT_Reliability
+            FROM
+                @EV_DAT_Event_Date p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_DAT_PositedAt > a.EV_DAT_PositedAt
+            ORDER BY 
+                p.EV_DAT_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_DAT_Reliability = 0 AND isnull(pre.EV_DAT_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_DAT_Reliability = 1 AND fol.EV_DAT_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_DAT_StatementType <> 'X'
+    AND (
+            (i.EV_DAT_Reliability = 0 AND i.previous_EV_DAT_Reliability = 1)
+        OR
+            (i.EV_DAT_Reliability = 1 AND i.following_EV_DAT_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_DAT_Event_Date SELECT * FROM @retracted;
+    INSERT INTO [dbo].[EV_DAT_Event_Date_Posit] (
+        EV_ID,
+        EV_DAT_Event_Date
+    )
+    SELECT
+        EV_ID,
+        EV_DAT_Event_Date
+    FROM
+        @EV_DAT_Event_Date
+    WHERE
+        EV_DAT_StatementType = 'P';
+    INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
+        EV_DAT_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability
+    )
+    SELECT
+        p.EV_DAT_ID,
+        v.EV_DAT_PositedAt,
+        v.EV_DAT_Reliability
+    FROM
+        @EV_DAT_Event_Date v
+    JOIN
+        [dbo].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_ID = v.EV_ID
+    AND
+        p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+    WHERE
+        EV_DAT_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [dbo].[it_EV_AUD_Event_Audience] ON [dbo].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_AUD_Event_Audience TABLE (
+        EV_ID int not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_StatementType char(1) not null,
+        primary key (
+            EV_ID asc, 
+            EV_AUD_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_AUD_Event_Audience
+    SELECT
+        i.EV_ID,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Reliability,
+        i.EV_AUD_Event_Audience,
+        CASE 
+            WHEN p.EV_AUD_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_AUD_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    AND
+        p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+    LEFT JOIN 
+        [dbo].[EV_AUD_Event_Audience_Annex] a
+    ON 
+        a.EV_AUD_ID = p.EV_AUD_ID
+    AND
+        a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_AUD_ID is null OR a.EV_AUD_ID is null);
+    INSERT INTO @EV_AUD_Event_Audience (
+        EV_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    )
+    SELECT
+        i.EV_ID,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Reliability,
+        p.EV_AUD_Event_Audience,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_ID FROM @EV_AUD_Event_Audience) i
+    JOIN
+        [dbo].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    JOIN 
+        [dbo].[EV_AUD_Event_Audience_Annex] a
+    ON 
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    DECLARE @retracted TABLE (
+        EV_ID int not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    )
+    SELECT
+        EV_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_AUD_Reliability as previous_EV_AUD_Reliability, 
+            fol.EV_AUD_Reliability as following_EV_AUD_Reliability
+        FROM
+            @EV_AUD_Event_Audience a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_AUD_Reliability
+            FROM
+                @EV_AUD_Event_Audience p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_AUD_PositedAt < a.EV_AUD_PositedAt
+            ORDER BY 
+                p.EV_AUD_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_AUD_Reliability
+            FROM
+                @EV_AUD_Event_Audience p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_AUD_PositedAt > a.EV_AUD_PositedAt
+            ORDER BY 
+                p.EV_AUD_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_AUD_Reliability = 0 AND isnull(pre.EV_AUD_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_AUD_Reliability = 1 AND fol.EV_AUD_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_AUD_StatementType <> 'X'
+    AND (
+            (i.EV_AUD_Reliability = 0 AND i.previous_EV_AUD_Reliability = 1)
+        OR
+            (i.EV_AUD_Reliability = 1 AND i.following_EV_AUD_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_AUD_Event_Audience SELECT * FROM @retracted;
+    INSERT INTO [dbo].[EV_AUD_Event_Audience_Posit] (
+        EV_ID,
+        EV_AUD_Event_Audience
+    )
+    SELECT
+        EV_ID,
+        EV_AUD_Event_Audience
+    FROM
+        @EV_AUD_Event_Audience
+    WHERE
+        EV_AUD_StatementType = 'P';
+    INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
+        EV_AUD_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability
+    )
+    SELECT
+        p.EV_AUD_ID,
+        v.EV_AUD_PositedAt,
+        v.EV_AUD_Reliability
+    FROM
+        @EV_AUD_Event_Audience v
+    JOIN
+        [dbo].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_ID = v.EV_ID
+    AND
+        p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+    WHERE
+        EV_AUD_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [dbo].[it_EV_REV_Event_Revenue] ON [dbo].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_REV_Event_Revenue TABLE (
+        EV_ID int not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_StatementType char(1) not null,
+        primary key (
+            EV_ID asc, 
+            EV_REV_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_REV_Event_Revenue
+    SELECT
+        i.EV_ID,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Reliability,
+        i.EV_REV_Event_Revenue,
+        CASE 
+            WHEN p.EV_REV_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_REV_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    AND
+        p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+    LEFT JOIN 
+        [dbo].[EV_REV_Event_Revenue_Annex] a
+    ON 
+        a.EV_REV_ID = p.EV_REV_ID
+    AND
+        a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_REV_ID is null OR a.EV_REV_ID is null);
+    INSERT INTO @EV_REV_Event_Revenue (
+        EV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    )
+    SELECT
+        i.EV_ID,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Reliability,
+        p.EV_REV_Event_Revenue,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_ID FROM @EV_REV_Event_Revenue) i
+    JOIN
+        [dbo].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_ID = i.EV_ID
+    JOIN 
+        [dbo].[EV_REV_Event_Revenue_Annex] a
+    ON 
+        a.EV_REV_ID = p.EV_REV_ID;
+    DECLARE @retracted TABLE (
+        EV_ID int not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    )
+    SELECT
+        EV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_REV_Reliability as previous_EV_REV_Reliability, 
+            fol.EV_REV_Reliability as following_EV_REV_Reliability
+        FROM
+            @EV_REV_Event_Revenue a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_REV_Reliability
+            FROM
+                @EV_REV_Event_Revenue p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_REV_PositedAt < a.EV_REV_PositedAt
+            ORDER BY 
+                p.EV_REV_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_REV_Reliability
+            FROM
+                @EV_REV_Event_Revenue p
+            WHERE
+                p.EV_ID = a.EV_ID
+            AND
+                p.EV_REV_PositedAt > a.EV_REV_PositedAt
+            ORDER BY 
+                p.EV_REV_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_REV_Reliability = 0 AND isnull(pre.EV_REV_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_REV_Reliability = 1 AND fol.EV_REV_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_REV_StatementType <> 'X'
+    AND (
+            (i.EV_REV_Reliability = 0 AND i.previous_EV_REV_Reliability = 1)
+        OR
+            (i.EV_REV_Reliability = 1 AND i.following_EV_REV_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_REV_Event_Revenue SELECT * FROM @retracted;
+    INSERT INTO [dbo].[EV_REV_Event_Revenue_Posit] (
+        EV_ID,
+        EV_REV_Event_Revenue
+    )
+    SELECT
+        EV_ID,
+        EV_REV_Event_Revenue
+    FROM
+        @EV_REV_Event_Revenue
+    WHERE
+        EV_REV_StatementType = 'P';
+    INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
+        EV_REV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Reliability
+    )
+    SELECT
+        p.EV_REV_ID,
+        v.EV_REV_PositedAt,
+        v.EV_REV_Reliability
+    FROM
+        @EV_REV_Event_Revenue v
+    JOIN
+        [dbo].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_ID = v.EV_ID
+    AND
+        p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+    WHERE
+        EV_REV_StatementType in ('P', 'A');
+END
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
 -----------------------------------------------------------------------------------------------------------------------

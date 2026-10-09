@@ -870,6 +870,208 @@ GO
 -- defined elsewhere.
 --
 -- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date assembled view of the posit and annex tables,
+-- pkEV_DAT_Event_Date optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_DAT_Event_Date', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_DAT_Event_Date]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_DAT,
+        p.EV_DAT_ID,
+        p.EV_DAT_EV_ID,
+        p.EV_DAT_Event_Date,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Reliability
+    FROM
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    JOIN
+        [attributes].[EV_DAT_Event_Date_Annex] a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
+    ON [attributes].[EV_DAT_Event_Date] (
+        EV_DAT_EV_ID asc,
+        EV_DAT_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience assembled view of the posit and annex tables,
+-- pkEV_AUD_Event_Audience optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_AUD_Event_Audience', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_AUD_Event_Audience]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_AUD,
+        p.EV_AUD_ID,
+        p.EV_AUD_EV_ID,
+        p.EV_AUD_Event_Audience,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Reliability
+    FROM
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    JOIN
+        [attributes].[EV_AUD_Event_Audience_Annex] a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
+    ON [attributes].[EV_AUD_Event_Audience] (
+        EV_AUD_EV_ID asc,
+        EV_AUD_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue assembled view of the posit and annex tables,
+-- pkEV_REV_Event_Revenue optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_REV_Event_Revenue', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_REV_Event_Revenue]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_REV,
+        p.EV_REV_ID,
+        p.EV_REV_EV_ID,
+        p.EV_REV_Event_Revenue,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Reliability
+    FROM
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    JOIN
+        [attributes].[EV_REV_Event_Revenue_Annex] a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
+    ON [attributes].[EV_REV_Event_Revenue] (
+        EV_REV_EV_ID asc,
+        EV_REV_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_STA_Event_Status assembled view of the posit and annex tables,
+-- pkEV_STA_Event_Status optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_STA_Event_Status', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_STA_Event_Status]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_STA,
+        p.EV_STA_ID,
+        p.EV_STA_EV_ID,
+        p.EV_STA_Event_Status,
+        p.EV_STA_ChangedAt,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Reliability
+    FROM
+        [attributes].[EV_STA_Event_Status_Posit] p
+    JOIN
+        [attributes].[EV_STA_Event_Status_Annex] a
+    ON
+        a.EV_STA_ID = p.EV_STA_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_STA_Event_Status]
+    ON [attributes].[EV_STA_Event_Status] (
+        EV_STA_EV_ID asc,
+        EV_STA_ChangedAt desc,
+        EV_STA_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_UTL_Event_Utilization assembled view of the posit and annex tables,
+-- pkEV_UTL_Event_Utilization optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_UTL_Event_Utilization', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_UTL_Event_Utilization]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_UTL,
+        p.EV_UTL_ID,
+        p.EV_UTL_EV_ID,
+        p.EV_UTL_UTL_ID,
+        a.EV_UTL_PositedAt,
+        a.EV_UTL_Reliability
+    FROM
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    JOIN
+        [attributes].[EV_UTL_Event_Utilization_Annex] a
+    ON
+        a.EV_UTL_ID = p.EV_UTL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_UTL_Event_Utilization]
+    ON [attributes].[EV_UTL_Event_Utilization] (
+        EV_UTL_EV_ID asc,
+        EV_UTL_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_LVL_Event_Level assembled view of the posit and annex tables,
+-- pkEV_LVL_Event_Level optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_LVL_Event_Level', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_LVL_Event_Level]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        p.EV_LVL_EV_ID,
+        p.EV_LVL_PLV_ID,
+        p.EV_LVL_ChangedAt,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Reliability
+    FROM
+        [attributes].[EV_LVL_Event_Level_Posit] p
+    JOIN
+        [attributes].[EV_LVL_Event_Level_Annex] a
+    ON
+        a.EV_LVL_ID = p.EV_LVL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_LVL_Event_Level]
+    ON [attributes].[EV_LVL_Event_Level] (
+        EV_LVL_EV_ID asc,
+        EV_LVL_ChangedAt desc,
+        EV_LVL_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name assembled view of the posit and annex tables,
 -- pkST_NAM_Stage_Name optional temporal consistency constraint
 -----------------------------------------------------------------------------------------------------------------------
@@ -4988,6 +5190,1122 @@ GO
 -- the previous or following value are stored. Others are silently ignored in
 -- order to avoid unnecessary temporal duplicates.
 --
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [attributes].[it_EV_DAT_Event_Date] ON [attributes].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_DAT_Event_Date TABLE (
+        EV_DAT_EV_ID numeric(12,0) not null,
+        Metadata_EV_DAT int not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_StatementType char(1) not null,
+        primary key (
+            EV_DAT_EV_ID asc, 
+            EV_DAT_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_DAT_Event_Date
+    SELECT
+        i.EV_DAT_EV_ID,
+        i.Metadata_EV_DAT,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Reliability,
+        i.EV_DAT_Event_Date,
+        CASE 
+            WHEN p.EV_DAT_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_DAT_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+    AND
+        p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+    LEFT JOIN 
+        [attributes].[EV_DAT_Event_Date_Annex] a
+    ON 
+        a.EV_DAT_ID = p.EV_DAT_ID
+    AND
+        a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_DAT_ID is null OR a.EV_DAT_ID is null);
+    INSERT INTO @EV_DAT_Event_Date (
+        EV_DAT_EV_ID,
+        Metadata_EV_DAT,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    )
+    SELECT
+        i.EV_DAT_EV_ID,
+        a.Metadata_EV_DAT,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Reliability,
+        p.EV_DAT_Event_Date,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_DAT_EV_ID FROM @EV_DAT_Event_Date) i
+    JOIN
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+    JOIN 
+        [attributes].[EV_DAT_Event_Date_Annex] a
+    ON 
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    DECLARE @retracted TABLE (
+        EV_DAT_EV_ID numeric(12,0) not null,
+        Metadata_EV_DAT int not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_DAT_EV_ID,
+        Metadata_EV_DAT,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    )
+    SELECT
+        EV_DAT_EV_ID,
+        Metadata_EV_DAT,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability,
+        EV_DAT_Event_Date,
+        EV_DAT_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_DAT_Reliability as previous_EV_DAT_Reliability, 
+            fol.EV_DAT_Reliability as following_EV_DAT_Reliability
+        FROM
+            @EV_DAT_Event_Date a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_DAT_Reliability
+            FROM
+                @EV_DAT_Event_Date p
+            WHERE
+                p.EV_DAT_EV_ID = a.EV_DAT_EV_ID
+            AND
+                p.EV_DAT_PositedAt < a.EV_DAT_PositedAt
+            ORDER BY 
+                p.EV_DAT_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_DAT_Reliability
+            FROM
+                @EV_DAT_Event_Date p
+            WHERE
+                p.EV_DAT_EV_ID = a.EV_DAT_EV_ID
+            AND
+                p.EV_DAT_PositedAt > a.EV_DAT_PositedAt
+            ORDER BY 
+                p.EV_DAT_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_DAT_Reliability = 0 AND isnull(pre.EV_DAT_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_DAT_Reliability = 1 AND fol.EV_DAT_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_DAT_StatementType <> 'X'
+    AND (
+            (i.EV_DAT_Reliability = 0 AND i.previous_EV_DAT_Reliability = 1)
+        OR
+            (i.EV_DAT_Reliability = 1 AND i.following_EV_DAT_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_DAT_Event_Date SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_DAT_Event_Date_Posit] (
+        EV_DAT_EV_ID,
+        EV_DAT_Event_Date
+    )
+    SELECT
+        EV_DAT_EV_ID,
+        EV_DAT_Event_Date
+    FROM
+        @EV_DAT_Event_Date
+    WHERE
+        EV_DAT_StatementType = 'P';
+    INSERT INTO [attributes].[EV_DAT_Event_Date_Annex] (
+        Metadata_EV_DAT,
+        EV_DAT_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability
+    )
+    SELECT
+        v.Metadata_EV_DAT,
+        p.EV_DAT_ID,
+        v.EV_DAT_PositedAt,
+        v.EV_DAT_Reliability
+    FROM
+        @EV_DAT_Event_Date v
+    JOIN
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    ON
+        p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+    AND
+        p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+    WHERE
+        EV_DAT_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [attributes].[it_EV_AUD_Event_Audience] ON [attributes].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_AUD_Event_Audience TABLE (
+        EV_AUD_EV_ID numeric(12,0) not null,
+        Metadata_EV_AUD int not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_StatementType char(1) not null,
+        primary key (
+            EV_AUD_EV_ID asc, 
+            EV_AUD_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_AUD_Event_Audience
+    SELECT
+        i.EV_AUD_EV_ID,
+        i.Metadata_EV_AUD,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Reliability,
+        i.EV_AUD_Event_Audience,
+        CASE 
+            WHEN p.EV_AUD_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_AUD_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+    AND
+        p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+    LEFT JOIN 
+        [attributes].[EV_AUD_Event_Audience_Annex] a
+    ON 
+        a.EV_AUD_ID = p.EV_AUD_ID
+    AND
+        a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_AUD_ID is null OR a.EV_AUD_ID is null);
+    INSERT INTO @EV_AUD_Event_Audience (
+        EV_AUD_EV_ID,
+        Metadata_EV_AUD,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    )
+    SELECT
+        i.EV_AUD_EV_ID,
+        a.Metadata_EV_AUD,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Reliability,
+        p.EV_AUD_Event_Audience,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_AUD_EV_ID FROM @EV_AUD_Event_Audience) i
+    JOIN
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+    JOIN 
+        [attributes].[EV_AUD_Event_Audience_Annex] a
+    ON 
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    DECLARE @retracted TABLE (
+        EV_AUD_EV_ID numeric(12,0) not null,
+        Metadata_EV_AUD int not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_AUD_EV_ID,
+        Metadata_EV_AUD,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    )
+    SELECT
+        EV_AUD_EV_ID,
+        Metadata_EV_AUD,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability,
+        EV_AUD_Event_Audience,
+        EV_AUD_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_AUD_Reliability as previous_EV_AUD_Reliability, 
+            fol.EV_AUD_Reliability as following_EV_AUD_Reliability
+        FROM
+            @EV_AUD_Event_Audience a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_AUD_Reliability
+            FROM
+                @EV_AUD_Event_Audience p
+            WHERE
+                p.EV_AUD_EV_ID = a.EV_AUD_EV_ID
+            AND
+                p.EV_AUD_PositedAt < a.EV_AUD_PositedAt
+            ORDER BY 
+                p.EV_AUD_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_AUD_Reliability
+            FROM
+                @EV_AUD_Event_Audience p
+            WHERE
+                p.EV_AUD_EV_ID = a.EV_AUD_EV_ID
+            AND
+                p.EV_AUD_PositedAt > a.EV_AUD_PositedAt
+            ORDER BY 
+                p.EV_AUD_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_AUD_Reliability = 0 AND isnull(pre.EV_AUD_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_AUD_Reliability = 1 AND fol.EV_AUD_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_AUD_StatementType <> 'X'
+    AND (
+            (i.EV_AUD_Reliability = 0 AND i.previous_EV_AUD_Reliability = 1)
+        OR
+            (i.EV_AUD_Reliability = 1 AND i.following_EV_AUD_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_AUD_Event_Audience SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_AUD_Event_Audience_Posit] (
+        EV_AUD_EV_ID,
+        EV_AUD_Event_Audience
+    )
+    SELECT
+        EV_AUD_EV_ID,
+        EV_AUD_Event_Audience
+    FROM
+        @EV_AUD_Event_Audience
+    WHERE
+        EV_AUD_StatementType = 'P';
+    INSERT INTO [attributes].[EV_AUD_Event_Audience_Annex] (
+        Metadata_EV_AUD,
+        EV_AUD_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability
+    )
+    SELECT
+        v.Metadata_EV_AUD,
+        p.EV_AUD_ID,
+        v.EV_AUD_PositedAt,
+        v.EV_AUD_Reliability
+    FROM
+        @EV_AUD_Event_Audience v
+    JOIN
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    ON
+        p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+    AND
+        p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+    WHERE
+        EV_AUD_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [attributes].[it_EV_REV_Event_Revenue] ON [attributes].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_REV_Event_Revenue TABLE (
+        EV_REV_EV_ID numeric(12,0) not null,
+        Metadata_EV_REV int not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_StatementType char(1) not null,
+        primary key (
+            EV_REV_EV_ID asc, 
+            EV_REV_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_REV_Event_Revenue
+    SELECT
+        i.EV_REV_EV_ID,
+        i.Metadata_EV_REV,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Reliability,
+        i.EV_REV_Event_Revenue,
+        CASE 
+            WHEN p.EV_REV_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_REV_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_REV_EV_ID = i.EV_REV_EV_ID
+    AND
+        p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+    LEFT JOIN 
+        [attributes].[EV_REV_Event_Revenue_Annex] a
+    ON 
+        a.EV_REV_ID = p.EV_REV_ID
+    AND
+        a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_REV_ID is null OR a.EV_REV_ID is null);
+    INSERT INTO @EV_REV_Event_Revenue (
+        EV_REV_EV_ID,
+        Metadata_EV_REV,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    )
+    SELECT
+        i.EV_REV_EV_ID,
+        a.Metadata_EV_REV,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Reliability,
+        p.EV_REV_Event_Revenue,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_REV_EV_ID FROM @EV_REV_Event_Revenue) i
+    JOIN
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_REV_EV_ID = i.EV_REV_EV_ID
+    JOIN 
+        [attributes].[EV_REV_Event_Revenue_Annex] a
+    ON 
+        a.EV_REV_ID = p.EV_REV_ID;
+    DECLARE @retracted TABLE (
+        EV_REV_EV_ID numeric(12,0) not null,
+        Metadata_EV_REV int not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_REV_EV_ID,
+        Metadata_EV_REV,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    )
+    SELECT
+        EV_REV_EV_ID,
+        Metadata_EV_REV,
+        EV_REV_PositedAt,
+        EV_REV_Reliability,
+        EV_REV_Event_Revenue,
+        EV_REV_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_REV_Reliability as previous_EV_REV_Reliability, 
+            fol.EV_REV_Reliability as following_EV_REV_Reliability
+        FROM
+            @EV_REV_Event_Revenue a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_REV_Reliability
+            FROM
+                @EV_REV_Event_Revenue p
+            WHERE
+                p.EV_REV_EV_ID = a.EV_REV_EV_ID
+            AND
+                p.EV_REV_PositedAt < a.EV_REV_PositedAt
+            ORDER BY 
+                p.EV_REV_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_REV_Reliability
+            FROM
+                @EV_REV_Event_Revenue p
+            WHERE
+                p.EV_REV_EV_ID = a.EV_REV_EV_ID
+            AND
+                p.EV_REV_PositedAt > a.EV_REV_PositedAt
+            ORDER BY 
+                p.EV_REV_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_REV_Reliability = 0 AND isnull(pre.EV_REV_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_REV_Reliability = 1 AND fol.EV_REV_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_REV_StatementType <> 'X'
+    AND (
+            (i.EV_REV_Reliability = 0 AND i.previous_EV_REV_Reliability = 1)
+        OR
+            (i.EV_REV_Reliability = 1 AND i.following_EV_REV_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_REV_Event_Revenue SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_REV_Event_Revenue_Posit] (
+        EV_REV_EV_ID,
+        EV_REV_Event_Revenue
+    )
+    SELECT
+        EV_REV_EV_ID,
+        EV_REV_Event_Revenue
+    FROM
+        @EV_REV_Event_Revenue
+    WHERE
+        EV_REV_StatementType = 'P';
+    INSERT INTO [attributes].[EV_REV_Event_Revenue_Annex] (
+        Metadata_EV_REV,
+        EV_REV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Reliability
+    )
+    SELECT
+        v.Metadata_EV_REV,
+        p.EV_REV_ID,
+        v.EV_REV_PositedAt,
+        v.EV_REV_Reliability
+    FROM
+        @EV_REV_Event_Revenue v
+    JOIN
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    ON
+        p.EV_REV_EV_ID = v.EV_REV_EV_ID
+    AND
+        p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+    WHERE
+        EV_REV_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_STA_Event_Status instead of INSERT trigger on EV_STA_Event_Status
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_STA_Event_Status', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_STA_Event_Status];
+GO
+CREATE TRIGGER [attributes].[it_EV_STA_Event_Status] ON [attributes].[EV_STA_Event_Status]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_STA_Event_Status TABLE (
+        EV_STA_EV_ID numeric(12,0) not null,
+        Metadata_EV_STA int not null,
+        EV_STA_ChangedAt datetime2 not null,
+        EV_STA_PositedAt datetime2 not null,
+        EV_STA_Reliability decimal(5,2) not null,
+        EV_STA_Event_Status nvarchar(20) not null,
+        EV_STA_StatementType char(1) not null,
+        primary key (
+            EV_STA_EV_ID asc, 
+            EV_STA_ChangedAt desc,
+            EV_STA_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_STA_Event_Status
+    SELECT
+        i.EV_STA_EV_ID,
+        i.Metadata_EV_STA,
+        i.EV_STA_ChangedAt,
+        i.EV_STA_PositedAt,
+        i.EV_STA_Reliability,
+        i.EV_STA_Event_Status,
+        CASE 
+            WHEN p.EV_STA_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_STA_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_STA_Event_Status_Posit] p
+    ON
+        p.EV_STA_EV_ID = i.EV_STA_EV_ID
+    AND
+        p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+    AND
+        p.EV_STA_Event_Status = i.EV_STA_Event_Status
+    LEFT JOIN 
+        [attributes].[EV_STA_Event_Status_Annex] a
+    ON 
+        a.EV_STA_ID = p.EV_STA_ID
+    AND
+        a.EV_STA_PositedAt = i.EV_STA_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_STA_ID is null OR a.EV_STA_ID is null);
+    INSERT INTO @EV_STA_Event_Status (
+        EV_STA_EV_ID,
+        Metadata_EV_STA,
+        EV_STA_ChangedAt,
+        EV_STA_PositedAt,
+        EV_STA_Reliability,
+        EV_STA_Event_Status,
+        EV_STA_StatementType 
+    )
+    SELECT
+        i.EV_STA_EV_ID,
+        a.Metadata_EV_STA,
+        p.EV_STA_ChangedAt,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Reliability,
+        p.EV_STA_Event_Status,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_STA_EV_ID FROM @EV_STA_Event_Status) i
+    JOIN
+        [attributes].[EV_STA_Event_Status_Posit] p
+    ON
+        p.EV_STA_EV_ID = i.EV_STA_EV_ID
+    JOIN 
+        [attributes].[EV_STA_Event_Status_Annex] a
+    ON 
+        a.EV_STA_ID = p.EV_STA_ID;
+    DECLARE @retracted TABLE (
+        EV_STA_EV_ID numeric(12,0) not null,
+        Metadata_EV_STA int not null,
+        EV_STA_ChangedAt datetime2 not null,
+        EV_STA_PositedAt datetime2 not null,
+        EV_STA_Reliability decimal(5,2) not null,
+        EV_STA_Event_Status nvarchar(20) not null,
+        EV_STA_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_STA_EV_ID,
+        Metadata_EV_STA,
+        EV_STA_ChangedAt,
+        EV_STA_PositedAt,
+        EV_STA_Reliability,
+        EV_STA_Event_Status,
+        EV_STA_StatementType 
+    )
+    SELECT
+        EV_STA_EV_ID,
+        Metadata_EV_STA,
+        EV_STA_ChangedAt,
+        EV_STA_PositedAt,
+        EV_STA_Reliability,
+        EV_STA_Event_Status,
+        EV_STA_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_STA_Reliability as previous_EV_STA_Reliability, 
+            fol.EV_STA_Reliability as following_EV_STA_Reliability
+        FROM
+            @EV_STA_Event_Status a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_STA_Reliability
+            FROM
+                @EV_STA_Event_Status p
+            WHERE
+                p.EV_STA_EV_ID = a.EV_STA_EV_ID
+            AND
+                p.EV_STA_ChangedAt = a.EV_STA_ChangedAt
+            AND
+                p.EV_STA_PositedAt < a.EV_STA_PositedAt
+            ORDER BY 
+                p.EV_STA_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_STA_Reliability
+            FROM
+                @EV_STA_Event_Status p
+            WHERE
+                p.EV_STA_EV_ID = a.EV_STA_EV_ID
+            AND
+                p.EV_STA_ChangedAt = a.EV_STA_ChangedAt
+            AND
+                p.EV_STA_PositedAt > a.EV_STA_PositedAt
+            ORDER BY 
+                p.EV_STA_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_STA_Reliability = 0 AND isnull(pre.EV_STA_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_STA_Reliability = 1 AND fol.EV_STA_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_STA_StatementType <> 'X'
+    AND (
+            (i.EV_STA_Reliability = 0 AND i.previous_EV_STA_Reliability = 1)
+        OR
+            (i.EV_STA_Reliability = 1 AND i.following_EV_STA_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_STA_Event_Status SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_STA_Event_Status_Posit] (
+        EV_STA_EV_ID,
+        EV_STA_ChangedAt,
+        EV_STA_Event_Status
+    )
+    SELECT
+        EV_STA_EV_ID,
+        EV_STA_ChangedAt,
+        EV_STA_Event_Status
+    FROM
+        @EV_STA_Event_Status
+    WHERE
+        EV_STA_StatementType = 'P';
+    INSERT INTO [attributes].[EV_STA_Event_Status_Annex] (
+        Metadata_EV_STA,
+        EV_STA_ID,
+        EV_STA_PositedAt,
+        EV_STA_Reliability
+    )
+    SELECT
+        v.Metadata_EV_STA,
+        p.EV_STA_ID,
+        v.EV_STA_PositedAt,
+        v.EV_STA_Reliability
+    FROM
+        @EV_STA_Event_Status v
+    JOIN
+        [attributes].[EV_STA_Event_Status_Posit] p
+    ON
+        p.EV_STA_EV_ID = v.EV_STA_EV_ID
+    AND
+        p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+    AND
+        p.EV_STA_Event_Status = v.EV_STA_Event_Status
+    WHERE
+        EV_STA_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_UTL_Event_Utilization instead of INSERT trigger on EV_UTL_Event_Utilization
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_UTL_Event_Utilization', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_UTL_Event_Utilization];
+GO
+CREATE TRIGGER [attributes].[it_EV_UTL_Event_Utilization] ON [attributes].[EV_UTL_Event_Utilization]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_UTL_Event_Utilization TABLE (
+        EV_UTL_EV_ID numeric(12,0) not null,
+        Metadata_EV_UTL int not null,
+        EV_UTL_PositedAt datetime2 not null,
+        EV_UTL_Reliability decimal(5,2) not null,
+        EV_UTL_UTL_ID tinyint not null, 
+        EV_UTL_StatementType char(1) not null,
+        primary key (
+            EV_UTL_EV_ID asc, 
+            EV_UTL_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_UTL_Event_Utilization
+    SELECT
+        i.EV_UTL_EV_ID,
+        i.Metadata_EV_UTL,
+        i.EV_UTL_PositedAt,
+        i.EV_UTL_Reliability,
+        i.EV_UTL_UTL_ID,
+        CASE 
+            WHEN p.EV_UTL_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_UTL_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    ON
+        p.EV_UTL_EV_ID = i.EV_UTL_EV_ID
+    AND
+        p.EV_UTL_UTL_ID = i.EV_UTL_UTL_ID
+    LEFT JOIN 
+        [attributes].[EV_UTL_Event_Utilization_Annex] a
+    ON 
+        a.EV_UTL_ID = p.EV_UTL_ID
+    AND
+        a.EV_UTL_PositedAt = i.EV_UTL_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_UTL_ID is null OR a.EV_UTL_ID is null);
+    INSERT INTO @EV_UTL_Event_Utilization (
+        EV_UTL_EV_ID,
+        Metadata_EV_UTL,
+        EV_UTL_PositedAt,
+        EV_UTL_Reliability,
+        EV_UTL_UTL_ID,
+        EV_UTL_StatementType 
+    )
+    SELECT
+        i.EV_UTL_EV_ID,
+        a.Metadata_EV_UTL,
+        a.EV_UTL_PositedAt,
+        a.EV_UTL_Reliability,
+        p.EV_UTL_UTL_ID,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_UTL_EV_ID FROM @EV_UTL_Event_Utilization) i
+    JOIN
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    ON
+        p.EV_UTL_EV_ID = i.EV_UTL_EV_ID
+    JOIN 
+        [attributes].[EV_UTL_Event_Utilization_Annex] a
+    ON 
+        a.EV_UTL_ID = p.EV_UTL_ID;
+    DECLARE @retracted TABLE (
+        EV_UTL_EV_ID numeric(12,0) not null,
+        Metadata_EV_UTL int not null,
+        EV_UTL_PositedAt datetime2 not null,
+        EV_UTL_Reliability decimal(5,2) not null,
+        EV_UTL_UTL_ID tinyint not null, 
+        EV_UTL_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_UTL_EV_ID,
+        Metadata_EV_UTL,
+        EV_UTL_PositedAt,
+        EV_UTL_Reliability,
+        EV_UTL_UTL_ID,
+        EV_UTL_StatementType 
+    )
+    SELECT
+        EV_UTL_EV_ID,
+        Metadata_EV_UTL,
+        EV_UTL_PositedAt,
+        EV_UTL_Reliability,
+        EV_UTL_UTL_ID,
+        EV_UTL_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_UTL_Reliability as previous_EV_UTL_Reliability, 
+            fol.EV_UTL_Reliability as following_EV_UTL_Reliability
+        FROM
+            @EV_UTL_Event_Utilization a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_UTL_Reliability
+            FROM
+                @EV_UTL_Event_Utilization p
+            WHERE
+                p.EV_UTL_EV_ID = a.EV_UTL_EV_ID
+            AND
+                p.EV_UTL_PositedAt < a.EV_UTL_PositedAt
+            ORDER BY 
+                p.EV_UTL_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_UTL_Reliability
+            FROM
+                @EV_UTL_Event_Utilization p
+            WHERE
+                p.EV_UTL_EV_ID = a.EV_UTL_EV_ID
+            AND
+                p.EV_UTL_PositedAt > a.EV_UTL_PositedAt
+            ORDER BY 
+                p.EV_UTL_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_UTL_Reliability = 0 AND isnull(pre.EV_UTL_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_UTL_Reliability = 1 AND fol.EV_UTL_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_UTL_StatementType <> 'X'
+    AND (
+            (i.EV_UTL_Reliability = 0 AND i.previous_EV_UTL_Reliability = 1)
+        OR
+            (i.EV_UTL_Reliability = 1 AND i.following_EV_UTL_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_UTL_Event_Utilization SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_UTL_Event_Utilization_Posit] (
+        EV_UTL_EV_ID,
+        EV_UTL_UTL_ID
+    )
+    SELECT
+        EV_UTL_EV_ID,
+        EV_UTL_UTL_ID
+    FROM
+        @EV_UTL_Event_Utilization
+    WHERE
+        EV_UTL_StatementType = 'P';
+    INSERT INTO [attributes].[EV_UTL_Event_Utilization_Annex] (
+        Metadata_EV_UTL,
+        EV_UTL_ID,
+        EV_UTL_PositedAt,
+        EV_UTL_Reliability
+    )
+    SELECT
+        v.Metadata_EV_UTL,
+        p.EV_UTL_ID,
+        v.EV_UTL_PositedAt,
+        v.EV_UTL_Reliability
+    FROM
+        @EV_UTL_Event_Utilization v
+    JOIN
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    ON
+        p.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+    AND
+        p.EV_UTL_UTL_ID = v.EV_UTL_UTL_ID
+    WHERE
+        EV_UTL_StatementType in ('P', 'A');
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_LVL_Event_Level instead of INSERT trigger on EV_LVL_Event_Level
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_LVL_Event_Level', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_LVL_Event_Level];
+GO
+CREATE TRIGGER [attributes].[it_EV_LVL_Event_Level] ON [attributes].[EV_LVL_Event_Level]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_LVL_Event_Level TABLE (
+        EV_LVL_EV_ID numeric(12,0) not null,
+        Metadata_EV_LVL int not null,
+        EV_LVL_ChangedAt date not null,
+        EV_LVL_PositedAt datetime2 not null,
+        EV_LVL_Reliability decimal(5,2) not null,
+        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_StatementType char(1) not null,
+        primary key (
+            EV_LVL_EV_ID asc, 
+            EV_LVL_ChangedAt desc,
+            EV_LVL_PositedAt desc
+        )
+    );
+    INSERT INTO @EV_LVL_Event_Level
+    SELECT
+        i.EV_LVL_EV_ID,
+        i.Metadata_EV_LVL,
+        i.EV_LVL_ChangedAt,
+        i.EV_LVL_PositedAt,
+        i.EV_LVL_Reliability,
+        i.EV_LVL_PLV_ID,
+        CASE 
+            WHEN p.EV_LVL_ID is null 
+            THEN 'P' -- new posit
+            WHEN a.EV_LVL_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [attributes].[EV_LVL_Event_Level_Posit] p
+    ON
+        p.EV_LVL_EV_ID = i.EV_LVL_EV_ID
+    AND
+        p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+    AND
+        p.EV_LVL_PLV_ID = i.EV_LVL_PLV_ID
+    LEFT JOIN 
+        [attributes].[EV_LVL_Event_Level_Annex] a
+    ON 
+        a.EV_LVL_ID = p.EV_LVL_ID
+    AND
+        a.EV_LVL_PositedAt = i.EV_LVL_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_LVL_ID is null OR a.EV_LVL_ID is null);
+    INSERT INTO @EV_LVL_Event_Level (
+        EV_LVL_EV_ID,
+        Metadata_EV_LVL,
+        EV_LVL_ChangedAt,
+        EV_LVL_PositedAt,
+        EV_LVL_Reliability,
+        EV_LVL_PLV_ID,
+        EV_LVL_StatementType 
+    )
+    SELECT
+        i.EV_LVL_EV_ID,
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ChangedAt,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Reliability,
+        p.EV_LVL_PLV_ID,
+        'X' -- existing data
+    FROM
+        (SELECT DISTINCT EV_LVL_EV_ID FROM @EV_LVL_Event_Level) i
+    JOIN
+        [attributes].[EV_LVL_Event_Level_Posit] p
+    ON
+        p.EV_LVL_EV_ID = i.EV_LVL_EV_ID
+    JOIN 
+        [attributes].[EV_LVL_Event_Level_Annex] a
+    ON 
+        a.EV_LVL_ID = p.EV_LVL_ID;
+    DECLARE @retracted TABLE (
+        EV_LVL_EV_ID numeric(12,0) not null,
+        Metadata_EV_LVL int not null,
+        EV_LVL_ChangedAt date not null,
+        EV_LVL_PositedAt datetime2 not null,
+        EV_LVL_Reliability decimal(5,2) not null,
+        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_LVL_EV_ID,
+        Metadata_EV_LVL,
+        EV_LVL_ChangedAt,
+        EV_LVL_PositedAt,
+        EV_LVL_Reliability,
+        EV_LVL_PLV_ID,
+        EV_LVL_StatementType 
+    )
+    SELECT
+        EV_LVL_EV_ID,
+        Metadata_EV_LVL,
+        EV_LVL_ChangedAt,
+        EV_LVL_PositedAt,
+        EV_LVL_Reliability,
+        EV_LVL_PLV_ID,
+        EV_LVL_StatementType 
+    FROM (
+        DELETE a
+        OUTPUT 
+            deleted.*,
+            pre.EV_LVL_Reliability as previous_EV_LVL_Reliability, 
+            fol.EV_LVL_Reliability as following_EV_LVL_Reliability
+        FROM
+            @EV_LVL_Event_Level a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_LVL_Reliability
+            FROM
+                @EV_LVL_Event_Level p
+            WHERE
+                p.EV_LVL_EV_ID = a.EV_LVL_EV_ID
+            AND
+                p.EV_LVL_ChangedAt = a.EV_LVL_ChangedAt
+            AND
+                p.EV_LVL_PositedAt < a.EV_LVL_PositedAt
+            ORDER BY 
+                p.EV_LVL_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_LVL_Reliability
+            FROM
+                @EV_LVL_Event_Level p
+            WHERE
+                p.EV_LVL_EV_ID = a.EV_LVL_EV_ID
+            AND
+                p.EV_LVL_ChangedAt = a.EV_LVL_ChangedAt
+            AND
+                p.EV_LVL_PositedAt > a.EV_LVL_PositedAt
+            ORDER BY 
+                p.EV_LVL_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_LVL_Reliability = 0 AND isnull(pre.EV_LVL_Reliability, 1) = 1) -- ta bort isnull för assertive
+        OR
+            (a.EV_LVL_Reliability = 1 AND fol.EV_LVL_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_LVL_StatementType <> 'X'
+    AND (
+            (i.EV_LVL_Reliability = 0 AND i.previous_EV_LVL_Reliability = 1)
+        OR
+            (i.EV_LVL_Reliability = 1 AND i.following_EV_LVL_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_LVL_Event_Level SELECT * FROM @retracted;
+    INSERT INTO [attributes].[EV_LVL_Event_Level_Posit] (
+        EV_LVL_EV_ID,
+        EV_LVL_ChangedAt,
+        EV_LVL_PLV_ID
+    )
+    SELECT
+        EV_LVL_EV_ID,
+        EV_LVL_ChangedAt,
+        EV_LVL_PLV_ID
+    FROM
+        @EV_LVL_Event_Level
+    WHERE
+        EV_LVL_StatementType = 'P';
+    INSERT INTO [attributes].[EV_LVL_Event_Level_Annex] (
+        Metadata_EV_LVL,
+        EV_LVL_ID,
+        EV_LVL_PositedAt,
+        EV_LVL_Reliability
+    )
+    SELECT
+        v.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        v.EV_LVL_PositedAt,
+        v.EV_LVL_Reliability
+    FROM
+        @EV_LVL_Event_Level v
+    JOIN
+        [attributes].[EV_LVL_Event_Level_Posit] p
+    ON
+        p.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+    AND
+        p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+    AND
+        p.EV_LVL_PLV_ID = v.EV_LVL_PLV_ID
+    WHERE
+        EV_LVL_StatementType in ('P', 'A');
+END
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
 -----------------------------------------------------------------------------------------------------------------------
