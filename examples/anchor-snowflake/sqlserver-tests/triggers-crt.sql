@@ -329,6 +329,23 @@ END CATCH
 SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
 SET @n = (SELECT COUNT(*) FROM dbo.EV_QTY_Event_Quantity_Posit WHERE EV_QTY_EV_ID = @e);
 INSERT INTO #result SELECT N'c15 a nexus with an attribute through its latest view', CASE WHEN @error IS NULL AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' values', ' ' + @error);
+-- several new nexus rows in one insert: each keeps its own roles and values (they were paired with the new identities
+-- by row numbers, in an order that SQL Server does not guarantee)
+DECLARE @a int, @b int, @made int, @matched int;
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @a = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @b = SCOPE_IDENTITY();
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_QTY_Event_Quantity) VALUES (0, @a, 7), (0, @b, 8), (0, @a, 9);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @made = (SELECT COUNT(*) FROM dbo.EV_Event WHERE SU_ID_for IN (@a, @b));
+SET @matched = (SELECT COUNT(*) FROM dbo.EV_Event e JOIN dbo.EV_QTY_Event_Quantity_Posit q ON q.EV_QTY_EV_ID = e.EV_ID
+    WHERE (e.SU_ID_for = @a AND q.EV_QTY_Event_Quantity IN (7, 9)) OR (e.SU_ID_for = @b AND q.EV_QTY_Event_Quantity = 8));
+INSERT INTO #result SELECT N'c15 several new nexus rows in one insert keep their own values', CASE WHEN @error IS NULL AND @made = 3 AND @matched = 3 THEN 1 ELSE 0 END, CONCAT(@made, ' rows, ', @matched, ' with their own values', ' ' + @error);
 UPDATE #group SET finished = 1 WHERE name = 'c15';
 GO
 
