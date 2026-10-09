@@ -526,7 +526,7 @@ BEGIN
         ON
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         WHERE NOT (
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
         )
         FOR XML PATH('')
     );
@@ -556,7 +556,7 @@ BEGIN
         WHERE
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
     ); 
 END
 GO 

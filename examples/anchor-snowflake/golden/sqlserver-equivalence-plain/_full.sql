@@ -4220,7 +4220,7 @@ BEGIN
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
         AND
-            x.ST_NAM_Checksum = i.ST_NAM_Checksum 
+            x.ST_NAM_Checksum = dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max))) 
     ); -- the posit must be different (exclude the identical)
     -- another value at a time that already has a value is a contradiction
     DECLARE @message varchar(max);
@@ -4293,7 +4293,7 @@ BEGIN
         AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         WHERE NOT (
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
         )
         FOR XML PATH('')
     );
@@ -4325,7 +4325,7 @@ BEGIN
         AND 
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
     ); 
 END
 GO 
@@ -4572,7 +4572,7 @@ BEGIN
         AND
             x.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
         AND
-            x.AC_NAM_Checksum = i.AC_NAM_Checksum 
+            x.AC_NAM_Checksum = dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max))) 
     ); -- the posit must be different (exclude the identical)
     -- another value at a time that already has a value is a contradiction
     DECLARE @message varchar(max);
@@ -5916,6 +5916,9 @@ BEGIN
         EV_ID int not null
     );
     INSERT INTO [dbo].[EV_Event] (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         EV_Dummy
     )
     OUTPUT
@@ -5923,6 +5926,9 @@ BEGIN
     INTO
         @EV
     SELECT
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         null
     FROM
         inserted

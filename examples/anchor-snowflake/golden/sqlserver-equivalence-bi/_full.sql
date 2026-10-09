@@ -8788,6 +8788,9 @@ BEGIN
         EV_ID int not null
     );
     INSERT INTO [dbo].[EV_Event] (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         Metadata_EV 
     )
     OUTPUT
@@ -8795,6 +8798,9 @@ BEGIN
     INTO
         @EV
     SELECT
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         Metadata_EV 
     FROM
         inserted

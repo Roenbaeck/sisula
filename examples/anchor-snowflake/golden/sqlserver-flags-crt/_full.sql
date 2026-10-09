@@ -10672,6 +10672,9 @@ BEGIN
         EV_ID numeric(12,0) not null
     );
     INSERT INTO [nexuses].[EV_Event] (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         Metadata_EV 
     )
     OUTPUT
@@ -10679,6 +10682,9 @@ BEGIN
     INTO
         @EV
     SELECT
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
         Metadata_EV 
     FROM
         inserted

@@ -287,7 +287,7 @@ BEGIN
         ON
             x.ST_ID = i.ST_ID
         WHERE NOT (
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
         )
         FOR XML PATH('')
     );
@@ -315,7 +315,7 @@ BEGIN
         WHERE
             x.ST_ID = i.ST_ID
         AND
-            x.ST_LOC_Checksum = i.ST_LOC_Checksum 
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
     ); 
 END
 GO 
