@@ -31,6 +31,7 @@ these ways:
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
+| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store with what the rules say: the golden output of the `sqlserver-triggers` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -44,7 +45,8 @@ The SQL Server models are `models/sqlserver-*.xml`; `tools/make-sqlserver-models
 the modeler's data type converter and adds variants for what only SQL Server has (business views and knot aliases, no triggers, partitioning,
 natural keys, deletability, encryption, and the knot roles of two ties moved from last), and each is then saved through the modeler like the
 others. For bitemporal and concurrent reliance temporal there is a copy of each (`sqlserver-<name>-bi.xml`, `-crt.xml`, made by
-`tools/make-sqlserver-bi-crt-models.ps1`) and `sqlserver-tieflags-bi/-crt` with every tie idempotent and assertive. `lint-sql.ps1` and `hosted-check.ps1` leave them out: they are about Snowflake SQL.
+`tools/make-sqlserver-bi-crt-models.ps1`) and `sqlserver-tieflags-bi/-crt` with every tie idempotent and assertive. `sqlserver-triggers.xml`,
+`-bi.xml` and `-crt.xml` are written for the trigger tests below. `lint-sql.ps1` and `hosted-check.ps1` leave the SQL Server models out: they are about Snowflake SQL.
 
 Their golden files are the output of the **original sisulets**, which are still in Anchor (`SQLServer_<t>.legacy.directive`), run unmodified
 (apart from the defects the port corrected, listed in Anchor's handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()`
@@ -53,6 +55,16 @@ output had been run. `tools/xml-to-tree.ps1 -WithSerialization` gives the tools 
 `schema.serialization`, which the schema tracking embeds; `browser-check.ps1` compares that part as a placeholder, because the modeler writes the
 time of the moment into it.
 The engines run under the Jint in `../../lib`; there is no Node on the development machine.
+
+The golden files say what SQL is generated, not what it does. What the SQL Server triggers do, loading through the
+latest views (Anchor's `docs/ANCHOR.md`, "Loading through the latest views"), is tested by `tools/sqlserver-tests.ps1`:
+for each temporalization it makes an empty database, runs the golden output of `sqlserver-triggers` (or `-bi`, `-crt`)
+in it and then `sqlserver-tests/triggers-<t>.sql`, which inserts, updates and deletes through the views and prints
+PASS or FAIL for each rule, and drops the database again; it exits 1 if a check failed. `sqlserver-triggers.xml` is a
+model made for these tests: an attribute for each combination of the settings that the triggers read (restatable,
+idempotent, assertive, deletable, checksum, knotted, static or historized), ties with and without identifiers, and a
+nexus with an attribute. The tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that
+run here; run them after the golden files of the three models have been regenerated.
 
 ## How it works
 

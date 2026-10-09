@@ -1,0 +1,8 @@
+-- KNOT EQUIVALENCE VIEWS ---------------------------------------------------------------------------------------------
+--
+-- Equivalence views combine the identity and equivalent parts of a knot into a single view, making
+-- it look and behave like a regular knot. They also make it possible to retrieve data for only the
+-- given equivalent.
+--
+-- @equivalent the equivalent that you want to retrieve data for
+--
