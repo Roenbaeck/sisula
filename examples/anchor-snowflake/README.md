@@ -29,6 +29,8 @@ these ways:
 | `tools\converter-check.ps1` | the modeler's data type converter (`modules\DataTypeConverter.js`, with `-Anchor` for a checkout that has the change): the Snowflake and BigQuery mappings against a table of what each type becomes, both ways; every one of the 49 pairs of the six databases and Generic on every model here and on Anchor's `example.xml`, which must stay well-formed and change nothing but the values of the data type attributes; and a model of names that look like types, which must not change | an Anchor checkout |
 | `tools\golden.ps1` | writes the golden files of a model from the original sisulets, run unmodified under Jint (SQL Server, where they still exist) | an Anchor checkout that has the original directive as `<DB>_<t>.legacy.directive` |
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
+| `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
+| `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -36,14 +38,15 @@ the Anchor checkout next to this repository.
 
 ## SQL Server too
 
-The same tools check the SQL Server uni templates (`SQL/SQLServer/**/*.sisula`, `SQLServer_uni.directive`): the model says
+The same tools check the SQL Server uni, bi and crt templates (`SQL/SQLServer/**/*.sisula`, `SQLServer_<t>.directive`): the model says
 which database it is for (`metadata/@databaseTarget`), and the tools take the directive, the prelude and the templates from that.
 The SQL Server models are `models/sqlserver-*.xml`; `tools/make-sqlserver-models.ps1` makes them from the uni models of Snowflake with
 the modeler's data type converter and adds variants for what only SQL Server has (business views and knot aliases, no triggers, partitioning,
 natural keys, deletability, encryption, and the knot roles of two ties moved from last), and each is then saved through the modeler like the
-others. `lint-sql.ps1` and `hosted-check.ps1` leave them out: they are about Snowflake SQL.
+others. For bitemporal and concurrent reliance temporal there is a copy of each (`sqlserver-<name>-bi.xml`, `-crt.xml`, made by
+`tools/make-sqlserver-bi-crt-models.ps1`) and `sqlserver-tieflags-bi/-crt` with every tie idempotent and assertive. `lint-sql.ps1` and `hosted-check.ps1` leave them out: they are about Snowflake SQL.
 
-Their golden files are the output of the **original sisulets**, which are still in Anchor (`SQLServer_uni.legacy.directive`), run unmodified
+Their golden files are the output of the **original sisulets**, which are still in Anchor (`SQLServer_<t>.legacy.directive`), run unmodified
 (apart from the defects the port corrected, listed in Anchor's handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()`
 answering its default. So for SQL Server the templates are checked against an independent implementation, which is what Snowflake had until its
 output had been run. `tools/xml-to-tree.ps1 -WithSerialization` gives the tools what the modeler adds when it generates SQL, the model's own XML as
