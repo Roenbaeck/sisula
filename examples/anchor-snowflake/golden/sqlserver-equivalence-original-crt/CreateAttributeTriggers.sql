@@ -63,7 +63,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Annex] a
+        ON
+            a.EV_DAT_ID = p.EV_DAT_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+        AND
+            a.EV_DAT_Positor = i.EV_DAT_Positor
+        AND
+            a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_DAT_Version),
         @currentVersion = 0
@@ -197,7 +215,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Annex] a
+        ON
+            a.EV_AUD_ID = p.EV_AUD_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+        AND
+            a.EV_AUD_Positor = i.EV_AUD_Positor
+        AND
+            a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_AUD_Version),
         @currentVersion = 0
@@ -331,7 +367,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Annex] a
+        ON
+            a.EV_REV_ID = p.EV_REV_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+        AND
+            a.EV_REV_Positor = i.EV_REV_Positor
+        AND
+            a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_REV_Version),
         @currentVersion = 0
@@ -468,7 +522,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_STA_Event_Status_Posit] p
+        JOIN
+            [attributes].[EV_STA_Event_Status_Annex] a
+        ON
+            a.EV_STA_ID = p.EV_STA_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = i.EV_STA_Event_Status
+        AND
+            a.EV_STA_Positor = i.EV_STA_Positor
+        AND
+            a.EV_STA_PositedAt = i.EV_STA_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_STA_Version),
         @currentVersion = 0
@@ -636,7 +710,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Annex] a
+        ON
+            a.EV_UTL_ID = p.EV_UTL_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.EV_UTL_Positor = i.EV_UTL_Positor
+        AND
+            a.EV_UTL_PositedAt = i.EV_UTL_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_UTL_Version),
         @currentVersion = 0
@@ -773,7 +865,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Annex] a
+        ON
+            a.EV_LVL_ID = p.EV_LVL_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+        AND
+            p.PLV_ID = i.PLV_ID
+        AND
+            a.EV_LVL_Positor = i.EV_LVL_Positor
+        AND
+            a.EV_LVL_PositedAt = i.EV_LVL_PositedAt
+    );
     SELECT
         @maxVersion = max(EV_LVL_Version),
         @currentVersion = 0
@@ -944,7 +1056,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Annex] a
+        ON
+            a.ST_NAM_ID = p.ST_NAM_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+        AND
+            a.ST_NAM_Positor = i.ST_NAM_Positor
+        AND
+            a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_NAM_Version),
         @currentVersion = 0
@@ -1114,7 +1246,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Annex] a
+        ON
+            a.ST_LOC_ID = p.ST_LOC_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+        AND
+            a.ST_LOC_Positor = i.ST_LOC_Positor
+        AND
+            a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_LOC_Version),
         @currentVersion = 0
@@ -1251,7 +1401,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Annex] a
+        ON
+            a.ST_AVG_ID = p.ST_AVG_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.ST_AVG_Positor = i.ST_AVG_Positor
+        AND
+            a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_AVG_Version),
         @currentVersion = 0
@@ -1293,7 +1463,9 @@ BEGIN
                                     v.ST_AVG_PositedAt,
                                     v.ST_AVG_Assertion
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.UTL_ID
                         WHERE
@@ -1306,7 +1478,7 @@ BEGIN
                                     v.ST_AVG_Assertion
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -1335,7 +1507,49 @@ BEGIN
         WHERE
             ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N');
+            ST_AVG_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
+            Metadata_ST_AVG,
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            v.Metadata_ST_AVG,
+            fol.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            0
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.ST_AVG_ID,
+                f.UTL_ID
+            FROM
+                [attributes].[fST_AVG_Stage_Average](
+                    v.ST_AVG_Positor,
+                    v.ST_AVG_ChangedAt,
+                    v.ST_AVG_PositedAt
+                ) f
+            WHERE
+                f.ST_ID = v.ST_ID
+            AND
+                f.ST_AVG_ChangedAt > v.ST_AVG_ChangedAt
+            AND
+                f.ST_AVG_Assertion = v.ST_AVG_Assertion
+            ORDER BY
+                f.ST_AVG_ChangedAt ASC,
+                f.ST_AVG_PositedAt DESC
+        ) fol
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType = 'F'
+        AND
+            fol.UTL_ID = v.UTL_ID;
         INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
             Metadata_ST_AVG,
             ST_AVG_ID,
@@ -1362,7 +1576,7 @@ BEGIN
         WHERE
             v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('S','N','D');
+            ST_AVG_StatementType in ('S','N','D','F');
     END
 END
 GO
@@ -1419,7 +1633,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Annex] a
+        ON
+            a.ST_MIN_ID = p.ST_MIN_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.ST_MIN_Positor = i.ST_MIN_Positor
+        AND
+            a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_MIN_Version),
         @currentVersion = 0
@@ -1556,7 +1788,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Annex] a
+        ON
+            a.AC_NAM_ID = p.AC_NAM_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+        AND
+            a.AC_NAM_Positor = i.AC_NAM_Positor
+        AND
+            a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_NAM_Version),
         @currentVersion = 0
@@ -1724,7 +1976,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Annex] a
+        ON
+            a.AC_GEN_ID = p.AC_GEN_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.GEN_ID = i.GEN_ID
+        AND
+            a.AC_GEN_Positor = i.AC_GEN_Positor
+        AND
+            a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_GEN_Version),
         @currentVersion = 0
@@ -1861,7 +2131,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+        ON
+            a.AC_PLV_ID = p.AC_PLV_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            p.PLV_ID = i.PLV_ID
+        AND
+            a.AC_PLV_Positor = i.AC_PLV_Positor
+        AND
+            a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_PLV_Version),
         @currentVersion = 0
@@ -2029,7 +2319,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Annex] a
+        ON
+            a.PR_NAM_ID = p.PR_NAM_ID
+        WHERE
+            p.PR_ID = i.PR_ID
+        AND
+            p.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+        AND
+            a.PR_NAM_Positor = i.PR_NAM_Positor
+        AND
+            a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_NAM_Version),
         @currentVersion = 0
@@ -2166,7 +2474,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Annex] a
+        ON
+            a.PR_LEN_ID = p.PR_LEN_ID
+        WHERE
+            p.PR_ID = i.PR_ID
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+        AND
+            a.PR_LEN_Positor = i.PR_LEN_Positor
+        AND
+            a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_LEN_Version),
         @currentVersion = 0
@@ -2208,7 +2536,9 @@ BEGIN
                                     v.PR_LEN_PositedAt,
                                     v.PR_LEN_Assertion
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.PR_LEN_Program_Length
                         WHERE
@@ -2221,7 +2551,7 @@ BEGIN
                                     v.PR_LEN_Assertion
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -2250,7 +2580,49 @@ BEGIN
         WHERE
             PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N');
+            PR_LEN_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
+            Metadata_PR_LEN,
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            v.Metadata_PR_LEN,
+            fol.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            0
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.PR_LEN_ID,
+                f.PR_LEN_Program_Length
+            FROM
+                [attributes].[fPR_LEN_Program_Length](
+                    v.PR_LEN_Positor,
+                    v.PR_LEN_ChangedAt,
+                    v.PR_LEN_PositedAt
+                ) f
+            WHERE
+                f.PR_ID = v.PR_ID
+            AND
+                f.PR_LEN_ChangedAt > v.PR_LEN_ChangedAt
+            AND
+                f.PR_LEN_Assertion = v.PR_LEN_Assertion
+            ORDER BY
+                f.PR_LEN_ChangedAt ASC,
+                f.PR_LEN_PositedAt DESC
+        ) fol
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType = 'F'
+        AND
+            fol.PR_LEN_Program_Length = v.PR_LEN_Program_Length;
         INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
             Metadata_PR_LEN,
             PR_LEN_ID,
@@ -2277,7 +2649,7 @@ BEGIN
         WHERE
             v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('S','N','D');
+            PR_LEN_StatementType in ('S','N','D','F');
     END
 END
 GO

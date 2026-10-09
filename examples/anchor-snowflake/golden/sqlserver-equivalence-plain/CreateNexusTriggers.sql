@@ -140,12 +140,21 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
-            i.EV_DAT_EQ,
+            ISNULL(i.EV_DAT_EQ, 0),
             i.EV_DAT_Event_Date
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_DAT_Event_Date is not null;
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_DAT_EQ) OR
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        );
     END
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
@@ -160,8 +169,16 @@ BEGIN
             i.EV_AUD_Event_Audience
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_AUD_Event_Audience is not null;
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        );
     END
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
@@ -174,12 +191,21 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(i.EV_REV_EV_ID, i.EV_ID),
-            i.EV_REV_EQ,
+            ISNULL(i.EV_REV_EQ, 0),
             i.EV_REV_Event_Revenue
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_REV_Event_Revenue is not null;
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_REV_EQ) OR
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        );
     END
 END
 GO

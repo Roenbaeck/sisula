@@ -209,14 +209,14 @@ BEGIN
                 @EV_DAT_Event_Date s
             WHERE
                 s.EV_DAT_EV_ID = a.EV_DAT_EV_ID
-            AND
-                s.EV_DAT_Event_Date = a.EV_DAT_Event_Date
             AND 
                 s.EV_DAT_PositedAt < a.EV_DAT_PositedAt
             ORDER BY 
                 s.EV_DAT_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_DAT_Event_Date = pre.EV_DAT_Event_Date
+        AND
             a.EV_DAT_Reliability = pre.EV_DAT_Reliability
     ) u
     WHERE
@@ -485,14 +485,14 @@ BEGIN
                 @EV_AUD_Event_Audience s
             WHERE
                 s.EV_AUD_EV_ID = a.EV_AUD_EV_ID
-            AND
-                s.EV_AUD_Event_Audience = a.EV_AUD_Event_Audience
             AND 
                 s.EV_AUD_PositedAt < a.EV_AUD_PositedAt
             ORDER BY 
                 s.EV_AUD_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_AUD_Event_Audience = pre.EV_AUD_Event_Audience
+        AND
             a.EV_AUD_Reliability = pre.EV_AUD_Reliability
     ) u
     WHERE
@@ -761,14 +761,14 @@ BEGIN
                 @EV_REV_Event_Revenue s
             WHERE
                 s.EV_REV_EV_ID = a.EV_REV_EV_ID
-            AND
-                s.EV_REV_Event_Revenue = a.EV_REV_Event_Revenue
             AND 
                 s.EV_REV_PositedAt < a.EV_REV_PositedAt
             ORDER BY 
                 s.EV_REV_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_REV_Event_Revenue = pre.EV_REV_Event_Revenue
+        AND
             a.EV_REV_Reliability = pre.EV_REV_Reliability
     ) u
     WHERE
@@ -1057,14 +1057,14 @@ BEGIN
                 s.EV_STA_EV_ID = a.EV_STA_EV_ID
             AND
                 s.EV_STA_ChangedAt = a.EV_STA_ChangedAt
-            AND
-                s.EV_STA_Event_Status = a.EV_STA_Event_Status
             AND 
                 s.EV_STA_PositedAt < a.EV_STA_PositedAt
             ORDER BY 
                 s.EV_STA_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_STA_Event_Status = pre.EV_STA_Event_Status
+        AND
             a.EV_STA_Reliability = pre.EV_STA_Reliability
     ) u
     WHERE
@@ -1341,14 +1341,14 @@ BEGIN
                 @EV_UTL_Event_Utilization s
             WHERE
                 s.EV_UTL_EV_ID = a.EV_UTL_EV_ID
-            AND
-                s.EV_UTL_UTL_ID = a.EV_UTL_UTL_ID
             AND 
                 s.EV_UTL_PositedAt < a.EV_UTL_PositedAt
             ORDER BY 
                 s.EV_UTL_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_UTL_UTL_ID = pre.EV_UTL_UTL_ID
+        AND
             a.EV_UTL_Reliability = pre.EV_UTL_Reliability
     ) u
     WHERE
@@ -1637,14 +1637,14 @@ BEGIN
                 s.EV_LVL_EV_ID = a.EV_LVL_EV_ID
             AND
                 s.EV_LVL_ChangedAt = a.EV_LVL_ChangedAt
-            AND
-                s.EV_LVL_PLV_ID = a.EV_LVL_PLV_ID
             AND 
                 s.EV_LVL_PositedAt < a.EV_LVL_PositedAt
             ORDER BY 
                 s.EV_LVL_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.EV_LVL_PLV_ID = pre.EV_LVL_PLV_ID
+        AND
             a.EV_LVL_Reliability = pre.EV_LVL_Reliability
     ) u
     WHERE
@@ -1941,14 +1941,14 @@ BEGIN
                 s.ST_NAM_ST_ID = a.ST_NAM_ST_ID
             AND
                 s.ST_NAM_ChangedAt = a.ST_NAM_ChangedAt
-            AND
-                s.ST_NAM_Stage_Name = a.ST_NAM_Stage_Name
             AND 
                 s.ST_NAM_PositedAt < a.ST_NAM_PositedAt
             ORDER BY 
                 s.ST_NAM_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.ST_NAM_Stage_Name = pre.ST_NAM_Stage_Name
+        AND
             a.ST_NAM_Reliability = pre.ST_NAM_Reliability
     ) u
     WHERE
@@ -2235,14 +2235,14 @@ BEGIN
                 @ST_LOC_Stage_Location s
             WHERE
                 s.ST_LOC_ST_ID = a.ST_LOC_ST_ID
-            AND
-                s.ST_LOC_Checksum = a.ST_LOC_Checksum 
             AND 
                 s.ST_LOC_PositedAt < a.ST_LOC_PositedAt
             ORDER BY 
                 s.ST_LOC_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.ST_LOC_Checksum = pre.ST_LOC_Checksum 
+        AND
             a.ST_LOC_Reliability = pre.ST_LOC_Reliability
     ) u
     WHERE
@@ -2531,14 +2531,14 @@ BEGIN
                 s.ST_AVG_ST_ID = a.ST_AVG_ST_ID
             AND
                 s.ST_AVG_ChangedAt = a.ST_AVG_ChangedAt
-            AND
-                s.ST_AVG_UTL_ID = a.ST_AVG_UTL_ID
             AND 
                 s.ST_AVG_PositedAt < a.ST_AVG_PositedAt
             ORDER BY 
                 s.ST_AVG_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.ST_AVG_UTL_ID = pre.ST_AVG_UTL_ID
+        AND
             a.ST_AVG_Reliability = pre.ST_AVG_Reliability
     ) u
     WHERE
@@ -2909,14 +2909,14 @@ BEGIN
                 @ST_MIN_Stage_Minimum s
             WHERE
                 s.ST_MIN_ST_ID = a.ST_MIN_ST_ID
-            AND
-                s.ST_MIN_UTL_ID = a.ST_MIN_UTL_ID
             AND 
                 s.ST_MIN_PositedAt < a.ST_MIN_PositedAt
             ORDER BY 
                 s.ST_MIN_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.ST_MIN_UTL_ID = pre.ST_MIN_UTL_ID
+        AND
             a.ST_MIN_Reliability = pre.ST_MIN_Reliability
     ) u
     WHERE
@@ -3205,14 +3205,14 @@ BEGIN
                 s.AC_NAM_AC_ID = a.AC_NAM_AC_ID
             AND
                 s.AC_NAM_ChangedAt = a.AC_NAM_ChangedAt
-            AND
-                s.AC_NAM_Actor_Name = a.AC_NAM_Actor_Name
             AND 
                 s.AC_NAM_PositedAt < a.AC_NAM_PositedAt
             ORDER BY 
                 s.AC_NAM_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.AC_NAM_Actor_Name = pre.AC_NAM_Actor_Name
+        AND
             a.AC_NAM_Reliability = pre.AC_NAM_Reliability
     ) u
     WHERE
@@ -3489,14 +3489,14 @@ BEGIN
                 @AC_GEN_Actor_Gender s
             WHERE
                 s.AC_GEN_AC_ID = a.AC_GEN_AC_ID
-            AND
-                s.AC_GEN_GEN_ID = a.AC_GEN_GEN_ID
             AND 
                 s.AC_GEN_PositedAt < a.AC_GEN_PositedAt
             ORDER BY 
                 s.AC_GEN_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.AC_GEN_GEN_ID = pre.AC_GEN_GEN_ID
+        AND
             a.AC_GEN_Reliability = pre.AC_GEN_Reliability
     ) u
     WHERE
@@ -3785,14 +3785,14 @@ BEGIN
                 s.AC_PLV_AC_ID = a.AC_PLV_AC_ID
             AND
                 s.AC_PLV_ChangedAt = a.AC_PLV_ChangedAt
-            AND
-                s.AC_PLV_PLV_ID = a.AC_PLV_PLV_ID
             AND 
                 s.AC_PLV_PositedAt < a.AC_PLV_PositedAt
             ORDER BY 
                 s.AC_PLV_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.AC_PLV_PLV_ID = pre.AC_PLV_PLV_ID
+        AND
             a.AC_PLV_Reliability = pre.AC_PLV_Reliability
     ) u
     WHERE
@@ -4069,14 +4069,14 @@ BEGIN
                 @PR_NAM_Program_Name s
             WHERE
                 s.PR_NAM_PR_ID = a.PR_NAM_PR_ID
-            AND
-                s.PR_NAM_Program_Name = a.PR_NAM_Program_Name
             AND 
                 s.PR_NAM_PositedAt < a.PR_NAM_PositedAt
             ORDER BY 
                 s.PR_NAM_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.PR_NAM_Program_Name = pre.PR_NAM_Program_Name
+        AND
             a.PR_NAM_Reliability = pre.PR_NAM_Reliability
     ) u
     WHERE
@@ -4365,14 +4365,14 @@ BEGIN
                 s.PR_LEN_PR_ID = a.PR_LEN_PR_ID
             AND
                 s.PR_LEN_ChangedAt = a.PR_LEN_ChangedAt
-            AND
-                s.PR_LEN_Program_Length = a.PR_LEN_Program_Length
             AND 
                 s.PR_LEN_PositedAt < a.PR_LEN_PositedAt
             ORDER BY 
                 s.PR_LEN_PositedAt DESC
-        ) pre
+        ) pre -- what is shown just before
         WHERE
+            a.PR_LEN_Program_Length = pre.PR_LEN_Program_Length
+        AND
             a.PR_LEN_Reliability = pre.PR_LEN_Reliability
     ) u
     WHERE

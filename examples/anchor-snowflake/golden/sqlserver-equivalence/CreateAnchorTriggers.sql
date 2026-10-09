@@ -213,7 +213,7 @@ BEGIN
                 ELSE i.Metadata_ST_NAM
             END, i.Metadata_ST),
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
-            i.ST_NAM_EQ,
+            ISNULL(i.ST_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.ST_NAM_Stage_Name is null THEN i.ST_NAM_ChangedAt
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
@@ -221,8 +221,18 @@ BEGIN
             i.ST_NAM_Stage_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_NAM_Stage_Name is not null;
+            i.ST_NAM_Stage_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_EQ) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Checksum <> dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max)))
+        );
     END
     IF(UPDATE(ST_LOC_ST_ID))
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
@@ -241,12 +251,21 @@ BEGIN
                 ELSE i.Metadata_ST_LOC
             END, i.Metadata_ST),
             ISNULL(i.ST_LOC_ST_ID, i.ST_ID),
-            i.ST_LOC_EQ,
+            ISNULL(i.ST_LOC_EQ, 0),
             i.ST_LOC_Stage_Location
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_LOC_Stage_Location is not null;
+            i.ST_LOC_Stage_Location is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_LOC_EQ) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+        );
     END
     IF(UPDATE(ST_AVG_ST_ID))
         RAISERROR('The foreign key column ST_AVG_ST_ID is not updatable.', 16, 1);
@@ -276,8 +295,17 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            d.ST_AVG_UTL_ID is null OR
+            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+        );
     END
     IF(UPDATE(ST_MIN_ST_ID))
         RAISERROR('The foreign key column ST_MIN_ST_ID is not updatable.', 16, 1);
@@ -302,8 +330,16 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.ST_MIN_UTL_ID is null OR
+            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
+        );
         SELECT
             i.ST_MIN_ST_ID
         INTO
@@ -617,7 +653,7 @@ BEGIN
                 ELSE i.Metadata_AC_NAM
             END, i.Metadata_AC),
             ISNULL(i.AC_NAM_AC_ID, i.AC_ID),
-            i.AC_NAM_EQ,
+            ISNULL(i.AC_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.AC_NAM_Actor_Name is null THEN i.AC_NAM_ChangedAt
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
@@ -625,8 +661,18 @@ BEGIN
             i.AC_NAM_Actor_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            i.AC_NAM_Actor_Name is not null;
+            i.AC_NAM_Actor_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            UPDATE(AC_NAM_EQ) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Checksum <> dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max)))
+        );
     END
     IF(UPDATE(AC_GEN_AC_ID))
         RAISERROR('The foreign key column AC_GEN_AC_ID is not updatable.', 16, 1);
@@ -653,8 +699,16 @@ BEGIN
             [kGEN].GEN_Gender = i.AC_GEN_GEN_Gender
         AND
             [kGEN].GEN_EQ = i.AC_GEN_GEN_EQ
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null;
+            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.AC_GEN_GEN_ID is null OR
+            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
+        );
     END
     IF(UPDATE(AC_PLV_AC_ID))
         RAISERROR('The foreign key column AC_PLV_AC_ID is not updatable.', 16, 1);
@@ -684,8 +738,17 @@ BEGIN
             [dbo].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dbo.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null;
+            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            d.AC_PLV_PLV_ID is null OR
+            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+        );
     END
 END
 GO
@@ -888,8 +951,16 @@ BEGIN
             i.PR_NAM_Program_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_NAM_Program_Name is not null;
+            i.PR_NAM_Program_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+        );
     END
     IF(UPDATE(PR_LEN_PR_ID))
         RAISERROR('The foreign key column PR_LEN_PR_ID is not updatable.', 16, 1);
@@ -915,8 +986,17 @@ BEGIN
             i.PR_LEN_Program_Length
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_LEN_Program_Length is not null;
+            i.PR_LEN_Program_Length is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+        );
     END
 END
 GO

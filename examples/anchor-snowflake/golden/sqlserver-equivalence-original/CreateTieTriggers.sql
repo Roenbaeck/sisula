@@ -139,7 +139,29 @@ BEGIN
     LEFT JOIN
         [knots].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing; 
+        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -165,6 +187,40 @@ BEGIN
         AND
             d.ONG_ID_currently = tie.ONG_ID_currently
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_subset_PN_of instead of INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_subset_PN_of', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_subset_PN_of];
+GO
+CREATE TRIGGER [ties].[it_AC_subset_PN_of] ON [ties].[AC_subset_PN_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [ties].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of, 
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [ties].[AC_subset_PN_of] x
+        WHERE 
+            x.AC_ID_subset = i.AC_ID_subset
+        AND
+            x.PN_ID_of = i.PN_ID_of
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -200,6 +256,34 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_ID_subset,
+        i.PN_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- values that are left as they are state nothing
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -221,6 +305,40 @@ BEGIN
         AND
             d.PN_ID_of = tie.PN_ID_of
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itEV_in_AC_wasCast instead of INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_EV_in_AC_wasCast', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_EV_in_AC_wasCast];
+GO
+CREATE TRIGGER [ties].[it_EV_in_AC_wasCast] ON [ties].[EV_in_AC_wasCast]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [ties].[EV_in_AC_wasCast] (
+        Metadata_EV_in_AC_wasCast, 
+        EV_ID_in,
+        AC_ID_wasCast
+    )
+    SELECT
+        Metadata_EV_in_AC_wasCast,
+        EV_ID_in,
+        AC_ID_wasCast
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [ties].[EV_in_AC_wasCast] x
+        WHERE 
+            x.EV_ID_in = i.EV_ID_in
+        AND
+            x.AC_ID_wasCast = i.AC_ID_wasCast
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -315,6 +433,32 @@ BEGIN
         AND
             x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
     );
+    -- other values for identifiers that already have values at that time are a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_part,
+            i.PR_ID_in,
+            i.AC_part_PR_in_RAT_got_ChangedAt
+        FROM
+            @inserted i
+        JOIN
+            [ties].[AC_part_PR_in_RAT_got] x
+        ON
+            x.AC_ID_part = i.AC_ID_part
+        AND
+            x.PR_ID_in = i.PR_ID_in
+        AND
+            x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got, 
         AC_part_PR_in_RAT_got_ChangedAt,
@@ -397,7 +541,25 @@ BEGIN
     LEFT JOIN
         [knots].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.RAT_Rating; 
+        [RAT_got].RAT_Rating = i.RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_part = i.AC_ID_part
+                AND
+                    d.PR_ID_in = i.PR_ID_in
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -528,6 +690,44 @@ BEGIN
         d.ST_ID_at = tie.ST_ID_at
     AND
         d.PR_ID_isPlaying = tie.PR_ID_isPlaying;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_parent_AC_child_PAT_having instead of INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_parent_AC_child_PAT_having', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_parent_AC_child_PAT_having];
+GO
+CREATE TRIGGER [ties].[it_AC_parent_AC_child_PAT_having] ON [ties].[AC_parent_AC_child_PAT_having]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [ties].[AC_parent_AC_child_PAT_having] (
+        Metadata_AC_parent_AC_child_PAT_having, 
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    )
+    SELECT
+        Metadata_AC_parent_AC_child_PAT_having,
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [ties].[AC_parent_AC_child_PAT_having] x
+        WHERE 
+            x.AC_ID_parent = i.AC_ID_parent
+        AND
+            x.AC_ID_child = i.AC_ID_child
+        AND
+            x.PAT_ID_having = i.PAT_ID_having
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -701,7 +901,29 @@ BEGIN
         i.ST_ID_location,
         i.EV_ID_of
     FROM
-        inserted i; 
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        i.EV_ID_of is not null
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(PR_content_ST_location_EV_of_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------

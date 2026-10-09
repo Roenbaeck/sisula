@@ -273,8 +273,16 @@ BEGIN
             i.EV_DAT_Event_Date
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_DAT_Event_Date is not null;
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        );
     END
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
@@ -293,12 +301,21 @@ BEGIN
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
-            i.EV_AUD_EQ,
+            ISNULL(i.EV_AUD_EQ, 0),
             i.EV_AUD_Event_Audience
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_AUD_Event_Audience is not null;
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_AUD_EQ) OR
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        );
     END
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
@@ -317,12 +334,21 @@ BEGIN
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             ISNULL(i.EV_REV_EV_ID, i.EV_ID),
-            i.EV_REV_EQ,
+            ISNULL(i.EV_REV_EQ, 0),
             i.EV_REV_Event_Revenue
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_REV_Event_Revenue is not null;
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_REV_EQ) OR
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        );
     END
     IF(UPDATE(EV_STA_EV_ID))
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
@@ -342,7 +368,7 @@ BEGIN
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_STA_EV_ID, i.EV_ID),
-            i.EV_STA_EQ,
+            ISNULL(i.EV_STA_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.EV_STA_Event_Status is null THEN i.EV_STA_ChangedAt
                 WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
@@ -350,8 +376,18 @@ BEGIN
             i.EV_STA_Event_Status
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_STA_Event_Status is not null;
+            i.EV_STA_Event_Status is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_STA_ChangedAt) OR
+            UPDATE(EV_STA_EQ) OR
+            d.EV_STA_Event_Status is null OR
+            d.EV_STA_Event_Status <> i.EV_STA_Event_Status
+        );
     END
     IF(UPDATE(EV_UTL_EV_ID))
         RAISERROR('The foreign key column EV_UTL_EV_ID is not updatable.', 16, 1);
@@ -376,8 +412,16 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_UTL_UTL_ID is null OR
+            d.EV_UTL_UTL_ID <> CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END
+        );
     END
     IF(UPDATE(EV_LVL_EV_ID))
         RAISERROR('The foreign key column EV_LVL_EV_ID is not updatable.', 16, 1);
@@ -409,8 +453,17 @@ BEGIN
             [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max))) 
         AND
             [kPLV].PLV_EQ = i.EV_LVL_PLV_EQ
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END is not null;
+            CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_LVL_ChangedAt) OR
+            d.EV_LVL_PLV_ID is null OR
+            d.EV_LVL_PLV_ID <> CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
+        );
     END
 END
 GO

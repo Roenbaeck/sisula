@@ -281,25 +281,45 @@ BEGIN
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
             i.ST_NAM_Stage_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN d.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+                THEN i.ST_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_NAM_Who
+                WHEN UPDATE(ST_NAM_Who) THEN i.ST_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_NAM_Confidence) THEN i.ST_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.ST_NAM_Stage_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_PositedAt) OR
+            UPDATE(ST_NAM_Who) OR
+            UPDATE(Who) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name OR
+            d.ST_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Confidence) THEN i.ST_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -331,8 +351,8 @@ BEGIN
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_NAM_Who
+                WHEN UPDATE(ST_NAM_Who) THEN i.ST_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -351,6 +371,7 @@ BEGIN
     IF(UPDATE(ST_LOC_Stance))
         RAISERROR('The computed assertion column ST_LOC_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(ST_LOC_Stage_Location) OR
         UPDATE(ST_LOC_Confidence) OR
         UPDATE(Confidence)
     )
@@ -375,18 +396,36 @@ BEGIN
                 WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_LOC_Who
+                WHEN UPDATE(ST_LOC_Who) THEN i.ST_LOC_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Confidence) THEN i.ST_LOC_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_LOC_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.ST_LOC_Stage_Location is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_LOC_PositedAt) OR
+            UPDATE(ST_LOC_Who) OR
+            UPDATE(Who) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Confidence) THEN i.ST_LOC_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_LOC_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -415,8 +454,8 @@ BEGIN
                 WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_LOC_Who
+                WHEN UPDATE(ST_LOC_Who) THEN i.ST_LOC_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -462,19 +501,20 @@ BEGIN
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
                 WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN d.ST_AVG_UTL_ID = CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+                THEN i.ST_AVG_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_AVG_Who
+                WHEN UPDATE(ST_AVG_Who) THEN i.ST_AVG_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_AVG_Confidence) THEN i.ST_AVG_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_AVG_Confidence
             END, 0.75)
         FROM
@@ -483,11 +523,30 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            UPDATE(ST_AVG_PositedAt) OR
+            UPDATE(ST_AVG_Who) OR
+            UPDATE(Who) OR
+            d.ST_AVG_UTL_ID is null OR
+            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_AVG_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Confidence) THEN i.ST_AVG_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_AVG_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -520,8 +579,8 @@ BEGIN
                 WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_AVG_Who
+                WHEN UPDATE(ST_AVG_Who) THEN i.ST_AVG_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -542,6 +601,8 @@ BEGIN
     IF(UPDATE(ST_MIN_Stance))
         RAISERROR('The computed assertion column ST_MIN_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(ST_MIN_UTL_ID) OR
+        UPDATE(ST_MIN_UTL_Utilization) OR
         UPDATE(ST_MIN_Confidence) OR
         UPDATE(Confidence)
     )
@@ -569,12 +630,12 @@ BEGIN
                 WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_MIN_Who
+                WHEN UPDATE(ST_MIN_Who) THEN i.ST_MIN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_MIN_Confidence) THEN i.ST_MIN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_MIN_Confidence
             END, 0.75)
         FROM
@@ -583,11 +644,29 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_MIN_PositedAt) OR
+            UPDATE(ST_MIN_Who) OR
+            UPDATE(Who) OR
+            d.ST_MIN_UTL_ID is null OR
+            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_MIN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Confidence) THEN i.ST_MIN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_MIN_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -617,8 +696,8 @@ BEGIN
                 WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_MIN_Who
+                WHEN UPDATE(ST_MIN_Who) THEN i.ST_MIN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -652,17 +731,15 @@ BEGIN
         ST_NAM_Confidence
     )
     SELECT
-        p.Metadata_ST_NAM,
-        p.ST_NAM_ID,
-        p.ST_NAM_Who,
+        d.Metadata_ST_NAM,
+        d.ST_NAM_ID,
+        d.ST_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_NAM_Stage_Name_Meta] p
-    ON
-        p.ST_NAM_ID = d.ST_NAM_ID;
+    WHERE
+        d.ST_NAM_ID is not null;
     INSERT INTO [attributes].[ST_LOC_Stage_Location_Meta] (
         Metadata_ST_LOC,
         ST_LOC_ID,
@@ -671,17 +748,15 @@ BEGIN
         ST_LOC_Confidence
     )
     SELECT
-        p.Metadata_ST_LOC,
-        p.ST_LOC_ID,
-        p.ST_LOC_Who,
+        d.Metadata_ST_LOC,
+        d.ST_LOC_ID,
+        d.ST_LOC_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_LOC_Stage_Location_Meta] p
-    ON
-        p.ST_LOC_ID = d.ST_LOC_ID;
+    WHERE
+        d.ST_LOC_ID is not null;
     INSERT INTO [attributes].[ST_AVG_Stage_Average_Meta] (
         Metadata_ST_AVG,
         ST_AVG_ID,
@@ -690,17 +765,15 @@ BEGIN
         ST_AVG_Confidence
     )
     SELECT
-        p.Metadata_ST_AVG,
-        p.ST_AVG_ID,
-        p.ST_AVG_Who,
+        d.Metadata_ST_AVG,
+        d.ST_AVG_ID,
+        d.ST_AVG_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_AVG_Stage_Average_Meta] p
-    ON
-        p.ST_AVG_ID = d.ST_AVG_ID;
+    WHERE
+        d.ST_AVG_ID is not null;
     INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Meta] (
         Metadata_ST_MIN,
         ST_MIN_ID,
@@ -709,17 +782,15 @@ BEGIN
         ST_MIN_Confidence
     )
     SELECT
-        p.Metadata_ST_MIN,
-        p.ST_MIN_ID,
-        p.ST_MIN_Who,
+        d.Metadata_ST_MIN,
+        d.ST_MIN_ID,
+        d.ST_MIN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_MIN_Stage_Minimum_Meta] p
-    ON
-        p.ST_MIN_ID = d.ST_MIN_ID;
+    WHERE
+        d.ST_MIN_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -962,25 +1033,45 @@ BEGIN
             ISNULL(i.AC_NAM_AC_ID, i.AC_ID),
             i.AC_NAM_Actor_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN d.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+                THEN i.AC_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_NAM_Who
+                WHEN UPDATE(AC_NAM_Who) THEN i.AC_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_NAM_Confidence) THEN i.AC_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.AC_NAM_Actor_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            UPDATE(AC_NAM_PositedAt) OR
+            UPDATE(AC_NAM_Who) OR
+            UPDATE(Who) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name OR
+            d.AC_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Confidence) THEN i.AC_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1012,8 +1103,8 @@ BEGIN
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_NAM_Who
+                WHEN UPDATE(AC_NAM_Who) THEN i.AC_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -1032,6 +1123,8 @@ BEGIN
     IF(UPDATE(AC_GEN_Stance))
         RAISERROR('The computed assertion column AC_GEN_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(AC_GEN_GEN_ID) OR
+        UPDATE(AC_GEN_GEN_Gender) OR
         UPDATE(AC_GEN_Confidence) OR
         UPDATE(Confidence)
     )
@@ -1059,12 +1152,12 @@ BEGIN
                 WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_GEN_Who
+                WHEN UPDATE(AC_GEN_Who) THEN i.AC_GEN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_GEN_Confidence) THEN i.AC_GEN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_GEN_Confidence
             END, 0.75)
         FROM
@@ -1073,11 +1166,29 @@ BEGIN
             [knots].[GEN_Gender] [kGEN]
         ON
             [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
                 ELSE [kGEN].GEN_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_GEN_PositedAt) OR
+            UPDATE(AC_GEN_Who) OR
+            UPDATE(Who) OR
+            d.AC_GEN_GEN_ID is null OR
+            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END OR
+            d.AC_GEN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Confidence) THEN i.AC_GEN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_GEN_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1107,8 +1218,8 @@ BEGIN
                 WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_GEN_Who
+                WHEN UPDATE(AC_GEN_Who) THEN i.AC_GEN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -1156,19 +1267,20 @@ BEGIN
                 ELSE [kPLV].PLV_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
                 WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN d.AC_PLV_PLV_ID = CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+                THEN i.AC_PLV_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_PLV_Who
+                WHEN UPDATE(AC_PLV_Who) THEN i.AC_PLV_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_PLV_Confidence) THEN i.AC_PLV_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_PLV_Confidence
             END, 0.75)
         FROM
@@ -1177,11 +1289,30 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
                 ELSE [kPLV].PLV_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            UPDATE(AC_PLV_PositedAt) OR
+            UPDATE(AC_PLV_Who) OR
+            UPDATE(Who) OR
+            d.AC_PLV_PLV_ID is null OR
+            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.AC_PLV_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Confidence) THEN i.AC_PLV_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_PLV_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1214,8 +1345,8 @@ BEGIN
                 WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_PLV_Who
+                WHEN UPDATE(AC_PLV_Who) THEN i.AC_PLV_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -1249,17 +1380,15 @@ BEGIN
         AC_NAM_Confidence
     )
     SELECT
-        p.Metadata_AC_NAM,
-        p.AC_NAM_ID,
-        p.AC_NAM_Who,
+        d.Metadata_AC_NAM,
+        d.AC_NAM_ID,
+        d.AC_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_NAM_Actor_Name_Meta] p
-    ON
-        p.AC_NAM_ID = d.AC_NAM_ID;
+    WHERE
+        d.AC_NAM_ID is not null;
     INSERT INTO [attributes].[AC_GEN_Actor_Gender_Meta] (
         Metadata_AC_GEN,
         AC_GEN_ID,
@@ -1268,17 +1397,15 @@ BEGIN
         AC_GEN_Confidence
     )
     SELECT
-        p.Metadata_AC_GEN,
-        p.AC_GEN_ID,
-        p.AC_GEN_Who,
+        d.Metadata_AC_GEN,
+        d.AC_GEN_ID,
+        d.AC_GEN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_GEN_Actor_Gender_Meta] p
-    ON
-        p.AC_GEN_ID = d.AC_GEN_ID;
+    WHERE
+        d.AC_GEN_ID is not null;
     INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Meta] (
         Metadata_AC_PLV,
         AC_PLV_ID,
@@ -1287,17 +1414,15 @@ BEGIN
         AC_PLV_Confidence
     )
     SELECT
-        p.Metadata_AC_PLV,
-        p.AC_PLV_ID,
-        p.AC_PLV_Who,
+        d.Metadata_AC_PLV,
+        d.AC_PLV_ID,
+        d.AC_PLV_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_PLV_Actor_ProfessionalLevel_Meta] p
-    ON
-        p.AC_PLV_ID = d.AC_PLV_ID;
+    WHERE
+        d.AC_PLV_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1449,6 +1574,7 @@ BEGIN
     IF(UPDATE(PR_NAM_Stance))
         RAISERROR('The computed assertion column PR_NAM_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(PR_NAM_Program_Name) OR
         UPDATE(PR_NAM_Confidence) OR
         UPDATE(Confidence)
     )
@@ -1473,18 +1599,36 @@ BEGIN
                 WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_NAM_Who
+                WHEN UPDATE(PR_NAM_Who) THEN i.PR_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(PR_NAM_Confidence) THEN i.PR_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.PR_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.PR_NAM_Program_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_NAM_PositedAt) OR
+            UPDATE(PR_NAM_Who) OR
+            UPDATE(Who) OR
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name OR
+            d.PR_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Confidence) THEN i.PR_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.PR_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1513,8 +1657,8 @@ BEGIN
                 WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_NAM_Who
+                WHEN UPDATE(PR_NAM_Who) THEN i.PR_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -1556,25 +1700,45 @@ BEGIN
             ISNULL(i.PR_LEN_PR_ID, i.PR_ID),
             i.PR_LEN_Program_Length,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN d.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+                THEN i.PR_LEN_ChangedAt -- the shown version is asserted again
             END, @now) as date),
             cast(ISNULL(CASE
                 WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_LEN_Who
+                WHEN UPDATE(PR_LEN_Who) THEN i.PR_LEN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(PR_LEN_Confidence) THEN i.PR_LEN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.PR_LEN_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.PR_LEN_Program_Length is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            UPDATE(PR_LEN_PositedAt) OR
+            UPDATE(PR_LEN_Who) OR
+            UPDATE(Who) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length OR
+            d.PR_LEN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Confidence) THEN i.PR_LEN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.PR_LEN_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1606,8 +1770,8 @@ BEGIN
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_LEN_Who
+                WHEN UPDATE(PR_LEN_Who) THEN i.PR_LEN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -1639,17 +1803,15 @@ BEGIN
         PR_NAM_Confidence
     )
     SELECT
-        p.Metadata_PR_NAM,
-        p.PR_NAM_ID,
-        p.PR_NAM_Who,
+        d.Metadata_PR_NAM,
+        d.PR_NAM_ID,
+        d.PR_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[PR_NAM_Program_Name_Meta] p
-    ON
-        p.PR_NAM_ID = d.PR_NAM_ID;
+    WHERE
+        d.PR_NAM_ID is not null;
     INSERT INTO [attributes].[PR_LEN_Program_Length_Meta] (
         Metadata_PR_LEN,
         PR_LEN_ID,
@@ -1658,16 +1820,14 @@ BEGIN
         PR_LEN_Confidence
     )
     SELECT
-        p.Metadata_PR_LEN,
-        p.PR_LEN_ID,
-        p.PR_LEN_Who,
+        d.Metadata_PR_LEN,
+        d.PR_LEN_ID,
+        d.PR_LEN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[PR_LEN_Program_Length_Meta] p
-    ON
-        p.PR_LEN_ID = d.PR_LEN_ID;
+    WHERE
+        d.PR_LEN_ID is not null;
 END
 GO

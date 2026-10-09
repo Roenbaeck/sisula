@@ -81,7 +81,30 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        i.ONG_ID_currently is not null;
+        i.ONG_ID_currently is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_partner_AC_with_ONG_currently_Posit] p
+            JOIN
+                [dbo].[AC_partner_AC_with_ONG_currently_Annex] a
+            ON
+                a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            WHERE
+                p.AC_ID_partner = i.AC_ID_partner
+            AND
+                p.AC_ID_with = i.AC_ID_with
+            AND
+                p.ONG_ID_currently = i.ONG_ID_currently
+            AND
+                p.AC_partner_AC_with_ONG_currently_ChangedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Positor = ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, 0)
+            AND
+                a.AC_partner_AC_with_ONG_currently_PositedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_partner_AC_with_ONG_currently_Version),
         @currentVersion = 0
@@ -113,70 +136,82 @@ BEGIN
                     THEN 'D' -- duplicate assertion
                     WHEN p.AC_partner_AC_with_ONG_currently_ID is not null
                     THEN 'S' -- duplicate statement
-                    WHEN (
-                    SELECT
-                        COUNT(*)
-                    FROM (
-                        SELECT TOP 1
-                            pre.AC_ID_partner,
-                            pre.AC_ID_with,
-                            pre.ONG_ID_currently
-                        FROM
-                            [dbo].[rAC_partner_AC_with_ONG_currently] (
-                                v.AC_partner_AC_with_ONG_currently_Positor,
-                                v.AC_partner_AC_with_ONG_currently_ChangedAt,
-                                v.AC_partner_AC_with_ONG_currently_PositedAt
-                            ) pre
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.AC_ID_partner,
+                                pre.AC_ID_with,
+                                pre.ONG_ID_currently
+                            FROM
+                                [dbo].[rAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Positor,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) pre
+                            WHERE
+                            (
+                                    pre.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    pre.AC_ID_with = v.AC_ID_with
+                                AND
+                                    pre.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt < v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
+                            ORDER BY
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+                                pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                pre.AC_ID_partner = v.AC_ID_partner
-                            AND
-                                pre.AC_ID_with = v.AC_ID_with
-                            AND
-                                pre.ONG_ID_currently = v.ONG_ID_currently
-                        )
+                            s.AC_ID_partner = v.AC_ID_partner
                         AND
-                            pre.AC_partner_AC_with_ONG_currently_ChangedAt < v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            s.AC_ID_with = v.AC_ID_with
                         AND
-                            pre.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
-                        ORDER BY
-                            pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
-                            pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
-                        UNION
-                        SELECT TOP 1
-                            fol.AC_ID_partner,
-                            fol.AC_ID_with,
-                            fol.ONG_ID_currently
-                        FROM
-                            [dbo].[fAC_partner_AC_with_ONG_currently] (
-                                v.AC_partner_AC_with_ONG_currently_Positor,
-                                v.AC_partner_AC_with_ONG_currently_ChangedAt,
-                                v.AC_partner_AC_with_ONG_currently_PositedAt
-                            ) fol
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.AC_ID_partner,
+                                fol.AC_ID_with,
+                                fol.ONG_ID_currently
+                            FROM
+                                [dbo].[fAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Positor,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) fol
+                            WHERE
+                            (
+                                    fol.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    fol.AC_ID_with = v.AC_ID_with
+                                AND
+                                    fol.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt > v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
+                            ORDER BY
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
+                                fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                fol.AC_ID_partner = v.AC_ID_partner
-                            AND
-                                fol.AC_ID_with = v.AC_ID_with
-                            AND
-                                fol.ONG_ID_currently = v.ONG_ID_currently
-                        )
+                            s.AC_ID_partner = v.AC_ID_partner
                         AND
-                            fol.AC_partner_AC_with_ONG_currently_ChangedAt > v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            s.AC_ID_with = v.AC_ID_with
                         AND
-                            fol.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
-                        ORDER BY
-                            fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
-                            fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
-                    ) s
-                    WHERE
-                        s.AC_ID_partner = v.AC_ID_partner
-                    AND
-                        s.AC_ID_with = v.AC_ID_with
-                    AND
-                        s.ONG_ID_currently = v.ONG_ID_currently
-                    ) > 0
-                    THEN 'R' -- restatement
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the following version
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -268,7 +303,7 @@ BEGIN
         i.AC_ID_partner,
         i.AC_ID_with,
         ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
-        i.AC_partner_AC_with_ONG_currently_Positor,
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, i.Positor),
         i.AC_partner_AC_with_ONG_currently_PositedAt,
         i.AC_partner_AC_with_ONG_currently_Reliability
     FROM
@@ -291,6 +326,41 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_partner_AC_with_ONG_currently_Assertion))
         RAISERROR('The computed assertion column AC_partner_AC_with_ONG_currently_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
+        RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [dbo].[AC_partner_AC_with_ONG_currently_Annex] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        i.AC_partner_AC_with_ONG_currently_ID,
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_partner_AC_with_ONG_currently_ID is not null
+    AND (
+        i.AC_ID_partner is null
+    OR
+        i.AC_ID_with is null
+    OR
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_partner_AC_with_ONG_currently] (
         Metadata_AC_partner_AC_with_ONG_currently,
         AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -303,29 +373,69 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_partner_AC_with_ONG_currently,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Positor = i.AC_partner_AC_with_ONG_currently_Positor
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
         CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
-        CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.AC_ID_partner is null
-            OR
-                i.AC_ID_with is null
-            OR
-                i.ONG_ID_currently is null
-            THEN 0
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_Reliability) THEN i.AC_partner_AC_with_ONG_currently_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
     FROM
         inserted i
     LEFT JOIN
         [dbo].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing;
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Positor = i.AC_partner_AC_with_ONG_currently_Positor
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -416,7 +526,26 @@ BEGIN
     WHERE
         i.AC_ID_subset is not null
     AND
-        i.PN_ID_of is not null;
+        i.PN_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_subset_PN_of_Posit] p
+            JOIN
+                [dbo].[AC_subset_PN_of_Annex] a
+            ON
+                a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            WHERE
+                p.AC_ID_subset = i.AC_ID_subset
+            AND
+                p.PN_ID_of = i.PN_ID_of
+            AND
+                a.AC_subset_PN_of_Positor = ISNULL(i.AC_subset_PN_of_Positor, 0)
+            AND
+                a.AC_subset_PN_of_PositedAt = ISNULL(i.AC_subset_PN_of_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_subset_PN_of_Version),
         @currentVersion = 0
@@ -519,7 +648,7 @@ BEGIN
         i.Metadata_AC_subset_PN_of,
         i.AC_ID_subset,
         i.PN_ID_of,
-        i.AC_subset_PN_of_Positor,
+        ISNULL(i.AC_subset_PN_of_Positor, i.Positor),
         i.AC_subset_PN_of_PositedAt,
         i.AC_subset_PN_of_Reliability
     FROM
@@ -538,6 +667,34 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_subset_PN_of_Assertion))
         RAISERROR('The computed assertion column AC_subset_PN_of_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_subset_PN_of_ID))
+        RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [dbo].[AC_subset_PN_of_Annex] (
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_subset_PN_of_ID,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Positor) THEN i.AC_subset_PN_of_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.AC_subset_PN_of_ID is not null
+    AND (
+        i.AC_ID_subset is null
+    OR
+        i.PN_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_subset_PN_of] (
         Metadata_AC_subset_PN_of,
         AC_ID_subset,
@@ -550,19 +707,37 @@ BEGIN
         i.Metadata_AC_subset_PN_of,
         i.AC_ID_subset,
         i.PN_ID_of,
-        CASE WHEN UPDATE(AC_subset_PN_of_Positor) THEN i.AC_subset_PN_of_Positor ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Positor) THEN i.AC_subset_PN_of_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.AC_ID_subset is null
-            OR
-                i.PN_ID_of is null
-            THEN 0
-            WHEN UPDATE(AC_subset_PN_of_Reliability) THEN i.AC_subset_PN_of_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_subset_PN_of_Reliability, 1)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_subset_PN_of_PositedAt) OR
+            UPDATE(AC_subset_PN_of_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_subset_PN_of_ID = i.AC_subset_PN_of_ID
+                AND
+                    d.AC_subset_PN_of_Positor = i.AC_subset_PN_of_Positor
+                AND
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+                AND
+                    d.AC_subset_PN_of_Reliability = ISNULL(i.AC_subset_PN_of_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -653,7 +828,26 @@ BEGIN
     WHERE
         i.EV_ID_in is not null
     AND
-        i.AC_ID_wasCast is not null;
+        i.AC_ID_wasCast is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_in_AC_wasCast_Posit] p
+            JOIN
+                [dbo].[EV_in_AC_wasCast_Annex] a
+            ON
+                a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            WHERE
+                p.EV_ID_in = i.EV_ID_in
+            AND
+                p.AC_ID_wasCast = i.AC_ID_wasCast
+            AND
+                a.EV_in_AC_wasCast_Positor = ISNULL(i.EV_in_AC_wasCast_Positor, 0)
+            AND
+                a.EV_in_AC_wasCast_PositedAt = ISNULL(i.EV_in_AC_wasCast_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(EV_in_AC_wasCast_Version),
         @currentVersion = 0
@@ -756,7 +950,7 @@ BEGIN
         i.Metadata_EV_in_AC_wasCast,
         i.EV_ID_in,
         i.AC_ID_wasCast,
-        i.EV_in_AC_wasCast_Positor,
+        ISNULL(i.EV_in_AC_wasCast_Positor, i.Positor),
         i.EV_in_AC_wasCast_PositedAt,
         i.EV_in_AC_wasCast_Reliability
     FROM
@@ -857,7 +1051,30 @@ BEGIN
     WHERE
         i.AC_ID_part is not null
     AND
-        i.PR_ID_in is not null;
+        i.PR_ID_in is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [dbo].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            WHERE
+                p.AC_ID_part = i.AC_ID_part
+            AND
+                p.PR_ID_in = i.PR_ID_in
+            AND
+                p.RAT_ID_got = i.RAT_ID_got
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Positor = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_part_PR_in_RAT_got_Version),
         @currentVersion = 0
@@ -889,54 +1106,62 @@ BEGIN
                     THEN 'D' -- duplicate assertion
                     WHEN p.AC_part_PR_in_RAT_got_ID is not null
                     THEN 'S' -- duplicate statement
-                    WHEN (
-                    SELECT
-                        COUNT(*)
-                    FROM (
-                        SELECT TOP 1
-                            pre.RAT_ID_got
-                        FROM
-                            [dbo].[rAC_part_PR_in_RAT_got] (
-                                v.AC_part_PR_in_RAT_got_Positor,
-                                v.AC_part_PR_in_RAT_got_ChangedAt,
-                                v.AC_part_PR_in_RAT_got_PositedAt
-                            ) pre
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.RAT_ID_got
+                            FROM
+                                [dbo].[rAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Positor,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) pre
+                            WHERE
+                                pre.AC_ID_part = v.AC_ID_part
+                            AND
+                                pre.PR_ID_in = v.PR_ID_in
+                            AND
+                                pre.AC_part_PR_in_RAT_got_ChangedAt < v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                pre.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
+                            ORDER BY
+                                pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
+                                pre.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
                         WHERE
-                            pre.AC_ID_part = v.AC_ID_part
-                        AND
-                            pre.PR_ID_in = v.PR_ID_in
-                        AND
-                            pre.AC_part_PR_in_RAT_got_ChangedAt < v.AC_part_PR_in_RAT_got_ChangedAt
-                        AND
-                            pre.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
-                        ORDER BY
-                            pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
-                            pre.AC_part_PR_in_RAT_got_PositedAt DESC
-                        UNION
-                        SELECT TOP 1
-                            fol.RAT_ID_got
-                        FROM
-                            [dbo].[fAC_part_PR_in_RAT_got] (
-                                v.AC_part_PR_in_RAT_got_Positor,
-                                v.AC_part_PR_in_RAT_got_ChangedAt,
-                                v.AC_part_PR_in_RAT_got_PositedAt
-                            ) fol
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.RAT_ID_got
+                            FROM
+                                [dbo].[fAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Positor,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) fol
+                            WHERE
+                                fol.AC_ID_part = v.AC_ID_part
+                            AND
+                                fol.PR_ID_in = v.PR_ID_in
+                            AND
+                                fol.AC_part_PR_in_RAT_got_ChangedAt > v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                fol.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
+                            ORDER BY
+                                fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
+                                fol.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
                         WHERE
-                            fol.AC_ID_part = v.AC_ID_part
-                        AND
-                            fol.PR_ID_in = v.PR_ID_in
-                        AND
-                            fol.AC_part_PR_in_RAT_got_ChangedAt > v.AC_part_PR_in_RAT_got_ChangedAt
-                        AND
-                            fol.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
-                        ORDER BY
-                            fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
-                            fol.AC_part_PR_in_RAT_got_PositedAt DESC
-                    ) s
-                    WHERE
-                        s.RAT_ID_got = v.RAT_ID_got
-                    ) > 0
-                    THEN 'R' -- restatement
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the following version
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -1028,7 +1253,7 @@ BEGIN
         i.AC_ID_part,
         i.PR_ID_in,
         ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
-        i.AC_part_PR_in_RAT_got_Positor,
+        ISNULL(i.AC_part_PR_in_RAT_got_Positor, i.Positor),
         i.AC_part_PR_in_RAT_got_PositedAt,
         i.AC_part_PR_in_RAT_got_Reliability
     FROM
@@ -1051,10 +1276,41 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_part_PR_in_RAT_got_Assertion))
         RAISERROR('The computed assertion column AC_part_PR_in_RAT_got_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_part_PR_in_RAT_got_ID))
+        RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID_part))
         RAISERROR('The identity column AC_ID_part is not updatable.', 16, 1);
     IF(UPDATE(PR_ID_in))
         RAISERROR('The identity column PR_ID_in is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [dbo].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        i.AC_part_PR_in_RAT_got_ID,
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        i.AC_part_PR_in_RAT_got_ID is not null
+    AND (
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got,
         AC_part_PR_in_RAT_got_ChangedAt,
@@ -1067,25 +1323,57 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_part_PR_in_RAT_got,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
         CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
-        CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.RAT_ID_got is null
-            THEN 0
-            WHEN UPDATE(AC_part_PR_in_RAT_got_Reliability) THEN i.AC_part_PR_in_RAT_got_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
     FROM
         inserted i
     LEFT JOIN
         [dbo].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating;
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                AND
+                    d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1180,7 +1468,28 @@ BEGIN
     WHERE
         i.ST_ID_at is not null
     AND
-        i.PR_ID_isPlaying is not null;
+        i.PR_ID_isPlaying is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_at_PR_isPlaying_Posit] p
+            JOIN
+                [dbo].[ST_at_PR_isPlaying_Annex] a
+            ON
+                a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            WHERE
+                p.ST_ID_at = i.ST_ID_at
+            AND
+                p.PR_ID_isPlaying = i.PR_ID_isPlaying
+            AND
+                p.ST_at_PR_isPlaying_ChangedAt = ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Positor = ISNULL(i.ST_at_PR_isPlaying_Positor, 0)
+            AND
+                a.ST_at_PR_isPlaying_PositedAt = ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(ST_at_PR_isPlaying_Version),
         @currentVersion = 0
@@ -1293,7 +1602,7 @@ BEGIN
         i.ST_at_PR_isPlaying_ChangedAt,
         i.ST_ID_at,
         i.PR_ID_isPlaying,
-        i.ST_at_PR_isPlaying_Positor,
+        ISNULL(i.ST_at_PR_isPlaying_Positor, i.Positor),
         i.ST_at_PR_isPlaying_PositedAt,
         i.ST_at_PR_isPlaying_Reliability
     FROM
@@ -1394,7 +1703,28 @@ BEGIN
     AND
         i.AC_ID_child is not null
     AND
-        i.PAT_ID_having is not null;
+        i.PAT_ID_having is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_parent_AC_child_PAT_having_Posit] p
+            JOIN
+                [dbo].[AC_parent_AC_child_PAT_having_Annex] a
+            ON
+                a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            WHERE
+                p.AC_ID_parent = i.AC_ID_parent
+            AND
+                p.AC_ID_child = i.AC_ID_child
+            AND
+                p.PAT_ID_having = i.PAT_ID_having
+            AND
+                a.AC_parent_AC_child_PAT_having_Positor = ISNULL(i.AC_parent_AC_child_PAT_having_Positor, 0)
+            AND
+                a.AC_parent_AC_child_PAT_having_PositedAt = ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_parent_AC_child_PAT_having_Version),
         @currentVersion = 0
@@ -1507,7 +1837,7 @@ BEGIN
         i.AC_ID_parent,
         i.AC_ID_child,
         ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
-        i.AC_parent_AC_child_PAT_having_Positor,
+        ISNULL(i.AC_parent_AC_child_PAT_having_Positor, i.Positor),
         i.AC_parent_AC_child_PAT_having_PositedAt,
         i.AC_parent_AC_child_PAT_having_Reliability
     FROM
@@ -1604,7 +1934,28 @@ BEGIN
     FROM
         inserted i
     WHERE
-        i.EV_ID_of is not null;
+        i.EV_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_content_ST_location_EV_of_Posit] p
+            JOIN
+                [dbo].[PR_content_ST_location_EV_of_Annex] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            WHERE
+                p.PR_ID_content = i.PR_ID_content
+            AND
+                p.ST_ID_location = i.ST_ID_location
+            AND
+                p.EV_ID_of = i.EV_ID_of
+            AND
+                a.PR_content_ST_location_EV_of_Positor = ISNULL(i.PR_content_ST_location_EV_of_Positor, 0)
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(PR_content_ST_location_EV_of_Version),
         @currentVersion = 0
@@ -1717,7 +2068,7 @@ BEGIN
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        i.PR_content_ST_location_EV_of_Positor,
+        ISNULL(i.PR_content_ST_location_EV_of_Positor, i.Positor),
         i.PR_content_ST_location_EV_of_PositedAt,
         i.PR_content_ST_location_EV_of_Reliability
     FROM
@@ -1736,8 +2087,36 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(PR_content_ST_location_EV_of_Assertion))
         RAISERROR('The computed assertion column PR_content_ST_location_EV_of_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(PR_content_ST_location_EV_of_ID))
+        RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID_of))
         RAISERROR('The identity column EV_ID_of is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [dbo].[PR_content_ST_location_EV_of_Annex] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_content_ST_location_EV_of_ID,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Positor) THEN i.PR_content_ST_location_EV_of_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.PR_content_ST_location_EV_of_ID is not null
+    AND (
+        i.PR_ID_content is null
+    OR
+        i.ST_ID_location is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[PR_content_ST_location_EV_of] (
         Metadata_PR_content_ST_location_EV_of,
         PR_ID_content,
@@ -1752,19 +2131,37 @@ BEGIN
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        CASE WHEN UPDATE(PR_content_ST_location_EV_of_Positor) THEN i.PR_content_ST_location_EV_of_Positor ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Positor) THEN i.PR_content_ST_location_EV_of_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.PR_ID_content is null
-            OR
-                i.ST_ID_location is null
-            THEN 0
-            WHEN UPDATE(PR_content_ST_location_EV_of_Reliability) THEN i.PR_content_ST_location_EV_of_Reliability
-            ELSE 1
-        END
+        ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_content_ST_location_EV_of_Positor = i.PR_content_ST_location_EV_of_Positor
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.PR_content_ST_location_EV_of_Reliability = ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
