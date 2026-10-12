@@ -2701,6 +2701,183 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [dbo].[it_EV_DAT_Event_Date] ON [dbo].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_DAT_EV_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_DAT_Event_Date] x
+        ON
+            x.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+        WHERE NOT (
+            x.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_DAT_Event_Date for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[EV_DAT_Event_Date] (
+        Metadata_EV_DAT,
+        EV_DAT_EV_ID,
+        EV_DAT_Event_Date
+    )
+    SELECT
+        Metadata_EV_DAT,
+        EV_DAT_EV_ID,
+        EV_DAT_Event_Date
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_DAT_EV_ID
+        FROM
+            [dbo].[EV_DAT_Event_Date] x
+        WHERE
+            x.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+        AND
+            x.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+    ); 
+END
+GO 
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [dbo].[it_EV_AUD_Event_Audience] ON [dbo].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_AUD_EV_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_AUD_Event_Audience] x
+        ON
+            x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+        WHERE NOT (
+            x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_AUD_Event_Audience for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[EV_AUD_Event_Audience] (
+        Metadata_EV_AUD,
+        EV_AUD_EV_ID,
+        EV_AUD_Event_Audience
+    )
+    SELECT
+        Metadata_EV_AUD,
+        EV_AUD_EV_ID,
+        EV_AUD_Event_Audience
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_AUD_EV_ID
+        FROM
+            [dbo].[EV_AUD_Event_Audience] x
+        WHERE
+            x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+        AND
+            x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+    ); 
+END
+GO 
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [dbo].[it_EV_REV_Event_Revenue] ON [dbo].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_REV_EV_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_REV_Event_Revenue] x
+        ON
+            x.EV_REV_EV_ID = i.EV_REV_EV_ID
+        WHERE NOT (
+            x.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_REV_Event_Revenue for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[EV_REV_Event_Revenue] (
+        Metadata_EV_REV,
+        EV_REV_EV_ID,
+        EV_REV_Event_Revenue
+    )
+    SELECT
+        Metadata_EV_REV,
+        EV_REV_EV_ID,
+        EV_REV_Event_Revenue
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_REV_EV_ID
+        FROM
+            [dbo].[EV_REV_Event_Revenue] x
+        WHERE
+            x.EV_REV_EV_ID = i.EV_REV_EV_ID
+        AND
+            x.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+    ); 
+END
+GO 
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.it_ST_NAM_Stage_Name', 'TR') IS NOT NULL
@@ -2745,6 +2922,29 @@ BEGIN
         AND
             x.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
     ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_NAM_ST_ID,
+            i.ST_NAM_ChangedAt
+        FROM
+            @ST_NAM_Stage_Name i
+        JOIN
+            [dbo].[ST_NAM_Stage_Name] x
+        ON
+            x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
+        AND
+            x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_NAM_Stage_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [dbo].[ST_NAM_Stage_Name] (
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
@@ -2762,6 +2962,65 @@ BEGIN
         ST_NAM_StatementType = 'P';
 END
 GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_LOC_Stage_Location instead of INSERT trigger on ST_LOC_Stage_Location
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_ST_LOC_Stage_Location', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_ST_LOC_Stage_Location];
+GO
+CREATE TRIGGER [dbo].[it_ST_LOC_Stage_Location] ON [dbo].[ST_LOC_Stage_Location]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_LOC_ST_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[ST_LOC_Stage_Location] x
+        ON
+            x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
+        WHERE NOT (
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_LOC_Stage_Location for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[ST_LOC_Stage_Location] (
+        Metadata_ST_LOC,
+        ST_LOC_ST_ID,
+        ST_LOC_Stage_Location
+    )
+    SELECT
+        Metadata_ST_LOC,
+        ST_LOC_ST_ID,
+        ST_LOC_Stage_Location
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.ST_LOC_ST_ID
+        FROM
+            [dbo].[ST_LOC_Stage_Location] x
+        WHERE
+            x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
+        AND
+            x.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+    ); 
+END
+GO 
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_AVG_Stage_Average instead of INSERT trigger on ST_AVG_Stage_Average
 -----------------------------------------------------------------------------------------------------------------------
@@ -2807,6 +3066,29 @@ BEGIN
         AND
             x.ST_AVG_UTL_ID = i.ST_AVG_UTL_ID
     ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_AVG_ST_ID,
+            i.ST_AVG_ChangedAt
+        FROM
+            @ST_AVG_Stage_Average i
+        JOIN
+            [dbo].[ST_AVG_Stage_Average] x
+        ON
+            x.ST_AVG_ST_ID = i.ST_AVG_ST_ID
+        AND
+            x.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_AVG_Stage_Average for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @ST_AVG_Stage_Average
     SELECT
         i.ST_AVG_ST_ID,
@@ -2883,6 +3165,65 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_MIN_Stage_Minimum instead of INSERT trigger on ST_MIN_Stage_Minimum
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_ST_MIN_Stage_Minimum', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_ST_MIN_Stage_Minimum];
+GO
+CREATE TRIGGER [dbo].[it_ST_MIN_Stage_Minimum] ON [dbo].[ST_MIN_Stage_Minimum]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_MIN_ST_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[ST_MIN_Stage_Minimum] x
+        ON
+            x.ST_MIN_ST_ID = i.ST_MIN_ST_ID
+        WHERE NOT (
+            x.ST_MIN_UTL_ID = i.ST_MIN_UTL_ID
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_MIN_Stage_Minimum for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[ST_MIN_Stage_Minimum] (
+        Metadata_ST_MIN,
+        ST_MIN_ST_ID,
+        ST_MIN_UTL_ID
+    )
+    SELECT
+        Metadata_ST_MIN,
+        ST_MIN_ST_ID,
+        ST_MIN_UTL_ID
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.ST_MIN_ST_ID
+        FROM
+            [dbo].[ST_MIN_Stage_Minimum] x
+        WHERE
+            x.ST_MIN_ST_ID = i.ST_MIN_ST_ID
+        AND
+            x.ST_MIN_UTL_ID = i.ST_MIN_UTL_ID
+    ); 
+END
+GO 
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_AC_NAM_Actor_Name instead of INSERT trigger on AC_NAM_Actor_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.it_AC_NAM_Actor_Name', 'TR') IS NOT NULL
@@ -2927,6 +3268,29 @@ BEGIN
         AND
             x.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
     ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_NAM_AC_ID,
+            i.AC_NAM_ChangedAt
+        FROM
+            @AC_NAM_Actor_Name i
+        JOIN
+            [dbo].[AC_NAM_Actor_Name] x
+        ON
+            x.AC_NAM_AC_ID = i.AC_NAM_AC_ID
+        AND
+            x.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_NAM_Actor_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [dbo].[AC_NAM_Actor_Name] (
         Metadata_AC_NAM,
         AC_NAM_AC_ID,
@@ -2944,6 +3308,65 @@ BEGIN
         AC_NAM_StatementType = 'P';
 END
 GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_GEN_Actor_Gender instead of INSERT trigger on AC_GEN_Actor_Gender
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_AC_GEN_Actor_Gender', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_AC_GEN_Actor_Gender];
+GO
+CREATE TRIGGER [dbo].[it_AC_GEN_Actor_Gender] ON [dbo].[AC_GEN_Actor_Gender]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_GEN_AC_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[AC_GEN_Actor_Gender] x
+        ON
+            x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
+        WHERE NOT (
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_GEN_Actor_Gender for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[AC_GEN_Actor_Gender] (
+        Metadata_AC_GEN,
+        AC_GEN_AC_ID,
+        AC_GEN_GEN_ID
+    )
+    SELECT
+        Metadata_AC_GEN,
+        AC_GEN_AC_ID,
+        AC_GEN_GEN_ID
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.AC_GEN_AC_ID
+        FROM
+            [dbo].[AC_GEN_Actor_Gender] x
+        WHERE
+            x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
+        AND
+            x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
+    ); 
+END
+GO 
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_AC_PLV_Actor_ProfessionalLevel instead of INSERT trigger on AC_PLV_Actor_ProfessionalLevel
 -----------------------------------------------------------------------------------------------------------------------
@@ -2989,6 +3412,29 @@ BEGIN
         AND
             x.AC_PLV_PLV_ID = i.AC_PLV_PLV_ID
     ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_PLV_AC_ID,
+            i.AC_PLV_ChangedAt
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel i
+        JOIN
+            [dbo].[AC_PLV_Actor_ProfessionalLevel] x
+        ON
+            x.AC_PLV_AC_ID = i.AC_PLV_AC_ID
+        AND
+            x.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel] (
         Metadata_AC_PLV,
         AC_PLV_AC_ID,
@@ -3006,6 +3452,65 @@ BEGIN
         AC_PLV_StatementType = 'P';
 END
 GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_NAM_Program_Name instead of INSERT trigger on PR_NAM_Program_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_PR_NAM_Program_Name', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_PR_NAM_Program_Name];
+GO
+CREATE TRIGGER [dbo].[it_PR_NAM_Program_Name] ON [dbo].[PR_NAM_Program_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    -- another value for an entity that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_NAM_PR_ID
+        FROM
+            inserted i
+        JOIN
+            [dbo].[PR_NAM_Program_Name] x
+        ON
+            x.PR_NAM_PR_ID = i.PR_NAM_PR_ID
+        WHERE NOT (
+            x.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_NAM_Program_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[PR_NAM_Program_Name] (
+        Metadata_PR_NAM,
+        PR_NAM_PR_ID,
+        PR_NAM_Program_Name
+    )
+    SELECT
+        Metadata_PR_NAM,
+        PR_NAM_PR_ID,
+        PR_NAM_Program_Name
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.PR_NAM_PR_ID
+        FROM
+            [dbo].[PR_NAM_Program_Name] x
+        WHERE
+            x.PR_NAM_PR_ID = i.PR_NAM_PR_ID
+        AND
+            x.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+    ); 
+END
+GO 
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_PR_LEN_Program_Length instead of INSERT trigger on PR_LEN_Program_Length
 -----------------------------------------------------------------------------------------------------------------------
@@ -3051,6 +3556,29 @@ BEGIN
         AND
             x.PR_LEN_Program_Length = i.PR_LEN_Program_Length
     ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_LEN_PR_ID,
+            i.PR_LEN_ChangedAt
+        FROM
+            @PR_LEN_Program_Length i
+        JOIN
+            [dbo].[PR_LEN_Program_Length] x
+        ON
+            x.PR_LEN_PR_ID = i.PR_LEN_PR_ID
+        AND
+            x.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_LEN_Program_Length for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @PR_LEN_Program_Length
     SELECT
         i.PR_LEN_PR_ID,
@@ -3341,8 +3869,17 @@ BEGIN
             i.ST_NAM_Stage_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_NAM_Stage_Name is not null;
+            i.ST_NAM_Stage_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+        );
     END
     IF(UPDATE(ST_LOC_ST_ID))
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
@@ -3363,8 +3900,16 @@ BEGIN
             i.ST_LOC_Stage_Location
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_LOC_Stage_Location is not null;
+            i.ST_LOC_Stage_Location is not null
+        AND ( -- a value that is left as it is states nothing
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+        );
     END
     IF(UPDATE(ST_AVG_ST_ID))
         RAISERROR('The foreign key column ST_AVG_ST_ID is not updatable.', 16, 1);
@@ -3394,8 +3939,17 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            d.ST_AVG_UTL_ID is null OR
+            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+        );
     END
     IF(UPDATE(ST_MIN_ST_ID))
         RAISERROR('The foreign key column ST_MIN_ST_ID is not updatable.', 16, 1);
@@ -3420,8 +3974,16 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.ST_MIN_UTL_ID is null OR
+            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
+        );
         SELECT
             i.ST_MIN_ST_ID
         INTO
@@ -3729,8 +4291,17 @@ BEGIN
             i.AC_NAM_Actor_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            i.AC_NAM_Actor_Name is not null;
+            i.AC_NAM_Actor_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+        );
     END
     IF(UPDATE(AC_GEN_AC_ID))
         RAISERROR('The foreign key column AC_GEN_AC_ID is not updatable.', 16, 1);
@@ -3755,8 +4326,16 @@ BEGIN
             [dbo].[GEN_Gender] [kGEN]
         ON
             [kGEN].GEN_Gender = i.AC_GEN_GEN_Gender
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null;
+            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.AC_GEN_GEN_ID is null OR
+            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
+        );
     END
     IF(UPDATE(AC_PLV_AC_ID))
         RAISERROR('The foreign key column AC_PLV_AC_ID is not updatable.', 16, 1);
@@ -3786,8 +4365,17 @@ BEGIN
             [dbo].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dbo.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null;
+            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            d.AC_PLV_PLV_ID is null OR
+            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+        );
     END
 END
 GO
@@ -3988,8 +4576,16 @@ BEGIN
             i.PR_NAM_Program_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_NAM_Program_Name is not null;
+            i.PR_NAM_Program_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+        );
     END
     IF(UPDATE(PR_LEN_PR_ID))
         RAISERROR('The foreign key column PR_LEN_PR_ID is not updatable.', 16, 1);
@@ -4015,8 +4611,17 @@ BEGIN
             i.PR_LEN_Program_Length
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_LEN_Program_Length is not null;
+            i.PR_LEN_Program_Length is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+        );
     END
 END
 GO
@@ -4099,23 +4704,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID int not null
-    );
-    INSERT INTO [dbo].[EV_Event] (
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID int not null,
         Metadata_EV int not null,
@@ -4129,40 +4717,55 @@ BEGIN
         Metadata_EV_REV int null,
         EV_REV_Event_Revenue decimal(19,4) null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [dbo].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
         i.EV_REV_Event_Revenue
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            EV_DAT_EV_ID,
-            Metadata_EV_DAT,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            Metadata_EV_AUD,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            Metadata_EV_REV,
-            EV_REV_Event_Revenue,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        i.EV_REV_Event_Revenue
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [dbo].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_DAT_EV_ID,
@@ -4235,8 +4838,16 @@ BEGIN
             i.EV_DAT_Event_Date
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_DAT_Event_Date is not null;
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        );
     END
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
@@ -4257,8 +4868,16 @@ BEGIN
             i.EV_AUD_Event_Audience
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_AUD_Event_Audience is not null;
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        );
     END
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
@@ -4279,8 +4898,16 @@ BEGIN
             i.EV_REV_Event_Revenue
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_REV_Event_Revenue is not null;
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        );
     END
 END
 GO
@@ -5398,7 +6025,29 @@ BEGIN
     LEFT JOIN
         [dbo].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing; 
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -5424,6 +6073,40 @@ BEGIN
         AND
             d.ONG_ID_currently = tie.ONG_ID_currently
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_subset_PN_of instead of INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_AC_subset_PN_of', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_AC_subset_PN_of];
+GO
+CREATE TRIGGER [dbo].[it_AC_subset_PN_of] ON [dbo].[AC_subset_PN_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of, 
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_subset_PN_of] x
+        WHERE 
+            x.AC_ID_subset = i.AC_ID_subset
+        AND
+            x.PN_ID_of = i.PN_ID_of
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -5459,6 +6142,34 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    INSERT INTO [dbo].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_ID_subset,
+        i.PN_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- values that are left as they are state nothing
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -5480,6 +6191,40 @@ BEGIN
         AND
             d.PN_ID_of = tie.PN_ID_of
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itEV_in_AC_wasCast instead of INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_in_AC_wasCast', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_in_AC_wasCast];
+GO
+CREATE TRIGGER [dbo].[it_EV_in_AC_wasCast] ON [dbo].[EV_in_AC_wasCast]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[EV_in_AC_wasCast] (
+        Metadata_EV_in_AC_wasCast, 
+        EV_ID_in,
+        AC_ID_wasCast
+    )
+    SELECT
+        Metadata_EV_in_AC_wasCast,
+        EV_ID_in,
+        AC_ID_wasCast
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_in_AC_wasCast] x
+        WHERE 
+            x.EV_ID_in = i.EV_ID_in
+        AND
+            x.AC_ID_wasCast = i.AC_ID_wasCast
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -5574,6 +6319,32 @@ BEGIN
         AND
             x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
     );
+    -- other values for identifiers that already have values at that time are a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_part,
+            i.PR_ID_in,
+            i.AC_part_PR_in_RAT_got_ChangedAt
+        FROM
+            @inserted i
+        JOIN
+            [dbo].[AC_part_PR_in_RAT_got] x
+        ON
+            x.AC_ID_part = i.AC_ID_part
+        AND
+            x.PR_ID_in = i.PR_ID_in
+        AND
+            x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got, 
         AC_part_PR_in_RAT_got_ChangedAt,
@@ -5656,7 +6427,25 @@ BEGIN
     LEFT JOIN
         [dbo].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating; 
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_part = i.AC_ID_part
+                AND
+                    d.PR_ID_in = i.PR_ID_in
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -5790,6 +6579,44 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_parent_AC_child_PAT_having instead of INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_AC_parent_AC_child_PAT_having', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_AC_parent_AC_child_PAT_having];
+GO
+CREATE TRIGGER [dbo].[it_AC_parent_AC_child_PAT_having] ON [dbo].[AC_parent_AC_child_PAT_having]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[AC_parent_AC_child_PAT_having] (
+        Metadata_AC_parent_AC_child_PAT_having, 
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    )
+    SELECT
+        Metadata_AC_parent_AC_child_PAT_having,
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_parent_AC_child_PAT_having] x
+        WHERE 
+            x.AC_ID_parent = i.AC_ID_parent
+        AND
+            x.AC_ID_child = i.AC_ID_child
+        AND
+            x.PAT_ID_having = i.PAT_ID_having
+    );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_lAC_parent_AC_child_PAT_having instead of INSERT trigger on lAC_parent_AC_child_PAT_having
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TRIGGER [dbo].[it_lAC_parent_AC_child_PAT_having] ON [dbo].[lAC_parent_AC_child_PAT_having]
@@ -5840,6 +6667,69 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itPR_content_ST_location_EV_of instead of INSERT trigger on PR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_PR_content_ST_location_EV_of', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_PR_content_ST_location_EV_of];
+GO
+CREATE TRIGGER [dbo].[it_PR_content_ST_location_EV_of] ON [dbo].[PR_content_ST_location_EV_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- other values for identifiers that already have values are a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID_of
+        FROM
+            inserted i
+        JOIN
+            [dbo].[PR_content_ST_location_EV_of] x
+        ON
+            x.EV_ID_of = i.EV_ID_of
+        WHERE NOT (
+            x.PR_ID_content = i.PR_ID_content
+        AND
+            x.ST_ID_location = i.ST_ID_location
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_content_ST_location_EV_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[PR_content_ST_location_EV_of] (
+        Metadata_PR_content_ST_location_EV_of, 
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    )
+    SELECT
+        Metadata_PR_content_ST_location_EV_of,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[PR_content_ST_location_EV_of] x
+        WHERE 
+            x.PR_ID_content = i.PR_ID_content
+        AND
+            x.ST_ID_location = i.ST_ID_location
+        AND
+            x.EV_ID_of = i.EV_ID_of
+    );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_lPR_content_ST_location_EV_of instead of INSERT trigger on lPR_content_ST_location_EV_of
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TRIGGER [dbo].[it_lPR_content_ST_location_EV_of] ON [dbo].[lPR_content_ST_location_EV_of]
@@ -5876,6 +6766,38 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(EV_ID_of))
         RAISERROR('The identity column EV_ID_of is not updatable.', 16, 1);
+    INSERT INTO [dbo].[PR_content_ST_location_EV_of] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_ID_content,
+        i.ST_ID_location,
+        i.EV_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        ( -- values that are left as they are state nothing
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------

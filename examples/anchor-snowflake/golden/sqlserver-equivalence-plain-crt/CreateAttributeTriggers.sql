@@ -11,6 +11,450 @@
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [dbo].[it_EV_DAT_Event_Date] ON [dbo].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_DAT_Event_Date TABLE (
+        EV_DAT_EV_ID int not null,
+        EV_DAT_Positor tinyint not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Assertion char(1) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_Version bigint not null,
+        EV_DAT_StatementType char(1) not null,
+        primary key(
+            EV_DAT_Version,
+            EV_DAT_Positor,
+            EV_DAT_EV_ID
+        )
+    );
+    INSERT INTO @EV_DAT_Event_Date
+    SELECT
+        i.EV_DAT_EV_ID,
+        i.EV_DAT_Positor,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Reliability,
+        case
+            when i.EV_DAT_Reliability > 0 then '+'
+            when i.EV_DAT_Reliability = 0 then '?'
+            when i.EV_DAT_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_DAT_Event_Date,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_DAT_Positor,
+                i.EV_DAT_EV_ID
+            ORDER BY
+                i.EV_DAT_PositedAt ASC,
+                i.EV_DAT_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_DAT_Event_Date_Posit] p
+        JOIN
+            [dbo].[EV_DAT_Event_Date_Annex] a
+        ON
+            a.EV_DAT_ID = p.EV_DAT_ID
+        WHERE
+            p.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+        AND
+            a.EV_DAT_Positor = i.EV_DAT_Positor
+        AND
+            a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_DAT_Version),
+        @currentVersion = 0
+    FROM
+        @EV_DAT_Event_Date;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_DAT_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_DAT_ID
+                        FROM
+                            [dbo].[tEV_Event](v.EV_DAT_Positor, DEFAULT, v.EV_DAT_PositedAt, v.EV_DAT_Assertion) t
+                        WHERE
+                            t.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+                        AND
+                            t.EV_DAT_Reliability = v.EV_DAT_Reliability
+                        AND
+                            t.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_DAT_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_DAT_Event_Date v
+        LEFT JOIN
+            [dbo].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion;
+        INSERT INTO [dbo].[EV_DAT_Event_Date_Posit] (
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date
+        )
+        SELECT
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date
+        FROM
+            @EV_DAT_Event_Date
+        WHERE
+            EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('N');
+        INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
+            EV_DAT_ID,
+            EV_DAT_Positor,
+            EV_DAT_PositedAt,
+            EV_DAT_Reliability
+        )
+        SELECT
+            p.EV_DAT_ID,
+            v.EV_DAT_Positor,
+            v.EV_DAT_PositedAt,
+            v.EV_DAT_Reliability
+        FROM
+            @EV_DAT_Event_Date v
+        JOIN
+            [dbo].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [dbo].[it_EV_AUD_Event_Audience] ON [dbo].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_AUD_Event_Audience TABLE (
+        EV_AUD_EV_ID int not null,
+        EV_AUD_Positor tinyint not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Assertion char(1) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_Version bigint not null,
+        EV_AUD_StatementType char(1) not null,
+        primary key(
+            EV_AUD_Version,
+            EV_AUD_Positor,
+            EV_AUD_EV_ID
+        )
+    );
+    INSERT INTO @EV_AUD_Event_Audience
+    SELECT
+        i.EV_AUD_EV_ID,
+        i.EV_AUD_Positor,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Reliability,
+        case
+            when i.EV_AUD_Reliability > 0 then '+'
+            when i.EV_AUD_Reliability = 0 then '?'
+            when i.EV_AUD_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_AUD_Event_Audience,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_AUD_Positor,
+                i.EV_AUD_EV_ID
+            ORDER BY
+                i.EV_AUD_PositedAt ASC,
+                i.EV_AUD_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_AUD_Event_Audience_Posit] p
+        JOIN
+            [dbo].[EV_AUD_Event_Audience_Annex] a
+        ON
+            a.EV_AUD_ID = p.EV_AUD_ID
+        WHERE
+            p.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+        AND
+            a.EV_AUD_Positor = i.EV_AUD_Positor
+        AND
+            a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_AUD_Version),
+        @currentVersion = 0
+    FROM
+        @EV_AUD_Event_Audience;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_AUD_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_AUD_ID
+                        FROM
+                            [dbo].[tEV_Event](v.EV_AUD_Positor, DEFAULT, v.EV_AUD_PositedAt, v.EV_AUD_Assertion) t
+                        WHERE
+                            t.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+                        AND
+                            t.EV_AUD_Reliability = v.EV_AUD_Reliability
+                        AND
+                            t.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_AUD_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_AUD_Event_Audience v
+        LEFT JOIN
+            [dbo].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion;
+        INSERT INTO [dbo].[EV_AUD_Event_Audience_Posit] (
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience
+        )
+        SELECT
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience
+        FROM
+            @EV_AUD_Event_Audience
+        WHERE
+            EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('N');
+        INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
+            EV_AUD_ID,
+            EV_AUD_Positor,
+            EV_AUD_PositedAt,
+            EV_AUD_Reliability
+        )
+        SELECT
+            p.EV_AUD_ID,
+            v.EV_AUD_Positor,
+            v.EV_AUD_PositedAt,
+            v.EV_AUD_Reliability
+        FROM
+            @EV_AUD_Event_Audience v
+        JOIN
+            [dbo].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [dbo].[it_EV_REV_Event_Revenue] ON [dbo].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_REV_Event_Revenue TABLE (
+        EV_REV_EV_ID int not null,
+        EV_REV_Positor tinyint not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Assertion char(1) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_Version bigint not null,
+        EV_REV_StatementType char(1) not null,
+        primary key(
+            EV_REV_Version,
+            EV_REV_Positor,
+            EV_REV_EV_ID
+        )
+    );
+    INSERT INTO @EV_REV_Event_Revenue
+    SELECT
+        i.EV_REV_EV_ID,
+        i.EV_REV_Positor,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Reliability,
+        case
+            when i.EV_REV_Reliability > 0 then '+'
+            when i.EV_REV_Reliability = 0 then '?'
+            when i.EV_REV_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_REV_Event_Revenue,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_REV_Positor,
+                i.EV_REV_EV_ID
+            ORDER BY
+                i.EV_REV_PositedAt ASC,
+                i.EV_REV_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_REV_Event_Revenue_Posit] p
+        JOIN
+            [dbo].[EV_REV_Event_Revenue_Annex] a
+        ON
+            a.EV_REV_ID = p.EV_REV_ID
+        WHERE
+            p.EV_REV_EV_ID = i.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+        AND
+            a.EV_REV_Positor = i.EV_REV_Positor
+        AND
+            a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_REV_Version),
+        @currentVersion = 0
+    FROM
+        @EV_REV_Event_Revenue;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_REV_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_REV_ID
+                        FROM
+                            [dbo].[tEV_Event](v.EV_REV_Positor, DEFAULT, v.EV_REV_PositedAt, v.EV_REV_Assertion) t
+                        WHERE
+                            t.EV_REV_EV_ID = v.EV_REV_EV_ID
+                        AND
+                            t.EV_REV_Reliability = v.EV_REV_Reliability
+                        AND
+                            t.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_REV_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_REV_Event_Revenue v
+        LEFT JOIN
+            [dbo].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_REV_EV_ID = v.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion;
+        INSERT INTO [dbo].[EV_REV_Event_Revenue_Posit] (
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue
+        )
+        SELECT
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue
+        FROM
+            @EV_REV_Event_Revenue
+        WHERE
+            EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('N');
+        INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
+            EV_REV_ID,
+            EV_REV_Positor,
+            EV_REV_PositedAt,
+            EV_REV_Reliability
+        )
+        SELECT
+            p.EV_REV_ID,
+            v.EV_REV_Positor,
+            v.EV_REV_PositedAt,
+            v.EV_REV_Reliability
+        FROM
+            @EV_REV_Event_Revenue v
+        JOIN
+            [dbo].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_REV_EV_ID = v.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.it_ST_NAM_Stage_Name', 'TR') IS NOT NULL
@@ -66,7 +510,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[ST_NAM_Stage_Name_Posit] p
+        JOIN
+            [dbo].[ST_NAM_Stage_Name_Annex] a
+        ON
+            a.ST_NAM_ID = p.ST_NAM_ID
+        WHERE
+            p.ST_NAM_ST_ID = i.ST_NAM_ST_ID
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Checksum = dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max))) 
+        AND
+            a.ST_NAM_Positor = i.ST_NAM_Positor
+        AND
+            a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_NAM_Version),
         @currentVersion = 0
@@ -232,7 +696,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[ST_LOC_Stage_Location_Posit] p
+        JOIN
+            [dbo].[ST_LOC_Stage_Location_Annex] a
+        ON
+            a.ST_LOC_ID = p.ST_LOC_ID
+        WHERE
+            p.ST_LOC_ST_ID = i.ST_LOC_ST_ID
+        AND
+            p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+        AND
+            a.ST_LOC_Positor = i.ST_LOC_Positor
+        AND
+            a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_LOC_Version),
         @currentVersion = 0
@@ -365,7 +847,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[ST_AVG_Stage_Average_Posit] p
+        JOIN
+            [dbo].[ST_AVG_Stage_Average_Annex] a
+        ON
+            a.ST_AVG_ID = p.ST_AVG_ID
+        WHERE
+            p.ST_AVG_ST_ID = i.ST_AVG_ST_ID
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            p.ST_AVG_UTL_ID = i.ST_AVG_UTL_ID
+        AND
+            a.ST_AVG_Positor = i.ST_AVG_Positor
+        AND
+            a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_AVG_Version),
         @currentVersion = 0
@@ -407,7 +909,9 @@ BEGIN
                                     v.ST_AVG_PositedAt,
                                     v.ST_AVG_Assertion
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.ST_AVG_UTL_ID
                         WHERE
@@ -420,7 +924,7 @@ BEGIN
                                     v.ST_AVG_Assertion
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -449,7 +953,47 @@ BEGIN
         WHERE
             ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N');
+            ST_AVG_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            fol.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            0
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.ST_AVG_ID,
+                f.ST_AVG_UTL_ID
+            FROM
+                [dbo].[fST_AVG_Stage_Average](
+                    v.ST_AVG_Positor,
+                    v.ST_AVG_ChangedAt,
+                    v.ST_AVG_PositedAt
+                ) f
+            WHERE
+                f.ST_AVG_ST_ID = v.ST_AVG_ST_ID
+            AND
+                f.ST_AVG_ChangedAt > v.ST_AVG_ChangedAt
+            AND
+                f.ST_AVG_Assertion = v.ST_AVG_Assertion
+            ORDER BY
+                f.ST_AVG_ChangedAt ASC,
+                f.ST_AVG_PositedAt DESC
+        ) fol
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType = 'F'
+        AND
+            fol.ST_AVG_UTL_ID = v.ST_AVG_UTL_ID;
         INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
             ST_AVG_ID,
             ST_AVG_Positor,
@@ -474,7 +1018,7 @@ BEGIN
         WHERE
             v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('S','N','D');
+            ST_AVG_StatementType in ('S','N','D','F');
     END
 END
 GO
@@ -529,7 +1073,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[ST_MIN_Stage_Minimum_Posit] p
+        JOIN
+            [dbo].[ST_MIN_Stage_Minimum_Annex] a
+        ON
+            a.ST_MIN_ID = p.ST_MIN_ID
+        WHERE
+            p.ST_MIN_ST_ID = i.ST_MIN_ST_ID
+        AND
+            p.ST_MIN_UTL_ID = i.ST_MIN_UTL_ID
+        AND
+            a.ST_MIN_Positor = i.ST_MIN_Positor
+        AND
+            a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_MIN_Version),
         @currentVersion = 0
@@ -664,7 +1226,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_NAM_Actor_Name_Posit] p
+        JOIN
+            [dbo].[AC_NAM_Actor_Name_Annex] a
+        ON
+            a.AC_NAM_ID = p.AC_NAM_ID
+        WHERE
+            p.AC_NAM_AC_ID = i.AC_NAM_AC_ID
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Checksum = dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max))) 
+        AND
+            a.AC_NAM_Positor = i.AC_NAM_Positor
+        AND
+            a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_NAM_Version),
         @currentVersion = 0
@@ -828,7 +1410,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_GEN_Actor_Gender_Posit] p
+        JOIN
+            [dbo].[AC_GEN_Actor_Gender_Annex] a
+        ON
+            a.AC_GEN_ID = p.AC_GEN_ID
+        WHERE
+            p.AC_GEN_AC_ID = i.AC_GEN_AC_ID
+        AND
+            p.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
+        AND
+            a.AC_GEN_Positor = i.AC_GEN_Positor
+        AND
+            a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_GEN_Version),
         @currentVersion = 0
@@ -961,7 +1561,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        JOIN
+            [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+        ON
+            a.AC_PLV_ID = p.AC_PLV_ID
+        WHERE
+            p.AC_PLV_AC_ID = i.AC_PLV_AC_ID
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            p.AC_PLV_PLV_ID = i.AC_PLV_PLV_ID
+        AND
+            a.AC_PLV_Positor = i.AC_PLV_Positor
+        AND
+            a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_PLV_Version),
         @currentVersion = 0
@@ -1125,7 +1745,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[PR_NAM_Program_Name_Posit] p
+        JOIN
+            [dbo].[PR_NAM_Program_Name_Annex] a
+        ON
+            a.PR_NAM_ID = p.PR_NAM_ID
+        WHERE
+            p.PR_NAM_PR_ID = i.PR_NAM_PR_ID
+        AND
+            p.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+        AND
+            a.PR_NAM_Positor = i.PR_NAM_Positor
+        AND
+            a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_NAM_Version),
         @currentVersion = 0
@@ -1258,7 +1896,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[PR_LEN_Program_Length_Posit] p
+        JOIN
+            [dbo].[PR_LEN_Program_Length_Annex] a
+        ON
+            a.PR_LEN_ID = p.PR_LEN_ID
+        WHERE
+            p.PR_LEN_PR_ID = i.PR_LEN_PR_ID
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+        AND
+            a.PR_LEN_Positor = i.PR_LEN_Positor
+        AND
+            a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_LEN_Version),
         @currentVersion = 0
@@ -1300,7 +1958,9 @@ BEGIN
                                     v.PR_LEN_PositedAt,
                                     v.PR_LEN_Assertion
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.PR_LEN_Program_Length
                         WHERE
@@ -1313,7 +1973,7 @@ BEGIN
                                     v.PR_LEN_Assertion
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -1342,7 +2002,47 @@ BEGIN
         WHERE
             PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N');
+            PR_LEN_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            fol.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            0
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.PR_LEN_ID,
+                f.PR_LEN_Program_Length
+            FROM
+                [dbo].[fPR_LEN_Program_Length](
+                    v.PR_LEN_Positor,
+                    v.PR_LEN_ChangedAt,
+                    v.PR_LEN_PositedAt
+                ) f
+            WHERE
+                f.PR_LEN_PR_ID = v.PR_LEN_PR_ID
+            AND
+                f.PR_LEN_ChangedAt > v.PR_LEN_ChangedAt
+            AND
+                f.PR_LEN_Assertion = v.PR_LEN_Assertion
+            ORDER BY
+                f.PR_LEN_ChangedAt ASC,
+                f.PR_LEN_PositedAt DESC
+        ) fol
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType = 'F'
+        AND
+            fol.PR_LEN_Program_Length = v.PR_LEN_Program_Length;
         INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
             PR_LEN_ID,
             PR_LEN_Positor,
@@ -1367,7 +2067,7 @@ BEGIN
         WHERE
             v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('S','N','D');
+            PR_LEN_StatementType in ('S','N','D','F');
     END
 END
 GO

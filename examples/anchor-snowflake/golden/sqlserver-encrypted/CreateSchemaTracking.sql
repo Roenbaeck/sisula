@@ -24,7 +24,7 @@ INSERT INTO [dw].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.101.2" date="2026-09-25" time="12:50:25">
+   N'<schema format="0.101.3" date="2026-09-25" time="12:50:25">
 <metadata changingRange="datetime2" encapsulation="dw" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="true" />
 <description>
 Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.
@@ -139,7 +139,7 @@ Name of the actor, such as a stage name. Historized, since it may change over ti
 </description>
 </attribute>
 <attribute mnemonic="GEN" descriptor="Gender" knotRange="GEN">
-<metadata privacy="Ignore" encryptionGroup="PII" capsule="attributes" idempotent="false" deletable="false" />
+<metadata privacy="Ignore" capsule="attributes" idempotent="false" deletable="false" />
 <layout x="1361.11" y="14.63" fixed="false" />
 <description>
 Gender of the actor.

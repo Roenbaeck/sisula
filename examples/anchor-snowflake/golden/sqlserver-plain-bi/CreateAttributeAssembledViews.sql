@@ -5,6 +5,102 @@
 -- defined elsewhere.
 --
 -- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date assembled view of the posit and annex tables,
+-- pkEV_DAT_Event_Date optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_DAT_Event_Date', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_DAT_Event_Date]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_DAT_ID,
+        p.EV_ID,
+        p.EV_DAT_Event_Date,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Reliability
+    FROM
+        [dbo].[EV_DAT_Event_Date_Posit] p
+    JOIN
+        [dbo].[EV_DAT_Event_Date_Annex] a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
+    ON [dbo].[EV_DAT_Event_Date] (
+        EV_ID asc,
+        EV_DAT_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience assembled view of the posit and annex tables,
+-- pkEV_AUD_Event_Audience optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_AUD_Event_Audience', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_AUD_Event_Audience]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_AUD_ID,
+        p.EV_ID,
+        p.EV_AUD_Event_Audience,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Reliability
+    FROM
+        [dbo].[EV_AUD_Event_Audience_Posit] p
+    JOIN
+        [dbo].[EV_AUD_Event_Audience_Annex] a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
+    ON [dbo].[EV_AUD_Event_Audience] (
+        EV_ID asc,
+        EV_AUD_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue assembled view of the posit and annex tables,
+-- pkEV_REV_Event_Revenue optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_REV_Event_Revenue', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_REV_Event_Revenue]
+    WITH SCHEMABINDING AS
+    SELECT
+        p.EV_REV_ID,
+        p.EV_ID,
+        p.EV_REV_Event_Revenue,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Reliability
+    FROM
+        [dbo].[EV_REV_Event_Revenue_Posit] p
+    JOIN
+        [dbo].[EV_REV_Event_Revenue_Annex] a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
+    ON [dbo].[EV_REV_Event_Revenue] (
+        EV_ID asc,
+        EV_REV_PositedAt desc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name assembled view of the posit and annex tables,
 -- pkST_NAM_Stage_Name optional temporal consistency constraint
 -----------------------------------------------------------------------------------------------------------------------

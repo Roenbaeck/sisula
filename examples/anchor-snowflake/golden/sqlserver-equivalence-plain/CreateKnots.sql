@@ -13,7 +13,7 @@
 IF Object_ID('dbo.PAT_ParentalType_ID', 'U') IS NULL
 CREATE TABLE [dbo].[PAT_ParentalType_ID] (
     PAT_ID tinyint IDENTITY(1,1) not null,
-     bit null,
+    PAT_Dummy bit null,
     constraint pkPAT_ParentalType_ID primary key (
         PAT_ID asc
     )
@@ -27,7 +27,7 @@ CREATE TABLE [dbo].[PAT_ParentalType_EQ] (
     PAT_ID tinyint not null,
     PAT_EQ tinyint not null,
     PAT_ParentalType nvarchar(42) not null,
-     bit null,
+    PAT_Dummy bit null,
     constraint fkPAT_ParentalType_EQ foreign key (
         PAT_ID
     ) references [dbo].[PAT_ParentalType_ID](PAT_ID),
@@ -47,7 +47,7 @@ GO
 IF Object_ID('dbo.GEN_Gender_ID', 'U') IS NULL
 CREATE TABLE [dbo].[GEN_Gender_ID] (
     GEN_ID tinyint not null,
-     bit null,
+    GEN_Dummy bit null,
     constraint pkGEN_Gender_ID primary key (
         GEN_ID asc
     )
@@ -61,7 +61,7 @@ CREATE TABLE [dbo].[GEN_Gender_EQ] (
     GEN_ID tinyint not null,
     GEN_EQ tinyint not null,
     GEN_Gender nvarchar(42) not null,
-     bit null,
+    GEN_Dummy bit null,
     constraint fkGEN_Gender_EQ foreign key (
         GEN_ID
     ) references [dbo].[GEN_Gender_ID](GEN_ID),
@@ -112,7 +112,7 @@ GO
 IF Object_ID('dbo.ONG_Ongoing_ID', 'U') IS NULL
 CREATE TABLE [dbo].[ONG_Ongoing_ID] (
     ONG_ID tinyint not null,
-     bit null,
+    ONG_Dummy bit null,
     constraint pkONG_Ongoing_ID primary key (
         ONG_ID asc
     )
@@ -126,7 +126,7 @@ CREATE TABLE [dbo].[ONG_Ongoing_EQ] (
     ONG_ID tinyint not null,
     ONG_EQ tinyint not null,
     ONG_Ongoing nvarchar(3) not null,
-     bit null,
+    ONG_Dummy bit null,
     constraint fkONG_Ongoing_EQ foreign key (
         ONG_ID
     ) references [dbo].[ONG_Ongoing_ID](ONG_ID),
@@ -146,7 +146,7 @@ GO
 IF Object_ID('dbo.RAT_Rating_ID', 'U') IS NULL
 CREATE TABLE [dbo].[RAT_Rating_ID] (
     RAT_ID tinyint IDENTITY(1,1) not null,
-     bit null,
+    RAT_Dummy bit null,
     constraint pkRAT_Rating_ID primary key (
         RAT_ID asc
     )
@@ -160,7 +160,7 @@ CREATE TABLE [dbo].[RAT_Rating_EQ] (
     RAT_ID tinyint not null,
     RAT_EQ tinyint not null,
     RAT_Rating nvarchar(42) not null,
-     bit null,
+    RAT_Dummy bit null,
     constraint fkRAT_Rating_EQ foreign key (
         RAT_ID
     ) references [dbo].[RAT_Rating_ID](RAT_ID),

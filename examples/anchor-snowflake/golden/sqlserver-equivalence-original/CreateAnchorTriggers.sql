@@ -201,7 +201,7 @@ BEGIN
                 ELSE i.Metadata_ST_NAM
             END, i.Metadata_ST),
             ISNULL(i.ST_ID, i.ST_ID),
-            i.ST_NAM_EQ,
+            ISNULL(i.ST_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.ST_NAM_Stage_Name is null THEN i.ST_NAM_ChangedAt
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
@@ -209,8 +209,18 @@ BEGIN
             i.ST_NAM_Stage_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_NAM_Stage_Name is not null;
+            i.ST_NAM_Stage_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_EQ) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+        );
     END
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
@@ -229,12 +239,21 @@ BEGIN
                 ELSE i.Metadata_ST_LOC
             END, i.Metadata_ST),
             ISNULL(i.ST_ID, i.ST_ID),
-            i.ST_LOC_EQ,
+            ISNULL(i.ST_LOC_EQ, 0),
             i.ST_LOC_Stage_Location
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_LOC_Stage_Location is not null;
+            i.ST_LOC_Stage_Location is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_LOC_EQ) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+        );
     END
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
@@ -264,8 +283,17 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            d.UTL_ID is null OR
+            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END
+        );
     END
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
@@ -290,8 +318,16 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.UTL_ID is null OR
+            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END
+        );
         SELECT
             i.ST_ID
         INTO
@@ -602,8 +638,17 @@ BEGIN
         ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_NAM_Actor_Name as varbinary(max))) 
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            i.AC_NAM_Actor_Name is not null;
+            i.AC_NAM_Actor_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+        );
     END
     IF(UPDATE(AC_ID))
         RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
@@ -628,8 +673,16 @@ BEGIN
             [knots].[GEN_Gender] [kGEN]
         ON
             [kGEN].GEN_Checksum = dw.MD5(cast(i.GEN_Gender as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(GEN_ID) THEN i.GEN_ID ELSE [kGEN].GEN_ID END is not null;
+            CASE WHEN UPDATE(GEN_ID) THEN i.GEN_ID ELSE [kGEN].GEN_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.GEN_ID is null OR
+            d.GEN_ID <> CASE WHEN UPDATE(GEN_ID) THEN i.GEN_ID ELSE [kGEN].GEN_ID END
+        );
     END
     IF(UPDATE(AC_ID))
         RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
@@ -661,8 +714,17 @@ BEGIN
             [kPLV].PLV_Checksum = dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
         AND
             [kPLV].PLV_EQ = i.PLV_EQ
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END is not null;
+            CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            d.PLV_ID is null OR
+            d.PLV_ID <> CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END
+        );
     END
 END
 GO
@@ -860,8 +922,16 @@ BEGIN
             i.PR_NAM_Program_Name
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_NAM_Program_Name is not null;
+            i.PR_NAM_Program_Name is not null
+        AND ( -- a value that is left as it is states nothing
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+        );
     END
     IF(UPDATE(PR_ID))
         RAISERROR('The foreign key column PR_ID is not updatable.', 16, 1);
@@ -881,7 +951,7 @@ BEGIN
                 ELSE i.Metadata_PR_LEN
             END, i.Metadata_PR),
             ISNULL(i.PR_ID, i.PR_ID),
-            i.PR_LEN_EQ,
+            ISNULL(i.PR_LEN_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.PR_LEN_Program_Length is null THEN i.PR_LEN_ChangedAt
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
@@ -889,8 +959,18 @@ BEGIN
             i.PR_LEN_Program_Length
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_LEN_Program_Length is not null;
+            i.PR_LEN_Program_Length is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            UPDATE(PR_LEN_EQ) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+        );
     END
 END
 GO

@@ -222,21 +222,37 @@ BEGIN
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
             i.ST_NAM_Stage_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Reliability) AND NOT UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN d.ST_NAM_Checksum = dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max))) 
+                THEN i.ST_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.ST_NAM_Reliability
             END, 1)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
             i.ST_NAM_Stage_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_PositedAt) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Checksum <> dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max))) OR 
+            d.ST_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_NAM_Reliability
+            END, 1)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -294,15 +310,27 @@ BEGIN
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.ST_LOC_Reliability
             END, 1)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_LOC_ID is null
-        AND
             i.ST_LOC_Stage_Location is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_LOC_PositedAt) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_LOC_Reliability
+            END, 1)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -358,15 +386,16 @@ BEGIN
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Reliability) AND NOT UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
                 WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN d.ST_AVG_UTL_ID = CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+                THEN i.ST_AVG_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.ST_AVG_Reliability
             END, 1)
         FROM
@@ -375,11 +404,26 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
             CASE
                 WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            UPDATE(ST_AVG_PositedAt) OR
+            d.ST_AVG_UTL_ID is null OR
+            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_AVG_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_AVG_Reliability
+            END, 1)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -444,7 +488,7 @@ BEGIN
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.ST_MIN_Reliability
             END, 1)
         FROM
@@ -453,13 +497,25 @@ BEGIN
             [dbo].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
         WHERE
-            i.ST_MIN_ID is null
-        AND
             CASE
                 WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_MIN_PositedAt) OR
+            d.ST_MIN_UTL_ID is null OR
+            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_MIN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_MIN_Reliability
+            END, 1)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -511,60 +567,52 @@ BEGIN
         ST_NAM_Reliability
     )
     SELECT
-        p.ST_NAM_ID,
+        d.ST_NAM_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[ST_NAM_Stage_Name_Annex] p
-    ON
-        p.ST_NAM_ID = d.ST_NAM_ID;
+    WHERE
+        d.ST_NAM_ID is not null;
     INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
         ST_LOC_ID,
         ST_LOC_PositedAt,
         ST_LOC_Reliability
     )
     SELECT
-        p.ST_LOC_ID,
+        d.ST_LOC_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[ST_LOC_Stage_Location_Annex] p
-    ON
-        p.ST_LOC_ID = d.ST_LOC_ID;
+    WHERE
+        d.ST_LOC_ID is not null;
     INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
         ST_AVG_ID,
         ST_AVG_PositedAt,
         ST_AVG_Reliability
     )
     SELECT
-        p.ST_AVG_ID,
+        d.ST_AVG_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[ST_AVG_Stage_Average_Annex] p
-    ON
-        p.ST_AVG_ID = d.ST_AVG_ID;
+    WHERE
+        d.ST_AVG_ID is not null;
     INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
         ST_MIN_ID,
         ST_MIN_PositedAt,
         ST_MIN_Reliability
     )
     SELECT
-        p.ST_MIN_ID,
+        d.ST_MIN_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[ST_MIN_Stage_Minimum_Annex] p
-    ON
-        p.ST_MIN_ID = d.ST_MIN_ID;
+    WHERE
+        d.ST_MIN_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -755,21 +803,37 @@ BEGIN
             ISNULL(i.AC_NAM_AC_ID, i.AC_ID),
             i.AC_NAM_Actor_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Reliability) AND NOT UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN d.AC_NAM_Checksum = dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max))) 
+                THEN i.AC_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.AC_NAM_Reliability
             END, 1)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
             i.AC_NAM_Actor_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            UPDATE(AC_NAM_PositedAt) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Checksum <> dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max))) OR 
+            d.AC_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_NAM_Reliability
+            END, 1)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -831,7 +895,7 @@ BEGIN
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.AC_GEN_Reliability
             END, 1)
         FROM
@@ -840,13 +904,25 @@ BEGIN
             [dbo].[GEN_Gender] [kGEN]
         ON
             [kGEN].GEN_Gender = i.AC_GEN_GEN_Gender
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
-            i.AC_GEN_ID is null
-        AND
             CASE
                 WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
                 ELSE [kGEN].GEN_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_GEN_PositedAt) OR
+            d.AC_GEN_GEN_ID is null OR
+            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END OR
+            d.AC_GEN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_GEN_Reliability
+            END, 1)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -905,15 +981,16 @@ BEGIN
                 ELSE [kPLV].PLV_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Reliability) AND NOT UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
                 WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN d.AC_PLV_PLV_ID = CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+                THEN i.AC_PLV_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.AC_PLV_Reliability
             END, 1)
         FROM
@@ -922,11 +999,26 @@ BEGIN
             [dbo].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dbo.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
         WHERE
             CASE
                 WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
                 ELSE [kPLV].PLV_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            UPDATE(AC_PLV_PositedAt) OR
+            d.AC_PLV_PLV_ID is null OR
+            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.AC_PLV_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_PLV_Reliability
+            END, 1)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -981,45 +1073,39 @@ BEGIN
         AC_NAM_Reliability
     )
     SELECT
-        p.AC_NAM_ID,
+        d.AC_NAM_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[AC_NAM_Actor_Name_Annex] p
-    ON
-        p.AC_NAM_ID = d.AC_NAM_ID;
+    WHERE
+        d.AC_NAM_ID is not null;
     INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
         AC_GEN_ID,
         AC_GEN_PositedAt,
         AC_GEN_Reliability
     )
     SELECT
-        p.AC_GEN_ID,
+        d.AC_GEN_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[AC_GEN_Actor_Gender_Annex] p
-    ON
-        p.AC_GEN_ID = d.AC_GEN_ID;
+    WHERE
+        d.AC_GEN_ID is not null;
     INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
         AC_PLV_ID,
         AC_PLV_PositedAt,
         AC_PLV_Reliability
     )
     SELECT
-        p.AC_PLV_ID,
+        d.AC_PLV_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] p
-    ON
-        p.AC_PLV_ID = d.AC_PLV_ID;
+    WHERE
+        d.AC_PLV_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1164,15 +1250,27 @@ BEGIN
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.PR_NAM_Reliability
             END, 1)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
-            i.PR_NAM_ID is null
-        AND
             i.PR_NAM_Program_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_NAM_PositedAt) OR
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name OR
+            d.PR_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_NAM_Reliability
+            END, 1)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1224,21 +1322,37 @@ BEGIN
             ISNULL(i.PR_LEN_PR_ID, i.PR_ID),
             i.PR_LEN_Program_Length,
             cast(ISNULL(CASE
-                WHEN UPDATE(Reliability) AND NOT UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN d.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+                THEN i.PR_LEN_ChangedAt -- the shown version is asserted again
             END, @now) as date),
             cast(ISNULL(CASE
                 WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
                 WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
-                WHEN UPDATE(Reliability) THEN Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
                 ELSE i.PR_LEN_Reliability
             END, 1)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
         WHERE
             i.PR_LEN_Program_Length is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            UPDATE(PR_LEN_PositedAt) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length OR
+            d.PR_LEN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_LEN_Reliability
+            END, 1)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -1290,29 +1404,25 @@ BEGIN
         PR_NAM_Reliability
     )
     SELECT
-        p.PR_NAM_ID,
+        d.PR_NAM_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[PR_NAM_Program_Name_Annex] p
-    ON
-        p.PR_NAM_ID = d.PR_NAM_ID;
+    WHERE
+        d.PR_NAM_ID is not null;
     INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
         PR_LEN_ID,
         PR_LEN_PositedAt,
         PR_LEN_Reliability
     )
     SELECT
-        p.PR_LEN_ID,
+        d.PR_LEN_ID,
         @now,
         0
     FROM
         deleted d
-    JOIN
-        [dbo].[PR_LEN_Program_Length_Annex] p
-    ON
-        p.PR_LEN_ID = d.PR_LEN_ID;
+    WHERE
+        d.PR_LEN_ID is not null;
 END
 GO

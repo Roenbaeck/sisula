@@ -39,7 +39,6 @@ BEGIN
 END
 -- GROUP KEY ----------------------------------------------------------------------------------------------------------
 -- An encryption key used to encrypt the data in the attributes: 
---	AC_GEN_Actor_Gender
 --	AC_NAM_Actor_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF NOT EXISTS (SELECT * FROM sys.symmetric_keys WHERE [name] = 'PII')

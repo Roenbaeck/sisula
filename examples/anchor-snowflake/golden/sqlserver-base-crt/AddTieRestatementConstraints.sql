@@ -45,6 +45,7 @@ BEGIN
         SELECT
             COUNT(*)
         FROM (
+            SELECT * FROM (
             SELECT TOP 1
                 pre.AC_ID_partner,
                 pre.AC_ID_with,
@@ -68,7 +69,9 @@ BEGIN
             ORDER BY
                 pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
                 pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) previous
             UNION
+            SELECT * FROM (
             SELECT TOP 1
                 fol.AC_ID_partner,
                 fol.AC_ID_with,
@@ -92,6 +95,7 @@ BEGIN
             ORDER BY
                 fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
                 fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) following
         ) s
         WHERE
             s.AC_ID_partner = @AC_partner
@@ -139,6 +143,7 @@ BEGIN
         SELECT
             COUNT(*)
         FROM (
+            SELECT * FROM (
             SELECT TOP 1
                 pre.RAT_ID_got
             FROM
@@ -158,7 +163,9 @@ BEGIN
             ORDER BY
                 pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
                 pre.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) previous
             UNION
+            SELECT * FROM (
             SELECT TOP 1
                 fol.RAT_ID_got
             FROM
@@ -178,6 +185,7 @@ BEGIN
             ORDER BY
                 fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
                 fol.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) following
         ) s
         WHERE
             s.RAT_ID_got = @RAT_got

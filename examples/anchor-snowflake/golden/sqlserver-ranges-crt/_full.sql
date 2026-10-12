@@ -1027,6 +1027,232 @@ GO
 -- defined elsewhere.
 --
 -- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date assembled view of the posit and annex tables,
+-- pkEV_DAT_Event_Date optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_DAT_Event_Date', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_DAT_Event_Date]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_DAT,
+        p.EV_DAT_ID,
+        p.EV_DAT_EV_ID,
+        p.EV_DAT_Event_Date,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Who,
+        a.EV_DAT_Confidence,
+        a.EV_DAT_Stance
+    FROM
+        [attributes].[EV_DAT_Event_Date_Fact] p
+    JOIN
+        [attributes].[EV_DAT_Event_Date_Meta] a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
+    ON [attributes].[EV_DAT_Event_Date] (
+        EV_DAT_Stance desc, 
+        EV_DAT_EV_ID asc,
+        EV_DAT_PositedAt desc,
+        EV_DAT_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience assembled view of the posit and annex tables,
+-- pkEV_AUD_Event_Audience optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_AUD_Event_Audience', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_AUD_Event_Audience]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_AUD,
+        p.EV_AUD_ID,
+        p.EV_AUD_EV_ID,
+        p.EV_AUD_Event_Audience,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Who,
+        a.EV_AUD_Confidence,
+        a.EV_AUD_Stance
+    FROM
+        [attributes].[EV_AUD_Event_Audience_Fact] p
+    JOIN
+        [attributes].[EV_AUD_Event_Audience_Meta] a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
+    ON [attributes].[EV_AUD_Event_Audience] (
+        EV_AUD_Stance desc, 
+        EV_AUD_EV_ID asc,
+        EV_AUD_PositedAt desc,
+        EV_AUD_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue assembled view of the posit and annex tables,
+-- pkEV_REV_Event_Revenue optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_REV_Event_Revenue', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_REV_Event_Revenue]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_REV,
+        p.EV_REV_ID,
+        p.EV_REV_EV_ID,
+        p.EV_REV_Event_Revenue,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Who,
+        a.EV_REV_Confidence,
+        a.EV_REV_Stance
+    FROM
+        [attributes].[EV_REV_Event_Revenue_Fact] p
+    JOIN
+        [attributes].[EV_REV_Event_Revenue_Meta] a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
+    ON [attributes].[EV_REV_Event_Revenue] (
+        EV_REV_Stance desc, 
+        EV_REV_EV_ID asc,
+        EV_REV_PositedAt desc,
+        EV_REV_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_STA_Event_Status assembled view of the posit and annex tables,
+-- pkEV_STA_Event_Status optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_STA_Event_Status', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_STA_Event_Status]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_STA,
+        p.EV_STA_ID,
+        p.EV_STA_EV_ID,
+        p.EV_STA_Event_Status,
+        p.EV_STA_ChangedAt,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Who,
+        a.EV_STA_Confidence,
+        a.EV_STA_Stance
+    FROM
+        [attributes].[EV_STA_Event_Status_Fact] p
+    JOIN
+        [attributes].[EV_STA_Event_Status_Meta] a
+    ON
+        a.EV_STA_ID = p.EV_STA_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_STA_Event_Status]
+    ON [attributes].[EV_STA_Event_Status] (
+        EV_STA_Stance desc, 
+        EV_STA_EV_ID asc,
+        EV_STA_ChangedAt desc,
+        EV_STA_PositedAt desc,
+        EV_STA_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_UTL_Event_Utilization assembled view of the posit and annex tables,
+-- pkEV_UTL_Event_Utilization optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_UTL_Event_Utilization', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_UTL_Event_Utilization]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_UTL,
+        p.EV_UTL_ID,
+        p.EV_UTL_EV_ID,
+        p.EV_UTL_UTL_ID,
+        a.EV_UTL_PositedAt,
+        a.EV_UTL_Who,
+        a.EV_UTL_Confidence,
+        a.EV_UTL_Stance
+    FROM
+        [attributes].[EV_UTL_Event_Utilization_Fact] p
+    JOIN
+        [attributes].[EV_UTL_Event_Utilization_Meta] a
+    ON
+        a.EV_UTL_ID = p.EV_UTL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_UTL_Event_Utilization]
+    ON [attributes].[EV_UTL_Event_Utilization] (
+        EV_UTL_Stance desc, 
+        EV_UTL_EV_ID asc,
+        EV_UTL_PositedAt desc,
+        EV_UTL_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_LVL_Event_Level assembled view of the posit and annex tables,
+-- pkEV_LVL_Event_Level optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_LVL_Event_Level', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_LVL_Event_Level]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        p.EV_LVL_EV_ID,
+        p.EV_LVL_PLV_ID,
+        p.EV_LVL_ChangedAt,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Who,
+        a.EV_LVL_Confidence,
+        a.EV_LVL_Stance
+    FROM
+        [attributes].[EV_LVL_Event_Level_Fact] p
+    JOIN
+        [attributes].[EV_LVL_Event_Level_Meta] a
+    ON
+        a.EV_LVL_ID = p.EV_LVL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_LVL_Event_Level]
+    ON [attributes].[EV_LVL_Event_Level] (
+        EV_LVL_Stance desc, 
+        EV_LVL_EV_ID asc,
+        EV_LVL_ChangedAt desc,
+        EV_LVL_PositedAt desc,
+        EV_LVL_Who asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name assembled view of the posit and annex tables,
 -- pkST_NAM_Stage_Name optional temporal consistency constraint
 -----------------------------------------------------------------------------------------------------------------------
@@ -5577,6 +5803,996 @@ GO
 -- order to avoid unnecessary temporal duplicates.
 --
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [attributes].[it_EV_DAT_Event_Date] ON [attributes].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_DAT_Event_Date TABLE (
+        EV_DAT_EV_ID numeric(12,0) not null,
+        Metadata_EV_DAT bigint not null,
+        EV_DAT_Who smallint not null,
+        EV_DAT_PositedAt datetime2(3) not null,
+        EV_DAT_Confidence decimal(7,3) not null,
+        EV_DAT_Stance char(1) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_Version bigint not null,
+        EV_DAT_StatementType char(1) not null,
+        primary key(
+            EV_DAT_Version,
+            EV_DAT_Who,
+            EV_DAT_EV_ID
+        )
+    );
+    INSERT INTO @EV_DAT_Event_Date
+    SELECT
+        i.EV_DAT_EV_ID,
+        i.Metadata_EV_DAT,
+        i.EV_DAT_Who,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Confidence,
+        case
+            when i.EV_DAT_Confidence > 0.25 then '+'
+            when i.EV_DAT_Confidence = 0.25 then '?'
+            when i.EV_DAT_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_DAT_Event_Date,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_DAT_Who,
+                i.EV_DAT_EV_ID
+            ORDER BY
+                i.EV_DAT_PositedAt ASC,
+                i.EV_DAT_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_DAT_Event_Date_Fact] p
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Meta] a
+        ON
+            a.EV_DAT_ID = p.EV_DAT_ID
+        WHERE
+            p.EV_DAT_EV_ID = i.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+        AND
+            a.EV_DAT_Who = i.EV_DAT_Who
+        AND
+            a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_DAT_Version),
+        @currentVersion = 0
+    FROM
+        @EV_DAT_Event_Date;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_DAT_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_DAT_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_DAT_Who, DEFAULT, v.EV_DAT_PositedAt, v.EV_DAT_Stance) t
+                        WHERE
+                            t.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+                        AND
+                            t.EV_DAT_Confidence = v.EV_DAT_Confidence
+                        AND
+                            t.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_DAT_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_DAT_Event_Date v
+        LEFT JOIN
+            [attributes].[EV_DAT_Event_Date_Fact] p
+        ON
+            p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_DAT_Event_Date_Fact] (
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date
+        )
+        SELECT
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date
+        FROM
+            @EV_DAT_Event_Date
+        WHERE
+            EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('N');
+        INSERT INTO [attributes].[EV_DAT_Event_Date_Meta] (
+            Metadata_EV_DAT,
+            EV_DAT_ID,
+            EV_DAT_Who,
+            EV_DAT_PositedAt,
+            EV_DAT_Confidence
+        )
+        SELECT
+            v.Metadata_EV_DAT,
+            p.EV_DAT_ID,
+            v.EV_DAT_Who,
+            v.EV_DAT_PositedAt,
+            v.EV_DAT_Confidence
+        FROM
+            @EV_DAT_Event_Date v
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Fact] p
+        ON
+            p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [attributes].[it_EV_AUD_Event_Audience] ON [attributes].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_AUD_Event_Audience TABLE (
+        EV_AUD_EV_ID numeric(12,0) not null,
+        Metadata_EV_AUD bigint not null,
+        EV_AUD_Who smallint not null,
+        EV_AUD_PositedAt datetime2(3) not null,
+        EV_AUD_Confidence decimal(7,3) not null,
+        EV_AUD_Stance char(1) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_Version bigint not null,
+        EV_AUD_StatementType char(1) not null,
+        primary key(
+            EV_AUD_Version,
+            EV_AUD_Who,
+            EV_AUD_EV_ID
+        )
+    );
+    INSERT INTO @EV_AUD_Event_Audience
+    SELECT
+        i.EV_AUD_EV_ID,
+        i.Metadata_EV_AUD,
+        i.EV_AUD_Who,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Confidence,
+        case
+            when i.EV_AUD_Confidence > 0.25 then '+'
+            when i.EV_AUD_Confidence = 0.25 then '?'
+            when i.EV_AUD_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_AUD_Event_Audience,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_AUD_Who,
+                i.EV_AUD_EV_ID
+            ORDER BY
+                i.EV_AUD_PositedAt ASC,
+                i.EV_AUD_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_AUD_Event_Audience_Fact] p
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Meta] a
+        ON
+            a.EV_AUD_ID = p.EV_AUD_ID
+        WHERE
+            p.EV_AUD_EV_ID = i.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+        AND
+            a.EV_AUD_Who = i.EV_AUD_Who
+        AND
+            a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_AUD_Version),
+        @currentVersion = 0
+    FROM
+        @EV_AUD_Event_Audience;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_AUD_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_AUD_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_AUD_Who, DEFAULT, v.EV_AUD_PositedAt, v.EV_AUD_Stance) t
+                        WHERE
+                            t.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+                        AND
+                            t.EV_AUD_Confidence = v.EV_AUD_Confidence
+                        AND
+                            t.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_AUD_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_AUD_Event_Audience v
+        LEFT JOIN
+            [attributes].[EV_AUD_Event_Audience_Fact] p
+        ON
+            p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_AUD_Event_Audience_Fact] (
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience
+        )
+        SELECT
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience
+        FROM
+            @EV_AUD_Event_Audience
+        WHERE
+            EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('N');
+        INSERT INTO [attributes].[EV_AUD_Event_Audience_Meta] (
+            Metadata_EV_AUD,
+            EV_AUD_ID,
+            EV_AUD_Who,
+            EV_AUD_PositedAt,
+            EV_AUD_Confidence
+        )
+        SELECT
+            v.Metadata_EV_AUD,
+            p.EV_AUD_ID,
+            v.EV_AUD_Who,
+            v.EV_AUD_PositedAt,
+            v.EV_AUD_Confidence
+        FROM
+            @EV_AUD_Event_Audience v
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Fact] p
+        ON
+            p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [attributes].[it_EV_REV_Event_Revenue] ON [attributes].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_REV_Event_Revenue TABLE (
+        EV_REV_EV_ID numeric(12,0) not null,
+        Metadata_EV_REV bigint not null,
+        EV_REV_Who smallint not null,
+        EV_REV_PositedAt datetime2(3) not null,
+        EV_REV_Confidence decimal(7,3) not null,
+        EV_REV_Stance char(1) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_Version bigint not null,
+        EV_REV_StatementType char(1) not null,
+        primary key(
+            EV_REV_Version,
+            EV_REV_Who,
+            EV_REV_EV_ID
+        )
+    );
+    INSERT INTO @EV_REV_Event_Revenue
+    SELECT
+        i.EV_REV_EV_ID,
+        i.Metadata_EV_REV,
+        i.EV_REV_Who,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Confidence,
+        case
+            when i.EV_REV_Confidence > 0.25 then '+'
+            when i.EV_REV_Confidence = 0.25 then '?'
+            when i.EV_REV_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_REV_Event_Revenue,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_REV_Who,
+                i.EV_REV_EV_ID
+            ORDER BY
+                i.EV_REV_PositedAt ASC,
+                i.EV_REV_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_REV_Event_Revenue_Fact] p
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Meta] a
+        ON
+            a.EV_REV_ID = p.EV_REV_ID
+        WHERE
+            p.EV_REV_EV_ID = i.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+        AND
+            a.EV_REV_Who = i.EV_REV_Who
+        AND
+            a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_REV_Version),
+        @currentVersion = 0
+    FROM
+        @EV_REV_Event_Revenue;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_REV_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_REV_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_REV_Who, DEFAULT, v.EV_REV_PositedAt, v.EV_REV_Stance) t
+                        WHERE
+                            t.EV_REV_EV_ID = v.EV_REV_EV_ID
+                        AND
+                            t.EV_REV_Confidence = v.EV_REV_Confidence
+                        AND
+                            t.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_REV_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_REV_Event_Revenue v
+        LEFT JOIN
+            [attributes].[EV_REV_Event_Revenue_Fact] p
+        ON
+            p.EV_REV_EV_ID = v.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_REV_Event_Revenue_Fact] (
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue
+        )
+        SELECT
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue
+        FROM
+            @EV_REV_Event_Revenue
+        WHERE
+            EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('N');
+        INSERT INTO [attributes].[EV_REV_Event_Revenue_Meta] (
+            Metadata_EV_REV,
+            EV_REV_ID,
+            EV_REV_Who,
+            EV_REV_PositedAt,
+            EV_REV_Confidence
+        )
+        SELECT
+            v.Metadata_EV_REV,
+            p.EV_REV_ID,
+            v.EV_REV_Who,
+            v.EV_REV_PositedAt,
+            v.EV_REV_Confidence
+        FROM
+            @EV_REV_Event_Revenue v
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Fact] p
+        ON
+            p.EV_REV_EV_ID = v.EV_REV_EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_STA_Event_Status instead of INSERT trigger on EV_STA_Event_Status
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_STA_Event_Status', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_STA_Event_Status];
+GO
+CREATE TRIGGER [attributes].[it_EV_STA_Event_Status] ON [attributes].[EV_STA_Event_Status]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_STA_Event_Status TABLE (
+        EV_STA_EV_ID numeric(12,0) not null,
+        Metadata_EV_STA bigint not null,
+        EV_STA_ChangedAt datetime2 not null,
+        EV_STA_Who smallint not null,
+        EV_STA_PositedAt datetime2(3) not null,
+        EV_STA_Confidence decimal(7,3) not null,
+        EV_STA_Stance char(1) not null,
+        EV_STA_Event_Status nvarchar(20) not null,
+        EV_STA_Version bigint not null,
+        EV_STA_StatementType char(1) not null,
+        primary key(
+            EV_STA_Version,
+            EV_STA_Who,
+            EV_STA_EV_ID
+        )
+    );
+    INSERT INTO @EV_STA_Event_Status
+    SELECT
+        i.EV_STA_EV_ID,
+        i.Metadata_EV_STA,
+        i.EV_STA_ChangedAt,
+        i.EV_STA_Who,
+        i.EV_STA_PositedAt,
+        i.EV_STA_Confidence,
+        case
+            when i.EV_STA_Confidence > 0.25 then '+'
+            when i.EV_STA_Confidence = 0.25 then '?'
+            when i.EV_STA_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_STA_Event_Status,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_STA_Who,
+                i.EV_STA_EV_ID
+            ORDER BY
+                i.EV_STA_ChangedAt ASC,
+                i.EV_STA_PositedAt ASC,
+                i.EV_STA_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_STA_Event_Status_Fact] p
+        JOIN
+            [attributes].[EV_STA_Event_Status_Meta] a
+        ON
+            a.EV_STA_ID = p.EV_STA_ID
+        WHERE
+            p.EV_STA_EV_ID = i.EV_STA_EV_ID
+        AND
+            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = i.EV_STA_Event_Status
+        AND
+            a.EV_STA_Who = i.EV_STA_Who
+        AND
+            a.EV_STA_PositedAt = i.EV_STA_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_STA_Version),
+        @currentVersion = 0
+    FROM
+        @EV_STA_Event_Status;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_STA_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_STA_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_STA_Who, v.EV_STA_ChangedAt, v.EV_STA_PositedAt, v.EV_STA_Stance) t
+                        WHERE
+                            t.EV_STA_EV_ID = v.EV_STA_EV_ID
+                        AND
+                            t.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+                        AND
+                            t.EV_STA_Confidence = v.EV_STA_Confidence
+                        AND
+                            t.EV_STA_Event_Status = v.EV_STA_Event_Status
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_STA_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.EV_STA_Event_Status
+                        WHERE
+                            v.EV_STA_Event_Status =
+                                attributes.preEV_STA_Event_Status (
+                                    v.EV_STA_EV_ID,
+                                    v.EV_STA_Who,
+                                    v.EV_STA_ChangedAt,
+                                    v.EV_STA_PositedAt,
+                                    v.EV_STA_Stance
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.EV_STA_Event_Status
+                        WHERE
+                            v.EV_STA_Event_Status =
+                                attributes.folEV_STA_Event_Status (
+                                    v.EV_STA_EV_ID,
+                                    v.EV_STA_Who,
+                                    v.EV_STA_ChangedAt,
+                                    v.EV_STA_PositedAt,
+                                    v.EV_STA_Stance
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_STA_Event_Status v
+        LEFT JOIN
+            [attributes].[EV_STA_Event_Status_Fact] p
+        ON
+            p.EV_STA_EV_ID = v.EV_STA_EV_ID
+        AND
+            p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = v.EV_STA_Event_Status
+        WHERE
+            v.EV_STA_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_STA_Event_Status_Fact] (
+            EV_STA_EV_ID,
+            EV_STA_ChangedAt,
+            EV_STA_Event_Status
+        )
+        SELECT
+            EV_STA_EV_ID,
+            EV_STA_ChangedAt,
+            EV_STA_Event_Status
+        FROM
+            @EV_STA_Event_Status
+        WHERE
+            EV_STA_Version = @currentVersion
+        AND
+            EV_STA_StatementType in ('N','R');
+        INSERT INTO [attributes].[EV_STA_Event_Status_Meta] (
+            Metadata_EV_STA,
+            EV_STA_ID,
+            EV_STA_Who,
+            EV_STA_PositedAt,
+            EV_STA_Confidence
+        )
+        SELECT
+            v.Metadata_EV_STA,
+            p.EV_STA_ID,
+            v.EV_STA_Who,
+            v.EV_STA_PositedAt,
+            v.EV_STA_Confidence
+        FROM
+            @EV_STA_Event_Status v
+        JOIN
+            [attributes].[EV_STA_Event_Status_Fact] p
+        ON
+            p.EV_STA_EV_ID = v.EV_STA_EV_ID
+        AND
+            p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = v.EV_STA_Event_Status
+        WHERE
+            v.EV_STA_Version = @currentVersion
+        AND
+            EV_STA_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_UTL_Event_Utilization instead of INSERT trigger on EV_UTL_Event_Utilization
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_UTL_Event_Utilization', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_UTL_Event_Utilization];
+GO
+CREATE TRIGGER [attributes].[it_EV_UTL_Event_Utilization] ON [attributes].[EV_UTL_Event_Utilization]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_UTL_Event_Utilization TABLE (
+        EV_UTL_EV_ID numeric(12,0) not null,
+        Metadata_EV_UTL bigint not null,
+        EV_UTL_Who smallint not null,
+        EV_UTL_PositedAt datetime2(3) not null,
+        EV_UTL_Confidence decimal(7,3) not null,
+        EV_UTL_Stance char(1) not null,
+        EV_UTL_UTL_ID tinyint not null, 
+        EV_UTL_Version bigint not null,
+        EV_UTL_StatementType char(1) not null,
+        primary key(
+            EV_UTL_Version,
+            EV_UTL_Who,
+            EV_UTL_EV_ID
+        )
+    );
+    INSERT INTO @EV_UTL_Event_Utilization
+    SELECT
+        i.EV_UTL_EV_ID,
+        i.Metadata_EV_UTL,
+        i.EV_UTL_Who,
+        i.EV_UTL_PositedAt,
+        i.EV_UTL_Confidence,
+        case
+            when i.EV_UTL_Confidence > 0.25 then '+'
+            when i.EV_UTL_Confidence = 0.25 then '?'
+            when i.EV_UTL_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_UTL_UTL_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_UTL_Who,
+                i.EV_UTL_EV_ID
+            ORDER BY
+                i.EV_UTL_PositedAt ASC,
+                i.EV_UTL_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_UTL_Event_Utilization_Fact] p
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Meta] a
+        ON
+            a.EV_UTL_ID = p.EV_UTL_ID
+        WHERE
+            p.EV_UTL_EV_ID = i.EV_UTL_EV_ID
+        AND
+            p.EV_UTL_UTL_ID = i.EV_UTL_UTL_ID
+        AND
+            a.EV_UTL_Who = i.EV_UTL_Who
+        AND
+            a.EV_UTL_PositedAt = i.EV_UTL_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_UTL_Version),
+        @currentVersion = 0
+    FROM
+        @EV_UTL_Event_Utilization;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_UTL_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_UTL_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_UTL_Who, DEFAULT, v.EV_UTL_PositedAt, v.EV_UTL_Stance) t
+                        WHERE
+                            t.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+                        AND
+                            t.EV_UTL_Confidence = v.EV_UTL_Confidence
+                        AND
+                            t.EV_UTL_UTL_ID = v.EV_UTL_UTL_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_UTL_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_UTL_Event_Utilization v
+        LEFT JOIN
+            [attributes].[EV_UTL_Event_Utilization_Fact] p
+        ON
+            p.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+        AND
+            p.EV_UTL_UTL_ID = v.EV_UTL_UTL_ID
+        WHERE
+            v.EV_UTL_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization_Fact] (
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID
+        )
+        SELECT
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID
+        FROM
+            @EV_UTL_Event_Utilization
+        WHERE
+            EV_UTL_Version = @currentVersion
+        AND
+            EV_UTL_StatementType in ('N');
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization_Meta] (
+            Metadata_EV_UTL,
+            EV_UTL_ID,
+            EV_UTL_Who,
+            EV_UTL_PositedAt,
+            EV_UTL_Confidence
+        )
+        SELECT
+            v.Metadata_EV_UTL,
+            p.EV_UTL_ID,
+            v.EV_UTL_Who,
+            v.EV_UTL_PositedAt,
+            v.EV_UTL_Confidence
+        FROM
+            @EV_UTL_Event_Utilization v
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Fact] p
+        ON
+            p.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+        AND
+            p.EV_UTL_UTL_ID = v.EV_UTL_UTL_ID
+        WHERE
+            v.EV_UTL_Version = @currentVersion
+        AND
+            EV_UTL_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_LVL_Event_Level instead of INSERT trigger on EV_LVL_Event_Level
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_LVL_Event_Level', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_LVL_Event_Level];
+GO
+CREATE TRIGGER [attributes].[it_EV_LVL_Event_Level] ON [attributes].[EV_LVL_Event_Level]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_LVL_Event_Level TABLE (
+        EV_LVL_EV_ID numeric(12,0) not null,
+        Metadata_EV_LVL bigint not null,
+        EV_LVL_ChangedAt date not null,
+        EV_LVL_Who smallint not null,
+        EV_LVL_PositedAt datetime2(3) not null,
+        EV_LVL_Confidence decimal(7,3) not null,
+        EV_LVL_Stance char(1) not null,
+        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_Version bigint not null,
+        EV_LVL_StatementType char(1) not null,
+        primary key(
+            EV_LVL_Version,
+            EV_LVL_Who,
+            EV_LVL_EV_ID
+        )
+    );
+    INSERT INTO @EV_LVL_Event_Level
+    SELECT
+        i.EV_LVL_EV_ID,
+        i.Metadata_EV_LVL,
+        i.EV_LVL_ChangedAt,
+        i.EV_LVL_Who,
+        i.EV_LVL_PositedAt,
+        i.EV_LVL_Confidence,
+        case
+            when i.EV_LVL_Confidence > 0.25 then '+'
+            when i.EV_LVL_Confidence = 0.25 then '?'
+            when i.EV_LVL_Confidence < 0.25 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_LVL_PLV_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_LVL_Who,
+                i.EV_LVL_EV_ID
+            ORDER BY
+                i.EV_LVL_ChangedAt ASC,
+                i.EV_LVL_PositedAt ASC,
+                i.EV_LVL_Confidence ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_LVL_Event_Level_Fact] p
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Meta] a
+        ON
+            a.EV_LVL_ID = p.EV_LVL_ID
+        WHERE
+            p.EV_LVL_EV_ID = i.EV_LVL_EV_ID
+        AND
+            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+        AND
+            p.EV_LVL_PLV_ID = i.EV_LVL_PLV_ID
+        AND
+            a.EV_LVL_Who = i.EV_LVL_Who
+        AND
+            a.EV_LVL_PositedAt = i.EV_LVL_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_LVL_Version),
+        @currentVersion = 0
+    FROM
+        @EV_LVL_Event_Level;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_LVL_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_LVL_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_LVL_Who, v.EV_LVL_ChangedAt, v.EV_LVL_PositedAt, v.EV_LVL_Stance) t
+                        WHERE
+                            t.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+                        AND
+                            t.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+                        AND
+                            t.EV_LVL_Confidence = v.EV_LVL_Confidence
+                        AND
+                            t.EV_LVL_PLV_ID = v.EV_LVL_PLV_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_LVL_EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.EV_LVL_PLV_ID
+                        WHERE
+                            v.EV_LVL_PLV_ID =
+                                attributes.preEV_LVL_Event_Level (
+                                    v.EV_LVL_EV_ID,
+                                    v.EV_LVL_Who,
+                                    v.EV_LVL_ChangedAt,
+                                    v.EV_LVL_PositedAt,
+                                    v.EV_LVL_Stance
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.EV_LVL_PLV_ID
+                        WHERE
+                            v.EV_LVL_PLV_ID =
+                                attributes.folEV_LVL_Event_Level (
+                                    v.EV_LVL_EV_ID,
+                                    v.EV_LVL_Who,
+                                    v.EV_LVL_ChangedAt,
+                                    v.EV_LVL_PositedAt,
+                                    v.EV_LVL_Stance
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_LVL_Event_Level v
+        LEFT JOIN
+            [attributes].[EV_LVL_Event_Level_Fact] p
+        ON
+            p.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+        AND
+            p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+        AND
+            p.EV_LVL_PLV_ID = v.EV_LVL_PLV_ID
+        WHERE
+            v.EV_LVL_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_LVL_Event_Level_Fact] (
+            EV_LVL_EV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PLV_ID
+        )
+        SELECT
+            EV_LVL_EV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PLV_ID
+        FROM
+            @EV_LVL_Event_Level
+        WHERE
+            EV_LVL_Version = @currentVersion
+        AND
+            EV_LVL_StatementType in ('N','R');
+        INSERT INTO [attributes].[EV_LVL_Event_Level_Meta] (
+            Metadata_EV_LVL,
+            EV_LVL_ID,
+            EV_LVL_Who,
+            EV_LVL_PositedAt,
+            EV_LVL_Confidence
+        )
+        SELECT
+            v.Metadata_EV_LVL,
+            p.EV_LVL_ID,
+            v.EV_LVL_Who,
+            v.EV_LVL_PositedAt,
+            v.EV_LVL_Confidence
+        FROM
+            @EV_LVL_Event_Level v
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Fact] p
+        ON
+            p.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+        AND
+            p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+        AND
+            p.EV_LVL_PLV_ID = v.EV_LVL_PLV_ID
+        WHERE
+            v.EV_LVL_Version = @currentVersion
+        AND
+            EV_LVL_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('attributes.it_ST_NAM_Stage_Name', 'TR') IS NOT NULL
@@ -5632,7 +6848,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_NAM_Stage_Name_Fact] p
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Meta] a
+        ON
+            a.ST_NAM_ID = p.ST_NAM_ID
+        WHERE
+            p.ST_NAM_ST_ID = i.ST_NAM_ST_ID
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+        AND
+            a.ST_NAM_Who = i.ST_NAM_Who
+        AND
+            a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_NAM_Version),
         @currentVersion = 0
@@ -5802,7 +7038,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_LOC_Stage_Location_Fact] p
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Meta] a
+        ON
+            a.ST_LOC_ID = p.ST_LOC_ID
+        WHERE
+            p.ST_LOC_ST_ID = i.ST_LOC_ST_ID
+        AND
+            p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+        AND
+            a.ST_LOC_Who = i.ST_LOC_Who
+        AND
+            a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_LOC_Version),
         @currentVersion = 0
@@ -5939,7 +7193,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_AVG_Stage_Average_Fact] p
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Meta] a
+        ON
+            a.ST_AVG_ID = p.ST_AVG_ID
+        WHERE
+            p.ST_AVG_ST_ID = i.ST_AVG_ST_ID
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            p.ST_AVG_UTL_ID = i.ST_AVG_UTL_ID
+        AND
+            a.ST_AVG_Who = i.ST_AVG_Who
+        AND
+            a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_AVG_Version),
         @currentVersion = 0
@@ -5981,7 +7255,9 @@ BEGIN
                                     v.ST_AVG_PositedAt,
                                     v.ST_AVG_Stance
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.ST_AVG_UTL_ID
                         WHERE
@@ -5994,7 +7270,7 @@ BEGIN
                                     v.ST_AVG_Stance
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -6023,7 +7299,49 @@ BEGIN
         WHERE
             ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N');
+            ST_AVG_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[ST_AVG_Stage_Average_Meta] (
+            Metadata_ST_AVG,
+            ST_AVG_ID,
+            ST_AVG_Who,
+            ST_AVG_PositedAt,
+            ST_AVG_Confidence
+        )
+        SELECT
+            v.Metadata_ST_AVG,
+            fol.ST_AVG_ID,
+            v.ST_AVG_Who,
+            v.ST_AVG_PositedAt,
+            0.25
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.ST_AVG_ID,
+                f.ST_AVG_UTL_ID
+            FROM
+                [attributes].[fST_AVG_Stage_Average](
+                    v.ST_AVG_Who,
+                    v.ST_AVG_ChangedAt,
+                    v.ST_AVG_PositedAt
+                ) f
+            WHERE
+                f.ST_AVG_ST_ID = v.ST_AVG_ST_ID
+            AND
+                f.ST_AVG_ChangedAt > v.ST_AVG_ChangedAt
+            AND
+                f.ST_AVG_Stance = v.ST_AVG_Stance
+            ORDER BY
+                f.ST_AVG_ChangedAt ASC,
+                f.ST_AVG_PositedAt DESC
+        ) fol
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType = 'F'
+        AND
+            fol.ST_AVG_UTL_ID = v.ST_AVG_UTL_ID;
         INSERT INTO [attributes].[ST_AVG_Stage_Average_Meta] (
             Metadata_ST_AVG,
             ST_AVG_ID,
@@ -6050,7 +7368,7 @@ BEGIN
         WHERE
             v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('S','N','D');
+            ST_AVG_StatementType in ('S','N','D','F');
     END
 END
 GO
@@ -6107,7 +7425,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_MIN_Stage_Minimum_Fact] p
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Meta] a
+        ON
+            a.ST_MIN_ID = p.ST_MIN_ID
+        WHERE
+            p.ST_MIN_ST_ID = i.ST_MIN_ST_ID
+        AND
+            p.ST_MIN_UTL_ID = i.ST_MIN_UTL_ID
+        AND
+            a.ST_MIN_Who = i.ST_MIN_Who
+        AND
+            a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+    );
     SELECT
         @maxVersion = max(ST_MIN_Version),
         @currentVersion = 0
@@ -6244,7 +7580,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_NAM_Actor_Name_Fact] p
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Meta] a
+        ON
+            a.AC_NAM_ID = p.AC_NAM_ID
+        WHERE
+            p.AC_NAM_AC_ID = i.AC_NAM_AC_ID
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+        AND
+            a.AC_NAM_Who = i.AC_NAM_Who
+        AND
+            a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_NAM_Version),
         @currentVersion = 0
@@ -6412,7 +7768,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_GEN_Actor_Gender_Fact] p
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Meta] a
+        ON
+            a.AC_GEN_ID = p.AC_GEN_ID
+        WHERE
+            p.AC_GEN_AC_ID = i.AC_GEN_AC_ID
+        AND
+            p.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
+        AND
+            a.AC_GEN_Who = i.AC_GEN_Who
+        AND
+            a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_GEN_Version),
         @currentVersion = 0
@@ -6549,7 +7923,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Fact] p
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Meta] a
+        ON
+            a.AC_PLV_ID = p.AC_PLV_ID
+        WHERE
+            p.AC_PLV_AC_ID = i.AC_PLV_AC_ID
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            p.AC_PLV_PLV_ID = i.AC_PLV_PLV_ID
+        AND
+            a.AC_PLV_Who = i.AC_PLV_Who
+        AND
+            a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+    );
     SELECT
         @maxVersion = max(AC_PLV_Version),
         @currentVersion = 0
@@ -6717,7 +8111,25 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_NAM_Program_Name_Fact] p
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Meta] a
+        ON
+            a.PR_NAM_ID = p.PR_NAM_ID
+        WHERE
+            p.PR_NAM_PR_ID = i.PR_NAM_PR_ID
+        AND
+            p.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+        AND
+            a.PR_NAM_Who = i.PR_NAM_Who
+        AND
+            a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_NAM_Version),
         @currentVersion = 0
@@ -6854,7 +8266,27 @@ BEGIN
         ),
         'X'
     FROM
-        inserted i;
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_LEN_Program_Length_Fact] p
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Meta] a
+        ON
+            a.PR_LEN_ID = p.PR_LEN_ID
+        WHERE
+            p.PR_LEN_PR_ID = i.PR_LEN_PR_ID
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+        AND
+            a.PR_LEN_Who = i.PR_LEN_Who
+        AND
+            a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+    );
     SELECT
         @maxVersion = max(PR_LEN_Version),
         @currentVersion = 0
@@ -6896,7 +8328,9 @@ BEGIN
                                     v.PR_LEN_PositedAt,
                                     v.PR_LEN_Stance
                                 )
-                    ) OR EXISTS (
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
                         SELECT
                             v.PR_LEN_Program_Length
                         WHERE
@@ -6909,7 +8343,7 @@ BEGIN
                                     v.PR_LEN_Stance
                                 )
                     )
-                    THEN 'R' -- restatement
+                    THEN 'F' -- the following version restates this one, so it is retracted
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -6938,7 +8372,49 @@ BEGIN
         WHERE
             PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N');
+            PR_LEN_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[PR_LEN_Program_Length_Meta] (
+            Metadata_PR_LEN,
+            PR_LEN_ID,
+            PR_LEN_Who,
+            PR_LEN_PositedAt,
+            PR_LEN_Confidence
+        )
+        SELECT
+            v.Metadata_PR_LEN,
+            fol.PR_LEN_ID,
+            v.PR_LEN_Who,
+            v.PR_LEN_PositedAt,
+            0.25
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.PR_LEN_ID,
+                f.PR_LEN_Program_Length
+            FROM
+                [attributes].[fPR_LEN_Program_Length](
+                    v.PR_LEN_Who,
+                    v.PR_LEN_ChangedAt,
+                    v.PR_LEN_PositedAt
+                ) f
+            WHERE
+                f.PR_LEN_PR_ID = v.PR_LEN_PR_ID
+            AND
+                f.PR_LEN_ChangedAt > v.PR_LEN_ChangedAt
+            AND
+                f.PR_LEN_Stance = v.PR_LEN_Stance
+            ORDER BY
+                f.PR_LEN_ChangedAt ASC,
+                f.PR_LEN_PositedAt DESC
+        ) fol
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType = 'F'
+        AND
+            fol.PR_LEN_Program_Length = v.PR_LEN_Program_Length;
         INSERT INTO [attributes].[PR_LEN_Program_Length_Meta] (
             Metadata_PR_LEN,
             PR_LEN_ID,
@@ -6965,7 +8441,7 @@ BEGIN
         WHERE
             v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('S','N','D');
+            PR_LEN_StatementType in ('S','N','D','F');
     END
 END
 GO
@@ -7252,25 +8728,45 @@ BEGIN
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
             i.ST_NAM_Stage_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN d.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+                THEN i.ST_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_NAM_Who
+                WHEN UPDATE(ST_NAM_Who) THEN i.ST_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_NAM_Confidence) THEN i.ST_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.ST_NAM_Stage_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_PositedAt) OR
+            UPDATE(ST_NAM_Who) OR
+            UPDATE(Who) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name OR
+            d.ST_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Confidence) THEN i.ST_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -7302,8 +8798,8 @@ BEGIN
                 WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_NAM_Who
+                WHEN UPDATE(ST_NAM_Who) THEN i.ST_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -7322,6 +8818,7 @@ BEGIN
     IF(UPDATE(ST_LOC_Stance))
         RAISERROR('The computed assertion column ST_LOC_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(ST_LOC_Stage_Location) OR
         UPDATE(ST_LOC_Confidence) OR
         UPDATE(Confidence)
     )
@@ -7346,18 +8843,36 @@ BEGIN
                 WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_LOC_Who
+                WHEN UPDATE(ST_LOC_Who) THEN i.ST_LOC_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Confidence) THEN i.ST_LOC_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_LOC_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.ST_LOC_Stage_Location is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_LOC_PositedAt) OR
+            UPDATE(ST_LOC_Who) OR
+            UPDATE(Who) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Confidence) THEN i.ST_LOC_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_LOC_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -7386,8 +8901,8 @@ BEGIN
                 WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_LOC_Who
+                WHEN UPDATE(ST_LOC_Who) THEN i.ST_LOC_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -7433,19 +8948,20 @@ BEGIN
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
                 WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN d.ST_AVG_UTL_ID = CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+                THEN i.ST_AVG_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_AVG_Who
+                WHEN UPDATE(ST_AVG_Who) THEN i.ST_AVG_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_AVG_Confidence) THEN i.ST_AVG_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_AVG_Confidence
             END, 0.75)
         FROM
@@ -7454,11 +8970,30 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            UPDATE(ST_AVG_PositedAt) OR
+            UPDATE(ST_AVG_Who) OR
+            UPDATE(Who) OR
+            d.ST_AVG_UTL_ID is null OR
+            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_AVG_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Confidence) THEN i.ST_AVG_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_AVG_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -7491,8 +9026,8 @@ BEGIN
                 WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_AVG_Who
+                WHEN UPDATE(ST_AVG_Who) THEN i.ST_AVG_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -7513,6 +9048,8 @@ BEGIN
     IF(UPDATE(ST_MIN_Stance))
         RAISERROR('The computed assertion column ST_MIN_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(ST_MIN_UTL_ID) OR
+        UPDATE(ST_MIN_UTL_Utilization) OR
         UPDATE(ST_MIN_Confidence) OR
         UPDATE(Confidence)
     )
@@ -7540,12 +9077,12 @@ BEGIN
                 WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_MIN_Who
+                WHEN UPDATE(ST_MIN_Who) THEN i.ST_MIN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(ST_MIN_Confidence) THEN i.ST_MIN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.ST_MIN_Confidence
             END, 0.75)
         FROM
@@ -7554,11 +9091,29 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
                 ELSE [kUTL].UTL_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_MIN_PositedAt) OR
+            UPDATE(ST_MIN_Who) OR
+            UPDATE(Who) OR
+            d.ST_MIN_UTL_ID is null OR
+            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_MIN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Confidence) THEN i.ST_MIN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.ST_MIN_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -7588,8 +9143,8 @@ BEGIN
                 WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.ST_MIN_Who
+                WHEN UPDATE(ST_MIN_Who) THEN i.ST_MIN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -7623,17 +9178,15 @@ BEGIN
         ST_NAM_Confidence
     )
     SELECT
-        p.Metadata_ST_NAM,
-        p.ST_NAM_ID,
-        p.ST_NAM_Who,
+        d.Metadata_ST_NAM,
+        d.ST_NAM_ID,
+        d.ST_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_NAM_Stage_Name_Meta] p
-    ON
-        p.ST_NAM_ID = d.ST_NAM_ID;
+    WHERE
+        d.ST_NAM_ID is not null;
     INSERT INTO [attributes].[ST_LOC_Stage_Location_Meta] (
         Metadata_ST_LOC,
         ST_LOC_ID,
@@ -7642,17 +9195,15 @@ BEGIN
         ST_LOC_Confidence
     )
     SELECT
-        p.Metadata_ST_LOC,
-        p.ST_LOC_ID,
-        p.ST_LOC_Who,
+        d.Metadata_ST_LOC,
+        d.ST_LOC_ID,
+        d.ST_LOC_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_LOC_Stage_Location_Meta] p
-    ON
-        p.ST_LOC_ID = d.ST_LOC_ID;
+    WHERE
+        d.ST_LOC_ID is not null;
     INSERT INTO [attributes].[ST_AVG_Stage_Average_Meta] (
         Metadata_ST_AVG,
         ST_AVG_ID,
@@ -7661,17 +9212,15 @@ BEGIN
         ST_AVG_Confidence
     )
     SELECT
-        p.Metadata_ST_AVG,
-        p.ST_AVG_ID,
-        p.ST_AVG_Who,
+        d.Metadata_ST_AVG,
+        d.ST_AVG_ID,
+        d.ST_AVG_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_AVG_Stage_Average_Meta] p
-    ON
-        p.ST_AVG_ID = d.ST_AVG_ID;
+    WHERE
+        d.ST_AVG_ID is not null;
     INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Meta] (
         Metadata_ST_MIN,
         ST_MIN_ID,
@@ -7680,17 +9229,15 @@ BEGIN
         ST_MIN_Confidence
     )
     SELECT
-        p.Metadata_ST_MIN,
-        p.ST_MIN_ID,
-        p.ST_MIN_Who,
+        d.Metadata_ST_MIN,
+        d.ST_MIN_ID,
+        d.ST_MIN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[ST_MIN_Stage_Minimum_Meta] p
-    ON
-        p.ST_MIN_ID = d.ST_MIN_ID;
+    WHERE
+        d.ST_MIN_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -7933,25 +9480,45 @@ BEGIN
             ISNULL(i.AC_NAM_AC_ID, i.AC_ID),
             i.AC_NAM_Actor_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN d.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+                THEN i.AC_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_NAM_Who
+                WHEN UPDATE(AC_NAM_Who) THEN i.AC_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_NAM_Confidence) THEN i.AC_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.AC_NAM_Actor_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            UPDATE(AC_NAM_PositedAt) OR
+            UPDATE(AC_NAM_Who) OR
+            UPDATE(Who) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name OR
+            d.AC_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Confidence) THEN i.AC_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -7983,8 +9550,8 @@ BEGIN
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_NAM_Who
+                WHEN UPDATE(AC_NAM_Who) THEN i.AC_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -8003,6 +9570,8 @@ BEGIN
     IF(UPDATE(AC_GEN_Stance))
         RAISERROR('The computed assertion column AC_GEN_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(AC_GEN_GEN_ID) OR
+        UPDATE(AC_GEN_GEN_Gender) OR
         UPDATE(AC_GEN_Confidence) OR
         UPDATE(Confidence)
     )
@@ -8030,12 +9599,12 @@ BEGIN
                 WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_GEN_Who
+                WHEN UPDATE(AC_GEN_Who) THEN i.AC_GEN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_GEN_Confidence) THEN i.AC_GEN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_GEN_Confidence
             END, 0.75)
         FROM
@@ -8044,11 +9613,29 @@ BEGIN
             [knots].[GEN_Gender] [kGEN]
         ON
             [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
                 ELSE [kGEN].GEN_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_GEN_PositedAt) OR
+            UPDATE(AC_GEN_Who) OR
+            UPDATE(Who) OR
+            d.AC_GEN_GEN_ID is null OR
+            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END OR
+            d.AC_GEN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Confidence) THEN i.AC_GEN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_GEN_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -8078,8 +9665,8 @@ BEGIN
                 WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_GEN_Who
+                WHEN UPDATE(AC_GEN_Who) THEN i.AC_GEN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -8127,19 +9714,20 @@ BEGIN
                 ELSE [kPLV].PLV_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
                 WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN d.AC_PLV_PLV_ID = CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+                THEN i.AC_PLV_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
                 WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_PLV_Who
+                WHEN UPDATE(AC_PLV_Who) THEN i.AC_PLV_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(AC_PLV_Confidence) THEN i.AC_PLV_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.AC_PLV_Confidence
             END, 0.75)
         FROM
@@ -8148,11 +9736,30 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Who = i.Who
         WHERE
             CASE
                 WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
                 ELSE [kPLV].PLV_ID
-            END is not null;
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            UPDATE(AC_PLV_PositedAt) OR
+            UPDATE(AC_PLV_Who) OR
+            UPDATE(Who) OR
+            d.AC_PLV_PLV_ID is null OR
+            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.AC_PLV_Confidence <> ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Confidence) THEN i.AC_PLV_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.AC_PLV_Confidence
+            END, 0.75)
+        );
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -8185,8 +9792,8 @@ BEGIN
                 WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.AC_PLV_Who
+                WHEN UPDATE(AC_PLV_Who) THEN i.AC_PLV_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -8220,17 +9827,15 @@ BEGIN
         AC_NAM_Confidence
     )
     SELECT
-        p.Metadata_AC_NAM,
-        p.AC_NAM_ID,
-        p.AC_NAM_Who,
+        d.Metadata_AC_NAM,
+        d.AC_NAM_ID,
+        d.AC_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_NAM_Actor_Name_Meta] p
-    ON
-        p.AC_NAM_ID = d.AC_NAM_ID;
+    WHERE
+        d.AC_NAM_ID is not null;
     INSERT INTO [attributes].[AC_GEN_Actor_Gender_Meta] (
         Metadata_AC_GEN,
         AC_GEN_ID,
@@ -8239,17 +9844,15 @@ BEGIN
         AC_GEN_Confidence
     )
     SELECT
-        p.Metadata_AC_GEN,
-        p.AC_GEN_ID,
-        p.AC_GEN_Who,
+        d.Metadata_AC_GEN,
+        d.AC_GEN_ID,
+        d.AC_GEN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_GEN_Actor_Gender_Meta] p
-    ON
-        p.AC_GEN_ID = d.AC_GEN_ID;
+    WHERE
+        d.AC_GEN_ID is not null;
     INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Meta] (
         Metadata_AC_PLV,
         AC_PLV_ID,
@@ -8258,17 +9861,15 @@ BEGIN
         AC_PLV_Confidence
     )
     SELECT
-        p.Metadata_AC_PLV,
-        p.AC_PLV_ID,
-        p.AC_PLV_Who,
+        d.Metadata_AC_PLV,
+        d.AC_PLV_ID,
+        d.AC_PLV_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[AC_PLV_Actor_ProfessionalLevel_Meta] p
-    ON
-        p.AC_PLV_ID = d.AC_PLV_ID;
+    WHERE
+        d.AC_PLV_ID is not null;
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -8420,6 +10021,7 @@ BEGIN
     IF(UPDATE(PR_NAM_Stance))
         RAISERROR('The computed assertion column PR_NAM_Stance is not updatable.', 16, 1);
     IF (
+        UPDATE(PR_NAM_Program_Name) OR
         UPDATE(PR_NAM_Confidence) OR
         UPDATE(Confidence)
     )
@@ -8444,18 +10046,36 @@ BEGIN
                 WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_NAM_Who
+                WHEN UPDATE(PR_NAM_Who) THEN i.PR_NAM_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(PR_NAM_Confidence) THEN i.PR_NAM_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.PR_NAM_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.PR_NAM_Program_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_NAM_PositedAt) OR
+            UPDATE(PR_NAM_Who) OR
+            UPDATE(Who) OR
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name OR
+            d.PR_NAM_Confidence <> ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Confidence) THEN i.PR_NAM_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.PR_NAM_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -8484,8 +10104,8 @@ BEGIN
                 WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_NAM_Who
+                WHEN UPDATE(PR_NAM_Who) THEN i.PR_NAM_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -8527,25 +10147,45 @@ BEGIN
             ISNULL(i.PR_LEN_PR_ID, i.PR_ID),
             i.PR_LEN_Program_Length,
             cast(ISNULL(CASE
-                WHEN UPDATE(Confidence) AND NOT UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN d.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+                THEN i.PR_LEN_ChangedAt -- the shown version is asserted again
             END, @now) as date),
             cast(ISNULL(CASE
                 WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_LEN_Who
+                WHEN UPDATE(PR_LEN_Who) THEN i.PR_LEN_Who
+                ELSE i.Who
             END, 0),
             ISNULL(CASE
                 WHEN UPDATE(PR_LEN_Confidence) THEN i.PR_LEN_Confidence
-                WHEN UPDATE(Confidence) THEN Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
                 ELSE i.PR_LEN_Confidence
             END, 0.75)
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Who = i.Who
         WHERE
             i.PR_LEN_Program_Length is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            UPDATE(PR_LEN_PositedAt) OR
+            UPDATE(PR_LEN_Who) OR
+            UPDATE(Who) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length OR
+            d.PR_LEN_Confidence <> ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Confidence) THEN i.PR_LEN_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.PR_LEN_Confidence
+            END, 0.75)
+        )
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -8577,8 +10217,8 @@ BEGIN
                 WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
             END, @now) as datetime2(3)),
             ISNULL(CASE
-                WHEN UPDATE(Who) THEN i.Who
-                ELSE i.PR_LEN_Who
+                WHEN UPDATE(PR_LEN_Who) THEN i.PR_LEN_Who
+                ELSE i.Who
             END, 0),
             0.25
         FROM
@@ -8610,17 +10250,15 @@ BEGIN
         PR_NAM_Confidence
     )
     SELECT
-        p.Metadata_PR_NAM,
-        p.PR_NAM_ID,
-        p.PR_NAM_Who,
+        d.Metadata_PR_NAM,
+        d.PR_NAM_ID,
+        d.PR_NAM_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[PR_NAM_Program_Name_Meta] p
-    ON
-        p.PR_NAM_ID = d.PR_NAM_ID;
+    WHERE
+        d.PR_NAM_ID is not null;
     INSERT INTO [attributes].[PR_LEN_Program_Length_Meta] (
         Metadata_PR_LEN,
         PR_LEN_ID,
@@ -8629,17 +10267,15 @@ BEGIN
         PR_LEN_Confidence
     )
     SELECT
-        p.Metadata_PR_LEN,
-        p.PR_LEN_ID,
-        p.PR_LEN_Who,
+        d.Metadata_PR_LEN,
+        d.PR_LEN_ID,
+        d.PR_LEN_Who,
         @now,
         0.25
     FROM
         deleted d
-    JOIN
-        [attributes].[PR_LEN_Program_Length_Meta] p
-    ON
-        p.PR_LEN_ID = d.PR_LEN_ID;
+    WHERE
+        d.PR_LEN_ID is not null;
 END
 GO
 -- NEXUS TRIGGERS ---------------------------------------------------------------------------------------------------
@@ -8664,23 +10300,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID numeric(12,0) not null
-    );
-    INSERT INTO [nexuses].[EV_Event] (
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID numeric(12,0) not null,
         Metadata_EV bigint not null,
@@ -8728,36 +10347,52 @@ BEGIN
         EV_LVL_Metadata_PLV bigint null,
         EV_LVL_PLV_ID tinyint null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
-        ISNULL(ISNULL(i.EV_DAT_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_DAT_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         ISNULL(ISNULL(i.EV_DAT_Who, i.Who), 0),
         ISNULL(i.EV_DAT_PositedAt, @now),
         ISNULL(ISNULL(i.EV_DAT_Confidence, i.Confidence), 0.75),
         i.EV_DAT_Event_Date,
-        ISNULL(ISNULL(i.EV_AUD_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
         ISNULL(ISNULL(i.EV_AUD_Who, i.Who), 0),
         ISNULL(i.EV_AUD_PositedAt, @now),
         ISNULL(ISNULL(i.EV_AUD_Confidence, i.Confidence), 0.75),
         i.EV_AUD_Event_Audience,
-        ISNULL(ISNULL(i.EV_REV_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
         ISNULL(ISNULL(i.EV_REV_Who, i.Who), 0),
         ISNULL(i.EV_REV_PositedAt, @now),
         ISNULL(ISNULL(i.EV_REV_Confidence, i.Confidence), 0.75),
         i.EV_REV_Event_Revenue,
-        ISNULL(ISNULL(i.EV_STA_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_STA_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
         ISNULL(ISNULL(i.EV_STA_Who, i.Who), 0),
         ISNULL(i.EV_STA_PositedAt, @now),
         ISNULL(ISNULL(i.EV_STA_Confidence, i.Confidence), 0.75),
         i.EV_STA_Event_Status,
-        ISNULL(ISNULL(i.EV_UTL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_UTL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
         ISNULL(ISNULL(i.EV_UTL_Who, i.Who), 0),
         ISNULL(i.EV_UTL_PositedAt, @now),
@@ -8765,7 +10400,7 @@ BEGIN
         i.EV_UTL_UTL_Utilization,
         ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
         i.EV_UTL_UTL_ID,
-        ISNULL(ISNULL(i.EV_LVL_EV_ID, i.EV_ID), a.EV_ID),
+        ISNULL(i.EV_LVL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
         ISNULL(i.EV_LVL_ChangedAt, @now),
         ISNULL(ISNULL(i.EV_LVL_Who, i.Who), 0),
@@ -8775,63 +10410,60 @@ BEGIN
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
-    FROM (
-        SELECT
-            Who,
-            Confidence,
-            EV_ID,
-            Metadata_EV,
-            EV_DAT_EV_ID,
-            Metadata_EV_DAT,
-            EV_DAT_Who,
-            EV_DAT_PositedAt,
-            EV_DAT_Confidence,
-            EV_DAT_Event_Date,
-            EV_AUD_EV_ID,
-            Metadata_EV_AUD,
-            EV_AUD_Who,
-            EV_AUD_PositedAt,
-            EV_AUD_Confidence,
-            EV_AUD_Event_Audience,
-            EV_REV_EV_ID,
-            Metadata_EV_REV,
-            EV_REV_Who,
-            EV_REV_PositedAt,
-            EV_REV_Confidence,
-            EV_REV_Event_Revenue,
-            EV_STA_EV_ID,
-            Metadata_EV_STA,
-            EV_STA_ChangedAt,
-            EV_STA_Who,
-            EV_STA_PositedAt,
-            EV_STA_Confidence,
-            EV_STA_Event_Status,
-            EV_UTL_EV_ID,
-            Metadata_EV_UTL,
-            EV_UTL_Who,
-            EV_UTL_PositedAt,
-            EV_UTL_Confidence,
-            EV_UTL_UTL_Utilization,
-            EV_UTL_Metadata_UTL,
-            EV_UTL_UTL_ID,
-            EV_LVL_EV_ID,
-            Metadata_EV_LVL,
-            EV_LVL_ChangedAt,
-            EV_LVL_Who,
-            EV_LVL_PositedAt,
-            EV_LVL_Confidence,
-            EV_LVL_PLV_ProfessionalLevel,
-            EV_LVL_PLV_Checksum,
-            EV_LVL_Metadata_PLV,
-            EV_LVL_PLV_ID,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_DAT_Who, i.Who), 0),
+        ISNULL(i.EV_DAT_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_DAT_Confidence, i.Confidence), 0.75),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_AUD_Who, i.Who), 0),
+        ISNULL(i.EV_AUD_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_AUD_Confidence, i.Confidence), 0.75),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_REV_Who, i.Who), 0),
+        ISNULL(i.EV_REV_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_REV_Confidence, i.Confidence), 0.75),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.EV_STA_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Who, i.Who), 0),
+        ISNULL(i.EV_STA_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Confidence, i.Confidence), 0.75),
+        i.EV_STA_Event_Status,
+        ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_UTL_Who, i.Who), 0),
+        ISNULL(i.EV_UTL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_UTL_Confidence, i.Confidence), 0.75),
+        i.EV_UTL_UTL_Utilization,
+        ISNULL(i.EV_UTL_Metadata_UTL, i.Metadata_EV),
+        i.EV_UTL_UTL_ID,
+        ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Who, i.Who), 0),
+        ISNULL(i.EV_LVL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Confidence, i.Confidence), 0.75),
+        i.EV_LVL_PLV_ProfessionalLevel,
+        ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
+        i.EV_LVL_PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [attributes].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_DAT_EV_ID,
@@ -9695,6 +11327,7 @@ BEGIN
         SELECT
             COUNT(*)
         FROM (
+            SELECT * FROM (
             SELECT TOP 1
                 pre.AC_ID_partner,
                 pre.AC_ID_with,
@@ -9718,7 +11351,9 @@ BEGIN
             ORDER BY
                 pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
                 pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) previous
             UNION
+            SELECT * FROM (
             SELECT TOP 1
                 fol.AC_ID_partner,
                 fol.AC_ID_with,
@@ -9742,6 +11377,7 @@ BEGIN
             ORDER BY
                 fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
                 fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) following
         ) s
         WHERE
             s.AC_ID_partner = @AC_partner
@@ -9789,6 +11425,7 @@ BEGIN
         SELECT
             COUNT(*)
         FROM (
+            SELECT * FROM (
             SELECT TOP 1
                 pre.RAT_ID_got
             FROM
@@ -9808,7 +11445,9 @@ BEGIN
             ORDER BY
                 pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
                 pre.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) previous
             UNION
+            SELECT * FROM (
             SELECT TOP 1
                 fol.RAT_ID_got
             FROM
@@ -9828,6 +11467,7 @@ BEGIN
             ORDER BY
                 fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
                 fol.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) following
         ) s
         WHERE
             s.RAT_ID_got = @RAT_got
@@ -9871,6 +11511,7 @@ BEGIN
         SELECT
             COUNT(*)
         FROM (
+            SELECT * FROM (
             SELECT TOP 1
                 pre.PR_ID_content,
                 pre.ST_ID_location,
@@ -9894,7 +11535,9 @@ BEGIN
             ORDER BY
                 pre.PR_content_ST_location_EV_of_ChangedAt DESC,
                 pre.PR_content_ST_location_EV_of_PositedAt DESC
+            ) previous
             UNION
+            SELECT * FROM (
             SELECT TOP 1
                 fol.PR_ID_content,
                 fol.ST_ID_location,
@@ -9918,6 +11561,7 @@ BEGIN
             ORDER BY
                 fol.PR_content_ST_location_EV_of_ChangedAt ASC,
                 fol.PR_content_ST_location_EV_of_PositedAt DESC
+            ) following
         ) s
         WHERE
             s.PR_ID_content = @PR_content
@@ -12330,7 +13974,30 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        i.ONG_ID_currently is not null;
+        i.ONG_ID_currently is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_partner_AC_with_ONG_currently_Fact] p
+            JOIN
+                [ties].[AC_partner_AC_with_ONG_currently_Meta] a
+            ON
+                a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            WHERE
+                p.AC_ID_partner = i.AC_ID_partner
+            AND
+                p.AC_ID_with = i.AC_ID_with
+            AND
+                p.ONG_ID_currently = i.ONG_ID_currently
+            AND
+                p.AC_partner_AC_with_ONG_currently_ChangedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Who = ISNULL(i.AC_partner_AC_with_ONG_currently_Who, 0)
+            AND
+                a.AC_partner_AC_with_ONG_currently_PositedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_partner_AC_with_ONG_currently_Version),
         @currentVersion = 0
@@ -12362,70 +14029,82 @@ BEGIN
                     THEN 'D' -- duplicate assertion
                     WHEN p.AC_partner_AC_with_ONG_currently_ID is not null
                     THEN 'S' -- duplicate statement
-                    WHEN (
-                    SELECT
-                        COUNT(*)
-                    FROM (
-                        SELECT TOP 1
-                            pre.AC_ID_partner,
-                            pre.AC_ID_with,
-                            pre.ONG_ID_currently
-                        FROM
-                            [ties].[rAC_partner_AC_with_ONG_currently] (
-                                v.AC_partner_AC_with_ONG_currently_Who,
-                                v.AC_partner_AC_with_ONG_currently_ChangedAt,
-                                v.AC_partner_AC_with_ONG_currently_PositedAt
-                            ) pre
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.AC_ID_partner,
+                                pre.AC_ID_with,
+                                pre.ONG_ID_currently
+                            FROM
+                                [ties].[rAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Who,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) pre
+                            WHERE
+                            (
+                                    pre.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    pre.AC_ID_with = v.AC_ID_with
+                                AND
+                                    pre.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt < v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_Stance = v.AC_partner_AC_with_ONG_currently_Stance
+                            ORDER BY
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+                                pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                pre.AC_ID_partner = v.AC_ID_partner
-                            AND
-                                pre.AC_ID_with = v.AC_ID_with
-                            AND
-                                pre.ONG_ID_currently = v.ONG_ID_currently
-                        )
+                            s.AC_ID_partner = v.AC_ID_partner
                         AND
-                            pre.AC_partner_AC_with_ONG_currently_ChangedAt < v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            s.AC_ID_with = v.AC_ID_with
                         AND
-                            pre.AC_partner_AC_with_ONG_currently_Stance = v.AC_partner_AC_with_ONG_currently_Stance
-                        ORDER BY
-                            pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
-                            pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
-                        UNION
-                        SELECT TOP 1
-                            fol.AC_ID_partner,
-                            fol.AC_ID_with,
-                            fol.ONG_ID_currently
-                        FROM
-                            [ties].[fAC_partner_AC_with_ONG_currently] (
-                                v.AC_partner_AC_with_ONG_currently_Who,
-                                v.AC_partner_AC_with_ONG_currently_ChangedAt,
-                                v.AC_partner_AC_with_ONG_currently_PositedAt
-                            ) fol
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.AC_ID_partner,
+                                fol.AC_ID_with,
+                                fol.ONG_ID_currently
+                            FROM
+                                [ties].[fAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Who,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) fol
+                            WHERE
+                            (
+                                    fol.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    fol.AC_ID_with = v.AC_ID_with
+                                AND
+                                    fol.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt > v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_Stance = v.AC_partner_AC_with_ONG_currently_Stance
+                            ORDER BY
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
+                                fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                fol.AC_ID_partner = v.AC_ID_partner
-                            AND
-                                fol.AC_ID_with = v.AC_ID_with
-                            AND
-                                fol.ONG_ID_currently = v.ONG_ID_currently
-                        )
+                            s.AC_ID_partner = v.AC_ID_partner
                         AND
-                            fol.AC_partner_AC_with_ONG_currently_ChangedAt > v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            s.AC_ID_with = v.AC_ID_with
                         AND
-                            fol.AC_partner_AC_with_ONG_currently_Stance = v.AC_partner_AC_with_ONG_currently_Stance
-                        ORDER BY
-                            fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
-                            fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
-                    ) s
-                    WHERE
-                        s.AC_ID_partner = v.AC_ID_partner
-                    AND
-                        s.AC_ID_with = v.AC_ID_with
-                    AND
-                        s.ONG_ID_currently = v.ONG_ID_currently
-                    ) > 0
-                    THEN 'R' -- restatement
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the following version
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -12517,7 +14196,7 @@ BEGIN
         i.AC_ID_partner,
         i.AC_ID_with,
         ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
-        i.AC_partner_AC_with_ONG_currently_Who,
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Who, i.Who),
         i.AC_partner_AC_with_ONG_currently_PositedAt,
         i.AC_partner_AC_with_ONG_currently_Confidence
     FROM
@@ -12540,6 +14219,41 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_partner_AC_with_ONG_currently_Stance))
         RAISERROR('The computed assertion column AC_partner_AC_with_ONG_currently_Stance is not updatable.', 16, 1);
+    IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
+        RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Meta] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_Who,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Confidence
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        i.AC_partner_AC_with_ONG_currently_ID,
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Who) THEN i.AC_partner_AC_with_ONG_currently_Who ELSE i.Who END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+        END, @now) as datetime2(3)),
+        0.25
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_partner_AC_with_ONG_currently_ID is not null
+    AND (
+        i.AC_ID_partner is null
+    OR
+        i.AC_ID_with is null
+    OR
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
         Metadata_AC_partner_AC_with_ONG_currently,
         AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -12552,29 +14266,69 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_partner_AC_with_ONG_currently,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Who = i.AC_partner_AC_with_ONG_currently_Who
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
         CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
-        CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Who) THEN i.AC_partner_AC_with_ONG_currently_Who ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Who) THEN i.AC_partner_AC_with_ONG_currently_Who ELSE i.Who END, 0),
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2(3)),
-        CASE
-            WHEN
-                i.AC_ID_partner is null
-            OR
-                i.AC_ID_with is null
-            OR
-                i.ONG_ID_currently is null
-            THEN 0.25
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_Confidence) THEN i.AC_partner_AC_with_ONG_currently_Confidence
-            ELSE 0.75
-        END
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Confidence, 0.75)
     FROM
         inserted i
     LEFT JOIN
         [knots].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing;
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_Who) OR
+            UPDATE(Who) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Who = i.AC_partner_AC_with_ONG_currently_Who
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Confidence = ISNULL(i.AC_partner_AC_with_ONG_currently_Confidence, 0.75)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -12665,7 +14419,26 @@ BEGIN
     WHERE
         i.AC_ID_subset is not null
     AND
-        i.PN_ID_of is not null;
+        i.PN_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_subset_PN_of_Fact] p
+            JOIN
+                [ties].[AC_subset_PN_of_Meta] a
+            ON
+                a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            WHERE
+                p.AC_ID_subset = i.AC_ID_subset
+            AND
+                p.PN_ID_of = i.PN_ID_of
+            AND
+                a.AC_subset_PN_of_Who = ISNULL(i.AC_subset_PN_of_Who, 0)
+            AND
+                a.AC_subset_PN_of_PositedAt = ISNULL(i.AC_subset_PN_of_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_subset_PN_of_Version),
         @currentVersion = 0
@@ -12768,7 +14541,7 @@ BEGIN
         i.Metadata_AC_subset_PN_of,
         i.AC_ID_subset,
         i.PN_ID_of,
-        i.AC_subset_PN_of_Who,
+        ISNULL(i.AC_subset_PN_of_Who, i.Who),
         i.AC_subset_PN_of_PositedAt,
         i.AC_subset_PN_of_Confidence
     FROM
@@ -12787,6 +14560,34 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_subset_PN_of_Stance))
         RAISERROR('The computed assertion column AC_subset_PN_of_Stance is not updatable.', 16, 1);
+    IF(UPDATE(AC_subset_PN_of_ID))
+        RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_subset_PN_of_Meta] (
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_Who,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Confidence
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_subset_PN_of_ID,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Who) THEN i.AC_subset_PN_of_Who ELSE i.Who END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+        END, @now) as datetime2(3)),
+        0.25
+    FROM
+        inserted i
+    WHERE
+        i.AC_subset_PN_of_ID is not null
+    AND (
+        i.AC_ID_subset is null
+    OR
+        i.PN_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_subset_PN_of] (
         Metadata_AC_subset_PN_of,
         AC_ID_subset,
@@ -12799,19 +14600,37 @@ BEGIN
         i.Metadata_AC_subset_PN_of,
         i.AC_ID_subset,
         i.PN_ID_of,
-        CASE WHEN UPDATE(AC_subset_PN_of_Who) THEN i.AC_subset_PN_of_Who ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Who) THEN i.AC_subset_PN_of_Who ELSE i.Who END, 0),
         cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2(3)),
-        CASE
-            WHEN
-                i.AC_ID_subset is null
-            OR
-                i.PN_ID_of is null
-            THEN 0.25
-            WHEN UPDATE(AC_subset_PN_of_Confidence) THEN i.AC_subset_PN_of_Confidence
-            ELSE 0.75
-        END
+        ISNULL(i.AC_subset_PN_of_Confidence, 0.75)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_subset_PN_of_PositedAt) OR
+            UPDATE(AC_subset_PN_of_Who) OR
+            UPDATE(Who) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_subset_PN_of_ID = i.AC_subset_PN_of_ID
+                AND
+                    d.AC_subset_PN_of_Who = i.AC_subset_PN_of_Who
+                AND
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+                AND
+                    d.AC_subset_PN_of_Confidence = ISNULL(i.AC_subset_PN_of_Confidence, 0.75)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -12902,7 +14721,26 @@ BEGIN
     WHERE
         i.EV_ID_in is not null
     AND
-        i.AC_ID_wasCast is not null;
+        i.AC_ID_wasCast is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[EV_in_AC_wasCast_Fact] p
+            JOIN
+                [ties].[EV_in_AC_wasCast_Meta] a
+            ON
+                a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            WHERE
+                p.EV_ID_in = i.EV_ID_in
+            AND
+                p.AC_ID_wasCast = i.AC_ID_wasCast
+            AND
+                a.EV_in_AC_wasCast_Who = ISNULL(i.EV_in_AC_wasCast_Who, 0)
+            AND
+                a.EV_in_AC_wasCast_PositedAt = ISNULL(i.EV_in_AC_wasCast_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(EV_in_AC_wasCast_Version),
         @currentVersion = 0
@@ -13005,7 +14843,7 @@ BEGIN
         i.Metadata_EV_in_AC_wasCast,
         i.EV_ID_in,
         i.AC_ID_wasCast,
-        i.EV_in_AC_wasCast_Who,
+        ISNULL(i.EV_in_AC_wasCast_Who, i.Who),
         i.EV_in_AC_wasCast_PositedAt,
         i.EV_in_AC_wasCast_Confidence
     FROM
@@ -13106,7 +14944,30 @@ BEGIN
     WHERE
         i.AC_ID_part is not null
     AND
-        i.PR_ID_in is not null;
+        i.PR_ID_in is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Fact] p
+            JOIN
+                [ties].[AC_part_PR_in_RAT_got_Meta] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            WHERE
+                p.AC_ID_part = i.AC_ID_part
+            AND
+                p.PR_ID_in = i.PR_ID_in
+            AND
+                p.RAT_ID_got = i.RAT_ID_got
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Who = ISNULL(i.AC_part_PR_in_RAT_got_Who, 0)
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_part_PR_in_RAT_got_Version),
         @currentVersion = 0
@@ -13138,54 +14999,62 @@ BEGIN
                     THEN 'D' -- duplicate assertion
                     WHEN p.AC_part_PR_in_RAT_got_ID is not null
                     THEN 'S' -- duplicate statement
-                    WHEN (
-                    SELECT
-                        COUNT(*)
-                    FROM (
-                        SELECT TOP 1
-                            pre.RAT_ID_got
-                        FROM
-                            [ties].[rAC_part_PR_in_RAT_got] (
-                                v.AC_part_PR_in_RAT_got_Who,
-                                v.AC_part_PR_in_RAT_got_ChangedAt,
-                                v.AC_part_PR_in_RAT_got_PositedAt
-                            ) pre
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.RAT_ID_got
+                            FROM
+                                [ties].[rAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Who,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) pre
+                            WHERE
+                                pre.AC_ID_part = v.AC_ID_part
+                            AND
+                                pre.PR_ID_in = v.PR_ID_in
+                            AND
+                                pre.AC_part_PR_in_RAT_got_ChangedAt < v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                pre.AC_part_PR_in_RAT_got_Stance = v.AC_part_PR_in_RAT_got_Stance
+                            ORDER BY
+                                pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
+                                pre.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
                         WHERE
-                            pre.AC_ID_part = v.AC_ID_part
-                        AND
-                            pre.PR_ID_in = v.PR_ID_in
-                        AND
-                            pre.AC_part_PR_in_RAT_got_ChangedAt < v.AC_part_PR_in_RAT_got_ChangedAt
-                        AND
-                            pre.AC_part_PR_in_RAT_got_Stance = v.AC_part_PR_in_RAT_got_Stance
-                        ORDER BY
-                            pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
-                            pre.AC_part_PR_in_RAT_got_PositedAt DESC
-                        UNION
-                        SELECT TOP 1
-                            fol.RAT_ID_got
-                        FROM
-                            [ties].[fAC_part_PR_in_RAT_got] (
-                                v.AC_part_PR_in_RAT_got_Who,
-                                v.AC_part_PR_in_RAT_got_ChangedAt,
-                                v.AC_part_PR_in_RAT_got_PositedAt
-                            ) fol
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.RAT_ID_got
+                            FROM
+                                [ties].[fAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Who,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) fol
+                            WHERE
+                                fol.AC_ID_part = v.AC_ID_part
+                            AND
+                                fol.PR_ID_in = v.PR_ID_in
+                            AND
+                                fol.AC_part_PR_in_RAT_got_ChangedAt > v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                fol.AC_part_PR_in_RAT_got_Stance = v.AC_part_PR_in_RAT_got_Stance
+                            ORDER BY
+                                fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
+                                fol.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
                         WHERE
-                            fol.AC_ID_part = v.AC_ID_part
-                        AND
-                            fol.PR_ID_in = v.PR_ID_in
-                        AND
-                            fol.AC_part_PR_in_RAT_got_ChangedAt > v.AC_part_PR_in_RAT_got_ChangedAt
-                        AND
-                            fol.AC_part_PR_in_RAT_got_Stance = v.AC_part_PR_in_RAT_got_Stance
-                        ORDER BY
-                            fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
-                            fol.AC_part_PR_in_RAT_got_PositedAt DESC
-                    ) s
-                    WHERE
-                        s.RAT_ID_got = v.RAT_ID_got
-                    ) > 0
-                    THEN 'R' -- restatement
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the following version
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -13277,7 +15146,7 @@ BEGIN
         i.AC_ID_part,
         i.PR_ID_in,
         ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
-        i.AC_part_PR_in_RAT_got_Who,
+        ISNULL(i.AC_part_PR_in_RAT_got_Who, i.Who),
         i.AC_part_PR_in_RAT_got_PositedAt,
         i.AC_part_PR_in_RAT_got_Confidence
     FROM
@@ -13300,10 +15169,41 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(AC_part_PR_in_RAT_got_Stance))
         RAISERROR('The computed assertion column AC_part_PR_in_RAT_got_Stance is not updatable.', 16, 1);
+    IF(UPDATE(AC_part_PR_in_RAT_got_ID))
+        RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID_part))
         RAISERROR('The identity column AC_ID_part is not updatable.', 16, 1);
     IF(UPDATE(PR_ID_in))
         RAISERROR('The identity column PR_ID_in is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Meta] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Who,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Confidence
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        i.AC_part_PR_in_RAT_got_ID,
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Who) THEN i.AC_part_PR_in_RAT_got_Who ELSE i.Who END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+        END, @now) as datetime2(3)),
+        0.25
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        i.AC_part_PR_in_RAT_got_ID is not null
+    AND (
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got,
         AC_part_PR_in_RAT_got_ChangedAt,
@@ -13316,25 +15216,57 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_part_PR_in_RAT_got,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Who = i.AC_part_PR_in_RAT_got_Who
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
         CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
-        CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Who) THEN i.AC_part_PR_in_RAT_got_Who ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Who) THEN i.AC_part_PR_in_RAT_got_Who ELSE i.Who END, 0),
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2(3)),
-        CASE
-            WHEN
-                i.RAT_ID_got is null
-            THEN 0.25
-            WHEN UPDATE(AC_part_PR_in_RAT_got_Confidence) THEN i.AC_part_PR_in_RAT_got_Confidence
-            ELSE 0.75
-        END
+        ISNULL(i.AC_part_PR_in_RAT_got_Confidence, 0.75)
     FROM
         inserted i
     LEFT JOIN
         [knots].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating;
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_Who) OR
+            UPDATE(Who) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Who = i.AC_part_PR_in_RAT_got_Who
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                AND
+                    d.AC_part_PR_in_RAT_got_Confidence = ISNULL(i.AC_part_PR_in_RAT_got_Confidence, 0.75)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -13429,7 +15361,28 @@ BEGIN
     WHERE
         i.ST_ID_at is not null
     AND
-        i.PR_ID_isPlaying is not null;
+        i.PR_ID_isPlaying is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[ST_at_PR_isPlaying_Fact] p
+            JOIN
+                [ties].[ST_at_PR_isPlaying_Meta] a
+            ON
+                a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            WHERE
+                p.ST_ID_at = i.ST_ID_at
+            AND
+                p.PR_ID_isPlaying = i.PR_ID_isPlaying
+            AND
+                p.ST_at_PR_isPlaying_ChangedAt = ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Who = ISNULL(i.ST_at_PR_isPlaying_Who, 0)
+            AND
+                a.ST_at_PR_isPlaying_PositedAt = ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(ST_at_PR_isPlaying_Version),
         @currentVersion = 0
@@ -13542,7 +15495,7 @@ BEGIN
         i.ST_at_PR_isPlaying_ChangedAt,
         i.ST_ID_at,
         i.PR_ID_isPlaying,
-        i.ST_at_PR_isPlaying_Who,
+        ISNULL(i.ST_at_PR_isPlaying_Who, i.Who),
         i.ST_at_PR_isPlaying_PositedAt,
         i.ST_at_PR_isPlaying_Confidence
     FROM
@@ -13643,7 +15596,28 @@ BEGIN
     AND
         i.AC_ID_child is not null
     AND
-        i.PAT_ID_having is not null;
+        i.PAT_ID_having is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_parent_AC_child_PAT_having_Fact] p
+            JOIN
+                [ties].[AC_parent_AC_child_PAT_having_Meta] a
+            ON
+                a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            WHERE
+                p.AC_ID_parent = i.AC_ID_parent
+            AND
+                p.AC_ID_child = i.AC_ID_child
+            AND
+                p.PAT_ID_having = i.PAT_ID_having
+            AND
+                a.AC_parent_AC_child_PAT_having_Who = ISNULL(i.AC_parent_AC_child_PAT_having_Who, 0)
+            AND
+                a.AC_parent_AC_child_PAT_having_PositedAt = ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(AC_parent_AC_child_PAT_having_Version),
         @currentVersion = 0
@@ -13756,7 +15730,7 @@ BEGIN
         i.AC_ID_parent,
         i.AC_ID_child,
         ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
-        i.AC_parent_AC_child_PAT_having_Who,
+        ISNULL(i.AC_parent_AC_child_PAT_having_Who, i.Who),
         i.AC_parent_AC_child_PAT_having_PositedAt,
         i.AC_parent_AC_child_PAT_having_Confidence
     FROM
@@ -13865,7 +15839,30 @@ BEGIN
     AND
         i.ST_ID_location is not null
     AND
-        i.EV_ID_of is not null;
+        i.EV_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[PR_content_ST_location_EV_of_Fact] p
+            JOIN
+                [ties].[PR_content_ST_location_EV_of_Meta] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            WHERE
+                p.PR_ID_content = i.PR_ID_content
+            AND
+                p.ST_ID_location = i.ST_ID_location
+            AND
+                p.EV_ID_of = i.EV_ID_of
+            AND
+                p.PR_content_ST_location_EV_of_ChangedAt = ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_Who = ISNULL(i.PR_content_ST_location_EV_of_Who, 0)
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+        );
     SELECT
         @maxVersion = max(PR_content_ST_location_EV_of_Version),
         @currentVersion = 0
@@ -13897,70 +15894,82 @@ BEGIN
                     THEN 'D' -- duplicate assertion
                     WHEN p.PR_content_ST_location_EV_of_ID is not null
                     THEN 'S' -- duplicate statement
-                    WHEN (
-                    SELECT
-                        COUNT(*)
-                    FROM (
-                        SELECT TOP 1
-                            pre.PR_ID_content,
-                            pre.ST_ID_location,
-                            pre.EV_ID_of
-                        FROM
-                            [ties].[rPR_content_ST_location_EV_of] (
-                                v.PR_content_ST_location_EV_of_Who,
-                                v.PR_content_ST_location_EV_of_ChangedAt,
-                                v.PR_content_ST_location_EV_of_PositedAt
-                            ) pre
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.PR_ID_content,
+                                pre.ST_ID_location,
+                                pre.EV_ID_of
+                            FROM
+                                [ties].[rPR_content_ST_location_EV_of] (
+                                    v.PR_content_ST_location_EV_of_Who,
+                                    v.PR_content_ST_location_EV_of_ChangedAt,
+                                    v.PR_content_ST_location_EV_of_PositedAt
+                                ) pre
+                            WHERE
+                            (
+                                    pre.PR_ID_content = v.PR_ID_content
+                                AND
+                                    pre.ST_ID_location = v.ST_ID_location
+                                AND
+                                    pre.EV_ID_of = v.EV_ID_of
+                            )
+                            AND
+                                pre.PR_content_ST_location_EV_of_ChangedAt < v.PR_content_ST_location_EV_of_ChangedAt
+                            AND
+                                pre.PR_content_ST_location_EV_of_Stance = v.PR_content_ST_location_EV_of_Stance
+                            ORDER BY
+                                pre.PR_content_ST_location_EV_of_ChangedAt DESC,
+                                pre.PR_content_ST_location_EV_of_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                pre.PR_ID_content = v.PR_ID_content
-                            AND
-                                pre.ST_ID_location = v.ST_ID_location
-                            AND
-                                pre.EV_ID_of = v.EV_ID_of
-                        )
+                            s.PR_ID_content = v.PR_ID_content
                         AND
-                            pre.PR_content_ST_location_EV_of_ChangedAt < v.PR_content_ST_location_EV_of_ChangedAt
+                            s.ST_ID_location = v.ST_ID_location
                         AND
-                            pre.PR_content_ST_location_EV_of_Stance = v.PR_content_ST_location_EV_of_Stance
-                        ORDER BY
-                            pre.PR_content_ST_location_EV_of_ChangedAt DESC,
-                            pre.PR_content_ST_location_EV_of_PositedAt DESC
-                        UNION
-                        SELECT TOP 1
-                            fol.PR_ID_content,
-                            fol.ST_ID_location,
-                            fol.EV_ID_of
-                        FROM
-                            [ties].[fPR_content_ST_location_EV_of] (
-                                v.PR_content_ST_location_EV_of_Who,
-                                v.PR_content_ST_location_EV_of_ChangedAt,
-                                v.PR_content_ST_location_EV_of_PositedAt
-                            ) fol
+                            s.EV_ID_of = v.EV_ID_of
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.PR_ID_content,
+                                fol.ST_ID_location,
+                                fol.EV_ID_of
+                            FROM
+                                [ties].[fPR_content_ST_location_EV_of] (
+                                    v.PR_content_ST_location_EV_of_Who,
+                                    v.PR_content_ST_location_EV_of_ChangedAt,
+                                    v.PR_content_ST_location_EV_of_PositedAt
+                                ) fol
+                            WHERE
+                            (
+                                    fol.PR_ID_content = v.PR_ID_content
+                                AND
+                                    fol.ST_ID_location = v.ST_ID_location
+                                AND
+                                    fol.EV_ID_of = v.EV_ID_of
+                            )
+                            AND
+                                fol.PR_content_ST_location_EV_of_ChangedAt > v.PR_content_ST_location_EV_of_ChangedAt
+                            AND
+                                fol.PR_content_ST_location_EV_of_Stance = v.PR_content_ST_location_EV_of_Stance
+                            ORDER BY
+                                fol.PR_content_ST_location_EV_of_ChangedAt ASC,
+                                fol.PR_content_ST_location_EV_of_PositedAt DESC
+                        ) s
                         WHERE
-                        (
-                                fol.PR_ID_content = v.PR_ID_content
-                            AND
-                                fol.ST_ID_location = v.ST_ID_location
-                            AND
-                                fol.EV_ID_of = v.EV_ID_of
-                        )
+                            s.PR_ID_content = v.PR_ID_content
                         AND
-                            fol.PR_content_ST_location_EV_of_ChangedAt > v.PR_content_ST_location_EV_of_ChangedAt
+                            s.ST_ID_location = v.ST_ID_location
                         AND
-                            fol.PR_content_ST_location_EV_of_Stance = v.PR_content_ST_location_EV_of_Stance
-                        ORDER BY
-                            fol.PR_content_ST_location_EV_of_ChangedAt ASC,
-                            fol.PR_content_ST_location_EV_of_PositedAt DESC
-                    ) s
-                    WHERE
-                        s.PR_ID_content = v.PR_ID_content
-                    AND
-                        s.ST_ID_location = v.ST_ID_location
-                    AND
-                        s.EV_ID_of = v.EV_ID_of
-                    ) > 0
-                    THEN 'R' -- restatement
+                            s.EV_ID_of = v.EV_ID_of
+                    )
+                    THEN 'R' -- restatement of the following version
                     ELSE 'N' -- new statement
                 END
         FROM
@@ -14052,7 +16061,7 @@ BEGIN
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        i.PR_content_ST_location_EV_of_Who,
+        ISNULL(i.PR_content_ST_location_EV_of_Who, i.Who),
         i.PR_content_ST_location_EV_of_PositedAt,
         i.PR_content_ST_location_EV_of_Confidence
     FROM
@@ -14071,6 +16080,37 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(PR_content_ST_location_EV_of_Stance))
         RAISERROR('The computed assertion column PR_content_ST_location_EV_of_Stance is not updatable.', 16, 1);
+    IF(UPDATE(PR_content_ST_location_EV_of_ID))
+        RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[PR_content_ST_location_EV_of_Meta] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_Who,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Confidence
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_content_ST_location_EV_of_ID,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Who) THEN i.PR_content_ST_location_EV_of_Who ELSE i.Who END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+        END, @now) as datetime2(3)),
+        0.25
+    FROM
+        inserted i
+    WHERE
+        i.PR_content_ST_location_EV_of_ID is not null
+    AND (
+        i.PR_ID_content is null
+    OR
+        i.ST_ID_location is null
+    OR
+        i.EV_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[PR_content_ST_location_EV_of] (
         Metadata_PR_content_ST_location_EV_of,
         PR_content_ST_location_EV_of_ChangedAt,
@@ -14083,25 +16123,65 @@ BEGIN
     )
     SELECT
         i.Metadata_PR_content_ST_location_EV_of,
-        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_content_ST_location_EV_of_Who = i.PR_content_ST_location_EV_of_Who
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            ) THEN i.PR_content_ST_location_EV_of_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        CASE WHEN UPDATE(PR_content_ST_location_EV_of_Who) THEN i.PR_content_ST_location_EV_of_Who ELSE 0 END,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Who) THEN i.PR_content_ST_location_EV_of_Who ELSE i.Who END, 0),
         cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2(3)),
-        CASE
-            WHEN
-                i.PR_ID_content is null
-            OR
-                i.ST_ID_location is null
-            OR
-                i.EV_ID_of is null
-            THEN 0.25
-            WHEN UPDATE(PR_content_ST_location_EV_of_Confidence) THEN i.PR_content_ST_location_EV_of_Confidence
-            ELSE 0.75
-        END
+        ISNULL(i.PR_content_ST_location_EV_of_Confidence, 0.75)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        i.EV_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_content_ST_location_EV_of_ChangedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_Who) OR
+            UPDATE(Who) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_content_ST_location_EV_of_Who = i.PR_content_ST_location_EV_of_Who
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+                AND
+                    d.PR_content_ST_location_EV_of_Confidence = ISNULL(i.PR_content_ST_location_EV_of_Confidence, 0.75)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------

@@ -131,7 +131,29 @@ BEGIN
     LEFT JOIN
         [dbo].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing; 
+        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -157,6 +179,38 @@ BEGIN
         AND
             d.ONG_ID_currently = tie.ONG_ID_currently
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_subset_PN_of instead of INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_AC_subset_PN_of', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_AC_subset_PN_of];
+GO
+CREATE TRIGGER [dbo].[it_AC_subset_PN_of] ON [dbo].[AC_subset_PN_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[AC_subset_PN_of] (
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        AC_ID_subset,
+        PN_ID_of
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_subset_PN_of] x
+        WHERE 
+            x.AC_ID_subset = i.AC_ID_subset
+        AND
+            x.PN_ID_of = i.PN_ID_of
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -190,6 +244,32 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    INSERT INTO [dbo].[AC_subset_PN_of] (
+        AC_ID_subset,
+        PN_ID_of
+    )
+    SELECT
+        i.AC_ID_subset,
+        i.PN_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- values that are left as they are state nothing
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -211,6 +291,38 @@ BEGIN
         AND
             d.PN_ID_of = tie.PN_ID_of
        );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itEV_in_AC_wasCast instead of INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_in_AC_wasCast', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_in_AC_wasCast];
+GO
+CREATE TRIGGER [dbo].[it_EV_in_AC_wasCast] ON [dbo].[EV_in_AC_wasCast]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[EV_in_AC_wasCast] (
+        EV_ID_in,
+        AC_ID_wasCast
+    )
+    SELECT
+        EV_ID_in,
+        AC_ID_wasCast
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_in_AC_wasCast] x
+        WHERE 
+            x.EV_ID_in = i.EV_ID_in
+        AND
+            x.AC_ID_wasCast = i.AC_ID_wasCast
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -301,6 +413,32 @@ BEGIN
         AND
             x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
     );
+    -- other values for identifiers that already have values at that time are a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_part,
+            i.PR_ID_in,
+            i.AC_part_PR_in_RAT_got_ChangedAt
+        FROM
+            @inserted i
+        JOIN
+            [dbo].[AC_part_PR_in_RAT_got] x
+        ON
+            x.AC_ID_part = i.AC_ID_part
+        AND
+            x.PR_ID_in = i.PR_ID_in
+        AND
+            x.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
         AC_part_PR_in_RAT_got_ChangedAt,
         AC_ID_part,
@@ -377,7 +515,25 @@ BEGIN
     LEFT JOIN
         [dbo].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.RAT_Rating; 
+        [RAT_got].RAT_Rating = i.RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- values that are left as they are state nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_ID_part = i.AC_ID_part
+                AND
+                    d.PR_ID_in = i.PR_ID_in
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -505,6 +661,42 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_parent_AC_child_PAT_having instead of INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_AC_parent_AC_child_PAT_having', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_AC_parent_AC_child_PAT_having];
+GO
+CREATE TRIGGER [dbo].[it_AC_parent_AC_child_PAT_having] ON [dbo].[AC_parent_AC_child_PAT_having]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    INSERT INTO [dbo].[AC_parent_AC_child_PAT_having] (
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    )
+    SELECT
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[AC_parent_AC_child_PAT_having] x
+        WHERE 
+            x.AC_ID_parent = i.AC_ID_parent
+        AND
+            x.AC_ID_child = i.AC_ID_child
+        AND
+            x.PAT_ID_having = i.PAT_ID_having
+    );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_lAC_parent_AC_child_PAT_having instead of INSERT trigger on lAC_parent_AC_child_PAT_having
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TRIGGER [dbo].[it_lAC_parent_AC_child_PAT_having] ON [dbo].[lAC_parent_AC_child_PAT_having]
@@ -553,6 +745,67 @@ BEGIN
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itPR_content_ST_location_EV_of instead of INSERT trigger on PR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_PR_content_ST_location_EV_of', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_PR_content_ST_location_EV_of];
+GO
+CREATE TRIGGER [dbo].[it_PR_content_ST_location_EV_of] ON [dbo].[PR_content_ST_location_EV_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    -- other values for identifiers that already have values are a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID_of
+        FROM
+            inserted i
+        JOIN
+            [dbo].[PR_content_ST_location_EV_of] x
+        ON
+            x.EV_ID_of = i.EV_ID_of
+        WHERE NOT (
+            x.PR_ID_content = i.PR_ID_content
+        AND
+            x.ST_ID_location = i.ST_ID_location
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_content_ST_location_EV_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[PR_content_ST_location_EV_of] (
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    )
+    SELECT
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[PR_content_ST_location_EV_of] x
+        WHERE 
+            x.PR_ID_content = i.PR_ID_content
+        AND
+            x.ST_ID_location = i.ST_ID_location
+        AND
+            x.EV_ID_of = i.EV_ID_of
+    );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_lPR_content_ST_location_EV_of instead of INSERT trigger on lPR_content_ST_location_EV_of
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TRIGGER [dbo].[it_lPR_content_ST_location_EV_of] ON [dbo].[lPR_content_ST_location_EV_of]
@@ -587,6 +840,36 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(EV_ID_of))
         RAISERROR('The identity column EV_ID_of is not updatable.', 16, 1);
+    INSERT INTO [dbo].[PR_content_ST_location_EV_of] (
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    )
+    SELECT
+        i.PR_ID_content,
+        i.ST_ID_location,
+        i.EV_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        ( -- values that are left as they are state nothing
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------

@@ -392,6 +392,39 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
+        RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Annex] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        i.AC_partner_AC_with_ONG_currently_ID,
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_partner_AC_with_ONG_currently_ID is not null
+    AND (
+        i.AC_ID_partner is null
+    OR
+        i.AC_ID_with is null
+    OR
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
         Metadata_AC_partner_AC_with_ONG_currently,
         AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -403,28 +436,62 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_partner_AC_with_ONG_currently,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
         CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.AC_ID_partner is null
-            OR
-                i.AC_ID_with is null
-            OR
-                i.ONG_ID_currently is null
-            THEN 0
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_Reliability) THEN i.AC_partner_AC_with_ONG_currently_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
     FROM
         inserted i
     LEFT JOIN
         [knots].[ONG_Ongoing] [ONG_currently]
     ON
-        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing;
+        [ONG_currently].ONG_Ongoing = i.currently_ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -680,6 +747,32 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    IF(UPDATE(AC_subset_PN_of_ID))
+        RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_subset_PN_of_Annex] (
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_subset_PN_of_ID,
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.AC_subset_PN_of_ID is not null
+    AND (
+        i.AC_ID_subset is null
+    OR
+        i.PN_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_subset_PN_of] (
         Metadata_AC_subset_PN_of,
         AC_ID_subset,
@@ -692,17 +785,31 @@ BEGIN
         i.AC_ID_subset,
         i.PN_ID_of,
         cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.AC_ID_subset is null
-            OR
-                i.PN_ID_of is null
-            THEN 0
-            WHEN UPDATE(AC_subset_PN_of_Reliability) THEN i.AC_subset_PN_of_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_subset_PN_of_Reliability, 1)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_subset_PN_of_PositedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_subset_PN_of_ID = i.AC_subset_PN_of_ID
+                AND
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+                AND
+                    d.AC_subset_PN_of_Reliability = ISNULL(i.AC_subset_PN_of_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1343,10 +1450,39 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    IF(UPDATE(AC_part_PR_in_RAT_got_ID))
+        RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID_part))
         RAISERROR('The identity column AC_ID_part is not updatable.', 16, 1);
     IF(UPDATE(PR_ID_in))
         RAISERROR('The identity column PR_ID_in is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        i.AC_part_PR_in_RAT_got_ID,
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        i.AC_part_PR_in_RAT_got_ID is not null
+    AND (
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got,
         AC_part_PR_in_RAT_got_ChangedAt,
@@ -1358,24 +1494,50 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_part_PR_in_RAT_got,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
         CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.RAT_ID_got is null
-            THEN 0
-            WHEN UPDATE(AC_part_PR_in_RAT_got_Reliability) THEN i.AC_part_PR_in_RAT_got_Reliability
-            ELSE 1
-        END
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
     FROM
         inserted i
     LEFT JOIN
         [knots].[RAT_Rating] [RAT_got]
     ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating;
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                AND
+                    d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -2412,6 +2574,35 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    IF(UPDATE(PR_content_ST_location_EV_of_ID))
+        RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[PR_content_ST_location_EV_of_Annex] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_content_ST_location_EV_of_ID,
+        cast(ISNULL(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.PR_content_ST_location_EV_of_ID is not null
+    AND (
+        i.PR_ID_content is null
+    OR
+        i.ST_ID_location is null
+    OR
+        i.EV_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[PR_content_ST_location_EV_of] (
         Metadata_PR_content_ST_location_EV_of,
         PR_content_ST_location_EV_of_ChangedAt,
@@ -2423,24 +2614,58 @@ BEGIN
     )
     SELECT
         i.Metadata_PR_content_ST_location_EV_of,
-        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt ELSE @now END as datetime2),
+        cast(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            ) THEN i.PR_content_ST_location_EV_of_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
         cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
-        CASE
-            WHEN
-                i.PR_ID_content is null
-            OR
-                i.ST_ID_location is null
-            OR
-                i.EV_ID_of is null
-            THEN 0
-            WHEN UPDATE(PR_content_ST_location_EV_of_Reliability) THEN i.PR_content_ST_location_EV_of_Reliability
-            ELSE 1
-        END
+        ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
     FROM
-        inserted i;
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        i.EV_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_content_ST_location_EV_of_ChangedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+                AND
+                    d.PR_content_ST_location_EV_of_Reliability = ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+            )
+        );
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------

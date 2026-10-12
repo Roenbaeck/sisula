@@ -32,8 +32,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [dbo].[lST_Stage] [ST];
 GO
@@ -49,8 +49,8 @@ SELECT
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
-    [ST].UTL_Utilization as [],
-    [ST].UTL_Utilization as []
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
 FROM
     [dbo].[pST_Stage](@changingTimepoint) [ST]
 GO
@@ -113,8 +113,8 @@ SELECT
     [AC].Positor,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [dbo].[lAC_Actor] [AC];
 GO
@@ -129,8 +129,8 @@ SELECT
     [AC].Positor,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
-    [AC].GEN_Gender as [],
-    [AC].PLV_ProfessionalLevel as []
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
 FROM
     [dbo].[pAC_Actor](@changingTimepoint) [AC]
 GO

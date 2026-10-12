@@ -24,23 +24,6 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
-    DECLARE @EV TABLE (
-        Row bigint IDENTITY(1,1) not null primary key,
-        EV_ID numeric(12,0) not null
-    );
-    INSERT INTO [nexuses].[EV_Event] (
-        Metadata_EV 
-    )
-    OUTPUT
-        inserted.EV_ID
-    INTO
-        @EV
-    SELECT
-        Metadata_EV 
-    FROM
-        inserted
-    WHERE
-        inserted.EV_ID is null;
     DECLARE @inserted TABLE (
         EV_ID numeric(12,0) not null,
         Metadata_EV int not null,
@@ -68,9 +51,25 @@ BEGIN
         Metadata_PLV int null,
         PLV_ID tinyint null
     );
-    INSERT INTO @inserted
-    SELECT
-        ISNULL(i.EV_ID, a.EV_ID),
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
         i.Metadata_EV,
         ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
         i.EV_DAT_Event_Date,
@@ -95,41 +94,40 @@ BEGIN
         ISNULL(i.PLV_EQ, 0),
         ISNULL(i.Metadata_PLV, i.Metadata_EV),
         i.PLV_ID
-    FROM (
-        SELECT
-            EV_ID,
-            Metadata_EV,
-            Metadata_EV_DAT,
-            EV_DAT_Event_Date,
-            Metadata_EV_AUD,
-            EV_AUD_EQ,
-            EV_AUD_Event_Audience,
-            Metadata_EV_REV,
-            EV_REV_EQ,
-            EV_REV_Event_Revenue,
-            Metadata_EV_STA,
-            EV_STA_ChangedAt,
-            EV_STA_EQ,
-            EV_STA_Event_Status,
-            Metadata_EV_UTL,
-            UTL_Utilization,
-            Metadata_UTL,
-            UTL_ID,
-            Metadata_EV_LVL,
-            EV_LVL_ChangedAt,
-            PLV_ProfessionalLevel,
-            PLV_Checksum,
-            PLV_EQ,
-            Metadata_PLV,
-            PLV_ID,
-            ROW_NUMBER() OVER (PARTITION BY EV_ID ORDER BY EV_ID) AS Row
-        FROM
-            inserted
-    ) i
-    LEFT JOIN
-        @EV a
-    ON
-        a.Row = i.Row;
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(i.EV_AUD_EQ, 0),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(i.EV_REV_EQ, 0),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(i.EV_STA_EQ, 0),
+        i.EV_STA_Event_Status,
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_EV),
+        i.UTL_ID,
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        i.PLV_ProfessionalLevel,
+        ISNULL(i.PLV_Checksum, dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.PLV_EQ, 0),
+        ISNULL(i.Metadata_PLV, i.Metadata_EV),
+        i.PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
     INSERT INTO [attributes].[EV_DAT_Event_Date] (
         Metadata_EV_DAT,
         EV_ID,
@@ -255,8 +253,16 @@ BEGIN
             i.EV_DAT_Event_Date
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_DAT_Event_Date is not null;
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a value that is left as it is states nothing
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        );
     END
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
@@ -275,12 +281,21 @@ BEGIN
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_ID, i.EV_ID),
-            i.EV_AUD_EQ,
+            ISNULL(i.EV_AUD_EQ, 0),
             i.EV_AUD_Event_Audience
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_AUD_Event_Audience is not null;
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_AUD_EQ) OR
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        );
     END
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
@@ -299,12 +314,21 @@ BEGIN
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             ISNULL(i.EV_ID, i.EV_ID),
-            i.EV_REV_EQ,
+            ISNULL(i.EV_REV_EQ, 0),
             i.EV_REV_Event_Revenue
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_REV_Event_Revenue is not null;
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_REV_EQ) OR
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        );
     END
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
@@ -324,7 +348,7 @@ BEGIN
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_ID, i.EV_ID),
-            i.EV_STA_EQ,
+            ISNULL(i.EV_STA_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.EV_STA_Event_Status is null THEN i.EV_STA_ChangedAt
                 WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
@@ -332,8 +356,18 @@ BEGIN
             i.EV_STA_Event_Status
         FROM
             inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            i.EV_STA_Event_Status is not null;
+            i.EV_STA_Event_Status is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_STA_ChangedAt) OR
+            UPDATE(EV_STA_EQ) OR
+            d.EV_STA_Event_Status is null OR
+            d.EV_STA_Event_Status <> i.EV_STA_Event_Status
+        );
     END
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
@@ -358,8 +392,16 @@ BEGIN
             [knots].[UTL_Utilization] [kUTL]
         ON
             [kUTL].UTL_Utilization = i.UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null;
+            CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            d.UTL_ID is null OR
+            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END
+        );
     END
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
@@ -391,8 +433,17 @@ BEGIN
             [kPLV].PLV_Checksum = dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
         AND
             [kPLV].PLV_EQ = i.PLV_EQ
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END is not null;
+            CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_LVL_ChangedAt) OR
+            d.PLV_ID is null OR
+            d.PLV_ID <> CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END
+        );
     END
 END
 GO
