@@ -7935,10 +7935,8 @@ CREATE VIEW [dbo].[ic_key_ST_Stage_1st] AS
 SELECT
     'key_ST_Stage_1st' AS Construct,
     'duplicate natural key' AS Violation,
-    (
-        SELECT
-            d.ST_LOC_Checksum
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'ST_LOC_Checksum=', CONVERT(varchar(max), d.ST_LOC_Checksum, 1)
     ) AS ViolationKey,
     d.Occurrences
 FROM (
@@ -7958,10 +7956,8 @@ UNION ALL
 SELECT
     'key_ST_Stage_1st',
     'more than one natural key',
-    (
-        SELECT
-            d.ST_ID
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'ST_ID=', d.ST_ID
     ),
     d.Occurrences
 FROM (
@@ -8063,10 +8059,8 @@ CREATE VIEW [dbo].[ic_key_ST_Stage_2nd] AS
 SELECT
     'key_ST_Stage_2nd' AS Construct,
     'duplicate natural key' AS Violation,
-    (
-        SELECT
-            d.ST_NAM_Checksum
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'ST_NAM_Checksum=', CONVERT(varchar(max), d.ST_NAM_Checksum, 1)
     ) AS ViolationKey,
     d.Occurrences
 FROM (
@@ -8086,10 +8080,8 @@ UNION ALL
 SELECT
     'key_ST_Stage_2nd',
     'more than one natural key',
-    (
-        SELECT
-            d.ST_ID
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'ST_ID=', d.ST_ID
     ),
     d.Occurrences
 FROM (
@@ -8191,10 +8183,8 @@ CREATE VIEW [dbo].[ic_key_AC_Actor_1st] AS
 SELECT
     'key_AC_Actor_1st' AS Construct,
     'duplicate natural key' AS Violation,
-    (
-        SELECT
-            d.AC_NAM_Checksum
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'AC_NAM_Checksum=', CONVERT(varchar(max), d.AC_NAM_Checksum, 1)
     ) AS ViolationKey,
     d.Occurrences
 FROM (
@@ -8214,10 +8204,8 @@ UNION ALL
 SELECT
     'key_AC_Actor_1st',
     'more than one natural key',
-    (
-        SELECT
-            d.AC_ID
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'AC_ID=', d.AC_ID
     ),
     d.Occurrences
 FROM (
@@ -8300,10 +8288,8 @@ CREATE VIEW [dbo].[ic_key_PR_Program_1st] AS
 SELECT
     'key_PR_Program_1st' AS Construct,
     'duplicate natural key' AS Violation,
-    (
-        SELECT
-            d.PR_NAM_Program_Name
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'PR_NAM_Program_Name=', d.PR_NAM_Program_Name
     ) AS ViolationKey,
     d.Occurrences
 FROM (
@@ -8323,10 +8309,8 @@ UNION ALL
 SELECT
     'key_PR_Program_1st',
     'more than one natural key',
-    (
-        SELECT
-            d.PR_ID
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'PR_ID=', d.PR_ID
     ),
     d.Occurrences
 FROM (
@@ -8417,12 +8401,10 @@ CREATE VIEW [dbo].[ic_key_EV_Event_1st] AS
 SELECT
     'key_EV_Event_1st' AS Construct,
     'duplicate natural key' AS Violation,
-    (
-        SELECT
-            d.EV_DAT_Event_Date,
-            d.wasHeldAt_ST_LOC_Checksum,
-            d.wasPlayed_PR_NAM_Program_Name
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'EV_DAT_Event_Date=', d.EV_DAT_Event_Date, ', ',
+        'wasHeldAt_ST_LOC_Checksum=', CONVERT(varchar(max), d.wasHeldAt_ST_LOC_Checksum, 1), ', ',
+        'wasPlayed_PR_NAM_Program_Name=', d.wasPlayed_PR_NAM_Program_Name
     ) AS ViolationKey,
     d.Occurrences
 FROM (
@@ -8450,10 +8432,8 @@ UNION ALL
 SELECT
     'key_EV_Event_1st',
     'more than one natural key',
-    (
-        SELECT
-            d.EV_ID
-        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+    CONCAT(
+        'EV_ID=', d.EV_ID
     ),
     d.Occurrences
 FROM (
