@@ -40,6 +40,48 @@ BEGIN
             AC_partner_AC_with_ONG_currently_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_partner,
+            i.AC_ID_with,
+            i.ONG_ID_currently,
+            ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now) AS AC_partner_AC_with_ONG_currently_ChangedAt,
+            ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now) AS AC_partner_AC_with_ONG_currently_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+            JOIN
+                [ties].[AC_partner_AC_with_ONG_currently_Annex] a
+            ON
+                a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            WHERE
+                p.AC_ID_partner = i.AC_ID_partner
+            AND
+                p.AC_ID_with = i.AC_ID_with
+            AND
+                p.ONG_ID_currently = i.ONG_ID_currently
+            AND
+                p.AC_partner_AC_with_ONG_currently_ChangedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_PositedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Reliability <> ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_partner_AC_with_ONG_currently for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_partner_AC_with_ONG_currently, 0),
@@ -438,6 +480,42 @@ BEGIN
             AC_subset_PN_of_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_subset,
+            i.PN_ID_of,
+            ISNULL(i.AC_subset_PN_of_PositedAt, @now) AS AC_subset_PN_of_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_subset_PN_of_Posit] p
+            JOIN
+                [ties].[AC_subset_PN_of_Annex] a
+            ON
+                a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            WHERE
+                p.AC_ID_subset = i.AC_ID_subset
+            AND
+                p.PN_ID_of = i.PN_ID_of
+            AND
+                a.AC_subset_PN_of_PositedAt = ISNULL(i.AC_subset_PN_of_PositedAt, @now)
+            AND
+                a.AC_subset_PN_of_Reliability <> ISNULL(i.AC_subset_PN_of_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_subset_PN_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_subset_PN_of, 0),
@@ -756,6 +834,42 @@ BEGIN
             EV_in_AC_wasCast_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID_in,
+            i.AC_ID_wasCast,
+            ISNULL(i.EV_in_AC_wasCast_PositedAt, @now) AS EV_in_AC_wasCast_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[EV_in_AC_wasCast_Posit] p
+            JOIN
+                [ties].[EV_in_AC_wasCast_Annex] a
+            ON
+                a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            WHERE
+                p.EV_ID_in = i.EV_ID_in
+            AND
+                p.AC_ID_wasCast = i.AC_ID_wasCast
+            AND
+                a.EV_in_AC_wasCast_PositedAt = ISNULL(i.EV_in_AC_wasCast_PositedAt, @now)
+            AND
+                a.EV_in_AC_wasCast_Reliability <> ISNULL(i.EV_in_AC_wasCast_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_in_AC_wasCast for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_EV_in_AC_wasCast, 0),
@@ -1002,6 +1116,48 @@ BEGIN
             AC_part_PR_in_RAT_got_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_part,
+            i.PR_ID_in,
+            i.RAT_ID_got,
+            ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now) AS AC_part_PR_in_RAT_got_ChangedAt,
+            ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now) AS AC_part_PR_in_RAT_got_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [ties].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            WHERE
+                p.AC_ID_part = i.AC_ID_part
+            AND
+                p.PR_ID_in = i.PR_ID_in
+            AND
+                p.RAT_ID_got = i.RAT_ID_got
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_part_PR_in_RAT_got, 0),
@@ -1381,6 +1537,45 @@ BEGIN
             ST_at_PR_isPlaying_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID_at,
+            i.PR_ID_isPlaying,
+            ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now) AS ST_at_PR_isPlaying_ChangedAt,
+            ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now) AS ST_at_PR_isPlaying_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[ST_at_PR_isPlaying_Posit] p
+            JOIN
+                [ties].[ST_at_PR_isPlaying_Annex] a
+            ON
+                a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            WHERE
+                p.ST_ID_at = i.ST_ID_at
+            AND
+                p.PR_ID_isPlaying = i.PR_ID_isPlaying
+            AND
+                p.ST_at_PR_isPlaying_ChangedAt = ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_PositedAt = ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Reliability <> ISNULL(i.ST_at_PR_isPlaying_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_at_PR_isPlaying for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_ST_at_PR_isPlaying, 0),
@@ -1643,6 +1838,45 @@ BEGIN
             AC_parent_AC_child_PAT_having_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_parent,
+            i.AC_ID_child,
+            i.PAT_ID_having,
+            ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now) AS AC_parent_AC_child_PAT_having_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_parent_AC_child_PAT_having_Posit] p
+            JOIN
+                [ties].[AC_parent_AC_child_PAT_having_Annex] a
+            ON
+                a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            WHERE
+                p.AC_ID_parent = i.AC_ID_parent
+            AND
+                p.AC_ID_child = i.AC_ID_child
+            AND
+                p.PAT_ID_having = i.PAT_ID_having
+            AND
+                a.AC_parent_AC_child_PAT_having_PositedAt = ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now)
+            AND
+                a.AC_parent_AC_child_PAT_having_Reliability <> ISNULL(i.AC_parent_AC_child_PAT_having_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_parent_AC_child_PAT_having for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_parent_AC_child_PAT_having, 0),
@@ -1916,6 +2150,48 @@ BEGIN
             PR_content_ST_location_EV_of_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_ID_content,
+            i.ST_ID_location,
+            i.EV_ID_of,
+            ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now) AS PR_content_ST_location_EV_of_ChangedAt,
+            ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now) AS PR_content_ST_location_EV_of_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[PR_content_ST_location_EV_of_Posit] p
+            JOIN
+                [ties].[PR_content_ST_location_EV_of_Annex] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            WHERE
+                p.PR_ID_content = i.PR_ID_content
+            AND
+                p.ST_ID_location = i.ST_ID_location
+            AND
+                p.EV_ID_of = i.EV_ID_of
+            AND
+                p.PR_content_ST_location_EV_of_ChangedAt = ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_Reliability <> ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_content_ST_location_EV_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_PR_content_ST_location_EV_of, 0),

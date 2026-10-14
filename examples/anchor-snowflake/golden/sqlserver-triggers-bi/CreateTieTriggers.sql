@@ -39,6 +39,48 @@ BEGIN
             SU_holder_OB_item_GRD_grade_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.SU_ID_holder,
+            i.OB_ID_item,
+            i.GRD_ID_grade,
+            ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now) AS SU_holder_OB_item_GRD_grade_ChangedAt,
+            ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now) AS SU_holder_OB_item_GRD_grade_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[SU_holder_OB_item_GRD_grade_Posit] p
+            JOIN
+                [dbo].[SU_holder_OB_item_GRD_grade_Annex] a
+            ON
+                a.SU_holder_OB_item_GRD_grade_ID = p.SU_holder_OB_item_GRD_grade_ID
+            WHERE
+                p.SU_ID_holder = i.SU_ID_holder
+            AND
+                p.OB_ID_item = i.OB_ID_item
+            AND
+                p.GRD_ID_grade = i.GRD_ID_grade
+            AND
+                p.SU_holder_OB_item_GRD_grade_ChangedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+            AND
+                a.SU_holder_OB_item_GRD_grade_PositedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+            AND
+                a.SU_holder_OB_item_GRD_grade_Reliability <> ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in SU_holder_OB_item_GRD_grade for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_SU_holder_OB_item_GRD_grade, 0),
@@ -419,6 +461,48 @@ BEGIN
             SU_keeper_OB_thing_GRD_rank_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.SU_ID_keeper,
+            i.OB_ID_thing,
+            i.GRD_ID_rank,
+            ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now) AS SU_keeper_OB_thing_GRD_rank_ChangedAt,
+            ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now) AS SU_keeper_OB_thing_GRD_rank_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] p
+            JOIN
+                [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] a
+            ON
+                a.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
+            WHERE
+                p.SU_ID_keeper = i.SU_ID_keeper
+            AND
+                p.OB_ID_thing = i.OB_ID_thing
+            AND
+                p.GRD_ID_rank = i.GRD_ID_rank
+            AND
+                p.SU_keeper_OB_thing_GRD_rank_ChangedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+            AND
+                a.SU_keeper_OB_thing_GRD_rank_PositedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+            AND
+                a.SU_keeper_OB_thing_GRD_rank_Reliability <> ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in SU_keeper_OB_thing_GRD_rank for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_SU_keeper_OB_thing_GRD_rank, 0),
@@ -1016,6 +1100,42 @@ BEGIN
             OB_part_SU_owner_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.OB_ID_part,
+            i.SU_ID_owner,
+            ISNULL(i.OB_part_SU_owner_PositedAt, @now) AS OB_part_SU_owner_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[OB_part_SU_owner_Posit] p
+            JOIN
+                [dbo].[OB_part_SU_owner_Annex] a
+            ON
+                a.OB_part_SU_owner_ID = p.OB_part_SU_owner_ID
+            WHERE
+                p.OB_ID_part = i.OB_ID_part
+            AND
+                p.SU_ID_owner = i.SU_ID_owner
+            AND
+                a.OB_part_SU_owner_PositedAt = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+            AND
+                a.OB_part_SU_owner_Reliability <> ISNULL(i.OB_part_SU_owner_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in OB_part_SU_owner for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_OB_part_SU_owner, 0),
@@ -1323,6 +1443,45 @@ BEGIN
             SU_partner_SU_with_PositedAt desc
         )
     );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.SU_ID_partner,
+            i.SU_ID_with,
+            ISNULL(i.SU_partner_SU_with_ChangedAt, @now) AS SU_partner_SU_with_ChangedAt,
+            ISNULL(i.SU_partner_SU_with_PositedAt, @now) AS SU_partner_SU_with_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[SU_partner_SU_with_Posit] p
+            JOIN
+                [dbo].[SU_partner_SU_with_Annex] a
+            ON
+                a.SU_partner_SU_with_ID = p.SU_partner_SU_with_ID
+            WHERE
+                p.SU_ID_partner = i.SU_ID_partner
+            AND
+                p.SU_ID_with = i.SU_ID_with
+            AND
+                p.SU_partner_SU_with_ChangedAt = ISNULL(i.SU_partner_SU_with_ChangedAt, @now)
+            AND
+                a.SU_partner_SU_with_PositedAt = ISNULL(i.SU_partner_SU_with_PositedAt, @now)
+            AND
+                a.SU_partner_SU_with_Reliability <> ISNULL(i.SU_partner_SU_with_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in SU_partner_SU_with for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_SU_partner_SU_with, 0),
