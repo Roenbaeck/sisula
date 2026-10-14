@@ -6557,6 +6557,404 @@ FROM
         '+'
     )) t
 ;
+-- NATURAL KEYS -------------------------------------------------------------------------------------------------------
+--
+-- A natural key is a route in the model: the values that identify an anchor or a nexus, reached from it through its
+-- attributes, its roles and ties (see naturalKeys() in Helpers.js for the rules a route follows). For each route of
+-- each anchor and nexus there is
+--
+--   key_<anchor or nexus>_<route>          the key of every identity, from the latest values, with one column for
+--                                          each value; a value with a checksum, such as a geography, is followed by
+--                                          the checksum, hash(value), which is what it is matched on
+--   pkey_<anchor or nexus>_<route>(time)   the key of every identity at a changing time, for a route that passes
+--                                          something historized, since its key can change
+--   ic_key_<anchor or nexus>_<route>       the keys that more than one identity has, and the identities that have
+--                                          more than one key; part of IntegrityViolations
+--
+-- Snowflake does not enforce that a key is unique, so a lookup through a key view can find more than one identity
+-- when ic_key_ is not empty.
+-- Every key is per positor, as the perspectives are.
+--
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_ST_Stage_1st" (
+    "Positor",
+    "ST_ID",
+    "ST_LOC_Stage_Location",
+    "ST_LOC_Checksum"
+) COPY GRANTS
+AS
+SELECT
+    "ST"."Positor",
+    "ST"."ST_ID",
+    "ST"."ST_LOC_Stage_Location",
+    "ST"."ST_LOC_Checksum"
+FROM
+    public."lST_Stage" "ST"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_ST_Stage_1st" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+SELECT
+    'key_ST_Stage_1st',
+    'duplicate natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'ST_LOC_Checksum', "ST_LOC_Checksum"
+    ),
+    COUNT(DISTINCT "ST_ID")
+FROM
+    public."key_ST_Stage_1st"
+WHERE
+    "ST_LOC_Checksum" IS NOT NULL
+GROUP BY
+    "Positor",
+    "ST_LOC_Checksum"
+HAVING
+    COUNT(DISTINCT "ST_ID") > 1
+UNION ALL
+SELECT
+    'key_ST_Stage_1st',
+    'more than one natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'ST_ID', "ST_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_ST_Stage_1st"
+GROUP BY
+    "Positor",
+    "ST_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_ST_Stage_2nd" (
+    "Positor",
+    "ST_ID",
+    "ST_NAM_Stage_Name",
+    "ST_NAM_Checksum"
+) COPY GRANTS
+AS
+SELECT
+    "ST"."Positor",
+    "ST"."ST_ID",
+    "ST"."ST_NAM_Stage_Name",
+    "ST"."ST_NAM_Checksum"
+FROM
+    public."lST_Stage" "ST"
+;
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."pkey_ST_Stage_2nd" (
+    changingTimepoint timestamp_ntz(9)
+)
+COPY GRANTS
+RETURNS TABLE (
+    "Positor" tinyint,
+    "ST_ID" int,
+    "ST_NAM_Stage_Name" varchar(42),
+    "ST_NAM_Checksum" numeric(19,0)
+)
+AS
+$$
+SELECT
+    "ST"."Positor",
+    "ST"."ST_ID",
+    "ST"."ST_NAM_Stage_Name",
+    "ST"."ST_NAM_Checksum"
+FROM
+    TABLE(public."pST_Stage"(changingTimepoint)) "ST"
+$$
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_ST_Stage_2nd" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+SELECT
+    'key_ST_Stage_2nd',
+    'duplicate natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'ST_NAM_Checksum', "ST_NAM_Checksum"
+    ),
+    COUNT(DISTINCT "ST_ID")
+FROM
+    public."key_ST_Stage_2nd"
+WHERE
+    "ST_NAM_Checksum" IS NOT NULL
+GROUP BY
+    "Positor",
+    "ST_NAM_Checksum"
+HAVING
+    COUNT(DISTINCT "ST_ID") > 1
+UNION ALL
+SELECT
+    'key_ST_Stage_2nd',
+    'more than one natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'ST_ID', "ST_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_ST_Stage_2nd"
+GROUP BY
+    "Positor",
+    "ST_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_AC_Actor_1st" (
+    "Positor",
+    "AC_ID",
+    "AC_NAM_Actor_Name",
+    "AC_NAM_Checksum"
+) COPY GRANTS
+AS
+SELECT
+    "AC"."Positor",
+    "AC"."AC_ID",
+    "AC"."AC_NAM_Actor_Name",
+    "AC"."AC_NAM_Checksum"
+FROM
+    public."lAC_Actor" "AC"
+;
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."pkey_AC_Actor_1st" (
+    changingTimepoint timestamp_ntz(9)
+)
+COPY GRANTS
+RETURNS TABLE (
+    "Positor" tinyint,
+    "AC_ID" int,
+    "AC_NAM_Actor_Name" varchar(42),
+    "AC_NAM_Checksum" numeric(19,0)
+)
+AS
+$$
+SELECT
+    "AC"."Positor",
+    "AC"."AC_ID",
+    "AC"."AC_NAM_Actor_Name",
+    "AC"."AC_NAM_Checksum"
+FROM
+    TABLE(public."pAC_Actor"(changingTimepoint)) "AC"
+$$
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_AC_Actor_1st" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+SELECT
+    'key_AC_Actor_1st',
+    'duplicate natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'AC_NAM_Checksum', "AC_NAM_Checksum"
+    ),
+    COUNT(DISTINCT "AC_ID")
+FROM
+    public."key_AC_Actor_1st"
+WHERE
+    "AC_NAM_Checksum" IS NOT NULL
+GROUP BY
+    "Positor",
+    "AC_NAM_Checksum"
+HAVING
+    COUNT(DISTINCT "AC_ID") > 1
+UNION ALL
+SELECT
+    'key_AC_Actor_1st',
+    'more than one natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'AC_ID', "AC_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_AC_Actor_1st"
+GROUP BY
+    "Positor",
+    "AC_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_PR_Program_1st" (
+    "Positor",
+    "PR_ID",
+    "PR_NAM_Program_Name"
+) COPY GRANTS
+AS
+SELECT
+    "PR"."Positor",
+    "PR"."PR_ID",
+    "PR"."PR_NAM_Program_Name"
+FROM
+    public."lPR_Program" "PR"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_PR_Program_1st" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+SELECT
+    'key_PR_Program_1st',
+    'duplicate natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'PR_NAM_Program_Name', "PR_NAM_Program_Name"
+    ),
+    COUNT(DISTINCT "PR_ID")
+FROM
+    public."key_PR_Program_1st"
+WHERE
+    "PR_NAM_Program_Name" IS NOT NULL
+GROUP BY
+    "Positor",
+    "PR_NAM_Program_Name"
+HAVING
+    COUNT(DISTINCT "PR_ID") > 1
+UNION ALL
+SELECT
+    'key_PR_Program_1st',
+    'more than one natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'PR_ID', "PR_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_PR_Program_1st"
+GROUP BY
+    "Positor",
+    "PR_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_EV_Event_1st" (
+    "Positor",
+    "EV_ID",
+    "EV_DAT_Event_Date",
+    "wasHeldAt_ST_LOC_Stage_Location",
+    "wasHeldAt_ST_LOC_Checksum",
+    "wasPlayed_PR_NAM_Program_Name"
+) COPY GRANTS
+AS
+SELECT
+    "EV"."Positor",
+    "EV"."EV_ID",
+    "EV"."EV_DAT_Event_Date",
+    "s2"."ST_LOC_Stage_Location",
+    "s2"."ST_LOC_Checksum",
+    "s4"."PR_NAM_Program_Name"
+FROM
+    public."lEV_Event" "EV"
+LEFT JOIN
+    public."lST_Stage" "s2"
+ON
+    "s2"."ST_ID" = "EV"."ST_ID_wasHeldAt"
+AND
+    "s2"."Positor" = "EV"."Positor"
+LEFT JOIN
+    public."lPR_Program" "s4"
+ON
+    "s4"."PR_ID" = "EV"."PR_ID_wasPlayed"
+AND
+    "s4"."Positor" = "EV"."Positor"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_EV_Event_1st" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+SELECT
+    'key_EV_Event_1st',
+    'duplicate natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'EV_DAT_Event_Date', "EV_DAT_Event_Date",
+        'wasHeldAt_ST_LOC_Checksum', "wasHeldAt_ST_LOC_Checksum",
+        'wasPlayed_PR_NAM_Program_Name', "wasPlayed_PR_NAM_Program_Name"
+    ),
+    COUNT(DISTINCT "EV_ID")
+FROM
+    public."key_EV_Event_1st"
+WHERE
+    "EV_DAT_Event_Date" IS NOT NULL
+AND
+    "wasHeldAt_ST_LOC_Checksum" IS NOT NULL
+AND
+    "wasPlayed_PR_NAM_Program_Name" IS NOT NULL
+GROUP BY
+    "Positor",
+    "EV_DAT_Event_Date",
+    "wasHeldAt_ST_LOC_Checksum",
+    "wasPlayed_PR_NAM_Program_Name"
+HAVING
+    COUNT(DISTINCT "EV_ID") > 1
+UNION ALL
+SELECT
+    'key_EV_Event_1st',
+    'more than one natural key',
+    OBJECT_CONSTRUCT(
+        'Positor', "Positor",
+        'EV_ID', "EV_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_EV_Event_1st"
+GROUP BY
+    "Positor",
+    "EV_ID"
+HAVING
+    COUNT(*) > 1;
 -- INTEGRITY CHECKS ---------------------------------------------------------------------------------------------------
 --
 -- Snowflake does not enforce primary, unique or foreign keys, and every key here is declared RELY, which tells the
@@ -6570,6 +6968,9 @@ FROM
 -- checked is restatement and whether the time of a posit overlaps another: the uni-temporal checks do not carry over.
 --
 -- A view that returns nothing has nothing wrong. IntegrityViolations is all of them together; it reads every table.
+-- It also has the checks of the natural keys, ic_key_<anchor or nexus>_<route>, which are made with the keys: a key
+-- that more than one identity has (duplicate natural key), and an identity with more than one key (more than one
+-- natural key).
 --
 --   Construct     the table
 --   Violation     what is wrong
@@ -9168,6 +9569,11 @@ UNION ALL SELECT * FROM public."ic_AC_parent_AC_child_PAT_having_Posit"
 UNION ALL SELECT * FROM public."ic_AC_parent_AC_child_PAT_having_Annex"
 UNION ALL SELECT * FROM public."ic_PR_content_ST_location_EV_of_Posit"
 UNION ALL SELECT * FROM public."ic_PR_content_ST_location_EV_of_Annex"
+UNION ALL SELECT * FROM public."ic_key_ST_Stage_1st"
+UNION ALL SELECT * FROM public."ic_key_ST_Stage_2nd"
+UNION ALL SELECT * FROM public."ic_key_AC_Actor_1st"
+UNION ALL SELECT * FROM public."ic_key_PR_Program_1st"
+UNION ALL SELECT * FROM public."ic_key_EV_Event_1st"
 ;-- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
 --
 -- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and
