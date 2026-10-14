@@ -13,7 +13,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('b01'), ('b02'), ('b03'), ('b04'), ('b05'), ('b06'), ('b07'), ('b08'), ('b09'), ('b10'), ('b11'), ('b12'), ('b13'), ('b14');
+INSERT INTO #group (name) VALUES ('b01'), ('b02'), ('b03'), ('b04'), ('b05'), ('b06'), ('b07'), ('b08'), ('b09'), ('b10'), ('b11'), ('b12'), ('b13'), ('b14'), ('b15');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -306,6 +306,48 @@ SET @matched = (SELECT COUNT(*) FROM dbo.EV_Event e JOIN dbo.EV_QTY_Event_Quanti
     WHERE (e.SU_ID_for = @a AND q.EV_QTY_Event_Quantity IN (7, 9)) OR (e.SU_ID_for = @b AND q.EV_QTY_Event_Quantity = 8));
 INSERT INTO #result SELECT N'b14 several new nexus rows in one insert keep their own values', CASE WHEN @error IS NULL AND @made = 3 AND @matched = 3 THEN 1 ELSE 0 END, CONCAT(@made, ' rows, ', @matched, ' with their own values', ' ' + @error);
 UPDATE #group SET finished = 1 WHERE name = 'b14';
+GO
+
+-- b15 a posit asserted again at a positing time that already has an assertion of it: the same reliability states
+--     nothing, another one is a contradiction (it used to be skipped as if it were the identical)
+DECLARE @s int, @o int, @n int, @shown nvarchar(42), @error nvarchar(2048);
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt) VALUES (0, N'x', '2020-01-01', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+SET @error = NULL;
+BEGIN TRY
+    UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N'x', SU_TTL_PositedAt = '2024-01-01' WHERE SU_ID = @s;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_TTL_Subject_Title_Annex a JOIN dbo.SU_TTL_Subject_Title_Posit p ON p.SU_TTL_ID = a.SU_TTL_ID WHERE p.SU_TTL_SU_ID = @s);
+INSERT INTO #result SELECT N'b15 the same reliability at a positing time that is taken states nothing', CASE WHEN @error IS NULL AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' assertions', ' ' + @error);
+SET @error = NULL;
+BEGIN TRY
+    UPDATE dbo.lSU_Subject SET SU_TTL_Reliability = 0, SU_TTL_PositedAt = '2024-01-01' WHERE SU_ID = @s;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s);
+INSERT INTO #result SELECT N'b15 another reliability at a positing time that is taken is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_TTL_Subject_Title%' AND @shown = N'x' THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'), '; ', ISNULL(@error, 'no error'));
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.OB_Object (Metadata_OB) VALUES (0); SET @o = SCOPE_IDENTITY();
+INSERT INTO dbo.lSU_holder_OB_item_GRD_grade (Metadata_SU_holder_OB_item_GRD_grade, SU_holder_OB_item_GRD_grade_ChangedAt, SU_holder_OB_item_GRD_grade_PositedAt, SU_ID_holder, OB_ID_item, GRD_ID_grade)
+VALUES (0, '2020-01-01', '2024-01-01', @s, @o, 1);
+SET @error = NULL;
+BEGIN TRY
+    UPDATE dbo.lSU_holder_OB_item_GRD_grade SET SU_holder_OB_item_GRD_grade_Reliability = 0, SU_holder_OB_item_GRD_grade_PositedAt = '2024-01-01' WHERE SU_ID_holder = @s AND OB_ID_item = @o;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.lSU_holder_OB_item_GRD_grade WHERE SU_ID_holder = @s AND OB_ID_item = @o);
+INSERT INTO #result SELECT N'b15 a tie: another reliability at a positing time that is taken is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_holder_OB_item_GRD_grade%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' shown; ', ISNULL(@error, 'no error'));
+UPDATE #group SET finished = 1 WHERE name = 'b15';
 GO
 
 -- the result
