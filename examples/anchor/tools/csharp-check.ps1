@@ -4,7 +4,8 @@
     named. The bindings are the ones check.ps1 resolves for the model; only the renderer differs.
 
     The renderer is tests\bin\FixtureRunner.exe in the sisula-mssql checkout next to this repository
-    (build it with tests\run-fixtures.ps1 there); -Runner names another one.
+    (build it with tests\run-fixtures.ps1 there); -Runner names another one. It renders all the templates
+    of a model in one run (--render-many), since starting it costs more than most renderings.
 
     Usage:
       csharp-check.ps1 [-Variant <name>,...] [-Name <template>,...] [-Runner <FixtureRunner.exe>] [-Anchor <checkout>]
@@ -38,17 +39,24 @@ try {
         $model = Join-Path $root "models\$v.xml"
         $info = Get-DirectiveInfo $Anchor (Get-ModelTemporalization $model) (Get-ModelDatabase $model)
         $bindings = Join-Path $work "$v.bindings.json"
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'check.ps1') -Variant $v -Name $info.Templates[0].Name -Anchor $Anchor -KeepBindings $bindings | Out-Null
-        foreach ($t in $info.Templates) {
-            if ($Name.Count -gt 0 -and $Name -notcontains $t.Name) { continue }
+        $templates = @($info.Templates | Where-Object { $Name.Count -eq 0 -or $Name -contains $_.Name })
+        # check.ps1 runs in this process, since a new PowerShell and Jint for every model cost more than the rest; it
+        # renders one template too, which is not used.
+        try { & (Join-Path $PSScriptRoot 'check.ps1') -Variant $v -Name $info.Templates[0].Name -Anchor $Anchor -KeepBindings $bindings 6>$null | Out-Null }
+        catch { Write-Host ("FAIL  {0}: check.ps1 could not resolve the model: {1}" -f $v, $_.Exception.Message) }
+        if (-not (Test-Path $bindings)) { $total += $templates.Count; $failed += $templates.Count; continue }
+        # Every template of the model in one run of the renderer, since starting it costs more than most renderings.
+        $arguments = @('--render-many', $bindings)
+        foreach ($t in $templates) { $arguments += (Join-Path $Anchor $t.Path); $arguments += (Join-Path $work "$v.$($t.Name).sql") }
+        & $Runner @arguments
+        if ($LASTEXITCODE -eq 2) { throw "$Runner does not know --render-many. Rebuild it with tests\run-fixtures.ps1 in sisula-mssql." }
+        foreach ($t in $templates) {
             $out = Join-Path $work "$v.$($t.Name).sql"
-            & $Runner --render (Join-Path $Anchor $t.Path) $bindings $out
+            $total++
+            if (-not (Test-Path $out)) { $failed++; Write-Host ("FAIL  {0}/{1}: the renderer threw (its message is above)" -f $v, $t.Name); continue }
             $actual = [IO.File]::ReadAllBytes($out)
             $golden = [IO.File]::ReadAllBytes((Join-Path $root "golden\$v\$($t.Name).sql"))
-            $total++
-            $same = ($actual.Length -eq $golden.Length)
-            if ($same) { for ($i = 0; $i -lt $actual.Length; $i++) { if ($actual[$i] -ne $golden[$i]) { $same = $false; break } } }
-            if (-not $same) {
+            if (-not [Linq.Enumerable]::SequenceEqual([byte[]] $actual, [byte[]] $golden)) {
                 $failed++
                 $a = [Text.Encoding]::UTF8.GetString($actual) -split "`n"
                 $g = [Text.Encoding]::UTF8.GetString($golden) -split "`n"
