@@ -1,8 +1,9 @@
-# Anchor to Snowflake, in Sisula dialect B
+# Anchor to Snowflake and SQL Server, in Sisula dialect B
 
-The Anchor Modeler's Snowflake generators (uni-, bi- and concurrent-reliance-temporal), ported from
-JScript sisulets that are `eval`'d against a live object graph to declarative Sisula templates
-over JSON.
+The Anchor Modeler's Snowflake and SQL Server generators (uni-, bi- and concurrent-reliance-temporal),
+ported from JScript sisulets that are `eval`'d against a live object graph to declarative Sisula
+templates over JSON. This folder was called `anchor-snowflake` until it held SQL Server too, so
+older commits name it that way.
 
 **The templates live in the Anchor repository now**, as `SQL/Snowflake/{uni,bi,crt}/*.sisula`, listed by
 Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with the vendored engine
