@@ -49,8 +49,9 @@ $models['names-like-types'] = @'
 </schema>
 '@
 
-$models.Keys | ForEach-Object { $engine.SetValue("m_$($_ -replace '[^A-Za-z0-9]', '_')", $models[$_]) | Out-Null }
-$names = ($models.Keys | Sort-Object | ForEach-Object { "'$_': m_$($_ -replace '[^A-Za-z0-9]', '_')" }) -join ', '
+# PSBase: $models.Keys would be the model called "keys"
+$models.PSBase.Keys | ForEach-Object { $engine.SetValue("m_$($_ -replace '[^A-Za-z0-9]', '_')", $models[$_]) | Out-Null }
+$names = ($models.PSBase.Keys | Sort-Object | ForEach-Object { "'$_': m_$($_ -replace '[^A-Za-z0-9]', '_')" }) -join ', '
 $engine.Execute("var MODELS = { $names };") | Out-Null
 
 $script = @'

@@ -11,6 +11,9 @@
 -- checked is restatement and whether the time of a posit overlaps another: the uni-temporal checks do not carry over.
 --
 -- A view that returns nothing has nothing wrong. IntegrityViolations is all of them together; it reads every table.
+-- It also has the checks of the natural keys, ic_key_<anchor or nexus>_<route>, which are made with the keys: a key
+-- that more than one identity has (duplicate natural key), and an identity with more than one key (more than one
+-- natural key).
 --
 --   Construct     the table
 --   Violation     what is wrong
@@ -2973,4 +2976,9 @@ UNION ALL SELECT * FROM ties."ic_AC_förälder_AC_barn_PAT_har_Posit"
 UNION ALL SELECT * FROM ties."ic_AC_förälder_AC_barn_PAT_har_Annex"
 UNION ALL SELECT * FROM ties."ic_PR_innehåll_ST_plats_EV_of_Posit"
 UNION ALL SELECT * FROM ties."ic_PR_innehåll_ST_plats_EV_of_Annex"
+UNION ALL SELECT * FROM anchors."ic_key_ST_Scen_1st"
+UNION ALL SELECT * FROM anchors."ic_key_ST_Scen_2nd"
+UNION ALL SELECT * FROM anchors."ic_key_AC_Skådespelare_1st"
+UNION ALL SELECT * FROM anchors."ic_key_PR_Föreställning_1st"
+UNION ALL SELECT * FROM nexuses."ic_key_EV_Händelse_1st"
 ;

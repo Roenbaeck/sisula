@@ -10,6 +10,9 @@
 --                                                 that is the same as the one before it in changing time
 --
 -- A view that returns nothing has nothing wrong. IntegrityViolations is all of them together; it reads every table.
+-- It also has the checks of the natural keys, ic_key_<anchor or nexus>_<route>, which are made with the keys: a key
+-- that more than one identity has (duplicate natural key), and an identity with more than one key (more than one
+-- natural key).
 --
 --   Construct     the table
 --   Violation     what is wrong
@@ -1819,4 +1822,9 @@ UNION ALL SELECT * FROM ties."ic_AC_part_PR_in_RAT_got"
 UNION ALL SELECT * FROM ties."ic_ST_at_PR_isPlaying"
 UNION ALL SELECT * FROM ties."ic_AC_parent_AC_child_PAT_having"
 UNION ALL SELECT * FROM ties."ic_PR_content_ST_location_EV_of"
+UNION ALL SELECT * FROM anchors."ic_key_ST_Stage_1st"
+UNION ALL SELECT * FROM anchors."ic_key_ST_Stage_2nd"
+UNION ALL SELECT * FROM anchors."ic_key_AC_Actor_1st"
+UNION ALL SELECT * FROM anchors."ic_key_PR_Program_1st"
+UNION ALL SELECT * FROM nexuses."ic_key_EV_Event_1st"
 ;

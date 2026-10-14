@@ -15,8 +15,8 @@ history of both repositories (`tools/golden.ps1` here, at commit `34d0b93`, show
 and the sisulets of the Snowflake constructs that are not ported yet (triggers, key generators,
 restatement constraints) are still in Anchor as the record of what is missing.
 
-The port is complete for what the modeler generates: 13 templates for uni, 11 for bi and 12 for crt
-(bi and crt share uni's `AddDescriptions`). For every model in `models/` the generated SQL is checked
+The port is complete for what the modeler generates, and has grown since: 15 templates for uni, 15 for bi and 16
+for crt (bi and crt share uni's `AddDescriptions` and `CreateKeys`). For every model in `models/` the generated SQL is checked
 these ways:
 
 | Check | Compares | Needs |
@@ -32,6 +32,7 @@ these ways:
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
+| `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
 | `tools\sqlserver-tests.ps1` | what the SQL Server triggers store with what the rules say: the golden output of the `sqlserver-triggers` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
@@ -110,9 +111,8 @@ difference; saving it again changes nothing, and `base.xml` itself comes back by
 
 **A model says which temporalization it is for** (`metadata/@temporalization`), and the tools take
 the directive, the scripts that prepare the schema and the templates from that (`tools/directive.ps1`).
-There are 11 models for each of uni, bi and crt: the models below, named `<name>-bi` and `<name>-crt`
-for the other two, which differ from the uni ones only in that setting, and `flags` and `ranges`, which
-exist for all three (listed after the table). The original sisulets of bi and crt failed with a syntax
+There are 13 Snowflake models for each of uni, bi and crt: the models below, named `<name>-bi` and
+`<name>-crt` for the other two, which differ from the uni ones only in that setting. The original sisulets of bi and crt failed with a syntax
 error in four of them when this was begun, so the golden files for those two exist because eight
 places were corrected first; the defects that remain are listed in Anchor's `HANDOVER-sisula-port.md`.
 
@@ -129,6 +129,8 @@ places were corrected first; the defects that remain are listed in Anchor's `HAN
 | `handwritten` | not saved through the modeler, on purpose: equivalent flags with equivalence off, roles without descriptions. Only run through the templates, not the modeler: it shows the generators on files that the modeler did not write |
 | `flags` | `distinct-equivalence` with restatement, idempotency, assertiveness and decisiveness turned over, so the code that tests them is reached both ways |
 | `ranges` | `distinct` with a type and a suffix of its own for everything that belongs to the posit, positor and reliability columns, so a template that takes one from the wrong place shows |
+| `national` | descriptors with national characters (å, ä, ö), which Snowflake keeps only in quoted names |
+| `keys` | `base` with a natural key for every rule a route follows (a functional tie, a historized one-to-one tie, two ties in a row, a knotted attribute, the knot of a nexus role and of a tie role, an anchor without attributes, a nexus entered by its role) and one for each way a route breaks one, which is reported instead of generated. Made by `tools/make-keys-models.ps1` |
 
 To see that these models can tell a correct template from a wrong one, five plausible bugs were
 planted in the templates one at a time. Each was caught by at least one model, and none by
@@ -221,7 +223,9 @@ Anchor's `HANDOVER-sisula-port.md`. These remain.)
 - Several sisulets test `knot.isEquivalent()` without `schema.EQUIVALENCE`, so a knot marked
   equivalent in a model with equivalence off is referenced through tables and functions that are
   never created. The modeler never saves such a model; a hand-written file can contain one.
-- In the key-naming pass of `NamingConvention.js`, `role` leaks from one stop to the next.
+- In the key-naming pass of `NamingConvention.js`, `role` leaked from the last stop of one route to the first of
+  the next, which gave a column a role prefix that does not belong to it. Fixed in Anchor (no model here changed);
+  within a route it is meant, since a role prefixes the stop after it.
 
 ## Other notes
 
