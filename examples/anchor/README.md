@@ -10,10 +10,10 @@ Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with t
 (`modules/sisula.js`). This folder is what checks them: the models, the golden files, and the tools
 that compare. The golden files used to come from the original JScript sisulets, which were the
 independent check while the templates were written; once the output had been run on Snowflake those
-sisulets, and the legacy directives that listed them, were removed from Anchor. They are in the git
-history of both repositories (`tools/golden.ps1` here, at commit `34d0b93`, shows how they were run),
-and the sisulets of the Snowflake constructs that are not ported yet (triggers, key generators,
-restatement constraints) are still in Anchor as the record of what is missing.
+sisulets, and the legacy directives that listed them, were removed from Anchor, and so were SQL Server's once
+its output had been run on a SQL Server. They are in the git history of both repositories (`tools/golden.ps1`
+here, at commit `2115504`, shows how they were run), and the sisulets of the Snowflake constructs that are not
+ported yet (triggers, key generators, restatement constraints) are still in Anchor as the record of what is missing.
 
 The port is complete for what the modeler generates, and has grown since: 15 templates for uni, 15 for bi and 16
 for crt (bi and crt share uni's `AddDescriptions` and `CreateKeys`). For every model in `models/` the generated SQL is checked
@@ -28,7 +28,6 @@ these ways:
 | `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
 | `tools\hosted-check.ps1` | the generator that runs in Snowflake (built by Anchor's `tools\build-snowflake-generator.ps1`), as far as it can run without Snowflake: the JavaScript of `ANCHOR_BINDINGS` and `SISULATE` under Jint, over the model XML as a user would paste it, against the golden files; also the temporalization argument and the error messages. The SQL around the JavaScript (the `CREATE`s, the table, the `LISTAGG`) is only run by Snowflake | an Anchor checkout |
 | `tools\converter-check.ps1` | the modeler's data type converter (`modules\DataTypeConverter.js`, with `-Anchor` for a checkout that has the change): the Snowflake and BigQuery mappings against a table of what each type becomes, both ways; every one of the 49 pairs of the six databases and Generic on every model here and on Anchor's `example.xml`, which must stay well-formed and change nothing but the values of the data type attributes; and a model of names that look like types, which must not change | an Anchor checkout |
-| `tools\golden.ps1` | writes the golden files of a model from the original sisulets, run unmodified under Jint (SQL Server, where they still exist) | an Anchor checkout that has the original directive as `<DB>_<t>.legacy.directive` |
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
@@ -50,10 +49,10 @@ others. For bitemporal and concurrent reliance temporal there is a copy of each 
 `tools/make-sqlserver-bi-crt-models.ps1`) and `sqlserver-tieflags-bi/-crt` with every tie idempotent and assertive. `sqlserver-triggers.xml`,
 `-bi.xml` and `-crt.xml` are written for the trigger tests below. `lint-sql.ps1` and `hosted-check.ps1` leave the SQL Server models out: they are about Snowflake SQL.
 
-Their golden files are the output of the **original sisulets**, which are still in Anchor (`SQLServer_<t>.legacy.directive`), run unmodified
-(apart from the defects the port corrected, listed in Anchor's handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()`
-answering its default. So for SQL Server the templates are checked against an independent implementation, which is what Snowflake had until its
-output had been run. `tools/xml-to-tree.ps1 -WithSerialization` gives the tools what the modeler adds when it generates SQL, the model's own XML as
+Their golden files were the output of the **original sisulets**, run unmodified (apart from the defects the port corrected, listed in Anchor's
+handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()` answering its default. So the SQL Server templates were checked
+against an independent implementation until the output had been run on a SQL Server; since then the golden files are approved output, as for
+Snowflake, and the originals and `golden.ps1` are in the git history. `tools/xml-to-tree.ps1 -WithSerialization` gives the tools what the modeler adds when it generates SQL, the model's own XML as
 `schema.serialization`, which the schema tracking embeds; `browser-check.ps1` compares that part as a placeholder, because the modeler writes the
 time of the moment into it.
 The engines run under the Jint in `../../lib`; there is no Node on the development machine.

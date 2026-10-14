@@ -4,8 +4,8 @@
     (sqlserver-tests/triggers-<t>.sql) and drops the database again. It prints what sqlcmd prints, the result of every
     check among it, and exits 1 if a check failed or a script did not run through.
 
-    The SQL that is run is the golden output, so regenerate it first when Anchor's sisulets have changed: golden.ps1 for
-    models/sqlserver-triggers.xml, sqlserver-triggers-bi.xml and sqlserver-triggers-crt.xml. The tests need SQL Server
+    The SQL that is run is the golden output, so regenerate it first when Anchor's templates have changed
+    (regenerate-golden.ps1 -Variant sqlserver-triggers,sqlserver-triggers-bi,sqlserver-triggers-crt). The tests need SQL Server
     2016 or later, sqlcmd (the ODBC one or the newer go-sqlcmd), and a login that may create databases.
 
     Usage:

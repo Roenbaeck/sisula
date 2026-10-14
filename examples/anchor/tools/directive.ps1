@@ -5,7 +5,8 @@
 # <Database>_<t>.directive: the scripts that prepare the schema first (Helpers.js, a NamingConvention.js,
 # derive.js), then the .sisula templates, in the order to render. Entries that start with # are not run, and a
 # template that is not ported stays in the list as a comment. While a database is being ported, the directive of
-# the original sisulets is kept as <Database>_<t>.legacy.directive, which golden.ps1 runs.
+# its original sisulets can be kept as <Database>_<t>.legacy.directive and run by golden.ps1, which is in the git
+# history (commit 2115504); Snowflake and SQL Server have none left.
 
 $script:PreludePattern = '(^|/)(Helpers|NamingConvention|derive)\.js$'
 
@@ -39,5 +40,5 @@ function Get-DirectiveInfo([string] $Anchor, [string] $Temporalization, [string]
     $notTemplates = @($others | Where-Object { $_ -notlike '*.sisula' })
     if ($notTemplates.Count -gt 0) { throw "$file lists something that is neither a prelude script nor a template: $($notTemplates -join ', ')" }
     $templates = @($others | ForEach-Object { [pscustomobject]@{ Name = [IO.Path]::GetFileNameWithoutExtension($_); Path = $_ } })
-    [pscustomobject]@{ Database = $Database; Temporalization = $Temporalization; File = $file; LegacyFile = "${Database}_$Temporalization.legacy.directive"; Prelude = $prelude; Templates = $templates }
+    [pscustomobject]@{ Database = $Database; Temporalization = $Temporalization; File = $file; Prelude = $prelude; Templates = $templates }
 }
