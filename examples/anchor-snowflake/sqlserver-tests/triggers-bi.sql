@@ -5,7 +5,8 @@
 -- the script ends with an error if a check failed. A check that expects an error catches it. Each group of checks
 -- marks itself finished as its last statement, so a group that stops early, on an error it does not catch or because
 -- it does not compile, counts as a failure too. Every group uses rows of its own, and gives its times explicitly where
--- the rule does not depend on now.
+-- the rule does not depend on now; in particular two statements about the same posit get positing times of their own,
+-- since statements in a row can get the same sysdatetime().
 -- The rules are in Anchor's docs/ANCHOR.md, "Loading through the latest views".
 SET NOCOUNT ON;
 IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
@@ -111,13 +112,15 @@ GO
 
 -- b05 another static value is a correction (it used to be ignored once a value was shown); the same states nothing
 DECLARE @s int, @before int, @after int, @name nvarchar(42), @code nvarchar(42), @grade tinyint, @note nvarchar(max);
-INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_COD_Subject_Code, SU_GRD_GRD_ID, SU_NOT_Subject_Note) VALUES (0, N'n1', N'c1', 1, N'note one');
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_COD_Subject_Code, SU_COD_PositedAt, SU_GRD_GRD_ID, SU_GRD_PositedAt, SU_NOT_Subject_Note, SU_NOT_PositedAt)
+VALUES (0, N'n1', '2024-01-01', N'c1', '2024-01-01', 1, '2024-01-01', N'note one', '2024-01-01');
 SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
 SET @before = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex) + (SELECT COUNT(*) FROM dbo.SU_COD_Subject_Code_Annex) + (SELECT COUNT(*) FROM dbo.SU_GRD_Subject_Grade_Annex) + (SELECT COUNT(*) FROM dbo.SU_NOT_Subject_Note_Annex);
 UPDATE dbo.lSU_Subject SET SU_NAM_Subject_Name = N'n1', SU_COD_Subject_Code = N'c1', SU_GRD_GRD_Grade = N'A', SU_NOT_Subject_Note = N'note one' WHERE SU_ID = @s;
 SET @after = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex) + (SELECT COUNT(*) FROM dbo.SU_COD_Subject_Code_Annex) + (SELECT COUNT(*) FROM dbo.SU_GRD_Subject_Grade_Annex) + (SELECT COUNT(*) FROM dbo.SU_NOT_Subject_Note_Annex);
 INSERT INTO #result SELECT N'b05 the same static value states nothing', CASE WHEN @after = @before THEN 1 ELSE 0 END, CONCAT(@after - @before, ' new assertions');
-UPDATE dbo.lSU_Subject SET SU_NAM_Subject_Name = N'n2', SU_COD_Subject_Code = N'c2', SU_GRD_GRD_Grade = N'B', SU_NOT_Subject_Note = N'note two' WHERE SU_ID = @s;
+UPDATE dbo.lSU_Subject SET SU_NAM_Subject_Name = N'n2', SU_COD_Subject_Code = N'c2', SU_GRD_GRD_Grade = N'B', SU_NOT_Subject_Note = N'note two',
+    SU_NAM_PositedAt = '2024-02-01', SU_COD_PositedAt = '2024-02-01', SU_GRD_PositedAt = '2024-02-01', SU_NOT_PositedAt = '2024-02-01' WHERE SU_ID = @s;
 SELECT @name = SU_NAM_Subject_Name, @code = SU_COD_Subject_Code, @grade = SU_GRD_GRD_ID, @note = SU_NOT_Subject_Note FROM dbo.lSU_Subject WHERE SU_ID = @s;
 INSERT INTO #result SELECT N'b05 another static value is a correction', CASE WHEN @name = N'n2' AND @code = N'c2' AND @grade = 2 AND @note = N'note two' THEN 1 ELSE 0 END, CONCAT('shown ', @name, ', ', @code, ', ', @grade, ', ', @note);
 UPDATE #group SET finished = 1 WHERE name = 'b05';
@@ -152,19 +155,19 @@ GO
 -- b08 a reliability of 0 retracts the shown version, through the attribute's own column (that used to be lost) and
 --     through the Reliability column; an unchanged reliability states nothing
 DECLARE @s int, @t int, @shown nvarchar(42), @before int, @after int;
-INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt) VALUES (0, N'x', '2020-01-01');
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt) VALUES (0, N'x', '2020-01-01', '2024-01-01');
 SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
-UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N'y', SU_TTL_ChangedAt = '2021-01-01' WHERE SU_ID = @s;
+UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N'y', SU_TTL_ChangedAt = '2021-01-01', SU_TTL_PositedAt = '2024-02-01' WHERE SU_ID = @s;
 SET @before = (SELECT COUNT(*) FROM dbo.SU_TTL_Subject_Title_Annex);
 UPDATE dbo.lSU_Subject SET Reliability = 1 WHERE SU_ID = @s;
 SET @after = (SELECT COUNT(*) FROM dbo.SU_TTL_Subject_Title_Annex);
 INSERT INTO #result SELECT N'b08 an unchanged reliability states nothing', CASE WHEN @after = @before THEN 1 ELSE 0 END, CONCAT(@after - @before, ' new assertions');
-UPDATE dbo.lSU_Subject SET SU_TTL_Reliability = 0 WHERE SU_ID = @s;
+UPDATE dbo.lSU_Subject SET SU_TTL_Reliability = 0, SU_TTL_PositedAt = '2024-03-01' WHERE SU_ID = @s;
 SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s);
 INSERT INTO #result SELECT N'b08 reliability 0 in the attribute''s own column retracts the shown version', CASE WHEN @shown = N'x' THEN 1 ELSE 0 END, CONCAT('shown ', @shown, ', expected x');
-INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_STA_Subject_State, SU_STA_ChangedAt) VALUES (0, N's', '2020-01-01');
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_STA_Subject_State, SU_STA_ChangedAt, SU_STA_PositedAt) VALUES (0, N's', '2020-01-01', '2024-01-01');
 SET @t = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
-UPDATE dbo.lSU_Subject SET Reliability = 0 WHERE SU_ID = @t;
+UPDATE dbo.lSU_Subject SET Reliability = 0, SU_STA_PositedAt = '2024-02-01' WHERE SU_ID = @t;
 SET @shown = (SELECT SU_STA_Subject_State FROM dbo.lSU_Subject WHERE SU_ID = @t);
 INSERT INTO #result SELECT N'b08 reliability 0 in the Reliability column retracts the shown version', CASE WHEN @shown IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
 UPDATE #group SET finished = 1 WHERE name = 'b08';
@@ -172,9 +175,9 @@ GO
 
 -- b09 null retracts the shown version; a value after that is a new version
 DECLARE @s int, @shown nvarchar(42);
-INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt) VALUES (0, N'x', '2020-01-01');
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt) VALUES (0, N'x', '2020-01-01', '2024-01-01');
 SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
-UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = NULL WHERE SU_ID = @s;
+UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = NULL, SU_TTL_PositedAt = '2024-02-01' WHERE SU_ID = @s;
 SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s);
 INSERT INTO #result SELECT N'b09 null retracts the shown version', CASE WHEN @shown IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
 UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N'y' WHERE SU_ID = @s;
@@ -237,11 +240,11 @@ VALUES (0, '2020-01-01', '2024-01-01', @s1, @o, 1);
 UPDATE dbo.lSU_holder_OB_item_GRD_grade SET GRD_ID_grade = 1 WHERE SU_ID_holder = @s1 AND OB_ID_item = @o;
 SET @n = (SELECT COUNT(*) FROM dbo.SU_holder_OB_item_GRD_grade_Annex a JOIN dbo.SU_holder_OB_item_GRD_grade_Posit p ON p.SU_holder_OB_item_GRD_grade_ID = a.SU_holder_OB_item_GRD_grade_ID WHERE p.SU_ID_holder = @s1 AND p.OB_ID_item = @o);
 INSERT INTO #result SELECT N'b13 a tie: unchanged values state nothing', CASE WHEN @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' assertions, expected 1');
-UPDATE dbo.lSU_holder_OB_item_GRD_grade SET grade_GRD_Grade = N'B', SU_holder_OB_item_GRD_grade_ChangedAt = '2021-01-01' WHERE SU_ID_holder = @s1 AND OB_ID_item = @o;
+UPDATE dbo.lSU_holder_OB_item_GRD_grade SET grade_GRD_Grade = N'B', SU_holder_OB_item_GRD_grade_ChangedAt = '2021-01-01', SU_holder_OB_item_GRD_grade_PositedAt = '2024-02-01' WHERE SU_ID_holder = @s1 AND OB_ID_item = @o;
 SET @shown = (SELECT grade_GRD_Grade FROM dbo.lSU_holder_OB_item_GRD_grade WHERE SU_ID_holder = @s1 AND OB_ID_item = @o);
 INSERT INTO #result SELECT N'b13 a tie: a new value by knot value is a new version', CASE WHEN @shown = N'B' THEN 1 ELSE 0 END, CONCAT('shown ', @shown);
 BEGIN TRY
-    UPDATE dbo.lSU_holder_OB_item_GRD_grade SET GRD_ID_grade = NULL WHERE SU_ID_holder = @s1 AND OB_ID_item = @o;
+    UPDATE dbo.lSU_holder_OB_item_GRD_grade SET GRD_ID_grade = NULL, SU_holder_OB_item_GRD_grade_PositedAt = '2024-03-01' WHERE SU_ID_holder = @s1 AND OB_ID_item = @o;
 END TRY
 BEGIN CATCH
     IF XACT_STATE() <> 0 ROLLBACK;
