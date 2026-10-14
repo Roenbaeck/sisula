@@ -1,7 +1,8 @@
 <#
-    Makes models/keys.xml, keys-bi.xml and keys-crt.xml from models/base.xml: base with more natural keys, so that
-    every rule a route follows (naturalKeys() in Anchor's SQL/Helpers.js) is reached, and every way a route can break
-    one. base has keys on attributes of their own anchor and a route of the nexus through its roles; these add
+    Makes models/keys.xml, keys-bi.xml and keys-crt.xml from models/base.xml, and sqlserver-keys.xml, -bi and -crt from
+    models/sqlserver-base.xml: the base models with more natural keys, so that every rule a route follows
+    (naturalKeys() in Anchor's SQL/Helpers.js) is reached, and every way a route can break one. The base models have
+    keys on attributes of their own anchor and a route of the nexus through its roles; these add
 
       EV 2nd   the knot of a nexus role (event type), and an attribute (date) on a branch of its own
       EV 3rd   a tie, entered by "of" and left by "content", which is functional from EV (its only identifier),
@@ -21,26 +22,21 @@
       AC 4th   an attribute of another anchor than the one the path has reached
       PR 3rd   a branch that ends in a tie role to an anchor, not in a value
 
-    The bi and crt models differ from keys.xml only in metadata/@temporalization. Like the others, each model then
-    has to be saved through the modeler.
+    The bi and crt models differ from the uni ones only in metadata/@temporalization. Like the others, each model then
+    has to be saved through the modeler. -Target makes only some of them (keys, sqlserver-keys).
 
     Usage:
-      make-keys-models.ps1
-      browser-check.ps1 -Canonicalize -Variant keys,keys-bi,keys-crt
+      make-keys-models.ps1 [-Target keys,sqlserver-keys]
+      browser-check.ps1 -Canonicalize -Variant keys,keys-bi,keys-crt,sqlserver-keys,sqlserver-keys-bi,sqlserver-keys-crt
 #>
 [CmdletBinding()]
-param()
+param([string[]] $Target = @('keys', 'sqlserver-keys'))
 $ErrorActionPreference = 'Stop'
 $models = Join-Path (Split-Path -Parent $PSScriptRoot) 'models'
 $utf8 = New-Object Text.UTF8Encoding($false)
-$xml = New-Object Xml.XmlDocument
-$xml.PreserveWhitespace = $true
-$xml.LoadXml([IO.File]::ReadAllText((Join-Path $models 'base.xml'), $utf8))
-$schema = $xml.DocumentElement
-
 function Find([string] $path) {
     $node = $schema.SelectSingleNode($path)
-    if (-not $node) { throw "base.xml has no $path" }
+    if (-not $node) { throw "$($script:source).xml has no $path" }
     $node
 }
 # a role of the tie whose roles are exactly these, in order
@@ -50,7 +46,7 @@ function TieRole([string] $roles, [string] $role) {
             return $tie.SelectSingleNode("role[@role='$role']")
         }
     }
-    throw "base.xml has no tie with the roles $roles"
+    throw "$($script:source).xml has no tie with the roles $roles"
 }
 # a key element where the modeler writes it: after the metadata of an attribute or a knot, first in a role
 function Key($element, [string] $of, [string] $route, [string] $stop, [string] $branch) {
@@ -63,55 +59,71 @@ function Key($element, [string] $of, [string] $route, [string] $stop, [string] $
     if ($metadata) { $element.InsertAfter($key, $metadata) | Out-Null } else { $element.PrependChild($key) | Out-Null }
 }
 
-Key (Find "nexus[@mnemonic='EV']/role[@role='of']") 'EV' '2nd' '1' '1'
-Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='DAT']") 'EV' '2nd' '2' '2'
+# The keys, the same in both models.
+function Add-Keys {
+    Key (Find "nexus[@mnemonic='EV']/role[@role='of']") 'EV' '2nd' '1' '1'
+    Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='DAT']") 'EV' '2nd' '2' '2'
 
-Key (TieRole 'content,location,of' 'of') 'EV' '3rd' '1' '1'
-Key (TieRole 'content,location,of' 'content') 'EV' '3rd' '2' '1'
-Key (Find "anchor[@mnemonic='PR']/attribute[@mnemonic='NAM']") 'EV' '3rd' '3' '1'
+    Key (TieRole 'content,location,of' 'of') 'EV' '3rd' '1' '1'
+    Key (TieRole 'content,location,of' 'content') 'EV' '3rd' '2' '1'
+    Key (Find "anchor[@mnemonic='PR']/attribute[@mnemonic='NAM']") 'EV' '3rd' '3' '1'
 
-Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='MIN']") 'ST' '3rd' '1' '1'
-Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'ST' '3rd' '2' '2'
+    Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='MIN']") 'ST' '3rd' '1' '1'
+    Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'ST' '3rd' '2' '2'
 
-Key (Find "nexus[@mnemonic='EV']/role[@role='wasHeldAt']") 'ST' '4th' '1' '1'
-Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='DAT']") 'ST' '4th' '2' '1'
+    Key (Find "nexus[@mnemonic='EV']/role[@role='wasHeldAt']") 'ST' '4th' '1' '1'
+    Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='DAT']") 'ST' '4th' '2' '1'
 
-Key (TieRole 'subset,of' 'of') 'PN' '1st' '1' '1'
-Key (TieRole 'subset,of' 'subset') 'PN' '1st' '2' '1'
-Key (Find "anchor[@mnemonic='AC']/attribute[@mnemonic='NAM']") 'PN' '1st' '3' '1'
+    Key (TieRole 'subset,of' 'of') 'PN' '1st' '1' '1'
+    Key (TieRole 'subset,of' 'subset') 'PN' '1st' '2' '1'
+    Key (Find "anchor[@mnemonic='AC']/attribute[@mnemonic='NAM']") 'PN' '1st' '3' '1'
 
-Key (TieRole 'partner,with,currently' 'partner') 'AC' '2nd' '1' '1'
-Key (TieRole 'partner,with,currently' 'with') 'AC' '2nd' '2' '1'
-Key (Find "anchor[@mnemonic='AC']/attribute[@mnemonic='NAM']") 'AC' '2nd' '3' '1'
+    Key (TieRole 'partner,with,currently' 'partner') 'AC' '2nd' '1' '1'
+    Key (TieRole 'partner,with,currently' 'with') 'AC' '2nd' '2' '1'
+    Key (Find "anchor[@mnemonic='AC']/attribute[@mnemonic='NAM']") 'AC' '2nd' '3' '1'
 
-Key (TieRole 'parent,child,having' 'parent') 'AC' '3rd' '1' '1'
-Key (TieRole 'parent,child,having' 'child') 'AC' '3rd' '2' '1'
-Key (TieRole 'part,in,got' 'part') 'AC' '3rd' '3' '1'
-Key (TieRole 'part,in,got' 'in') 'AC' '3rd' '4' '1'
-Key (Find "anchor[@mnemonic='PR']/attribute[@mnemonic='NAM']") 'AC' '3rd' '5' '1'
+    Key (TieRole 'parent,child,having' 'parent') 'AC' '3rd' '1' '1'
+    Key (TieRole 'parent,child,having' 'child') 'AC' '3rd' '2' '1'
+    Key (TieRole 'part,in,got' 'part') 'AC' '3rd' '3' '1'
+    Key (TieRole 'part,in,got' 'in') 'AC' '3rd' '4' '1'
+    Key (Find "anchor[@mnemonic='PR']/attribute[@mnemonic='NAM']") 'AC' '3rd' '5' '1'
 
-Key (TieRole 'part,in,got' 'in') 'PR' '2nd' '1' '1'
-Key (TieRole 'part,in,got' 'got') 'PR' '2nd' '2' '1'
+    Key (TieRole 'part,in,got' 'in') 'PR' '2nd' '1' '1'
+    Key (TieRole 'part,in,got' 'got') 'PR' '2nd' '2' '1'
 
-# routes that break a rule
-Key (TieRole 'in,wasCast' 'in') 'EV' '4th' '1' '1'
-Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='AUD']") 'EV' '4th' '2' '2'
-Key (Find "knot[@mnemonic='ETY']") 'EV' '5th' '1' '1'
-Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='LOC']") 'ST' '5th' '1' '1'
-Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'ST' '5th' '1' '2'
-Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'AC' '4th' '1' '1'
-Key (TieRole 'at,isPlaying' 'isPlaying') 'PR' '3rd' '1' '1'
-Key (TieRole 'at,isPlaying' 'at') 'PR' '3rd' '2' '1'
-
-$text = $xml.OuterXml
-foreach ($t in 'uni', 'bi', 'crt') {
-    $copy = $text
-    if ($t -ne 'uni') {
-        $count = ([regex]::Matches($copy, 'temporalization="uni"')).Count
-        if ($count -ne 1) { throw "base.xml says temporalization=""uni"" $count times, not once" }
-        $copy = $copy.Replace('temporalization="uni"', "temporalization=""$t""")
-    }
-    $name = $(if ($t -eq 'uni') { 'keys' } else { "keys-$t" })
-    [IO.File]::WriteAllText((Join-Path $models "$name.xml"), $copy, $utf8)
-    Write-Host "$name ($(@($xml.SelectNodes('//key')).Count) keys)"
+    # routes that break a rule
+    Key (TieRole 'in,wasCast' 'in') 'EV' '4th' '1' '1'
+    Key (Find "nexus[@mnemonic='EV']/attribute[@mnemonic='AUD']") 'EV' '4th' '2' '2'
+    Key (Find "knot[@mnemonic='ETY']") 'EV' '5th' '1' '1'
+    Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='LOC']") 'ST' '5th' '1' '1'
+    Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'ST' '5th' '1' '2'
+    Key (Find "anchor[@mnemonic='ST']/attribute[@mnemonic='NAM']") 'AC' '4th' '1' '1'
+    Key (TieRole 'at,isPlaying' 'isPlaying') 'PR' '3rd' '1' '1'
+    Key (TieRole 'at,isPlaying' 'at') 'PR' '3rd' '2' '1'
 }
+
+
+function Make-Keys([string] $source, [string] $target) {
+    $script:source = $source
+    $script:xml = New-Object Xml.XmlDocument
+    $script:xml.PreserveWhitespace = $true
+    $script:xml.LoadXml([IO.File]::ReadAllText((Join-Path $models "$source.xml"), $utf8))
+    $script:schema = $script:xml.DocumentElement
+    Add-Keys
+    $text = $script:xml.OuterXml
+    foreach ($t in 'uni', 'bi', 'crt') {
+        $copy = $text
+        if ($t -ne 'uni') {
+            $count = ([regex]::Matches($copy, 'temporalization="uni"')).Count
+            if ($count -ne 1) { throw "$source.xml says temporalization=""uni"" $count times, not once" }
+            $copy = $copy.Replace('temporalization="uni"', "temporalization=""$t""")
+        }
+        $name = $(if ($t -eq 'uni') { $target } else { "$target-$t" })
+        [IO.File]::WriteAllText((Join-Path $models "$name.xml"), $copy, $utf8)
+        Write-Host "$name ($(@($script:xml.SelectNodes('//key')).Count) keys)"
+    }
+}
+
+$Target = @($Target | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+if ($Target -contains 'keys') { Make-Keys 'base' 'keys' }
+if ($Target -contains 'sqlserver-keys') { Make-Keys 'sqlserver-base' 'sqlserver-keys' }
