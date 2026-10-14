@@ -31,8 +31,8 @@ these ways:
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
-| `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
-| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store with what the rules say: the golden output of the `sqlserver-triggers` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
+| `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, and `sqlserver-keys`, `-bi` and `-crt` from `sqlserver-base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
+| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers` and `sqlserver-keys` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -47,7 +47,8 @@ the modeler's data type converter and adds variants for what only SQL Server has
 natural keys, deletability, encryption, and the knot roles of two ties moved from last), and each is then saved through the modeler like the
 others. For bitemporal and concurrent reliance temporal there is a copy of each (`sqlserver-<name>-bi.xml`, `-crt.xml`, made by
 `tools/make-sqlserver-bi-crt-models.ps1`) and `sqlserver-tieflags-bi/-crt` with every tie idempotent and assertive. `sqlserver-triggers.xml`,
-`-bi.xml` and `-crt.xml` are written for the trigger tests below. `lint-sql.ps1` and `hosted-check.ps1` leave the SQL Server models out: they are about Snowflake SQL.
+`-bi.xml` and `-crt.xml` are written for the trigger tests below, and `sqlserver-keys.xml`, `-bi.xml` and `-crt.xml` (the routes of `keys`
+on `sqlserver-base`) for the natural key tests. `lint-sql.ps1` and `hosted-check.ps1` leave the SQL Server models out: they are about Snowflake SQL.
 
 Their golden files were the output of the **original sisulets**, run unmodified (apart from the defects the port corrected, listed in Anchor's
 handover) by `tools/golden.ps1`: the original engine under Jint, with `prompt()` answering its default. So the SQL Server templates were checked
@@ -64,8 +65,13 @@ in it and then `sqlserver-tests/triggers-<t>.sql`, which inserts, updates and de
 PASS or FAIL for each rule, and drops the database again; it exits 1 if a check failed. `sqlserver-triggers.xml` is a
 model made for these tests: an attribute for each combination of the settings that the triggers read (restatable,
 idempotent, assertive, deletable, checksum, knotted, static or historized), ties with and without identifiers, and a
-nexus with an attribute. The tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that
-run here; run them after the golden files of the three models have been regenerated.
+nexus with an attribute. The natural keys are tested the same way (`-Suite keys`, which runs with the trigger tests by
+default): `sqlserver-tests/keys-<t>.sql` loads stages, programs, events, actors and ties into the output of
+`sqlserver-keys`, then looks them up through every kind of route, reads a key that has changed at a time, and checks
+that a duplicate key and a route that is not functional are reported, that the refresh procedure fills the key table
+and fails on a duplicate, that the routes that break a rule are left out, and in crt that a key is per positor. The
+tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that run here; run them after the
+golden files of the test models have been regenerated.
 
 ## How it works
 
