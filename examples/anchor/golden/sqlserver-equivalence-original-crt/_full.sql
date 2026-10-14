@@ -1,0 +1,20643 @@
+-- CLR ----------------------------------------------------------------------------------------------------------------
+--
+-- The MD5 function is used to calculate hashes on which comparisons are made for data types that do
+-- not support equality checking, and for which 'checksum' has been selected. The reason for not
+-- using the built in HashBytes is that it is limited to inputs up to 8000 bytes.
+--
+-- MD5 function -------------------------------------------------------------------------------------------------------
+-- MD5 hashing function
+-----------------------------------------------------------------------------------------------------------------------
+DECLARE @version smallint =
+    CASE 
+        WHEN patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
+        THEN substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
+        ELSE 0
+    END
+IF Object_Id('dw.MD5') IS NULL
+BEGIN
+    IF(@version >= 2016)
+    BEGIN
+        EXEC('
+        CREATE FUNCTION dw.MD5(@binaryData AS varbinary(max))
+        RETURNS varbinary(16) 
+        WITH SCHEMABINDING AS
+        BEGIN
+            RETURN HASHBYTES(''MD5'', @binaryData)
+        END
+        ');
+    END
+    ELSE
+    BEGIN
+        -- since some version of 2017 assemblies must be explicitly whitelisted
+        IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+            IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636)
+                EXEC sys.sp_add_trusted_assembly @hash = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636, @description = N'Anchor';
+        CREATE ASSEMBLY Anchor
+        AUTHORIZATION dbo
+        -- you can use the DLL instead if you substitute for your path:
+        -- FROM 'path_to_Anchor.dll'
+        -- or you can use the binary representation of the compiled code:
+        FROM 0x4D5A90000300000004000000FFFF0000B800000000000000400000000000000000000000000000000000000000000000000000000000000000000000800000000E1FBA0E00B409CD21B8014CCD21546869732070726F6772616D2063616E6E6F742062652072756E20696E20444F53206D6F64652E0D0D0A2400000000000000504500004C010300E7B633540000000000000000E00002210B010800000600000006000000000000CE2500000020000000400000000040000020000000020000040000000000000004000000000000000080000000020000000000000300408500001000001000000000100000100000000000001000000000000000000000007C2500004F00000000400000A002000000000000000000000000000000000000006000000C00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000080000000000000000000000082000004800000000000000000000002E74657874000000D4050000002000000006000000020000000000000000000000000000200000602E72737263000000A0020000004000000004000000080000000000000000000000000000400000402E72656C6F6300000C0000000060000000020000000C00000000000000000000000000004000004200000000000000000000000000000000B025000000000000480000000200050080200000FC040000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000096026F0400000A2D16280500000A026F0600000A6F0700000A730800000A2A14280900000A2A1E02280A00000A2A000042534A4201000100000000000C00000076322E302E35303732370000000005006C00000048010000237E0000B40100009001000023537472696E6773000000004403000008000000235553004C0300001000000023475549440000005C030000A001000023426C6F620000000000000002000001471500000900000000FA01330016000001000000090000000200000002000000010000000A00000003000000010000000200000000000A0001000000000006002F0028000A00570042000A00610042000600A30083000600C30083000A000301E800060040012301060055014B010600670123010000000001000000000001000100010010001500000005000100010050200000000096006A000A000100762000000000861872001100020000000100780021007200150029007200110031007200110019001801550139004401590119005C015E01490075016301110072006A0111008101700109007200110020001B001A002E000B0077012E0013008001048000000000000000000000000000000000E100000002000000000000000000000001001F000000000002000000000000000000000001003600000000000000003C4D6F64756C653E00416E63686F722E646C6C005574696C6974696573006D73636F726C69620053797374656D004F626A6563740053797374656D2E446174610053797374656D2E446174612E53716C54797065730053716C42696E6172790053716C427974657300486173684D4435002E63746F720062696E617279446174610053797374656D2E52756E74696D652E436F6D70696C6572536572766963657300436F6D70696C6174696F6E52656C61786174696F6E734174747269627574650052756E74696D65436F6D7061746962696C69747941747472696275746500416E63686F72004D6963726F736F66742E53716C5365727665722E5365727665720053716C46756E6374696F6E417474726962757465006765745F49734E756C6C0053797374656D2E53656375726974792E43727970746F677261706879004D4435004372656174650053797374656D2E494F0053747265616D006765745F53747265616D0048617368416C676F726974686D00436F6D7075746548617368006F705F496D706C69636974000000000003200000000000C7641B1E7755B04A8FCCCA2F22950BF30008B77A5C561934E0890600011109120D0320000104200101088139010003005455794D6963726F736F66742E53716C5365727665722E5365727665722E446174614163636573734B696E642C2053797374656D2E446174612C2056657273696F6E3D322E302E302E302C2043756C747572653D6E65757472616C2C205075626C69634B6579546F6B656E3D623737613563353631393334653038390A446174614163636573730000000054020F497344657465726D696E69737469630154557F4D6963726F736F66742E53716C5365727665722E5365727665722E53797374656D446174614163636573734B696E642C2053797374656D2E446174612C2056657273696F6E3D322E302E302E302C2043756C747572653D6E65757472616C2C205075626C69634B6579546F6B656E3D623737613563353631393334653038391053797374656D446174614163636573730000000003200002040000121D04200012210620011D051221052001011D0506000111091D050801000800000000001E01000100540216577261704E6F6E457863657074696F6E5468726F77730100A42500000000000000000000BE250000002000000000000000000000000000000000000000000000B0250000000000000000000000005F436F72446C6C4D61696E006D73636F7265652E646C6C0000000000FF2500204000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100100000001800008000000000000000000000000000000100010000003000008000000000000000000000000000000100000000004800000058400000440200000000000000000000440234000000560053005F00560045005200530049004F004E005F0049004E0046004F0000000000BD04EFFE00000100000000000000000000000000000000003F000000000000000400000002000000000000000000000000000000440000000100560061007200460069006C00650049006E0066006F00000000002400040000005400720061006E0073006C006100740069006F006E00000000000000B004A4010000010053007400720069006E006700460069006C00650049006E0066006F0000008001000001003000300030003000300034006200300000002C0002000100460069006C0065004400650073006300720069007000740069006F006E000000000020000000300008000100460069006C006500560065007200730069006F006E000000000030002E0030002E0030002E003000000038000B00010049006E007400650072006E0061006C004E0061006D006500000041006E00630068006F0072002E0064006C006C00000000002800020001004C006500670061006C0043006F00700079007200690067006800740000002000000040000B0001004F0072006900670069006E0061006C00460069006C0065006E0061006D006500000041006E00630068006F0072002E0064006C006C0000000000340008000100500072006F006400750063007400560065007200730069006F006E00000030002E0030002E0030002E003000000038000800010041007300730065006D0062006C0079002000560065007200730069006F006E00000030002E0030002E0030002E00300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000C000000D03500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        WITH PERMISSION_SET = SAFE;
+        EXEC('
+        CREATE FUNCTION dw.MD5(@binaryData AS varbinary(max))
+        RETURNS varbinary(16) AS EXTERNAL NAME Anchor.Utilities.HashMD5
+        ');
+        EXEC sys.sp_configure 'clr enabled', 1;
+        reconfigure with override;
+    END 
+END
+GO
+-- POSITOR METADATA ---------------------------------------------------------------------------------------------------
+--
+-- Sets up a table containing the list of available positors. Since at least one positor
+-- must be available the table is set up with a default positor with identity 0.
+--
+-- Positor table ------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Positor', 'U') IS NULL
+BEGIN
+    CREATE TABLE [dw].[_Positor] (
+        Positor tinyint not null,
+        constraint pk_Positor primary key (
+            Positor asc
+        )
+    );
+    INSERT INTO [dw].[_Positor] (
+        Positor
+    )
+    VALUES (
+        0 -- the default positor
+    );
+END
+GO
+-- KNOTS --------------------------------------------------------------------------------------------------------------
+--
+-- Knots are used to store finite sets of values, normally used to describe states
+-- of entities (through knotted attributes) or relationships (through knotted ties).
+-- Knots have their own surrogate identities and are therefore immutable.
+-- Values can be added to the set over time though.
+-- Knots should have values that are mutually exclusive and exhaustive.
+--
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- PAT_ParentalType table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.PAT_ParentalType', 'U') IS NULL
+CREATE TABLE [knots].[PAT_ParentalType] (
+    PAT_ID tinyint not null,
+    PAT_ParentalType nvarchar(42) not null,
+    Metadata_PAT int not null,
+    constraint pkPAT_ParentalType primary key (
+        PAT_ID asc
+    ),
+    constraint uqPAT_ParentalType unique (
+        PAT_ParentalType
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- GEN_Gender table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.GEN_Gender', 'U') IS NULL
+CREATE TABLE [knots].[GEN_Gender] (
+    GEN_ID tinyint not null,
+    GEN_Gender nvarchar(42) not null,
+    GEN_Checksum as cast(dw.MD5(cast(GEN_Gender as varbinary(max))) as varbinary(16)) persisted,
+    Metadata_GEN int not null,
+    constraint pkGEN_Gender primary key (
+        GEN_ID asc
+    ),
+    constraint uqGEN_Gender unique (
+        GEN_Checksum 
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- PLV_ProfessionalLevel table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.PLV_ProfessionalLevel', 'U') IS NULL
+CREATE TABLE [knots].[PLV_ProfessionalLevel] (
+    PLV_ID tinyint not null,
+    PLV_ProfessionalLevel nvarchar(max) not null,
+    PLV_Checksum as cast(dw.MD5(cast(PLV_ProfessionalLevel as varbinary(max))) as varbinary(16)) persisted,
+    Metadata_PLV int not null,
+    constraint pkPLV_ProfessionalLevel primary key (
+        PLV_ID asc
+    ),
+    constraint uqPLV_ProfessionalLevel unique (
+        PLV_Checksum 
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- UTL_Utilization table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.UTL_Utilization', 'U') IS NULL
+CREATE TABLE [knots].[UTL_Utilization] (
+    UTL_ID tinyint not null,
+    UTL_Utilization tinyint not null,
+    Metadata_UTL int not null,
+    constraint pkUTL_Utilization primary key (
+        UTL_ID asc
+    ),
+    constraint uqUTL_Utilization unique (
+        UTL_Utilization
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- ONG_Ongoing table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.ONG_Ongoing', 'U') IS NULL
+CREATE TABLE [knots].[ONG_Ongoing] (
+    ONG_ID tinyint not null,
+    ONG_Ongoing nvarchar(3) not null,
+    Metadata_ONG int not null,
+    constraint pkONG_Ongoing primary key (
+        ONG_ID asc
+    ),
+    constraint uqONG_Ongoing unique (
+        ONG_Ongoing
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- RAT_Rating table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.RAT_Rating', 'U') IS NULL
+CREATE TABLE [knots].[RAT_Rating] (
+    RAT_ID tinyint IDENTITY(1,1) not null,
+    RAT_Rating nvarchar(42) not null,
+    RAT_Checksum as cast(dw.MD5(cast(RAT_Rating as varbinary(max))) as varbinary(16)) persisted,
+    Metadata_RAT int not null,
+    constraint pkRAT_Rating primary key (
+        RAT_ID asc
+    ),
+    constraint uqRAT_Rating unique (
+        RAT_Checksum 
+    )
+);
+GO
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- ETY_EventType table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('knots.ETY_EventType', 'U') IS NULL
+CREATE TABLE [knots].[ETY_EventType] (
+    ETY_ID tinyint not null,
+    ETY_EventType nvarchar(42) not null,
+    ETY_Checksum as cast(dw.MD5(cast(ETY_EventType as varbinary(max))) as varbinary(16)) persisted,
+    Metadata_ETY int not null,
+    constraint pkETY_EventType primary key (
+        ETY_ID asc
+    ),
+    constraint uqETY_EventType unique (
+        ETY_Checksum 
+    )
+);
+GO
+-- ANCHORS -----------------------------------------------------------------------------------------------------------
+--
+-- Anchors store the identities of entities and are immutable.
+-- (Attribute tables moved to CreateAttributes.js.)
+--
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- PN_Person table (with 0 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.PN_Person', 'U') IS NULL
+CREATE TABLE [anchors].[PN_Person] (
+    PN_ID bigint IDENTITY(1,1) not null,
+    Metadata_PN int not null, 
+    constraint pkPN_Person primary key (
+        PN_ID asc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- ST_Stage table (with 4 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ST_Stage', 'U') IS NULL
+CREATE TABLE [anchors].[ST_Stage] (
+    ST_ID int not null,
+    Metadata_ST int not null, 
+    constraint pkST_Stage primary key (
+        ST_ID asc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- AC_Actor table (with 3 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor', 'U') IS NULL
+CREATE TABLE [anchors].[AC_Actor] (
+    AC_ID smallint IDENTITY(1,1) not null,
+    Metadata_AC int not null, 
+    constraint pkAC_Actor primary key (
+        AC_ID asc
+    )
+);
+GO
+-- Anchor table -------------------------------------------------------------------------------------------------------
+-- PR_Program table (with 2 attributes)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.PR_Program', 'U') IS NULL
+CREATE TABLE [anchors].[PR_Program] (
+    PR_ID bigint not null,
+    Metadata_PR int not null, 
+    constraint pkPR_Program primary key (
+        PR_ID asc
+    )
+);
+GO
+-- NEXUSES -----------------------------------------------------------------------------------------------------------
+--
+-- Nexuses (event-like constructs) store identities of composite event instances and are immutable.
+-- (Attribute tables moved to CreateAttributes.js.)
+--
+-- Nexus table -------------------------------------------------------------------------------------------------------
+-- EV_Event table (with 6 attributes and 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.EV_Event', 'U') IS NULL
+CREATE TABLE [nexuses].[EV_Event] (
+    EV_ID numeric(12,0) not null,
+    ST_ID_wasHeldAt int not null, 
+    PR_ID_wasPlayed bigint not null, 
+    ETY_ID_of tinyint not null,
+    constraint EV_Event_fkST_wasHeldAt foreign key (
+        ST_ID_wasHeldAt
+    ) references [anchors].[ST_Stage](ST_ID), 
+    constraint EV_Event_fkPR_wasPlayed foreign key (
+        PR_ID_wasPlayed
+    ) references [anchors].[PR_Program](PR_ID), 
+    constraint EV_Event_fkETY_of foreign key (
+        ETY_ID_of
+    ) references [knots].[ETY_EventType_ID](ETY_ID),
+    Metadata_EV int not null, 
+    constraint pkEV_Event primary key (
+        EV_ID asc
+    )
+);
+GO
+-- ATTRIBUTES (UNIFIED FOR ANCHORS AND NEXUSES) ---------------------------------------------------------------------
+--
+-- Attributes are mutable properties attached to either anchors or nexuses.
+-- Flavors: static, historized, knotted static, knotted historized.
+-- This unified script creates all attribute tables (posits and annexes) using the global attribute iterator.
+--
+-- Static attribute posit table -----------------------------------------------------------------------------------
+-- EV_DAT_Event_Date_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_DAT_Event_Date_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_DAT_Event_Date_Posit] (
+    EV_DAT_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    EV_DAT_Event_Date datetime2 not null,
+    constraint fkEV_DAT_Event_Date_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint pkEV_DAT_Event_Date_Posit primary key nonclustered (
+        EV_DAT_ID asc
+    ),
+    constraint uqEV_DAT_Event_Date_Posit unique clustered (
+        EV_ID asc,
+        EV_DAT_Event_Date asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date_Annex table (of EV_DAT_Event_Date_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_DAT_Event_Date_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_DAT_Event_Date_Annex] (
+    EV_DAT_ID int not null,
+    EV_DAT_PositedAt datetime2 not null,
+    EV_DAT_Positor tinyint not null,
+    EV_DAT_Reliability decimal(5,2) not null,
+    EV_DAT_Assertion as cast(
+        case
+            when EV_DAT_Reliability > 0 then '+'
+            when EV_DAT_Reliability = 0 then '?'
+            when EV_DAT_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_DAT int not null,
+    constraint fkEV_DAT_Event_Date_Annex foreign key (
+        EV_DAT_ID
+    ) references [attributes].[EV_DAT_Event_Date_Posit](EV_DAT_ID),
+    constraint pkEV_DAT_Event_Date_Annex primary key clustered (
+        EV_DAT_ID asc,
+        EV_DAT_Positor asc,
+        EV_DAT_PositedAt desc
+    )
+);
+GO
+-- Static attribute posit table -----------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_AUD_Event_Audience_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_AUD_Event_Audience_Posit] (
+    EV_AUD_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    EV_AUD_Event_Audience int not null,
+    constraint fkEV_AUD_Event_Audience_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint pkEV_AUD_Event_Audience_Posit primary key nonclustered (
+        EV_AUD_ID asc
+    ),
+    constraint uqEV_AUD_Event_Audience_Posit unique clustered (
+        EV_ID asc,
+        EV_AUD_Event_Audience asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience_Annex table (of EV_AUD_Event_Audience_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_AUD_Event_Audience_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_AUD_Event_Audience_Annex] (
+    EV_AUD_ID int not null,
+    EV_AUD_PositedAt datetime2 not null,
+    EV_AUD_Positor tinyint not null,
+    EV_AUD_Reliability decimal(5,2) not null,
+    EV_AUD_Assertion as cast(
+        case
+            when EV_AUD_Reliability > 0 then '+'
+            when EV_AUD_Reliability = 0 then '?'
+            when EV_AUD_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_AUD int not null,
+    constraint fkEV_AUD_Event_Audience_Annex foreign key (
+        EV_AUD_ID
+    ) references [attributes].[EV_AUD_Event_Audience_Posit](EV_AUD_ID),
+    constraint pkEV_AUD_Event_Audience_Annex primary key clustered (
+        EV_AUD_ID asc,
+        EV_AUD_Positor asc,
+        EV_AUD_PositedAt desc
+    )
+);
+GO
+-- Static attribute posit table -----------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_REV_Event_Revenue_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_REV_Event_Revenue_Posit] (
+    EV_REV_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    EV_REV_Event_Revenue decimal(19,4) not null,
+    constraint fkEV_REV_Event_Revenue_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint pkEV_REV_Event_Revenue_Posit primary key nonclustered (
+        EV_REV_ID asc
+    ),
+    constraint uqEV_REV_Event_Revenue_Posit unique clustered (
+        EV_ID asc,
+        EV_REV_Event_Revenue asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue_Annex table (of EV_REV_Event_Revenue_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_REV_Event_Revenue_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_REV_Event_Revenue_Annex] (
+    EV_REV_ID int not null,
+    EV_REV_PositedAt datetime2 not null,
+    EV_REV_Positor tinyint not null,
+    EV_REV_Reliability decimal(5,2) not null,
+    EV_REV_Assertion as cast(
+        case
+            when EV_REV_Reliability > 0 then '+'
+            when EV_REV_Reliability = 0 then '?'
+            when EV_REV_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_REV int not null,
+    constraint fkEV_REV_Event_Revenue_Annex foreign key (
+        EV_REV_ID
+    ) references [attributes].[EV_REV_Event_Revenue_Posit](EV_REV_ID),
+    constraint pkEV_REV_Event_Revenue_Annex primary key clustered (
+        EV_REV_ID asc,
+        EV_REV_Positor asc,
+        EV_REV_PositedAt desc
+    )
+);
+GO
+-- Historized attribute posit table -----------------------------------------------------------------------------------
+-- EV_STA_Event_Status_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_STA_Event_Status_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_STA_Event_Status_Posit] (
+    EV_STA_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    EV_STA_Event_Status nvarchar(20) not null,
+    EV_STA_ChangedAt datetime2 not null,
+    constraint fkEV_STA_Event_Status_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint pkEV_STA_Event_Status_Posit primary key nonclustered (
+        EV_STA_ID asc
+    ),
+    constraint uqEV_STA_Event_Status_Posit unique clustered (
+        EV_ID asc,
+        EV_STA_ChangedAt desc,
+        EV_STA_Event_Status asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_STA_Event_Status_Annex table (of EV_STA_Event_Status_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_STA_Event_Status_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_STA_Event_Status_Annex] (
+    EV_STA_ID int not null,
+    EV_STA_PositedAt datetime2 not null,
+    EV_STA_Positor tinyint not null,
+    EV_STA_Reliability decimal(5,2) not null,
+    EV_STA_Assertion as cast(
+        case
+            when EV_STA_Reliability > 0 then '+'
+            when EV_STA_Reliability = 0 then '?'
+            when EV_STA_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_STA int not null,
+    constraint fkEV_STA_Event_Status_Annex foreign key (
+        EV_STA_ID
+    ) references [attributes].[EV_STA_Event_Status_Posit](EV_STA_ID),
+    constraint pkEV_STA_Event_Status_Annex primary key clustered (
+        EV_STA_ID asc,
+        EV_STA_Positor asc,
+        EV_STA_PositedAt desc
+    )
+);
+GO
+-- Knotted static attribute posit table -------------------------------------------------------------------------------
+-- EV_UTL_Event_Utilization_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_UTL_Event_Utilization_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_UTL_Event_Utilization_Posit] (
+    EV_UTL_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    UTL_ID tinyint not null,
+    constraint fk_A_EV_UTL_Event_Utilization_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint fk_K_EV_UTL_Event_Utilization_Posit foreign key (
+        UTL_ID
+    ) references [knots].[UTL_Utilization](UTL_ID),
+    constraint pkEV_UTL_Event_Utilization_Posit primary key nonclustered (
+        EV_UTL_ID asc
+    ),
+    constraint uqEV_UTL_Event_Utilization_Posit unique clustered (
+        EV_ID asc,
+        UTL_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_UTL_Event_Utilization_Annex table (of EV_UTL_Event_Utilization_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_UTL_Event_Utilization_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_UTL_Event_Utilization_Annex] (
+    EV_UTL_ID int not null,
+    EV_UTL_PositedAt datetime2 not null,
+    EV_UTL_Positor tinyint not null,
+    EV_UTL_Reliability decimal(5,2) not null,
+    EV_UTL_Assertion as cast(
+        case
+            when EV_UTL_Reliability > 0 then '+'
+            when EV_UTL_Reliability = 0 then '?'
+            when EV_UTL_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_UTL int not null,
+    constraint fkEV_UTL_Event_Utilization_Annex foreign key (
+        EV_UTL_ID
+    ) references [attributes].[EV_UTL_Event_Utilization_Posit](EV_UTL_ID),
+    constraint pkEV_UTL_Event_Utilization_Annex primary key clustered (
+        EV_UTL_ID asc,
+        EV_UTL_Positor asc,
+        EV_UTL_PositedAt desc
+    )
+);
+GO
+-- Knotted historized attribute posit table ---------------------------------------------------------------------------
+-- EV_LVL_Event_Level_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_LVL_Event_Level_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[EV_LVL_Event_Level_Posit] (
+    EV_LVL_ID int IDENTITY(1,1) not null,
+    EV_ID numeric(12,0) not null,
+    PLV_ID tinyint not null,
+    EV_LVL_ChangedAt date not null,
+    constraint fk_A_EV_LVL_Event_Level_Posit foreign key (
+        EV_ID
+    ) references [nexuses].[EV_Event](EV_ID),
+    constraint fk_K_EV_LVL_Event_Level_Posit foreign key (
+        PLV_ID
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
+    constraint pkEV_LVL_Event_Level_Posit primary key nonclustered (
+        EV_LVL_ID asc
+    ),
+    constraint uqEV_LVL_Event_Level_Posit unique clustered (
+        EV_ID asc,
+        EV_LVL_ChangedAt desc,
+        PLV_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_LVL_Event_Level_Annex table (of EV_LVL_Event_Level_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_LVL_Event_Level_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[EV_LVL_Event_Level_Annex] (
+    EV_LVL_ID int not null,
+    EV_LVL_PositedAt datetime2 not null,
+    EV_LVL_Positor tinyint not null,
+    EV_LVL_Reliability decimal(5,2) not null,
+    EV_LVL_Assertion as cast(
+        case
+            when EV_LVL_Reliability > 0 then '+'
+            when EV_LVL_Reliability = 0 then '?'
+            when EV_LVL_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_LVL int not null,
+    constraint fkEV_LVL_Event_Level_Annex foreign key (
+        EV_LVL_ID
+    ) references [attributes].[EV_LVL_Event_Level_Posit](EV_LVL_ID),
+    constraint pkEV_LVL_Event_Level_Annex primary key clustered (
+        EV_LVL_ID asc,
+        EV_LVL_Positor asc,
+        EV_LVL_PositedAt desc
+    )
+);
+GO
+-- Historized attribute posit table -----------------------------------------------------------------------------------
+-- ST_NAM_Stage_Name_Posit table (on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_NAM_Stage_Name_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[ST_NAM_Stage_Name_Posit] (
+    ST_NAM_ID int IDENTITY(1,1) not null,
+    ST_ID int not null,
+    ST_NAM_Stage_Name nvarchar(42) not null,
+    ST_NAM_ChangedAt datetime2 not null,
+    constraint fkST_NAM_Stage_Name_Posit foreign key (
+        ST_ID
+    ) references [anchors].[ST_Stage](ST_ID),
+    constraint pkST_NAM_Stage_Name_Posit primary key nonclustered (
+        ST_NAM_ID asc
+    ),
+    constraint uqST_NAM_Stage_Name_Posit unique clustered (
+        ST_ID asc,
+        ST_NAM_ChangedAt desc,
+        ST_NAM_Stage_Name asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- ST_NAM_Stage_Name_Annex table (of ST_NAM_Stage_Name_Posit on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_NAM_Stage_Name_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[ST_NAM_Stage_Name_Annex] (
+    ST_NAM_ID int not null,
+    ST_NAM_PositedAt datetime2 not null,
+    ST_NAM_Positor tinyint not null,
+    ST_NAM_Reliability decimal(5,2) not null,
+    ST_NAM_Assertion as cast(
+        case
+            when ST_NAM_Reliability > 0 then '+'
+            when ST_NAM_Reliability = 0 then '?'
+            when ST_NAM_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_ST_NAM int not null,
+    constraint fkST_NAM_Stage_Name_Annex foreign key (
+        ST_NAM_ID
+    ) references [attributes].[ST_NAM_Stage_Name_Posit](ST_NAM_ID),
+    constraint pkST_NAM_Stage_Name_Annex primary key clustered (
+        ST_NAM_ID asc,
+        ST_NAM_Positor asc,
+        ST_NAM_PositedAt desc
+    )
+);
+GO
+-- Static attribute posit table -----------------------------------------------------------------------------------
+-- ST_LOC_Stage_Location_Posit table (on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_LOC_Stage_Location_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[ST_LOC_Stage_Location_Posit] (
+    ST_LOC_ID int IDENTITY(1,1) not null,
+    ST_ID int not null,
+    ST_LOC_Stage_Location geography not null,
+    ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
+    constraint fkST_LOC_Stage_Location_Posit foreign key (
+        ST_ID
+    ) references [anchors].[ST_Stage](ST_ID),
+    constraint pkST_LOC_Stage_Location_Posit primary key nonclustered (
+        ST_LOC_ID asc
+    ),
+    constraint uqST_LOC_Stage_Location_Posit unique clustered (
+        ST_ID asc,
+        ST_LOC_Checksum asc 
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- ST_LOC_Stage_Location_Annex table (of ST_LOC_Stage_Location_Posit on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_LOC_Stage_Location_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[ST_LOC_Stage_Location_Annex] (
+    ST_LOC_ID int not null,
+    ST_LOC_PositedAt datetime2 not null,
+    ST_LOC_Positor tinyint not null,
+    ST_LOC_Reliability decimal(5,2) not null,
+    ST_LOC_Assertion as cast(
+        case
+            when ST_LOC_Reliability > 0 then '+'
+            when ST_LOC_Reliability = 0 then '?'
+            when ST_LOC_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_ST_LOC int not null,
+    constraint fkST_LOC_Stage_Location_Annex foreign key (
+        ST_LOC_ID
+    ) references [attributes].[ST_LOC_Stage_Location_Posit](ST_LOC_ID),
+    constraint pkST_LOC_Stage_Location_Annex primary key clustered (
+        ST_LOC_ID asc,
+        ST_LOC_Positor asc,
+        ST_LOC_PositedAt desc
+    )
+);
+GO
+-- Knotted historized attribute posit table ---------------------------------------------------------------------------
+-- ST_AVG_Stage_Average_Posit table (on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_AVG_Stage_Average_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[ST_AVG_Stage_Average_Posit] (
+    ST_AVG_ID int IDENTITY(1,1) not null,
+    ST_ID int not null,
+    UTL_ID tinyint not null,
+    ST_AVG_ChangedAt datetime2 not null,
+    constraint fk_A_ST_AVG_Stage_Average_Posit foreign key (
+        ST_ID
+    ) references [anchors].[ST_Stage](ST_ID),
+    constraint fk_K_ST_AVG_Stage_Average_Posit foreign key (
+        UTL_ID
+    ) references [knots].[UTL_Utilization](UTL_ID),
+    constraint pkST_AVG_Stage_Average_Posit primary key nonclustered (
+        ST_AVG_ID asc
+    ),
+    constraint uqST_AVG_Stage_Average_Posit unique clustered (
+        ST_ID asc,
+        ST_AVG_ChangedAt desc,
+        UTL_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- ST_AVG_Stage_Average_Annex table (of ST_AVG_Stage_Average_Posit on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_AVG_Stage_Average_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[ST_AVG_Stage_Average_Annex] (
+    ST_AVG_ID int not null,
+    ST_AVG_PositedAt datetime2 not null,
+    ST_AVG_Positor tinyint not null,
+    ST_AVG_Reliability decimal(5,2) not null,
+    ST_AVG_Assertion as cast(
+        case
+            when ST_AVG_Reliability > 0 then '+'
+            when ST_AVG_Reliability = 0 then '?'
+            when ST_AVG_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_ST_AVG int not null,
+    constraint fkST_AVG_Stage_Average_Annex foreign key (
+        ST_AVG_ID
+    ) references [attributes].[ST_AVG_Stage_Average_Posit](ST_AVG_ID),
+    constraint pkST_AVG_Stage_Average_Annex primary key clustered (
+        ST_AVG_ID asc,
+        ST_AVG_Positor asc,
+        ST_AVG_PositedAt desc
+    )
+);
+GO
+-- Knotted static attribute posit table -------------------------------------------------------------------------------
+-- ST_MIN_Stage_Minimum_Posit table (on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_MIN_Stage_Minimum_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Posit] (
+    ST_MIN_ID int IDENTITY(1,1) not null,
+    ST_ID int not null,
+    UTL_ID tinyint not null,
+    constraint fk_A_ST_MIN_Stage_Minimum_Posit foreign key (
+        ST_ID
+    ) references [anchors].[ST_Stage](ST_ID),
+    constraint fk_K_ST_MIN_Stage_Minimum_Posit foreign key (
+        UTL_ID
+    ) references [knots].[UTL_Utilization](UTL_ID),
+    constraint pkST_MIN_Stage_Minimum_Posit primary key nonclustered (
+        ST_MIN_ID asc
+    ),
+    constraint uqST_MIN_Stage_Minimum_Posit unique clustered (
+        ST_ID asc,
+        UTL_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- ST_MIN_Stage_Minimum_Annex table (of ST_MIN_Stage_Minimum_Posit on ST_Stage)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_MIN_Stage_Minimum_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Annex] (
+    ST_MIN_ID int not null,
+    ST_MIN_PositedAt datetime2 not null,
+    ST_MIN_Positor tinyint not null,
+    ST_MIN_Reliability decimal(5,2) not null,
+    ST_MIN_Assertion as cast(
+        case
+            when ST_MIN_Reliability > 0 then '+'
+            when ST_MIN_Reliability = 0 then '?'
+            when ST_MIN_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_ST_MIN int not null,
+    constraint fkST_MIN_Stage_Minimum_Annex foreign key (
+        ST_MIN_ID
+    ) references [attributes].[ST_MIN_Stage_Minimum_Posit](ST_MIN_ID),
+    constraint pkST_MIN_Stage_Minimum_Annex primary key clustered (
+        ST_MIN_ID asc,
+        ST_MIN_Positor asc,
+        ST_MIN_PositedAt desc
+    )
+);
+GO
+-- Historized attribute posit table -----------------------------------------------------------------------------------
+-- AC_NAM_Actor_Name_Posit table (on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_NAM_Actor_Name_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[AC_NAM_Actor_Name_Posit] (
+    AC_NAM_ID int IDENTITY(1,1) not null,
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_ChangedAt datetime2 not null,
+    constraint fkAC_NAM_Actor_Name_Posit foreign key (
+        AC_ID
+    ) references [anchors].[AC_Actor](AC_ID),
+    constraint pkAC_NAM_Actor_Name_Posit primary key nonclustered (
+        AC_NAM_ID asc
+    ),
+    constraint uqAC_NAM_Actor_Name_Posit unique clustered (
+        AC_ID asc,
+        AC_NAM_ChangedAt desc,
+        AC_NAM_Actor_Name asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- AC_NAM_Actor_Name_Annex table (of AC_NAM_Actor_Name_Posit on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_NAM_Actor_Name_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[AC_NAM_Actor_Name_Annex] (
+    AC_NAM_ID int not null,
+    AC_NAM_PositedAt datetime2 not null,
+    AC_NAM_Positor tinyint not null,
+    AC_NAM_Reliability decimal(5,2) not null,
+    AC_NAM_Assertion as cast(
+        case
+            when AC_NAM_Reliability > 0 then '+'
+            when AC_NAM_Reliability = 0 then '?'
+            when AC_NAM_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_NAM int not null,
+    constraint fkAC_NAM_Actor_Name_Annex foreign key (
+        AC_NAM_ID
+    ) references [attributes].[AC_NAM_Actor_Name_Posit](AC_NAM_ID),
+    constraint pkAC_NAM_Actor_Name_Annex primary key clustered (
+        AC_NAM_ID asc,
+        AC_NAM_Positor asc,
+        AC_NAM_PositedAt desc
+    )
+);
+GO
+-- Knotted static attribute posit table -------------------------------------------------------------------------------
+-- AC_GEN_Actor_Gender_Posit table (on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_GEN_Actor_Gender_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[AC_GEN_Actor_Gender_Posit] (
+    AC_GEN_ID int IDENTITY(1,1) not null,
+    AC_ID smallint not null,
+    GEN_ID tinyint not null,
+    constraint fk_A_AC_GEN_Actor_Gender_Posit foreign key (
+        AC_ID
+    ) references [anchors].[AC_Actor](AC_ID),
+    constraint fk_K_AC_GEN_Actor_Gender_Posit foreign key (
+        GEN_ID
+    ) references [knots].[GEN_Gender](GEN_ID),
+    constraint pkAC_GEN_Actor_Gender_Posit primary key nonclustered (
+        AC_GEN_ID asc
+    ),
+    constraint uqAC_GEN_Actor_Gender_Posit unique clustered (
+        AC_ID asc,
+        GEN_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- AC_GEN_Actor_Gender_Annex table (of AC_GEN_Actor_Gender_Posit on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_GEN_Actor_Gender_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[AC_GEN_Actor_Gender_Annex] (
+    AC_GEN_ID int not null,
+    AC_GEN_PositedAt datetime2 not null,
+    AC_GEN_Positor tinyint not null,
+    AC_GEN_Reliability decimal(5,2) not null,
+    AC_GEN_Assertion as cast(
+        case
+            when AC_GEN_Reliability > 0 then '+'
+            when AC_GEN_Reliability = 0 then '?'
+            when AC_GEN_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_GEN int not null,
+    constraint fkAC_GEN_Actor_Gender_Annex foreign key (
+        AC_GEN_ID
+    ) references [attributes].[AC_GEN_Actor_Gender_Posit](AC_GEN_ID),
+    constraint pkAC_GEN_Actor_Gender_Annex primary key clustered (
+        AC_GEN_ID asc,
+        AC_GEN_Positor asc,
+        AC_GEN_PositedAt desc
+    )
+);
+GO
+-- Knotted historized attribute posit table ---------------------------------------------------------------------------
+-- AC_PLV_Actor_ProfessionalLevel_Posit table (on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_PLV_Actor_ProfessionalLevel_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] (
+    AC_PLV_ID int IDENTITY(1,1) not null,
+    AC_ID smallint not null,
+    PLV_ID tinyint not null,
+    AC_PLV_ChangedAt datetime2 not null,
+    constraint fk_A_AC_PLV_Actor_ProfessionalLevel_Posit foreign key (
+        AC_ID
+    ) references [anchors].[AC_Actor](AC_ID),
+    constraint fk_K_AC_PLV_Actor_ProfessionalLevel_Posit foreign key (
+        PLV_ID
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
+    constraint pkAC_PLV_Actor_ProfessionalLevel_Posit primary key nonclustered (
+        AC_PLV_ID asc
+    ),
+    constraint uqAC_PLV_Actor_ProfessionalLevel_Posit unique clustered (
+        AC_ID asc,
+        AC_PLV_ChangedAt desc,
+        PLV_ID asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- AC_PLV_Actor_ProfessionalLevel_Annex table (of AC_PLV_Actor_ProfessionalLevel_Posit on AC_Actor)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_PLV_Actor_ProfessionalLevel_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] (
+    AC_PLV_ID int not null,
+    AC_PLV_PositedAt datetime2 not null,
+    AC_PLV_Positor tinyint not null,
+    AC_PLV_Reliability decimal(5,2) not null,
+    AC_PLV_Assertion as cast(
+        case
+            when AC_PLV_Reliability > 0 then '+'
+            when AC_PLV_Reliability = 0 then '?'
+            when AC_PLV_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_PLV int not null,
+    constraint fkAC_PLV_Actor_ProfessionalLevel_Annex foreign key (
+        AC_PLV_ID
+    ) references [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit](AC_PLV_ID),
+    constraint pkAC_PLV_Actor_ProfessionalLevel_Annex primary key clustered (
+        AC_PLV_ID asc,
+        AC_PLV_Positor asc,
+        AC_PLV_PositedAt desc
+    )
+);
+GO
+-- Static attribute posit table -----------------------------------------------------------------------------------
+-- PR_NAM_Program_Name_Posit table (on PR_Program)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_NAM_Program_Name_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[PR_NAM_Program_Name_Posit] (
+    PR_NAM_ID int IDENTITY(1,1) not null,
+    PR_ID bigint not null,
+    PR_NAM_Program_Name nvarchar(42) not null,
+    constraint fkPR_NAM_Program_Name_Posit foreign key (
+        PR_ID
+    ) references [anchors].[PR_Program](PR_ID),
+    constraint pkPR_NAM_Program_Name_Posit primary key nonclustered (
+        PR_NAM_ID asc
+    ),
+    constraint uqPR_NAM_Program_Name_Posit unique clustered (
+        PR_ID asc,
+        PR_NAM_Program_Name asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- PR_NAM_Program_Name_Annex table (of PR_NAM_Program_Name_Posit on PR_Program)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_NAM_Program_Name_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[PR_NAM_Program_Name_Annex] (
+    PR_NAM_ID int not null,
+    PR_NAM_PositedAt datetime2 not null,
+    PR_NAM_Positor tinyint not null,
+    PR_NAM_Reliability decimal(5,2) not null,
+    PR_NAM_Assertion as cast(
+        case
+            when PR_NAM_Reliability > 0 then '+'
+            when PR_NAM_Reliability = 0 then '?'
+            when PR_NAM_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_PR_NAM int not null,
+    constraint fkPR_NAM_Program_Name_Annex foreign key (
+        PR_NAM_ID
+    ) references [attributes].[PR_NAM_Program_Name_Posit](PR_NAM_ID),
+    constraint pkPR_NAM_Program_Name_Annex primary key clustered (
+        PR_NAM_ID asc,
+        PR_NAM_Positor asc,
+        PR_NAM_PositedAt desc
+    )
+);
+GO
+-- Historized attribute posit table -----------------------------------------------------------------------------------
+-- PR_LEN_Program_Length_Posit table (on PR_Program)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_LEN_Program_Length_Posit', 'U') IS NULL
+CREATE TABLE [attributes].[PR_LEN_Program_Length_Posit] (
+    PR_LEN_ID int IDENTITY(1,1) not null,
+    PR_ID bigint not null,
+    PR_LEN_Program_Length time not null,
+    PR_LEN_ChangedAt date not null,
+    constraint fkPR_LEN_Program_Length_Posit foreign key (
+        PR_ID
+    ) references [anchors].[PR_Program](PR_ID),
+    constraint pkPR_LEN_Program_Length_Posit primary key nonclustered (
+        PR_LEN_ID asc
+    ),
+    constraint uqPR_LEN_Program_Length_Posit unique clustered (
+        PR_ID asc,
+        PR_LEN_ChangedAt desc,
+        PR_LEN_Program_Length asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- PR_LEN_Program_Length_Annex table (of PR_LEN_Program_Length_Posit on PR_Program)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_LEN_Program_Length_Annex', 'U') IS NULL
+CREATE TABLE [attributes].[PR_LEN_Program_Length_Annex] (
+    PR_LEN_ID int not null,
+    PR_LEN_PositedAt datetime2 not null,
+    PR_LEN_Positor tinyint not null,
+    PR_LEN_Reliability decimal(5,2) not null,
+    PR_LEN_Assertion as cast(
+        case
+            when PR_LEN_Reliability > 0 then '+'
+            when PR_LEN_Reliability = 0 then '?'
+            when PR_LEN_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_PR_LEN int not null,
+    constraint fkPR_LEN_Program_Length_Annex foreign key (
+        PR_LEN_ID
+    ) references [attributes].[PR_LEN_Program_Length_Posit](PR_LEN_ID),
+    constraint pkPR_LEN_Program_Length_Annex primary key clustered (
+        PR_LEN_ID asc,
+        PR_LEN_Positor asc,
+        PR_LEN_PositedAt desc
+    )
+);
+GO
+-- ATTRIBUTE ASSEMBLED VIEWS ------------------------------------------------------------------------------------------
+--
+-- The assembled view of an attribute combines the posit and annex table of the attribute.
+-- It can be used to maintain entity integrity through a primary key, which cannot be
+-- defined elsewhere.
+--
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_DAT_Event_Date assembled view of the posit and annex tables,
+-- pkEV_DAT_Event_Date optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_DAT_Event_Date', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_DAT_Event_Date]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_DAT,
+        p.EV_DAT_ID,
+        p.EV_ID,
+        p.EV_DAT_Event_Date,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Positor,
+        a.EV_DAT_Reliability,
+        a.EV_DAT_Assertion
+    FROM
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    JOIN
+        [attributes].[EV_DAT_Event_Date_Annex] a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
+    ON [attributes].[EV_DAT_Event_Date] (
+        EV_DAT_Assertion desc, 
+        EV_ID asc,
+        EV_DAT_PositedAt desc,
+        EV_DAT_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_AUD_Event_Audience assembled view of the posit and annex tables,
+-- pkEV_AUD_Event_Audience optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_AUD_Event_Audience', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_AUD_Event_Audience]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_AUD,
+        p.EV_AUD_ID,
+        p.EV_ID,
+        p.EV_AUD_Event_Audience,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Positor,
+        a.EV_AUD_Reliability,
+        a.EV_AUD_Assertion
+    FROM
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    JOIN
+        [attributes].[EV_AUD_Event_Audience_Annex] a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
+    ON [attributes].[EV_AUD_Event_Audience] (
+        EV_AUD_Assertion desc, 
+        EV_ID asc,
+        EV_AUD_PositedAt desc,
+        EV_AUD_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_REV_Event_Revenue assembled view of the posit and annex tables,
+-- pkEV_REV_Event_Revenue optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_REV_Event_Revenue', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_REV_Event_Revenue]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_REV,
+        p.EV_REV_ID,
+        p.EV_ID,
+        p.EV_REV_Event_Revenue,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Positor,
+        a.EV_REV_Reliability,
+        a.EV_REV_Assertion
+    FROM
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    JOIN
+        [attributes].[EV_REV_Event_Revenue_Annex] a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
+    ON [attributes].[EV_REV_Event_Revenue] (
+        EV_REV_Assertion desc, 
+        EV_ID asc,
+        EV_REV_PositedAt desc,
+        EV_REV_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_STA_Event_Status assembled view of the posit and annex tables,
+-- pkEV_STA_Event_Status optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_STA_Event_Status', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_STA_Event_Status]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_STA,
+        p.EV_STA_ID,
+        p.EV_ID,
+        p.EV_STA_Event_Status,
+        p.EV_STA_ChangedAt,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Positor,
+        a.EV_STA_Reliability,
+        a.EV_STA_Assertion
+    FROM
+        [attributes].[EV_STA_Event_Status_Posit] p
+    JOIN
+        [attributes].[EV_STA_Event_Status_Annex] a
+    ON
+        a.EV_STA_ID = p.EV_STA_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_STA_Event_Status]
+    ON [attributes].[EV_STA_Event_Status] (
+        EV_STA_Assertion desc, 
+        EV_ID asc,
+        EV_STA_ChangedAt desc,
+        EV_STA_PositedAt desc,
+        EV_STA_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_UTL_Event_Utilization assembled view of the posit and annex tables,
+-- pkEV_UTL_Event_Utilization optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_UTL_Event_Utilization', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_UTL_Event_Utilization]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_UTL,
+        p.EV_UTL_ID,
+        p.EV_ID,
+        p.UTL_ID,
+        a.EV_UTL_PositedAt,
+        a.EV_UTL_Positor,
+        a.EV_UTL_Reliability,
+        a.EV_UTL_Assertion
+    FROM
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    JOIN
+        [attributes].[EV_UTL_Event_Utilization_Annex] a
+    ON
+        a.EV_UTL_ID = p.EV_UTL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_UTL_Event_Utilization]
+    ON [attributes].[EV_UTL_Event_Utilization] (
+        EV_UTL_Assertion desc, 
+        EV_ID asc,
+        EV_UTL_PositedAt desc,
+        EV_UTL_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_LVL_Event_Level assembled view of the posit and annex tables,
+-- pkEV_LVL_Event_Level optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.EV_LVL_Event_Level', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[EV_LVL_Event_Level]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        p.EV_ID,
+        p.PLV_ID,
+        p.EV_LVL_ChangedAt,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Positor,
+        a.EV_LVL_Reliability,
+        a.EV_LVL_Assertion
+    FROM
+        [attributes].[EV_LVL_Event_Level_Posit] p
+    JOIN
+        [attributes].[EV_LVL_Event_Level_Annex] a
+    ON
+        a.EV_LVL_ID = p.EV_LVL_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_LVL_Event_Level]
+    ON [attributes].[EV_LVL_Event_Level] (
+        EV_LVL_Assertion desc, 
+        EV_ID asc,
+        EV_LVL_ChangedAt desc,
+        EV_LVL_PositedAt desc,
+        EV_LVL_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- ST_NAM_Stage_Name assembled view of the posit and annex tables,
+-- pkST_NAM_Stage_Name optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_NAM_Stage_Name', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[ST_NAM_Stage_Name]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_ST_NAM,
+        p.ST_NAM_ID,
+        p.ST_ID,
+        p.ST_NAM_Stage_Name,
+        p.ST_NAM_ChangedAt,
+        a.ST_NAM_PositedAt,
+        a.ST_NAM_Positor,
+        a.ST_NAM_Reliability,
+        a.ST_NAM_Assertion
+    FROM
+        [attributes].[ST_NAM_Stage_Name_Posit] p
+    JOIN
+        [attributes].[ST_NAM_Stage_Name_Annex] a
+    ON
+        a.ST_NAM_ID = p.ST_NAM_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkST_NAM_Stage_Name]
+    ON [attributes].[ST_NAM_Stage_Name] (
+        ST_NAM_Assertion desc, 
+        ST_ID asc,
+        ST_NAM_ChangedAt desc,
+        ST_NAM_PositedAt desc,
+        ST_NAM_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- ST_LOC_Stage_Location assembled view of the posit and annex tables,
+-- pkST_LOC_Stage_Location optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_LOC_Stage_Location', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[ST_LOC_Stage_Location]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_ST_LOC,
+        p.ST_LOC_ID,
+        p.ST_ID,
+        p.ST_LOC_Checksum,
+        p.ST_LOC_Stage_Location,
+        a.ST_LOC_PositedAt,
+        a.ST_LOC_Positor,
+        a.ST_LOC_Reliability,
+        a.ST_LOC_Assertion
+    FROM
+        [attributes].[ST_LOC_Stage_Location_Posit] p
+    JOIN
+        [attributes].[ST_LOC_Stage_Location_Annex] a
+    ON
+        a.ST_LOC_ID = p.ST_LOC_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkST_LOC_Stage_Location]
+    ON [attributes].[ST_LOC_Stage_Location] (
+        ST_LOC_Assertion desc, 
+        ST_ID asc,
+        ST_LOC_PositedAt desc,
+        ST_LOC_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- ST_AVG_Stage_Average assembled view of the posit and annex tables,
+-- pkST_AVG_Stage_Average optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_AVG_Stage_Average', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[ST_AVG_Stage_Average]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_ST_AVG,
+        p.ST_AVG_ID,
+        p.ST_ID,
+        p.UTL_ID,
+        p.ST_AVG_ChangedAt,
+        a.ST_AVG_PositedAt,
+        a.ST_AVG_Positor,
+        a.ST_AVG_Reliability,
+        a.ST_AVG_Assertion
+    FROM
+        [attributes].[ST_AVG_Stage_Average_Posit] p
+    JOIN
+        [attributes].[ST_AVG_Stage_Average_Annex] a
+    ON
+        a.ST_AVG_ID = p.ST_AVG_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkST_AVG_Stage_Average]
+    ON [attributes].[ST_AVG_Stage_Average] (
+        ST_AVG_Assertion desc, 
+        ST_ID asc,
+        ST_AVG_ChangedAt desc,
+        ST_AVG_PositedAt desc,
+        ST_AVG_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- ST_MIN_Stage_Minimum assembled view of the posit and annex tables,
+-- pkST_MIN_Stage_Minimum optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ST_MIN_Stage_Minimum', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[ST_MIN_Stage_Minimum]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_ST_MIN,
+        p.ST_MIN_ID,
+        p.ST_ID,
+        p.UTL_ID,
+        a.ST_MIN_PositedAt,
+        a.ST_MIN_Positor,
+        a.ST_MIN_Reliability,
+        a.ST_MIN_Assertion
+    FROM
+        [attributes].[ST_MIN_Stage_Minimum_Posit] p
+    JOIN
+        [attributes].[ST_MIN_Stage_Minimum_Annex] a
+    ON
+        a.ST_MIN_ID = p.ST_MIN_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkST_MIN_Stage_Minimum]
+    ON [attributes].[ST_MIN_Stage_Minimum] (
+        ST_MIN_Assertion desc, 
+        ST_ID asc,
+        ST_MIN_PositedAt desc,
+        ST_MIN_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- AC_NAM_Actor_Name assembled view of the posit and annex tables,
+-- pkAC_NAM_Actor_Name optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_NAM_Actor_Name', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[AC_NAM_Actor_Name]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_NAM,
+        p.AC_NAM_ID,
+        p.AC_ID,
+        p.AC_NAM_Actor_Name,
+        p.AC_NAM_ChangedAt,
+        a.AC_NAM_PositedAt,
+        a.AC_NAM_Positor,
+        a.AC_NAM_Reliability,
+        a.AC_NAM_Assertion
+    FROM
+        [attributes].[AC_NAM_Actor_Name_Posit] p
+    JOIN
+        [attributes].[AC_NAM_Actor_Name_Annex] a
+    ON
+        a.AC_NAM_ID = p.AC_NAM_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_NAM_Actor_Name]
+    ON [attributes].[AC_NAM_Actor_Name] (
+        AC_NAM_Assertion desc, 
+        AC_ID asc,
+        AC_NAM_ChangedAt desc,
+        AC_NAM_PositedAt desc,
+        AC_NAM_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- AC_GEN_Actor_Gender assembled view of the posit and annex tables,
+-- pkAC_GEN_Actor_Gender optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_GEN_Actor_Gender', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[AC_GEN_Actor_Gender]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_GEN,
+        p.AC_GEN_ID,
+        p.AC_ID,
+        p.GEN_ID,
+        a.AC_GEN_PositedAt,
+        a.AC_GEN_Positor,
+        a.AC_GEN_Reliability,
+        a.AC_GEN_Assertion
+    FROM
+        [attributes].[AC_GEN_Actor_Gender_Posit] p
+    JOIN
+        [attributes].[AC_GEN_Actor_Gender_Annex] a
+    ON
+        a.AC_GEN_ID = p.AC_GEN_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_GEN_Actor_Gender]
+    ON [attributes].[AC_GEN_Actor_Gender] (
+        AC_GEN_Assertion desc, 
+        AC_ID asc,
+        AC_GEN_PositedAt desc,
+        AC_GEN_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- AC_PLV_Actor_ProfessionalLevel assembled view of the posit and annex tables,
+-- pkAC_PLV_Actor_ProfessionalLevel optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.AC_PLV_Actor_ProfessionalLevel', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[AC_PLV_Actor_ProfessionalLevel]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_PLV,
+        p.AC_PLV_ID,
+        p.AC_ID,
+        p.PLV_ID,
+        p.AC_PLV_ChangedAt,
+        a.AC_PLV_PositedAt,
+        a.AC_PLV_Positor,
+        a.AC_PLV_Reliability,
+        a.AC_PLV_Assertion
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+    JOIN
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+    ON
+        a.AC_PLV_ID = p.AC_PLV_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_PLV_Actor_ProfessionalLevel]
+    ON [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+        AC_PLV_Assertion desc, 
+        AC_ID asc,
+        AC_PLV_ChangedAt desc,
+        AC_PLV_PositedAt desc,
+        AC_PLV_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- PR_NAM_Program_Name assembled view of the posit and annex tables,
+-- pkPR_NAM_Program_Name optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_NAM_Program_Name', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[PR_NAM_Program_Name]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_PR_NAM,
+        p.PR_NAM_ID,
+        p.PR_ID,
+        p.PR_NAM_Program_Name,
+        a.PR_NAM_PositedAt,
+        a.PR_NAM_Positor,
+        a.PR_NAM_Reliability,
+        a.PR_NAM_Assertion
+    FROM
+        [attributes].[PR_NAM_Program_Name_Posit] p
+    JOIN
+        [attributes].[PR_NAM_Program_Name_Annex] a
+    ON
+        a.PR_NAM_ID = p.PR_NAM_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkPR_NAM_Program_Name]
+    ON [attributes].[PR_NAM_Program_Name] (
+        PR_NAM_Assertion desc, 
+        PR_ID asc,
+        PR_NAM_PositedAt desc,
+        PR_NAM_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- PR_LEN_Program_Length assembled view of the posit and annex tables,
+-- pkPR_LEN_Program_Length optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.PR_LEN_Program_Length', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [attributes].[PR_LEN_Program_Length]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_PR_LEN,
+        p.PR_LEN_ID,
+        p.PR_ID,
+        p.PR_LEN_Program_Length,
+        p.PR_LEN_ChangedAt,
+        a.PR_LEN_PositedAt,
+        a.PR_LEN_Positor,
+        a.PR_LEN_Reliability,
+        a.PR_LEN_Assertion
+    FROM
+        [attributes].[PR_LEN_Program_Length_Posit] p
+    JOIN
+        [attributes].[PR_LEN_Program_Length_Annex] a
+    ON
+        a.PR_LEN_ID = p.PR_LEN_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkPR_LEN_Program_Length]
+    ON [attributes].[PR_LEN_Program_Length] (
+        PR_LEN_Assertion desc, 
+        PR_ID asc,
+        PR_LEN_ChangedAt desc,
+        PR_LEN_PositedAt desc,
+        PR_LEN_Positor asc
+    );
+    ');
+END
+GO
+-- ATTRIBUTE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------
+--
+-- These table valued functions rewind an attribute posit table to the given
+-- point in changing time, or an attribute annex table to the given point
+-- in positing time. It does not pick a temporal perspective and
+-- instead shows all rows that have been in effect before that point
+-- in time. The forwarder is the opposite of the rewinder, such that the 
+-- union of the two will produce all rows in a posit table.
+--
+-- @positor the view of which positor to adopt (defaults to 0)
+-- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
+-- @positingTimepoint the point in positing time to rewind to (defaults to End of Time, no rewind)
+--
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_DAT_Event_Date_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_DAT_Event_Date_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_DAT_Event_Date_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_DAT,
+        EV_DAT_ID,
+        EV_DAT_PositedAt,
+        EV_DAT_Positor,
+        EV_DAT_Reliability,
+        EV_DAT_Assertion
+    FROM
+        [attributes].[EV_DAT_Event_Date_Annex]
+    WHERE
+        EV_DAT_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_DAT_Event_Date rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_DAT_Event_Date','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_DAT_Event_Date] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_DAT,
+        p.EV_DAT_ID,
+        a.EV_DAT_PositedAt,
+        a.EV_DAT_Positor,
+        a.EV_DAT_Reliability,
+        a.EV_DAT_Assertion,
+        p.EV_ID,
+        p.EV_DAT_Event_Date
+    FROM
+        [attributes].[EV_DAT_Event_Date_Posit] p
+    JOIN
+        [attributes].[rEV_DAT_Event_Date_Annex](@positingTimepoint) a
+    ON
+        a.EV_DAT_ID = p.EV_DAT_ID
+    AND
+        a.EV_DAT_Positor = @positor
+    AND
+        a.EV_DAT_PositedAt = (
+            SELECT TOP 1
+                sub.EV_DAT_PositedAt
+            FROM
+                [attributes].[rEV_DAT_Event_Date_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_DAT_ID = p.EV_DAT_ID
+            AND
+                sub.EV_DAT_Positor = @positor
+            ORDER BY
+                sub.EV_DAT_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_AUD_Event_Audience_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_AUD_Event_Audience_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_AUD_Event_Audience_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_AUD,
+        EV_AUD_ID,
+        EV_AUD_PositedAt,
+        EV_AUD_Positor,
+        EV_AUD_Reliability,
+        EV_AUD_Assertion
+    FROM
+        [attributes].[EV_AUD_Event_Audience_Annex]
+    WHERE
+        EV_AUD_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_AUD_Event_Audience rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_AUD_Event_Audience','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_AUD_Event_Audience] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_AUD,
+        p.EV_AUD_ID,
+        a.EV_AUD_PositedAt,
+        a.EV_AUD_Positor,
+        a.EV_AUD_Reliability,
+        a.EV_AUD_Assertion,
+        p.EV_ID,
+        p.EV_AUD_Event_Audience
+    FROM
+        [attributes].[EV_AUD_Event_Audience_Posit] p
+    JOIN
+        [attributes].[rEV_AUD_Event_Audience_Annex](@positingTimepoint) a
+    ON
+        a.EV_AUD_ID = p.EV_AUD_ID
+    AND
+        a.EV_AUD_Positor = @positor
+    AND
+        a.EV_AUD_PositedAt = (
+            SELECT TOP 1
+                sub.EV_AUD_PositedAt
+            FROM
+                [attributes].[rEV_AUD_Event_Audience_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_AUD_ID = p.EV_AUD_ID
+            AND
+                sub.EV_AUD_Positor = @positor
+            ORDER BY
+                sub.EV_AUD_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_REV_Event_Revenue_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_REV_Event_Revenue_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_REV_Event_Revenue_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_REV,
+        EV_REV_ID,
+        EV_REV_PositedAt,
+        EV_REV_Positor,
+        EV_REV_Reliability,
+        EV_REV_Assertion
+    FROM
+        [attributes].[EV_REV_Event_Revenue_Annex]
+    WHERE
+        EV_REV_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_REV_Event_Revenue rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_REV_Event_Revenue','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_REV_Event_Revenue] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_REV,
+        p.EV_REV_ID,
+        a.EV_REV_PositedAt,
+        a.EV_REV_Positor,
+        a.EV_REV_Reliability,
+        a.EV_REV_Assertion,
+        p.EV_ID,
+        p.EV_REV_Event_Revenue
+    FROM
+        [attributes].[EV_REV_Event_Revenue_Posit] p
+    JOIN
+        [attributes].[rEV_REV_Event_Revenue_Annex](@positingTimepoint) a
+    ON
+        a.EV_REV_ID = p.EV_REV_ID
+    AND
+        a.EV_REV_Positor = @positor
+    AND
+        a.EV_REV_PositedAt = (
+            SELECT TOP 1
+                sub.EV_REV_PositedAt
+            FROM
+                [attributes].[rEV_REV_Event_Revenue_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_REV_ID = p.EV_REV_ID
+            AND
+                sub.EV_REV_Positor = @positor
+            ORDER BY
+                sub.EV_REV_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rEV_STA_Event_Status_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_STA_Event_Status_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_STA_Event_Status_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_STA_ID,
+        EV_ID,
+        EV_STA_Event_Status,
+        EV_STA_ChangedAt
+    FROM
+        [attributes].[EV_STA_Event_Status_Posit]
+    WHERE
+        EV_STA_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fEV_STA_Event_Status_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fEV_STA_Event_Status_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fEV_STA_Event_Status_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_STA_ID,
+        EV_ID,
+        EV_STA_Event_Status,
+        EV_STA_ChangedAt
+    FROM
+        [attributes].[EV_STA_Event_Status_Posit]
+    WHERE
+        EV_STA_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_STA_Event_Status_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_STA_Event_Status_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_STA_Event_Status_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_STA,
+        EV_STA_ID,
+        EV_STA_PositedAt,
+        EV_STA_Positor,
+        EV_STA_Reliability,
+        EV_STA_Assertion
+    FROM
+        [attributes].[EV_STA_Event_Status_Annex]
+    WHERE
+        EV_STA_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_STA_Event_Status rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_STA_Event_Status','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_STA_Event_Status] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_STA,
+        p.EV_STA_ID,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Positor,
+        a.EV_STA_Reliability,
+        a.EV_STA_Assertion,
+        p.EV_ID,
+        p.EV_STA_Event_Status,
+        p.EV_STA_ChangedAt
+    FROM
+        [attributes].[rEV_STA_Event_Status_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rEV_STA_Event_Status_Annex](@positingTimepoint) a
+    ON
+        a.EV_STA_ID = p.EV_STA_ID
+    AND
+        a.EV_STA_Positor = @positor
+    AND
+        a.EV_STA_PositedAt = (
+            SELECT TOP 1
+                sub.EV_STA_PositedAt
+            FROM
+                [attributes].[rEV_STA_Event_Status_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_STA_ID = p.EV_STA_ID
+            AND
+                sub.EV_STA_Positor = @positor
+            ORDER BY
+                sub.EV_STA_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fEV_STA_Event_Status forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fEV_STA_Event_Status','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fEV_STA_Event_Status] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_STA,
+        p.EV_STA_ID,
+        a.EV_STA_PositedAt,
+        a.EV_STA_Positor,
+        a.EV_STA_Reliability,
+        a.EV_STA_Assertion,
+        p.EV_ID,
+        p.EV_STA_Event_Status,
+        p.EV_STA_ChangedAt
+    FROM
+        [attributes].[fEV_STA_Event_Status_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rEV_STA_Event_Status_Annex](@positingTimepoint) a
+    ON
+        a.EV_STA_ID = p.EV_STA_ID
+    AND
+        a.EV_STA_Positor = @positor
+    AND
+        a.EV_STA_PositedAt = (
+            SELECT TOP 1
+                sub.EV_STA_PositedAt
+            FROM
+                [attributes].[rEV_STA_Event_Status_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_STA_ID = p.EV_STA_ID
+            AND
+                sub.EV_STA_Positor = @positor
+            ORDER BY
+                sub.EV_STA_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preEV_STA_Event_Status function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preEV_STA_Event_Status','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preEV_STA_Event_Status] (
+        @id numeric(12,0),
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS nvarchar(20)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.EV_STA_Event_Status
+        FROM
+            [attributes].[rEV_STA_Event_Status](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.EV_ID = @id
+        AND
+            pre.EV_STA_ChangedAt < @changingTimepoint
+        AND
+            pre.EV_STA_Assertion = isnull(@assertion, pre.EV_STA_Assertion)
+        ORDER BY
+            pre.EV_STA_ChangedAt DESC,
+            pre.EV_STA_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folEV_STA_Event_Status function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folEV_STA_Event_Status','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folEV_STA_Event_Status] (
+        @id numeric(12,0),
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS nvarchar(20)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.EV_STA_Event_Status
+        FROM
+            [attributes].[fEV_STA_Event_Status](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.EV_ID = @id
+        AND
+            fol.EV_STA_ChangedAt > @changingTimepoint
+        AND
+            fol.EV_STA_Assertion = isnull(@assertion, fol.EV_STA_Assertion)
+        ORDER BY
+            fol.EV_STA_ChangedAt ASC,
+            fol.EV_STA_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_UTL_Event_Utilization_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_UTL_Event_Utilization_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_UTL_Event_Utilization_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_UTL,
+        EV_UTL_ID,
+        EV_UTL_PositedAt,
+        EV_UTL_Positor,
+        EV_UTL_Reliability,
+        EV_UTL_Assertion
+    FROM
+        [attributes].[EV_UTL_Event_Utilization_Annex]
+    WHERE
+        EV_UTL_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_UTL_Event_Utilization rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_UTL_Event_Utilization','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_UTL_Event_Utilization] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_UTL,
+        p.EV_UTL_ID,
+        a.EV_UTL_PositedAt,
+        a.EV_UTL_Positor,
+        a.EV_UTL_Reliability,
+        a.EV_UTL_Assertion,
+        p.EV_ID,
+        p.UTL_ID
+    FROM
+        [attributes].[EV_UTL_Event_Utilization_Posit] p
+    JOIN
+        [attributes].[rEV_UTL_Event_Utilization_Annex](@positingTimepoint) a
+    ON
+        a.EV_UTL_ID = p.EV_UTL_ID
+    AND
+        a.EV_UTL_Positor = @positor
+    AND
+        a.EV_UTL_PositedAt = (
+            SELECT TOP 1
+                sub.EV_UTL_PositedAt
+            FROM
+                [attributes].[rEV_UTL_Event_Utilization_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_UTL_ID = p.EV_UTL_ID
+            AND
+                sub.EV_UTL_Positor = @positor
+            ORDER BY
+                sub.EV_UTL_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rEV_LVL_Event_Level_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_LVL_Event_Level_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_LVL_Event_Level_Posit] (
+        @changingTimepoint date = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_LVL_ID,
+        EV_ID,
+        PLV_ID,
+        EV_LVL_ChangedAt
+    FROM
+        [attributes].[EV_LVL_Event_Level_Posit]
+    WHERE
+        EV_LVL_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fEV_LVL_Event_Level_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fEV_LVL_Event_Level_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fEV_LVL_Event_Level_Posit] (
+        @changingTimepoint date = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_LVL_ID,
+        EV_ID,
+        PLV_ID,
+        EV_LVL_ChangedAt
+    FROM
+        [attributes].[EV_LVL_Event_Level_Posit]
+    WHERE
+        EV_LVL_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_LVL_Event_Level_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_LVL_Event_Level_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_LVL_Event_Level_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_LVL,
+        EV_LVL_ID,
+        EV_LVL_PositedAt,
+        EV_LVL_Positor,
+        EV_LVL_Reliability,
+        EV_LVL_Assertion
+    FROM
+        [attributes].[EV_LVL_Event_Level_Annex]
+    WHERE
+        EV_LVL_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_LVL_Event_Level rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rEV_LVL_Event_Level','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rEV_LVL_Event_Level] (
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Positor,
+        a.EV_LVL_Reliability,
+        a.EV_LVL_Assertion,
+        p.EV_ID,
+        p.PLV_ID,
+        p.EV_LVL_ChangedAt
+    FROM
+        [attributes].[rEV_LVL_Event_Level_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rEV_LVL_Event_Level_Annex](@positingTimepoint) a
+    ON
+        a.EV_LVL_ID = p.EV_LVL_ID
+    AND
+        a.EV_LVL_Positor = @positor
+    AND
+        a.EV_LVL_PositedAt = (
+            SELECT TOP 1
+                sub.EV_LVL_PositedAt
+            FROM
+                [attributes].[rEV_LVL_Event_Level_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_LVL_ID = p.EV_LVL_ID
+            AND
+                sub.EV_LVL_Positor = @positor
+            ORDER BY
+                sub.EV_LVL_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fEV_LVL_Event_Level forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fEV_LVL_Event_Level','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fEV_LVL_Event_Level] (
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_LVL,
+        p.EV_LVL_ID,
+        a.EV_LVL_PositedAt,
+        a.EV_LVL_Positor,
+        a.EV_LVL_Reliability,
+        a.EV_LVL_Assertion,
+        p.EV_ID,
+        p.PLV_ID,
+        p.EV_LVL_ChangedAt
+    FROM
+        [attributes].[fEV_LVL_Event_Level_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rEV_LVL_Event_Level_Annex](@positingTimepoint) a
+    ON
+        a.EV_LVL_ID = p.EV_LVL_ID
+    AND
+        a.EV_LVL_Positor = @positor
+    AND
+        a.EV_LVL_PositedAt = (
+            SELECT TOP 1
+                sub.EV_LVL_PositedAt
+            FROM
+                [attributes].[rEV_LVL_Event_Level_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_LVL_ID = p.EV_LVL_ID
+            AND
+                sub.EV_LVL_Positor = @positor
+            ORDER BY
+                sub.EV_LVL_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preEV_LVL_Event_Level function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preEV_LVL_Event_Level','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preEV_LVL_Event_Level] (
+        @id numeric(12,0),
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.PLV_ID
+        FROM
+            [attributes].[rEV_LVL_Event_Level](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.EV_ID = @id
+        AND
+            pre.EV_LVL_ChangedAt < @changingTimepoint
+        AND
+            pre.EV_LVL_Assertion = isnull(@assertion, pre.EV_LVL_Assertion)
+        ORDER BY
+            pre.EV_LVL_ChangedAt DESC,
+            pre.EV_LVL_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folEV_LVL_Event_Level function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folEV_LVL_Event_Level','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folEV_LVL_Event_Level] (
+        @id numeric(12,0),
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.PLV_ID
+        FROM
+            [attributes].[fEV_LVL_Event_Level](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.EV_ID = @id
+        AND
+            fol.EV_LVL_ChangedAt > @changingTimepoint
+        AND
+            fol.EV_LVL_Assertion = isnull(@assertion, fol.EV_LVL_Assertion)
+        ORDER BY
+            fol.EV_LVL_ChangedAt ASC,
+            fol.EV_LVL_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rST_NAM_Stage_Name_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_NAM_Stage_Name_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_NAM_Stage_Name_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_NAM_ID,
+        ST_ID,
+        ST_NAM_Stage_Name,
+        ST_NAM_ChangedAt
+    FROM
+        [attributes].[ST_NAM_Stage_Name_Posit]
+    WHERE
+        ST_NAM_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fST_NAM_Stage_Name_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fST_NAM_Stage_Name_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fST_NAM_Stage_Name_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_NAM_ID,
+        ST_ID,
+        ST_NAM_Stage_Name,
+        ST_NAM_ChangedAt
+    FROM
+        [attributes].[ST_NAM_Stage_Name_Posit]
+    WHERE
+        ST_NAM_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rST_NAM_Stage_Name_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_NAM_Stage_Name_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_NAM_Stage_Name_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_ST_NAM,
+        ST_NAM_ID,
+        ST_NAM_PositedAt,
+        ST_NAM_Positor,
+        ST_NAM_Reliability,
+        ST_NAM_Assertion
+    FROM
+        [attributes].[ST_NAM_Stage_Name_Annex]
+    WHERE
+        ST_NAM_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rST_NAM_Stage_Name rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_NAM_Stage_Name','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_NAM_Stage_Name] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_NAM,
+        p.ST_NAM_ID,
+        a.ST_NAM_PositedAt,
+        a.ST_NAM_Positor,
+        a.ST_NAM_Reliability,
+        a.ST_NAM_Assertion,
+        p.ST_ID,
+        p.ST_NAM_Stage_Name,
+        p.ST_NAM_ChangedAt
+    FROM
+        [attributes].[rST_NAM_Stage_Name_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rST_NAM_Stage_Name_Annex](@positingTimepoint) a
+    ON
+        a.ST_NAM_ID = p.ST_NAM_ID
+    AND
+        a.ST_NAM_Positor = @positor
+    AND
+        a.ST_NAM_PositedAt = (
+            SELECT TOP 1
+                sub.ST_NAM_PositedAt
+            FROM
+                [attributes].[rST_NAM_Stage_Name_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_NAM_ID = p.ST_NAM_ID
+            AND
+                sub.ST_NAM_Positor = @positor
+            ORDER BY
+                sub.ST_NAM_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fST_NAM_Stage_Name forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fST_NAM_Stage_Name','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fST_NAM_Stage_Name] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_NAM,
+        p.ST_NAM_ID,
+        a.ST_NAM_PositedAt,
+        a.ST_NAM_Positor,
+        a.ST_NAM_Reliability,
+        a.ST_NAM_Assertion,
+        p.ST_ID,
+        p.ST_NAM_Stage_Name,
+        p.ST_NAM_ChangedAt
+    FROM
+        [attributes].[fST_NAM_Stage_Name_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rST_NAM_Stage_Name_Annex](@positingTimepoint) a
+    ON
+        a.ST_NAM_ID = p.ST_NAM_ID
+    AND
+        a.ST_NAM_Positor = @positor
+    AND
+        a.ST_NAM_PositedAt = (
+            SELECT TOP 1
+                sub.ST_NAM_PositedAt
+            FROM
+                [attributes].[rST_NAM_Stage_Name_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_NAM_ID = p.ST_NAM_ID
+            AND
+                sub.ST_NAM_Positor = @positor
+            ORDER BY
+                sub.ST_NAM_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preST_NAM_Stage_Name function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preST_NAM_Stage_Name','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preST_NAM_Stage_Name] (
+        @id int,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS nvarchar(42)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.ST_NAM_Stage_Name
+        FROM
+            [attributes].[rST_NAM_Stage_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.ST_ID = @id
+        AND
+            pre.ST_NAM_ChangedAt < @changingTimepoint
+        AND
+            pre.ST_NAM_Assertion = isnull(@assertion, pre.ST_NAM_Assertion)
+        ORDER BY
+            pre.ST_NAM_ChangedAt DESC,
+            pre.ST_NAM_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folST_NAM_Stage_Name function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folST_NAM_Stage_Name','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folST_NAM_Stage_Name] (
+        @id int,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS nvarchar(42)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.ST_NAM_Stage_Name
+        FROM
+            [attributes].[fST_NAM_Stage_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.ST_ID = @id
+        AND
+            fol.ST_NAM_ChangedAt > @changingTimepoint
+        AND
+            fol.ST_NAM_Assertion = isnull(@assertion, fol.ST_NAM_Assertion)
+        ORDER BY
+            fol.ST_NAM_ChangedAt ASC,
+            fol.ST_NAM_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rST_LOC_Stage_Location_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_LOC_Stage_Location_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_LOC_Stage_Location_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_ST_LOC,
+        ST_LOC_ID,
+        ST_LOC_PositedAt,
+        ST_LOC_Positor,
+        ST_LOC_Reliability,
+        ST_LOC_Assertion
+    FROM
+        [attributes].[ST_LOC_Stage_Location_Annex]
+    WHERE
+        ST_LOC_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rST_LOC_Stage_Location rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_LOC_Stage_Location','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_LOC_Stage_Location] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_LOC,
+        p.ST_LOC_ID,
+        a.ST_LOC_PositedAt,
+        a.ST_LOC_Positor,
+        a.ST_LOC_Reliability,
+        a.ST_LOC_Assertion,
+        p.ST_ID,
+        p.ST_LOC_Checksum,
+        p.ST_LOC_Stage_Location
+    FROM
+        [attributes].[ST_LOC_Stage_Location_Posit] p
+    JOIN
+        [attributes].[rST_LOC_Stage_Location_Annex](@positingTimepoint) a
+    ON
+        a.ST_LOC_ID = p.ST_LOC_ID
+    AND
+        a.ST_LOC_Positor = @positor
+    AND
+        a.ST_LOC_PositedAt = (
+            SELECT TOP 1
+                sub.ST_LOC_PositedAt
+            FROM
+                [attributes].[rST_LOC_Stage_Location_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_LOC_ID = p.ST_LOC_ID
+            AND
+                sub.ST_LOC_Positor = @positor
+            ORDER BY
+                sub.ST_LOC_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rST_AVG_Stage_Average_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_AVG_Stage_Average_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_AVG_Stage_Average_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_AVG_ID,
+        ST_ID,
+        UTL_ID,
+        ST_AVG_ChangedAt
+    FROM
+        [attributes].[ST_AVG_Stage_Average_Posit]
+    WHERE
+        ST_AVG_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fST_AVG_Stage_Average_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fST_AVG_Stage_Average_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fST_AVG_Stage_Average_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_AVG_ID,
+        ST_ID,
+        UTL_ID,
+        ST_AVG_ChangedAt
+    FROM
+        [attributes].[ST_AVG_Stage_Average_Posit]
+    WHERE
+        ST_AVG_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rST_AVG_Stage_Average_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_AVG_Stage_Average_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_AVG_Stage_Average_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_ST_AVG,
+        ST_AVG_ID,
+        ST_AVG_PositedAt,
+        ST_AVG_Positor,
+        ST_AVG_Reliability,
+        ST_AVG_Assertion
+    FROM
+        [attributes].[ST_AVG_Stage_Average_Annex]
+    WHERE
+        ST_AVG_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rST_AVG_Stage_Average rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_AVG_Stage_Average','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_AVG_Stage_Average] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_AVG,
+        p.ST_AVG_ID,
+        a.ST_AVG_PositedAt,
+        a.ST_AVG_Positor,
+        a.ST_AVG_Reliability,
+        a.ST_AVG_Assertion,
+        p.ST_ID,
+        p.UTL_ID,
+        p.ST_AVG_ChangedAt
+    FROM
+        [attributes].[rST_AVG_Stage_Average_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rST_AVG_Stage_Average_Annex](@positingTimepoint) a
+    ON
+        a.ST_AVG_ID = p.ST_AVG_ID
+    AND
+        a.ST_AVG_Positor = @positor
+    AND
+        a.ST_AVG_PositedAt = (
+            SELECT TOP 1
+                sub.ST_AVG_PositedAt
+            FROM
+                [attributes].[rST_AVG_Stage_Average_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_AVG_ID = p.ST_AVG_ID
+            AND
+                sub.ST_AVG_Positor = @positor
+            ORDER BY
+                sub.ST_AVG_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fST_AVG_Stage_Average forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fST_AVG_Stage_Average','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fST_AVG_Stage_Average] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_AVG,
+        p.ST_AVG_ID,
+        a.ST_AVG_PositedAt,
+        a.ST_AVG_Positor,
+        a.ST_AVG_Reliability,
+        a.ST_AVG_Assertion,
+        p.ST_ID,
+        p.UTL_ID,
+        p.ST_AVG_ChangedAt
+    FROM
+        [attributes].[fST_AVG_Stage_Average_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rST_AVG_Stage_Average_Annex](@positingTimepoint) a
+    ON
+        a.ST_AVG_ID = p.ST_AVG_ID
+    AND
+        a.ST_AVG_Positor = @positor
+    AND
+        a.ST_AVG_PositedAt = (
+            SELECT TOP 1
+                sub.ST_AVG_PositedAt
+            FROM
+                [attributes].[rST_AVG_Stage_Average_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_AVG_ID = p.ST_AVG_ID
+            AND
+                sub.ST_AVG_Positor = @positor
+            ORDER BY
+                sub.ST_AVG_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preST_AVG_Stage_Average function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preST_AVG_Stage_Average','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preST_AVG_Stage_Average] (
+        @id int,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.UTL_ID
+        FROM
+            [attributes].[rST_AVG_Stage_Average](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.ST_ID = @id
+        AND
+            pre.ST_AVG_ChangedAt < @changingTimepoint
+        AND
+            pre.ST_AVG_Assertion = isnull(@assertion, pre.ST_AVG_Assertion)
+        ORDER BY
+            pre.ST_AVG_ChangedAt DESC,
+            pre.ST_AVG_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folST_AVG_Stage_Average function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folST_AVG_Stage_Average','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folST_AVG_Stage_Average] (
+        @id int,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.UTL_ID
+        FROM
+            [attributes].[fST_AVG_Stage_Average](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.ST_ID = @id
+        AND
+            fol.ST_AVG_ChangedAt > @changingTimepoint
+        AND
+            fol.ST_AVG_Assertion = isnull(@assertion, fol.ST_AVG_Assertion)
+        ORDER BY
+            fol.ST_AVG_ChangedAt ASC,
+            fol.ST_AVG_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rST_MIN_Stage_Minimum_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_MIN_Stage_Minimum_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_MIN_Stage_Minimum_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_ST_MIN,
+        ST_MIN_ID,
+        ST_MIN_PositedAt,
+        ST_MIN_Positor,
+        ST_MIN_Reliability,
+        ST_MIN_Assertion
+    FROM
+        [attributes].[ST_MIN_Stage_Minimum_Annex]
+    WHERE
+        ST_MIN_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rST_MIN_Stage_Minimum rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rST_MIN_Stage_Minimum','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rST_MIN_Stage_Minimum] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_MIN,
+        p.ST_MIN_ID,
+        a.ST_MIN_PositedAt,
+        a.ST_MIN_Positor,
+        a.ST_MIN_Reliability,
+        a.ST_MIN_Assertion,
+        p.ST_ID,
+        p.UTL_ID
+    FROM
+        [attributes].[ST_MIN_Stage_Minimum_Posit] p
+    JOIN
+        [attributes].[rST_MIN_Stage_Minimum_Annex](@positingTimepoint) a
+    ON
+        a.ST_MIN_ID = p.ST_MIN_ID
+    AND
+        a.ST_MIN_Positor = @positor
+    AND
+        a.ST_MIN_PositedAt = (
+            SELECT TOP 1
+                sub.ST_MIN_PositedAt
+            FROM
+                [attributes].[rST_MIN_Stage_Minimum_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_MIN_ID = p.ST_MIN_ID
+            AND
+                sub.ST_MIN_Positor = @positor
+            ORDER BY
+                sub.ST_MIN_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rAC_NAM_Actor_Name_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_NAM_Actor_Name_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_NAM_Actor_Name_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_NAM_ID,
+        AC_ID,
+        AC_NAM_Actor_Name,
+        AC_NAM_ChangedAt
+    FROM
+        [attributes].[AC_NAM_Actor_Name_Posit]
+    WHERE
+        AC_NAM_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fAC_NAM_Actor_Name_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fAC_NAM_Actor_Name_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fAC_NAM_Actor_Name_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_NAM_ID,
+        AC_ID,
+        AC_NAM_Actor_Name,
+        AC_NAM_ChangedAt
+    FROM
+        [attributes].[AC_NAM_Actor_Name_Posit]
+    WHERE
+        AC_NAM_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rAC_NAM_Actor_Name_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_NAM_Actor_Name_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_NAM_Actor_Name_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_NAM,
+        AC_NAM_ID,
+        AC_NAM_PositedAt,
+        AC_NAM_Positor,
+        AC_NAM_Reliability,
+        AC_NAM_Assertion
+    FROM
+        [attributes].[AC_NAM_Actor_Name_Annex]
+    WHERE
+        AC_NAM_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rAC_NAM_Actor_Name rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_NAM_Actor_Name','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_NAM_Actor_Name] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_NAM,
+        p.AC_NAM_ID,
+        a.AC_NAM_PositedAt,
+        a.AC_NAM_Positor,
+        a.AC_NAM_Reliability,
+        a.AC_NAM_Assertion,
+        p.AC_ID,
+        p.AC_NAM_Actor_Name,
+        p.AC_NAM_ChangedAt
+    FROM
+        [attributes].[rAC_NAM_Actor_Name_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rAC_NAM_Actor_Name_Annex](@positingTimepoint) a
+    ON
+        a.AC_NAM_ID = p.AC_NAM_ID
+    AND
+        a.AC_NAM_Positor = @positor
+    AND
+        a.AC_NAM_PositedAt = (
+            SELECT TOP 1
+                sub.AC_NAM_PositedAt
+            FROM
+                [attributes].[rAC_NAM_Actor_Name_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_NAM_ID = p.AC_NAM_ID
+            AND
+                sub.AC_NAM_Positor = @positor
+            ORDER BY
+                sub.AC_NAM_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fAC_NAM_Actor_Name forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fAC_NAM_Actor_Name','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fAC_NAM_Actor_Name] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_NAM,
+        p.AC_NAM_ID,
+        a.AC_NAM_PositedAt,
+        a.AC_NAM_Positor,
+        a.AC_NAM_Reliability,
+        a.AC_NAM_Assertion,
+        p.AC_ID,
+        p.AC_NAM_Actor_Name,
+        p.AC_NAM_ChangedAt
+    FROM
+        [attributes].[fAC_NAM_Actor_Name_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rAC_NAM_Actor_Name_Annex](@positingTimepoint) a
+    ON
+        a.AC_NAM_ID = p.AC_NAM_ID
+    AND
+        a.AC_NAM_Positor = @positor
+    AND
+        a.AC_NAM_PositedAt = (
+            SELECT TOP 1
+                sub.AC_NAM_PositedAt
+            FROM
+                [attributes].[rAC_NAM_Actor_Name_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_NAM_ID = p.AC_NAM_ID
+            AND
+                sub.AC_NAM_Positor = @positor
+            ORDER BY
+                sub.AC_NAM_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preAC_NAM_Actor_Name function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preAC_NAM_Actor_Name','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preAC_NAM_Actor_Name] (
+        @id smallint,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS varbinary(max)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.AC_NAM_Actor_Name
+        FROM
+            [attributes].[rAC_NAM_Actor_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.AC_ID = @id
+        AND
+            pre.AC_NAM_ChangedAt < @changingTimepoint
+        AND
+            pre.AC_NAM_Assertion = isnull(@assertion, pre.AC_NAM_Assertion)
+        ORDER BY
+            pre.AC_NAM_ChangedAt DESC,
+            pre.AC_NAM_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folAC_NAM_Actor_Name function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folAC_NAM_Actor_Name','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folAC_NAM_Actor_Name] (
+        @id smallint,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS varbinary(max)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.AC_NAM_Actor_Name
+        FROM
+            [attributes].[fAC_NAM_Actor_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.AC_ID = @id
+        AND
+            fol.AC_NAM_ChangedAt > @changingTimepoint
+        AND
+            fol.AC_NAM_Assertion = isnull(@assertion, fol.AC_NAM_Assertion)
+        ORDER BY
+            fol.AC_NAM_ChangedAt ASC,
+            fol.AC_NAM_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rAC_GEN_Actor_Gender_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_GEN_Actor_Gender_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_GEN_Actor_Gender_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_GEN,
+        AC_GEN_ID,
+        AC_GEN_PositedAt,
+        AC_GEN_Positor,
+        AC_GEN_Reliability,
+        AC_GEN_Assertion
+    FROM
+        [attributes].[AC_GEN_Actor_Gender_Annex]
+    WHERE
+        AC_GEN_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rAC_GEN_Actor_Gender rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_GEN_Actor_Gender','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_GEN_Actor_Gender] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_GEN,
+        p.AC_GEN_ID,
+        a.AC_GEN_PositedAt,
+        a.AC_GEN_Positor,
+        a.AC_GEN_Reliability,
+        a.AC_GEN_Assertion,
+        p.AC_ID,
+        p.GEN_ID
+    FROM
+        [attributes].[AC_GEN_Actor_Gender_Posit] p
+    JOIN
+        [attributes].[rAC_GEN_Actor_Gender_Annex](@positingTimepoint) a
+    ON
+        a.AC_GEN_ID = p.AC_GEN_ID
+    AND
+        a.AC_GEN_Positor = @positor
+    AND
+        a.AC_GEN_PositedAt = (
+            SELECT TOP 1
+                sub.AC_GEN_PositedAt
+            FROM
+                [attributes].[rAC_GEN_Actor_Gender_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_GEN_ID = p.AC_GEN_ID
+            AND
+                sub.AC_GEN_Positor = @positor
+            ORDER BY
+                sub.AC_GEN_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rAC_PLV_Actor_ProfessionalLevel_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_PLV_Actor_ProfessionalLevel_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_PLV_Actor_ProfessionalLevel_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_PLV_ID,
+        AC_ID,
+        PLV_ID,
+        AC_PLV_ChangedAt
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit]
+    WHERE
+        AC_PLV_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fAC_PLV_Actor_ProfessionalLevel_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fAC_PLV_Actor_ProfessionalLevel_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fAC_PLV_Actor_ProfessionalLevel_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_PLV_ID,
+        AC_ID,
+        PLV_ID,
+        AC_PLV_ChangedAt
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit]
+    WHERE
+        AC_PLV_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rAC_PLV_Actor_ProfessionalLevel_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_PLV_Actor_ProfessionalLevel_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_PLV_Actor_ProfessionalLevel_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_PLV,
+        AC_PLV_ID,
+        AC_PLV_PositedAt,
+        AC_PLV_Positor,
+        AC_PLV_Reliability,
+        AC_PLV_Assertion
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex]
+    WHERE
+        AC_PLV_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rAC_PLV_Actor_ProfessionalLevel rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rAC_PLV_Actor_ProfessionalLevel','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rAC_PLV_Actor_ProfessionalLevel] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_PLV,
+        p.AC_PLV_ID,
+        a.AC_PLV_PositedAt,
+        a.AC_PLV_Positor,
+        a.AC_PLV_Reliability,
+        a.AC_PLV_Assertion,
+        p.AC_ID,
+        p.PLV_ID,
+        p.AC_PLV_ChangedAt
+    FROM
+        [attributes].[rAC_PLV_Actor_ProfessionalLevel_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rAC_PLV_Actor_ProfessionalLevel_Annex](@positingTimepoint) a
+    ON
+        a.AC_PLV_ID = p.AC_PLV_ID
+    AND
+        a.AC_PLV_Positor = @positor
+    AND
+        a.AC_PLV_PositedAt = (
+            SELECT TOP 1
+                sub.AC_PLV_PositedAt
+            FROM
+                [attributes].[rAC_PLV_Actor_ProfessionalLevel_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_PLV_ID = p.AC_PLV_ID
+            AND
+                sub.AC_PLV_Positor = @positor
+            ORDER BY
+                sub.AC_PLV_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fAC_PLV_Actor_ProfessionalLevel forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fAC_PLV_Actor_ProfessionalLevel','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fAC_PLV_Actor_ProfessionalLevel] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_PLV,
+        p.AC_PLV_ID,
+        a.AC_PLV_PositedAt,
+        a.AC_PLV_Positor,
+        a.AC_PLV_Reliability,
+        a.AC_PLV_Assertion,
+        p.AC_ID,
+        p.PLV_ID,
+        p.AC_PLV_ChangedAt
+    FROM
+        [attributes].[fAC_PLV_Actor_ProfessionalLevel_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rAC_PLV_Actor_ProfessionalLevel_Annex](@positingTimepoint) a
+    ON
+        a.AC_PLV_ID = p.AC_PLV_ID
+    AND
+        a.AC_PLV_Positor = @positor
+    AND
+        a.AC_PLV_PositedAt = (
+            SELECT TOP 1
+                sub.AC_PLV_PositedAt
+            FROM
+                [attributes].[rAC_PLV_Actor_ProfessionalLevel_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_PLV_ID = p.AC_PLV_ID
+            AND
+                sub.AC_PLV_Positor = @positor
+            ORDER BY
+                sub.AC_PLV_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preAC_PLV_Actor_ProfessionalLevel function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.preAC_PLV_Actor_ProfessionalLevel','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[preAC_PLV_Actor_ProfessionalLevel] (
+        @id smallint,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.PLV_ID
+        FROM
+            [attributes].[rAC_PLV_Actor_ProfessionalLevel](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.AC_ID = @id
+        AND
+            pre.AC_PLV_ChangedAt < @changingTimepoint
+        AND
+            pre.AC_PLV_Assertion = isnull(@assertion, pre.AC_PLV_Assertion)
+        ORDER BY
+            pre.AC_PLV_ChangedAt DESC,
+            pre.AC_PLV_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folAC_PLV_Actor_ProfessionalLevel function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folAC_PLV_Actor_ProfessionalLevel','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folAC_PLV_Actor_ProfessionalLevel] (
+        @id smallint,
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS tinyint
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.PLV_ID
+        FROM
+            [attributes].[fAC_PLV_Actor_ProfessionalLevel](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.AC_ID = @id
+        AND
+            fol.AC_PLV_ChangedAt > @changingTimepoint
+        AND
+            fol.AC_PLV_Assertion = isnull(@assertion, fol.AC_PLV_Assertion)
+        ORDER BY
+            fol.AC_PLV_ChangedAt ASC,
+            fol.AC_PLV_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rPR_NAM_Program_Name_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rPR_NAM_Program_Name_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rPR_NAM_Program_Name_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_PR_NAM,
+        PR_NAM_ID,
+        PR_NAM_PositedAt,
+        PR_NAM_Positor,
+        PR_NAM_Reliability,
+        PR_NAM_Assertion
+    FROM
+        [attributes].[PR_NAM_Program_Name_Annex]
+    WHERE
+        PR_NAM_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rPR_NAM_Program_Name rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rPR_NAM_Program_Name','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rPR_NAM_Program_Name] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_PR_NAM,
+        p.PR_NAM_ID,
+        a.PR_NAM_PositedAt,
+        a.PR_NAM_Positor,
+        a.PR_NAM_Reliability,
+        a.PR_NAM_Assertion,
+        p.PR_ID,
+        p.PR_NAM_Program_Name
+    FROM
+        [attributes].[PR_NAM_Program_Name_Posit] p
+    JOIN
+        [attributes].[rPR_NAM_Program_Name_Annex](@positingTimepoint) a
+    ON
+        a.PR_NAM_ID = p.PR_NAM_ID
+    AND
+        a.PR_NAM_Positor = @positor
+    AND
+        a.PR_NAM_PositedAt = (
+            SELECT TOP 1
+                sub.PR_NAM_PositedAt
+            FROM
+                [attributes].[rPR_NAM_Program_Name_Annex](@positingTimepoint) sub
+            WHERE
+                sub.PR_NAM_ID = p.PR_NAM_ID
+            AND
+                sub.PR_NAM_Positor = @positor
+            ORDER BY
+                sub.PR_NAM_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rPR_LEN_Program_Length_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rPR_LEN_Program_Length_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rPR_LEN_Program_Length_Posit] (
+        @changingTimepoint date = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        PR_LEN_ID,
+        PR_ID,
+        PR_LEN_Program_Length,
+        PR_LEN_ChangedAt
+    FROM
+        [attributes].[PR_LEN_Program_Length_Posit]
+    WHERE
+        PR_LEN_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fPR_LEN_Program_Length_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fPR_LEN_Program_Length_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fPR_LEN_Program_Length_Posit] (
+        @changingTimepoint date = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        PR_LEN_ID,
+        PR_ID,
+        PR_LEN_Program_Length,
+        PR_LEN_ChangedAt
+    FROM
+        [attributes].[PR_LEN_Program_Length_Posit]
+    WHERE
+        PR_LEN_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rPR_LEN_Program_Length_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rPR_LEN_Program_Length_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rPR_LEN_Program_Length_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_PR_LEN,
+        PR_LEN_ID,
+        PR_LEN_PositedAt,
+        PR_LEN_Positor,
+        PR_LEN_Reliability,
+        PR_LEN_Assertion
+    FROM
+        [attributes].[PR_LEN_Program_Length_Annex]
+    WHERE
+        PR_LEN_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rPR_LEN_Program_Length rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rPR_LEN_Program_Length','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rPR_LEN_Program_Length] (
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_PR_LEN,
+        p.PR_LEN_ID,
+        a.PR_LEN_PositedAt,
+        a.PR_LEN_Positor,
+        a.PR_LEN_Reliability,
+        a.PR_LEN_Assertion,
+        p.PR_ID,
+        p.PR_LEN_Program_Length,
+        p.PR_LEN_ChangedAt
+    FROM
+        [attributes].[rPR_LEN_Program_Length_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rPR_LEN_Program_Length_Annex](@positingTimepoint) a
+    ON
+        a.PR_LEN_ID = p.PR_LEN_ID
+    AND
+        a.PR_LEN_Positor = @positor
+    AND
+        a.PR_LEN_PositedAt = (
+            SELECT TOP 1
+                sub.PR_LEN_PositedAt
+            FROM
+                [attributes].[rPR_LEN_Program_Length_Annex](@positingTimepoint) sub
+            WHERE
+                sub.PR_LEN_ID = p.PR_LEN_ID
+            AND
+                sub.PR_LEN_Positor = @positor
+            ORDER BY
+                sub.PR_LEN_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fPR_LEN_Program_Length forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.fPR_LEN_Program_Length','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[fPR_LEN_Program_Length] (
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_PR_LEN,
+        p.PR_LEN_ID,
+        a.PR_LEN_PositedAt,
+        a.PR_LEN_Positor,
+        a.PR_LEN_Reliability,
+        a.PR_LEN_Assertion,
+        p.PR_ID,
+        p.PR_LEN_Program_Length,
+        p.PR_LEN_ChangedAt
+    FROM
+        [attributes].[fPR_LEN_Program_Length_Posit](@changingTimepoint) p
+    JOIN
+        [attributes].[rPR_LEN_Program_Length_Annex](@positingTimepoint) a
+    ON
+        a.PR_LEN_ID = p.PR_LEN_ID
+    AND
+        a.PR_LEN_Positor = @positor
+    AND
+        a.PR_LEN_PositedAt = (
+            SELECT TOP 1
+                sub.PR_LEN_PositedAt
+            FROM
+                [attributes].[rPR_LEN_Program_Length_Annex](@positingTimepoint) sub
+            WHERE
+                sub.PR_LEN_ID = p.PR_LEN_ID
+            AND
+                sub.PR_LEN_Positor = @positor
+            ORDER BY
+                sub.PR_LEN_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- prePR_LEN_Program_Length function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.prePR_LEN_Program_Length','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[prePR_LEN_Program_Length] (
+        @id bigint,
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS time
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.PR_LEN_Program_Length
+        FROM
+            [attributes].[rPR_LEN_Program_Length](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.PR_ID = @id
+        AND
+            pre.PR_LEN_ChangedAt < @changingTimepoint
+        AND
+            pre.PR_LEN_Assertion = isnull(@assertion, pre.PR_LEN_Assertion)
+        ORDER BY
+            pre.PR_LEN_ChangedAt DESC,
+            pre.PR_LEN_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folPR_LEN_Program_Length function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.folPR_LEN_Program_Length','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[folPR_LEN_Program_Length] (
+        @id bigint,
+        @positor tinyint = 0,
+        @changingTimepoint date = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @assertion char(1) = null
+    )
+    RETURNS time
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.PR_LEN_Program_Length
+        FROM
+            [attributes].[fPR_LEN_Program_Length](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.PR_ID = @id
+        AND
+            fol.PR_LEN_ChangedAt > @changingTimepoint
+        AND
+            fol.PR_LEN_Assertion = isnull(@assertion, fol.PR_LEN_Assertion)
+        ORDER BY
+            fol.PR_LEN_ChangedAt ASC,
+            fol.PR_LEN_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- ATTRIBUTE RESTATEMENT CONSTRAINTS ----------------------------------------------------------------------------------
+--
+-- Attributes may be prevented from storing restatements.
+-- A restatement is when the same value occurs for two adjacent points
+-- in changing time. Note that restatement checking is not done for
+-- unreliable information as this could prevent demotion.
+--
+-- returns 1 for at least one equal surrounding value, 0 for different surrounding values
+--
+-- @posit the id of the posit that should be checked
+-- @posited the time when this posit was made
+-- @positor the one who made the posit
+-- @assertion whether this posit is positively or negatively asserted, or unreliable
+--
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfST_NAM_Stage_Name restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcST_NAM_Stage_Name restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfST_NAM_Stage_Name', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfST_NAM_Stage_Name] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id int;
+    DECLARE @value nvarchar(42);
+    DECLARE @changed datetime2;
+    SELECT
+        @id = ST_ID,
+        @value = ST_NAM_Stage_Name,
+        @changed = ST_NAM_ChangedAt
+    FROM
+        [attributes].[ST_NAM_Stage_Name_Posit]
+    WHERE
+        ST_NAM_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preST_NAM_Stage_Name] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folST_NAM_Stage_Name] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfST_AVG_Stage_Average restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcST_AVG_Stage_Average restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfST_AVG_Stage_Average', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfST_AVG_Stage_Average] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id int;
+    DECLARE @value tinyint;
+    DECLARE @changed datetime2;
+    SELECT
+        @id = ST_ID,
+        @value = UTL_ID,
+        @changed = ST_AVG_ChangedAt
+    FROM
+        [attributes].[ST_AVG_Stage_Average_Posit]
+    WHERE
+        ST_AVG_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preST_AVG_Stage_Average] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folST_AVG_Stage_Average] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [attributes].[ST_AVG_Stage_Average_Annex]
+    ADD CONSTRAINT [rcST_AVG_Stage_Average_Annex] CHECK (
+        [attributes].[rfST_AVG_Stage_Average] (
+            ST_AVG_ID,
+            ST_AVG_PositedAt,
+            ST_AVG_Positor,
+            ST_AVG_Assertion
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfAC_NAM_Actor_Name restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcAC_NAM_Actor_Name restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfAC_NAM_Actor_Name', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfAC_NAM_Actor_Name] (
+        @posit smallint,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id smallint;
+    DECLARE @value varbinary(max);
+    DECLARE @changed datetime2;
+    SELECT
+        @id = AC_ID,
+        @value = AC_NAM_Actor_Name,
+        @changed = AC_NAM_ChangedAt
+    FROM
+        [attributes].[AC_NAM_Actor_Name_Posit]
+    WHERE
+        AC_NAM_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preAC_NAM_Actor_Name] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folAC_NAM_Actor_Name] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [attributes].[AC_NAM_Actor_Name_Annex]
+    ADD CONSTRAINT [rcAC_NAM_Actor_Name_Annex] CHECK (
+        [attributes].[rfAC_NAM_Actor_Name] (
+            AC_NAM_ID,
+            AC_NAM_PositedAt,
+            AC_NAM_Positor,
+            AC_NAM_Assertion
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfAC_PLV_Actor_ProfessionalLevel restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcAC_PLV_Actor_ProfessionalLevel restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfAC_PLV_Actor_ProfessionalLevel', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfAC_PLV_Actor_ProfessionalLevel] (
+        @posit smallint,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id smallint;
+    DECLARE @value tinyint;
+    DECLARE @changed datetime2;
+    SELECT
+        @id = AC_ID,
+        @value = PLV_ID,
+        @changed = AC_PLV_ChangedAt
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit]
+    WHERE
+        AC_PLV_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preAC_PLV_Actor_ProfessionalLevel] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folAC_PLV_Actor_ProfessionalLevel] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfPR_LEN_Program_Length restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcPR_LEN_Program_Length restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfPR_LEN_Program_Length', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfPR_LEN_Program_Length] (
+        @posit bigint,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id bigint;
+    DECLARE @value time;
+    DECLARE @changed date;
+    SELECT
+        @id = PR_ID,
+        @value = PR_LEN_Program_Length,
+        @changed = PR_LEN_ChangedAt
+    FROM
+        [attributes].[PR_LEN_Program_Length_Posit]
+    WHERE
+        PR_LEN_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[prePR_LEN_Program_Length] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folPR_LEN_Program_Length] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited, 
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+END
+GO
+-- ANCHOR TEMPORAL BUSINESS PERSPECTIVES ------------------------------------------------------------------------------
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.EQ_Difference_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Difference_Person];
+IF Object_ID('anchors.EQ_Current_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Current_Person];
+IF Object_ID('anchors.EQ_Point_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Point_Person];
+IF Object_ID('anchors.EQ_Latest_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Latest_Person];
+IF Object_ID('anchors.Difference_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Difference_Person];
+IF Object_ID('anchors.Current_Person', 'V') IS NOT NULL
+DROP VIEW [anchors].[Current_Person];
+IF Object_ID('anchors.Point_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Point_Person];
+IF Object_ID('anchors.Latest_Person', 'V') IS NOT NULL
+DROP VIEW [anchors].[Latest_Person];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.EQ_Difference_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Difference_Stage];
+IF Object_ID('anchors.EQ_Current_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Current_Stage];
+IF Object_ID('anchors.EQ_Point_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Point_Stage];
+IF Object_ID('anchors.EQ_Latest_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Latest_Stage];
+IF Object_ID('anchors.Difference_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Difference_Stage];
+IF Object_ID('anchors.Current_Stage', 'V') IS NOT NULL
+DROP VIEW [anchors].[Current_Stage];
+IF Object_ID('anchors.Point_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Point_Stage];
+IF Object_ID('anchors.Latest_Stage', 'V') IS NOT NULL
+DROP VIEW [anchors].[Latest_Stage];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.EQ_Difference_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Difference_Actor];
+IF Object_ID('anchors.EQ_Current_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Current_Actor];
+IF Object_ID('anchors.EQ_Point_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Point_Actor];
+IF Object_ID('anchors.EQ_Latest_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Latest_Actor];
+IF Object_ID('anchors.Difference_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Difference_Actor];
+IF Object_ID('anchors.Current_Actor', 'V') IS NOT NULL
+DROP VIEW [anchors].[Current_Actor];
+IF Object_ID('anchors.Point_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Point_Actor];
+IF Object_ID('anchors.Latest_Actor', 'V') IS NOT NULL
+DROP VIEW [anchors].[Latest_Actor];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.EQ_Difference_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Difference_Program];
+IF Object_ID('anchors.EQ_Current_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Current_Program];
+IF Object_ID('anchors.EQ_Point_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Point_Program];
+IF Object_ID('anchors.EQ_Latest_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[EQ_Latest_Program];
+IF Object_ID('anchors.Difference_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Difference_Program];
+IF Object_ID('anchors.Current_Program', 'V') IS NOT NULL
+DROP VIEW [anchors].[Current_Program];
+IF Object_ID('anchors.Point_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[Point_Program];
+IF Object_ID('anchors.Latest_Program', 'V') IS NOT NULL
+DROP VIEW [anchors].[Latest_Program];
+GO
+-- ANCHOR TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each anchor. There are five types of perspectives: time traveling, latest,
+-- point-in-time, difference, and now. They also denormalize the anchor, its attributes,
+-- and referenced knots from sixth to third normal form.
+--
+-- The time traveling perspective shows information as it was or will be based on a number
+-- of input parameters.
+--
+-- @positor the view of which positor to adopt (defaults to 0)
+-- @changingTimepoint the point in changing time to travel to (defaults to End of Time)
+-- @positingTimepoint the point in positing time to travel to (defaults to End of Time)
+-- @assertion whether to show positve, negative, uncertain, or all posits (defaults to all)
+--
+-- The latest perspective shows the latest available (changing & positing) information for each anchor.
+-- The now perspective shows the information as it is right now, with latest positing time.
+-- The point-in-time perspective lets you travel through the information to the given timepoint,
+-- with latest positing time and the given point in changing time.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints, and for
+-- changes in all or a selection of attributes, with latest positing time.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+-- @selection a list of mnemonics for tracked attributes, ie 'MNE MON ICS', or null for all
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.dPN_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[dPN_Person];
+IF Object_ID('anchors.nPN_Person', 'V') IS NOT NULL
+DROP VIEW [anchors].[nPN_Person];
+IF Object_ID('anchors.pPN_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pPN_Person];
+IF Object_ID('anchors.lPN_Person', 'V') IS NOT NULL
+DROP VIEW [anchors].[lPN_Person];
+IF Object_ID('anchors.tPN_Person', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[tPN_Person];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.dST_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[dST_Stage];
+IF Object_ID('anchors.nST_Stage', 'V') IS NOT NULL
+DROP VIEW [anchors].[nST_Stage];
+IF Object_ID('anchors.pST_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pST_Stage];
+IF Object_ID('anchors.lST_Stage', 'V') IS NOT NULL
+DROP VIEW [anchors].[lST_Stage];
+IF Object_ID('anchors.tST_Stage', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[tST_Stage];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tST_Stage viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[tST_Stage] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [ST].ST_ID,
+    [ST].Metadata_ST,
+    [NAM].Metadata_ST_NAM,
+    [NAM].ST_NAM_ID,
+    [NAM].ST_NAM_ChangedAt,
+    [NAM].ST_NAM_PositedAt,
+    [NAM].ST_NAM_Positor,
+    [NAM].ST_NAM_Reliability,
+    [NAM].ST_NAM_Assertion,
+    [NAM].ST_NAM_Stage_Name,
+    [LOC].Metadata_ST_LOC,
+    [LOC].ST_LOC_ID,
+    [LOC].ST_LOC_PositedAt,
+    [LOC].ST_LOC_Positor,
+    [LOC].ST_LOC_Reliability,
+    [LOC].ST_LOC_Assertion,
+    [LOC].ST_LOC_Checksum,
+    [LOC].ST_LOC_Stage_Location,
+    [AVG].Metadata_ST_AVG,
+    [AVG].ST_AVG_ID,
+    [AVG].ST_AVG_ChangedAt,
+    [AVG].ST_AVG_PositedAt,
+    [AVG].ST_AVG_Positor,
+    [AVG].ST_AVG_Reliability,
+    [AVG].ST_AVG_Assertion,
+    [kAVG].UTL_Utilization AS UTL_Utilization,
+    [kAVG].Metadata_UTL AS Metadata_UTL,
+    [AVG].UTL_ID,
+    [MIN].Metadata_ST_MIN,
+    [MIN].ST_MIN_ID,
+    [MIN].ST_MIN_PositedAt,
+    [MIN].ST_MIN_Positor,
+    [MIN].ST_MIN_Reliability,
+    [MIN].ST_MIN_Assertion,
+    [kMIN].UTL_Utilization AS UTL_Utilization,
+    [kMIN].Metadata_UTL AS Metadata_UTL,
+    [MIN].UTL_ID
+FROM
+    [anchors].[ST_Stage] [ST]
+LEFT JOIN
+    [attributes].[rST_NAM_Stage_Name](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [NAM]
+ON
+    [NAM].ST_NAM_ID = (
+        SELECT TOP 1
+            sub.ST_NAM_ID
+        FROM
+            [attributes].[rST_NAM_Stage_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.ST_ID = [ST].ST_ID
+        AND
+            sub.ST_NAM_Assertion = isnull(@assertion, sub.ST_NAM_Assertion)
+        ORDER BY
+            sub.ST_NAM_ChangedAt DESC,
+            sub.ST_NAM_PositedAt DESC,
+            sub.ST_NAM_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rST_LOC_Stage_Location](
+        @positor,
+        @positingTimepoint
+    ) [LOC]
+ON
+    [LOC].ST_LOC_ID = (
+        SELECT TOP 1
+            sub.ST_LOC_ID
+        FROM
+            [attributes].[rST_LOC_Stage_Location](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.ST_ID = [ST].ST_ID
+        AND
+            sub.ST_LOC_Assertion = isnull(@assertion, sub.ST_LOC_Assertion)
+        ORDER BY
+            sub.ST_LOC_PositedAt DESC,
+            sub.ST_LOC_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rST_AVG_Stage_Average](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [AVG]
+ON
+    [AVG].ST_AVG_ID = (
+        SELECT TOP 1
+            sub.ST_AVG_ID
+        FROM
+            [attributes].[rST_AVG_Stage_Average](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.ST_ID = [ST].ST_ID
+        AND
+            sub.ST_AVG_Assertion = isnull(@assertion, sub.ST_AVG_Assertion)
+        ORDER BY
+            sub.ST_AVG_ChangedAt DESC,
+            sub.ST_AVG_PositedAt DESC,
+            sub.ST_AVG_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[UTL_Utilization] [kAVG]
+ON
+    [kAVG].UTL_ID = [AVG].UTL_ID
+LEFT JOIN
+    [attributes].[rST_MIN_Stage_Minimum](
+        @positor,
+        @positingTimepoint
+    ) [MIN]
+ON
+    [MIN].ST_MIN_ID = (
+        SELECT TOP 1
+            sub.ST_MIN_ID
+        FROM
+            [attributes].[rST_MIN_Stage_Minimum](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.ST_ID = [ST].ST_ID
+        AND
+            sub.ST_MIN_Assertion = isnull(@assertion, sub.ST_MIN_Assertion)
+        ORDER BY
+            sub.ST_MIN_PositedAt DESC,
+            sub.ST_MIN_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[UTL_Utilization] [kMIN]
+ON
+    [kMIN].UTL_ID = [MIN].UTL_ID;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lST_Stage viewed by the latest available information for all positors (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[lST_Stage]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [ST].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tST_Stage] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [ST];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pST_Stage viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[pST_Stage] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    p.*,
+    cast(null as decimal(5,2)) as Reliability,
+    [ST].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tST_Stage] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [ST];
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nST_Stage viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[nST_Stage]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [ST].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tST_Stage] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [ST];
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dST_Stage showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[dST_Stage] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    [ST].*
+FROM
+    [dw].[_Positor] p
+JOIN (
+    SELECT DISTINCT
+        ST_NAM_Positor AS positor,
+        ST_ID AS ST_ID,
+        ST_NAM_ChangedAt AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        [attributes].[ST_NAM_Stage_Name]
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        ST_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        ST_AVG_Positor AS positor,
+        ST_ID AS ST_ID,
+        ST_AVG_ChangedAt AS inspectedTimepoint,
+        'AVG' AS mnemonic
+    FROM
+        [attributes].[ST_AVG_Stage_Average]
+    WHERE
+        (@selection is null OR @selection like '%AVG%')
+    AND
+        ST_AVG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+ON
+    timepoints.positor = p.Positor
+CROSS APPLY
+    [anchors].[tST_Stage] (
+        timepoints.positor,
+        timepoints.inspectedTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [ST]
+ WHERE
+    [ST].ST_ID = timepoints.ST_ID;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.dAC_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[dAC_Actor];
+IF Object_ID('anchors.nAC_Actor', 'V') IS NOT NULL
+DROP VIEW [anchors].[nAC_Actor];
+IF Object_ID('anchors.pAC_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pAC_Actor];
+IF Object_ID('anchors.lAC_Actor', 'V') IS NOT NULL
+DROP VIEW [anchors].[lAC_Actor];
+IF Object_ID('anchors.tAC_Actor', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[tAC_Actor];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tAC_Actor viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[tAC_Actor] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [AC].AC_ID,
+    [AC].Metadata_AC,
+    [NAM].Metadata_AC_NAM,
+    [NAM].AC_NAM_ID,
+    [NAM].AC_NAM_ChangedAt,
+    [NAM].AC_NAM_PositedAt,
+    [NAM].AC_NAM_Positor,
+    [NAM].AC_NAM_Reliability,
+    [NAM].AC_NAM_Assertion,
+    [NAM].AC_NAM_Actor_Name,
+    [GEN].Metadata_AC_GEN,
+    [GEN].AC_GEN_ID,
+    [GEN].AC_GEN_PositedAt,
+    [GEN].AC_GEN_Positor,
+    [GEN].AC_GEN_Reliability,
+    [GEN].AC_GEN_Assertion,
+    [kGEN].GEN_Checksum AS GEN_Checksum,
+    [kGEN].GEN_Gender AS GEN_Gender,
+    [kGEN].Metadata_GEN AS Metadata_GEN,
+    [GEN].GEN_ID,
+    [PLV].Metadata_AC_PLV,
+    [PLV].AC_PLV_ID,
+    [PLV].AC_PLV_ChangedAt,
+    [PLV].AC_PLV_PositedAt,
+    [PLV].AC_PLV_Positor,
+    [PLV].AC_PLV_Reliability,
+    [PLV].AC_PLV_Assertion,
+    [kPLV].PLV_Checksum AS PLV_Checksum,
+    [kPLV].PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
+    [kPLV].Metadata_PLV AS Metadata_PLV,
+    [PLV].PLV_ID
+FROM
+    [anchors].[AC_Actor] [AC]
+LEFT JOIN
+    [attributes].[rAC_NAM_Actor_Name](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [NAM]
+ON
+    [NAM].AC_NAM_ID = (
+        SELECT TOP 1
+            sub.AC_NAM_ID
+        FROM
+            [attributes].[rAC_NAM_Actor_Name](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.AC_ID = [AC].AC_ID
+        AND
+            sub.AC_NAM_Assertion = isnull(@assertion, sub.AC_NAM_Assertion)
+        ORDER BY
+            sub.AC_NAM_ChangedAt DESC,
+            sub.AC_NAM_PositedAt DESC,
+            sub.AC_NAM_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rAC_GEN_Actor_Gender](
+        @positor,
+        @positingTimepoint
+    ) [GEN]
+ON
+    [GEN].AC_GEN_ID = (
+        SELECT TOP 1
+            sub.AC_GEN_ID
+        FROM
+            [attributes].[rAC_GEN_Actor_Gender](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.AC_ID = [AC].AC_ID
+        AND
+            sub.AC_GEN_Assertion = isnull(@assertion, sub.AC_GEN_Assertion)
+        ORDER BY
+            sub.AC_GEN_PositedAt DESC,
+            sub.AC_GEN_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[GEN_Gender] [kGEN]
+ON
+    [kGEN].GEN_ID = [GEN].GEN_ID
+LEFT JOIN
+    [attributes].[rAC_PLV_Actor_ProfessionalLevel](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [PLV]
+ON
+    [PLV].AC_PLV_ID = (
+        SELECT TOP 1
+            sub.AC_PLV_ID
+        FROM
+            [attributes].[rAC_PLV_Actor_ProfessionalLevel](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.AC_ID = [AC].AC_ID
+        AND
+            sub.AC_PLV_Assertion = isnull(@assertion, sub.AC_PLV_Assertion)
+        ORDER BY
+            sub.AC_PLV_ChangedAt DESC,
+            sub.AC_PLV_PositedAt DESC,
+            sub.AC_PLV_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[PLV_ProfessionalLevel] [kPLV]
+ON
+    [kPLV].PLV_ID = [PLV].PLV_ID;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_Actor viewed by the latest available information for all positors (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[lAC_Actor]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [AC].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tAC_Actor] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [AC];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_Actor viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[pAC_Actor] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    p.*,
+    cast(null as decimal(5,2)) as Reliability,
+    [AC].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tAC_Actor] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [AC];
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_Actor viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[nAC_Actor]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [AC].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tAC_Actor] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [AC];
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dAC_Actor showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[dAC_Actor] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    [AC].*
+FROM
+    [dw].[_Positor] p
+JOIN (
+    SELECT DISTINCT
+        AC_NAM_Positor AS positor,
+        AC_ID AS AC_ID,
+        AC_NAM_ChangedAt AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        [attributes].[AC_NAM_Actor_Name]
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        AC_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        AC_PLV_Positor AS positor,
+        AC_ID AS AC_ID,
+        AC_PLV_ChangedAt AS inspectedTimepoint,
+        'PLV' AS mnemonic
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel]
+    WHERE
+        (@selection is null OR @selection like '%PLV%')
+    AND
+        AC_PLV_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+ON
+    timepoints.positor = p.Positor
+CROSS APPLY
+    [anchors].[tAC_Actor] (
+        timepoints.positor,
+        timepoints.inspectedTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [AC]
+ WHERE
+    [AC].AC_ID = timepoints.AC_ID;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.dPR_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[dPR_Program];
+IF Object_ID('anchors.nPR_Program', 'V') IS NOT NULL
+DROP VIEW [anchors].[nPR_Program];
+IF Object_ID('anchors.pPR_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pPR_Program];
+IF Object_ID('anchors.lPR_Program', 'V') IS NOT NULL
+DROP VIEW [anchors].[lPR_Program];
+IF Object_ID('anchors.tPR_Program', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[tPR_Program];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tPR_Program viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[tPR_Program] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [PR].PR_ID,
+    [PR].Metadata_PR,
+    [NAM].Metadata_PR_NAM,
+    [NAM].PR_NAM_ID,
+    [NAM].PR_NAM_PositedAt,
+    [NAM].PR_NAM_Positor,
+    [NAM].PR_NAM_Reliability,
+    [NAM].PR_NAM_Assertion,
+    [NAM].PR_NAM_Program_Name,
+    [LEN].Metadata_PR_LEN,
+    [LEN].PR_LEN_ID,
+    [LEN].PR_LEN_ChangedAt,
+    [LEN].PR_LEN_PositedAt,
+    [LEN].PR_LEN_Positor,
+    [LEN].PR_LEN_Reliability,
+    [LEN].PR_LEN_Assertion,
+    [LEN].PR_LEN_Program_Length
+FROM
+    [anchors].[PR_Program] [PR]
+LEFT JOIN
+    [attributes].[rPR_NAM_Program_Name](
+        @positor,
+        @positingTimepoint
+    ) [NAM]
+ON
+    [NAM].PR_NAM_ID = (
+        SELECT TOP 1
+            sub.PR_NAM_ID
+        FROM
+            [attributes].[rPR_NAM_Program_Name](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.PR_ID = [PR].PR_ID
+        AND
+            sub.PR_NAM_Assertion = isnull(@assertion, sub.PR_NAM_Assertion)
+        ORDER BY
+            sub.PR_NAM_PositedAt DESC,
+            sub.PR_NAM_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rPR_LEN_Program_Length](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [LEN]
+ON
+    [LEN].PR_LEN_ID = (
+        SELECT TOP 1
+            sub.PR_LEN_ID
+        FROM
+            [attributes].[rPR_LEN_Program_Length](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.PR_ID = [PR].PR_ID
+        AND
+            sub.PR_LEN_Assertion = isnull(@assertion, sub.PR_LEN_Assertion)
+        ORDER BY
+            sub.PR_LEN_ChangedAt DESC,
+            sub.PR_LEN_PositedAt DESC,
+            sub.PR_LEN_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lPR_Program viewed by the latest available information for all positors (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[lPR_Program]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [PR].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tPR_Program] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [PR];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pPR_Program viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[pPR_Program] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    p.*,
+    cast(null as decimal(5,2)) as Reliability,
+    [PR].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tPR_Program] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [PR];
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nPR_Program viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[nPR_Program]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [PR].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [anchors].[tPR_Program] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [PR];
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dPR_Program showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[dPR_Program] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    [PR].*
+FROM
+    [dw].[_Positor] p
+JOIN (
+    SELECT DISTINCT
+        PR_LEN_Positor AS positor,
+        PR_ID AS PR_ID,
+        PR_LEN_ChangedAt AS inspectedTimepoint,
+        'LEN' AS mnemonic
+    FROM
+        [attributes].[PR_LEN_Program_Length]
+    WHERE
+        (@selection is null OR @selection like '%LEN%')
+    AND
+        PR_LEN_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+ON
+    timepoints.positor = p.Positor
+CROSS APPLY
+    [anchors].[tPR_Program] (
+        timepoints.positor,
+        timepoints.inspectedTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [PR]
+ WHERE
+    [PR].PR_ID = timepoints.PR_ID;
+GO
+-- ANCHOR TEMPORAL BUSINESS PERSPECTIVES ------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each anchor. There are four types of perspectives: latest,
+-- point-in-time, difference, and now. They also denormalize the anchor, its attributes,
+-- and referenced knots from sixth to third normal form.
+--
+-- The latest perspective shows the latest available information for each anchor.
+-- The now perspective shows the information as it is right now.
+-- The point-in-time perspective lets you travel through the information to the given timepoint.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints, and for
+-- changes in all or a selection of attributes.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+-- @selection a list of mnemonics for tracked attributes, ie 'MNE MON ICS', or null for all
+--
+-- Under equivalence all these views default to equivalent = 0, however, corresponding
+-- prepended-EQ perspectives are provided in order to select a specific equivalent.
+--
+-- @equivalent the equivalent for which to retrieve data
+--
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Stage viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Latest_Stage] AS
+SELECT
+    [ST].Positor,
+    [ST].ST_ID as [Stage_Id],
+    [ST].ST_NAM_Stage_Name as [Name],
+    [ST].ST_LOC_Stage_Location as [Location],
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
+FROM
+    [anchors].[lST_Stage] [ST];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Stage viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Point_Stage] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [ST].Positor,
+    [ST].ST_ID as [Stage_Id],
+    [ST].ST_NAM_Stage_Name as [Name],
+    [ST].ST_LOC_Stage_Location as [Location],
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
+FROM
+    [anchors].[pST_Stage](@changingTimepoint) [ST]
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Stage viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Current_Stage]
+AS
+SELECT
+    *
+FROM
+    [anchors].[Point_Stage](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Stage showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Difference_Stage] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pST].*
+FROM (
+    SELECT DISTINCT
+        ST_ID AS ST_ID,
+        ST_NAM_ChangedAt AS [Time_of_Change],
+        'Name' AS [Subject_of_Change]
+    FROM
+        [attributes].[eST_NAM_Stage_Name](0) 
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        ST_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        ST_ID AS ST_ID,
+        ST_AVG_ChangedAt AS [Time_of_Change],
+        'Average' AS [Subject_of_Change]
+    FROM
+        [attributes].[ST_AVG_Stage_Average]
+    WHERE
+        (@selection is null OR @selection like '%AVG%')
+    AND
+        ST_AVG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[Point_Stage](timepoints.[Time_of_Change]) [pST]
+WHERE
+    [pST].Stage_Id = timepoints.ST_ID;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Stage viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Latest_Stage] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [ST].Positor,
+    [ST].ST_ID as [Stage_Id],
+    [ST].ST_NAM_Stage_Name as [Name],
+    [ST].ST_LOC_Stage_Location as [Location],
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
+FROM
+    [anchors].[elST_Stage](@equivalent) [ST];
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Stage viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Point_Stage] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [ST].Positor,
+    [ST].ST_ID as [Stage_Id],
+    [ST].ST_NAM_Stage_Name as [Name],
+    [ST].ST_LOC_Stage_Location as [Location],
+    [ST].UTL_Utilization as [Average_Utilization],
+    [ST].UTL_Utilization as [Minimum_Utilization]
+FROM
+    [anchors].[epST_Stage](@equivalent, @changingTimepoint) [ST]
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Stage viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Current_Stage] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [anchors].[EQ_Point_Stage](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Stage showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Difference_Stage] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pST].*
+FROM (
+    SELECT DISTINCT
+        ST_ID AS ST_ID,
+        ST_NAM_ChangedAt AS [Time_of_Change],
+        'Name' AS [Subject_of_Change]
+    FROM
+        [attributes].[eST_NAM_Stage_Name](@equivalent) 
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        ST_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        ST_ID AS ST_ID,
+        ST_AVG_ChangedAt AS [Time_of_Change],
+        'Average' AS [Subject_of_Change]
+    FROM
+        [attributes].[ST_AVG_Stage_Average]
+    WHERE
+        (@selection is null OR @selection like '%AVG%')
+    AND
+        ST_AVG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[EQ_Point_Stage](@equivalent, timepoints.[Time_of_Change]) [pST]
+WHERE
+    [pST].Stage_Id = timepoints.ST_ID;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Actor viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Latest_Actor] AS
+SELECT
+    [AC].Positor,
+    [AC].AC_ID as [Actor_Id],
+    [AC].AC_NAM_Actor_Name as [Name],
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
+FROM
+    [anchors].[lAC_Actor] [AC];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Actor viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Point_Actor] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [AC].Positor,
+    [AC].AC_ID as [Actor_Id],
+    [AC].AC_NAM_Actor_Name as [Name],
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
+FROM
+    [anchors].[pAC_Actor](@changingTimepoint) [AC]
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Actor viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Current_Actor]
+AS
+SELECT
+    *
+FROM
+    [anchors].[Point_Actor](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Actor showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Difference_Actor] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pAC].*
+FROM (
+    SELECT DISTINCT
+        AC_ID AS AC_ID,
+        AC_NAM_ChangedAt AS [Time_of_Change],
+        'Name' AS [Subject_of_Change]
+    FROM
+        [attributes].[AC_NAM_Actor_Name]
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        AC_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        AC_ID AS AC_ID,
+        AC_PLV_ChangedAt AS [Time_of_Change],
+        'ProfessionalLevel' AS [Subject_of_Change]
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel]
+    WHERE
+        (@selection is null OR @selection like '%PLV%')
+    AND
+        AC_PLV_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[Point_Actor](timepoints.[Time_of_Change]) [pAC]
+WHERE
+    [pAC].Actor_Id = timepoints.AC_ID;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Actor viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Latest_Actor] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [AC].Positor,
+    [AC].AC_ID as [Actor_Id],
+    [AC].AC_NAM_Actor_Name as [Name],
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
+FROM
+    [anchors].[elAC_Actor](@equivalent) [AC];
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Actor viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Point_Actor] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [AC].Positor,
+    [AC].AC_ID as [Actor_Id],
+    [AC].AC_NAM_Actor_Name as [Name],
+    [AC].GEN_Gender as [Gender_Gender],
+    [AC].PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
+FROM
+    [anchors].[epAC_Actor](@equivalent, @changingTimepoint) [AC]
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Actor viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Current_Actor] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [anchors].[EQ_Point_Actor](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Actor showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Difference_Actor] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pAC].*
+FROM (
+    SELECT DISTINCT
+        AC_ID AS AC_ID,
+        AC_NAM_ChangedAt AS [Time_of_Change],
+        'Name' AS [Subject_of_Change]
+    FROM
+        [attributes].[AC_NAM_Actor_Name]
+    WHERE
+        (@selection is null OR @selection like '%NAM%')
+    AND
+        AC_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        AC_ID AS AC_ID,
+        AC_PLV_ChangedAt AS [Time_of_Change],
+        'ProfessionalLevel' AS [Subject_of_Change]
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel]
+    WHERE
+        (@selection is null OR @selection like '%PLV%')
+    AND
+        AC_PLV_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[EQ_Point_Actor](@equivalent, timepoints.[Time_of_Change]) [pAC]
+WHERE
+    [pAC].Actor_Id = timepoints.AC_ID;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Program viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Latest_Program] AS
+SELECT
+    [PR].Positor,
+    [PR].PR_ID as [Program_Id],
+    [PR].PR_NAM_Program_Name as [Name],
+    [PR].PR_LEN_Program_Length as [Length]
+FROM
+    [anchors].[lPR_Program] [PR];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Program viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Point_Program] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [PR].Positor,
+    [PR].PR_ID as [Program_Id],
+    [PR].PR_NAM_Program_Name as [Name],
+    [PR].PR_LEN_Program_Length as [Length]
+FROM
+    [anchors].[pPR_Program](@changingTimepoint) [PR]
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Program viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [anchors].[Current_Program]
+AS
+SELECT
+    *
+FROM
+    [anchors].[Point_Program](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Program showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[Difference_Program] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pPR].*
+FROM (
+    SELECT DISTINCT
+        PR_ID AS PR_ID,
+        PR_LEN_ChangedAt AS [Time_of_Change],
+        'Length' AS [Subject_of_Change]
+    FROM
+        [attributes].[ePR_LEN_Program_Length](0) 
+    WHERE
+        (@selection is null OR @selection like '%LEN%')
+    AND
+        PR_LEN_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[Point_Program](timepoints.[Time_of_Change]) [pPR]
+WHERE
+    [pPR].Program_Id = timepoints.PR_ID;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Program viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Latest_Program] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [PR].Positor,
+    [PR].PR_ID as [Program_Id],
+    [PR].PR_NAM_Program_Name as [Name],
+    [PR].PR_LEN_Program_Length as [Length]
+FROM
+    [anchors].[elPR_Program](@equivalent) [PR];
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Program viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Point_Program] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [PR].Positor,
+    [PR].PR_ID as [Program_Id],
+    [PR].PR_NAM_Program_Name as [Name],
+    [PR].PR_LEN_Program_Length as [Length]
+FROM
+    [anchors].[epPR_Program](@equivalent, @changingTimepoint) [PR]
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Program viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Current_Program] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [anchors].[EQ_Point_Program](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Program showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [anchors].[EQ_Difference_Program] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pPR].*
+FROM (
+    SELECT DISTINCT
+        PR_ID AS PR_ID,
+        PR_LEN_ChangedAt AS [Time_of_Change],
+        'Length' AS [Subject_of_Change]
+    FROM
+        [attributes].[ePR_LEN_Program_Length](@equivalent) 
+    WHERE
+        (@selection is null OR @selection like '%LEN%')
+    AND
+        PR_LEN_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [anchors].[EQ_Point_Program](@equivalent, timepoints.[Time_of_Change]) [pPR]
+WHERE
+    [pPR].Program_Id = timepoints.PR_ID;
+GO
+-- NEXUS TEMPORAL BUSINESS PERSPECTIVES -----------------------------------------------------------------------------
+--
+-- Drop perspectives -------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.EQ_Difference_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[EQ_Difference_Event];
+IF Object_ID('nexuses.EQ_Current_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[EQ_Current_Event];
+IF Object_ID('nexuses.EQ_Point_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[EQ_Point_Event];
+IF Object_ID('nexuses.EQ_Latest_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[EQ_Latest_Event];
+IF Object_ID('nexuses.Difference_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[Difference_Event];
+IF Object_ID('nexuses.Current_Event', 'V') IS NOT NULL
+DROP VIEW [nexuses].[Current_Event];
+IF Object_ID('nexuses.Point_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[Point_Event];
+IF Object_ID('nexuses.Latest_Event', 'V') IS NOT NULL
+DROP VIEW [nexuses].[Latest_Event];
+GO
+-- NEXUS TEMPORAL PERSPECTIVES ---------------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each nexus. There are five types of perspectives: time traveling, latest,
+-- point-in-time, difference, and now. They also denormalize the nexus, its attributes,
+-- and referenced knots from sixth to third normal form.
+--
+-- The time traveling perspective shows information as it was or will be based on a number
+-- of input parameters.
+--
+-- @positor the view of which positor to adopt (defaults to 0)
+-- @changingTimepoint the point in changing time to travel to (defaults to End of Time)
+-- @positingTimepoint the point in positing time to travel to (defaults to End of Time)
+-- @assertion whether to show positve, negative, uncertain, or all posits (defaults to all)
+--
+-- The latest perspective shows the latest available (changing & positing) information for each nexus.
+-- The now perspective shows the information as it is right now, with latest positing time.
+-- The point-in-time perspective lets you travel through the information to the given timepoint,
+-- with latest positing time and the given point in changing time.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints, and for
+-- changes in all or a selection of attributes, with latest positing time.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+-- @selection a list of mnemonics for tracked attributes, ie 'MNE MON ICS', or null for all
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.dEV_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[dEV_Event];
+IF Object_ID('nexuses.nEV_Event', 'V') IS NOT NULL
+DROP VIEW [nexuses].[nEV_Event];
+IF Object_ID('nexuses.pEV_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[pEV_Event];
+IF Object_ID('nexuses.lEV_Event', 'V') IS NOT NULL
+DROP VIEW [nexuses].[lEV_Event];
+IF Object_ID('nexuses.tEV_Event', 'IF') IS NOT NULL
+DROP FUNCTION [nexuses].[tEV_Event];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tEV_Event viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[tEV_Event] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    [EV].EV_ID,
+    [EV].Metadata_EV,
+    [EV].ST_ID_wasHeldAt,
+    [EV].PR_ID_wasPlayed,
+    [ETY_of].ETY_Checksum AS ETY_Checksum,
+    [ETY_of].ETY_EventType AS ETY_EventType,
+    [ETY_of].Metadata_ETY AS Metadata_ETY,
+    [EV].ETY_ID_of,
+    [DAT].Metadata_EV_DAT,
+    [DAT].EV_DAT_ID,
+    [DAT].EV_DAT_PositedAt,
+    [DAT].EV_DAT_Positor,
+    [DAT].EV_DAT_Reliability,
+    [DAT].EV_DAT_Assertion,
+    [DAT].EV_DAT_Event_Date,
+    [AUD].Metadata_EV_AUD,
+    [AUD].EV_AUD_ID,
+    [AUD].EV_AUD_PositedAt,
+    [AUD].EV_AUD_Positor,
+    [AUD].EV_AUD_Reliability,
+    [AUD].EV_AUD_Assertion,
+    [AUD].EV_AUD_Event_Audience,
+    [REV].Metadata_EV_REV,
+    [REV].EV_REV_ID,
+    [REV].EV_REV_PositedAt,
+    [REV].EV_REV_Positor,
+    [REV].EV_REV_Reliability,
+    [REV].EV_REV_Assertion,
+    [REV].EV_REV_Event_Revenue,
+    [STA].Metadata_EV_STA,
+    [STA].EV_STA_ID,
+    [STA].EV_STA_ChangedAt,
+    [STA].EV_STA_PositedAt,
+    [STA].EV_STA_Positor,
+    [STA].EV_STA_Reliability,
+    [STA].EV_STA_Assertion,
+    [STA].EV_STA_Event_Status,
+    [UTL].Metadata_EV_UTL,
+    [UTL].EV_UTL_ID,
+    [UTL].EV_UTL_PositedAt,
+    [UTL].EV_UTL_Positor,
+    [UTL].EV_UTL_Reliability,
+    [UTL].EV_UTL_Assertion,
+    [kUTL].UTL_Utilization AS UTL_Utilization,
+    [kUTL].Metadata_UTL AS Metadata_UTL,
+    [UTL].UTL_ID,
+    [LVL].Metadata_EV_LVL,
+    [LVL].EV_LVL_ID,
+    [LVL].EV_LVL_ChangedAt,
+    [LVL].EV_LVL_PositedAt,
+    [LVL].EV_LVL_Positor,
+    [LVL].EV_LVL_Reliability,
+    [LVL].EV_LVL_Assertion,
+    [kLVL].PLV_Checksum AS PLV_Checksum,
+    [kLVL].PLV_ProfessionalLevel AS PLV_ProfessionalLevel,
+    [kLVL].Metadata_PLV AS Metadata_PLV,
+    [LVL].PLV_ID
+FROM
+    [nexuses].[EV_Event] [EV]
+LEFT JOIN
+    [knots].[ETY_EventType] [ETY_of]
+ON
+    [ETY_of].ETY_ID = [EV].ETY_ID_of
+LEFT JOIN
+    [attributes].[rEV_DAT_Event_Date](
+        @positor,
+        @positingTimepoint
+    ) [DAT]
+ON
+    [DAT].EV_DAT_ID = (
+        SELECT TOP 1
+            sub.EV_DAT_ID
+        FROM
+            [attributes].[rEV_DAT_Event_Date](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_DAT_Assertion = isnull(@assertion, sub.EV_DAT_Assertion)
+        ORDER BY
+            sub.EV_DAT_PositedAt DESC,
+            sub.EV_DAT_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rEV_AUD_Event_Audience](
+        @positor,
+        @positingTimepoint
+    ) [AUD]
+ON
+    [AUD].EV_AUD_ID = (
+        SELECT TOP 1
+            sub.EV_AUD_ID
+        FROM
+            [attributes].[rEV_AUD_Event_Audience](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_AUD_Assertion = isnull(@assertion, sub.EV_AUD_Assertion)
+        ORDER BY
+            sub.EV_AUD_PositedAt DESC,
+            sub.EV_AUD_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rEV_REV_Event_Revenue](
+        @positor,
+        @positingTimepoint
+    ) [REV]
+ON
+    [REV].EV_REV_ID = (
+        SELECT TOP 1
+            sub.EV_REV_ID
+        FROM
+            [attributes].[rEV_REV_Event_Revenue](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_REV_Assertion = isnull(@assertion, sub.EV_REV_Assertion)
+        ORDER BY
+            sub.EV_REV_PositedAt DESC,
+            sub.EV_REV_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rEV_STA_Event_Status](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [STA]
+ON
+    [STA].EV_STA_ID = (
+        SELECT TOP 1
+            sub.EV_STA_ID
+        FROM
+            [attributes].[rEV_STA_Event_Status](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_STA_Assertion = isnull(@assertion, sub.EV_STA_Assertion)
+        ORDER BY
+            sub.EV_STA_ChangedAt DESC,
+            sub.EV_STA_PositedAt DESC,
+            sub.EV_STA_Reliability DESC
+    )
+LEFT JOIN
+    [attributes].[rEV_UTL_Event_Utilization](
+        @positor,
+        @positingTimepoint
+    ) [UTL]
+ON
+    [UTL].EV_UTL_ID = (
+        SELECT TOP 1
+            sub.EV_UTL_ID
+        FROM
+            [attributes].[rEV_UTL_Event_Utilization](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_UTL_Assertion = isnull(@assertion, sub.EV_UTL_Assertion)
+        ORDER BY
+            sub.EV_UTL_PositedAt DESC,
+            sub.EV_UTL_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[UTL_Utilization] [kUTL]
+ON
+    [kUTL].UTL_ID = [UTL].UTL_ID
+LEFT JOIN
+    [attributes].[rEV_LVL_Event_Level](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) [LVL]
+ON
+    [LVL].EV_LVL_ID = (
+        SELECT TOP 1
+            sub.EV_LVL_ID
+        FROM
+            [attributes].[rEV_LVL_Event_Level](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID = [EV].EV_ID
+        AND
+            sub.EV_LVL_Assertion = isnull(@assertion, sub.EV_LVL_Assertion)
+        ORDER BY
+            sub.EV_LVL_ChangedAt DESC,
+            sub.EV_LVL_PositedAt DESC,
+            sub.EV_LVL_Reliability DESC
+    )
+LEFT JOIN
+    [knots].[PLV_ProfessionalLevel] [kLVL]
+ON
+    [kLVL].PLV_ID = [LVL].PLV_ID;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lEV_Event viewed by the latest available information for all positors (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [nexuses].[lEV_Event]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [EV].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [nexuses].[tEV_Event] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [EV];
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pEV_Event viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[pEV_Event] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    p.*,
+    cast(null as decimal(5,2)) as Reliability,
+    [EV].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [nexuses].[tEV_Event] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [EV];
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nEV_Event viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [nexuses].[nEV_Event]
+AS
+SELECT
+    p.*, 
+    cast(null as decimal(5,2)) as Reliability,
+    [EV].*
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [nexuses].[tEV_Event] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [EV];
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dEV_Event showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[dEV_Event] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    p.Positor,
+    timepoints.inspectedTimepoint,
+    [EV].*
+FROM
+    [dw].[_Positor] p
+CROSS JOIN
+    (
+        SELECT DISTINCT
+            timepoint AS inspectedTimepoint
+        FROM
+            [dw].[pPositor]
+        CROSS APPLY
+            [dw].[_AnchorTimepoints](
+                @intervalStart,
+                @intervalEnd
+            )
+    ) timepoints
+CROSS APPLY
+    [nexuses].[tEV_Event](p.Positor, timepoints.inspectedTimepoint, DEFAULT, '+') [EV]
+WHERE
+    @selection is null
+OR
+    EXISTS (
+        SELECT
+            1
+        FROM
+            [dw].[_SplitMnemonic](@selection)
+        JOIN
+            [dw].[_AnchorAttributes]
+        ON
+            mnemonic = [attribute]
+        AND
+            [anchor] = 'EV_Event'
+        CROSS APPLY
+            [dw].[_AttributeTimepoints](
+                [capsule],
+                [attribute],
+                p.Positor,
+                @intervalStart,
+                @intervalEnd
+            )
+        WHERE
+            timepoint = timepoints.inspectedTimepoint
+    );
+GO
+-- NEXUS TEMPORAL BUSINESS PERSPECTIVES -----------------------------------------------------------------------------
+--
+-- These views and functions provide business friendly temporal perspectives over each nexus
+-- paralleling the anchor and tie business perspectives. A nexus base row is immutable; only
+-- its historized attributes vary over time. Roles (anchor/nexus/knot foreign keys) project
+-- as business columns without historization logic.
+--
+-- Four base perspectives: Latest_, Point_, Difference_, Current_ (l / p / d / n)
+-- Under equivalence: EQ_Latest_, EQ_Point_, EQ_Difference_, EQ_Current_ (el / ep / ed / en)
+--
+-- @changingTimepoint point in changing time for point-in-time functions
+-- @intervalStart interval start (difference)
+-- @intervalEnd interval end (difference)
+-- @selection list of attribute mnemonics to filter differences (null = all)
+-- @equivalent equivalence key (equivalence variants)
+--
+-- Generation is skipped for nexuses without attributes to avoid trivial duplication of the base table.
+-- Knot value columns respect schema.KNOT_ALIASES for presentable naming; both alias and knot value
+-- are exposed analogous to anchor business perspectives when aliases are disabled.
+--
+-- Latest perspective ------------------------------------------------------------------------------------------------
+-- Latest_Event viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [nexuses].[Latest_Event] AS
+SELECT
+    [EV].Positor,
+    [EV].EV_ID as [Event_Id],
+    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
+    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
+    [EV].ETY_EventType AS [of_EventType],
+    [EV].EV_DAT_Event_Date as [Date],
+    [EV].EV_AUD_Event_Audience as [Audience],
+    [EV].EV_REV_Event_Revenue as [Revenue],
+    [EV].EV_STA_Event_Status as [Status],
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
+FROM
+    [nexuses].[lEV_Event] [EV];
+GO
+-- Point-in-time perspective -----------------------------------------------------------------------------------------
+-- Point_Event viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[Point_Event] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [EV].Positor,
+    [EV].EV_ID as [Event_Id],
+    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
+    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
+    [EV].ETY_EventType AS [of_EventType],
+    [EV].EV_DAT_Event_Date as [Date],
+    [EV].EV_AUD_Event_Audience as [Audience],
+    [EV].EV_REV_Event_Revenue as [Revenue],
+    [EV].EV_STA_Event_Status as [Status],
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
+FROM
+    [nexuses].[pEV_Event](@changingTimepoint) [EV]
+GO
+-- Now perspective ---------------------------------------------------------------------------------------------------
+-- Current_Event viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [nexuses].[Current_Event]
+AS
+SELECT
+    *
+FROM
+    [nexuses].[Point_Event](sysdatetime());
+GO
+-- Difference perspective --------------------------------------------------------------------------------------------
+-- Difference_Event showing differences between timepoints (optionally subset of attributes)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[Difference_Event] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pEV].*
+FROM (
+    SELECT DISTINCT
+        EV_ID AS EV_ID,
+        EV_STA_ChangedAt AS [Time_of_Change],
+        'Status' AS [Subject_of_Change]
+    FROM
+        [attributes].[eEV_STA_Event_Status](0) 
+    WHERE
+        (@selection is null OR @selection like '%STA%')
+    AND
+        EV_STA_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        EV_ID AS EV_ID,
+        EV_LVL_ChangedAt AS [Time_of_Change],
+        'Level' AS [Subject_of_Change]
+    FROM
+        [attributes].[EV_LVL_Event_Level]
+    WHERE
+        (@selection is null OR @selection like '%LVL%')
+    AND
+        EV_LVL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [nexuses].[Point_Event](timepoints.[Time_of_Change]) [pEV]
+WHERE
+    [pEV].Event_Id = timepoints.EV_ID;
+GO
+-- Latest equivalence perspective ------------------------------------------------------------------------------------
+-- EQ_Latest_Event viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[EQ_Latest_Event] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [EV].Positor,
+    [EV].EV_ID as [Event_Id],
+    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
+    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
+    [EV].ETY_EventType AS [of_EventType],
+    [EV].EV_DAT_Event_Date as [Date],
+    [EV].EV_AUD_Event_Audience as [Audience],
+    [EV].EV_REV_Event_Revenue as [Revenue],
+    [EV].EV_STA_Event_Status as [Status],
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
+FROM
+    [nexuses].[elEV_Event](@equivalent) [EV];
+GO
+-- Point-in-time equivalence perspective -----------------------------------------------------------------------------
+-- EQ_Point_Event viewed as it was on the given timepoint
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[EQ_Point_Event] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [EV].Positor,
+    [EV].EV_ID as [Event_Id],
+    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
+    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
+    [EV].ETY_EventType AS [of_EventType],
+    [EV].EV_DAT_Event_Date as [Date],
+    [EV].EV_AUD_Event_Audience as [Audience],
+    [EV].EV_REV_Event_Revenue as [Revenue],
+    [EV].EV_STA_Event_Status as [Status],
+    [EV].UTL_Utilization as [Utilization_Utilization],
+    [EV].PLV_ProfessionalLevel as [Level_ProfessionalLevel]
+FROM
+    [nexuses].[epEV_Event](@equivalent, @changingTimepoint) [EV]
+GO
+-- Now equivalence perspective ---------------------------------------------------------------------------------------
+-- EQ_Current_Event viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[EQ_Current_Event] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [nexuses].[EQ_Point_Event](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective -------------------------------------------------------------------------------
+-- EQ_Difference_Event showing differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [nexuses].[EQ_Difference_Event] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.[Time_of_Change],
+    timepoints.[Subject_of_Change],
+    [pEV].*
+FROM (
+    SELECT DISTINCT
+        EV_ID AS EV_ID,
+        EV_STA_ChangedAt AS [Time_of_Change],
+        'Status' AS [Subject_of_Change]
+    FROM
+        [attributes].[eEV_STA_Event_Status](@equivalent) 
+    WHERE
+        (@selection is null OR @selection like '%STA%')
+    AND
+        EV_STA_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        EV_ID AS EV_ID,
+        EV_LVL_ChangedAt AS [Time_of_Change],
+        'Level' AS [Subject_of_Change]
+    FROM
+        [attributes].[EV_LVL_Event_Level]
+    WHERE
+        (@selection is null OR @selection like '%LVL%')
+    AND
+        EV_LVL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [nexuses].[EQ_Point_Event](@equivalent, timepoints.[Time_of_Change]) [pEV]
+WHERE
+    [pEV].Event_Id = timepoints.EV_ID;
+GO
+-- KEY GENERATORS -----------------------------------------------------------------------------------------------------
+--
+-- These stored procedures can be used to generate identities of entities.
+-- Corresponding anchors must have an incrementing identity column.
+--
+-- Key Generation Stored Procedure ------------------------------------------------------------------------------------
+-- kPN_Person identity by surrogate key generation stored procedure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.kPN_Person', 'P') IS NULL
+BEGIN
+    EXEC('
+    CREATE PROCEDURE [anchors].[kPN_Person] (
+        @requestedNumberOfIdentities bigint,
+        @metadata int
+    ) AS
+    BEGIN
+        SET NOCOUNT ON;
+        IF @requestedNumberOfIdentities > 0
+        BEGIN
+            WITH idGenerator (idNumber) AS (
+                SELECT
+                    1
+                UNION ALL
+                SELECT
+                    idNumber + 1
+                FROM
+                    idGenerator
+                WHERE
+                    idNumber < @requestedNumberOfIdentities
+            )
+            INSERT INTO [anchors].[PN_Person] (
+                Metadata_PN
+            )
+            OUTPUT
+                inserted.PN_ID
+            SELECT
+                @metadata
+            FROM
+                idGenerator
+            OPTION (maxrecursion 0);
+        END
+    END
+    ');
+END
+GO
+-- Key Generation Stored Procedure ------------------------------------------------------------------------------------
+-- kAC_Actor identity by surrogate key generation stored procedure
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.kAC_Actor', 'P') IS NULL
+BEGIN
+    EXEC('
+    CREATE PROCEDURE [anchors].[kAC_Actor] (
+        @requestedNumberOfIdentities bigint,
+        @metadata int
+    ) AS
+    BEGIN
+        SET NOCOUNT ON;
+        IF @requestedNumberOfIdentities > 0
+        BEGIN
+            WITH idGenerator (idNumber) AS (
+                SELECT
+                    1
+                UNION ALL
+                SELECT
+                    idNumber + 1
+                FROM
+                    idGenerator
+                WHERE
+                    idNumber < @requestedNumberOfIdentities
+            )
+            INSERT INTO [anchors].[AC_Actor] (
+                Metadata_AC
+            )
+            OUTPUT
+                inserted.AC_ID
+            SELECT
+                @metadata
+            FROM
+                idGenerator
+            OPTION (maxrecursion 0);
+        END
+    END
+    ');
+END
+GO
+-- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the assembled views make them behave like tables.
+-- There is one 'instead of' trigger for: insert.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_DAT_Event_Date', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_DAT_Event_Date];
+GO
+CREATE TRIGGER [attributes].[it_EV_DAT_Event_Date] ON [attributes].[EV_DAT_Event_Date]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_DAT_Event_Date TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_DAT int not null,
+        EV_DAT_Positor tinyint not null,
+        EV_DAT_PositedAt datetime2 not null,
+        EV_DAT_Reliability decimal(5,2) not null,
+        EV_DAT_Assertion char(1) not null,
+        EV_DAT_Event_Date datetime2 not null,
+        EV_DAT_Version bigint not null,
+        EV_DAT_StatementType char(1) not null,
+        primary key(
+            EV_DAT_Version,
+            EV_DAT_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_DAT_Positor,
+            i.EV_DAT_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_DAT_Event_Date_Posit] p
+            JOIN
+                [attributes].[EV_DAT_Event_Date_Annex] a
+            ON
+                a.EV_DAT_ID = p.EV_DAT_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+            AND
+                a.EV_DAT_Positor = i.EV_DAT_Positor
+            AND
+                a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+            AND
+                a.EV_DAT_Reliability <> i.EV_DAT_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_DAT_Event_Date for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_DAT_Event_Date
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_DAT,
+        i.EV_DAT_Positor,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Reliability,
+        case
+            when i.EV_DAT_Reliability > 0 then '+'
+            when i.EV_DAT_Reliability = 0 then '?'
+            when i.EV_DAT_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_DAT_Event_Date,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_DAT_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_DAT_PositedAt ASC,
+                i.EV_DAT_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Annex] a
+        ON
+            a.EV_DAT_ID = p.EV_DAT_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_DAT_Event_Date = i.EV_DAT_Event_Date
+        AND
+            a.EV_DAT_Positor = i.EV_DAT_Positor
+        AND
+            a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_DAT_Version),
+        @currentVersion = 0
+    FROM
+        @EV_DAT_Event_Date;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_DAT_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_DAT_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_DAT_Positor, DEFAULT, v.EV_DAT_PositedAt, v.EV_DAT_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_DAT_Reliability = v.EV_DAT_Reliability
+                        AND
+                            t.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_DAT_Event_Date v
+        LEFT JOIN
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_DAT_Event_Date_Posit] (
+            EV_ID,
+            EV_DAT_Event_Date
+        )
+        SELECT
+            EV_ID,
+            EV_DAT_Event_Date
+        FROM
+            @EV_DAT_Event_Date
+        WHERE
+            EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('N');
+        INSERT INTO [attributes].[EV_DAT_Event_Date_Annex] (
+            Metadata_EV_DAT,
+            EV_DAT_ID,
+            EV_DAT_Positor,
+            EV_DAT_PositedAt,
+            EV_DAT_Reliability
+        )
+        SELECT
+            v.Metadata_EV_DAT,
+            p.EV_DAT_ID,
+            v.EV_DAT_Positor,
+            v.EV_DAT_PositedAt,
+            v.EV_DAT_Reliability
+        FROM
+            @EV_DAT_Event_Date v
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+        WHERE
+            v.EV_DAT_Version = @currentVersion
+        AND
+            EV_DAT_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_AUD_Event_Audience', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_AUD_Event_Audience];
+GO
+CREATE TRIGGER [attributes].[it_EV_AUD_Event_Audience] ON [attributes].[EV_AUD_Event_Audience]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_AUD_Event_Audience TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_AUD int not null,
+        EV_AUD_Positor tinyint not null,
+        EV_AUD_PositedAt datetime2 not null,
+        EV_AUD_Reliability decimal(5,2) not null,
+        EV_AUD_Assertion char(1) not null,
+        EV_AUD_Event_Audience int not null,
+        EV_AUD_Version bigint not null,
+        EV_AUD_StatementType char(1) not null,
+        primary key(
+            EV_AUD_Version,
+            EV_AUD_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_AUD_Positor,
+            i.EV_AUD_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_AUD_Event_Audience_Posit] p
+            JOIN
+                [attributes].[EV_AUD_Event_Audience_Annex] a
+            ON
+                a.EV_AUD_ID = p.EV_AUD_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+            AND
+                a.EV_AUD_Positor = i.EV_AUD_Positor
+            AND
+                a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+            AND
+                a.EV_AUD_Reliability <> i.EV_AUD_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_AUD_Event_Audience for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_AUD_Event_Audience
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_AUD,
+        i.EV_AUD_Positor,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Reliability,
+        case
+            when i.EV_AUD_Reliability > 0 then '+'
+            when i.EV_AUD_Reliability = 0 then '?'
+            when i.EV_AUD_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_AUD_Event_Audience,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_AUD_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_AUD_PositedAt ASC,
+                i.EV_AUD_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Annex] a
+        ON
+            a.EV_AUD_ID = p.EV_AUD_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
+        AND
+            a.EV_AUD_Positor = i.EV_AUD_Positor
+        AND
+            a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_AUD_Version),
+        @currentVersion = 0
+    FROM
+        @EV_AUD_Event_Audience;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_AUD_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_AUD_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_AUD_Positor, DEFAULT, v.EV_AUD_PositedAt, v.EV_AUD_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_AUD_Reliability = v.EV_AUD_Reliability
+                        AND
+                            t.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_AUD_Event_Audience v
+        LEFT JOIN
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_AUD_Event_Audience_Posit] (
+            EV_ID,
+            EV_AUD_Event_Audience
+        )
+        SELECT
+            EV_ID,
+            EV_AUD_Event_Audience
+        FROM
+            @EV_AUD_Event_Audience
+        WHERE
+            EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('N');
+        INSERT INTO [attributes].[EV_AUD_Event_Audience_Annex] (
+            Metadata_EV_AUD,
+            EV_AUD_ID,
+            EV_AUD_Positor,
+            EV_AUD_PositedAt,
+            EV_AUD_Reliability
+        )
+        SELECT
+            v.Metadata_EV_AUD,
+            p.EV_AUD_ID,
+            v.EV_AUD_Positor,
+            v.EV_AUD_PositedAt,
+            v.EV_AUD_Reliability
+        FROM
+            @EV_AUD_Event_Audience v
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+        WHERE
+            v.EV_AUD_Version = @currentVersion
+        AND
+            EV_AUD_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_REV_Event_Revenue', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_REV_Event_Revenue];
+GO
+CREATE TRIGGER [attributes].[it_EV_REV_Event_Revenue] ON [attributes].[EV_REV_Event_Revenue]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_REV_Event_Revenue TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_REV int not null,
+        EV_REV_Positor tinyint not null,
+        EV_REV_PositedAt datetime2 not null,
+        EV_REV_Reliability decimal(5,2) not null,
+        EV_REV_Assertion char(1) not null,
+        EV_REV_Event_Revenue decimal(19,4) not null,
+        EV_REV_Version bigint not null,
+        EV_REV_StatementType char(1) not null,
+        primary key(
+            EV_REV_Version,
+            EV_REV_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_REV_Positor,
+            i.EV_REV_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_REV_Event_Revenue_Posit] p
+            JOIN
+                [attributes].[EV_REV_Event_Revenue_Annex] a
+            ON
+                a.EV_REV_ID = p.EV_REV_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+            AND
+                a.EV_REV_Positor = i.EV_REV_Positor
+            AND
+                a.EV_REV_PositedAt = i.EV_REV_PositedAt
+            AND
+                a.EV_REV_Reliability <> i.EV_REV_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_REV_Event_Revenue for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_REV_Event_Revenue
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_REV,
+        i.EV_REV_Positor,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Reliability,
+        case
+            when i.EV_REV_Reliability > 0 then '+'
+            when i.EV_REV_Reliability = 0 then '?'
+            when i.EV_REV_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_REV_Event_Revenue,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_REV_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_REV_PositedAt ASC,
+                i.EV_REV_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Annex] a
+        ON
+            a.EV_REV_ID = p.EV_REV_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
+        AND
+            a.EV_REV_Positor = i.EV_REV_Positor
+        AND
+            a.EV_REV_PositedAt = i.EV_REV_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_REV_Version),
+        @currentVersion = 0
+    FROM
+        @EV_REV_Event_Revenue;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_REV_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_REV_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_REV_Positor, DEFAULT, v.EV_REV_PositedAt, v.EV_REV_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_REV_Reliability = v.EV_REV_Reliability
+                        AND
+                            t.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_REV_Event_Revenue v
+        LEFT JOIN
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_REV_Event_Revenue_Posit] (
+            EV_ID,
+            EV_REV_Event_Revenue
+        )
+        SELECT
+            EV_ID,
+            EV_REV_Event_Revenue
+        FROM
+            @EV_REV_Event_Revenue
+        WHERE
+            EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('N');
+        INSERT INTO [attributes].[EV_REV_Event_Revenue_Annex] (
+            Metadata_EV_REV,
+            EV_REV_ID,
+            EV_REV_Positor,
+            EV_REV_PositedAt,
+            EV_REV_Reliability
+        )
+        SELECT
+            v.Metadata_EV_REV,
+            p.EV_REV_ID,
+            v.EV_REV_Positor,
+            v.EV_REV_PositedAt,
+            v.EV_REV_Reliability
+        FROM
+            @EV_REV_Event_Revenue v
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+        WHERE
+            v.EV_REV_Version = @currentVersion
+        AND
+            EV_REV_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_STA_Event_Status instead of INSERT trigger on EV_STA_Event_Status
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_STA_Event_Status', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_STA_Event_Status];
+GO
+CREATE TRIGGER [attributes].[it_EV_STA_Event_Status] ON [attributes].[EV_STA_Event_Status]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_STA_Event_Status TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_STA int not null,
+        EV_STA_ChangedAt datetime2 not null,
+        EV_STA_Positor tinyint not null,
+        EV_STA_PositedAt datetime2 not null,
+        EV_STA_Reliability decimal(5,2) not null,
+        EV_STA_Assertion char(1) not null,
+        EV_STA_Event_Status nvarchar(20) not null,
+        EV_STA_Version bigint not null,
+        EV_STA_StatementType char(1) not null,
+        primary key(
+            EV_STA_Version,
+            EV_STA_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_STA_ChangedAt,
+            i.EV_STA_Positor,
+            i.EV_STA_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_STA_Event_Status_Posit] p
+            JOIN
+                [attributes].[EV_STA_Event_Status_Annex] a
+            ON
+                a.EV_STA_ID = p.EV_STA_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+            AND
+                p.EV_STA_Event_Status = i.EV_STA_Event_Status
+            AND
+                a.EV_STA_Positor = i.EV_STA_Positor
+            AND
+                a.EV_STA_PositedAt = i.EV_STA_PositedAt
+            AND
+                a.EV_STA_Reliability <> i.EV_STA_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_STA_Event_Status for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_STA_Event_Status
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_STA,
+        i.EV_STA_ChangedAt,
+        i.EV_STA_Positor,
+        i.EV_STA_PositedAt,
+        i.EV_STA_Reliability,
+        case
+            when i.EV_STA_Reliability > 0 then '+'
+            when i.EV_STA_Reliability = 0 then '?'
+            when i.EV_STA_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.EV_STA_Event_Status,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_STA_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_STA_ChangedAt ASC,
+                i.EV_STA_PositedAt ASC,
+                i.EV_STA_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_STA_Event_Status_Posit] p
+        JOIN
+            [attributes].[EV_STA_Event_Status_Annex] a
+        ON
+            a.EV_STA_ID = p.EV_STA_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = i.EV_STA_Event_Status
+        AND
+            a.EV_STA_Positor = i.EV_STA_Positor
+        AND
+            a.EV_STA_PositedAt = i.EV_STA_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_STA_Version),
+        @currentVersion = 0
+    FROM
+        @EV_STA_Event_Status;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_STA_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_STA_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_STA_Positor, v.EV_STA_ChangedAt, v.EV_STA_PositedAt, v.EV_STA_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+                        AND
+                            t.EV_STA_Reliability = v.EV_STA_Reliability
+                        AND
+                            t.EV_STA_Event_Status = v.EV_STA_Event_Status
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.EV_STA_Event_Status
+                        WHERE
+                            v.EV_STA_Event_Status =
+                                attributes.preEV_STA_Event_Status (
+                                    v.EV_ID,
+                                    v.EV_STA_Positor,
+                                    v.EV_STA_ChangedAt,
+                                    v.EV_STA_PositedAt,
+                                    v.EV_STA_Assertion
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.EV_STA_Event_Status
+                        WHERE
+                            v.EV_STA_Event_Status =
+                                attributes.folEV_STA_Event_Status (
+                                    v.EV_ID,
+                                    v.EV_STA_Positor,
+                                    v.EV_STA_ChangedAt,
+                                    v.EV_STA_PositedAt,
+                                    v.EV_STA_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_STA_Event_Status v
+        LEFT JOIN
+            [attributes].[EV_STA_Event_Status_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = v.EV_STA_Event_Status
+        WHERE
+            v.EV_STA_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_STA_Event_Status_Posit] (
+            EV_ID,
+            EV_STA_ChangedAt,
+            EV_STA_Event_Status
+        )
+        SELECT
+            EV_ID,
+            EV_STA_ChangedAt,
+            EV_STA_Event_Status
+        FROM
+            @EV_STA_Event_Status
+        WHERE
+            EV_STA_Version = @currentVersion
+        AND
+            EV_STA_StatementType in ('N','R');
+        INSERT INTO [attributes].[EV_STA_Event_Status_Annex] (
+            Metadata_EV_STA,
+            EV_STA_ID,
+            EV_STA_Positor,
+            EV_STA_PositedAt,
+            EV_STA_Reliability
+        )
+        SELECT
+            v.Metadata_EV_STA,
+            p.EV_STA_ID,
+            v.EV_STA_Positor,
+            v.EV_STA_PositedAt,
+            v.EV_STA_Reliability
+        FROM
+            @EV_STA_Event_Status v
+        JOIN
+            [attributes].[EV_STA_Event_Status_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+        AND
+            p.EV_STA_Event_Status = v.EV_STA_Event_Status
+        WHERE
+            v.EV_STA_Version = @currentVersion
+        AND
+            EV_STA_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_UTL_Event_Utilization instead of INSERT trigger on EV_UTL_Event_Utilization
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_UTL_Event_Utilization', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_UTL_Event_Utilization];
+GO
+CREATE TRIGGER [attributes].[it_EV_UTL_Event_Utilization] ON [attributes].[EV_UTL_Event_Utilization]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_UTL_Event_Utilization TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_UTL int not null,
+        EV_UTL_Positor tinyint not null,
+        EV_UTL_PositedAt datetime2 not null,
+        EV_UTL_Reliability decimal(5,2) not null,
+        EV_UTL_Assertion char(1) not null,
+        UTL_ID tinyint not null, 
+        EV_UTL_Version bigint not null,
+        EV_UTL_StatementType char(1) not null,
+        primary key(
+            EV_UTL_Version,
+            EV_UTL_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_UTL_Positor,
+            i.EV_UTL_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_UTL_Event_Utilization_Posit] p
+            JOIN
+                [attributes].[EV_UTL_Event_Utilization_Annex] a
+            ON
+                a.EV_UTL_ID = p.EV_UTL_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.UTL_ID = i.UTL_ID
+            AND
+                a.EV_UTL_Positor = i.EV_UTL_Positor
+            AND
+                a.EV_UTL_PositedAt = i.EV_UTL_PositedAt
+            AND
+                a.EV_UTL_Reliability <> i.EV_UTL_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_UTL_Event_Utilization for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_UTL_Event_Utilization
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_UTL,
+        i.EV_UTL_Positor,
+        i.EV_UTL_PositedAt,
+        i.EV_UTL_Reliability,
+        case
+            when i.EV_UTL_Reliability > 0 then '+'
+            when i.EV_UTL_Reliability = 0 then '?'
+            when i.EV_UTL_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.UTL_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_UTL_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_UTL_PositedAt ASC,
+                i.EV_UTL_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Annex] a
+        ON
+            a.EV_UTL_ID = p.EV_UTL_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.EV_UTL_Positor = i.EV_UTL_Positor
+        AND
+            a.EV_UTL_PositedAt = i.EV_UTL_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_UTL_Version),
+        @currentVersion = 0
+    FROM
+        @EV_UTL_Event_Utilization;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_UTL_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_UTL_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_UTL_Positor, DEFAULT, v.EV_UTL_PositedAt, v.EV_UTL_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_UTL_Reliability = v.EV_UTL_Reliability
+                        AND
+                            t.UTL_ID = v.UTL_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_UTL_Event_Utilization v
+        LEFT JOIN
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.EV_UTL_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization_Posit] (
+            EV_ID,
+            UTL_ID
+        )
+        SELECT
+            EV_ID,
+            UTL_ID
+        FROM
+            @EV_UTL_Event_Utilization
+        WHERE
+            EV_UTL_Version = @currentVersion
+        AND
+            EV_UTL_StatementType in ('N');
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization_Annex] (
+            Metadata_EV_UTL,
+            EV_UTL_ID,
+            EV_UTL_Positor,
+            EV_UTL_PositedAt,
+            EV_UTL_Reliability
+        )
+        SELECT
+            v.Metadata_EV_UTL,
+            p.EV_UTL_ID,
+            v.EV_UTL_Positor,
+            v.EV_UTL_PositedAt,
+            v.EV_UTL_Reliability
+        FROM
+            @EV_UTL_Event_Utilization v
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.EV_UTL_Version = @currentVersion
+        AND
+            EV_UTL_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_LVL_Event_Level instead of INSERT trigger on EV_LVL_Event_Level
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_EV_LVL_Event_Level', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_EV_LVL_Event_Level];
+GO
+CREATE TRIGGER [attributes].[it_EV_LVL_Event_Level] ON [attributes].[EV_LVL_Event_Level]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @EV_LVL_Event_Level TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV_LVL int not null,
+        EV_LVL_ChangedAt date not null,
+        EV_LVL_Positor tinyint not null,
+        EV_LVL_PositedAt datetime2 not null,
+        EV_LVL_Reliability decimal(5,2) not null,
+        EV_LVL_Assertion char(1) not null,
+        PLV_ID tinyint not null, 
+        EV_LVL_Version bigint not null,
+        EV_LVL_StatementType char(1) not null,
+        primary key(
+            EV_LVL_Version,
+            EV_LVL_Positor,
+            EV_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID,
+            i.EV_LVL_ChangedAt,
+            i.EV_LVL_Positor,
+            i.EV_LVL_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[EV_LVL_Event_Level_Posit] p
+            JOIN
+                [attributes].[EV_LVL_Event_Level_Annex] a
+            ON
+                a.EV_LVL_ID = p.EV_LVL_ID
+            WHERE
+                p.EV_ID = i.EV_ID
+            AND
+                p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+            AND
+                p.PLV_ID = i.PLV_ID
+            AND
+                a.EV_LVL_Positor = i.EV_LVL_Positor
+            AND
+                a.EV_LVL_PositedAt = i.EV_LVL_PositedAt
+            AND
+                a.EV_LVL_Reliability <> i.EV_LVL_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_LVL_Event_Level for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_LVL_Event_Level
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV_LVL,
+        i.EV_LVL_ChangedAt,
+        i.EV_LVL_Positor,
+        i.EV_LVL_PositedAt,
+        i.EV_LVL_Reliability,
+        case
+            when i.EV_LVL_Reliability > 0 then '+'
+            when i.EV_LVL_Reliability = 0 then '?'
+            when i.EV_LVL_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.PLV_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_LVL_Positor,
+                i.EV_ID
+            ORDER BY
+                i.EV_LVL_ChangedAt ASC,
+                i.EV_LVL_PositedAt ASC,
+                i.EV_LVL_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Annex] a
+        ON
+            a.EV_LVL_ID = p.EV_LVL_ID
+        WHERE
+            p.EV_ID = i.EV_ID
+        AND
+            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+        AND
+            p.PLV_ID = i.PLV_ID
+        AND
+            a.EV_LVL_Positor = i.EV_LVL_Positor
+        AND
+            a.EV_LVL_PositedAt = i.EV_LVL_PositedAt
+    );
+    SELECT
+        @maxVersion = max(EV_LVL_Version),
+        @currentVersion = 0
+    FROM
+        @EV_LVL_Event_Level;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_LVL_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_LVL_ID
+                        FROM
+                            [nexuses].[tEV_Event](v.EV_LVL_Positor, v.EV_LVL_ChangedAt, v.EV_LVL_PositedAt, v.EV_LVL_Assertion) t
+                        WHERE
+                            t.EV_ID = v.EV_ID
+                        AND
+                            t.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+                        AND
+                            t.EV_LVL_Reliability = v.EV_LVL_Reliability
+                        AND
+                            t.PLV_ID = v.PLV_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.PLV_ID
+                        WHERE
+                            v.PLV_ID =
+                                attributes.preEV_LVL_Event_Level (
+                                    v.EV_ID,
+                                    v.EV_LVL_Positor,
+                                    v.EV_LVL_ChangedAt,
+                                    v.EV_LVL_PositedAt,
+                                    v.EV_LVL_Assertion
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.PLV_ID
+                        WHERE
+                            v.PLV_ID =
+                                attributes.folEV_LVL_Event_Level (
+                                    v.EV_ID,
+                                    v.EV_LVL_Positor,
+                                    v.EV_LVL_ChangedAt,
+                                    v.EV_LVL_PositedAt,
+                                    v.EV_LVL_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @EV_LVL_Event_Level v
+        LEFT JOIN
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+        AND
+            p.PLV_ID = v.PLV_ID
+        WHERE
+            v.EV_LVL_Version = @currentVersion;
+        INSERT INTO [attributes].[EV_LVL_Event_Level_Posit] (
+            EV_ID,
+            EV_LVL_ChangedAt,
+            PLV_ID
+        )
+        SELECT
+            EV_ID,
+            EV_LVL_ChangedAt,
+            PLV_ID
+        FROM
+            @EV_LVL_Event_Level
+        WHERE
+            EV_LVL_Version = @currentVersion
+        AND
+            EV_LVL_StatementType in ('N','R');
+        INSERT INTO [attributes].[EV_LVL_Event_Level_Annex] (
+            Metadata_EV_LVL,
+            EV_LVL_ID,
+            EV_LVL_Positor,
+            EV_LVL_PositedAt,
+            EV_LVL_Reliability
+        )
+        SELECT
+            v.Metadata_EV_LVL,
+            p.EV_LVL_ID,
+            v.EV_LVL_Positor,
+            v.EV_LVL_PositedAt,
+            v.EV_LVL_Reliability
+        FROM
+            @EV_LVL_Event_Level v
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        ON
+            p.EV_ID = v.EV_ID
+        AND
+            p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+        AND
+            p.PLV_ID = v.PLV_ID
+        WHERE
+            v.EV_LVL_Version = @currentVersion
+        AND
+            EV_LVL_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_ST_NAM_Stage_Name', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_ST_NAM_Stage_Name];
+GO
+CREATE TRIGGER [attributes].[it_ST_NAM_Stage_Name] ON [attributes].[ST_NAM_Stage_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @ST_NAM_Stage_Name TABLE (
+        ST_ID int not null,
+        Metadata_ST_NAM int not null,
+        ST_NAM_ChangedAt datetime2 not null,
+        ST_NAM_Positor tinyint not null,
+        ST_NAM_PositedAt datetime2 not null,
+        ST_NAM_Reliability decimal(5,2) not null,
+        ST_NAM_Assertion char(1) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
+        ST_NAM_Version bigint not null,
+        ST_NAM_StatementType char(1) not null,
+        primary key(
+            ST_NAM_Version,
+            ST_NAM_Positor,
+            ST_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID,
+            i.ST_NAM_ChangedAt,
+            i.ST_NAM_Positor,
+            i.ST_NAM_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[ST_NAM_Stage_Name_Posit] p
+            JOIN
+                [attributes].[ST_NAM_Stage_Name_Annex] a
+            ON
+                a.ST_NAM_ID = p.ST_NAM_ID
+            WHERE
+                p.ST_ID = i.ST_ID
+            AND
+                p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+            AND
+                p.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+            AND
+                a.ST_NAM_Positor = i.ST_NAM_Positor
+            AND
+                a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+            AND
+                a.ST_NAM_Reliability <> i.ST_NAM_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_NAM_Stage_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @ST_NAM_Stage_Name
+    SELECT
+        i.ST_ID,
+        i.Metadata_ST_NAM,
+        i.ST_NAM_ChangedAt,
+        i.ST_NAM_Positor,
+        i.ST_NAM_PositedAt,
+        i.ST_NAM_Reliability,
+        case
+            when i.ST_NAM_Reliability > 0 then '+'
+            when i.ST_NAM_Reliability = 0 then '?'
+            when i.ST_NAM_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.ST_NAM_Stage_Name,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.ST_NAM_Positor,
+                i.ST_ID
+            ORDER BY
+                i.ST_NAM_ChangedAt ASC,
+                i.ST_NAM_PositedAt ASC,
+                i.ST_NAM_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Annex] a
+        ON
+            a.ST_NAM_ID = p.ST_NAM_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+        AND
+            a.ST_NAM_Positor = i.ST_NAM_Positor
+        AND
+            a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+    );
+    SELECT
+        @maxVersion = max(ST_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @ST_NAM_Stage_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.ST_NAM_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.ST_NAM_ID
+                        FROM
+                            [anchors].[tST_Stage](v.ST_NAM_Positor, v.ST_NAM_ChangedAt, v.ST_NAM_PositedAt, v.ST_NAM_Assertion) t
+                        WHERE
+                            t.ST_ID = v.ST_ID
+                        AND
+                            t.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+                        AND
+                            t.ST_NAM_Reliability = v.ST_NAM_Reliability
+                        AND
+                            t.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.ST_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.ST_NAM_Stage_Name
+                        WHERE
+                            v.ST_NAM_Stage_Name =
+                                attributes.preST_NAM_Stage_Name (
+                                    v.ST_ID,
+                                    v.ST_NAM_Positor,
+                                    v.ST_NAM_ChangedAt,
+                                    v.ST_NAM_PositedAt,
+                                    v.ST_NAM_Assertion
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.ST_NAM_Stage_Name
+                        WHERE
+                            v.ST_NAM_Stage_Name =
+                                attributes.folST_NAM_Stage_Name (
+                                    v.ST_ID,
+                                    v.ST_NAM_Positor,
+                                    v.ST_NAM_ChangedAt,
+                                    v.ST_NAM_PositedAt,
+                                    v.ST_NAM_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @ST_NAM_Stage_Name v
+        LEFT JOIN
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+        WHERE
+            v.ST_NAM_Version = @currentVersion;
+        INSERT INTO [attributes].[ST_NAM_Stage_Name_Posit] (
+            ST_ID,
+            ST_NAM_ChangedAt,
+            ST_NAM_Stage_Name
+        )
+        SELECT
+            ST_ID,
+            ST_NAM_ChangedAt,
+            ST_NAM_Stage_Name
+        FROM
+            @ST_NAM_Stage_Name
+        WHERE
+            ST_NAM_Version = @currentVersion
+        AND
+            ST_NAM_StatementType in ('N','R');
+        INSERT INTO [attributes].[ST_NAM_Stage_Name_Annex] (
+            Metadata_ST_NAM,
+            ST_NAM_ID,
+            ST_NAM_Positor,
+            ST_NAM_PositedAt,
+            ST_NAM_Reliability
+        )
+        SELECT
+            v.Metadata_ST_NAM,
+            p.ST_NAM_ID,
+            v.ST_NAM_Positor,
+            v.ST_NAM_PositedAt,
+            v.ST_NAM_Reliability
+        FROM
+            @ST_NAM_Stage_Name v
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+        AND
+            p.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+        WHERE
+            v.ST_NAM_Version = @currentVersion
+        AND
+            ST_NAM_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_LOC_Stage_Location instead of INSERT trigger on ST_LOC_Stage_Location
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_ST_LOC_Stage_Location', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_ST_LOC_Stage_Location];
+GO
+CREATE TRIGGER [attributes].[it_ST_LOC_Stage_Location] ON [attributes].[ST_LOC_Stage_Location]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @ST_LOC_Stage_Location TABLE (
+        ST_ID int not null,
+        Metadata_ST_LOC int not null,
+        ST_LOC_Positor tinyint not null,
+        ST_LOC_PositedAt datetime2 not null,
+        ST_LOC_Reliability decimal(5,2) not null,
+        ST_LOC_Assertion char(1) not null,
+        ST_LOC_Stage_Location geography not null,
+        ST_LOC_Checksum varbinary(16) not null,
+        ST_LOC_Version bigint not null,
+        ST_LOC_StatementType char(1) not null,
+        primary key(
+            ST_LOC_Version,
+            ST_LOC_Positor,
+            ST_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID,
+            i.ST_LOC_Positor,
+            i.ST_LOC_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[ST_LOC_Stage_Location_Posit] p
+            JOIN
+                [attributes].[ST_LOC_Stage_Location_Annex] a
+            ON
+                a.ST_LOC_ID = p.ST_LOC_ID
+            WHERE
+                p.ST_ID = i.ST_ID
+            AND
+                p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+            AND
+                a.ST_LOC_Positor = i.ST_LOC_Positor
+            AND
+                a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+            AND
+                a.ST_LOC_Reliability <> i.ST_LOC_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_LOC_Stage_Location for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @ST_LOC_Stage_Location
+    SELECT
+        i.ST_ID,
+        i.Metadata_ST_LOC,
+        i.ST_LOC_Positor,
+        i.ST_LOC_PositedAt,
+        i.ST_LOC_Reliability,
+        case
+            when i.ST_LOC_Reliability > 0 then '+'
+            when i.ST_LOC_Reliability = 0 then '?'
+            when i.ST_LOC_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.ST_LOC_Stage_Location,
+        dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.ST_LOC_Positor,
+                i.ST_ID
+            ORDER BY
+                i.ST_LOC_PositedAt ASC,
+                i.ST_LOC_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Annex] a
+        ON
+            a.ST_LOC_ID = p.ST_LOC_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+        AND
+            a.ST_LOC_Positor = i.ST_LOC_Positor
+        AND
+            a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+    );
+    SELECT
+        @maxVersion = max(ST_LOC_Version),
+        @currentVersion = 0
+    FROM
+        @ST_LOC_Stage_Location;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.ST_LOC_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.ST_LOC_ID
+                        FROM
+                            [anchors].[tST_Stage](v.ST_LOC_Positor, DEFAULT, v.ST_LOC_PositedAt, v.ST_LOC_Assertion) t
+                        WHERE
+                            t.ST_ID = v.ST_ID
+                        AND
+                            t.ST_LOC_Reliability = v.ST_LOC_Reliability
+                        AND
+                            t.ST_LOC_Checksum = v.ST_LOC_Checksum 
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.ST_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @ST_LOC_Stage_Location v
+        LEFT JOIN
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+        WHERE
+            v.ST_LOC_Version = @currentVersion;
+        INSERT INTO [attributes].[ST_LOC_Stage_Location_Posit] (
+            ST_ID,
+            ST_LOC_Stage_Location
+        )
+        SELECT
+            ST_ID,
+            ST_LOC_Stage_Location
+        FROM
+            @ST_LOC_Stage_Location
+        WHERE
+            ST_LOC_Version = @currentVersion
+        AND
+            ST_LOC_StatementType in ('N');
+        INSERT INTO [attributes].[ST_LOC_Stage_Location_Annex] (
+            Metadata_ST_LOC,
+            ST_LOC_ID,
+            ST_LOC_Positor,
+            ST_LOC_PositedAt,
+            ST_LOC_Reliability
+        )
+        SELECT
+            v.Metadata_ST_LOC,
+            p.ST_LOC_ID,
+            v.ST_LOC_Positor,
+            v.ST_LOC_PositedAt,
+            v.ST_LOC_Reliability
+        FROM
+            @ST_LOC_Stage_Location v
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+        WHERE
+            v.ST_LOC_Version = @currentVersion
+        AND
+            ST_LOC_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_AVG_Stage_Average instead of INSERT trigger on ST_AVG_Stage_Average
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_ST_AVG_Stage_Average', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_ST_AVG_Stage_Average];
+GO
+CREATE TRIGGER [attributes].[it_ST_AVG_Stage_Average] ON [attributes].[ST_AVG_Stage_Average]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @ST_AVG_Stage_Average TABLE (
+        ST_ID int not null,
+        Metadata_ST_AVG int not null,
+        ST_AVG_ChangedAt datetime2 not null,
+        ST_AVG_Positor tinyint not null,
+        ST_AVG_PositedAt datetime2 not null,
+        ST_AVG_Reliability decimal(5,2) not null,
+        ST_AVG_Assertion char(1) not null,
+        UTL_ID tinyint not null, 
+        ST_AVG_Version bigint not null,
+        ST_AVG_StatementType char(1) not null,
+        primary key(
+            ST_AVG_Version,
+            ST_AVG_Positor,
+            ST_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID,
+            i.ST_AVG_ChangedAt,
+            i.ST_AVG_Positor,
+            i.ST_AVG_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[ST_AVG_Stage_Average_Posit] p
+            JOIN
+                [attributes].[ST_AVG_Stage_Average_Annex] a
+            ON
+                a.ST_AVG_ID = p.ST_AVG_ID
+            WHERE
+                p.ST_ID = i.ST_ID
+            AND
+                p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+            AND
+                p.UTL_ID = i.UTL_ID
+            AND
+                a.ST_AVG_Positor = i.ST_AVG_Positor
+            AND
+                a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+            AND
+                a.ST_AVG_Reliability <> i.ST_AVG_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_AVG_Stage_Average for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @ST_AVG_Stage_Average
+    SELECT
+        i.ST_ID,
+        i.Metadata_ST_AVG,
+        i.ST_AVG_ChangedAt,
+        i.ST_AVG_Positor,
+        i.ST_AVG_PositedAt,
+        i.ST_AVG_Reliability,
+        case
+            when i.ST_AVG_Reliability > 0 then '+'
+            when i.ST_AVG_Reliability = 0 then '?'
+            when i.ST_AVG_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.UTL_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.ST_AVG_Positor,
+                i.ST_ID
+            ORDER BY
+                i.ST_AVG_ChangedAt ASC,
+                i.ST_AVG_PositedAt ASC,
+                i.ST_AVG_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Annex] a
+        ON
+            a.ST_AVG_ID = p.ST_AVG_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.ST_AVG_Positor = i.ST_AVG_Positor
+        AND
+            a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+    );
+    SELECT
+        @maxVersion = max(ST_AVG_Version),
+        @currentVersion = 0
+    FROM
+        @ST_AVG_Stage_Average;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.ST_AVG_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.ST_AVG_ID
+                        FROM
+                            [anchors].[tST_Stage](v.ST_AVG_Positor, v.ST_AVG_ChangedAt, v.ST_AVG_PositedAt, v.ST_AVG_Assertion) t
+                        WHERE
+                            t.ST_ID = v.ST_ID
+                        AND
+                            t.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+                        AND
+                            t.ST_AVG_Reliability = v.ST_AVG_Reliability
+                        AND
+                            t.UTL_ID = v.UTL_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.ST_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.UTL_ID
+                        WHERE
+                            v.UTL_ID =
+                                attributes.preST_AVG_Stage_Average (
+                                    v.ST_ID,
+                                    v.ST_AVG_Positor,
+                                    v.ST_AVG_ChangedAt,
+                                    v.ST_AVG_PositedAt,
+                                    v.ST_AVG_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            v.UTL_ID
+                        WHERE
+                            v.UTL_ID =
+                                attributes.folST_AVG_Stage_Average (
+                                    v.ST_ID,
+                                    v.ST_AVG_Positor,
+                                    v.ST_AVG_ChangedAt,
+                                    v.ST_AVG_PositedAt,
+                                    v.ST_AVG_Assertion
+                                )
+                    )
+                    THEN 'F' -- the following version restates this one, so it is retracted
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @ST_AVG_Stage_Average v
+        LEFT JOIN
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.ST_AVG_Version = @currentVersion;
+        INSERT INTO [attributes].[ST_AVG_Stage_Average_Posit] (
+            ST_ID,
+            ST_AVG_ChangedAt,
+            UTL_ID
+        )
+        SELECT
+            ST_ID,
+            ST_AVG_ChangedAt,
+            UTL_ID
+        FROM
+            @ST_AVG_Stage_Average
+        WHERE
+            ST_AVG_Version = @currentVersion
+        AND
+            ST_AVG_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
+            Metadata_ST_AVG,
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            v.Metadata_ST_AVG,
+            fol.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            0
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.ST_AVG_ID,
+                f.UTL_ID
+            FROM
+                [attributes].[fST_AVG_Stage_Average](
+                    v.ST_AVG_Positor,
+                    v.ST_AVG_ChangedAt,
+                    v.ST_AVG_PositedAt
+                ) f
+            WHERE
+                f.ST_ID = v.ST_ID
+            AND
+                f.ST_AVG_ChangedAt > v.ST_AVG_ChangedAt
+            AND
+                f.ST_AVG_Assertion = v.ST_AVG_Assertion
+            ORDER BY
+                f.ST_AVG_ChangedAt ASC,
+                f.ST_AVG_PositedAt DESC
+        ) fol
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType = 'F'
+        AND
+            fol.UTL_ID = v.UTL_ID;
+        INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
+            Metadata_ST_AVG,
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            v.Metadata_ST_AVG,
+            p.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            v.ST_AVG_Reliability
+        FROM
+            @ST_AVG_Stage_Average v
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            ST_AVG_StatementType in ('S','N','D','F');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_MIN_Stage_Minimum instead of INSERT trigger on ST_MIN_Stage_Minimum
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_ST_MIN_Stage_Minimum', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_ST_MIN_Stage_Minimum];
+GO
+CREATE TRIGGER [attributes].[it_ST_MIN_Stage_Minimum] ON [attributes].[ST_MIN_Stage_Minimum]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @ST_MIN_Stage_Minimum TABLE (
+        ST_ID int not null,
+        Metadata_ST_MIN int not null,
+        ST_MIN_Positor tinyint not null,
+        ST_MIN_PositedAt datetime2 not null,
+        ST_MIN_Reliability decimal(5,2) not null,
+        ST_MIN_Assertion char(1) not null,
+        UTL_ID tinyint not null, 
+        ST_MIN_Version bigint not null,
+        ST_MIN_StatementType char(1) not null,
+        primary key(
+            ST_MIN_Version,
+            ST_MIN_Positor,
+            ST_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID,
+            i.ST_MIN_Positor,
+            i.ST_MIN_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[ST_MIN_Stage_Minimum_Posit] p
+            JOIN
+                [attributes].[ST_MIN_Stage_Minimum_Annex] a
+            ON
+                a.ST_MIN_ID = p.ST_MIN_ID
+            WHERE
+                p.ST_ID = i.ST_ID
+            AND
+                p.UTL_ID = i.UTL_ID
+            AND
+                a.ST_MIN_Positor = i.ST_MIN_Positor
+            AND
+                a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+            AND
+                a.ST_MIN_Reliability <> i.ST_MIN_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_MIN_Stage_Minimum for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @ST_MIN_Stage_Minimum
+    SELECT
+        i.ST_ID,
+        i.Metadata_ST_MIN,
+        i.ST_MIN_Positor,
+        i.ST_MIN_PositedAt,
+        i.ST_MIN_Reliability,
+        case
+            when i.ST_MIN_Reliability > 0 then '+'
+            when i.ST_MIN_Reliability = 0 then '?'
+            when i.ST_MIN_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.UTL_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.ST_MIN_Positor,
+                i.ST_ID
+            ORDER BY
+                i.ST_MIN_PositedAt ASC,
+                i.ST_MIN_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Annex] a
+        ON
+            a.ST_MIN_ID = p.ST_MIN_ID
+        WHERE
+            p.ST_ID = i.ST_ID
+        AND
+            p.UTL_ID = i.UTL_ID
+        AND
+            a.ST_MIN_Positor = i.ST_MIN_Positor
+        AND
+            a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+    );
+    SELECT
+        @maxVersion = max(ST_MIN_Version),
+        @currentVersion = 0
+    FROM
+        @ST_MIN_Stage_Minimum;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.ST_MIN_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.ST_MIN_ID
+                        FROM
+                            [anchors].[tST_Stage](v.ST_MIN_Positor, DEFAULT, v.ST_MIN_PositedAt, v.ST_MIN_Assertion) t
+                        WHERE
+                            t.ST_ID = v.ST_ID
+                        AND
+                            t.ST_MIN_Reliability = v.ST_MIN_Reliability
+                        AND
+                            t.UTL_ID = v.UTL_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.ST_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @ST_MIN_Stage_Minimum v
+        LEFT JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.ST_MIN_Version = @currentVersion;
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Posit] (
+            ST_ID,
+            UTL_ID
+        )
+        SELECT
+            ST_ID,
+            UTL_ID
+        FROM
+            @ST_MIN_Stage_Minimum
+        WHERE
+            ST_MIN_Version = @currentVersion
+        AND
+            ST_MIN_StatementType in ('N');
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Annex] (
+            Metadata_ST_MIN,
+            ST_MIN_ID,
+            ST_MIN_Positor,
+            ST_MIN_PositedAt,
+            ST_MIN_Reliability
+        )
+        SELECT
+            v.Metadata_ST_MIN,
+            p.ST_MIN_ID,
+            v.ST_MIN_Positor,
+            v.ST_MIN_PositedAt,
+            v.ST_MIN_Reliability
+        FROM
+            @ST_MIN_Stage_Minimum v
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        ON
+            p.ST_ID = v.ST_ID
+        AND
+            p.UTL_ID = v.UTL_ID
+        WHERE
+            v.ST_MIN_Version = @currentVersion
+        AND
+            ST_MIN_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_NAM_Actor_Name instead of INSERT trigger on AC_NAM_Actor_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_AC_NAM_Actor_Name', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_AC_NAM_Actor_Name];
+GO
+CREATE TRIGGER [attributes].[it_AC_NAM_Actor_Name] ON [attributes].[AC_NAM_Actor_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @AC_NAM_Actor_Name TABLE (
+        AC_ID smallint not null,
+        Metadata_AC_NAM int not null,
+        AC_NAM_ChangedAt datetime2 not null,
+        AC_NAM_Positor tinyint not null,
+        AC_NAM_PositedAt datetime2 not null,
+        AC_NAM_Reliability decimal(5,2) not null,
+        AC_NAM_Assertion char(1) not null,
+        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Version bigint not null,
+        AC_NAM_StatementType char(1) not null,
+        primary key(
+            AC_NAM_Version,
+            AC_NAM_Positor,
+            AC_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID,
+            i.AC_NAM_ChangedAt,
+            i.AC_NAM_Positor,
+            i.AC_NAM_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[AC_NAM_Actor_Name_Posit] p
+            JOIN
+                [attributes].[AC_NAM_Actor_Name_Annex] a
+            ON
+                a.AC_NAM_ID = p.AC_NAM_ID
+            WHERE
+                p.AC_ID = i.AC_ID
+            AND
+                p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+            AND
+                p.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+            AND
+                a.AC_NAM_Positor = i.AC_NAM_Positor
+            AND
+                a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+            AND
+                a.AC_NAM_Reliability <> i.AC_NAM_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_NAM_Actor_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @AC_NAM_Actor_Name
+    SELECT
+        i.AC_ID,
+        i.Metadata_AC_NAM,
+        i.AC_NAM_ChangedAt,
+        i.AC_NAM_Positor,
+        i.AC_NAM_PositedAt,
+        i.AC_NAM_Reliability,
+        case
+            when i.AC_NAM_Reliability > 0 then '+'
+            when i.AC_NAM_Reliability = 0 then '?'
+            when i.AC_NAM_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.AC_NAM_Actor_Name,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_NAM_Positor,
+                i.AC_ID
+            ORDER BY
+                i.AC_NAM_ChangedAt ASC,
+                i.AC_NAM_PositedAt ASC,
+                i.AC_NAM_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Annex] a
+        ON
+            a.AC_NAM_ID = p.AC_NAM_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+        AND
+            a.AC_NAM_Positor = i.AC_NAM_Positor
+        AND
+            a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+    );
+    SELECT
+        @maxVersion = max(AC_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @AC_NAM_Actor_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_NAM_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_NAM_ID
+                        FROM
+                            [anchors].[tAC_Actor](v.AC_NAM_Positor, v.AC_NAM_ChangedAt, v.AC_NAM_PositedAt, v.AC_NAM_Assertion) t
+                        WHERE
+                            t.AC_ID = v.AC_ID
+                        AND
+                            t.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+                        AND
+                            t.AC_NAM_Reliability = v.AC_NAM_Reliability
+                        AND
+                            t.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.AC_NAM_Actor_Name
+                        WHERE
+                            v.AC_NAM_Actor_Name =
+                                attributes.preAC_NAM_Actor_Name (
+                                    v.AC_ID,
+                                    v.AC_NAM_Positor,
+                                    v.AC_NAM_ChangedAt,
+                                    v.AC_NAM_PositedAt,
+                                    v.AC_NAM_Assertion
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.AC_NAM_Actor_Name
+                        WHERE
+                            v.AC_NAM_Actor_Name =
+                                attributes.folAC_NAM_Actor_Name (
+                                    v.AC_ID,
+                                    v.AC_NAM_Positor,
+                                    v.AC_NAM_ChangedAt,
+                                    v.AC_NAM_PositedAt,
+                                    v.AC_NAM_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @AC_NAM_Actor_Name v
+        LEFT JOIN
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+        WHERE
+            v.AC_NAM_Version = @currentVersion;
+        INSERT INTO [attributes].[AC_NAM_Actor_Name_Posit] (
+            AC_ID,
+            AC_NAM_ChangedAt,
+            AC_NAM_Actor_Name
+        )
+        SELECT
+            AC_ID,
+            AC_NAM_ChangedAt,
+            AC_NAM_Actor_Name
+        FROM
+            @AC_NAM_Actor_Name
+        WHERE
+            AC_NAM_Version = @currentVersion
+        AND
+            AC_NAM_StatementType in ('N','R');
+        INSERT INTO [attributes].[AC_NAM_Actor_Name_Annex] (
+            Metadata_AC_NAM,
+            AC_NAM_ID,
+            AC_NAM_Positor,
+            AC_NAM_PositedAt,
+            AC_NAM_Reliability
+        )
+        SELECT
+            v.Metadata_AC_NAM,
+            p.AC_NAM_ID,
+            v.AC_NAM_Positor,
+            v.AC_NAM_PositedAt,
+            v.AC_NAM_Reliability
+        FROM
+            @AC_NAM_Actor_Name v
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+        AND
+            p.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+        WHERE
+            v.AC_NAM_Version = @currentVersion
+        AND
+            AC_NAM_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_GEN_Actor_Gender instead of INSERT trigger on AC_GEN_Actor_Gender
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_AC_GEN_Actor_Gender', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_AC_GEN_Actor_Gender];
+GO
+CREATE TRIGGER [attributes].[it_AC_GEN_Actor_Gender] ON [attributes].[AC_GEN_Actor_Gender]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @AC_GEN_Actor_Gender TABLE (
+        AC_ID smallint not null,
+        Metadata_AC_GEN int not null,
+        AC_GEN_Positor tinyint not null,
+        AC_GEN_PositedAt datetime2 not null,
+        AC_GEN_Reliability decimal(5,2) not null,
+        AC_GEN_Assertion char(1) not null,
+        GEN_ID tinyint not null, 
+        AC_GEN_Version bigint not null,
+        AC_GEN_StatementType char(1) not null,
+        primary key(
+            AC_GEN_Version,
+            AC_GEN_Positor,
+            AC_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID,
+            i.AC_GEN_Positor,
+            i.AC_GEN_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[AC_GEN_Actor_Gender_Posit] p
+            JOIN
+                [attributes].[AC_GEN_Actor_Gender_Annex] a
+            ON
+                a.AC_GEN_ID = p.AC_GEN_ID
+            WHERE
+                p.AC_ID = i.AC_ID
+            AND
+                p.GEN_ID = i.GEN_ID
+            AND
+                a.AC_GEN_Positor = i.AC_GEN_Positor
+            AND
+                a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+            AND
+                a.AC_GEN_Reliability <> i.AC_GEN_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_GEN_Actor_Gender for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @AC_GEN_Actor_Gender
+    SELECT
+        i.AC_ID,
+        i.Metadata_AC_GEN,
+        i.AC_GEN_Positor,
+        i.AC_GEN_PositedAt,
+        i.AC_GEN_Reliability,
+        case
+            when i.AC_GEN_Reliability > 0 then '+'
+            when i.AC_GEN_Reliability = 0 then '?'
+            when i.AC_GEN_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.GEN_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_GEN_Positor,
+                i.AC_ID
+            ORDER BY
+                i.AC_GEN_PositedAt ASC,
+                i.AC_GEN_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Annex] a
+        ON
+            a.AC_GEN_ID = p.AC_GEN_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.GEN_ID = i.GEN_ID
+        AND
+            a.AC_GEN_Positor = i.AC_GEN_Positor
+        AND
+            a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+    );
+    SELECT
+        @maxVersion = max(AC_GEN_Version),
+        @currentVersion = 0
+    FROM
+        @AC_GEN_Actor_Gender;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_GEN_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_GEN_ID
+                        FROM
+                            [anchors].[tAC_Actor](v.AC_GEN_Positor, DEFAULT, v.AC_GEN_PositedAt, v.AC_GEN_Assertion) t
+                        WHERE
+                            t.AC_ID = v.AC_ID
+                        AND
+                            t.AC_GEN_Reliability = v.AC_GEN_Reliability
+                        AND
+                            t.GEN_ID = v.GEN_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @AC_GEN_Actor_Gender v
+        LEFT JOIN
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.GEN_ID = v.GEN_ID
+        WHERE
+            v.AC_GEN_Version = @currentVersion;
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender_Posit] (
+            AC_ID,
+            GEN_ID
+        )
+        SELECT
+            AC_ID,
+            GEN_ID
+        FROM
+            @AC_GEN_Actor_Gender
+        WHERE
+            AC_GEN_Version = @currentVersion
+        AND
+            AC_GEN_StatementType in ('N');
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender_Annex] (
+            Metadata_AC_GEN,
+            AC_GEN_ID,
+            AC_GEN_Positor,
+            AC_GEN_PositedAt,
+            AC_GEN_Reliability
+        )
+        SELECT
+            v.Metadata_AC_GEN,
+            p.AC_GEN_ID,
+            v.AC_GEN_Positor,
+            v.AC_GEN_PositedAt,
+            v.AC_GEN_Reliability
+        FROM
+            @AC_GEN_Actor_Gender v
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.GEN_ID = v.GEN_ID
+        WHERE
+            v.AC_GEN_Version = @currentVersion
+        AND
+            AC_GEN_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_PLV_Actor_ProfessionalLevel instead of INSERT trigger on AC_PLV_Actor_ProfessionalLevel
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_AC_PLV_Actor_ProfessionalLevel', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_AC_PLV_Actor_ProfessionalLevel];
+GO
+CREATE TRIGGER [attributes].[it_AC_PLV_Actor_ProfessionalLevel] ON [attributes].[AC_PLV_Actor_ProfessionalLevel]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @AC_PLV_Actor_ProfessionalLevel TABLE (
+        AC_ID smallint not null,
+        Metadata_AC_PLV int not null,
+        AC_PLV_ChangedAt datetime2 not null,
+        AC_PLV_Positor tinyint not null,
+        AC_PLV_PositedAt datetime2 not null,
+        AC_PLV_Reliability decimal(5,2) not null,
+        AC_PLV_Assertion char(1) not null,
+        PLV_ID tinyint not null, 
+        AC_PLV_Version bigint not null,
+        AC_PLV_StatementType char(1) not null,
+        primary key(
+            AC_PLV_Version,
+            AC_PLV_Positor,
+            AC_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID,
+            i.AC_PLV_ChangedAt,
+            i.AC_PLV_Positor,
+            i.AC_PLV_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+            JOIN
+                [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+            ON
+                a.AC_PLV_ID = p.AC_PLV_ID
+            WHERE
+                p.AC_ID = i.AC_ID
+            AND
+                p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+            AND
+                p.PLV_ID = i.PLV_ID
+            AND
+                a.AC_PLV_Positor = i.AC_PLV_Positor
+            AND
+                a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+            AND
+                a.AC_PLV_Reliability <> i.AC_PLV_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @AC_PLV_Actor_ProfessionalLevel
+    SELECT
+        i.AC_ID,
+        i.Metadata_AC_PLV,
+        i.AC_PLV_ChangedAt,
+        i.AC_PLV_Positor,
+        i.AC_PLV_PositedAt,
+        i.AC_PLV_Reliability,
+        case
+            when i.AC_PLV_Reliability > 0 then '+'
+            when i.AC_PLV_Reliability = 0 then '?'
+            when i.AC_PLV_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.PLV_ID,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_PLV_Positor,
+                i.AC_ID
+            ORDER BY
+                i.AC_PLV_ChangedAt ASC,
+                i.AC_PLV_PositedAt ASC,
+                i.AC_PLV_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+        ON
+            a.AC_PLV_ID = p.AC_PLV_ID
+        WHERE
+            p.AC_ID = i.AC_ID
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            p.PLV_ID = i.PLV_ID
+        AND
+            a.AC_PLV_Positor = i.AC_PLV_Positor
+        AND
+            a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+    );
+    SELECT
+        @maxVersion = max(AC_PLV_Version),
+        @currentVersion = 0
+    FROM
+        @AC_PLV_Actor_ProfessionalLevel;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_PLV_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_PLV_ID
+                        FROM
+                            [anchors].[tAC_Actor](v.AC_PLV_Positor, v.AC_PLV_ChangedAt, v.AC_PLV_PositedAt, v.AC_PLV_Assertion) t
+                        WHERE
+                            t.AC_ID = v.AC_ID
+                        AND
+                            t.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+                        AND
+                            t.AC_PLV_Reliability = v.AC_PLV_Reliability
+                        AND
+                            t.PLV_ID = v.PLV_ID
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.PLV_ID
+                        WHERE
+                            v.PLV_ID =
+                                attributes.preAC_PLV_Actor_ProfessionalLevel (
+                                    v.AC_ID,
+                                    v.AC_PLV_Positor,
+                                    v.AC_PLV_ChangedAt,
+                                    v.AC_PLV_PositedAt,
+                                    v.AC_PLV_Assertion
+                                )
+                    ) OR EXISTS (
+                        SELECT
+                            v.PLV_ID
+                        WHERE
+                            v.PLV_ID =
+                                attributes.folAC_PLV_Actor_ProfessionalLevel (
+                                    v.AC_ID,
+                                    v.AC_PLV_Positor,
+                                    v.AC_PLV_ChangedAt,
+                                    v.AC_PLV_PositedAt,
+                                    v.AC_PLV_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel v
+        LEFT JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+        AND
+            p.PLV_ID = v.PLV_ID
+        WHERE
+            v.AC_PLV_Version = @currentVersion;
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] (
+            AC_ID,
+            AC_PLV_ChangedAt,
+            PLV_ID
+        )
+        SELECT
+            AC_ID,
+            AC_PLV_ChangedAt,
+            PLV_ID
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel
+        WHERE
+            AC_PLV_Version = @currentVersion
+        AND
+            AC_PLV_StatementType in ('N','R');
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] (
+            Metadata_AC_PLV,
+            AC_PLV_ID,
+            AC_PLV_Positor,
+            AC_PLV_PositedAt,
+            AC_PLV_Reliability
+        )
+        SELECT
+            v.Metadata_AC_PLV,
+            p.AC_PLV_ID,
+            v.AC_PLV_Positor,
+            v.AC_PLV_PositedAt,
+            v.AC_PLV_Reliability
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel v
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        ON
+            p.AC_ID = v.AC_ID
+        AND
+            p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+        AND
+            p.PLV_ID = v.PLV_ID
+        WHERE
+            v.AC_PLV_Version = @currentVersion
+        AND
+            AC_PLV_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_NAM_Program_Name instead of INSERT trigger on PR_NAM_Program_Name
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_PR_NAM_Program_Name', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_PR_NAM_Program_Name];
+GO
+CREATE TRIGGER [attributes].[it_PR_NAM_Program_Name] ON [attributes].[PR_NAM_Program_Name]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @PR_NAM_Program_Name TABLE (
+        PR_ID bigint not null,
+        Metadata_PR_NAM int not null,
+        PR_NAM_Positor tinyint not null,
+        PR_NAM_PositedAt datetime2 not null,
+        PR_NAM_Reliability decimal(5,2) not null,
+        PR_NAM_Assertion char(1) not null,
+        PR_NAM_Program_Name nvarchar(42) not null,
+        PR_NAM_Version bigint not null,
+        PR_NAM_StatementType char(1) not null,
+        primary key(
+            PR_NAM_Version,
+            PR_NAM_Positor,
+            PR_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_ID,
+            i.PR_NAM_Positor,
+            i.PR_NAM_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[PR_NAM_Program_Name_Posit] p
+            JOIN
+                [attributes].[PR_NAM_Program_Name_Annex] a
+            ON
+                a.PR_NAM_ID = p.PR_NAM_ID
+            WHERE
+                p.PR_ID = i.PR_ID
+            AND
+                p.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+            AND
+                a.PR_NAM_Positor = i.PR_NAM_Positor
+            AND
+                a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+            AND
+                a.PR_NAM_Reliability <> i.PR_NAM_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_NAM_Program_Name for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @PR_NAM_Program_Name
+    SELECT
+        i.PR_ID,
+        i.Metadata_PR_NAM,
+        i.PR_NAM_Positor,
+        i.PR_NAM_PositedAt,
+        i.PR_NAM_Reliability,
+        case
+            when i.PR_NAM_Reliability > 0 then '+'
+            when i.PR_NAM_Reliability = 0 then '?'
+            when i.PR_NAM_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.PR_NAM_Program_Name,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.PR_NAM_Positor,
+                i.PR_ID
+            ORDER BY
+                i.PR_NAM_PositedAt ASC,
+                i.PR_NAM_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Annex] a
+        ON
+            a.PR_NAM_ID = p.PR_NAM_ID
+        WHERE
+            p.PR_ID = i.PR_ID
+        AND
+            p.PR_NAM_Program_Name = i.PR_NAM_Program_Name
+        AND
+            a.PR_NAM_Positor = i.PR_NAM_Positor
+        AND
+            a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+    );
+    SELECT
+        @maxVersion = max(PR_NAM_Version),
+        @currentVersion = 0
+    FROM
+        @PR_NAM_Program_Name;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.PR_NAM_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.PR_NAM_ID
+                        FROM
+                            [anchors].[tPR_Program](v.PR_NAM_Positor, DEFAULT, v.PR_NAM_PositedAt, v.PR_NAM_Assertion) t
+                        WHERE
+                            t.PR_ID = v.PR_ID
+                        AND
+                            t.PR_NAM_Reliability = v.PR_NAM_Reliability
+                        AND
+                            t.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.PR_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @PR_NAM_Program_Name v
+        LEFT JOIN
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        ON
+            p.PR_ID = v.PR_ID
+        AND
+            p.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+        WHERE
+            v.PR_NAM_Version = @currentVersion;
+        INSERT INTO [attributes].[PR_NAM_Program_Name_Posit] (
+            PR_ID,
+            PR_NAM_Program_Name
+        )
+        SELECT
+            PR_ID,
+            PR_NAM_Program_Name
+        FROM
+            @PR_NAM_Program_Name
+        WHERE
+            PR_NAM_Version = @currentVersion
+        AND
+            PR_NAM_StatementType in ('N');
+        INSERT INTO [attributes].[PR_NAM_Program_Name_Annex] (
+            Metadata_PR_NAM,
+            PR_NAM_ID,
+            PR_NAM_Positor,
+            PR_NAM_PositedAt,
+            PR_NAM_Reliability
+        )
+        SELECT
+            v.Metadata_PR_NAM,
+            p.PR_NAM_ID,
+            v.PR_NAM_Positor,
+            v.PR_NAM_PositedAt,
+            v.PR_NAM_Reliability
+        FROM
+            @PR_NAM_Program_Name v
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        ON
+            p.PR_ID = v.PR_ID
+        AND
+            p.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+        WHERE
+            v.PR_NAM_Version = @currentVersion
+        AND
+            PR_NAM_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_LEN_Program_Length instead of INSERT trigger on PR_LEN_Program_Length
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.it_PR_LEN_Program_Length', 'TR') IS NOT NULL
+DROP TRIGGER [attributes].[it_PR_LEN_Program_Length];
+GO
+CREATE TRIGGER [attributes].[it_PR_LEN_Program_Length] ON [attributes].[PR_LEN_Program_Length]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @PR_LEN_Program_Length TABLE (
+        PR_ID bigint not null,
+        Metadata_PR_LEN int not null,
+        PR_LEN_ChangedAt date not null,
+        PR_LEN_Positor tinyint not null,
+        PR_LEN_PositedAt datetime2 not null,
+        PR_LEN_Reliability decimal(5,2) not null,
+        PR_LEN_Assertion char(1) not null,
+        PR_LEN_Program_Length time not null,
+        PR_LEN_Version bigint not null,
+        PR_LEN_StatementType char(1) not null,
+        primary key(
+            PR_LEN_Version,
+            PR_LEN_Positor,
+            PR_ID
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_ID,
+            i.PR_LEN_ChangedAt,
+            i.PR_LEN_Positor,
+            i.PR_LEN_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [attributes].[PR_LEN_Program_Length_Posit] p
+            JOIN
+                [attributes].[PR_LEN_Program_Length_Annex] a
+            ON
+                a.PR_LEN_ID = p.PR_LEN_ID
+            WHERE
+                p.PR_ID = i.PR_ID
+            AND
+                p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+            AND
+                p.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+            AND
+                a.PR_LEN_Positor = i.PR_LEN_Positor
+            AND
+                a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+            AND
+                a.PR_LEN_Reliability <> i.PR_LEN_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_LEN_Program_Length for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @PR_LEN_Program_Length
+    SELECT
+        i.PR_ID,
+        i.Metadata_PR_LEN,
+        i.PR_LEN_ChangedAt,
+        i.PR_LEN_Positor,
+        i.PR_LEN_PositedAt,
+        i.PR_LEN_Reliability,
+        case
+            when i.PR_LEN_Reliability > 0 then '+'
+            when i.PR_LEN_Reliability = 0 then '?'
+            when i.PR_LEN_Reliability < 0 then '-'
+            else '+' -- assume that unspecified reliability (NULL) means default
+        end,
+        i.PR_LEN_Program_Length,
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.PR_LEN_Positor,
+                i.PR_ID
+            ORDER BY
+                i.PR_LEN_ChangedAt ASC,
+                i.PR_LEN_PositedAt ASC,
+                i.PR_LEN_Reliability ASC
+        ),
+        'X'
+    FROM
+        inserted i
+    WHERE NOT EXISTS ( -- exclude the identical, which is already stored
+        SELECT TOP 1
+            42
+        FROM
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Annex] a
+        ON
+            a.PR_LEN_ID = p.PR_LEN_ID
+        WHERE
+            p.PR_ID = i.PR_ID
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+        AND
+            a.PR_LEN_Positor = i.PR_LEN_Positor
+        AND
+            a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+    );
+    SELECT
+        @maxVersion = max(PR_LEN_Version),
+        @currentVersion = 0
+    FROM
+        @PR_LEN_Program_Length;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.PR_LEN_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.PR_LEN_ID
+                        FROM
+                            [anchors].[tPR_Program](v.PR_LEN_Positor, v.PR_LEN_ChangedAt, v.PR_LEN_PositedAt, v.PR_LEN_Assertion) t
+                        WHERE
+                            t.PR_ID = v.PR_ID
+                        AND
+                            t.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+                        AND
+                            t.PR_LEN_Reliability = v.PR_LEN_Reliability
+                        AND
+                            t.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.PR_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            v.PR_LEN_Program_Length
+                        WHERE
+                            v.PR_LEN_Program_Length =
+                                attributes.prePR_LEN_Program_Length (
+                                    v.PR_ID,
+                                    v.PR_LEN_Positor,
+                                    v.PR_LEN_ChangedAt,
+                                    v.PR_LEN_PositedAt,
+                                    v.PR_LEN_Assertion
+                                )
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            v.PR_LEN_Program_Length
+                        WHERE
+                            v.PR_LEN_Program_Length =
+                                attributes.folPR_LEN_Program_Length (
+                                    v.PR_ID,
+                                    v.PR_LEN_Positor,
+                                    v.PR_LEN_ChangedAt,
+                                    v.PR_LEN_PositedAt,
+                                    v.PR_LEN_Assertion
+                                )
+                    )
+                    THEN 'F' -- the following version restates this one, so it is retracted
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @PR_LEN_Program_Length v
+        LEFT JOIN
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        ON
+            p.PR_ID = v.PR_ID
+        AND
+            p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+        WHERE
+            v.PR_LEN_Version = @currentVersion;
+        INSERT INTO [attributes].[PR_LEN_Program_Length_Posit] (
+            PR_ID,
+            PR_LEN_ChangedAt,
+            PR_LEN_Program_Length
+        )
+        SELECT
+            PR_ID,
+            PR_LEN_ChangedAt,
+            PR_LEN_Program_Length
+        FROM
+            @PR_LEN_Program_Length
+        WHERE
+            PR_LEN_Version = @currentVersion
+        AND
+            PR_LEN_StatementType in ('N','F');
+        -- retract the following versions that the new ones make restatements
+        INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
+            Metadata_PR_LEN,
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            v.Metadata_PR_LEN,
+            fol.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            0
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                f.PR_LEN_ID,
+                f.PR_LEN_Program_Length
+            FROM
+                [attributes].[fPR_LEN_Program_Length](
+                    v.PR_LEN_Positor,
+                    v.PR_LEN_ChangedAt,
+                    v.PR_LEN_PositedAt
+                ) f
+            WHERE
+                f.PR_ID = v.PR_ID
+            AND
+                f.PR_LEN_ChangedAt > v.PR_LEN_ChangedAt
+            AND
+                f.PR_LEN_Assertion = v.PR_LEN_Assertion
+            ORDER BY
+                f.PR_LEN_ChangedAt ASC,
+                f.PR_LEN_PositedAt DESC
+        ) fol
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType = 'F'
+        AND
+            fol.PR_LEN_Program_Length = v.PR_LEN_Program_Length;
+        INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
+            Metadata_PR_LEN,
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            v.Metadata_PR_LEN,
+            p.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            v.PR_LEN_Reliability
+        FROM
+            @PR_LEN_Program_Length v
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        ON
+            p.PR_ID = v.PR_ID
+        AND
+            p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+        AND
+            p.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            PR_LEN_StatementType in ('S','N','D','F');
+    END
+END
+GO
+-- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_Stage instead of INSERT trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[it_lST_Stage] ON [anchors].[lST_Stage]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @ST TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        ST_ID int not null
+    );
+    INSERT INTO [anchors].[ST_Stage] (
+        Metadata_ST 
+    )
+    OUTPUT
+        inserted.ST_ID
+    INTO
+        @ST
+    SELECT
+        Metadata_ST 
+    FROM
+        inserted
+    WHERE
+        inserted.ST_ID is null;
+    DECLARE @inserted TABLE (
+        ST_ID int not null,
+        Metadata_ST int not null,
+        Metadata_ST_NAM int null,
+        ST_NAM_ChangedAt datetime2 null,
+        ST_NAM_Positor tinyint null,
+        ST_NAM_PositedAt datetime2 null,
+        ST_NAM_Reliability decimal(5,2) null,
+        ST_NAM_Stage_Name nvarchar(42) null,
+        Metadata_ST_LOC int null,
+        ST_LOC_Positor tinyint null,
+        ST_LOC_PositedAt datetime2 null,
+        ST_LOC_Reliability decimal(5,2) null,
+        ST_LOC_Stage_Location geography null,
+        Metadata_ST_AVG int null,
+        ST_AVG_ChangedAt datetime2 null,
+        ST_AVG_Positor tinyint null,
+        ST_AVG_PositedAt datetime2 null,
+        ST_AVG_Reliability decimal(5,2) null,
+        UTL_Utilization tinyint null,
+        Metadata_UTL int null,
+        UTL_ID tinyint null,
+        Metadata_ST_MIN int null,
+        ST_MIN_Positor tinyint null,
+        ST_MIN_PositedAt datetime2 null,
+        ST_MIN_Reliability decimal(5,2) null,
+        UTL_Utilization tinyint null,
+        Metadata_UTL int null,
+        UTL_ID tinyint null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.ST_ID, a.ST_ID),
+        i.Metadata_ST,
+        ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
+        ISNULL(i.ST_NAM_ChangedAt, @now),
+        ISNULL(ISNULL(i.ST_NAM_Positor, i.Positor), 0),
+        ISNULL(i.ST_NAM_PositedAt, @now),
+        ISNULL(ISNULL(i.ST_NAM_Reliability, i.Reliability), 1),
+        i.ST_NAM_Stage_Name,
+        ISNULL(i.Metadata_ST_LOC, i.Metadata_ST),
+        ISNULL(ISNULL(i.ST_LOC_Positor, i.Positor), 0),
+        ISNULL(i.ST_LOC_PositedAt, @now),
+        ISNULL(ISNULL(i.ST_LOC_Reliability, i.Reliability), 1),
+        i.ST_LOC_Stage_Location,
+        ISNULL(i.Metadata_ST_AVG, i.Metadata_ST),
+        ISNULL(i.ST_AVG_ChangedAt, @now),
+        ISNULL(ISNULL(i.ST_AVG_Positor, i.Positor), 0),
+        ISNULL(i.ST_AVG_PositedAt, @now),
+        ISNULL(ISNULL(i.ST_AVG_Reliability, i.Reliability), 1),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_ST),
+        i.UTL_ID,
+        ISNULL(i.Metadata_ST_MIN, i.Metadata_ST),
+        ISNULL(ISNULL(i.ST_MIN_Positor, i.Positor), 0),
+        ISNULL(i.ST_MIN_PositedAt, @now),
+        ISNULL(ISNULL(i.ST_MIN_Reliability, i.Reliability), 1),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_ST),
+        i.UTL_ID
+    FROM (
+        SELECT
+            Positor,
+            Reliability,
+            ST_ID,
+            Metadata_ST,
+            Metadata_ST_NAM,
+            ST_NAM_ChangedAt,
+            ST_NAM_Positor,
+            ST_NAM_PositedAt,
+            ST_NAM_Reliability,
+            ST_NAM_Stage_Name,
+            Metadata_ST_LOC,
+            ST_LOC_Positor,
+            ST_LOC_PositedAt,
+            ST_LOC_Reliability,
+            ST_LOC_Stage_Location,
+            Metadata_ST_AVG,
+            ST_AVG_ChangedAt,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability,
+            UTL_Utilization,
+            Metadata_UTL,
+            UTL_ID,
+            Metadata_ST_MIN,
+            ST_MIN_Positor,
+            ST_MIN_PositedAt,
+            ST_MIN_Reliability,
+            UTL_Utilization,
+            Metadata_UTL,
+            UTL_ID,
+            ROW_NUMBER() OVER (PARTITION BY ST_ID ORDER BY ST_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @ST a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [attributes].[ST_NAM_Stage_Name] (
+        Metadata_ST_NAM,
+        ST_ID,
+        ST_NAM_Stage_Name,
+        ST_NAM_ChangedAt,
+        ST_NAM_PositedAt,
+        ST_NAM_Positor,
+        ST_NAM_Reliability
+    )
+    SELECT
+        i.Metadata_ST_NAM,
+        i.ST_ID,
+        i.ST_NAM_Stage_Name,
+        i.ST_NAM_ChangedAt,
+        i.ST_NAM_PositedAt,
+        i.ST_NAM_Positor,
+        i.ST_NAM_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.ST_NAM_Stage_Name is not null;
+    INSERT INTO [attributes].[ST_LOC_Stage_Location] (
+        Metadata_ST_LOC,
+        ST_ID,
+        ST_LOC_Stage_Location,
+        ST_LOC_PositedAt,
+        ST_LOC_Positor,
+        ST_LOC_Reliability
+    )
+    SELECT
+        i.Metadata_ST_LOC,
+        i.ST_ID,
+        i.ST_LOC_Stage_Location,
+        i.ST_LOC_PositedAt,
+        i.ST_LOC_Positor,
+        i.ST_LOC_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.ST_LOC_Stage_Location is not null;
+    INSERT INTO [attributes].[ST_AVG_Stage_Average] (
+        Metadata_ST_AVG,
+        ST_ID,
+        UTL_ID,
+        ST_AVG_ChangedAt,
+        ST_AVG_PositedAt,
+        ST_AVG_Positor,
+        ST_AVG_Reliability
+    )
+    SELECT
+        i.Metadata_ST_AVG,
+        i.ST_ID,
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        i.ST_AVG_ChangedAt,
+        i.ST_AVG_PositedAt,
+        i.ST_AVG_Positor,
+        i.ST_AVG_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[UTL_Utilization] [kUTL]
+    ON
+        [kUTL].UTL_Utilization = i.UTL_Utilization
+    WHERE
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID) is not null;
+    INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
+        Metadata_ST_MIN,
+        ST_ID,
+        UTL_ID,
+        ST_MIN_PositedAt,
+        ST_MIN_Positor,
+        ST_MIN_Reliability
+    )
+    SELECT
+        i.Metadata_ST_MIN,
+        i.ST_ID,
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        i.ST_MIN_PositedAt,
+        i.ST_MIN_Positor,
+        i.ST_MIN_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[UTL_Utilization] [kUTL]
+    ON
+        [kUTL].UTL_Utilization = i.UTL_Utilization
+    WHERE
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID) is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lST_Stage instead of UPDATE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[ut_lST_Stage] ON [anchors].[lST_Stage]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(ST_ID))
+        RAISERROR('The identity column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_NAM_ID))
+        RAISERROR('The identity column ST_NAM_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID))
+        RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_NAM_Assertion))
+        RAISERROR('The computed assertion column ST_NAM_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(ST_NAM_Stage_Name) OR
+        UPDATE(ST_NAM_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_NAM_Stage_Name] (
+            Metadata_ST_NAM,
+            ST_ID,
+            ST_NAM_Stage_Name,
+            ST_NAM_ChangedAt,
+            ST_NAM_PositedAt,
+            ST_NAM_Positor,
+            ST_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_NAM
+            END, i.Metadata_ST),
+            ISNULL(i.ST_ID, i.ST_ID),
+            i.ST_NAM_Stage_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN d.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
+                THEN i.ST_NAM_ChangedAt -- the shown version is asserted again
+            END, @now) as datetime2),
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Positor) THEN i.ST_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_NAM_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.ST_NAM_Stage_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_NAM_ChangedAt) OR
+            UPDATE(ST_NAM_PositedAt) OR
+            UPDATE(ST_NAM_Positor) OR
+            UPDATE(Positor) OR
+            d.ST_NAM_Stage_Name is null OR
+            d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name OR
+            d.ST_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_NAM_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(ST_NAM_Stage_Name) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_NAM_Stage_Name] (
+            Metadata_ST_NAM,
+            ST_ID,
+            ST_NAM_Stage_Name,
+            ST_NAM_ChangedAt,
+            ST_NAM_PositedAt,
+            ST_NAM_Positor,
+            ST_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_NAM
+            END, i.Metadata_ST),
+            p.ST_ID,
+            p.ST_NAM_Stage_Name,
+            p.ST_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+                WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Positor) THEN i.ST_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        ON
+            p.ST_NAM_ID = i.ST_NAM_ID
+        WHERE
+            i.ST_NAM_Stage_Name is null
+    END
+    IF(UPDATE(ST_LOC_ID))
+        RAISERROR('The identity column ST_LOC_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID))
+        RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_LOC_Assertion))
+        RAISERROR('The computed assertion column ST_LOC_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(ST_LOC_Stage_Location) OR
+        UPDATE(ST_LOC_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_LOC_Stage_Location] (
+            Metadata_ST_LOC,
+            ST_ID,
+            ST_LOC_Stage_Location,
+            ST_LOC_PositedAt,
+            ST_LOC_Positor,
+            ST_LOC_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_LOC
+            END, i.Metadata_ST),
+            ISNULL(i.ST_ID, i.ST_ID),
+            i.ST_LOC_Stage_Location,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Positor) THEN i.ST_LOC_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_LOC_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.ST_LOC_Stage_Location is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_LOC_PositedAt) OR
+            UPDATE(ST_LOC_Positor) OR
+            UPDATE(Positor) OR
+            d.ST_LOC_Stage_Location is null OR
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_LOC_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(ST_LOC_Stage_Location) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_LOC_Stage_Location] (
+            Metadata_ST_LOC,
+            ST_ID,
+            ST_LOC_Stage_Location,
+            ST_LOC_PositedAt,
+            ST_LOC_Positor,
+            ST_LOC_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_LOC
+            END, i.Metadata_ST),
+            p.ST_ID,
+            p.ST_LOC_Stage_Location,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Positor) THEN i.ST_LOC_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        ON
+            p.ST_LOC_ID = i.ST_LOC_ID
+        WHERE
+            i.ST_LOC_Stage_Location is null
+    END
+    IF(UPDATE(ST_AVG_ID))
+        RAISERROR('The identity column ST_AVG_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID))
+        RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_AVG_Assertion))
+        RAISERROR('The computed assertion column ST_AVG_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(UTL_ID) OR
+        UPDATE(UTL_Utilization) OR
+        UPDATE(ST_AVG_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_AVG_Stage_Average] (
+            Metadata_ST_AVG,
+            ST_ID,
+            UTL_ID,
+            ST_AVG_ChangedAt,
+            ST_AVG_PositedAt,
+            ST_AVG_Positor,
+            ST_AVG_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_AVG
+            END, i.Metadata_ST),
+            ISNULL(i.ST_ID, i.ST_ID),
+            CASE
+                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                ELSE [kUTL].UTL_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN d.UTL_ID = CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END
+                THEN i.ST_AVG_ChangedAt -- the shown version is asserted again
+            END, @now) as datetime2),
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Positor) THEN i.ST_AVG_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_AVG_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            CASE
+                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                ELSE [kUTL].UTL_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_AVG_ChangedAt) OR
+            UPDATE(ST_AVG_PositedAt) OR
+            UPDATE(ST_AVG_Positor) OR
+            UPDATE(Positor) OR
+            d.UTL_ID is null OR
+            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_AVG_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_AVG_Reliability
+            END, 1)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(UTL_ID) OR
+        UPDATE(UTL_Utilization) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_AVG_Stage_Average] (
+            Metadata_ST_AVG,
+            ST_ID,
+            UTL_ID,
+            ST_AVG_ChangedAt,
+            ST_AVG_PositedAt,
+            ST_AVG_Positor,
+            ST_AVG_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_AVG
+            END, i.Metadata_ST),
+            p.ST_ID,
+            p.UTL_ID,
+            p.ST_AVG_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+                WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Positor) THEN i.ST_AVG_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        ON
+            p.ST_AVG_ID = i.ST_AVG_ID
+        WHERE
+            (UPDATE(UTL_ID) AND i.UTL_ID is null)
+        OR 
+            (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
+    END
+    IF(UPDATE(ST_MIN_ID))
+        RAISERROR('The identity column ST_MIN_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID))
+        RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_MIN_Assertion))
+        RAISERROR('The computed assertion column ST_MIN_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(UTL_ID) OR
+        UPDATE(UTL_Utilization) OR
+        UPDATE(ST_MIN_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
+            Metadata_ST_MIN,
+            ST_ID,
+            UTL_ID,
+            ST_MIN_PositedAt,
+            ST_MIN_Positor,
+            ST_MIN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_MIN
+            END, i.Metadata_ST),
+            ISNULL(i.ST_ID, i.ST_ID),
+            CASE
+                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                ELSE [kUTL].UTL_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Positor) THEN i.ST_MIN_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_MIN_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            CASE
+                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                ELSE [kUTL].UTL_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(ST_MIN_PositedAt) OR
+            UPDATE(ST_MIN_Positor) OR
+            UPDATE(Positor) OR
+            d.UTL_ID is null OR
+            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.ST_MIN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_MIN_Reliability
+            END, 1)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(UTL_ID) OR
+        UPDATE(UTL_Utilization) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
+            Metadata_ST_MIN,
+            ST_ID,
+            UTL_ID,
+            ST_MIN_PositedAt,
+            ST_MIN_Positor,
+            ST_MIN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_MIN
+            END, i.Metadata_ST),
+            p.ST_ID,
+            p.UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Positor) THEN i.ST_MIN_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        ON
+            p.ST_MIN_ID = i.ST_MIN_ID
+        WHERE
+            (UPDATE(UTL_ID) AND i.UTL_ID is null)
+        OR 
+            (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_Stage instead of DELETE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[dt_lST_Stage] ON [anchors].[lST_Stage]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [attributes].[ST_NAM_Stage_Name_Annex] (
+        Metadata_ST_NAM,
+        ST_NAM_ID,
+        ST_NAM_Positor,
+        ST_NAM_PositedAt,
+        ST_NAM_Reliability
+    )
+    SELECT
+        d.Metadata_ST_NAM,
+        d.ST_NAM_ID,
+        d.ST_NAM_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.ST_NAM_ID is not null;
+    INSERT INTO [attributes].[ST_LOC_Stage_Location_Annex] (
+        Metadata_ST_LOC,
+        ST_LOC_ID,
+        ST_LOC_Positor,
+        ST_LOC_PositedAt,
+        ST_LOC_Reliability
+    )
+    SELECT
+        d.Metadata_ST_LOC,
+        d.ST_LOC_ID,
+        d.ST_LOC_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.ST_LOC_ID is not null;
+    INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
+        Metadata_ST_AVG,
+        ST_AVG_ID,
+        ST_AVG_Positor,
+        ST_AVG_PositedAt,
+        ST_AVG_Reliability
+    )
+    SELECT
+        d.Metadata_ST_AVG,
+        d.ST_AVG_ID,
+        d.ST_AVG_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.ST_AVG_ID is not null;
+    INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Annex] (
+        Metadata_ST_MIN,
+        ST_MIN_ID,
+        ST_MIN_Positor,
+        ST_MIN_PositedAt,
+        ST_MIN_Reliability
+    )
+    SELECT
+        d.Metadata_ST_MIN,
+        d.ST_MIN_ID,
+        d.ST_MIN_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.ST_MIN_ID is not null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_Actor instead of INSERT trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[it_lAC_Actor] ON [anchors].[lAC_Actor]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @AC TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        AC_ID smallint not null
+    );
+    INSERT INTO [anchors].[AC_Actor] (
+        Metadata_AC 
+    )
+    OUTPUT
+        inserted.AC_ID
+    INTO
+        @AC
+    SELECT
+        Metadata_AC 
+    FROM
+        inserted
+    WHERE
+        inserted.AC_ID is null;
+    DECLARE @inserted TABLE (
+        AC_ID smallint not null,
+        Metadata_AC int not null,
+        Metadata_AC_NAM int null,
+        AC_NAM_ChangedAt datetime2 null,
+        AC_NAM_Positor tinyint null,
+        AC_NAM_PositedAt datetime2 null,
+        AC_NAM_Reliability decimal(5,2) null,
+        AC_NAM_Actor_Name varbinary(max) null,
+        Metadata_AC_GEN int null,
+        AC_GEN_Positor tinyint null,
+        AC_GEN_PositedAt datetime2 null,
+        AC_GEN_Reliability decimal(5,2) null,
+        GEN_Gender nvarchar(42) null,
+        GEN_Checksum varbinary(16) null,
+        Metadata_GEN int null,
+        GEN_ID tinyint null,
+        Metadata_AC_PLV int null,
+        AC_PLV_ChangedAt datetime2 null,
+        AC_PLV_Positor tinyint null,
+        AC_PLV_PositedAt datetime2 null,
+        AC_PLV_Reliability decimal(5,2) null,
+        PLV_ProfessionalLevel nvarchar(max) null,
+        PLV_Checksum varbinary(16) null,
+        Metadata_PLV int null,
+        PLV_ID tinyint null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.AC_ID, a.AC_ID),
+        i.Metadata_AC,
+        ISNULL(i.Metadata_AC_NAM, i.Metadata_AC),
+        ISNULL(i.AC_NAM_ChangedAt, @now),
+        ISNULL(ISNULL(i.AC_NAM_Positor, i.Positor), 0),
+        ISNULL(i.AC_NAM_PositedAt, @now),
+        ISNULL(ISNULL(i.AC_NAM_Reliability, i.Reliability), 1),
+        i.AC_NAM_Actor_Name,
+        ISNULL(i.Metadata_AC_GEN, i.Metadata_AC),
+        ISNULL(ISNULL(i.AC_GEN_Positor, i.Positor), 0),
+        ISNULL(i.AC_GEN_PositedAt, @now),
+        ISNULL(ISNULL(i.AC_GEN_Reliability, i.Reliability), 1),
+        i.GEN_Gender,
+        ISNULL(i.GEN_Checksum, dw.MD5(cast(i.GEN_Gender as varbinary(max)))),
+        ISNULL(i.Metadata_GEN, i.Metadata_AC),
+        i.GEN_ID,
+        ISNULL(i.Metadata_AC_PLV, i.Metadata_AC),
+        ISNULL(i.AC_PLV_ChangedAt, @now),
+        ISNULL(ISNULL(i.AC_PLV_Positor, i.Positor), 0),
+        ISNULL(i.AC_PLV_PositedAt, @now),
+        ISNULL(ISNULL(i.AC_PLV_Reliability, i.Reliability), 1),
+        i.PLV_ProfessionalLevel,
+        ISNULL(i.PLV_Checksum, dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.Metadata_PLV, i.Metadata_AC),
+        i.PLV_ID
+    FROM (
+        SELECT
+            Positor,
+            Reliability,
+            AC_ID,
+            Metadata_AC,
+            Metadata_AC_NAM,
+            AC_NAM_ChangedAt,
+            AC_NAM_Positor,
+            AC_NAM_PositedAt,
+            AC_NAM_Reliability,
+            AC_NAM_Actor_Name,
+            Metadata_AC_GEN,
+            AC_GEN_Positor,
+            AC_GEN_PositedAt,
+            AC_GEN_Reliability,
+            GEN_Gender,
+            GEN_Checksum,
+            Metadata_GEN,
+            GEN_ID,
+            Metadata_AC_PLV,
+            AC_PLV_ChangedAt,
+            AC_PLV_Positor,
+            AC_PLV_PositedAt,
+            AC_PLV_Reliability,
+            PLV_ProfessionalLevel,
+            PLV_Checksum,
+            Metadata_PLV,
+            PLV_ID,
+            ROW_NUMBER() OVER (PARTITION BY AC_ID ORDER BY AC_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @AC a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [attributes].[AC_NAM_Actor_Name] (
+        Metadata_AC_NAM,
+        AC_ID,
+        AC_NAM_Actor_Name,
+        AC_NAM_ChangedAt,
+        AC_NAM_PositedAt,
+        AC_NAM_Positor,
+        AC_NAM_Reliability
+    )
+    SELECT
+        i.Metadata_AC_NAM,
+        i.AC_ID,
+        i.AC_NAM_Actor_Name,
+        i.AC_NAM_ChangedAt,
+        i.AC_NAM_PositedAt,
+        i.AC_NAM_Positor,
+        i.AC_NAM_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.AC_NAM_Actor_Name is not null;
+    INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
+        Metadata_AC_GEN,
+        AC_ID,
+        GEN_ID,
+        AC_GEN_PositedAt,
+        AC_GEN_Positor,
+        AC_GEN_Reliability
+    )
+    SELECT
+        i.Metadata_AC_GEN,
+        i.AC_ID,
+        ISNULL(i.GEN_ID, [kGEN].GEN_ID), 
+        i.AC_GEN_PositedAt,
+        i.AC_GEN_Positor,
+        i.AC_GEN_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[GEN_Gender] [kGEN]
+    ON
+        [kGEN].GEN_Checksum = i.GEN_Checksum 
+    WHERE
+        ISNULL(i.GEN_ID, [kGEN].GEN_ID) is not null;
+    INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+        Metadata_AC_PLV,
+        AC_ID,
+        PLV_ID,
+        AC_PLV_ChangedAt,
+        AC_PLV_PositedAt,
+        AC_PLV_Positor,
+        AC_PLV_Reliability
+    )
+    SELECT
+        i.Metadata_AC_PLV,
+        i.AC_ID,
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID), 
+        i.AC_PLV_ChangedAt,
+        i.AC_PLV_PositedAt,
+        i.AC_PLV_Positor,
+        i.AC_PLV_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[PLV_ProfessionalLevel] [kPLV]
+    ON
+        [kPLV].PLV_Checksum = i.PLV_Checksum 
+    WHERE
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID) is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_Actor instead of UPDATE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[ut_lAC_Actor] ON [anchors].[lAC_Actor]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(AC_ID))
+        RAISERROR('The identity column AC_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_NAM_ID))
+        RAISERROR('The identity column AC_NAM_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_ID))
+        RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_NAM_Assertion))
+        RAISERROR('The computed assertion column AC_NAM_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(AC_NAM_Actor_Name) OR
+        UPDATE(AC_NAM_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_NAM_Actor_Name] (
+            Metadata_AC_NAM,
+            AC_ID,
+            AC_NAM_Actor_Name,
+            AC_NAM_ChangedAt,
+            AC_NAM_PositedAt,
+            AC_NAM_Positor,
+            AC_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_NAM
+            END, i.Metadata_AC),
+            ISNULL(i.AC_ID, i.AC_ID),
+            i.AC_NAM_Actor_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN d.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
+                THEN i.AC_NAM_ChangedAt -- the shown version is asserted again
+            END, @now) as datetime2),
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Positor) THEN i.AC_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_NAM_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.AC_NAM_Actor_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_NAM_ChangedAt) OR
+            UPDATE(AC_NAM_PositedAt) OR
+            UPDATE(AC_NAM_Positor) OR
+            UPDATE(Positor) OR
+            d.AC_NAM_Actor_Name is null OR
+            d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name OR
+            d.AC_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_NAM_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(AC_NAM_Actor_Name) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_NAM_Actor_Name] (
+            Metadata_AC_NAM,
+            AC_ID,
+            AC_NAM_Actor_Name,
+            AC_NAM_ChangedAt,
+            AC_NAM_PositedAt,
+            AC_NAM_Positor,
+            AC_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_NAM
+            END, i.Metadata_AC),
+            p.AC_ID,
+            p.AC_NAM_Actor_Name,
+            p.AC_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+                WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Positor) THEN i.AC_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        ON
+            p.AC_NAM_ID = i.AC_NAM_ID
+        WHERE
+            i.AC_NAM_Actor_Name is null
+    END
+    IF(UPDATE(AC_GEN_ID))
+        RAISERROR('The identity column AC_GEN_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_ID))
+        RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_GEN_Assertion))
+        RAISERROR('The computed assertion column AC_GEN_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(GEN_ID) OR
+        UPDATE(GEN_Gender) OR
+        UPDATE(AC_GEN_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
+            Metadata_AC_GEN,
+            AC_ID,
+            GEN_ID,
+            AC_GEN_PositedAt,
+            AC_GEN_Positor,
+            AC_GEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_GEN
+            END, i.Metadata_AC),
+            ISNULL(i.AC_ID, i.AC_ID),
+            CASE
+                WHEN UPDATE(GEN_ID) THEN i.GEN_ID
+                ELSE [kGEN].GEN_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Positor) THEN i.AC_GEN_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_GEN_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[GEN_Gender] [kGEN]
+        ON
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.GEN_Gender as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            CASE
+                WHEN UPDATE(GEN_ID) THEN i.GEN_ID
+                ELSE [kGEN].GEN_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_GEN_PositedAt) OR
+            UPDATE(AC_GEN_Positor) OR
+            UPDATE(Positor) OR
+            d.GEN_ID is null OR
+            d.GEN_ID <> CASE WHEN UPDATE(GEN_ID) THEN i.GEN_ID ELSE [kGEN].GEN_ID END OR
+            d.AC_GEN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_GEN_Reliability
+            END, 1)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(GEN_ID) OR
+        UPDATE(GEN_Gender) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
+            Metadata_AC_GEN,
+            AC_ID,
+            GEN_ID,
+            AC_GEN_PositedAt,
+            AC_GEN_Positor,
+            AC_GEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_GEN
+            END, i.Metadata_AC),
+            p.AC_ID,
+            p.GEN_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Positor) THEN i.AC_GEN_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        ON
+            p.AC_GEN_ID = i.AC_GEN_ID
+        WHERE
+            (UPDATE(GEN_ID) AND i.GEN_ID is null)
+        OR 
+            (UPDATE(GEN_Gender) AND i.GEN_Gender is null);
+    END
+    IF(UPDATE(AC_PLV_ID))
+        RAISERROR('The identity column AC_PLV_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_ID))
+        RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_PLV_Assertion))
+        RAISERROR('The computed assertion column AC_PLV_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(PLV_ID) OR
+        UPDATE(PLV_ProfessionalLevel) OR
+        UPDATE(AC_PLV_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+            Metadata_AC_PLV,
+            AC_ID,
+            PLV_ID,
+            AC_PLV_ChangedAt,
+            AC_PLV_PositedAt,
+            AC_PLV_Positor,
+            AC_PLV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_PLV
+            END, i.Metadata_AC),
+            ISNULL(i.AC_ID, i.AC_ID),
+            CASE
+                WHEN UPDATE(PLV_ID) THEN i.PLV_ID
+                ELSE [kPLV].PLV_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN d.PLV_ID = CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END
+                THEN i.AC_PLV_ChangedAt -- the shown version is asserted again
+            END, @now) as datetime2),
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Positor) THEN i.AC_PLV_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_PLV_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
+        LEFT JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            CASE
+                WHEN UPDATE(PLV_ID) THEN i.PLV_ID
+                ELSE [kPLV].PLV_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_PLV_ChangedAt) OR
+            UPDATE(AC_PLV_PositedAt) OR
+            UPDATE(AC_PLV_Positor) OR
+            UPDATE(Positor) OR
+            d.PLV_ID is null OR
+            d.PLV_ID <> CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.AC_PLV_Reliability <> ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_PLV_Reliability
+            END, 1)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(PLV_ID) OR
+        UPDATE(PLV_ProfessionalLevel) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+            Metadata_AC_PLV,
+            AC_ID,
+            PLV_ID,
+            AC_PLV_ChangedAt,
+            AC_PLV_PositedAt,
+            AC_PLV_Positor,
+            AC_PLV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_PLV
+            END, i.Metadata_AC),
+            p.AC_ID,
+            p.PLV_ID,
+            p.AC_PLV_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+                WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Positor) THEN i.AC_PLV_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        ON
+            p.AC_PLV_ID = i.AC_PLV_ID
+        WHERE
+            (UPDATE(PLV_ID) AND i.PLV_ID is null)
+        OR 
+            (UPDATE(PLV_ProfessionalLevel) AND i.PLV_ProfessionalLevel is null);
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_Actor instead of DELETE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[dt_lAC_Actor] ON [anchors].[lAC_Actor]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [attributes].[AC_NAM_Actor_Name_Annex] (
+        Metadata_AC_NAM,
+        AC_NAM_ID,
+        AC_NAM_Positor,
+        AC_NAM_PositedAt,
+        AC_NAM_Reliability
+    )
+    SELECT
+        d.Metadata_AC_NAM,
+        d.AC_NAM_ID,
+        d.AC_NAM_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.AC_NAM_ID is not null;
+    INSERT INTO [attributes].[AC_GEN_Actor_Gender_Annex] (
+        Metadata_AC_GEN,
+        AC_GEN_ID,
+        AC_GEN_Positor,
+        AC_GEN_PositedAt,
+        AC_GEN_Reliability
+    )
+    SELECT
+        d.Metadata_AC_GEN,
+        d.AC_GEN_ID,
+        d.AC_GEN_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.AC_GEN_ID is not null;
+    INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] (
+        Metadata_AC_PLV,
+        AC_PLV_ID,
+        AC_PLV_Positor,
+        AC_PLV_PositedAt,
+        AC_PLV_Reliability
+    )
+    SELECT
+        d.Metadata_AC_PLV,
+        d.AC_PLV_ID,
+        d.AC_PLV_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.AC_PLV_ID is not null;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_Program instead of INSERT trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[it_lPR_Program] ON [anchors].[lPR_Program]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @PR TABLE (
+        Row bigint IDENTITY(1,1) not null primary key,
+        PR_ID bigint not null
+    );
+    INSERT INTO [anchors].[PR_Program] (
+        Metadata_PR 
+    )
+    OUTPUT
+        inserted.PR_ID
+    INTO
+        @PR
+    SELECT
+        Metadata_PR 
+    FROM
+        inserted
+    WHERE
+        inserted.PR_ID is null;
+    DECLARE @inserted TABLE (
+        PR_ID bigint not null,
+        Metadata_PR int not null,
+        Metadata_PR_NAM int null,
+        PR_NAM_Positor tinyint null,
+        PR_NAM_PositedAt datetime2 null,
+        PR_NAM_Reliability decimal(5,2) null,
+        PR_NAM_Program_Name nvarchar(42) null,
+        Metadata_PR_LEN int null,
+        PR_LEN_ChangedAt date null,
+        PR_LEN_Positor tinyint null,
+        PR_LEN_PositedAt datetime2 null,
+        PR_LEN_Reliability decimal(5,2) null,
+        PR_LEN_Program_Length time null
+    );
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.PR_ID, a.PR_ID),
+        i.Metadata_PR,
+        ISNULL(i.Metadata_PR_NAM, i.Metadata_PR),
+        ISNULL(ISNULL(i.PR_NAM_Positor, i.Positor), 0),
+        ISNULL(i.PR_NAM_PositedAt, @now),
+        ISNULL(ISNULL(i.PR_NAM_Reliability, i.Reliability), 1),
+        i.PR_NAM_Program_Name,
+        ISNULL(i.Metadata_PR_LEN, i.Metadata_PR),
+        ISNULL(i.PR_LEN_ChangedAt, @now),
+        ISNULL(ISNULL(i.PR_LEN_Positor, i.Positor), 0),
+        ISNULL(i.PR_LEN_PositedAt, @now),
+        ISNULL(ISNULL(i.PR_LEN_Reliability, i.Reliability), 1),
+        i.PR_LEN_Program_Length
+    FROM (
+        SELECT
+            Positor,
+            Reliability,
+            PR_ID,
+            Metadata_PR,
+            Metadata_PR_NAM,
+            PR_NAM_Positor,
+            PR_NAM_PositedAt,
+            PR_NAM_Reliability,
+            PR_NAM_Program_Name,
+            Metadata_PR_LEN,
+            PR_LEN_ChangedAt,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability,
+            PR_LEN_Program_Length,
+            ROW_NUMBER() OVER (PARTITION BY PR_ID ORDER BY PR_ID) AS Row
+        FROM
+            inserted
+    ) i
+    LEFT JOIN
+        @PR a
+    ON
+        a.Row = i.Row;
+    INSERT INTO [attributes].[PR_NAM_Program_Name] (
+        Metadata_PR_NAM,
+        PR_ID,
+        PR_NAM_Program_Name,
+        PR_NAM_PositedAt,
+        PR_NAM_Positor,
+        PR_NAM_Reliability
+    )
+    SELECT
+        i.Metadata_PR_NAM,
+        i.PR_ID,
+        i.PR_NAM_Program_Name,
+        i.PR_NAM_PositedAt,
+        i.PR_NAM_Positor,
+        i.PR_NAM_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.PR_NAM_Program_Name is not null;
+    INSERT INTO [attributes].[PR_LEN_Program_Length] (
+        Metadata_PR_LEN,
+        PR_ID,
+        PR_LEN_Program_Length,
+        PR_LEN_ChangedAt,
+        PR_LEN_PositedAt,
+        PR_LEN_Positor,
+        PR_LEN_Reliability
+    )
+    SELECT
+        i.Metadata_PR_LEN,
+        i.PR_ID,
+        i.PR_LEN_Program_Length,
+        i.PR_LEN_ChangedAt,
+        i.PR_LEN_PositedAt,
+        i.PR_LEN_Positor,
+        i.PR_LEN_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.PR_LEN_Program_Length is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_Program instead of UPDATE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[ut_lPR_Program] ON [anchors].[lPR_Program]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(PR_ID))
+        RAISERROR('The identity column PR_ID is not updatable.', 16, 1);
+    IF(UPDATE(PR_NAM_ID))
+        RAISERROR('The identity column PR_NAM_ID is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID))
+        RAISERROR('The foreign key column PR_ID is not updatable.', 16, 1);
+    IF(UPDATE(PR_NAM_Assertion))
+        RAISERROR('The computed assertion column PR_NAM_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(PR_NAM_Program_Name) OR
+        UPDATE(PR_NAM_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_NAM_Program_Name] (
+            Metadata_PR_NAM,
+            PR_ID,
+            PR_NAM_Program_Name,
+            PR_NAM_PositedAt,
+            PR_NAM_Positor,
+            PR_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_NAM
+            END, i.Metadata_PR),
+            ISNULL(i.PR_ID, i.PR_ID),
+            i.PR_NAM_Program_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Positor) THEN i.PR_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_NAM_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.PR_NAM_Program_Name is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_NAM_PositedAt) OR
+            UPDATE(PR_NAM_Positor) OR
+            UPDATE(Positor) OR
+            d.PR_NAM_Program_Name is null OR
+            d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name OR
+            d.PR_NAM_Reliability <> ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_NAM_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(PR_NAM_Program_Name) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_NAM_Program_Name] (
+            Metadata_PR_NAM,
+            PR_ID,
+            PR_NAM_Program_Name,
+            PR_NAM_PositedAt,
+            PR_NAM_Positor,
+            PR_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_NAM
+            END, i.Metadata_PR),
+            p.PR_ID,
+            p.PR_NAM_Program_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Positor) THEN i.PR_NAM_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        ON
+            p.PR_NAM_ID = i.PR_NAM_ID
+        WHERE
+            i.PR_NAM_Program_Name is null
+    END
+    IF(UPDATE(PR_LEN_ID))
+        RAISERROR('The identity column PR_LEN_ID is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID))
+        RAISERROR('The foreign key column PR_ID is not updatable.', 16, 1);
+    IF(UPDATE(PR_LEN_Assertion))
+        RAISERROR('The computed assertion column PR_LEN_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(PR_LEN_Program_Length) OR
+        UPDATE(PR_LEN_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_LEN_Program_Length] (
+            Metadata_PR_LEN,
+            PR_ID,
+            PR_LEN_Program_Length,
+            PR_LEN_ChangedAt,
+            PR_LEN_PositedAt,
+            PR_LEN_Positor,
+            PR_LEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_LEN
+            END, i.Metadata_PR),
+            ISNULL(i.PR_ID, i.PR_ID),
+            i.PR_LEN_Program_Length,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN d.PR_LEN_Program_Length = i.PR_LEN_Program_Length
+                THEN i.PR_LEN_ChangedAt -- the shown version is asserted again
+            END, @now) as date),
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Positor) THEN i.PR_LEN_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_LEN_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.PR_LEN_Program_Length is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_LEN_ChangedAt) OR
+            UPDATE(PR_LEN_PositedAt) OR
+            UPDATE(PR_LEN_Positor) OR
+            UPDATE(Positor) OR
+            d.PR_LEN_Program_Length is null OR
+            d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length OR
+            d.PR_LEN_Reliability <> ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_LEN_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(PR_LEN_Program_Length) 
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_LEN_Program_Length] (
+            Metadata_PR_LEN,
+            PR_ID,
+            PR_LEN_Program_Length,
+            PR_LEN_ChangedAt,
+            PR_LEN_PositedAt,
+            PR_LEN_Positor,
+            PR_LEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_LEN
+            END, i.Metadata_PR),
+            p.PR_ID,
+            p.PR_LEN_Program_Length,
+            p.PR_LEN_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+                WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Positor) THEN i.PR_LEN_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN 
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        ON
+            p.PR_LEN_ID = i.PR_LEN_ID
+        WHERE
+            i.PR_LEN_Program_Length is null
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_Program instead of DELETE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [anchors].[dt_lPR_Program] ON [anchors].[lPR_Program]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [attributes].[PR_NAM_Program_Name_Annex] (
+        Metadata_PR_NAM,
+        PR_NAM_ID,
+        PR_NAM_Positor,
+        PR_NAM_PositedAt,
+        PR_NAM_Reliability
+    )
+    SELECT
+        d.Metadata_PR_NAM,
+        d.PR_NAM_ID,
+        d.PR_NAM_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.PR_NAM_ID is not null;
+    INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
+        Metadata_PR_LEN,
+        PR_LEN_ID,
+        PR_LEN_Positor,
+        PR_LEN_PositedAt,
+        PR_LEN_Reliability
+    )
+    SELECT
+        d.Metadata_PR_LEN,
+        d.PR_LEN_ID,
+        d.PR_LEN_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.PR_LEN_ID is not null;
+END
+GO
+-- NEXUS TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_Event instead of INSERT trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [nexuses].[it_lEV_Event] ON [nexuses].[lEV_Event]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @inserted TABLE (
+        EV_ID numeric(12,0) not null,
+        Metadata_EV int not null,
+        Metadata_EV_DAT int null,
+        EV_DAT_Positor tinyint null,
+        EV_DAT_PositedAt datetime2 null,
+        EV_DAT_Reliability decimal(5,2) null,
+        EV_DAT_Event_Date datetime2 null,
+        Metadata_EV_AUD int null,
+        EV_AUD_Positor tinyint null,
+        EV_AUD_PositedAt datetime2 null,
+        EV_AUD_Reliability decimal(5,2) null,
+        EV_AUD_Event_Audience int null,
+        Metadata_EV_REV int null,
+        EV_REV_Positor tinyint null,
+        EV_REV_PositedAt datetime2 null,
+        EV_REV_Reliability decimal(5,2) null,
+        EV_REV_Event_Revenue decimal(19,4) null,
+        Metadata_EV_STA int null,
+        EV_STA_ChangedAt datetime2 null,
+        EV_STA_Positor tinyint null,
+        EV_STA_PositedAt datetime2 null,
+        EV_STA_Reliability decimal(5,2) null,
+        EV_STA_Event_Status nvarchar(20) null,
+        Metadata_EV_UTL int null,
+        EV_UTL_Positor tinyint null,
+        EV_UTL_PositedAt datetime2 null,
+        EV_UTL_Reliability decimal(5,2) null,
+        UTL_Utilization tinyint null,
+        Metadata_UTL int null,
+        UTL_ID tinyint null,
+        Metadata_EV_LVL int null,
+        EV_LVL_ChangedAt date null,
+        EV_LVL_Positor tinyint null,
+        EV_LVL_PositedAt datetime2 null,
+        EV_LVL_Reliability decimal(5,2) null,
+        PLV_ProfessionalLevel nvarchar(max) null,
+        PLV_Checksum varbinary(16) null,
+        Metadata_PLV int null,
+        PLV_ID tinyint null
+    );
+    -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
+    -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
+    MERGE INTO [nexuses].[EV_Event]
+    USING inserted AS i
+    ON 1 = 0
+    WHEN NOT MATCHED AND i.EV_ID is null THEN INSERT (
+        ST_ID_wasHeldAt,
+        PR_ID_wasPlayed,
+        ETY_ID_of,
+        Metadata_EV 
+    )
+    VALUES (
+        i.ST_ID_wasHeldAt,
+        i.PR_ID_wasPlayed,
+        i.ETY_ID_of,
+        i.Metadata_EV 
+    )
+    OUTPUT
+        inserted.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_DAT_Positor, i.Positor), 0),
+        ISNULL(i.EV_DAT_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_DAT_Reliability, i.Reliability), 1),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_AUD_Positor, i.Positor), 0),
+        ISNULL(i.EV_AUD_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_AUD_Reliability, i.Reliability), 1),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_REV_Positor, i.Positor), 0),
+        ISNULL(i.EV_REV_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_REV_Reliability, i.Reliability), 1),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Positor, i.Positor), 0),
+        ISNULL(i.EV_STA_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Reliability, i.Reliability), 1),
+        i.EV_STA_Event_Status,
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_UTL_Positor, i.Positor), 0),
+        ISNULL(i.EV_UTL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_UTL_Reliability, i.Reliability), 1),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_EV),
+        i.UTL_ID,
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Positor, i.Positor), 0),
+        ISNULL(i.EV_LVL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Reliability, i.Reliability), 1),
+        i.PLV_ProfessionalLevel,
+        ISNULL(i.PLV_Checksum, dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.Metadata_PLV, i.Metadata_EV),
+        i.PLV_ID
+    INTO
+        @inserted;
+    -- the rows that come with the identity of a nexus row
+    INSERT INTO @inserted
+    SELECT
+        i.EV_ID,
+        i.Metadata_EV,
+        ISNULL(i.Metadata_EV_DAT, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_DAT_Positor, i.Positor), 0),
+        ISNULL(i.EV_DAT_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_DAT_Reliability, i.Reliability), 1),
+        i.EV_DAT_Event_Date,
+        ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_AUD_Positor, i.Positor), 0),
+        ISNULL(i.EV_AUD_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_AUD_Reliability, i.Reliability), 1),
+        i.EV_AUD_Event_Audience,
+        ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_REV_Positor, i.Positor), 0),
+        ISNULL(i.EV_REV_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_REV_Reliability, i.Reliability), 1),
+        i.EV_REV_Event_Revenue,
+        ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
+        ISNULL(i.EV_STA_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Positor, i.Positor), 0),
+        ISNULL(i.EV_STA_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_STA_Reliability, i.Reliability), 1),
+        i.EV_STA_Event_Status,
+        ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
+        ISNULL(ISNULL(i.EV_UTL_Positor, i.Positor), 0),
+        ISNULL(i.EV_UTL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_UTL_Reliability, i.Reliability), 1),
+        i.UTL_Utilization,
+        ISNULL(i.Metadata_UTL, i.Metadata_EV),
+        i.UTL_ID,
+        ISNULL(i.Metadata_EV_LVL, i.Metadata_EV),
+        ISNULL(i.EV_LVL_ChangedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Positor, i.Positor), 0),
+        ISNULL(i.EV_LVL_PositedAt, @now),
+        ISNULL(ISNULL(i.EV_LVL_Reliability, i.Reliability), 1),
+        i.PLV_ProfessionalLevel,
+        ISNULL(i.PLV_Checksum, dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))),
+        ISNULL(i.Metadata_PLV, i.Metadata_EV),
+        i.PLV_ID
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID is not null;
+    INSERT INTO [attributes].[EV_DAT_Event_Date] (
+        Metadata_EV_DAT,
+        EV_ID,
+        EV_DAT_Event_Date,
+        EV_DAT_PositedAt,
+        EV_DAT_Positor,
+        EV_DAT_Reliability
+    )
+    SELECT
+        i.Metadata_EV_DAT,
+        i.EV_ID,
+        i.EV_DAT_Event_Date,
+        i.EV_DAT_PositedAt,
+        i.EV_DAT_Positor,
+        i.EV_DAT_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.EV_DAT_Event_Date is not null;
+    INSERT INTO [attributes].[EV_AUD_Event_Audience] (
+        Metadata_EV_AUD,
+        EV_ID,
+        EV_AUD_Event_Audience,
+        EV_AUD_PositedAt,
+        EV_AUD_Positor,
+        EV_AUD_Reliability
+    )
+    SELECT
+        i.Metadata_EV_AUD,
+        i.EV_ID,
+        i.EV_AUD_Event_Audience,
+        i.EV_AUD_PositedAt,
+        i.EV_AUD_Positor,
+        i.EV_AUD_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.EV_AUD_Event_Audience is not null;
+    INSERT INTO [attributes].[EV_REV_Event_Revenue] (
+        Metadata_EV_REV,
+        EV_ID,
+        EV_REV_Event_Revenue,
+        EV_REV_PositedAt,
+        EV_REV_Positor,
+        EV_REV_Reliability
+    )
+    SELECT
+        i.Metadata_EV_REV,
+        i.EV_ID,
+        i.EV_REV_Event_Revenue,
+        i.EV_REV_PositedAt,
+        i.EV_REV_Positor,
+        i.EV_REV_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.EV_REV_Event_Revenue is not null;
+    INSERT INTO [attributes].[EV_STA_Event_Status] (
+        Metadata_EV_STA,
+        EV_ID,
+        EV_STA_Event_Status,
+        EV_STA_ChangedAt,
+        EV_STA_PositedAt,
+        EV_STA_Positor,
+        EV_STA_Reliability
+    )
+    SELECT
+        i.Metadata_EV_STA,
+        i.EV_ID,
+        i.EV_STA_Event_Status,
+        i.EV_STA_ChangedAt,
+        i.EV_STA_PositedAt,
+        i.EV_STA_Positor,
+        i.EV_STA_Reliability
+    FROM
+        @inserted i
+    WHERE
+        i.EV_STA_Event_Status is not null;
+    INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
+        Metadata_EV_UTL,
+        EV_ID,
+        UTL_ID,
+        EV_UTL_PositedAt,
+        EV_UTL_Positor,
+        EV_UTL_Reliability
+    )
+    SELECT
+        i.Metadata_EV_UTL,
+        i.EV_ID,
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        i.EV_UTL_PositedAt,
+        i.EV_UTL_Positor,
+        i.EV_UTL_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[UTL_Utilization] [kUTL]
+    ON
+        [kUTL].UTL_Utilization = i.UTL_Utilization
+    WHERE
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID) is not null;
+    INSERT INTO [attributes].[EV_LVL_Event_Level] (
+        Metadata_EV_LVL,
+        EV_ID,
+        PLV_ID,
+        EV_LVL_ChangedAt,
+        EV_LVL_PositedAt,
+        EV_LVL_Positor,
+        EV_LVL_Reliability
+    )
+    SELECT
+        i.Metadata_EV_LVL,
+        i.EV_ID,
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID), 
+        i.EV_LVL_ChangedAt,
+        i.EV_LVL_PositedAt,
+        i.EV_LVL_Positor,
+        i.EV_LVL_Reliability
+    FROM
+        @inserted i
+    LEFT JOIN
+        [knots].[PLV_ProfessionalLevel] [kPLV]
+    ON
+        [kPLV].PLV_Checksum = i.PLV_Checksum 
+    WHERE
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID) is not null;
+END
+GO
+-- TIES ---------------------------------------------------------------------------------------------------------------
+--
+-- Ties are used to represent relationships between entities.
+-- They come in four flavors: static, historized, knotted static, and knotted historized.
+-- Ties have cardinality, constraining how members may participate in the relationship.
+-- Every entity that is a member in a tie has a specified role in the relationship.
+-- Ties must have at least two anchor roles and zero or more knot roles.
+--
+-- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- AC_partner_AC_with_ONG_currently_Posit table (having 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_partner_AC_with_ONG_currently_Posit', 'U') IS NULL
+CREATE TABLE [ties].[AC_partner_AC_with_ONG_currently_Posit] (
+    AC_partner_AC_with_ONG_currently_ID int IDENTITY(1,1) not null,
+    AC_ID_partner smallint not null, 
+    AC_ID_with smallint not null, 
+    ONG_ID_currently tinyint not null,
+    AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
+    constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_partner foreign key (
+        AC_ID_partner
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_with foreign key (
+        AC_ID_with
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_partner_AC_with_ONG_currently_Posit_fkONG_currently foreign key (
+        ONG_ID_currently
+    ) references [knots].[ONG_Ongoing](ONG_ID),
+    constraint AC_partner_AC_with_ONG_currently_Posit_uqAC_partner unique (
+        AC_ID_partner,
+        AC_partner_AC_with_ONG_currently_ChangedAt
+    ),
+    constraint AC_partner_AC_with_ONG_currently_Posit_uqAC_with unique (
+        AC_ID_with,
+        AC_partner_AC_with_ONG_currently_ChangedAt
+    ),
+    constraint pkAC_partner_AC_with_ONG_currently_Posit primary key nonclustered (
+        AC_partner_AC_with_ONG_currently_ID asc
+    ),
+    constraint uqAC_partner_AC_with_ONG_currently unique clustered (
+        AC_partner_AC_with_ONG_currently_ChangedAt desc,
+        AC_ID_partner asc,
+        AC_ID_with asc,
+        ONG_ID_currently asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- AC_partner_AC_with_ONG_currently_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_partner_AC_with_ONG_currently_Annex', 'U') IS NULL
+CREATE TABLE [ties].[AC_partner_AC_with_ONG_currently_Annex] (
+    AC_partner_AC_with_ONG_currently_ID int not null,
+    AC_partner_AC_with_ONG_currently_PositedAt datetime2 not null,
+    AC_partner_AC_with_ONG_currently_Positor tinyint not null,
+    AC_partner_AC_with_ONG_currently_Reliability decimal(5,2) not null,
+    AC_partner_AC_with_ONG_currently_Assertion as cast(
+        case
+            when AC_partner_AC_with_ONG_currently_Reliability > 0 then '+'
+            when AC_partner_AC_with_ONG_currently_Reliability = 0 then '?'
+            when AC_partner_AC_with_ONG_currently_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_partner_AC_with_ONG_currently int not null,
+    constraint fkAC_partner_AC_with_ONG_currently_Annex foreign key (
+        AC_partner_AC_with_ONG_currently_ID
+    ) references [ties].[AC_partner_AC_with_ONG_currently_Posit](AC_partner_AC_with_ONG_currently_ID),
+    constraint pkAC_partner_AC_with_ONG_currently_Annex primary key clustered (
+        AC_partner_AC_with_ONG_currently_ID asc,
+        AC_partner_AC_with_ONG_currently_Positor asc,
+        AC_partner_AC_with_ONG_currently_PositedAt desc
+    )
+);
+GO
+-- Knotted static tie table -------------------------------------------------------------------------------------------
+-- AC_subset_PN_of_Posit table (having 2 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_subset_PN_of_Posit', 'U') IS NULL
+CREATE TABLE [ties].[AC_subset_PN_of_Posit] (
+    AC_subset_PN_of_ID int IDENTITY(1,1) not null,
+    AC_ID_subset smallint not null, 
+    PN_ID_of bigint not null, 
+    constraint AC_subset_PN_of_Posit_fkAC_subset foreign key (
+        AC_ID_subset
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_subset_PN_of_Posit_fkPN_of foreign key (
+        PN_ID_of
+    ) references [anchors].[PN_Person](PN_ID), 
+    constraint AC_subset_PN_of_Posit_uqAC_subset unique (
+        AC_ID_subset
+    ),
+    constraint AC_subset_PN_of_Posit_uqPN_of unique (
+        PN_ID_of
+    ),
+    constraint pkAC_subset_PN_of_Posit primary key nonclustered (
+        AC_subset_PN_of_ID asc
+    ),
+    constraint uqAC_subset_PN_of unique clustered (
+        AC_ID_subset asc,
+        PN_ID_of asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- AC_subset_PN_of_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_subset_PN_of_Annex', 'U') IS NULL
+CREATE TABLE [ties].[AC_subset_PN_of_Annex] (
+    AC_subset_PN_of_ID int not null,
+    AC_subset_PN_of_PositedAt datetime2 not null,
+    AC_subset_PN_of_Positor tinyint not null,
+    AC_subset_PN_of_Reliability decimal(5,2) not null,
+    AC_subset_PN_of_Assertion as cast(
+        case
+            when AC_subset_PN_of_Reliability > 0 then '+'
+            when AC_subset_PN_of_Reliability = 0 then '?'
+            when AC_subset_PN_of_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_subset_PN_of int not null,
+    constraint fkAC_subset_PN_of_Annex foreign key (
+        AC_subset_PN_of_ID
+    ) references [ties].[AC_subset_PN_of_Posit](AC_subset_PN_of_ID),
+    constraint pkAC_subset_PN_of_Annex primary key clustered (
+        AC_subset_PN_of_ID asc,
+        AC_subset_PN_of_Positor asc,
+        AC_subset_PN_of_PositedAt desc
+    )
+);
+GO
+-- Knotted static tie table -------------------------------------------------------------------------------------------
+-- EV_in_AC_wasCast_Posit table (having 2 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EV_in_AC_wasCast_Posit', 'U') IS NULL
+CREATE TABLE [ties].[EV_in_AC_wasCast_Posit] (
+    EV_in_AC_wasCast_ID int IDENTITY(1,1) not null,
+    EV_ID_in numeric(12,0) not null, 
+    AC_ID_wasCast smallint not null, 
+    constraint EV_in_AC_wasCast_Posit_fkEV_in foreign key (
+        EV_ID_in
+    ) references [nexuses].[EV_Event](EV_ID), 
+    constraint EV_in_AC_wasCast_Posit_fkAC_wasCast foreign key (
+        AC_ID_wasCast
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint pkEV_in_AC_wasCast_Posit primary key nonclustered (
+        EV_in_AC_wasCast_ID asc
+    ),
+    constraint uqEV_in_AC_wasCast unique clustered (
+        EV_ID_in asc,
+        AC_ID_wasCast asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- EV_in_AC_wasCast_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EV_in_AC_wasCast_Annex', 'U') IS NULL
+CREATE TABLE [ties].[EV_in_AC_wasCast_Annex] (
+    EV_in_AC_wasCast_ID int not null,
+    EV_in_AC_wasCast_PositedAt datetime2 not null,
+    EV_in_AC_wasCast_Positor tinyint not null,
+    EV_in_AC_wasCast_Reliability decimal(5,2) not null,
+    EV_in_AC_wasCast_Assertion as cast(
+        case
+            when EV_in_AC_wasCast_Reliability > 0 then '+'
+            when EV_in_AC_wasCast_Reliability = 0 then '?'
+            when EV_in_AC_wasCast_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_EV_in_AC_wasCast int not null,
+    constraint fkEV_in_AC_wasCast_Annex foreign key (
+        EV_in_AC_wasCast_ID
+    ) references [ties].[EV_in_AC_wasCast_Posit](EV_in_AC_wasCast_ID),
+    constraint pkEV_in_AC_wasCast_Annex primary key clustered (
+        EV_in_AC_wasCast_ID asc,
+        EV_in_AC_wasCast_Positor asc,
+        EV_in_AC_wasCast_PositedAt desc
+    )
+);
+GO
+-- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- AC_part_PR_in_RAT_got_Posit table (having 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_part_PR_in_RAT_got_Posit', 'U') IS NULL
+CREATE TABLE [ties].[AC_part_PR_in_RAT_got_Posit] (
+    AC_part_PR_in_RAT_got_ID int IDENTITY(1,1) not null,
+    AC_ID_part smallint not null, 
+    PR_ID_in bigint not null, 
+    RAT_ID_got tinyint not null,
+    AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
+    constraint AC_part_PR_in_RAT_got_Posit_fkAC_part foreign key (
+        AC_ID_part
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_part_PR_in_RAT_got_Posit_fkPR_in foreign key (
+        PR_ID_in
+    ) references [anchors].[PR_Program](PR_ID), 
+    constraint AC_part_PR_in_RAT_got_Posit_fkRAT_got foreign key (
+        RAT_ID_got
+    ) references [knots].[RAT_Rating](RAT_ID),
+    constraint pkAC_part_PR_in_RAT_got_Posit primary key nonclustered (
+        AC_part_PR_in_RAT_got_ID asc
+    ),
+    constraint uqAC_part_PR_in_RAT_got unique clustered (
+        AC_ID_part asc,
+        PR_ID_in asc,
+        AC_part_PR_in_RAT_got_ChangedAt desc,
+        RAT_ID_got asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- AC_part_PR_in_RAT_got_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_part_PR_in_RAT_got_Annex', 'U') IS NULL
+CREATE TABLE [ties].[AC_part_PR_in_RAT_got_Annex] (
+    AC_part_PR_in_RAT_got_ID int not null,
+    AC_part_PR_in_RAT_got_PositedAt datetime2 not null,
+    AC_part_PR_in_RAT_got_Positor tinyint not null,
+    AC_part_PR_in_RAT_got_Reliability decimal(5,2) not null,
+    AC_part_PR_in_RAT_got_Assertion as cast(
+        case
+            when AC_part_PR_in_RAT_got_Reliability > 0 then '+'
+            when AC_part_PR_in_RAT_got_Reliability = 0 then '?'
+            when AC_part_PR_in_RAT_got_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_part_PR_in_RAT_got int not null,
+    constraint fkAC_part_PR_in_RAT_got_Annex foreign key (
+        AC_part_PR_in_RAT_got_ID
+    ) references [ties].[AC_part_PR_in_RAT_got_Posit](AC_part_PR_in_RAT_got_ID),
+    constraint pkAC_part_PR_in_RAT_got_Annex primary key clustered (
+        AC_part_PR_in_RAT_got_ID asc,
+        AC_part_PR_in_RAT_got_Positor asc,
+        AC_part_PR_in_RAT_got_PositedAt desc
+    )
+);
+GO
+-- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- ST_at_PR_isPlaying_Posit table (having 2 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.ST_at_PR_isPlaying_Posit', 'U') IS NULL
+CREATE TABLE [ties].[ST_at_PR_isPlaying_Posit] (
+    ST_at_PR_isPlaying_ID int IDENTITY(1,1) not null,
+    ST_ID_at int not null, 
+    PR_ID_isPlaying bigint not null, 
+    ST_at_PR_isPlaying_ChangedAt datetime2 not null,
+    constraint ST_at_PR_isPlaying_Posit_fkST_at foreign key (
+        ST_ID_at
+    ) references [anchors].[ST_Stage](ST_ID), 
+    constraint ST_at_PR_isPlaying_Posit_fkPR_isPlaying foreign key (
+        PR_ID_isPlaying
+    ) references [anchors].[PR_Program](PR_ID), 
+    constraint pkST_at_PR_isPlaying_Posit primary key nonclustered (
+        ST_at_PR_isPlaying_ID asc
+    ),
+    constraint uqST_at_PR_isPlaying unique clustered (
+        ST_ID_at asc,
+        PR_ID_isPlaying asc,
+        ST_at_PR_isPlaying_ChangedAt desc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- ST_at_PR_isPlaying_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.ST_at_PR_isPlaying_Annex', 'U') IS NULL
+CREATE TABLE [ties].[ST_at_PR_isPlaying_Annex] (
+    ST_at_PR_isPlaying_ID int not null,
+    ST_at_PR_isPlaying_PositedAt datetime2 not null,
+    ST_at_PR_isPlaying_Positor tinyint not null,
+    ST_at_PR_isPlaying_Reliability decimal(5,2) not null,
+    ST_at_PR_isPlaying_Assertion as cast(
+        case
+            when ST_at_PR_isPlaying_Reliability > 0 then '+'
+            when ST_at_PR_isPlaying_Reliability = 0 then '?'
+            when ST_at_PR_isPlaying_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_ST_at_PR_isPlaying int not null,
+    constraint fkST_at_PR_isPlaying_Annex foreign key (
+        ST_at_PR_isPlaying_ID
+    ) references [ties].[ST_at_PR_isPlaying_Posit](ST_at_PR_isPlaying_ID),
+    constraint pkST_at_PR_isPlaying_Annex primary key clustered (
+        ST_at_PR_isPlaying_ID asc,
+        ST_at_PR_isPlaying_Positor asc,
+        ST_at_PR_isPlaying_PositedAt desc
+    )
+);
+GO
+-- Knotted static tie table -------------------------------------------------------------------------------------------
+-- AC_parent_AC_child_PAT_having_Posit table (having 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_parent_AC_child_PAT_having_Posit', 'U') IS NULL
+CREATE TABLE [ties].[AC_parent_AC_child_PAT_having_Posit] (
+    AC_parent_AC_child_PAT_having_ID int IDENTITY(1,1) not null,
+    AC_ID_parent smallint not null, 
+    AC_ID_child smallint not null, 
+    PAT_ID_having tinyint not null,
+    constraint AC_parent_AC_child_PAT_having_Posit_fkAC_parent foreign key (
+        AC_ID_parent
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_parent_AC_child_PAT_having_Posit_fkAC_child foreign key (
+        AC_ID_child
+    ) references [anchors].[AC_Actor](AC_ID), 
+    constraint AC_parent_AC_child_PAT_having_Posit_fkPAT_having foreign key (
+        PAT_ID_having
+    ) references [knots].[PAT_ParentalType](PAT_ID),
+    constraint pkAC_parent_AC_child_PAT_having_Posit primary key nonclustered (
+        AC_parent_AC_child_PAT_having_ID asc
+    ),
+    constraint uqAC_parent_AC_child_PAT_having unique clustered (
+        AC_ID_parent asc,
+        AC_ID_child asc,
+        PAT_ID_having asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- AC_parent_AC_child_PAT_having_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_parent_AC_child_PAT_having_Annex', 'U') IS NULL
+CREATE TABLE [ties].[AC_parent_AC_child_PAT_having_Annex] (
+    AC_parent_AC_child_PAT_having_ID int not null,
+    AC_parent_AC_child_PAT_having_PositedAt datetime2 not null,
+    AC_parent_AC_child_PAT_having_Positor tinyint not null,
+    AC_parent_AC_child_PAT_having_Reliability decimal(5,2) not null,
+    AC_parent_AC_child_PAT_having_Assertion as cast(
+        case
+            when AC_parent_AC_child_PAT_having_Reliability > 0 then '+'
+            when AC_parent_AC_child_PAT_having_Reliability = 0 then '?'
+            when AC_parent_AC_child_PAT_having_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_AC_parent_AC_child_PAT_having int not null,
+    constraint fkAC_parent_AC_child_PAT_having_Annex foreign key (
+        AC_parent_AC_child_PAT_having_ID
+    ) references [ties].[AC_parent_AC_child_PAT_having_Posit](AC_parent_AC_child_PAT_having_ID),
+    constraint pkAC_parent_AC_child_PAT_having_Annex primary key clustered (
+        AC_parent_AC_child_PAT_having_ID asc,
+        AC_parent_AC_child_PAT_having_Positor asc,
+        AC_parent_AC_child_PAT_having_PositedAt desc
+    )
+);
+GO
+-- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- PR_content_ST_location_EV_of_Posit table (having 3 roles)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.PR_content_ST_location_EV_of_Posit', 'U') IS NULL
+CREATE TABLE [ties].[PR_content_ST_location_EV_of_Posit] (
+    PR_content_ST_location_EV_of_ID int IDENTITY(1,1) not null,
+    PR_ID_content bigint not null, 
+    ST_ID_location int not null, 
+    EV_ID_of numeric(12,0) not null, 
+    PR_content_ST_location_EV_of_ChangedAt datetime2 not null,
+    constraint PR_content_ST_location_EV_of_Posit_fkPR_content foreign key (
+        PR_ID_content
+    ) references [anchors].[PR_Program](PR_ID), 
+    constraint PR_content_ST_location_EV_of_Posit_fkST_location foreign key (
+        ST_ID_location
+    ) references [anchors].[ST_Stage](ST_ID), 
+    constraint PR_content_ST_location_EV_of_Posit_fkEV_of foreign key (
+        EV_ID_of
+    ) references [nexuses].[EV_Event](EV_ID), 
+    constraint PR_content_ST_location_EV_of_Posit_uqPR_content unique (
+        PR_ID_content,
+        PR_content_ST_location_EV_of_ChangedAt
+    ),
+    constraint PR_content_ST_location_EV_of_Posit_uqST_location unique (
+        ST_ID_location,
+        PR_content_ST_location_EV_of_ChangedAt
+    ),
+    constraint pkPR_content_ST_location_EV_of_Posit primary key nonclustered (
+        PR_content_ST_location_EV_of_ID asc
+    ),
+    constraint uqPR_content_ST_location_EV_of unique clustered (
+        PR_content_ST_location_EV_of_ChangedAt desc,
+        PR_ID_content asc,
+        ST_ID_location asc,
+        EV_ID_of asc
+    )
+);
+-- Tie annex table ----------------------------------------------------------------------------------------------------
+-- PR_content_ST_location_EV_of_Annex table
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.PR_content_ST_location_EV_of_Annex', 'U') IS NULL
+CREATE TABLE [ties].[PR_content_ST_location_EV_of_Annex] (
+    PR_content_ST_location_EV_of_ID int not null,
+    PR_content_ST_location_EV_of_PositedAt datetime2 not null,
+    PR_content_ST_location_EV_of_Positor tinyint not null,
+    PR_content_ST_location_EV_of_Reliability decimal(5,2) not null,
+    PR_content_ST_location_EV_of_Assertion as cast(
+        case
+            when PR_content_ST_location_EV_of_Reliability > 0 then '+'
+            when PR_content_ST_location_EV_of_Reliability = 0 then '?'
+            when PR_content_ST_location_EV_of_Reliability < 0 then '-'
+        end
+    as char(1)) persisted,
+    Metadata_PR_content_ST_location_EV_of int not null,
+    constraint fkPR_content_ST_location_EV_of_Annex foreign key (
+        PR_content_ST_location_EV_of_ID
+    ) references [ties].[PR_content_ST_location_EV_of_Posit](PR_content_ST_location_EV_of_ID),
+    constraint pkPR_content_ST_location_EV_of_Annex primary key clustered (
+        PR_content_ST_location_EV_of_ID asc,
+        PR_content_ST_location_EV_of_Positor asc,
+        PR_content_ST_location_EV_of_PositedAt desc
+    )
+);
+GO
+-- TIE ASSEMBLED VIEWS ------------------------------------------------------------------------------------------------
+--
+-- The assembled view of a tie combines the posit and annex table of the tie.
+-- It can be used to maintain entity integrity through a primary key, which cannot be
+-- defined elsewhere.
+--
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- AC_partner_AC_with_ONG_currently assembled view of the posit and annex tables,
+-- pkAC_partner_AC_with_ONG_currently optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_partner_AC_with_ONG_currently', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[AC_partner_AC_with_ONG_currently]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_partner_AC_with_ONG_currently,
+        p.AC_partner_AC_with_ONG_currently_ID,
+        p.AC_ID_partner,
+        p.AC_ID_with,
+        p.ONG_ID_currently,
+        p.AC_partner_AC_with_ONG_currently_ChangedAt,
+        a.AC_partner_AC_with_ONG_currently_PositedAt,
+        a.AC_partner_AC_with_ONG_currently_Positor,
+        a.AC_partner_AC_with_ONG_currently_Reliability,
+        a.AC_partner_AC_with_ONG_currently_Assertion
+    FROM
+        [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+    JOIN
+        [ties].[AC_partner_AC_with_ONG_currently_Annex] a
+    ON
+        a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_partner_AC_with_ONG_currently]
+    ON [ties].[AC_partner_AC_with_ONG_currently] (
+        AC_partner_AC_with_ONG_currently_Assertion desc, 
+        AC_ID_partner asc,
+        AC_ID_with asc,
+        ONG_ID_currently asc,
+        AC_partner_AC_with_ONG_currently_ChangedAt desc,
+        AC_partner_AC_with_ONG_currently_PositedAt desc,
+        AC_partner_AC_with_ONG_currently_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- AC_subset_PN_of assembled view of the posit and annex tables,
+-- pkAC_subset_PN_of optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_subset_PN_of', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[AC_subset_PN_of]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_subset_PN_of,
+        p.AC_subset_PN_of_ID,
+        p.AC_ID_subset,
+        p.PN_ID_of,
+        a.AC_subset_PN_of_PositedAt,
+        a.AC_subset_PN_of_Positor,
+        a.AC_subset_PN_of_Reliability,
+        a.AC_subset_PN_of_Assertion
+    FROM
+        [ties].[AC_subset_PN_of_Posit] p
+    JOIN
+        [ties].[AC_subset_PN_of_Annex] a
+    ON
+        a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_subset_PN_of]
+    ON [ties].[AC_subset_PN_of] (
+        AC_subset_PN_of_Assertion desc, 
+        AC_ID_subset asc,
+        PN_ID_of asc,
+        AC_subset_PN_of_PositedAt desc,
+        AC_subset_PN_of_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- EV_in_AC_wasCast assembled view of the posit and annex tables,
+-- pkEV_in_AC_wasCast optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EV_in_AC_wasCast', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[EV_in_AC_wasCast]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_in_AC_wasCast,
+        p.EV_in_AC_wasCast_ID,
+        p.EV_ID_in,
+        p.AC_ID_wasCast,
+        a.EV_in_AC_wasCast_PositedAt,
+        a.EV_in_AC_wasCast_Positor,
+        a.EV_in_AC_wasCast_Reliability,
+        a.EV_in_AC_wasCast_Assertion
+    FROM
+        [ties].[EV_in_AC_wasCast_Posit] p
+    JOIN
+        [ties].[EV_in_AC_wasCast_Annex] a
+    ON
+        a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_in_AC_wasCast]
+    ON [ties].[EV_in_AC_wasCast] (
+        EV_in_AC_wasCast_Assertion desc, 
+        EV_ID_in asc,
+        AC_ID_wasCast asc,
+        EV_in_AC_wasCast_PositedAt desc,
+        EV_in_AC_wasCast_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- AC_part_PR_in_RAT_got assembled view of the posit and annex tables,
+-- pkAC_part_PR_in_RAT_got optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_part_PR_in_RAT_got', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[AC_part_PR_in_RAT_got]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_part_PR_in_RAT_got,
+        p.AC_part_PR_in_RAT_got_ID,
+        p.AC_ID_part,
+        p.PR_ID_in,
+        p.RAT_ID_got,
+        p.AC_part_PR_in_RAT_got_ChangedAt,
+        a.AC_part_PR_in_RAT_got_PositedAt,
+        a.AC_part_PR_in_RAT_got_Positor,
+        a.AC_part_PR_in_RAT_got_Reliability,
+        a.AC_part_PR_in_RAT_got_Assertion
+    FROM
+        [ties].[AC_part_PR_in_RAT_got_Posit] p
+    JOIN
+        [ties].[AC_part_PR_in_RAT_got_Annex] a
+    ON
+        a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_part_PR_in_RAT_got]
+    ON [ties].[AC_part_PR_in_RAT_got] (
+        AC_part_PR_in_RAT_got_Assertion desc, 
+        AC_ID_part asc,
+        PR_ID_in asc,
+        AC_part_PR_in_RAT_got_ChangedAt desc,
+        AC_part_PR_in_RAT_got_PositedAt desc,
+        AC_part_PR_in_RAT_got_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- ST_at_PR_isPlaying assembled view of the posit and annex tables,
+-- pkST_at_PR_isPlaying optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.ST_at_PR_isPlaying', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[ST_at_PR_isPlaying]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_ST_at_PR_isPlaying,
+        p.ST_at_PR_isPlaying_ID,
+        p.ST_ID_at,
+        p.PR_ID_isPlaying,
+        p.ST_at_PR_isPlaying_ChangedAt,
+        a.ST_at_PR_isPlaying_PositedAt,
+        a.ST_at_PR_isPlaying_Positor,
+        a.ST_at_PR_isPlaying_Reliability,
+        a.ST_at_PR_isPlaying_Assertion
+    FROM
+        [ties].[ST_at_PR_isPlaying_Posit] p
+    JOIN
+        [ties].[ST_at_PR_isPlaying_Annex] a
+    ON
+        a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkST_at_PR_isPlaying]
+    ON [ties].[ST_at_PR_isPlaying] (
+        ST_at_PR_isPlaying_Assertion desc, 
+        ST_ID_at asc,
+        PR_ID_isPlaying asc,
+        ST_at_PR_isPlaying_ChangedAt desc,
+        ST_at_PR_isPlaying_PositedAt desc,
+        ST_at_PR_isPlaying_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- AC_parent_AC_child_PAT_having assembled view of the posit and annex tables,
+-- pkAC_parent_AC_child_PAT_having optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.AC_parent_AC_child_PAT_having', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[AC_parent_AC_child_PAT_having]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_AC_parent_AC_child_PAT_having,
+        p.AC_parent_AC_child_PAT_having_ID,
+        p.AC_ID_parent,
+        p.AC_ID_child,
+        p.PAT_ID_having,
+        a.AC_parent_AC_child_PAT_having_PositedAt,
+        a.AC_parent_AC_child_PAT_having_Positor,
+        a.AC_parent_AC_child_PAT_having_Reliability,
+        a.AC_parent_AC_child_PAT_having_Assertion
+    FROM
+        [ties].[AC_parent_AC_child_PAT_having_Posit] p
+    JOIN
+        [ties].[AC_parent_AC_child_PAT_having_Annex] a
+    ON
+        a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_parent_AC_child_PAT_having]
+    ON [ties].[AC_parent_AC_child_PAT_having] (
+        AC_parent_AC_child_PAT_having_Assertion desc, 
+        AC_ID_parent asc,
+        AC_ID_child asc,
+        PAT_ID_having asc,
+        AC_parent_AC_child_PAT_having_PositedAt desc,
+        AC_parent_AC_child_PAT_having_Positor asc
+    );
+    ');
+END
+GO
+-- Tie assembled view -------------------------------------------------------------------------------------------------
+-- PR_content_ST_location_EV_of assembled view of the posit and annex tables,
+-- pkPR_content_ST_location_EV_of optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.PR_content_ST_location_EV_of', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [ties].[PR_content_ST_location_EV_of]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_PR_content_ST_location_EV_of,
+        p.PR_content_ST_location_EV_of_ID,
+        p.PR_ID_content,
+        p.ST_ID_location,
+        p.EV_ID_of,
+        p.PR_content_ST_location_EV_of_ChangedAt,
+        a.PR_content_ST_location_EV_of_PositedAt,
+        a.PR_content_ST_location_EV_of_Positor,
+        a.PR_content_ST_location_EV_of_Reliability,
+        a.PR_content_ST_location_EV_of_Assertion
+    FROM
+        [ties].[PR_content_ST_location_EV_of_Posit] p
+    JOIN
+        [ties].[PR_content_ST_location_EV_of_Annex] a
+    ON
+        a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkPR_content_ST_location_EV_of]
+    ON [ties].[PR_content_ST_location_EV_of] (
+        PR_content_ST_location_EV_of_Assertion desc, 
+        PR_ID_content asc,
+        ST_ID_location asc,
+        EV_ID_of asc,
+        PR_content_ST_location_EV_of_ChangedAt desc,
+        PR_content_ST_location_EV_of_PositedAt desc,
+        PR_content_ST_location_EV_of_Positor asc
+    );
+    ');
+END
+GO
+-- TIE RESTATEMENT CONSTRAINTS ----------------------------------------------------------------------------------------
+--
+-- Ties may be prevented from storing restatements.
+-- A restatement is when the same (non-key) values occurs for two adjacent points
+-- in changing time.
+--
+-- returns 1 for one or two equal surrounding values, 0 for different surrounding values
+--
+-- @posit the id of the posit that should be checked
+-- @posited the time when this posit was made
+-- @positor the one who made the posit
+-- @assertion whether this posit is positively or negatively asserted, or unreliable
+--
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfAC_partner_AC_with_ONG_currently restatement finder
+-- rcAC_partner_AC_with_ONG_currently restatement constraint (available only in ties that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rfAC_partner_AC_with_ONG_currently', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rfAC_partner_AC_with_ONG_currently] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @changed datetime2;
+    DECLARE @AC_partner smallint; 
+    DECLARE @AC_with smallint; 
+    DECLARE @ONG_currently tinyint;
+    SELECT
+        @AC_partner = p.AC_ID_partner,
+        @AC_with = p.AC_ID_with,
+        @ONG_currently = p.ONG_ID_currently,
+        @changed = p.AC_partner_AC_with_ONG_currently_ChangedAt
+    FROM
+        [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+    WHERE
+        p.AC_partner_AC_with_ONG_currently_ID = @posit;
+    RETURN
+        CASE WHEN @assertion = ''?'' THEN 0
+        ELSE (
+        SELECT
+            COUNT(*)
+        FROM (
+            SELECT * FROM (
+            SELECT TOP 1
+                pre.AC_ID_partner,
+                pre.AC_ID_with,
+                pre.ONG_ID_currently
+            FROM
+                [ties].[rAC_partner_AC_with_ONG_currently] (
+                    @positor,
+                    @changed,
+                    @posited
+                ) pre
+            WHERE
+            (
+                    pre.AC_ID_partner = @AC_partner
+                OR
+                    pre.AC_ID_with = @AC_with
+            )
+            AND
+                pre.AC_partner_AC_with_ONG_currently_ChangedAt < @changed
+            AND
+                pre.AC_partner_AC_with_ONG_currently_Assertion = @assertion
+            ORDER BY
+                pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+                pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) previous
+            UNION
+            SELECT * FROM (
+            SELECT TOP 1
+                fol.AC_ID_partner,
+                fol.AC_ID_with,
+                fol.ONG_ID_currently
+            FROM
+                [ties].[fAC_partner_AC_with_ONG_currently] (
+                    @positor,
+                    @changed,
+                    @posited 
+                ) fol
+            WHERE
+            (
+                    fol.AC_ID_partner = @AC_partner
+                OR
+                    fol.AC_ID_with = @AC_with
+            )
+            AND
+                fol.AC_partner_AC_with_ONG_currently_ChangedAt > @changed
+            AND
+                fol.AC_partner_AC_with_ONG_currently_Assertion = @assertion
+            ORDER BY
+                fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
+                fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+            ) following
+        ) s
+        WHERE
+            s.AC_ID_partner = @AC_partner
+        AND
+            s.AC_ID_with = @AC_with
+        AND
+            s.ONG_ID_currently = @ONG_currently
+    )
+    END;
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfAC_part_PR_in_RAT_got restatement finder
+-- rcAC_part_PR_in_RAT_got restatement constraint (available only in ties that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rfAC_part_PR_in_RAT_got', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rfAC_part_PR_in_RAT_got] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @changed datetime2;
+    DECLARE @AC_part smallint; 
+    DECLARE @PR_in bigint; 
+    DECLARE @RAT_got tinyint;
+    SELECT
+        @AC_part = p.AC_ID_part,
+        @PR_in = p.PR_ID_in,
+        @RAT_got = p.RAT_ID_got,
+        @changed = p.AC_part_PR_in_RAT_got_ChangedAt
+    FROM
+        [ties].[AC_part_PR_in_RAT_got_Posit] p
+    WHERE
+        p.AC_part_PR_in_RAT_got_ID = @posit;
+    RETURN
+        CASE WHEN @assertion = ''?'' THEN 0
+        ELSE (
+        SELECT
+            COUNT(*)
+        FROM (
+            SELECT * FROM (
+            SELECT TOP 1
+                pre.RAT_ID_got
+            FROM
+                [ties].[rAC_part_PR_in_RAT_got] (
+                    @positor,
+                    @changed,
+                    @posited
+                ) pre
+            WHERE
+                pre.AC_ID_part = @AC_part
+            AND
+                pre.PR_ID_in = @PR_in
+            AND
+                pre.AC_part_PR_in_RAT_got_ChangedAt < @changed
+            AND
+                pre.AC_part_PR_in_RAT_got_Assertion = @assertion
+            ORDER BY
+                pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
+                pre.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) previous
+            UNION
+            SELECT * FROM (
+            SELECT TOP 1
+                fol.RAT_ID_got
+            FROM
+                [ties].[fAC_part_PR_in_RAT_got] (
+                    @positor,
+                    @changed,
+                    @posited 
+                ) fol
+            WHERE
+                fol.AC_ID_part = @AC_part
+            AND
+                fol.PR_ID_in = @PR_in
+            AND
+                fol.AC_part_PR_in_RAT_got_ChangedAt > @changed
+            AND
+                fol.AC_part_PR_in_RAT_got_Assertion = @assertion
+            ORDER BY
+                fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
+                fol.AC_part_PR_in_RAT_got_PositedAt DESC
+            ) following
+        ) s
+        WHERE
+            s.RAT_ID_got = @RAT_got
+    )
+    END;
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfPR_content_ST_location_EV_of restatement finder
+-- rcPR_content_ST_location_EV_of restatement constraint (available only in ties that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rfPR_content_ST_location_EV_of', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rfPR_content_ST_location_EV_of] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @changed datetime2;
+    DECLARE @PR_content bigint; 
+    DECLARE @ST_location int; 
+    DECLARE @EV_of numeric(12,0); 
+    SELECT
+        @PR_content = p.PR_ID_content,
+        @ST_location = p.ST_ID_location,
+        @EV_of = p.EV_ID_of,
+        @changed = p.PR_content_ST_location_EV_of_ChangedAt
+    FROM
+        [ties].[PR_content_ST_location_EV_of_Posit] p
+    WHERE
+        p.PR_content_ST_location_EV_of_ID = @posit;
+    RETURN
+        CASE WHEN @assertion = ''?'' THEN 0
+        ELSE (
+        SELECT
+            COUNT(*)
+        FROM (
+            SELECT * FROM (
+            SELECT TOP 1
+                pre.PR_ID_content,
+                pre.ST_ID_location,
+                pre.EV_ID_of
+            FROM
+                [ties].[rPR_content_ST_location_EV_of] (
+                    @positor,
+                    @changed,
+                    @posited
+                ) pre
+            WHERE
+            (
+                    pre.PR_ID_content = @PR_content
+                OR
+                    pre.ST_ID_location = @ST_location
+            )
+            AND
+                pre.PR_content_ST_location_EV_of_ChangedAt < @changed
+            AND
+                pre.PR_content_ST_location_EV_of_Assertion = @assertion
+            ORDER BY
+                pre.PR_content_ST_location_EV_of_ChangedAt DESC,
+                pre.PR_content_ST_location_EV_of_PositedAt DESC
+            ) previous
+            UNION
+            SELECT * FROM (
+            SELECT TOP 1
+                fol.PR_ID_content,
+                fol.ST_ID_location,
+                fol.EV_ID_of
+            FROM
+                [ties].[fPR_content_ST_location_EV_of] (
+                    @positor,
+                    @changed,
+                    @posited 
+                ) fol
+            WHERE
+            (
+                    fol.PR_ID_content = @PR_content
+                OR
+                    fol.ST_ID_location = @ST_location
+            )
+            AND
+                fol.PR_content_ST_location_EV_of_ChangedAt > @changed
+            AND
+                fol.PR_content_ST_location_EV_of_Assertion = @assertion
+            ORDER BY
+                fol.PR_content_ST_location_EV_of_ChangedAt ASC,
+                fol.PR_content_ST_location_EV_of_PositedAt DESC
+            ) following
+        ) s
+        WHERE
+            s.PR_ID_content = @PR_content
+        AND
+            s.ST_ID_location = @ST_location
+        AND
+            s.EV_ID_of = @EV_of
+    )
+    END;
+    END
+    ');
+END
+GO
+-- TIE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------------
+--
+-- These table valued functions rewind a tie posit table to the given
+-- point in changing time, or a tie annex table to the given point
+-- in positing time. It does not pick a temporal perspective and
+-- instead shows all rows that have been in effect before that point
+-- in time. The forwarder is the opposite of the rewinder, such that 
+-- their union corresponds to all rows in the posit table.
+--
+-- @positor the view of which positor to adopt (defaults to 0)
+-- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
+-- @positingTimepoint the point in positing time to rewind to (defaults to End of Time, no rewind)
+--
+-- Tie posit rewinder -------------------------------------------------------------------------------------------------
+-- rAC_partner_AC_with_ONG_currently_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_partner_AC_with_ONG_currently_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_partner_AC_with_ONG_currently_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_ID_partner,
+        AC_ID_with,
+        ONG_ID_currently,
+        AC_partner_AC_with_ONG_currently_ChangedAt
+    FROM
+        [ties].[AC_partner_AC_with_ONG_currently_Posit]
+    WHERE
+        AC_partner_AC_with_ONG_currently_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Tie posit forwarder ------------------------------------------------------------------------------------------------
+-- fAC_partner_AC_with_ONG_currently_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_partner_AC_with_ONG_currently_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_partner_AC_with_ONG_currently_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_ID_partner,
+        AC_ID_with,
+        ONG_ID_currently,
+        AC_partner_AC_with_ONG_currently_ChangedAt
+    FROM
+        [ties].[AC_partner_AC_with_ONG_currently_Posit]
+    WHERE
+        AC_partner_AC_with_ONG_currently_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rAC_partner_AC_with_ONG_currently_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_partner_AC_with_ONG_currently_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_partner_AC_with_ONG_currently_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_Reliability,
+        AC_partner_AC_with_ONG_currently_Assertion
+    FROM
+        [ties].[AC_partner_AC_with_ONG_currently_Annex]
+    WHERE
+        AC_partner_AC_with_ONG_currently_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rAC_partner_AC_with_ONG_currently rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_partner_AC_with_ONG_currently','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_partner_AC_with_ONG_currently] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_partner_AC_with_ONG_currently,
+        p.AC_partner_AC_with_ONG_currently_ID,
+        p.AC_ID_partner,
+        p.AC_ID_with,
+        p.ONG_ID_currently,
+        p.AC_partner_AC_with_ONG_currently_ChangedAt,
+        a.AC_partner_AC_with_ONG_currently_PositedAt,
+        a.AC_partner_AC_with_ONG_currently_Positor,
+        a.AC_partner_AC_with_ONG_currently_Reliability,
+        a.AC_partner_AC_with_ONG_currently_Assertion
+    FROM
+        [ties].[rAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
+    ON
+        a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+    AND
+        a.AC_partner_AC_with_ONG_currently_Positor = @positor
+    AND
+        a.AC_partner_AC_with_ONG_currently_PositedAt = (
+            SELECT TOP 1
+                sub.AC_partner_AC_with_ONG_currently_PositedAt
+            FROM
+                [ties].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            AND
+                sub.AC_partner_AC_with_ONG_currently_Positor = @positor
+            ORDER BY
+                sub.AC_partner_AC_with_ONG_currently_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fAC_partner_AC_with_ONG_currently forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_partner_AC_with_ONG_currently','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_partner_AC_with_ONG_currently] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_partner_AC_with_ONG_currently,
+        p.AC_partner_AC_with_ONG_currently_ID,
+        p.AC_ID_partner,
+        p.AC_ID_with,
+        p.ONG_ID_currently,
+        p.AC_partner_AC_with_ONG_currently_ChangedAt,
+        a.AC_partner_AC_with_ONG_currently_PositedAt,
+        a.AC_partner_AC_with_ONG_currently_Positor,
+        a.AC_partner_AC_with_ONG_currently_Reliability,
+        a.AC_partner_AC_with_ONG_currently_Assertion
+    FROM
+        [ties].[fAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
+    ON
+        a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+    AND
+        a.AC_partner_AC_with_ONG_currently_Positor = @positor
+    AND
+        a.AC_partner_AC_with_ONG_currently_PositedAt = (
+            SELECT TOP 1
+                sub.AC_partner_AC_with_ONG_currently_PositedAt
+            FROM
+                [ties].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            AND
+                sub.AC_partner_AC_with_ONG_currently_Positor = @positor
+            ORDER BY
+                sub.AC_partner_AC_with_ONG_currently_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rAC_subset_PN_of_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_subset_PN_of_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_subset_PN_of_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_Reliability,
+        AC_subset_PN_of_Assertion
+    FROM
+        [ties].[AC_subset_PN_of_Annex]
+    WHERE
+        AC_subset_PN_of_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rAC_subset_PN_of rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_subset_PN_of','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_subset_PN_of] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_subset_PN_of,
+        p.AC_subset_PN_of_ID,
+        p.AC_ID_subset,
+        p.PN_ID_of,
+        a.AC_subset_PN_of_PositedAt,
+        a.AC_subset_PN_of_Positor,
+        a.AC_subset_PN_of_Reliability,
+        a.AC_subset_PN_of_Assertion
+    FROM
+        [ties].[AC_subset_PN_of_Posit] p
+    JOIN
+        [ties].[rAC_subset_PN_of_Annex](@positingTimepoint) a
+    ON
+        a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+    AND
+        a.AC_subset_PN_of_Positor = @positor
+    AND
+        a.AC_subset_PN_of_PositedAt = (
+            SELECT TOP 1
+                sub.AC_subset_PN_of_PositedAt
+            FROM
+                [ties].[rAC_subset_PN_of_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            AND
+                sub.AC_subset_PN_of_Positor = @positor
+            ORDER BY
+                sub.AC_subset_PN_of_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fAC_subset_PN_of forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_subset_PN_of','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_subset_PN_of] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_subset_PN_of,
+        p.AC_subset_PN_of_ID,
+        p.AC_ID_subset,
+        p.PN_ID_of,
+        a.AC_subset_PN_of_PositedAt,
+        a.AC_subset_PN_of_Positor,
+        a.AC_subset_PN_of_Reliability,
+        a.AC_subset_PN_of_Assertion
+    FROM
+        [ties].[AC_subset_PN_of_Posit] p
+    JOIN
+        [ties].[rAC_subset_PN_of_Annex](@positingTimepoint) a
+    ON
+        a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+    AND
+        a.AC_subset_PN_of_Positor = @positor
+    AND
+        a.AC_subset_PN_of_PositedAt = (
+            SELECT TOP 1
+                sub.AC_subset_PN_of_PositedAt
+            FROM
+                [ties].[rAC_subset_PN_of_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            AND
+                sub.AC_subset_PN_of_Positor = @positor
+            ORDER BY
+                sub.AC_subset_PN_of_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rEV_in_AC_wasCast_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rEV_in_AC_wasCast_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rEV_in_AC_wasCast_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_in_AC_wasCast,
+        EV_in_AC_wasCast_ID,
+        EV_in_AC_wasCast_PositedAt,
+        EV_in_AC_wasCast_Positor,
+        EV_in_AC_wasCast_Reliability,
+        EV_in_AC_wasCast_Assertion
+    FROM
+        [ties].[EV_in_AC_wasCast_Annex]
+    WHERE
+        EV_in_AC_wasCast_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rEV_in_AC_wasCast rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rEV_in_AC_wasCast','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rEV_in_AC_wasCast] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_in_AC_wasCast,
+        p.EV_in_AC_wasCast_ID,
+        p.EV_ID_in,
+        p.AC_ID_wasCast,
+        a.EV_in_AC_wasCast_PositedAt,
+        a.EV_in_AC_wasCast_Positor,
+        a.EV_in_AC_wasCast_Reliability,
+        a.EV_in_AC_wasCast_Assertion
+    FROM
+        [ties].[EV_in_AC_wasCast_Posit] p
+    JOIN
+        [ties].[rEV_in_AC_wasCast_Annex](@positingTimepoint) a
+    ON
+        a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+    AND
+        a.EV_in_AC_wasCast_Positor = @positor
+    AND
+        a.EV_in_AC_wasCast_PositedAt = (
+            SELECT TOP 1
+                sub.EV_in_AC_wasCast_PositedAt
+            FROM
+                [ties].[rEV_in_AC_wasCast_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            AND
+                sub.EV_in_AC_wasCast_Positor = @positor
+            ORDER BY
+                sub.EV_in_AC_wasCast_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fEV_in_AC_wasCast forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fEV_in_AC_wasCast','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fEV_in_AC_wasCast] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_in_AC_wasCast,
+        p.EV_in_AC_wasCast_ID,
+        p.EV_ID_in,
+        p.AC_ID_wasCast,
+        a.EV_in_AC_wasCast_PositedAt,
+        a.EV_in_AC_wasCast_Positor,
+        a.EV_in_AC_wasCast_Reliability,
+        a.EV_in_AC_wasCast_Assertion
+    FROM
+        [ties].[EV_in_AC_wasCast_Posit] p
+    JOIN
+        [ties].[rEV_in_AC_wasCast_Annex](@positingTimepoint) a
+    ON
+        a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+    AND
+        a.EV_in_AC_wasCast_Positor = @positor
+    AND
+        a.EV_in_AC_wasCast_PositedAt = (
+            SELECT TOP 1
+                sub.EV_in_AC_wasCast_PositedAt
+            FROM
+                [ties].[rEV_in_AC_wasCast_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            AND
+                sub.EV_in_AC_wasCast_Positor = @positor
+            ORDER BY
+                sub.EV_in_AC_wasCast_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie posit rewinder -------------------------------------------------------------------------------------------------
+-- rAC_part_PR_in_RAT_got_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_part_PR_in_RAT_got_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_part_PR_in_RAT_got_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_part_PR_in_RAT_got_ID,
+        AC_ID_part,
+        PR_ID_in,
+        RAT_ID_got,
+        AC_part_PR_in_RAT_got_ChangedAt
+    FROM
+        [ties].[AC_part_PR_in_RAT_got_Posit]
+    WHERE
+        AC_part_PR_in_RAT_got_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Tie posit forwarder ------------------------------------------------------------------------------------------------
+-- fAC_part_PR_in_RAT_got_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_part_PR_in_RAT_got_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_part_PR_in_RAT_got_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        AC_part_PR_in_RAT_got_ID,
+        AC_ID_part,
+        PR_ID_in,
+        RAT_ID_got,
+        AC_part_PR_in_RAT_got_ChangedAt
+    FROM
+        [ties].[AC_part_PR_in_RAT_got_Posit]
+    WHERE
+        AC_part_PR_in_RAT_got_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rAC_part_PR_in_RAT_got_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_part_PR_in_RAT_got_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_part_PR_in_RAT_got_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_Reliability,
+        AC_part_PR_in_RAT_got_Assertion
+    FROM
+        [ties].[AC_part_PR_in_RAT_got_Annex]
+    WHERE
+        AC_part_PR_in_RAT_got_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rAC_part_PR_in_RAT_got rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_part_PR_in_RAT_got','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_part_PR_in_RAT_got] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_part_PR_in_RAT_got,
+        p.AC_part_PR_in_RAT_got_ID,
+        p.AC_ID_part,
+        p.PR_ID_in,
+        p.RAT_ID_got,
+        p.AC_part_PR_in_RAT_got_ChangedAt,
+        a.AC_part_PR_in_RAT_got_PositedAt,
+        a.AC_part_PR_in_RAT_got_Positor,
+        a.AC_part_PR_in_RAT_got_Reliability,
+        a.AC_part_PR_in_RAT_got_Assertion
+    FROM
+        [ties].[rAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
+    ON
+        a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+    AND
+        a.AC_part_PR_in_RAT_got_Positor = @positor
+    AND
+        a.AC_part_PR_in_RAT_got_PositedAt = (
+            SELECT TOP 1
+                sub.AC_part_PR_in_RAT_got_PositedAt
+            FROM
+                [ties].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            AND
+                sub.AC_part_PR_in_RAT_got_Positor = @positor
+            ORDER BY
+                sub.AC_part_PR_in_RAT_got_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fAC_part_PR_in_RAT_got forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_part_PR_in_RAT_got','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_part_PR_in_RAT_got] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_part_PR_in_RAT_got,
+        p.AC_part_PR_in_RAT_got_ID,
+        p.AC_ID_part,
+        p.PR_ID_in,
+        p.RAT_ID_got,
+        p.AC_part_PR_in_RAT_got_ChangedAt,
+        a.AC_part_PR_in_RAT_got_PositedAt,
+        a.AC_part_PR_in_RAT_got_Positor,
+        a.AC_part_PR_in_RAT_got_Reliability,
+        a.AC_part_PR_in_RAT_got_Assertion
+    FROM
+        [ties].[fAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
+    ON
+        a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+    AND
+        a.AC_part_PR_in_RAT_got_Positor = @positor
+    AND
+        a.AC_part_PR_in_RAT_got_PositedAt = (
+            SELECT TOP 1
+                sub.AC_part_PR_in_RAT_got_PositedAt
+            FROM
+                [ties].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            AND
+                sub.AC_part_PR_in_RAT_got_Positor = @positor
+            ORDER BY
+                sub.AC_part_PR_in_RAT_got_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie posit rewinder -------------------------------------------------------------------------------------------------
+-- rST_at_PR_isPlaying_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rST_at_PR_isPlaying_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rST_at_PR_isPlaying_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_at_PR_isPlaying_ID,
+        ST_ID_at,
+        PR_ID_isPlaying,
+        ST_at_PR_isPlaying_ChangedAt
+    FROM
+        [ties].[ST_at_PR_isPlaying_Posit]
+    WHERE
+        ST_at_PR_isPlaying_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Tie posit forwarder ------------------------------------------------------------------------------------------------
+-- fST_at_PR_isPlaying_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fST_at_PR_isPlaying_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fST_at_PR_isPlaying_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        ST_at_PR_isPlaying_ID,
+        ST_ID_at,
+        PR_ID_isPlaying,
+        ST_at_PR_isPlaying_ChangedAt
+    FROM
+        [ties].[ST_at_PR_isPlaying_Posit]
+    WHERE
+        ST_at_PR_isPlaying_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rST_at_PR_isPlaying_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rST_at_PR_isPlaying_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rST_at_PR_isPlaying_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_ST_at_PR_isPlaying,
+        ST_at_PR_isPlaying_ID,
+        ST_at_PR_isPlaying_PositedAt,
+        ST_at_PR_isPlaying_Positor,
+        ST_at_PR_isPlaying_Reliability,
+        ST_at_PR_isPlaying_Assertion
+    FROM
+        [ties].[ST_at_PR_isPlaying_Annex]
+    WHERE
+        ST_at_PR_isPlaying_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rST_at_PR_isPlaying rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rST_at_PR_isPlaying','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rST_at_PR_isPlaying] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_at_PR_isPlaying,
+        p.ST_at_PR_isPlaying_ID,
+        p.ST_ID_at,
+        p.PR_ID_isPlaying,
+        p.ST_at_PR_isPlaying_ChangedAt,
+        a.ST_at_PR_isPlaying_PositedAt,
+        a.ST_at_PR_isPlaying_Positor,
+        a.ST_at_PR_isPlaying_Reliability,
+        a.ST_at_PR_isPlaying_Assertion
+    FROM
+        [ties].[rST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
+    ON
+        a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+    AND
+        a.ST_at_PR_isPlaying_Positor = @positor
+    AND
+        a.ST_at_PR_isPlaying_PositedAt = (
+            SELECT TOP 1
+                sub.ST_at_PR_isPlaying_PositedAt
+            FROM
+                [ties].[rST_at_PR_isPlaying_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            AND
+                sub.ST_at_PR_isPlaying_Positor = @positor
+            ORDER BY
+                sub.ST_at_PR_isPlaying_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fST_at_PR_isPlaying forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fST_at_PR_isPlaying','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fST_at_PR_isPlaying] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_ST_at_PR_isPlaying,
+        p.ST_at_PR_isPlaying_ID,
+        p.ST_ID_at,
+        p.PR_ID_isPlaying,
+        p.ST_at_PR_isPlaying_ChangedAt,
+        a.ST_at_PR_isPlaying_PositedAt,
+        a.ST_at_PR_isPlaying_Positor,
+        a.ST_at_PR_isPlaying_Reliability,
+        a.ST_at_PR_isPlaying_Assertion
+    FROM
+        [ties].[fST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
+    ON
+        a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+    AND
+        a.ST_at_PR_isPlaying_Positor = @positor
+    AND
+        a.ST_at_PR_isPlaying_PositedAt = (
+            SELECT TOP 1
+                sub.ST_at_PR_isPlaying_PositedAt
+            FROM
+                [ties].[rST_at_PR_isPlaying_Annex](@positingTimepoint) sub
+            WHERE
+                sub.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            AND
+                sub.ST_at_PR_isPlaying_Positor = @positor
+            ORDER BY
+                sub.ST_at_PR_isPlaying_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rAC_parent_AC_child_PAT_having_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_parent_AC_child_PAT_having_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_parent_AC_child_PAT_having_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_AC_parent_AC_child_PAT_having,
+        AC_parent_AC_child_PAT_having_ID,
+        AC_parent_AC_child_PAT_having_PositedAt,
+        AC_parent_AC_child_PAT_having_Positor,
+        AC_parent_AC_child_PAT_having_Reliability,
+        AC_parent_AC_child_PAT_having_Assertion
+    FROM
+        [ties].[AC_parent_AC_child_PAT_having_Annex]
+    WHERE
+        AC_parent_AC_child_PAT_having_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rAC_parent_AC_child_PAT_having rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rAC_parent_AC_child_PAT_having','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rAC_parent_AC_child_PAT_having] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_parent_AC_child_PAT_having,
+        p.AC_parent_AC_child_PAT_having_ID,
+        p.AC_ID_parent,
+        p.AC_ID_child,
+        p.PAT_ID_having,
+        a.AC_parent_AC_child_PAT_having_PositedAt,
+        a.AC_parent_AC_child_PAT_having_Positor,
+        a.AC_parent_AC_child_PAT_having_Reliability,
+        a.AC_parent_AC_child_PAT_having_Assertion
+    FROM
+        [ties].[AC_parent_AC_child_PAT_having_Posit] p
+    JOIN
+        [ties].[rAC_parent_AC_child_PAT_having_Annex](@positingTimepoint) a
+    ON
+        a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+    AND
+        a.AC_parent_AC_child_PAT_having_Positor = @positor
+    AND
+        a.AC_parent_AC_child_PAT_having_PositedAt = (
+            SELECT TOP 1
+                sub.AC_parent_AC_child_PAT_having_PositedAt
+            FROM
+                [ties].[rAC_parent_AC_child_PAT_having_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            AND
+                sub.AC_parent_AC_child_PAT_having_Positor = @positor
+            ORDER BY
+                sub.AC_parent_AC_child_PAT_having_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fAC_parent_AC_child_PAT_having forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fAC_parent_AC_child_PAT_having','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fAC_parent_AC_child_PAT_having] (
+        @positor tinyint = 0,
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_AC_parent_AC_child_PAT_having,
+        p.AC_parent_AC_child_PAT_having_ID,
+        p.AC_ID_parent,
+        p.AC_ID_child,
+        p.PAT_ID_having,
+        a.AC_parent_AC_child_PAT_having_PositedAt,
+        a.AC_parent_AC_child_PAT_having_Positor,
+        a.AC_parent_AC_child_PAT_having_Reliability,
+        a.AC_parent_AC_child_PAT_having_Assertion
+    FROM
+        [ties].[AC_parent_AC_child_PAT_having_Posit] p
+    JOIN
+        [ties].[rAC_parent_AC_child_PAT_having_Annex](@positingTimepoint) a
+    ON
+        a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+    AND
+        a.AC_parent_AC_child_PAT_having_Positor = @positor
+    AND
+        a.AC_parent_AC_child_PAT_having_PositedAt = (
+            SELECT TOP 1
+                sub.AC_parent_AC_child_PAT_having_PositedAt
+            FROM
+                [ties].[rAC_parent_AC_child_PAT_having_Annex](@positingTimepoint) sub
+            WHERE
+                sub.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            AND
+                sub.AC_parent_AC_child_PAT_having_Positor = @positor
+            ORDER BY
+                sub.AC_parent_AC_child_PAT_having_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie posit rewinder -------------------------------------------------------------------------------------------------
+-- rPR_content_ST_location_EV_of_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rPR_content_ST_location_EV_of_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rPR_content_ST_location_EV_of_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        PR_content_ST_location_EV_of_ID,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of,
+        PR_content_ST_location_EV_of_ChangedAt
+    FROM
+        [ties].[PR_content_ST_location_EV_of_Posit]
+    WHERE
+        PR_content_ST_location_EV_of_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Tie posit forwarder ------------------------------------------------------------------------------------------------
+-- fPR_content_ST_location_EV_of_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fPR_content_ST_location_EV_of_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fPR_content_ST_location_EV_of_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        PR_content_ST_location_EV_of_ID,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of,
+        PR_content_ST_location_EV_of_ChangedAt
+    FROM
+        [ties].[PR_content_ST_location_EV_of_Posit]
+    WHERE
+        PR_content_ST_location_EV_of_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Tie annex rewinder -------------------------------------------------------------------------------------------------
+-- rPR_content_ST_location_EV_of_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rPR_content_ST_location_EV_of_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rPR_content_ST_location_EV_of_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_Reliability,
+        PR_content_ST_location_EV_of_Assertion
+    FROM
+        [ties].[PR_content_ST_location_EV_of_Annex]
+    WHERE
+        PR_content_ST_location_EV_of_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Tie assembled rewinder ---------------------------------------------------------------------------------------------
+-- rPR_content_ST_location_EV_of rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.rPR_content_ST_location_EV_of','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[rPR_content_ST_location_EV_of] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_PR_content_ST_location_EV_of,
+        p.PR_content_ST_location_EV_of_ID,
+        p.PR_ID_content,
+        p.ST_ID_location,
+        p.EV_ID_of,
+        p.PR_content_ST_location_EV_of_ChangedAt,
+        a.PR_content_ST_location_EV_of_PositedAt,
+        a.PR_content_ST_location_EV_of_Positor,
+        a.PR_content_ST_location_EV_of_Reliability,
+        a.PR_content_ST_location_EV_of_Assertion
+    FROM
+        [ties].[rPR_content_ST_location_EV_of_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rPR_content_ST_location_EV_of_Annex](@positingTimepoint) a
+    ON
+        a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+    AND
+        a.PR_content_ST_location_EV_of_Positor = @positor
+    AND
+        a.PR_content_ST_location_EV_of_PositedAt = (
+            SELECT TOP 1
+                sub.PR_content_ST_location_EV_of_PositedAt
+            FROM
+                [ties].[rPR_content_ST_location_EV_of_Annex](@positingTimepoint) sub
+            WHERE
+                sub.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            AND
+                sub.PR_content_ST_location_EV_of_Positor = @positor
+            ORDER BY
+                sub.PR_content_ST_location_EV_of_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Tie assembled forwarder --------------------------------------------------------------------------------------------
+-- fPR_content_ST_location_EV_of forwarding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.fPR_content_ST_location_EV_of','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [ties].[fPR_content_ST_location_EV_of] (
+        @positor tinyint = 0,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_PR_content_ST_location_EV_of,
+        p.PR_content_ST_location_EV_of_ID,
+        p.PR_ID_content,
+        p.ST_ID_location,
+        p.EV_ID_of,
+        p.PR_content_ST_location_EV_of_ChangedAt,
+        a.PR_content_ST_location_EV_of_PositedAt,
+        a.PR_content_ST_location_EV_of_Positor,
+        a.PR_content_ST_location_EV_of_Reliability,
+        a.PR_content_ST_location_EV_of_Assertion
+    FROM
+        [ties].[fPR_content_ST_location_EV_of_Posit](@changingTimepoint) p 
+    JOIN
+        [ties].[rPR_content_ST_location_EV_of_Annex](@positingTimepoint) a
+    ON
+        a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+    AND
+        a.PR_content_ST_location_EV_of_Positor = @positor
+    AND
+        a.PR_content_ST_location_EV_of_PositedAt = (
+            SELECT TOP 1
+                sub.PR_content_ST_location_EV_of_PositedAt
+            FROM
+                [ties].[rPR_content_ST_location_EV_of_Annex](@positingTimepoint) sub
+            WHERE
+                sub.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            AND
+                sub.PR_content_ST_location_EV_of_Positor = @positor
+            ORDER BY
+                sub.PR_content_ST_location_EV_of_PositedAt DESC
+        )
+    ');
+END
+GO
+-- TIE TEMPORAL BUSINESS PERSPECTIVES ---------------------------------------------------------------------------------
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.EQ_Current_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.EQ_Point_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.EQ_Latest_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.Difference_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.Current_Actor_partner_Actor_with_currently_Ongoing', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.Point_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Actor_partner_Actor_with_currently_Ongoing];
+IF Object_ID('ties.Latest_Actor_partner_Actor_with_currently_Ongoing', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Actor_partner_Actor_with_currently_Ongoing];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Actor_subset_Person_of];
+IF Object_ID('ties.EQ_Current_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Actor_subset_Person_of];
+IF Object_ID('ties.EQ_Point_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Actor_subset_Person_of];
+IF Object_ID('ties.EQ_Latest_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Actor_subset_Person_of];
+IF Object_ID('ties.Difference_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Actor_subset_Person_of];
+IF Object_ID('ties.Current_Actor_subset_Person_of', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Actor_subset_Person_of];
+IF Object_ID('ties.Point_Actor_subset_Person_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Actor_subset_Person_of];
+IF Object_ID('ties.Latest_Actor_subset_Person_of', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Actor_subset_Person_of];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.EQ_Current_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.EQ_Point_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.EQ_Latest_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.Difference_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.Current_in_Unknown_Actor_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.Point_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_in_Unknown_Actor_wasCast];
+IF Object_ID('ties.Latest_in_Unknown_Actor_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_in_Unknown_Actor_wasCast];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.EQ_Current_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.EQ_Point_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.EQ_Latest_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.Difference_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.Current_Actor_part_Program_in_got_Rating', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.Point_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Actor_part_Program_in_got_Rating];
+IF Object_ID('ties.Latest_Actor_part_Program_in_got_Rating', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Actor_part_Program_in_got_Rating];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Stage_at_Program_isPlaying];
+IF Object_ID('ties.EQ_Current_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Stage_at_Program_isPlaying];
+IF Object_ID('ties.EQ_Point_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Stage_at_Program_isPlaying];
+IF Object_ID('ties.EQ_Latest_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Stage_at_Program_isPlaying];
+IF Object_ID('ties.Difference_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Stage_at_Program_isPlaying];
+IF Object_ID('ties.Current_Stage_at_Program_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Stage_at_Program_isPlaying];
+IF Object_ID('ties.Point_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Stage_at_Program_isPlaying];
+IF Object_ID('ties.Latest_Stage_at_Program_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Stage_at_Program_isPlaying];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.EQ_Current_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.EQ_Point_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.EQ_Latest_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.Difference_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.Current_Actor_parent_Actor_child_having_ParentalType', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.Point_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Actor_parent_Actor_child_having_ParentalType];
+IF Object_ID('ties.Latest_Actor_parent_Actor_child_having_ParentalType', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Actor_parent_Actor_child_having_ParentalType];
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.EQ_Difference_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Difference_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.EQ_Current_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Current_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.EQ_Point_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Point_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.EQ_Latest_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[EQ_Latest_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.Difference_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Difference_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.Current_Program_content_Stage_location_of_Unknown', 'V') IS NOT NULL
+DROP VIEW [ties].[Current_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.Point_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[Point_Program_content_Stage_location_of_Unknown];
+IF Object_ID('ties.Latest_Program_content_Stage_location_of_Unknown', 'V') IS NOT NULL
+DROP VIEW [ties].[Latest_Program_content_Stage_location_of_Unknown];
+GO
+-- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each tie. There are four types of perspectives: latest,
+-- point-in-time, difference, and now.
+--
+-- The time traveling perspective shows information as it was or will be based on a number
+-- of input parameters.
+--
+-- @positor the view of which positor to adopt (defaults to 0)
+-- @changingTimepoint the point in changing time to travel to (defaults to End of Time)
+-- @positingTimepoint the point in positing time to travel to (defaults to End of Time)
+-- @assertion whether to show positve, negative, uncertain, or all posits (defaults to all)
+--
+-- The latest perspective shows the latest available information for each tie.
+-- The now perspective shows the information as it is right now.
+-- The point-in-time perspective lets you travel through the information to the given timepoint.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+--
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.nAC_partner_AC_with_ONG_currently', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.pAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.lAC_partner_AC_with_ONG_currently', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_partner_AC_with_ONG_currently];
+IF Object_ID('ties.tAC_partner_AC_with_ONG_currently', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tAC_partner_AC_with_ONG_currently];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tAC_partner_AC_with_ONG_currently viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tAC_partner_AC_with_ONG_currently] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.AC_partner_AC_with_ONG_currently_ID,
+    tie.Metadata_AC_partner_AC_with_ONG_currently,
+    tie.AC_partner_AC_with_ONG_currently_Positor,
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+    tie.AC_partner_AC_with_ONG_currently_PositedAt,
+    tie.AC_partner_AC_with_ONG_currently_Reliability,
+    tie.AC_partner_AC_with_ONG_currently_Assertion,
+    tie.AC_ID_partner,
+    tie.AC_ID_with,
+    [ONG_currently].ONG_Ongoing AS ONG_Ongoing,
+    [ONG_currently].Metadata_ONG AS Metadata_ONG,
+    tie.ONG_ID_currently
+FROM
+    [ties].[rAC_partner_AC_with_ONG_currently](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) tie
+LEFT JOIN
+    [knots].[ONG_Ongoing] [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ID = (
+        SELECT TOP 1
+            sub.AC_partner_AC_with_ONG_currently_ID
+        FROM
+            [ties].[rAC_partner_AC_with_ONG_currently](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+        (
+                sub.AC_ID_partner = tie.AC_ID_partner
+            OR
+                sub.AC_ID_with = tie.AC_ID_with
+        )
+        AND
+            sub.AC_partner_AC_with_ONG_currently_Assertion = isnull(@assertion, sub.AC_partner_AC_with_ONG_currently_Assertion)
+        ORDER BY
+            sub.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+            sub.AC_partner_AC_with_ONG_currently_PositedAt DESC,
+            sub.AC_partner_AC_with_ONG_currently_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_partner_AC_with_ONG_currently] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_partner_AC_with_ONG_currently] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_partner_AC_with_ONG_currently viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_partner_AC_with_ONG_currently] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_partner_AC_with_ONG_currently] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_partner_AC_with_ONG_currently viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_partner_AC_with_ONG_currently]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_partner_AC_with_ONG_currently] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dAC_partner_AC_with_ONG_currently showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dAC_partner_AC_with_ONG_currently] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [ONG_currently].ONG_Ongoing AS ONG_Ongoing,
+    [ONG_currently].Metadata_ONG AS Metadata_ONG,
+    tie.*
+FROM
+    [ties].[AC_partner_AC_with_ONG_currently] tie
+LEFT JOIN
+    [knots].[ONG_Ongoing] [ONG_currently]
+ON
+    [ONG_currently].ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_subset_PN_of];
+IF Object_ID('ties.nAC_subset_PN_of', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_subset_PN_of];
+IF Object_ID('ties.pAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_subset_PN_of];
+IF Object_ID('ties.lAC_subset_PN_of', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_subset_PN_of];
+IF Object_ID('ties.tAC_subset_PN_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tAC_subset_PN_of];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tAC_subset_PN_of viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tAC_subset_PN_of] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.AC_subset_PN_of_ID,
+    tie.Metadata_AC_subset_PN_of,
+    tie.AC_subset_PN_of_Positor,
+    tie.AC_subset_PN_of_PositedAt,
+    tie.AC_subset_PN_of_Reliability,
+    tie.AC_subset_PN_of_Assertion,
+    tie.AC_ID_subset,
+    tie.PN_ID_of
+FROM
+    [ties].[rAC_subset_PN_of](
+        @positor,
+        @positingTimepoint
+    ) tie
+WHERE
+    tie.AC_subset_PN_of_ID = (
+        SELECT TOP 1
+            sub.AC_subset_PN_of_ID
+        FROM
+            [ties].[rAC_subset_PN_of](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+        (
+                sub.AC_ID_subset = tie.AC_ID_subset
+            OR
+                sub.PN_ID_of = tie.PN_ID_of
+        )
+        AND
+            sub.AC_subset_PN_of_Assertion = isnull(@assertion, sub.AC_subset_PN_of_Assertion)
+        ORDER BY
+            sub.AC_subset_PN_of_PositedAt DESC,
+            sub.AC_subset_PN_of_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_subset_PN_of] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_subset_PN_of] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_subset_PN_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_subset_PN_of] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_subset_PN_of] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_subset_PN_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_subset_PN_of]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_subset_PN_of] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dEV_in_AC_wasCast];
+IF Object_ID('ties.nEV_in_AC_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[nEV_in_AC_wasCast];
+IF Object_ID('ties.pEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pEV_in_AC_wasCast];
+IF Object_ID('ties.lEV_in_AC_wasCast', 'V') IS NOT NULL
+DROP VIEW [ties].[lEV_in_AC_wasCast];
+IF Object_ID('ties.tEV_in_AC_wasCast', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tEV_in_AC_wasCast];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tEV_in_AC_wasCast viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tEV_in_AC_wasCast] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.EV_in_AC_wasCast_ID,
+    tie.Metadata_EV_in_AC_wasCast,
+    tie.EV_in_AC_wasCast_Positor,
+    tie.EV_in_AC_wasCast_PositedAt,
+    tie.EV_in_AC_wasCast_Reliability,
+    tie.EV_in_AC_wasCast_Assertion,
+    tie.EV_ID_in,
+    tie.AC_ID_wasCast
+FROM
+    [ties].[rEV_in_AC_wasCast](
+        @positor,
+        @positingTimepoint
+    ) tie
+WHERE
+    tie.EV_in_AC_wasCast_ID = (
+        SELECT TOP 1
+            sub.EV_in_AC_wasCast_ID
+        FROM
+            [ties].[rEV_in_AC_wasCast](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.EV_ID_in = tie.EV_ID_in
+        AND
+            sub.AC_ID_wasCast = tie.AC_ID_wasCast
+        AND
+            sub.EV_in_AC_wasCast_Assertion = isnull(@assertion, sub.EV_in_AC_wasCast_Assertion)
+        ORDER BY
+            sub.EV_in_AC_wasCast_PositedAt DESC,
+            sub.EV_in_AC_wasCast_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lEV_in_AC_wasCast] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tEV_in_AC_wasCast] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pEV_in_AC_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pEV_in_AC_wasCast] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tEV_in_AC_wasCast] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nEV_in_AC_wasCast viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nEV_in_AC_wasCast]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tEV_in_AC_wasCast] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_part_PR_in_RAT_got];
+IF Object_ID('ties.nAC_part_PR_in_RAT_got', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_part_PR_in_RAT_got];
+IF Object_ID('ties.pAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_part_PR_in_RAT_got];
+IF Object_ID('ties.lAC_part_PR_in_RAT_got', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_part_PR_in_RAT_got];
+IF Object_ID('ties.tAC_part_PR_in_RAT_got', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tAC_part_PR_in_RAT_got];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tAC_part_PR_in_RAT_got viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tAC_part_PR_in_RAT_got] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.AC_part_PR_in_RAT_got_ID,
+    tie.Metadata_AC_part_PR_in_RAT_got,
+    tie.AC_part_PR_in_RAT_got_Positor,
+    tie.AC_part_PR_in_RAT_got_ChangedAt,
+    tie.AC_part_PR_in_RAT_got_PositedAt,
+    tie.AC_part_PR_in_RAT_got_Reliability,
+    tie.AC_part_PR_in_RAT_got_Assertion,
+    tie.AC_ID_part,
+    tie.PR_ID_in,
+    [RAT_got].RAT_Rating AS RAT_Rating,
+    [RAT_got].Metadata_RAT AS Metadata_RAT,
+    tie.RAT_ID_got
+FROM
+    [ties].[rAC_part_PR_in_RAT_got](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) tie
+LEFT JOIN
+    [knots].[RAT_Rating] [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ID = (
+        SELECT TOP 1
+            sub.AC_part_PR_in_RAT_got_ID
+        FROM
+            [ties].[rAC_part_PR_in_RAT_got](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.AC_ID_part = tie.AC_ID_part
+        AND
+            sub.PR_ID_in = tie.PR_ID_in
+        AND
+            sub.AC_part_PR_in_RAT_got_Assertion = isnull(@assertion, sub.AC_part_PR_in_RAT_got_Assertion)
+        ORDER BY
+            sub.AC_part_PR_in_RAT_got_ChangedAt DESC,
+            sub.AC_part_PR_in_RAT_got_PositedAt DESC,
+            sub.AC_part_PR_in_RAT_got_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_part_PR_in_RAT_got] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_part_PR_in_RAT_got] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_part_PR_in_RAT_got viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_part_PR_in_RAT_got] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_part_PR_in_RAT_got] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_part_PR_in_RAT_got viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_part_PR_in_RAT_got]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_part_PR_in_RAT_got] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dAC_part_PR_in_RAT_got showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dAC_part_PR_in_RAT_got] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [RAT_got].RAT_Rating AS RAT_Rating,
+    [RAT_got].Metadata_RAT AS Metadata_RAT,
+    tie.*
+FROM
+    [ties].[AC_part_PR_in_RAT_got] tie
+LEFT JOIN
+    [knots].[RAT_Rating] [RAT_got]
+ON
+    [RAT_got].RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dST_at_PR_isPlaying];
+IF Object_ID('ties.nST_at_PR_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[nST_at_PR_isPlaying];
+IF Object_ID('ties.pST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pST_at_PR_isPlaying];
+IF Object_ID('ties.lST_at_PR_isPlaying', 'V') IS NOT NULL
+DROP VIEW [ties].[lST_at_PR_isPlaying];
+IF Object_ID('ties.tST_at_PR_isPlaying', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tST_at_PR_isPlaying];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tST_at_PR_isPlaying viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tST_at_PR_isPlaying] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.ST_at_PR_isPlaying_ID,
+    tie.Metadata_ST_at_PR_isPlaying,
+    tie.ST_at_PR_isPlaying_Positor,
+    tie.ST_at_PR_isPlaying_ChangedAt,
+    tie.ST_at_PR_isPlaying_PositedAt,
+    tie.ST_at_PR_isPlaying_Reliability,
+    tie.ST_at_PR_isPlaying_Assertion,
+    tie.ST_ID_at,
+    tie.PR_ID_isPlaying
+FROM
+    [ties].[rST_at_PR_isPlaying](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) tie
+WHERE
+    tie.ST_at_PR_isPlaying_ID = (
+        SELECT TOP 1
+            sub.ST_at_PR_isPlaying_ID
+        FROM
+            [ties].[rST_at_PR_isPlaying](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.ST_ID_at = tie.ST_ID_at
+        AND
+            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
+        AND
+            sub.ST_at_PR_isPlaying_Assertion = isnull(@assertion, sub.ST_at_PR_isPlaying_Assertion)
+        ORDER BY
+            sub.ST_at_PR_isPlaying_ChangedAt DESC,
+            sub.ST_at_PR_isPlaying_PositedAt DESC,
+            sub.ST_at_PR_isPlaying_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lST_at_PR_isPlaying] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tST_at_PR_isPlaying] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pST_at_PR_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pST_at_PR_isPlaying] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tST_at_PR_isPlaying] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nST_at_PR_isPlaying viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nST_at_PR_isPlaying]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tST_at_PR_isPlaying] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dST_at_PR_isPlaying showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dST_at_PR_isPlaying] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.*
+FROM
+    [ties].[ST_at_PR_isPlaying] tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.nAC_parent_AC_child_PAT_having', 'V') IS NOT NULL
+DROP VIEW [ties].[nAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.pAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.lAC_parent_AC_child_PAT_having', 'V') IS NOT NULL
+DROP VIEW [ties].[lAC_parent_AC_child_PAT_having];
+IF Object_ID('ties.tAC_parent_AC_child_PAT_having', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tAC_parent_AC_child_PAT_having];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tAC_parent_AC_child_PAT_having viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tAC_parent_AC_child_PAT_having] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.AC_parent_AC_child_PAT_having_ID,
+    tie.Metadata_AC_parent_AC_child_PAT_having,
+    tie.AC_parent_AC_child_PAT_having_Positor,
+    tie.AC_parent_AC_child_PAT_having_PositedAt,
+    tie.AC_parent_AC_child_PAT_having_Reliability,
+    tie.AC_parent_AC_child_PAT_having_Assertion,
+    tie.AC_ID_parent,
+    tie.AC_ID_child,
+    [PAT_having].PAT_ParentalType AS PAT_ParentalType,
+    [PAT_having].Metadata_PAT AS Metadata_PAT,
+    tie.PAT_ID_having
+FROM
+    [ties].[rAC_parent_AC_child_PAT_having](
+        @positor,
+        @positingTimepoint
+    ) tie
+LEFT JOIN
+    [knots].[PAT_ParentalType] [PAT_having]
+ON
+    [PAT_having].PAT_ID = tie.PAT_ID_having
+WHERE
+    tie.AC_parent_AC_child_PAT_having_ID = (
+        SELECT TOP 1
+            sub.AC_parent_AC_child_PAT_having_ID
+        FROM
+            [ties].[rAC_parent_AC_child_PAT_having](
+                @positor,
+                @positingTimepoint
+            ) sub
+        WHERE
+            sub.AC_ID_parent = tie.AC_ID_parent
+        AND
+            sub.AC_ID_child = tie.AC_ID_child
+        AND
+            sub.PAT_ID_having = tie.PAT_ID_having
+        AND
+            sub.AC_parent_AC_child_PAT_having_Assertion = isnull(@assertion, sub.AC_parent_AC_child_PAT_having_Assertion)
+        ORDER BY
+            sub.AC_parent_AC_child_PAT_having_PositedAt DESC,
+            sub.AC_parent_AC_child_PAT_having_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lAC_parent_AC_child_PAT_having] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_parent_AC_child_PAT_having] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pAC_parent_AC_child_PAT_having viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pAC_parent_AC_child_PAT_having] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_parent_AC_child_PAT_having] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nAC_parent_AC_child_PAT_having viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nAC_parent_AC_child_PAT_having]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tAC_parent_AC_child_PAT_having] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Drop perspectives --------------------------------------------------------------------------------------------------
+IF Object_ID('ties.dPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[dPR_content_ST_location_EV_of];
+IF Object_ID('ties.nPR_content_ST_location_EV_of', 'V') IS NOT NULL
+DROP VIEW [ties].[nPR_content_ST_location_EV_of];
+IF Object_ID('ties.pPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[pPR_content_ST_location_EV_of];
+IF Object_ID('ties.lPR_content_ST_location_EV_of', 'V') IS NOT NULL
+DROP VIEW [ties].[lPR_content_ST_location_EV_of];
+IF Object_ID('ties.tPR_content_ST_location_EV_of', 'IF') IS NOT NULL
+DROP FUNCTION [ties].[tPR_content_ST_location_EV_of];
+GO
+-- Time traveling perspective -----------------------------------------------------------------------------------------
+-- tPR_content_ST_location_EV_of viewed as given by the input parameters
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[tPR_content_ST_location_EV_of] (
+    @positor tinyint = 0,
+    @changingTimepoint datetime2 = '9999-12-31',
+    @positingTimepoint datetime2 = '9999-12-31',
+    @assertion char(1) = null
+)
+RETURNS TABLE WITH SCHEMABINDING AS RETURN
+SELECT
+    tie.PR_content_ST_location_EV_of_ID,
+    tie.Metadata_PR_content_ST_location_EV_of,
+    tie.PR_content_ST_location_EV_of_Positor,
+    tie.PR_content_ST_location_EV_of_ChangedAt,
+    tie.PR_content_ST_location_EV_of_PositedAt,
+    tie.PR_content_ST_location_EV_of_Reliability,
+    tie.PR_content_ST_location_EV_of_Assertion,
+    tie.PR_ID_content,
+    tie.ST_ID_location,
+    tie.EV_ID_of
+FROM
+    [ties].[rPR_content_ST_location_EV_of](
+        @positor,
+        @changingTimepoint,
+        @positingTimepoint
+    ) tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ID = (
+        SELECT TOP 1
+            sub.PR_content_ST_location_EV_of_ID
+        FROM
+            [ties].[rPR_content_ST_location_EV_of](
+                @positor,
+                @changingTimepoint,
+                @positingTimepoint
+            ) sub
+        WHERE
+        (
+                sub.PR_ID_content = tie.PR_ID_content
+            OR
+                sub.ST_ID_location = tie.ST_ID_location
+        )
+        AND
+            sub.PR_content_ST_location_EV_of_Assertion = isnull(@assertion, sub.PR_content_ST_location_EV_of_Assertion)
+        ORDER BY
+            sub.PR_content_ST_location_EV_of_ChangedAt DESC,
+            sub.PR_content_ST_location_EV_of_PositedAt DESC,
+            sub.PR_content_ST_location_EV_of_Reliability DESC
+    );
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- lPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[lPR_content_ST_location_EV_of] AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tPR_content_ST_location_EV_of] (
+        p.Positor,
+        DEFAULT,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- pPR_content_ST_location_EV_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[pPR_content_ST_location_EV_of] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tPR_content_ST_location_EV_of] (
+        p.Positor,
+        @changingTimepoint,
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- nPR_content_ST_location_EV_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[nPR_content_ST_location_EV_of]
+AS
+SELECT
+    *
+FROM
+    [dw].[_Positor] p
+CROSS APPLY
+    [ties].[tPR_content_ST_location_EV_of] (
+        p.Positor,
+        sysdatetime(),
+        DEFAULT,
+        '+'
+    ) tie;
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dPR_content_ST_location_EV_of showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[dPR_content_ST_location_EV_of] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.*
+FROM
+    [ties].[PR_content_ST_location_EV_of] tie
+WHERE
+    tie.PR_content_ST_location_EV_of_ChangedAt BETWEEN @intervalStart AND @intervalEnd;
+GO
+-- TIE TEMPORAL BUSINESS PERSPECTIVES ---------------------------------------------------------------------------------
+--
+-- These table valued functions simplify temporal querying by providing a temporal
+-- perspective of each tie. There are four types of perspectives: latest,
+-- point-in-time, difference, and now.
+--
+-- The latest perspective shows the latest available information for each tie.
+-- The now perspective shows the information as it is right now.
+-- The point-in-time perspective lets you travel through the information to the given timepoint.
+--
+-- @changingTimepoint the point in changing time to travel to
+--
+-- The difference perspective shows changes between the two given timepoints.
+--
+-- @intervalStart the start of the interval for finding changes
+-- @intervalEnd the end of the interval for finding changes
+--
+-- Under equivalence all these views default to equivalent = 0, however, corresponding
+-- prepended-e perspectives are provided in order to select a specific equivalent.
+--
+-- @equivalent the equivalent for which to retrieve data
+--
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Actor_partner_Actor_with_currently_Ongoing] AS
+SELECT
+    tie.Positor,
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[lAC_partner_AC_with_ONG_currently] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Actor_partner_Actor_with_currently_Ongoing] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[pAC_partner_AC_with_ONG_currently](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Actor_partner_Actor_with_currently_Ongoing viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Actor_partner_Actor_with_currently_Ongoing]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Actor_partner_Actor_with_currently_Ongoing](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Actor_partner_Actor_with_currently_Ongoing showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Difference_Actor_partner_Actor_with_currently_Ongoing] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.AC_partner_AC_with_ONG_currently_Positor as [Positor],
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt as [Time_of_Change],
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[dAC_partner_AC_with_ONG_currently](@intervalStart, @intervalEnd) tie;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Actor_partner_Actor_with_currently_Ongoing] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[elAC_partner_AC_with_ONG_currently](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[epAC_partner_AC_with_ONG_currently](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Actor_partner_Actor_with_currently_Ongoing viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Actor_partner_Actor_with_currently_Ongoing] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Actor_partner_Actor_with_currently_Ongoing showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Difference_Actor_partner_Actor_with_currently_Ongoing] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.AC_partner_AC_with_ONG_currently_Positor as [Positor],
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt as [Time_of_Change],
+    tie.AC_ID_partner as [Actor_partner_Id],
+    tie.AC_ID_with as [Actor_with_Id],
+    tie.ONG_Ongoing AS [currently_Ongoing]
+FROM
+    [ties].[edAC_partner_AC_with_ONG_currently](@equivalent, @intervalStart, @intervalEnd) tie;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Actor_subset_Person_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Actor_subset_Person_of] AS
+SELECT
+    tie.Positor,
+    tie.AC_ID_subset as [Actor_subset_Id],
+    tie.PN_ID_of as [Person_of_Id]
+FROM
+    [ties].[lAC_subset_PN_of] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Actor_subset_Person_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Actor_subset_Person_of] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_subset as [Actor_subset_Id],
+    tie.PN_ID_of as [Person_of_Id]
+FROM
+    [ties].[pAC_subset_PN_of](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Actor_subset_Person_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Actor_subset_Person_of]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Actor_subset_Person_of](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Actor_subset_Person_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Actor_subset_Person_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_subset as [Actor_subset_Id],
+    tie.PN_ID_of as [Person_of_Id]
+FROM
+    [ties].[elAC_subset_PN_of](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Actor_subset_Person_of viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Actor_subset_Person_of] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_subset as [Actor_subset_Id],
+    tie.PN_ID_of as [Person_of_Id]
+FROM
+    [ties].[epAC_subset_PN_of](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Actor_subset_Person_of viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Actor_subset_Person_of] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Actor_subset_Person_of](@equivalent, sysdatetime());
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_in_Unknown_Actor_wasCast] AS
+SELECT
+    tie.Positor,
+    tie.EV_ID_in as [in_Unknown_Id],
+    tie.AC_ID_wasCast as [Actor_wasCast_Id]
+FROM
+    [ties].[lEV_in_AC_wasCast] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_in_Unknown_Actor_wasCast] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.EV_ID_in as [in_Unknown_Id],
+    tie.AC_ID_wasCast as [Actor_wasCast_Id]
+FROM
+    [ties].[pEV_in_AC_wasCast](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_in_Unknown_Actor_wasCast viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_in_Unknown_Actor_wasCast]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_in_Unknown_Actor_wasCast](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_in_Unknown_Actor_wasCast] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.EV_ID_in as [in_Unknown_Id],
+    tie.AC_ID_wasCast as [Actor_wasCast_Id]
+FROM
+    [ties].[elEV_in_AC_wasCast](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_in_Unknown_Actor_wasCast] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.EV_ID_in as [in_Unknown_Id],
+    tie.AC_ID_wasCast as [Actor_wasCast_Id]
+FROM
+    [ties].[epEV_in_AC_wasCast](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_in_Unknown_Actor_wasCast viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_in_Unknown_Actor_wasCast] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_in_Unknown_Actor_wasCast](@equivalent, sysdatetime());
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Actor_part_Program_in_got_Rating] AS
+SELECT
+    tie.Positor,
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[lAC_part_PR_in_RAT_got] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Actor_part_Program_in_got_Rating] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[pAC_part_PR_in_RAT_got](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Actor_part_Program_in_got_Rating viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Actor_part_Program_in_got_Rating]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Actor_part_Program_in_got_Rating](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Actor_part_Program_in_got_Rating showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Difference_Actor_part_Program_in_got_Rating] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.AC_part_PR_in_RAT_got_Positor as [Positor],
+    tie.AC_part_PR_in_RAT_got_ChangedAt as [Time_of_Change],
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[dAC_part_PR_in_RAT_got](@intervalStart, @intervalEnd) tie;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Actor_part_Program_in_got_Rating] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[elAC_part_PR_in_RAT_got](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Actor_part_Program_in_got_Rating] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[epAC_part_PR_in_RAT_got](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Actor_part_Program_in_got_Rating viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Actor_part_Program_in_got_Rating] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Actor_part_Program_in_got_Rating](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Actor_part_Program_in_got_Rating showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Difference_Actor_part_Program_in_got_Rating] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.AC_part_PR_in_RAT_got_Positor as [Positor],
+    tie.AC_part_PR_in_RAT_got_ChangedAt as [Time_of_Change],
+    tie.AC_ID_part as [Actor_part_Id],
+    tie.PR_ID_in as [Program_in_Id],
+    tie.RAT_Rating AS [got_Rating]
+FROM
+    [ties].[edAC_part_PR_in_RAT_got](@equivalent, @intervalStart, @intervalEnd) tie;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Stage_at_Program_isPlaying] AS
+SELECT
+    tie.Positor,
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[lST_at_PR_isPlaying] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Stage_at_Program_isPlaying] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[pST_at_PR_isPlaying](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Stage_at_Program_isPlaying viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Stage_at_Program_isPlaying]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Stage_at_Program_isPlaying](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Stage_at_Program_isPlaying showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Difference_Stage_at_Program_isPlaying] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.ST_at_PR_isPlaying_Positor as [Positor],
+    tie.ST_at_PR_isPlaying_ChangedAt as [Time_of_Change],
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[dST_at_PR_isPlaying](@intervalStart, @intervalEnd) tie;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Stage_at_Program_isPlaying] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[elST_at_PR_isPlaying](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Stage_at_Program_isPlaying] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[epST_at_PR_isPlaying](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Stage_at_Program_isPlaying viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Stage_at_Program_isPlaying] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Stage_at_Program_isPlaying](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Stage_at_Program_isPlaying showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Difference_Stage_at_Program_isPlaying] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.ST_at_PR_isPlaying_Positor as [Positor],
+    tie.ST_at_PR_isPlaying_ChangedAt as [Time_of_Change],
+    tie.ST_ID_at as [Stage_at_Id],
+    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
+FROM
+    [ties].[edST_at_PR_isPlaying](@equivalent, @intervalStart, @intervalEnd) tie;
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Actor_parent_Actor_child_having_ParentalType] AS
+SELECT
+    tie.Positor,
+    tie.AC_ID_parent as [Actor_parent_Id],
+    tie.AC_ID_child as [Actor_child_Id],
+    tie.PAT_ParentalType AS [having_ParentalType]
+FROM
+    [ties].[lAC_parent_AC_child_PAT_having] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Actor_parent_Actor_child_having_ParentalType] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_parent as [Actor_parent_Id],
+    tie.AC_ID_child as [Actor_child_Id],
+    tie.PAT_ParentalType AS [having_ParentalType]
+FROM
+    [ties].[pAC_parent_AC_child_PAT_having](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Actor_parent_Actor_child_having_ParentalType viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Actor_parent_Actor_child_having_ParentalType]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Actor_parent_Actor_child_having_ParentalType](sysdatetime());
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Actor_parent_Actor_child_having_ParentalType] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_parent as [Actor_parent_Id],
+    tie.AC_ID_child as [Actor_child_Id],
+    tie.PAT_ParentalType AS [having_ParentalType]
+FROM
+    [ties].[elAC_parent_AC_child_PAT_having](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.AC_ID_parent as [Actor_parent_Id],
+    tie.AC_ID_child as [Actor_child_Id],
+    tie.PAT_ParentalType AS [having_ParentalType]
+FROM
+    [ties].[epAC_parent_AC_child_PAT_having](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Actor_parent_Actor_child_having_ParentalType viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Actor_parent_Actor_child_having_ParentalType] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType](@equivalent, sysdatetime());
+GO
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-- Latest_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Latest_Program_content_Stage_location_of_Unknown] AS
+SELECT
+    tie.Positor,
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[lPR_content_ST_location_EV_of] tie;
+GO
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-- Point_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Point_Program_content_Stage_location_of_Unknown] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[pPR_content_ST_location_EV_of](@changingTimepoint) tie
+GO
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-- Current_Program_content_Stage_location_of_Unknown viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE VIEW [ties].[Current_Program_content_Stage_location_of_Unknown]
+AS
+SELECT
+    *
+FROM
+    [ties].[Point_Program_content_Stage_location_of_Unknown](sysdatetime());
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- Difference_Program_content_Stage_location_of_Unknown showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[Difference_Program_content_Stage_location_of_Unknown] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.PR_content_ST_location_EV_of_Positor as [Positor],
+    tie.PR_content_ST_location_EV_of_ChangedAt as [Time_of_Change],
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[dPR_content_ST_location_EV_of](@intervalStart, @intervalEnd) tie;
+GO
+-- Latest equivalence perspective -------------------------------------------------------------------------------------
+-- EQ_Latest_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Latest_Program_content_Stage_location_of_Unknown] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[elPR_content_ST_location_EV_of](@equivalent) tie;
+GO
+-- Point-in-time equivalence perspective ------------------------------------------------------------------------------
+-- EQ_Point_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Point_Program_content_Stage_location_of_Unknown] (
+    @equivalent tinyint,
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.Positor,
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[epPR_content_ST_location_EV_of](@equivalent, @changingTimepoint) tie
+GO
+-- Now equivalence perspective ----------------------------------------------------------------------------------------
+-- EQ_Current_Program_content_Stage_location_of_Unknown viewed as it currently is (cannot include future versions)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Current_Program_content_Stage_location_of_Unknown] (
+    @equivalent tinyint
+)
+RETURNS TABLE AS RETURN
+SELECT
+    *
+FROM
+    [ties].[EQ_Point_Program_content_Stage_location_of_Unknown](@equivalent, sysdatetime());
+GO
+-- Difference equivalence perspective ---------------------------------------------------------------------------------
+-- EQ_Difference_Program_content_Stage_location_of_Unknown showing all differences between the given timepoints
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [ties].[EQ_Difference_Program_content_Stage_location_of_Unknown] (
+    @equivalent tinyint,
+    @intervalStart datetime2,
+    @intervalEnd datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    tie.PR_content_ST_location_EV_of_Positor as [Positor],
+    tie.PR_content_ST_location_EV_of_ChangedAt as [Time_of_Change],
+    tie.PR_ID_content as [Program_content_Id],
+    tie.ST_ID_location as [Stage_location_Id],
+    tie.EV_ID_of as [of_Unknown_Id]
+FROM
+    [ties].[edPR_content_ST_location_EV_of](@equivalent, @intervalStart, @intervalEnd) tie;
+GO
+-- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the assembled and latest views make them behave like tables.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent ties, only changes that represent values different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_partner_AC_with_ONG_currently instead of INSERT trigger on AC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_partner_AC_with_ONG_currently', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_partner_AC_with_ONG_currently];
+GO
+CREATE TRIGGER [ties].[it_AC_partner_AC_with_ONG_currently] ON [ties].[AC_partner_AC_with_ONG_currently]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_AC_partner_AC_with_ONG_currently int not null,
+        AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
+        AC_partner_AC_with_ONG_currently_Version bigint not null,
+        AC_partner_AC_with_ONG_currently_StatementType char(1) not null,
+        AC_partner_AC_with_ONG_currently_Positor tinyint not null,
+        AC_partner_AC_with_ONG_currently_PositedAt datetime2 not null,
+        AC_partner_AC_with_ONG_currently_Reliability decimal(5,2) not null,
+        AC_partner_AC_with_ONG_currently_Assertion char(1) not null,
+        AC_ID_partner smallint not null,
+        AC_ID_with smallint not null,
+        ONG_ID_currently tinyint not null,
+        primary key (
+            AC_partner_AC_with_ONG_currently_Version,
+            AC_ID_partner,
+            AC_ID_with,
+            ONG_ID_currently
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_partner,
+            i.AC_ID_with,
+            i.ONG_ID_currently,
+            ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now) AS AC_partner_AC_with_ONG_currently_ChangedAt,
+            ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, 0) AS AC_partner_AC_with_ONG_currently_Positor,
+            ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now) AS AC_partner_AC_with_ONG_currently_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+            JOIN
+                [ties].[AC_partner_AC_with_ONG_currently_Annex] a
+            ON
+                a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            WHERE
+                p.AC_ID_partner = i.AC_ID_partner
+            AND
+                p.AC_ID_with = i.AC_ID_with
+            AND
+                p.ONG_ID_currently = i.ONG_ID_currently
+            AND
+                p.AC_partner_AC_with_ONG_currently_ChangedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Positor = ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, 0)
+            AND
+                a.AC_partner_AC_with_ONG_currently_PositedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Reliability <> ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_partner_AC_with_ONG_currently for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_AC_partner_AC_with_ONG_currently, 0),
+        ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_partner_AC_with_ONG_currently_Positor,
+                i.AC_ID_partner,
+                i.AC_ID_with,
+                i.ONG_ID_currently
+            ORDER BY
+                ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now),
+                i.AC_partner_AC_with_ONG_currently_PositedAt ASC,
+                i.AC_partner_AC_with_ONG_currently_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, 0),
+        ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now),
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1),
+        CAST(
+            case
+                when i.AC_partner_AC_with_ONG_currently_Reliability > 0 then '+'
+                when i.AC_partner_AC_with_ONG_currently_Reliability = 0 then '?'
+                when i.AC_partner_AC_with_ONG_currently_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.AC_ID_partner,
+        i.AC_ID_with,
+        i.ONG_ID_currently
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        i.ONG_ID_currently is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+            JOIN
+                [ties].[AC_partner_AC_with_ONG_currently_Annex] a
+            ON
+                a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+            WHERE
+                p.AC_ID_partner = i.AC_ID_partner
+            AND
+                p.AC_ID_with = i.AC_ID_with
+            AND
+                p.ONG_ID_currently = i.ONG_ID_currently
+            AND
+                p.AC_partner_AC_with_ONG_currently_ChangedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_ChangedAt, @now)
+            AND
+                a.AC_partner_AC_with_ONG_currently_Positor = ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, 0)
+            AND
+                a.AC_partner_AC_with_ONG_currently_PositedAt = ISNULL(i.AC_partner_AC_with_ONG_currently_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(AC_partner_AC_with_ONG_currently_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_partner_AC_with_ONG_currently_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_partner_AC_with_ONG_currently_ID
+                        FROM
+                            [ties].[tAC_partner_AC_with_ONG_currently](v.AC_partner_AC_with_ONG_currently_Positor, v.AC_partner_AC_with_ONG_currently_ChangedAt, v.AC_partner_AC_with_ONG_currently_PositedAt, v.AC_partner_AC_with_ONG_currently_Assertion) t
+                        WHERE
+                            t.AC_partner_AC_with_ONG_currently_Reliability = v.AC_partner_AC_with_ONG_currently_Reliability
+                        AND
+                            t.AC_partner_AC_with_ONG_currently_ChangedAt = v.AC_partner_AC_with_ONG_currently_ChangedAt
+                        AND
+                            t.AC_ID_partner = v.AC_ID_partner
+                        AND
+                            t.AC_ID_with = v.AC_ID_with
+                        AND
+                            t.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_partner_AC_with_ONG_currently_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.AC_ID_partner,
+                                pre.AC_ID_with,
+                                pre.ONG_ID_currently
+                            FROM
+                                [ties].[rAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Positor,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) pre
+                            WHERE
+                            (
+                                    pre.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    pre.AC_ID_with = v.AC_ID_with
+                                AND
+                                    pre.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt < v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                pre.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
+                            ORDER BY
+                                pre.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+                                pre.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.AC_ID_partner = v.AC_ID_partner
+                        AND
+                            s.AC_ID_with = v.AC_ID_with
+                        AND
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.AC_ID_partner,
+                                fol.AC_ID_with,
+                                fol.ONG_ID_currently
+                            FROM
+                                [ties].[fAC_partner_AC_with_ONG_currently] (
+                                    v.AC_partner_AC_with_ONG_currently_Positor,
+                                    v.AC_partner_AC_with_ONG_currently_ChangedAt,
+                                    v.AC_partner_AC_with_ONG_currently_PositedAt
+                                ) fol
+                            WHERE
+                            (
+                                    fol.AC_ID_partner = v.AC_ID_partner
+                                AND
+                                    fol.AC_ID_with = v.AC_ID_with
+                                AND
+                                    fol.ONG_ID_currently = v.ONG_ID_currently
+                            )
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt > v.AC_partner_AC_with_ONG_currently_ChangedAt
+                            AND
+                                fol.AC_partner_AC_with_ONG_currently_Assertion = v.AC_partner_AC_with_ONG_currently_Assertion
+                            ORDER BY
+                                fol.AC_partner_AC_with_ONG_currently_ChangedAt ASC,
+                                fol.AC_partner_AC_with_ONG_currently_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.AC_ID_partner = v.AC_ID_partner
+                        AND
+                            s.AC_ID_with = v.AC_ID_with
+                        AND
+                            s.ONG_ID_currently = v.ONG_ID_currently
+                    )
+                    THEN 'R' -- restatement of the following version
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+        ON
+            p.AC_ID_partner = v.AC_ID_partner
+        AND
+            p.AC_ID_with = v.AC_ID_with
+        AND
+            p.ONG_ID_currently = v.ONG_ID_currently
+        AND
+            p.AC_partner_AC_with_ONG_currently_ChangedAt = v.AC_partner_AC_with_ONG_currently_ChangedAt
+        WHERE
+            v.AC_partner_AC_with_ONG_currently_Version = @currentVersion;
+        INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Posit] (
+            AC_partner_AC_with_ONG_currently_ChangedAt,
+            AC_ID_partner,
+            AC_ID_with,
+            ONG_ID_currently
+        )
+        SELECT
+            AC_partner_AC_with_ONG_currently_ChangedAt,
+            AC_ID_partner,
+            AC_ID_with,
+            ONG_ID_currently
+        FROM
+            @inserted
+        WHERE
+            AC_partner_AC_with_ONG_currently_Version = @currentVersion
+        AND
+            AC_partner_AC_with_ONG_currently_StatementType in ('N','R');
+        INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Annex] (
+            Metadata_AC_partner_AC_with_ONG_currently,
+            AC_partner_AC_with_ONG_currently_ID,
+            AC_partner_AC_with_ONG_currently_Positor,
+            AC_partner_AC_with_ONG_currently_PositedAt,
+            AC_partner_AC_with_ONG_currently_Reliability
+        )
+        SELECT
+            v.Metadata_AC_partner_AC_with_ONG_currently,
+            p.AC_partner_AC_with_ONG_currently_ID,
+            v.AC_partner_AC_with_ONG_currently_Positor,
+            v.AC_partner_AC_with_ONG_currently_PositedAt,
+            v.AC_partner_AC_with_ONG_currently_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+        ON
+            p.AC_ID_partner = v.AC_ID_partner
+        AND
+            p.AC_ID_with = v.AC_ID_with
+        AND
+            p.ONG_ID_currently = v.ONG_ID_currently
+        AND
+            p.AC_partner_AC_with_ONG_currently_ChangedAt = v.AC_partner_AC_with_ONG_currently_ChangedAt
+        WHERE
+            v.AC_partner_AC_with_ONG_currently_Version = @currentVersion
+        AND
+            v.AC_partner_AC_with_ONG_currently_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_partner_AC_with_ONG_currently instead of INSERT trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lAC_partner_AC_with_ONG_currently] ON [ties].[lAC_partner_AC_with_ONG_currently]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ChangedAt,
+        AC_ID_partner,
+        AC_ID_with,
+        ONG_ID_currently,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        i.AC_partner_AC_with_ONG_currently_ChangedAt,
+        i.AC_ID_partner,
+        i.AC_ID_with,
+        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, i.Positor),
+        i.AC_partner_AC_with_ONG_currently_PositedAt,
+        i.AC_partner_AC_with_ONG_currently_Reliability
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_partner_AC_with_ONG_currently instead of UPDATE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[ut_lAC_partner_AC_with_ONG_currently] ON [ties].[lAC_partner_AC_with_ONG_currently]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(AC_partner_AC_with_ONG_currently_Assertion))
+        RAISERROR('The computed assertion column AC_partner_AC_with_ONG_currently_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
+        RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Annex] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        i.AC_partner_AC_with_ONG_currently_ID,
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing
+    WHERE
+        i.AC_partner_AC_with_ONG_currently_ID is not null
+    AND (
+        i.AC_ID_partner is null
+    OR
+        i.AC_ID_with is null
+    OR
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ChangedAt,
+        AC_ID_partner,
+        AC_ID_with,
+        ONG_ID_currently,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        i.Metadata_AC_partner_AC_with_ONG_currently,
+        cast(CASE
+            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Positor = i.AC_partner_AC_with_ONG_currently_Positor
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+            ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
+        i.AC_ID_partner,
+        i.AC_ID_with,
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
+        ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
+        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
+        ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[ONG_Ongoing] [ONG_currently]
+    ON
+        [ONG_currently].ONG_Ongoing = i.ONG_Ongoing
+    WHERE
+        i.AC_ID_partner is not null
+    AND
+        i.AC_ID_with is not null
+    AND
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            UPDATE(AC_partner_AC_with_ONG_currently_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Positor = i.AC_partner_AC_with_ONG_currently_Positor
+                AND
+                    d.AC_ID_partner = i.AC_ID_partner
+                AND
+                    d.AC_ID_with = i.AC_ID_with
+                AND
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                AND
+                    d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
+            )
+        );
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_partner_AC_with_ONG_currently instead of DELETE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lAC_partner_AC_with_ONG_currently] ON [ties].[lAC_partner_AC_with_ONG_currently]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_partner_AC_with_ONG_currently_Annex] (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ID,
+        AC_partner_AC_with_ONG_currently_Positor,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_partner_AC_with_ONG_currently_Reliability
+    )
+    SELECT
+        d.Metadata_AC_partner_AC_with_ONG_currently,
+        d.AC_partner_AC_with_ONG_currently_ID,
+        d.AC_partner_AC_with_ONG_currently_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_subset_PN_of instead of INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_subset_PN_of', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_subset_PN_of];
+GO
+CREATE TRIGGER [ties].[it_AC_subset_PN_of] ON [ties].[AC_subset_PN_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_AC_subset_PN_of int not null,
+        AC_subset_PN_of_Version bigint not null,
+        AC_subset_PN_of_StatementType char(1) not null,
+        AC_subset_PN_of_Positor tinyint not null,
+        AC_subset_PN_of_PositedAt datetime2 not null,
+        AC_subset_PN_of_Reliability decimal(5,2) not null,
+        AC_subset_PN_of_Assertion char(1) not null,
+        AC_ID_subset smallint not null,
+        PN_ID_of bigint not null,
+        primary key (
+            AC_ID_subset,
+            PN_ID_of
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_subset,
+            i.PN_ID_of,
+            ISNULL(i.AC_subset_PN_of_Positor, 0) AS AC_subset_PN_of_Positor,
+            ISNULL(i.AC_subset_PN_of_PositedAt, @now) AS AC_subset_PN_of_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_subset_PN_of_Posit] p
+            JOIN
+                [ties].[AC_subset_PN_of_Annex] a
+            ON
+                a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            WHERE
+                p.AC_ID_subset = i.AC_ID_subset
+            AND
+                p.PN_ID_of = i.PN_ID_of
+            AND
+                a.AC_subset_PN_of_Positor = ISNULL(i.AC_subset_PN_of_Positor, 0)
+            AND
+                a.AC_subset_PN_of_PositedAt = ISNULL(i.AC_subset_PN_of_PositedAt, @now)
+            AND
+                a.AC_subset_PN_of_Reliability <> ISNULL(i.AC_subset_PN_of_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_subset_PN_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_AC_subset_PN_of, 0),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_subset_PN_of_Positor,
+                i.AC_ID_subset,
+                i.PN_ID_of
+            ORDER BY
+                i.AC_subset_PN_of_PositedAt ASC,
+                i.AC_subset_PN_of_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.AC_subset_PN_of_Positor, 0),
+        ISNULL(i.AC_subset_PN_of_PositedAt, @now),
+        ISNULL(i.AC_subset_PN_of_Reliability, 1),
+        CAST(
+            case
+                when i.AC_subset_PN_of_Reliability > 0 then '+'
+                when i.AC_subset_PN_of_Reliability = 0 then '?'
+                when i.AC_subset_PN_of_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.AC_ID_subset,
+        i.PN_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_subset_PN_of_Posit] p
+            JOIN
+                [ties].[AC_subset_PN_of_Annex] a
+            ON
+                a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+            WHERE
+                p.AC_ID_subset = i.AC_ID_subset
+            AND
+                p.PN_ID_of = i.PN_ID_of
+            AND
+                a.AC_subset_PN_of_Positor = ISNULL(i.AC_subset_PN_of_Positor, 0)
+            AND
+                a.AC_subset_PN_of_PositedAt = ISNULL(i.AC_subset_PN_of_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(AC_subset_PN_of_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_subset_PN_of_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_subset_PN_of_ID
+                        FROM
+                            [ties].[tAC_subset_PN_of](v.AC_subset_PN_of_Positor, DEFAULT, v.AC_subset_PN_of_PositedAt, v.AC_subset_PN_of_Assertion) t
+                        WHERE
+                            t.AC_subset_PN_of_Reliability = v.AC_subset_PN_of_Reliability
+                        AND
+                            t.AC_ID_subset = v.AC_ID_subset
+                        AND
+                            t.PN_ID_of = v.PN_ID_of
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_subset_PN_of_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[AC_subset_PN_of_Posit] p
+        ON
+            p.AC_ID_subset = v.AC_ID_subset
+        AND
+            p.PN_ID_of = v.PN_ID_of
+        WHERE
+            v.AC_subset_PN_of_Version = @currentVersion;
+        INSERT INTO [ties].[AC_subset_PN_of_Posit] (
+            AC_ID_subset,
+            PN_ID_of
+        )
+        SELECT
+            AC_ID_subset,
+            PN_ID_of
+        FROM
+            @inserted
+        WHERE
+            AC_subset_PN_of_Version = @currentVersion
+        AND
+            AC_subset_PN_of_StatementType in ('N');
+        INSERT INTO [ties].[AC_subset_PN_of_Annex] (
+            Metadata_AC_subset_PN_of,
+            AC_subset_PN_of_ID,
+            AC_subset_PN_of_Positor,
+            AC_subset_PN_of_PositedAt,
+            AC_subset_PN_of_Reliability
+        )
+        SELECT
+            v.Metadata_AC_subset_PN_of,
+            p.AC_subset_PN_of_ID,
+            v.AC_subset_PN_of_Positor,
+            v.AC_subset_PN_of_PositedAt,
+            v.AC_subset_PN_of_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[AC_subset_PN_of_Posit] p
+        ON
+            p.AC_ID_subset = v.AC_ID_subset
+        AND
+            p.PN_ID_of = v.PN_ID_of
+        WHERE
+            v.AC_subset_PN_of_Version = @currentVersion
+        AND
+            v.AC_subset_PN_of_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_subset_PN_of instead of INSERT trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lAC_subset_PN_of] ON [ties].[lAC_subset_PN_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_ID_subset,
+        i.PN_ID_of,
+        ISNULL(i.AC_subset_PN_of_Positor, i.Positor),
+        i.AC_subset_PN_of_PositedAt,
+        i.AC_subset_PN_of_Reliability
+    FROM
+        inserted i;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_subset_PN_of instead of UPDATE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[ut_lAC_subset_PN_of] ON [ties].[lAC_subset_PN_of]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(AC_subset_PN_of_Assertion))
+        RAISERROR('The computed assertion column AC_subset_PN_of_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_subset_PN_of_ID))
+        RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_subset_PN_of_Annex] (
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_subset_PN_of_ID,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Positor) THEN i.AC_subset_PN_of_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.AC_subset_PN_of_ID is not null
+    AND (
+        i.AC_ID_subset is null
+    OR
+        i.PN_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
+    INSERT INTO [ties].[AC_subset_PN_of] (
+        Metadata_AC_subset_PN_of,
+        AC_ID_subset,
+        PN_ID_of,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        i.Metadata_AC_subset_PN_of,
+        i.AC_ID_subset,
+        i.PN_ID_of,
+        ISNULL(CASE WHEN UPDATE(AC_subset_PN_of_Positor) THEN i.AC_subset_PN_of_Positor ELSE i.Positor END, 0),
+        cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
+        ISNULL(i.AC_subset_PN_of_Reliability, 1)
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_subset is not null
+    AND
+        i.PN_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_subset_PN_of_PositedAt) OR
+            UPDATE(AC_subset_PN_of_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_subset_PN_of_ID = i.AC_subset_PN_of_ID
+                AND
+                    d.AC_subset_PN_of_Positor = i.AC_subset_PN_of_Positor
+                AND
+                    d.AC_ID_subset = i.AC_ID_subset
+                AND
+                    d.PN_ID_of = i.PN_ID_of
+                AND
+                    d.AC_subset_PN_of_Reliability = ISNULL(i.AC_subset_PN_of_Reliability, 1)
+            )
+        );
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_subset_PN_of instead of DELETE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lAC_subset_PN_of] ON [ties].[lAC_subset_PN_of]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_subset_PN_of_Annex] (
+        Metadata_AC_subset_PN_of,
+        AC_subset_PN_of_ID,
+        AC_subset_PN_of_Positor,
+        AC_subset_PN_of_PositedAt,
+        AC_subset_PN_of_Reliability
+    )
+    SELECT
+        d.Metadata_AC_subset_PN_of,
+        d.AC_subset_PN_of_ID,
+        d.AC_subset_PN_of_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itEV_in_AC_wasCast instead of INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_EV_in_AC_wasCast', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_EV_in_AC_wasCast];
+GO
+CREATE TRIGGER [ties].[it_EV_in_AC_wasCast] ON [ties].[EV_in_AC_wasCast]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_EV_in_AC_wasCast int not null,
+        EV_in_AC_wasCast_Version bigint not null,
+        EV_in_AC_wasCast_StatementType char(1) not null,
+        EV_in_AC_wasCast_Positor tinyint not null,
+        EV_in_AC_wasCast_PositedAt datetime2 not null,
+        EV_in_AC_wasCast_Reliability decimal(5,2) not null,
+        EV_in_AC_wasCast_Assertion char(1) not null,
+        EV_ID_in numeric(12,0) not null,
+        AC_ID_wasCast smallint not null,
+        primary key (
+            EV_ID_in,
+            AC_ID_wasCast
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_ID_in,
+            i.AC_ID_wasCast,
+            ISNULL(i.EV_in_AC_wasCast_Positor, 0) AS EV_in_AC_wasCast_Positor,
+            ISNULL(i.EV_in_AC_wasCast_PositedAt, @now) AS EV_in_AC_wasCast_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[EV_in_AC_wasCast_Posit] p
+            JOIN
+                [ties].[EV_in_AC_wasCast_Annex] a
+            ON
+                a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            WHERE
+                p.EV_ID_in = i.EV_ID_in
+            AND
+                p.AC_ID_wasCast = i.AC_ID_wasCast
+            AND
+                a.EV_in_AC_wasCast_Positor = ISNULL(i.EV_in_AC_wasCast_Positor, 0)
+            AND
+                a.EV_in_AC_wasCast_PositedAt = ISNULL(i.EV_in_AC_wasCast_PositedAt, @now)
+            AND
+                a.EV_in_AC_wasCast_Reliability <> ISNULL(i.EV_in_AC_wasCast_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_in_AC_wasCast for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_EV_in_AC_wasCast, 0),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.EV_in_AC_wasCast_Positor,
+                i.EV_ID_in,
+                i.AC_ID_wasCast
+            ORDER BY
+                i.EV_in_AC_wasCast_PositedAt ASC,
+                i.EV_in_AC_wasCast_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.EV_in_AC_wasCast_Positor, 0),
+        ISNULL(i.EV_in_AC_wasCast_PositedAt, @now),
+        ISNULL(i.EV_in_AC_wasCast_Reliability, 1),
+        CAST(
+            case
+                when i.EV_in_AC_wasCast_Reliability > 0 then '+'
+                when i.EV_in_AC_wasCast_Reliability = 0 then '?'
+                when i.EV_in_AC_wasCast_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.EV_ID_in,
+        i.AC_ID_wasCast
+    FROM
+        inserted i
+    WHERE
+        i.EV_ID_in is not null
+    AND
+        i.AC_ID_wasCast is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[EV_in_AC_wasCast_Posit] p
+            JOIN
+                [ties].[EV_in_AC_wasCast_Annex] a
+            ON
+                a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+            WHERE
+                p.EV_ID_in = i.EV_ID_in
+            AND
+                p.AC_ID_wasCast = i.AC_ID_wasCast
+            AND
+                a.EV_in_AC_wasCast_Positor = ISNULL(i.EV_in_AC_wasCast_Positor, 0)
+            AND
+                a.EV_in_AC_wasCast_PositedAt = ISNULL(i.EV_in_AC_wasCast_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(EV_in_AC_wasCast_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.EV_in_AC_wasCast_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.EV_in_AC_wasCast_ID
+                        FROM
+                            [ties].[tEV_in_AC_wasCast](v.EV_in_AC_wasCast_Positor, DEFAULT, v.EV_in_AC_wasCast_PositedAt, v.EV_in_AC_wasCast_Assertion) t
+                        WHERE
+                            t.EV_in_AC_wasCast_Reliability = v.EV_in_AC_wasCast_Reliability
+                        AND
+                            t.EV_ID_in = v.EV_ID_in
+                        AND
+                            t.AC_ID_wasCast = v.AC_ID_wasCast
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.EV_in_AC_wasCast_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[EV_in_AC_wasCast_Posit] p
+        ON
+            p.EV_ID_in = v.EV_ID_in
+        AND
+            p.AC_ID_wasCast = v.AC_ID_wasCast
+        WHERE
+            v.EV_in_AC_wasCast_Version = @currentVersion;
+        INSERT INTO [ties].[EV_in_AC_wasCast_Posit] (
+            EV_ID_in,
+            AC_ID_wasCast
+        )
+        SELECT
+            EV_ID_in,
+            AC_ID_wasCast
+        FROM
+            @inserted
+        WHERE
+            EV_in_AC_wasCast_Version = @currentVersion
+        AND
+            EV_in_AC_wasCast_StatementType in ('N');
+        INSERT INTO [ties].[EV_in_AC_wasCast_Annex] (
+            Metadata_EV_in_AC_wasCast,
+            EV_in_AC_wasCast_ID,
+            EV_in_AC_wasCast_Positor,
+            EV_in_AC_wasCast_PositedAt,
+            EV_in_AC_wasCast_Reliability
+        )
+        SELECT
+            v.Metadata_EV_in_AC_wasCast,
+            p.EV_in_AC_wasCast_ID,
+            v.EV_in_AC_wasCast_Positor,
+            v.EV_in_AC_wasCast_PositedAt,
+            v.EV_in_AC_wasCast_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[EV_in_AC_wasCast_Posit] p
+        ON
+            p.EV_ID_in = v.EV_ID_in
+        AND
+            p.AC_ID_wasCast = v.AC_ID_wasCast
+        WHERE
+            v.EV_in_AC_wasCast_Version = @currentVersion
+        AND
+            v.EV_in_AC_wasCast_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_in_AC_wasCast instead of INSERT trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lEV_in_AC_wasCast] ON [ties].[lEV_in_AC_wasCast]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[EV_in_AC_wasCast] (
+        Metadata_EV_in_AC_wasCast,
+        EV_ID_in,
+        AC_ID_wasCast,
+        EV_in_AC_wasCast_Positor,
+        EV_in_AC_wasCast_PositedAt,
+        EV_in_AC_wasCast_Reliability
+    )
+    SELECT
+        i.Metadata_EV_in_AC_wasCast,
+        i.EV_ID_in,
+        i.AC_ID_wasCast,
+        ISNULL(i.EV_in_AC_wasCast_Positor, i.Positor),
+        i.EV_in_AC_wasCast_PositedAt,
+        i.EV_in_AC_wasCast_Reliability
+    FROM
+        inserted i;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_in_AC_wasCast instead of DELETE trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lEV_in_AC_wasCast] ON [ties].[lEV_in_AC_wasCast]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[EV_in_AC_wasCast_Annex] (
+        Metadata_EV_in_AC_wasCast,
+        EV_in_AC_wasCast_ID,
+        EV_in_AC_wasCast_Positor,
+        EV_in_AC_wasCast_PositedAt,
+        EV_in_AC_wasCast_Reliability
+    )
+    SELECT
+        d.Metadata_EV_in_AC_wasCast,
+        d.EV_in_AC_wasCast_ID,
+        d.EV_in_AC_wasCast_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_part_PR_in_RAT_got instead of INSERT trigger on AC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_part_PR_in_RAT_got', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_part_PR_in_RAT_got];
+GO
+CREATE TRIGGER [ties].[it_AC_part_PR_in_RAT_got] ON [ties].[AC_part_PR_in_RAT_got]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_AC_part_PR_in_RAT_got int not null,
+        AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
+        AC_part_PR_in_RAT_got_Version bigint not null,
+        AC_part_PR_in_RAT_got_StatementType char(1) not null,
+        AC_part_PR_in_RAT_got_Positor tinyint not null,
+        AC_part_PR_in_RAT_got_PositedAt datetime2 not null,
+        AC_part_PR_in_RAT_got_Reliability decimal(5,2) not null,
+        AC_part_PR_in_RAT_got_Assertion char(1) not null,
+        AC_ID_part smallint not null,
+        PR_ID_in bigint not null,
+        RAT_ID_got tinyint not null,
+        primary key (
+            AC_part_PR_in_RAT_got_Version,
+            AC_ID_part,
+            PR_ID_in
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_part,
+            i.PR_ID_in,
+            i.RAT_ID_got,
+            ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now) AS AC_part_PR_in_RAT_got_ChangedAt,
+            ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0) AS AC_part_PR_in_RAT_got_Positor,
+            ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now) AS AC_part_PR_in_RAT_got_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [ties].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            WHERE
+                p.AC_ID_part = i.AC_ID_part
+            AND
+                p.PR_ID_in = i.PR_ID_in
+            AND
+                p.RAT_ID_got = i.RAT_ID_got
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Positor = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_AC_part_PR_in_RAT_got, 0),
+        ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_part_PR_in_RAT_got_Positor,
+                i.AC_ID_part,
+                i.PR_ID_in
+            ORDER BY
+                ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now),
+                i.AC_part_PR_in_RAT_got_PositedAt ASC,
+                i.AC_part_PR_in_RAT_got_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0),
+        ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now),
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1),
+        CAST(
+            case
+                when i.AC_part_PR_in_RAT_got_Reliability > 0 then '+'
+                when i.AC_part_PR_in_RAT_got_Reliability = 0 then '?'
+                when i.AC_part_PR_in_RAT_got_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.AC_ID_part,
+        i.PR_ID_in,
+        i.RAT_ID_got
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_part is not null
+    AND
+        i.PR_ID_in is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [ties].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            WHERE
+                p.AC_ID_part = i.AC_ID_part
+            AND
+                p.PR_ID_in = i.PR_ID_in
+            AND
+                p.RAT_ID_got = i.RAT_ID_got
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+            AND
+                a.AC_part_PR_in_RAT_got_Positor = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(AC_part_PR_in_RAT_got_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_part_PR_in_RAT_got_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_part_PR_in_RAT_got_ID
+                        FROM
+                            [ties].[tAC_part_PR_in_RAT_got](v.AC_part_PR_in_RAT_got_Positor, v.AC_part_PR_in_RAT_got_ChangedAt, v.AC_part_PR_in_RAT_got_PositedAt, v.AC_part_PR_in_RAT_got_Assertion) t
+                        WHERE
+                            t.AC_part_PR_in_RAT_got_Reliability = v.AC_part_PR_in_RAT_got_Reliability
+                        AND
+                            t.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+                        AND
+                            t.AC_ID_part = v.AC_ID_part
+                        AND
+                            t.PR_ID_in = v.PR_ID_in
+                        AND
+                            t.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_part_PR_in_RAT_got_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.RAT_ID_got
+                            FROM
+                                [ties].[rAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Positor,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) pre
+                            WHERE
+                                pre.AC_ID_part = v.AC_ID_part
+                            AND
+                                pre.PR_ID_in = v.PR_ID_in
+                            AND
+                                pre.AC_part_PR_in_RAT_got_ChangedAt < v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                pre.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
+                            ORDER BY
+                                pre.AC_part_PR_in_RAT_got_ChangedAt DESC,
+                                pre.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.RAT_ID_got
+                            FROM
+                                [ties].[fAC_part_PR_in_RAT_got] (
+                                    v.AC_part_PR_in_RAT_got_Positor,
+                                    v.AC_part_PR_in_RAT_got_ChangedAt,
+                                    v.AC_part_PR_in_RAT_got_PositedAt
+                                ) fol
+                            WHERE
+                                fol.AC_ID_part = v.AC_ID_part
+                            AND
+                                fol.PR_ID_in = v.PR_ID_in
+                            AND
+                                fol.AC_part_PR_in_RAT_got_ChangedAt > v.AC_part_PR_in_RAT_got_ChangedAt
+                            AND
+                                fol.AC_part_PR_in_RAT_got_Assertion = v.AC_part_PR_in_RAT_got_Assertion
+                            ORDER BY
+                                fol.AC_part_PR_in_RAT_got_ChangedAt ASC,
+                                fol.AC_part_PR_in_RAT_got_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.RAT_ID_got = v.RAT_ID_got
+                    )
+                    THEN 'R' -- restatement of the following version
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[AC_part_PR_in_RAT_got_Posit] p
+        ON
+            p.AC_ID_part = v.AC_ID_part
+        AND
+            p.PR_ID_in = v.PR_ID_in
+        AND
+            p.RAT_ID_got = v.RAT_ID_got
+        AND
+            p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+        WHERE
+            v.AC_part_PR_in_RAT_got_Version = @currentVersion;
+        INSERT INTO [ties].[AC_part_PR_in_RAT_got_Posit] (
+            AC_part_PR_in_RAT_got_ChangedAt,
+            AC_ID_part,
+            PR_ID_in,
+            RAT_ID_got
+        )
+        SELECT
+            AC_part_PR_in_RAT_got_ChangedAt,
+            AC_ID_part,
+            PR_ID_in,
+            RAT_ID_got
+        FROM
+            @inserted
+        WHERE
+            AC_part_PR_in_RAT_got_Version = @currentVersion
+        AND
+            AC_part_PR_in_RAT_got_StatementType in ('N','R');
+        INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+            Metadata_AC_part_PR_in_RAT_got,
+            AC_part_PR_in_RAT_got_ID,
+            AC_part_PR_in_RAT_got_Positor,
+            AC_part_PR_in_RAT_got_PositedAt,
+            AC_part_PR_in_RAT_got_Reliability
+        )
+        SELECT
+            v.Metadata_AC_part_PR_in_RAT_got,
+            p.AC_part_PR_in_RAT_got_ID,
+            v.AC_part_PR_in_RAT_got_Positor,
+            v.AC_part_PR_in_RAT_got_PositedAt,
+            v.AC_part_PR_in_RAT_got_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[AC_part_PR_in_RAT_got_Posit] p
+        ON
+            p.AC_ID_part = v.AC_ID_part
+        AND
+            p.PR_ID_in = v.PR_ID_in
+        AND
+            p.RAT_ID_got = v.RAT_ID_got
+        AND
+            p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+        WHERE
+            v.AC_part_PR_in_RAT_got_Version = @currentVersion
+        AND
+            v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_part_PR_in_RAT_got instead of INSERT trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lAC_part_PR_in_RAT_got] ON [ties].[lAC_part_PR_in_RAT_got]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ChangedAt,
+        AC_ID_part,
+        PR_ID_in,
+        RAT_ID_got,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        i.AC_part_PR_in_RAT_got_ChangedAt,
+        i.AC_ID_part,
+        i.PR_ID_in,
+        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
+        ISNULL(i.AC_part_PR_in_RAT_got_Positor, i.Positor),
+        i.AC_part_PR_in_RAT_got_PositedAt,
+        i.AC_part_PR_in_RAT_got_Reliability
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.RAT_Rating;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_part_PR_in_RAT_got instead of UPDATE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[ut_lAC_part_PR_in_RAT_got] ON [ties].[lAC_part_PR_in_RAT_got]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(AC_part_PR_in_RAT_got_Assertion))
+        RAISERROR('The computed assertion column AC_part_PR_in_RAT_got_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(AC_part_PR_in_RAT_got_ID))
+        RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
+    IF(UPDATE(AC_ID_part))
+        RAISERROR('The identity column AC_ID_part is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID_in))
+        RAISERROR('The identity column PR_ID_in is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        i.AC_part_PR_in_RAT_got_ID,
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.RAT_Rating
+    WHERE
+        i.AC_part_PR_in_RAT_got_ID is not null
+    AND (
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+    );
+    -- the other rows are statements, unless they leave everything as it is
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ChangedAt,
+        AC_ID_part,
+        PR_ID_in,
+        RAT_ID_got,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        cast(CASE
+            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+            ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
+        i.AC_ID_part,
+        i.PR_ID_in,
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
+        ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
+        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.RAT_Rating
+    WHERE
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            UPDATE(AC_part_PR_in_RAT_got_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+                AND
+                    d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+                AND
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                AND
+                    d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
+            )
+        );
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_part_PR_in_RAT_got instead of DELETE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lAC_part_PR_in_RAT_got] ON [ties].[lAC_part_PR_in_RAT_got]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        d.Metadata_AC_part_PR_in_RAT_got,
+        d.AC_part_PR_in_RAT_got_ID,
+        d.AC_part_PR_in_RAT_got_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itST_at_PR_isPlaying instead of INSERT trigger on ST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_ST_at_PR_isPlaying', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_ST_at_PR_isPlaying];
+GO
+CREATE TRIGGER [ties].[it_ST_at_PR_isPlaying] ON [ties].[ST_at_PR_isPlaying]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_ST_at_PR_isPlaying int not null,
+        ST_at_PR_isPlaying_ChangedAt datetime2 not null,
+        ST_at_PR_isPlaying_Version bigint not null,
+        ST_at_PR_isPlaying_StatementType char(1) not null,
+        ST_at_PR_isPlaying_Positor tinyint not null,
+        ST_at_PR_isPlaying_PositedAt datetime2 not null,
+        ST_at_PR_isPlaying_Reliability decimal(5,2) not null,
+        ST_at_PR_isPlaying_Assertion char(1) not null,
+        ST_ID_at int not null,
+        PR_ID_isPlaying bigint not null,
+        primary key (
+            ST_at_PR_isPlaying_Version,
+            ST_ID_at,
+            PR_ID_isPlaying
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.ST_ID_at,
+            i.PR_ID_isPlaying,
+            ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now) AS ST_at_PR_isPlaying_ChangedAt,
+            ISNULL(i.ST_at_PR_isPlaying_Positor, 0) AS ST_at_PR_isPlaying_Positor,
+            ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now) AS ST_at_PR_isPlaying_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[ST_at_PR_isPlaying_Posit] p
+            JOIN
+                [ties].[ST_at_PR_isPlaying_Annex] a
+            ON
+                a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            WHERE
+                p.ST_ID_at = i.ST_ID_at
+            AND
+                p.PR_ID_isPlaying = i.PR_ID_isPlaying
+            AND
+                p.ST_at_PR_isPlaying_ChangedAt = ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Positor = ISNULL(i.ST_at_PR_isPlaying_Positor, 0)
+            AND
+                a.ST_at_PR_isPlaying_PositedAt = ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Reliability <> ISNULL(i.ST_at_PR_isPlaying_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in ST_at_PR_isPlaying for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_ST_at_PR_isPlaying, 0),
+        ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.ST_at_PR_isPlaying_Positor,
+                i.ST_ID_at,
+                i.PR_ID_isPlaying
+            ORDER BY
+                ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now),
+                i.ST_at_PR_isPlaying_PositedAt ASC,
+                i.ST_at_PR_isPlaying_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.ST_at_PR_isPlaying_Positor, 0),
+        ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now),
+        ISNULL(i.ST_at_PR_isPlaying_Reliability, 1),
+        CAST(
+            case
+                when i.ST_at_PR_isPlaying_Reliability > 0 then '+'
+                when i.ST_at_PR_isPlaying_Reliability = 0 then '?'
+                when i.ST_at_PR_isPlaying_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.ST_ID_at,
+        i.PR_ID_isPlaying
+    FROM
+        inserted i
+    WHERE
+        i.ST_ID_at is not null
+    AND
+        i.PR_ID_isPlaying is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[ST_at_PR_isPlaying_Posit] p
+            JOIN
+                [ties].[ST_at_PR_isPlaying_Annex] a
+            ON
+                a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+            WHERE
+                p.ST_ID_at = i.ST_ID_at
+            AND
+                p.PR_ID_isPlaying = i.PR_ID_isPlaying
+            AND
+                p.ST_at_PR_isPlaying_ChangedAt = ISNULL(i.ST_at_PR_isPlaying_ChangedAt, @now)
+            AND
+                a.ST_at_PR_isPlaying_Positor = ISNULL(i.ST_at_PR_isPlaying_Positor, 0)
+            AND
+                a.ST_at_PR_isPlaying_PositedAt = ISNULL(i.ST_at_PR_isPlaying_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(ST_at_PR_isPlaying_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.ST_at_PR_isPlaying_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.ST_at_PR_isPlaying_ID
+                        FROM
+                            [ties].[tST_at_PR_isPlaying](v.ST_at_PR_isPlaying_Positor, v.ST_at_PR_isPlaying_ChangedAt, v.ST_at_PR_isPlaying_PositedAt, v.ST_at_PR_isPlaying_Assertion) t
+                        WHERE
+                            t.ST_at_PR_isPlaying_Reliability = v.ST_at_PR_isPlaying_Reliability
+                        AND
+                            t.ST_at_PR_isPlaying_ChangedAt = v.ST_at_PR_isPlaying_ChangedAt
+                        AND
+                            t.ST_ID_at = v.ST_ID_at
+                        AND
+                            t.PR_ID_isPlaying = v.PR_ID_isPlaying
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.ST_at_PR_isPlaying_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[ST_at_PR_isPlaying_Posit] p
+        ON
+            p.ST_ID_at = v.ST_ID_at
+        AND
+            p.PR_ID_isPlaying = v.PR_ID_isPlaying
+        AND
+            p.ST_at_PR_isPlaying_ChangedAt = v.ST_at_PR_isPlaying_ChangedAt
+        WHERE
+            v.ST_at_PR_isPlaying_Version = @currentVersion;
+        INSERT INTO [ties].[ST_at_PR_isPlaying_Posit] (
+            ST_at_PR_isPlaying_ChangedAt,
+            ST_ID_at,
+            PR_ID_isPlaying
+        )
+        SELECT
+            ST_at_PR_isPlaying_ChangedAt,
+            ST_ID_at,
+            PR_ID_isPlaying
+        FROM
+            @inserted
+        WHERE
+            ST_at_PR_isPlaying_Version = @currentVersion
+        AND
+            ST_at_PR_isPlaying_StatementType in ('N','R');
+        INSERT INTO [ties].[ST_at_PR_isPlaying_Annex] (
+            Metadata_ST_at_PR_isPlaying,
+            ST_at_PR_isPlaying_ID,
+            ST_at_PR_isPlaying_Positor,
+            ST_at_PR_isPlaying_PositedAt,
+            ST_at_PR_isPlaying_Reliability
+        )
+        SELECT
+            v.Metadata_ST_at_PR_isPlaying,
+            p.ST_at_PR_isPlaying_ID,
+            v.ST_at_PR_isPlaying_Positor,
+            v.ST_at_PR_isPlaying_PositedAt,
+            v.ST_at_PR_isPlaying_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[ST_at_PR_isPlaying_Posit] p
+        ON
+            p.ST_ID_at = v.ST_ID_at
+        AND
+            p.PR_ID_isPlaying = v.PR_ID_isPlaying
+        AND
+            p.ST_at_PR_isPlaying_ChangedAt = v.ST_at_PR_isPlaying_ChangedAt
+        WHERE
+            v.ST_at_PR_isPlaying_Version = @currentVersion
+        AND
+            v.ST_at_PR_isPlaying_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_at_PR_isPlaying instead of INSERT trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lST_at_PR_isPlaying] ON [ties].[lST_at_PR_isPlaying]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[ST_at_PR_isPlaying] (
+        Metadata_ST_at_PR_isPlaying,
+        ST_at_PR_isPlaying_ChangedAt,
+        ST_ID_at,
+        PR_ID_isPlaying,
+        ST_at_PR_isPlaying_Positor,
+        ST_at_PR_isPlaying_PositedAt,
+        ST_at_PR_isPlaying_Reliability
+    )
+    SELECT
+        i.Metadata_ST_at_PR_isPlaying,
+        i.ST_at_PR_isPlaying_ChangedAt,
+        i.ST_ID_at,
+        i.PR_ID_isPlaying,
+        ISNULL(i.ST_at_PR_isPlaying_Positor, i.Positor),
+        i.ST_at_PR_isPlaying_PositedAt,
+        i.ST_at_PR_isPlaying_Reliability
+    FROM
+        inserted i;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_at_PR_isPlaying instead of DELETE trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lST_at_PR_isPlaying] ON [ties].[lST_at_PR_isPlaying]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[ST_at_PR_isPlaying_Annex] (
+        Metadata_ST_at_PR_isPlaying,
+        ST_at_PR_isPlaying_ID,
+        ST_at_PR_isPlaying_Positor,
+        ST_at_PR_isPlaying_PositedAt,
+        ST_at_PR_isPlaying_Reliability
+    )
+    SELECT
+        d.Metadata_ST_at_PR_isPlaying,
+        d.ST_at_PR_isPlaying_ID,
+        d.ST_at_PR_isPlaying_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itAC_parent_AC_child_PAT_having instead of INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_AC_parent_AC_child_PAT_having', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_AC_parent_AC_child_PAT_having];
+GO
+CREATE TRIGGER [ties].[it_AC_parent_AC_child_PAT_having] ON [ties].[AC_parent_AC_child_PAT_having]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_AC_parent_AC_child_PAT_having int not null,
+        AC_parent_AC_child_PAT_having_Version bigint not null,
+        AC_parent_AC_child_PAT_having_StatementType char(1) not null,
+        AC_parent_AC_child_PAT_having_Positor tinyint not null,
+        AC_parent_AC_child_PAT_having_PositedAt datetime2 not null,
+        AC_parent_AC_child_PAT_having_Reliability decimal(5,2) not null,
+        AC_parent_AC_child_PAT_having_Assertion char(1) not null,
+        AC_ID_parent smallint not null,
+        AC_ID_child smallint not null,
+        PAT_ID_having tinyint not null,
+        primary key (
+            AC_ID_parent,
+            AC_ID_child,
+            PAT_ID_having
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.AC_ID_parent,
+            i.AC_ID_child,
+            i.PAT_ID_having,
+            ISNULL(i.AC_parent_AC_child_PAT_having_Positor, 0) AS AC_parent_AC_child_PAT_having_Positor,
+            ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now) AS AC_parent_AC_child_PAT_having_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_parent_AC_child_PAT_having_Posit] p
+            JOIN
+                [ties].[AC_parent_AC_child_PAT_having_Annex] a
+            ON
+                a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            WHERE
+                p.AC_ID_parent = i.AC_ID_parent
+            AND
+                p.AC_ID_child = i.AC_ID_child
+            AND
+                p.PAT_ID_having = i.PAT_ID_having
+            AND
+                a.AC_parent_AC_child_PAT_having_Positor = ISNULL(i.AC_parent_AC_child_PAT_having_Positor, 0)
+            AND
+                a.AC_parent_AC_child_PAT_having_PositedAt = ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now)
+            AND
+                a.AC_parent_AC_child_PAT_having_Reliability <> ISNULL(i.AC_parent_AC_child_PAT_having_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in AC_parent_AC_child_PAT_having for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_AC_parent_AC_child_PAT_having, 0),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.AC_parent_AC_child_PAT_having_Positor,
+                i.AC_ID_parent,
+                i.AC_ID_child,
+                i.PAT_ID_having
+            ORDER BY
+                i.AC_parent_AC_child_PAT_having_PositedAt ASC,
+                i.AC_parent_AC_child_PAT_having_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.AC_parent_AC_child_PAT_having_Positor, 0),
+        ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now),
+        ISNULL(i.AC_parent_AC_child_PAT_having_Reliability, 1),
+        CAST(
+            case
+                when i.AC_parent_AC_child_PAT_having_Reliability > 0 then '+'
+                when i.AC_parent_AC_child_PAT_having_Reliability = 0 then '?'
+                when i.AC_parent_AC_child_PAT_having_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.AC_ID_parent,
+        i.AC_ID_child,
+        i.PAT_ID_having
+    FROM
+        inserted i
+    WHERE
+        i.AC_ID_parent is not null
+    AND
+        i.AC_ID_child is not null
+    AND
+        i.PAT_ID_having is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_parent_AC_child_PAT_having_Posit] p
+            JOIN
+                [ties].[AC_parent_AC_child_PAT_having_Annex] a
+            ON
+                a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+            WHERE
+                p.AC_ID_parent = i.AC_ID_parent
+            AND
+                p.AC_ID_child = i.AC_ID_child
+            AND
+                p.PAT_ID_having = i.PAT_ID_having
+            AND
+                a.AC_parent_AC_child_PAT_having_Positor = ISNULL(i.AC_parent_AC_child_PAT_having_Positor, 0)
+            AND
+                a.AC_parent_AC_child_PAT_having_PositedAt = ISNULL(i.AC_parent_AC_child_PAT_having_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(AC_parent_AC_child_PAT_having_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.AC_parent_AC_child_PAT_having_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.AC_parent_AC_child_PAT_having_ID
+                        FROM
+                            [ties].[tAC_parent_AC_child_PAT_having](v.AC_parent_AC_child_PAT_having_Positor, DEFAULT, v.AC_parent_AC_child_PAT_having_PositedAt, v.AC_parent_AC_child_PAT_having_Assertion) t
+                        WHERE
+                            t.AC_parent_AC_child_PAT_having_Reliability = v.AC_parent_AC_child_PAT_having_Reliability
+                        AND
+                            t.AC_ID_parent = v.AC_ID_parent
+                        AND
+                            t.AC_ID_child = v.AC_ID_child
+                        AND
+                            t.PAT_ID_having = v.PAT_ID_having
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.AC_parent_AC_child_PAT_having_ID is not null
+                    THEN 'S' -- duplicate statement
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[AC_parent_AC_child_PAT_having_Posit] p
+        ON
+            p.AC_ID_parent = v.AC_ID_parent
+        AND
+            p.AC_ID_child = v.AC_ID_child
+        AND
+            p.PAT_ID_having = v.PAT_ID_having
+        WHERE
+            v.AC_parent_AC_child_PAT_having_Version = @currentVersion;
+        INSERT INTO [ties].[AC_parent_AC_child_PAT_having_Posit] (
+            AC_ID_parent,
+            AC_ID_child,
+            PAT_ID_having
+        )
+        SELECT
+            AC_ID_parent,
+            AC_ID_child,
+            PAT_ID_having
+        FROM
+            @inserted
+        WHERE
+            AC_parent_AC_child_PAT_having_Version = @currentVersion
+        AND
+            AC_parent_AC_child_PAT_having_StatementType in ('N');
+        INSERT INTO [ties].[AC_parent_AC_child_PAT_having_Annex] (
+            Metadata_AC_parent_AC_child_PAT_having,
+            AC_parent_AC_child_PAT_having_ID,
+            AC_parent_AC_child_PAT_having_Positor,
+            AC_parent_AC_child_PAT_having_PositedAt,
+            AC_parent_AC_child_PAT_having_Reliability
+        )
+        SELECT
+            v.Metadata_AC_parent_AC_child_PAT_having,
+            p.AC_parent_AC_child_PAT_having_ID,
+            v.AC_parent_AC_child_PAT_having_Positor,
+            v.AC_parent_AC_child_PAT_having_PositedAt,
+            v.AC_parent_AC_child_PAT_having_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[AC_parent_AC_child_PAT_having_Posit] p
+        ON
+            p.AC_ID_parent = v.AC_ID_parent
+        AND
+            p.AC_ID_child = v.AC_ID_child
+        AND
+            p.PAT_ID_having = v.PAT_ID_having
+        WHERE
+            v.AC_parent_AC_child_PAT_having_Version = @currentVersion
+        AND
+            v.AC_parent_AC_child_PAT_having_StatementType in ('S','N','D');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_parent_AC_child_PAT_having instead of INSERT trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lAC_parent_AC_child_PAT_having] ON [ties].[lAC_parent_AC_child_PAT_having]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_parent_AC_child_PAT_having] (
+        Metadata_AC_parent_AC_child_PAT_having,
+        AC_ID_parent,
+        AC_ID_child,
+        PAT_ID_having,
+        AC_parent_AC_child_PAT_having_Positor,
+        AC_parent_AC_child_PAT_having_PositedAt,
+        AC_parent_AC_child_PAT_having_Reliability
+    )
+    SELECT
+        i.Metadata_AC_parent_AC_child_PAT_having,
+        i.AC_ID_parent,
+        i.AC_ID_child,
+        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
+        ISNULL(i.AC_parent_AC_child_PAT_having_Positor, i.Positor),
+        i.AC_parent_AC_child_PAT_having_PositedAt,
+        i.AC_parent_AC_child_PAT_having_Reliability
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[PAT_ParentalType] [PAT_having]
+    ON
+        [PAT_having].PAT_ParentalType = i.PAT_ParentalType;
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_parent_AC_child_PAT_having instead of DELETE trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lAC_parent_AC_child_PAT_having] ON [ties].[lAC_parent_AC_child_PAT_having]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[AC_parent_AC_child_PAT_having_Annex] (
+        Metadata_AC_parent_AC_child_PAT_having,
+        AC_parent_AC_child_PAT_having_ID,
+        AC_parent_AC_child_PAT_having_Positor,
+        AC_parent_AC_child_PAT_having_PositedAt,
+        AC_parent_AC_child_PAT_having_Reliability
+    )
+    SELECT
+        d.Metadata_AC_parent_AC_child_PAT_having,
+        d.AC_parent_AC_child_PAT_having_ID,
+        d.AC_parent_AC_child_PAT_having_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- itPR_content_ST_location_EV_of instead of INSERT trigger on PR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('ties.it_PR_content_ST_location_EV_of', 'TR') IS NOT NULL
+DROP TRIGGER [ties].[it_PR_content_ST_location_EV_of];
+GO
+CREATE TRIGGER [ties].[it_PR_content_ST_location_EV_of] ON [ties].[PR_content_ST_location_EV_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @maxVersion int;
+    DECLARE @currentVersion int;
+    DECLARE @inserted TABLE (
+        Metadata_PR_content_ST_location_EV_of int not null,
+        PR_content_ST_location_EV_of_ChangedAt datetime2 not null,
+        PR_content_ST_location_EV_of_Version bigint not null,
+        PR_content_ST_location_EV_of_StatementType char(1) not null,
+        PR_content_ST_location_EV_of_Positor tinyint not null,
+        PR_content_ST_location_EV_of_PositedAt datetime2 not null,
+        PR_content_ST_location_EV_of_Reliability decimal(5,2) not null,
+        PR_content_ST_location_EV_of_Assertion char(1) not null,
+        PR_ID_content bigint not null,
+        ST_ID_location int not null,
+        EV_ID_of numeric(12,0) not null,
+        primary key (
+            PR_content_ST_location_EV_of_Version,
+            PR_ID_content,
+            ST_ID_location,
+            EV_ID_of
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.PR_ID_content,
+            i.ST_ID_location,
+            i.EV_ID_of,
+            ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now) AS PR_content_ST_location_EV_of_ChangedAt,
+            ISNULL(i.PR_content_ST_location_EV_of_Positor, 0) AS PR_content_ST_location_EV_of_Positor,
+            ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now) AS PR_content_ST_location_EV_of_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[PR_content_ST_location_EV_of_Posit] p
+            JOIN
+                [ties].[PR_content_ST_location_EV_of_Annex] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            WHERE
+                p.PR_ID_content = i.PR_ID_content
+            AND
+                p.ST_ID_location = i.ST_ID_location
+            AND
+                p.EV_ID_of = i.EV_ID_of
+            AND
+                p.PR_content_ST_location_EV_of_ChangedAt = ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_Positor = ISNULL(i.PR_content_ST_location_EV_of_Positor, 0)
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_Reliability <> ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in PR_content_ST_location_EV_of for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @inserted
+    SELECT
+        ISNULL(i.Metadata_PR_content_ST_location_EV_of, 0),
+        ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now),
+        DENSE_RANK() OVER (
+            PARTITION BY
+                i.PR_content_ST_location_EV_of_Positor,
+                i.PR_ID_content,
+                i.ST_ID_location,
+                i.EV_ID_of
+            ORDER BY
+                ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now),
+                i.PR_content_ST_location_EV_of_PositedAt ASC,
+                i.PR_content_ST_location_EV_of_Reliability ASC
+        ),
+        'X',
+        ISNULL(i.PR_content_ST_location_EV_of_Positor, 0),
+        ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now),
+        ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1),
+        CAST(
+            case
+                when i.PR_content_ST_location_EV_of_Reliability > 0 then '+'
+                when i.PR_content_ST_location_EV_of_Reliability = 0 then '?'
+                when i.PR_content_ST_location_EV_of_Reliability < 0 then '-'
+                else '+' -- assume that unspecified reliability (NULL) means default
+            end
+        as char(1)),
+        i.PR_ID_content,
+        i.ST_ID_location,
+        i.EV_ID_of
+    FROM
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        i.EV_ID_of is not null
+    AND
+        NOT EXISTS ( -- exclude the identical, which is already stored
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[PR_content_ST_location_EV_of_Posit] p
+            JOIN
+                [ties].[PR_content_ST_location_EV_of_Annex] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            WHERE
+                p.PR_ID_content = i.PR_ID_content
+            AND
+                p.ST_ID_location = i.ST_ID_location
+            AND
+                p.EV_ID_of = i.EV_ID_of
+            AND
+                p.PR_content_ST_location_EV_of_ChangedAt = ISNULL(i.PR_content_ST_location_EV_of_ChangedAt, @now)
+            AND
+                a.PR_content_ST_location_EV_of_Positor = ISNULL(i.PR_content_ST_location_EV_of_Positor, 0)
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+        );
+    SELECT
+        @maxVersion = max(PR_content_ST_location_EV_of_Version),
+        @currentVersion = 0
+    FROM
+        @inserted;
+    WHILE (@currentVersion < @maxVersion)
+    BEGIN
+        SET @currentVersion = @currentVersion + 1;
+        UPDATE v
+        SET
+            v.PR_content_ST_location_EV_of_StatementType =
+                CASE
+                    WHEN EXISTS (
+                        SELECT TOP 1
+                            t.PR_content_ST_location_EV_of_ID
+                        FROM
+                            [ties].[tPR_content_ST_location_EV_of](v.PR_content_ST_location_EV_of_Positor, v.PR_content_ST_location_EV_of_ChangedAt, v.PR_content_ST_location_EV_of_PositedAt, v.PR_content_ST_location_EV_of_Assertion) t
+                        WHERE
+                            t.PR_content_ST_location_EV_of_Reliability = v.PR_content_ST_location_EV_of_Reliability
+                        AND
+                            t.PR_content_ST_location_EV_of_ChangedAt = v.PR_content_ST_location_EV_of_ChangedAt
+                        AND
+                            t.PR_ID_content = v.PR_ID_content
+                        AND
+                            t.ST_ID_location = v.ST_ID_location
+                        AND
+                            t.EV_ID_of = v.EV_ID_of
+                    )
+                    THEN 'D' -- duplicate assertion
+                    WHEN p.PR_content_ST_location_EV_of_ID is not null
+                    THEN 'S' -- duplicate statement
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                pre.PR_ID_content,
+                                pre.ST_ID_location,
+                                pre.EV_ID_of
+                            FROM
+                                [ties].[rPR_content_ST_location_EV_of] (
+                                    v.PR_content_ST_location_EV_of_Positor,
+                                    v.PR_content_ST_location_EV_of_ChangedAt,
+                                    v.PR_content_ST_location_EV_of_PositedAt
+                                ) pre
+                            WHERE
+                            (
+                                    pre.PR_ID_content = v.PR_ID_content
+                                AND
+                                    pre.ST_ID_location = v.ST_ID_location
+                                AND
+                                    pre.EV_ID_of = v.EV_ID_of
+                            )
+                            AND
+                                pre.PR_content_ST_location_EV_of_ChangedAt < v.PR_content_ST_location_EV_of_ChangedAt
+                            AND
+                                pre.PR_content_ST_location_EV_of_Assertion = v.PR_content_ST_location_EV_of_Assertion
+                            ORDER BY
+                                pre.PR_content_ST_location_EV_of_ChangedAt DESC,
+                                pre.PR_content_ST_location_EV_of_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.PR_ID_content = v.PR_ID_content
+                        AND
+                            s.ST_ID_location = v.ST_ID_location
+                        AND
+                            s.EV_ID_of = v.EV_ID_of
+                    )
+                    THEN 'R' -- restatement of the previous version
+                    WHEN EXISTS (
+                        SELECT
+                            42
+                        FROM (
+                            SELECT TOP 1
+                                fol.PR_ID_content,
+                                fol.ST_ID_location,
+                                fol.EV_ID_of
+                            FROM
+                                [ties].[fPR_content_ST_location_EV_of] (
+                                    v.PR_content_ST_location_EV_of_Positor,
+                                    v.PR_content_ST_location_EV_of_ChangedAt,
+                                    v.PR_content_ST_location_EV_of_PositedAt
+                                ) fol
+                            WHERE
+                            (
+                                    fol.PR_ID_content = v.PR_ID_content
+                                AND
+                                    fol.ST_ID_location = v.ST_ID_location
+                                AND
+                                    fol.EV_ID_of = v.EV_ID_of
+                            )
+                            AND
+                                fol.PR_content_ST_location_EV_of_ChangedAt > v.PR_content_ST_location_EV_of_ChangedAt
+                            AND
+                                fol.PR_content_ST_location_EV_of_Assertion = v.PR_content_ST_location_EV_of_Assertion
+                            ORDER BY
+                                fol.PR_content_ST_location_EV_of_ChangedAt ASC,
+                                fol.PR_content_ST_location_EV_of_PositedAt DESC
+                        ) s
+                        WHERE
+                            s.PR_ID_content = v.PR_ID_content
+                        AND
+                            s.ST_ID_location = v.ST_ID_location
+                        AND
+                            s.EV_ID_of = v.EV_ID_of
+                    )
+                    THEN 'R' -- restatement of the following version
+                    ELSE 'N' -- new statement
+                END
+        FROM
+            @inserted v
+        LEFT JOIN
+            [ties].[PR_content_ST_location_EV_of_Posit] p
+        ON
+            p.PR_ID_content = v.PR_ID_content
+        AND
+            p.ST_ID_location = v.ST_ID_location
+        AND
+            p.EV_ID_of = v.EV_ID_of
+        AND
+            p.PR_content_ST_location_EV_of_ChangedAt = v.PR_content_ST_location_EV_of_ChangedAt
+        WHERE
+            v.PR_content_ST_location_EV_of_Version = @currentVersion;
+        INSERT INTO [ties].[PR_content_ST_location_EV_of_Posit] (
+            PR_content_ST_location_EV_of_ChangedAt,
+            PR_ID_content,
+            ST_ID_location,
+            EV_ID_of
+        )
+        SELECT
+            PR_content_ST_location_EV_of_ChangedAt,
+            PR_ID_content,
+            ST_ID_location,
+            EV_ID_of
+        FROM
+            @inserted
+        WHERE
+            PR_content_ST_location_EV_of_Version = @currentVersion
+        AND
+            PR_content_ST_location_EV_of_StatementType in ('N','R');
+        INSERT INTO [ties].[PR_content_ST_location_EV_of_Annex] (
+            Metadata_PR_content_ST_location_EV_of,
+            PR_content_ST_location_EV_of_ID,
+            PR_content_ST_location_EV_of_Positor,
+            PR_content_ST_location_EV_of_PositedAt,
+            PR_content_ST_location_EV_of_Reliability
+        )
+        SELECT
+            v.Metadata_PR_content_ST_location_EV_of,
+            p.PR_content_ST_location_EV_of_ID,
+            v.PR_content_ST_location_EV_of_Positor,
+            v.PR_content_ST_location_EV_of_PositedAt,
+            v.PR_content_ST_location_EV_of_Reliability
+        FROM
+            @inserted v
+        JOIN
+            [ties].[PR_content_ST_location_EV_of_Posit] p
+        ON
+            p.PR_ID_content = v.PR_ID_content
+        AND
+            p.ST_ID_location = v.ST_ID_location
+        AND
+            p.EV_ID_of = v.EV_ID_of
+        AND
+            p.PR_content_ST_location_EV_of_ChangedAt = v.PR_content_ST_location_EV_of_ChangedAt
+        WHERE
+            v.PR_content_ST_location_EV_of_Version = @currentVersion
+        AND
+            v.PR_content_ST_location_EV_of_StatementType in ('S','N','D','R');
+    END
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_content_ST_location_EV_of instead of INSERT trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[it_lPR_content_ST_location_EV_of] ON [ties].[lPR_content_ST_location_EV_of]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[PR_content_ST_location_EV_of] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ChangedAt,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_content_ST_location_EV_of_ChangedAt,
+        i.PR_ID_content,
+        i.ST_ID_location,
+        i.EV_ID_of,
+        ISNULL(i.PR_content_ST_location_EV_of_Positor, i.Positor),
+        i.PR_content_ST_location_EV_of_PositedAt,
+        i.PR_content_ST_location_EV_of_Reliability
+    FROM
+        inserted i;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_content_ST_location_EV_of instead of UPDATE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[ut_lPR_content_ST_location_EV_of] ON [ties].[lPR_content_ST_location_EV_of]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(PR_content_ST_location_EV_of_Assertion))
+        RAISERROR('The computed assertion column PR_content_ST_location_EV_of_Assertion is not updatable.', 16, 1);
+    IF(UPDATE(PR_content_ST_location_EV_of_ID))
+        RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
+    -- a value set to null retracts the shown posit
+    INSERT INTO [ties].[PR_content_ST_location_EV_of_Annex] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        i.PR_content_ST_location_EV_of_ID,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Positor) THEN i.PR_content_ST_location_EV_of_Positor ELSE i.Positor END, 0),
+        cast(ISNULL(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+        END, @now) as datetime2),
+        0
+    FROM
+        inserted i
+    WHERE
+        i.PR_content_ST_location_EV_of_ID is not null
+    AND (
+        i.PR_ID_content is null
+    OR
+        i.ST_ID_location is null
+    OR
+        i.EV_ID_of is null
+    );
+    -- the other rows are statements, unless they leave everything as it is
+    INSERT INTO [ties].[PR_content_ST_location_EV_of] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ChangedAt,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        i.Metadata_PR_content_ST_location_EV_of,
+        cast(CASE
+            WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt
+            WHEN EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_content_ST_location_EV_of_Positor = i.PR_content_ST_location_EV_of_Positor
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+            ) THEN i.PR_content_ST_location_EV_of_ChangedAt -- the shown version is asserted again
+            ELSE @now
+        END as datetime2),
+        i.PR_ID_content,
+        i.ST_ID_location,
+        i.EV_ID_of,
+        ISNULL(CASE WHEN UPDATE(PR_content_ST_location_EV_of_Positor) THEN i.PR_content_ST_location_EV_of_Positor ELSE i.Positor END, 0),
+        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
+        ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+    FROM
+        inserted i
+    WHERE
+        i.PR_ID_content is not null
+    AND
+        i.ST_ID_location is not null
+    AND
+        i.EV_ID_of is not null
+    AND
+        ( -- a statement that leaves everything as it is states nothing
+            UPDATE(PR_content_ST_location_EV_of_ChangedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            UPDATE(PR_content_ST_location_EV_of_Positor) OR
+            UPDATE(Positor) OR
+            NOT EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    deleted d
+                WHERE
+                    d.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID
+                AND
+                    d.PR_content_ST_location_EV_of_Positor = i.PR_content_ST_location_EV_of_Positor
+                AND
+                    d.PR_ID_content = i.PR_ID_content
+                AND
+                    d.ST_ID_location = i.ST_ID_location
+                AND
+                    d.EV_ID_of = i.EV_ID_of
+                AND
+                    d.PR_content_ST_location_EV_of_Reliability = ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
+            )
+        );
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_content_ST_location_EV_of instead of DELETE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [ties].[dt_lPR_content_ST_location_EV_of] ON [ties].[lPR_content_ST_location_EV_of]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [ties].[PR_content_ST_location_EV_of_Annex] (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ID,
+        PR_content_ST_location_EV_of_Positor,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_content_ST_location_EV_of_Reliability
+    )
+    SELECT
+        d.Metadata_PR_content_ST_location_EV_of,
+        d.PR_content_ST_location_EV_of_ID,
+        d.PR_content_ST_location_EV_of_Positor,
+        @now,
+        0
+    FROM
+        deleted d;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssST_NAM_Stage_Name procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ssST_NAM_Stage_Name', 'P') IS NOT NULL
+DROP PROCEDURE [attributes].[ssST_NAM_Stage_Name];
+GO
+CREATE PROCEDURE [attributes].[ssST_NAM_Stage_Name] (
+    @ST_ID int = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), ST_NAM_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [attributes].[ST_NAM_Stage_Name]
+        WHERE
+            ST_ID = ISNULL(@ST_ID, ST_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        ST_NAM_Positor
+    FROM
+        [attributes].[ST_NAM_Stage_Name]
+    WHERE
+        ST_ID = ISNULL(@ST_ID, ST_ID)
+    AND
+        ST_NAM_Stage_Name is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql varchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.ST_NAM_Positor,
+                x.ST_ID,
+                x.ST_NAM_PositedAt,
+                b.ST_NAM_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    ST_ID,
+                    ST_NAM_PositedAt
+                FROM
+                    [attributes].[ST_NAM_Stage_Name]
+                WHERE
+                    ST_ID = ISNULL(@ST_ID, ST_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    ST_NAM_Positor,
+                    ST_ID,
+                    ST_NAM_PositedAt,
+                    ST_NAM_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [attributes].[ST_NAM_Stage_Name]
+                PIVOT (
+                    MIN(ST_NAM_Stage_Name) FOR ST_NAM_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    ST_ID = ISNULL(@ST_ID, ST_ID)
+                AND
+                    ST_NAM_Positor = ' + @positor + '
+            ) b
+            ON
+                b.ST_ID = x.ST_ID
+            AND
+                b.ST_NAM_PositedAt = x.ST_NAM_PositedAt
+            ORDER BY
+                ST_ID,
+                ST_NAM_PositedAt,
+                ST_NAM_Assertion
+        ';
+        EXEC(@sql);
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssST_AVG_Stage_Average procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ssST_AVG_Stage_Average', 'P') IS NOT NULL
+DROP PROCEDURE [attributes].[ssST_AVG_Stage_Average];
+GO
+CREATE PROCEDURE [attributes].[ssST_AVG_Stage_Average] (
+    @ST_ID int = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), ST_AVG_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [attributes].[ST_AVG_Stage_Average]
+        WHERE
+            ST_ID = ISNULL(@ST_ID, ST_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        ST_AVG_Positor
+    FROM
+        [attributes].[ST_AVG_Stage_Average]
+    WHERE
+        ST_ID = ISNULL(@ST_ID, ST_ID)
+    AND
+        UTL_ID is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql varchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.ST_AVG_Positor,
+                x.ST_ID,
+                x.ST_AVG_PositedAt,
+                b.ST_AVG_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    ST_ID,
+                    ST_AVG_PositedAt
+                FROM
+                    [attributes].[ST_AVG_Stage_Average]
+                WHERE
+                    ST_ID = ISNULL(@ST_ID, ST_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    ST_AVG_Positor,
+                    ST_ID,
+                    ST_AVG_PositedAt,
+                    ST_AVG_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [attributes].[ST_AVG_Stage_Average]
+                PIVOT (
+                    MIN(UTL_ID) FOR ST_AVG_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    ST_ID = ISNULL(@ST_ID, ST_ID)
+                AND
+                    ST_AVG_Positor = ' + @positor + '
+            ) b
+            ON
+                b.ST_ID = x.ST_ID
+            AND
+                b.ST_AVG_PositedAt = x.ST_AVG_PositedAt
+            ORDER BY
+                ST_ID,
+                ST_AVG_PositedAt,
+                ST_AVG_Assertion
+        ';
+        EXEC(@sql);
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssAC_NAM_Actor_Name procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ssAC_NAM_Actor_Name', 'P') IS NOT NULL
+DROP PROCEDURE [attributes].[ssAC_NAM_Actor_Name];
+GO
+CREATE PROCEDURE [attributes].[ssAC_NAM_Actor_Name] (
+    @AC_ID smallint = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), AC_NAM_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [attributes].[AC_NAM_Actor_Name]
+        WHERE
+            AC_ID = ISNULL(@AC_ID, AC_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        AC_NAM_Positor
+    FROM
+        [attributes].[AC_NAM_Actor_Name]
+    WHERE
+        AC_ID = ISNULL(@AC_ID, AC_ID)
+    AND
+        AC_NAM_Actor_Name is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql varchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.AC_NAM_Positor,
+                x.AC_ID,
+                x.AC_NAM_PositedAt,
+                b.AC_NAM_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    AC_ID,
+                    AC_NAM_PositedAt
+                FROM
+                    [attributes].[AC_NAM_Actor_Name]
+                WHERE
+                    AC_ID = ISNULL(@AC_ID, AC_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    AC_NAM_Positor,
+                    AC_ID,
+                    AC_NAM_PositedAt,
+                    AC_NAM_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [attributes].[AC_NAM_Actor_Name]
+                PIVOT (
+                    MIN(AC_NAM_Actor_Name) FOR AC_NAM_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    AC_ID = ISNULL(@AC_ID, AC_ID)
+                AND
+                    AC_NAM_Positor = ' + @positor + '
+            ) b
+            ON
+                b.AC_ID = x.AC_ID
+            AND
+                b.AC_NAM_PositedAt = x.AC_NAM_PositedAt
+            ORDER BY
+                AC_ID,
+                AC_NAM_PositedAt,
+                AC_NAM_Assertion
+        ';
+        EXEC(@sql);
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssAC_PLV_Actor_ProfessionalLevel procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ssAC_PLV_Actor_ProfessionalLevel', 'P') IS NOT NULL
+DROP PROCEDURE [attributes].[ssAC_PLV_Actor_ProfessionalLevel];
+GO
+CREATE PROCEDURE [attributes].[ssAC_PLV_Actor_ProfessionalLevel] (
+    @AC_ID smallint = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), AC_PLV_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [attributes].[AC_PLV_Actor_ProfessionalLevel]
+        WHERE
+            AC_ID = ISNULL(@AC_ID, AC_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        AC_PLV_Positor
+    FROM
+        [attributes].[AC_PLV_Actor_ProfessionalLevel]
+    WHERE
+        AC_ID = ISNULL(@AC_ID, AC_ID)
+    AND
+        PLV_ID is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql varchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.AC_PLV_Positor,
+                x.AC_ID,
+                x.AC_PLV_PositedAt,
+                b.AC_PLV_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    AC_ID,
+                    AC_PLV_PositedAt
+                FROM
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel]
+                WHERE
+                    AC_ID = ISNULL(@AC_ID, AC_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    AC_PLV_Positor,
+                    AC_ID,
+                    AC_PLV_PositedAt,
+                    AC_PLV_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel]
+                PIVOT (
+                    MIN(PLV_ID) FOR AC_PLV_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    AC_ID = ISNULL(@AC_ID, AC_ID)
+                AND
+                    AC_PLV_Positor = ' + @positor + '
+            ) b
+            ON
+                b.AC_ID = x.AC_ID
+            AND
+                b.AC_PLV_PositedAt = x.AC_PLV_PositedAt
+            ORDER BY
+                AC_ID,
+                AC_PLV_PositedAt,
+                AC_PLV_Assertion
+        ';
+        EXEC(@sql);
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssPR_LEN_Program_Length procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.ssPR_LEN_Program_Length', 'P') IS NOT NULL
+DROP PROCEDURE [attributes].[ssPR_LEN_Program_Length];
+GO
+CREATE PROCEDURE [attributes].[ssPR_LEN_Program_Length] (
+    @PR_ID bigint = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), PR_LEN_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [attributes].[PR_LEN_Program_Length]
+        WHERE
+            PR_ID = ISNULL(@PR_ID, PR_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        PR_LEN_Positor
+    FROM
+        [attributes].[PR_LEN_Program_Length]
+    WHERE
+        PR_ID = ISNULL(@PR_ID, PR_ID)
+    AND
+        PR_LEN_Program_Length is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql varchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.PR_LEN_Positor,
+                x.PR_ID,
+                x.PR_LEN_PositedAt,
+                b.PR_LEN_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    PR_ID,
+                    PR_LEN_PositedAt
+                FROM
+                    [attributes].[PR_LEN_Program_Length]
+                WHERE
+                    PR_ID = ISNULL(@PR_ID, PR_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    PR_LEN_Positor,
+                    PR_ID,
+                    PR_LEN_PositedAt,
+                    PR_LEN_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [attributes].[PR_LEN_Program_Length]
+                PIVOT (
+                    MIN(PR_LEN_Program_Length) FOR PR_LEN_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    PR_ID = ISNULL(@PR_ID, PR_ID)
+                AND
+                    PR_LEN_Positor = ' + @positor + '
+            ) b
+            ON
+                b.PR_ID = x.PR_ID
+            AND
+                b.PR_LEN_PositedAt = x.PR_LEN_PositedAt
+            ORDER BY
+                PR_ID,
+                PR_LEN_PositedAt,
+                PR_LEN_Assertion
+        ';
+        EXEC(@sql);
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- SCHEMA EVOLUTION ---------------------------------------------------------------------------------------------------
+--
+-- The following tables, views, and functions are used to track schema changes
+-- over time, as well as providing every XML that has been 'executed' against
+-- the database.
+--
+-- Schema table -------------------------------------------------------------------------------------------------------
+-- The schema table holds every xml that has been executed against the database
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Schema', 'U') IS NULL
+   CREATE TABLE [dw].[_Schema] (
+      [version] int identity(1, 1) not null,
+      [activation] datetime2 not null,
+      [schema] xml not null,
+      constraint pk_Schema primary key (
+         [version]
+      )
+   );
+GO
+-- Insert the XML schema (as of now)
+INSERT INTO [dw].[_Schema] (
+   [activation],
+   [schema]
+)
+SELECT
+   current_timestamp,
+   N'<schema format="0.101.3" date="2026-09-25" time="12:50:25">
+<metadata changingRange="datetime2" encapsulation="dw" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="original" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="true" decisiveness="true" equivalence="true" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="crt" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="true" />
+<description>
+Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.
+</description>
+<knot mnemonic="PAT" descriptor="ParentalType" identity="tinyint" dataRange="nvarchar(42)">
+<metadata capsule="knots" generator="false" equivalent="true" />
+<layout x="1168.03" y="97.52" fixed="false" />
+<description>
+Kind of parent-child relationship between two actors, such as biological or adoptive parent.
+</description>
+</knot>
+<knot mnemonic="GEN" descriptor="Gender" identity="tinyint" dataRange="nvarchar(42)">
+<metadata capsule="knots" generator="false" checksum="true" equivalent="false" />
+<layout x="1360.09" y="-59.78" fixed="false" />
+<description>
+Gender of an actor.
+</description>
+</knot>
+<knot mnemonic="PLV" descriptor="ProfessionalLevel" identity="tinyint" dataRange="nvarchar(max)">
+<metadata capsule="knots" generator="false" checksum="true" equivalent="true" />
+<layout x="1257.93" y="-12.47" fixed="false" />
+<description>
+Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.
+</description>
+</knot>
+<knot mnemonic="UTL" descriptor="Utilization" identity="tinyint" dataRange="tinyint">
+<metadata capsule="knots" generator="false" equivalent="false" />
+<layout x="973.86" y="899.86" fixed="false" />
+<description>
+Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.
+</description>
+</knot>
+<knot mnemonic="ONG" descriptor="Ongoing" identity="tinyint" dataRange="nvarchar(3)">
+<metadata capsule="knots" generator="false" equivalent="true" />
+<layout x="1575.55" y="191.32" fixed="false" />
+<description>
+Yes or No flag indicating whether a relationship is still ongoing or has ended.
+</description>
+</knot>
+<knot mnemonic="RAT" descriptor="Rating" identity="tinyint" dataRange="nvarchar(42)">
+<metadata capsule="knots" generator="true" checksum="true" equivalent="true" />
+<layout x="1310.90" y="402.62" fixed="false" />
+<description>
+Rating of how well an actor performs a part in a program, such as good, mediocre or bad.
+</description>
+</knot>
+<knot mnemonic="ETY" descriptor="EventType" identity="tinyint" dataRange="nvarchar(42)">
+<metadata capsule="knots" generator="false" checksum="true" equivalent="true" />
+<layout x="1314.96" y="557.45" fixed="false" />
+</knot>
+<anchor mnemonic="PN" descriptor="Person" identity="bigint">
+<metadata capsule="anchors" generator="true" />
+<layout x="1497.65" y="16.48" fixed="false" />
+<description>
+A person. Persons who perform are also registered as actors.
+</description>
+</anchor>
+<anchor mnemonic="ST" descriptor="Stage" identity="int">
+<metadata capsule="anchors" generator="false" />
+<attribute mnemonic="NAM" descriptor="Name" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false" />
+<key stop="1" route="2nd" of="ST" branch="1" />
+<layout x="1064.26" y="809.51" fixed="false" />
+<description>
+Name of the stage. Historized, since a stage may be renamed over time.
+</description>
+</attribute>
+<attribute mnemonic="LOC" descriptor="Location" identity="int" dataRange="geography">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" checksum="true" idempotent="false" deletable="false" />
+<key stop="1" route="1st" of="ST" branch="1" />
+<key stop="3" route="1st" of="EV" branch="2" />
+<layout x="1105.00" y="789.37" fixed="false" />
+<description>
+Geographic location of the stage as a geography point.
+</description>
+</attribute>
+<attribute mnemonic="AVG" descriptor="Average" identity="int" timeRange="datetime2" knotRange="UTL">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" restatable="false" idempotent="true" deletable="false" />
+<layout x="1014.22" y="830.84" fixed="false" />
+<description>
+Average utilization of the stage capacity, recalculated over time.
+</description>
+</attribute>
+<attribute mnemonic="MIN" descriptor="Minimum" identity="int" knotRange="UTL">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="true" />
+<layout x="987.08" y="804.53" fixed="false" />
+<description>
+Minimum utilization of the stage capacity required for a performance to take place.
+</description>
+</attribute>
+<identifier route="1st" identity="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" />
+<layout x="1139.77" y="750.29" fixed="false" />
+</identifier>
+<identifier route="2nd" identity="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" />
+<layout x="974.71" y="698.13" fixed="false" />
+</identifier>
+<layout x="1071.79" y="692.58" fixed="false" />
+<description>
+A stage or venue where programs are played and events are held.
+</description>
+</anchor>
+<anchor mnemonic="AC" descriptor="Actor" identity="smallint">
+<metadata capsule="anchors" generator="true" />
+<attribute mnemonic="NAM" descriptor="Name" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" encryptionGroup="PII" capsule="attributes" equivalent="false" generator="true" assertive="true" restatable="false" idempotent="false" deletable="false" />
+<key stop="1" route="1st" of="AC" branch="1" />
+<layout x="1393.90" y="233.62" fixed="false" />
+<description>
+Name of the actor, such as a stage name. Historized, since it may change over time.
+</description>
+</attribute>
+<attribute mnemonic="GEN" descriptor="Gender" identity="int" knotRange="GEN">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="false" />
+<layout x="1361.11" y="14.63" fixed="false" />
+<description>
+Gender of the actor.
+</description>
+</attribute>
+<attribute mnemonic="PLV" descriptor="ProfessionalLevel" identity="int" timeRange="datetime2" knotRange="PLV">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false" />
+<layout x="1297.57" y="31.67" fixed="false" />
+<description>
+Professional level of the actor, which may change as the actor gains experience.
+</description>
+</attribute>
+<identifier route="1st" identity="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" />
+<layout x="1318.04" y="201.65" fixed="false" />
+</identifier>
+<layout x="1350.10" y="167.06" fixed="false" />
+<description>
+An actor, a person who performs parts in programs and is cast in events.
+</description>
+</anchor>
+<anchor mnemonic="PR" descriptor="Program" identity="bigint">
+<metadata capsule="anchors" generator="false" />
+<attribute mnemonic="NAM" descriptor="Name" identity="int" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="false" />
+<key stop="1" route="1st" of="PR" branch="1" />
+<key stop="5" route="1st" of="EV" branch="3" />
+<layout x="1041.15" y="438.50" fixed="false" />
+<description>
+Name or title of the program.
+</description>
+</attribute>
+<attribute mnemonic="LEN" descriptor="Length" identity="int" timeRange="date" dataRange="time">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" restatable="true" idempotent="true" deletable="false" />
+<layout x="1087.45" y="405.27" fixed="false" />
+<description>
+Running time of the program. Historized, since the program may be shortened or extended over time.
+</description>
+</attribute>
+<identifier route="1st" identity="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" />
+<layout x="1204.70" y="448.61" fixed="false" />
+</identifier>
+<layout x="1143.26" y="449.41" fixed="false" />
+</anchor>
+<nexus mnemonic="EV" descriptor="Event" identity="numeric(12,0)">
+<metadata capsule="nexuses" generator="false" />
+<attribute mnemonic="DAT" descriptor="Date" identity="int" dataRange="datetime2" chronicle="1">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="false" />
+<key stop="1" route="1st" of="EV" branch="1" />
+<layout x="1282.10" y="598.26" fixed="false" />
+<description>
+Date and time when the event took place.
+</description>
+</attribute>
+<attribute mnemonic="AUD" descriptor="Audience" identity="int" dataRange="int">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" idempotent="false" deletable="false" />
+<layout x="1238.34" y="623.47" fixed="false" />
+<description>
+Number of people in the audience at the event.
+</description>
+</attribute>
+<attribute mnemonic="REV" descriptor="Revenue" identity="int" dataRange="decimal(19,4)">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" idempotent="false" deletable="false" />
+<layout x="1299.10" y="497.14" fixed="false" />
+<description>
+Revenue from ticket sales for the event.
+</description>
+</attribute>
+<attribute mnemonic="STA" descriptor="Status" identity="int" timeRange="datetime2" dataRange="nvarchar(20)">
+<metadata privacy="Ignore" capsule="attributes" equivalent="true" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false" />
+<layout x="618.60" y="156.39" fixed="false" />
+<description>
+Status of the event, which may change until it has taken place.
+</description>
+</attribute>
+<attribute mnemonic="UTL" descriptor="Utilization" identity="int" knotRange="UTL">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" idempotent="false" deletable="false" />
+<layout x="701.75" y="92.33" fixed="false" />
+</attribute>
+<attribute mnemonic="LVL" descriptor="Level" identity="int" timeRange="date" knotRange="PLV">
+<metadata privacy="Ignore" capsule="attributes" equivalent="false" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false" />
+<layout x="335.25" y="42.51" fixed="false" />
+<description>
+Professional level required for the event, over time.
+</description>
+</attribute>
+<role role="wasHeldAt" type="ST" identifier="false">
+<key stop="2" route="1st" of="EV" branch="2" />
+<description>
+The stage at which the event was held.
+</description>
+</role>
+<role role="wasPlayed" type="PR" identifier="false">
+<key stop="4" route="1st" of="EV" branch="3" />
+<description>
+The program that was played at the event.
+</description>
+</role>
+<role role="of" type="ETY" identifier="false" />
+<identifier route="1st" identity="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" />
+<layout x="1256.71" y="494.49" fixed="false" />
+</identifier>
+<layout x="1214.10" y="539.35" fixed="false" />
+<description>
+An event, a single performance of a program held at a stage at a specific date and time.
+</description>
+</nexus>
+<tie identity="int" timeRange="datetime2">
+<role role="partner" type="AC" identifier="false">
+<description>
+One of the actors in the partnership.
+</description>
+</role>
+<role role="with" type="AC" identifier="false">
+<description>
+The other actor in the partnership.
+</description>
+</role>
+<role role="currently" type="ONG" identifier="false">
+<description>
+Whether the partnership is still ongoing (Yes) or has ended (No).
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false" />
+<layout x="1483.31" y="185.10" fixed="false" />
+<description>
+Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.
+</description>
+</tie>
+<tie identity="int">
+<role role="subset" type="AC" identifier="false">
+<description>
+An actor, a person who performs parts in programs and is cast in events.
+</description>
+</role>
+<role role="of" type="PN" identifier="false">
+<description>
+The person who is the actor.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" deletable="false" idempotent="false" />
+<layout x="1445.29" y="77.24" fixed="false" />
+</tie>
+<tie identity="int">
+<role role="in" type="EV" identifier="true">
+<description>
+The event the actor was cast in.
+</description>
+</role>
+<role role="wasCast" type="AC" identifier="true">
+<description>
+An actor cast in the event.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" deletable="false" idempotent="false" />
+<layout x="1283.03" y="356.36" fixed="false" />
+<description>
+The actors that were cast in an event, meaning those who performed at that performance.
+</description>
+</tie>
+<tie identity="int" timeRange="datetime2">
+<role role="part" type="AC" identifier="true">
+<description>
+The actor having a part in the program.
+</description>
+</role>
+<role role="in" type="PR" identifier="true">
+<description>
+The program the actor has a part in.
+</description>
+</role>
+<role role="got" type="RAT" identifier="false">
+<description>
+The rating the actor got for the part.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false" />
+<layout x="1253.84" y="330.26" fixed="false" />
+<description>
+Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.
+</description>
+</tie>
+<tie identity="int" timeRange="datetime2">
+<role role="at" type="ST" identifier="true">
+<description>
+The stage where the program is playing.
+</description>
+</role>
+<role role="isPlaying" type="PR" identifier="true">
+<description>
+The program playing at the stage.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false" />
+<layout x="1042.83" y="541.87" fixed="false" />
+<description>
+Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.
+</description>
+</tie>
+<tie identity="int">
+<role role="parent" type="AC" identifier="true">
+<description>
+The actor who is the parent.
+</description>
+</role>
+<role role="child" type="AC" identifier="true">
+<description>
+The actor who is the child.
+</description>
+</role>
+<role role="having" type="PAT" identifier="true">
+<description>
+The type of parental relationship.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" deletable="false" idempotent="false" />
+<layout x="1246.77" y="123.21" fixed="false" />
+<description>
+Parent-child relationships between actors, along with the type of parental relationship.
+</description>
+</tie>
+<tie identity="int" timeRange="datetime2">
+<role role="content" type="PR" identifier="false">
+<description>
+The program that made up the content of the event.
+</description>
+</role>
+<role role="location" type="ST" identifier="false">
+<description>
+The stage where the event was located.
+</description>
+</role>
+<role role="of" type="EV" identifier="false">
+<description>
+The event.
+</description>
+</role>
+<metadata capsule="ties" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false" />
+<layout x="1105.57" y="552.13" fixed="false" />
+<description>
+The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.
+</description>
+</tie>
+</schema>';
+GO
+-- Schema expanded view -----------------------------------------------------------------------------------------------
+-- A view of the schema table that expands the XML attributes into columns
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Schema_Expanded', 'V') IS NOT NULL
+DROP VIEW [dw].[_Schema_Expanded]
+GO
+CREATE VIEW [dw].[_Schema_Expanded]
+AS
+SELECT
+	[version],
+	[activation],
+	[schema],
+	[schema].value('schema[1]/@format', 'nvarchar(max)') as [format],
+	[schema].value('schema[1]/@date', 'datetime') + [schema].value('schema[1]/@time', 'datetime') as [date],
+	[schema].value('schema[1]/metadata[1]/@temporalization', 'nvarchar(max)') as [temporalization],
+	[schema].value('schema[1]/metadata[1]/@databaseTarget', 'nvarchar(max)') as [databaseTarget],
+	[schema].value('schema[1]/metadata[1]/@changingRange', 'nvarchar(max)') as [changingRange],
+	[schema].value('schema[1]/metadata[1]/@encapsulation', 'nvarchar(max)') as [encapsulation],
+	[schema].value('schema[1]/metadata[1]/@identity', 'nvarchar(max)') as [identity],
+	[schema].value('schema[1]/metadata[1]/@metadataPrefix', 'nvarchar(max)') as [metadataPrefix],
+	[schema].value('schema[1]/metadata[1]/@metadataType', 'nvarchar(max)') as [metadataType],
+	[schema].value('schema[1]/metadata[1]/@metadataUsage', 'nvarchar(max)') as [metadataUsage],
+	[schema].value('schema[1]/metadata[1]/@changingSuffix', 'nvarchar(max)') as [changingSuffix],
+	[schema].value('schema[1]/metadata[1]/@identitySuffix', 'nvarchar(max)') as [identitySuffix],
+	[schema].value('schema[1]/metadata[1]/@positIdentity', 'nvarchar(max)') as [positIdentity],
+	[schema].value('schema[1]/metadata[1]/@positGenerator', 'nvarchar(max)') as [positGenerator],
+	[schema].value('schema[1]/metadata[1]/@positingRange', 'nvarchar(max)') as [positingRange],
+	[schema].value('schema[1]/metadata[1]/@positingSuffix', 'nvarchar(max)') as [positingSuffix],
+	[schema].value('schema[1]/metadata[1]/@positorRange', 'nvarchar(max)') as [positorRange],
+	[schema].value('schema[1]/metadata[1]/@positorSuffix', 'nvarchar(max)') as [positorSuffix],
+	[schema].value('schema[1]/metadata[1]/@reliabilityRange', 'nvarchar(max)') as [reliabilityRange],
+	[schema].value('schema[1]/metadata[1]/@reliabilitySuffix', 'nvarchar(max)') as [reliabilitySuffix],
+	[schema].value('schema[1]/metadata[1]/@deleteReliability', 'nvarchar(max)') as [deleteReliability],
+	[schema].value('schema[1]/metadata[1]/@assertionSuffix', 'nvarchar(max)') as [assertionSuffix],
+	[schema].value('schema[1]/metadata[1]/@partitioning', 'nvarchar(max)') as [partitioning],
+	[schema].value('schema[1]/metadata[1]/@entityIntegrity', 'nvarchar(max)') as [entityIntegrity],
+	[schema].value('schema[1]/metadata[1]/@restatability', 'nvarchar(max)') as [restatability],
+	[schema].value('schema[1]/metadata[1]/@idempotency', 'nvarchar(max)') as [idempotency],
+	[schema].value('schema[1]/metadata[1]/@assertiveness', 'nvarchar(max)') as [assertiveness],
+	[schema].value('schema[1]/metadata[1]/@naming', 'nvarchar(max)') as [naming],
+	[schema].value('schema[1]/metadata[1]/@positSuffix', 'nvarchar(max)') as [positSuffix],
+	[schema].value('schema[1]/metadata[1]/@annexSuffix', 'nvarchar(max)') as [annexSuffix],
+	[schema].value('schema[1]/metadata[1]/@chronon', 'nvarchar(max)') as [chronon],
+	[schema].value('schema[1]/metadata[1]/@now', 'nvarchar(max)') as [now],
+	[schema].value('schema[1]/metadata[1]/@dummySuffix', 'nvarchar(max)') as [dummySuffix],
+	[schema].value('schema[1]/metadata[1]/@statementTypeSuffix', 'nvarchar(max)') as [statementTypeSuffix],
+	[schema].value('schema[1]/metadata[1]/@checksumSuffix', 'nvarchar(max)') as [checksumSuffix],
+	[schema].value('schema[1]/metadata[1]/@businessViews', 'nvarchar(max)') as [businessViews],
+	[schema].value('schema[1]/metadata[1]/@equivalence', 'nvarchar(max)') as [equivalence],
+	[schema].value('schema[1]/metadata[1]/@equivalentSuffix', 'nvarchar(max)') as [equivalentSuffix],
+	[schema].value('schema[1]/metadata[1]/@equivalentRange', 'nvarchar(max)') as [equivalentRange]
+FROM
+	_Schema;
+GO
+-- Anchor view --------------------------------------------------------------------------------------------------------
+-- The anchor view shows information about all the anchors in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Anchor', 'V') IS NOT NULL
+DROP VIEW [dw].[_Anchor]
+GO
+CREATE VIEW [dw].[_Anchor]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.anchor.value('concat(@mnemonic, "_", @descriptor)', 'nvarchar(max)') as [name],
+   Nodeset.anchor.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.anchor.value('@mnemonic', 'nvarchar(max)') as [mnemonic],
+   Nodeset.anchor.value('@descriptor', 'nvarchar(max)') as [descriptor],
+   Nodeset.anchor.value('@identity', 'nvarchar(max)') as [identity],
+   Nodeset.anchor.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.anchor.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.anchor.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dw].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/anchor') as Nodeset(anchor);
+GO
+-- Knot view ----------------------------------------------------------------------------------------------------------
+-- The knot view shows information about all the knots in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Knot', 'V') IS NOT NULL
+DROP VIEW [dw].[_Knot]
+GO
+CREATE VIEW [dw].[_Knot]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.knot.value('concat(@mnemonic, "_", @descriptor)', 'nvarchar(max)') as [name],
+   Nodeset.knot.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.knot.value('@mnemonic', 'nvarchar(max)') as [mnemonic],
+   Nodeset.knot.value('@descriptor', 'nvarchar(max)') as [descriptor],
+   Nodeset.knot.value('@identity', 'nvarchar(max)') as [identity],
+   Nodeset.knot.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.knot.value('@dataRange', 'nvarchar(max)') as [dataRange],
+   isnull(Nodeset.knot.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
+   isnull(Nodeset.knot.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
+   Nodeset.knot.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dw].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/knot') as Nodeset(knot);
+GO
+-- Attribute view -----------------------------------------------------------------------------------------------------
+-- The attribute view shows information about all the attributes in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Attribute', 'V') IS NOT NULL
+DROP VIEW [dw].[_Attribute]
+GO
+CREATE VIEW [dw].[_Attribute]
+AS
+SELECT
+   S.version,
+   S.activation,
+   ParentNodeset.anchor.value('concat(@mnemonic, "_")', 'nvarchar(max)') +
+   Nodeset.attribute.value('concat(@mnemonic, "_")', 'nvarchar(max)') +
+   ParentNodeset.anchor.value('concat(@descriptor, "_")', 'nvarchar(max)') +
+   Nodeset.attribute.value('@descriptor', 'nvarchar(max)') as [name],
+   Nodeset.attribute.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.attribute.value('@mnemonic', 'nvarchar(max)') as [mnemonic],
+   Nodeset.attribute.value('@descriptor', 'nvarchar(max)') as [descriptor],
+   Nodeset.attribute.value('@identity', 'nvarchar(max)') as [identity],
+   isnull(Nodeset.attribute.value('metadata[1]/@equivalent', 'nvarchar(max)'), 'false') as [equivalent],
+   Nodeset.attribute.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.attribute.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
+   Nodeset.attribute.value('metadata[1]/@privacy', 'nvarchar(max)') as [privacy],
+   isnull(Nodeset.attribute.value('metadata[1]/@checksum', 'nvarchar(max)'), 'false') as [checksum],
+   Nodeset.attribute.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
+   Nodeset.attribute.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
+   ParentNodeset.anchor.value('@mnemonic', 'nvarchar(max)') as [anchorMnemonic],
+   ParentNodeset.anchor.value('@descriptor', 'nvarchar(max)') as [anchorDescriptor],
+   ParentNodeset.anchor.value('@identity', 'nvarchar(max)') as [anchorIdentity],
+   Nodeset.attribute.value('@dataRange', 'nvarchar(max)') as [dataRange],
+   Nodeset.attribute.value('@knotRange', 'nvarchar(max)') as [knotRange],
+   Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
+   Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
+   Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dw].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/anchor') as ParentNodeset(anchor)
+OUTER APPLY
+   ParentNodeset.anchor.nodes('attribute') as Nodeset(attribute);
+GO
+-- Tie view -----------------------------------------------------------------------------------------------------------
+-- The tie view shows information about all the ties in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Tie', 'V') IS NOT NULL
+DROP VIEW [dw].[_Tie]
+GO
+CREATE VIEW [dw].[_Tie]
+AS
+SELECT
+   S.version,
+   S.activation,
+   REPLACE(Nodeset.tie.query('
+      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      return concat($role/@type, "_", $role/@role)
+   ').value('.', 'nvarchar(max)'), ' ', '_') as [name],
+   Nodeset.tie.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.tie.value('count(anchorRole) + count(knotRole)', 'int') as [numberOfRoles],
+   Nodeset.tie.query('
+      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      return string($role/@role)
+   ').value('.', 'nvarchar(max)') as [roles],
+   Nodeset.tie.value('count(anchorRole)', 'int') as [numberOfAnchors],
+   Nodeset.tie.query('
+      for $role in anchorRole
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [anchors],
+   Nodeset.tie.value('count(knotRole)', 'int') as [numberOfKnots],
+   Nodeset.tie.query('
+      for $role in knotRole
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [knots],
+   Nodeset.tie.value('count(*[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"])', 'int') as [numberOfIdentifiers],
+   Nodeset.tie.query('
+      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"]
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [identifiers],
+   Nodeset.tie.value('@timeRange', 'nvarchar(max)') as [timeRange],
+   Nodeset.tie.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
+   Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
+   Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dw].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/tie') as Nodeset(tie);
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- The key view shows information about all the keys in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Key', 'V') IS NOT NULL
+DROP VIEW [dw].[_Key]
+GO
+CREATE VIEW [dw].[_Key]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
+   Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
+   Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
+   case [parent]
+      when 'tie'
+      then Nodeset.keys.value('../@role', 'nvarchar(max)')
+   end as [role],
+   case [parent]
+      when 'knot'
+      then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'attribute'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+      when 'tie'
+      then REPLACE(Nodeset.keys.query('
+            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            return concat($role/@type, "_", $role/@role)
+          ').value('.', 'nvarchar(max)'), ' ', '_')
+   end as [in],
+   [parent]
+FROM
+   [dw].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema//key') as Nodeset(keys)
+CROSS APPLY (
+   VALUES (
+      case
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
+         then 'tie'
+         else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
+      end 
+   )
+) p ([parent]);
+GO
+-- Evolution function -------------------------------------------------------------------------------------------------
+-- The evolution function shows what the schema looked like at the given
+-- point in time with additional information about missing or added
+-- modeling components since that time.
+--
+-- @timepoint The point in time to which you would like to travel.
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._Evolution', 'IF') IS NOT NULL
+DROP FUNCTION [dw].[_Evolution];
+GO
+CREATE FUNCTION [dw].[_Evolution] (
+    @timepoint AS datetime2
+)
+RETURNS TABLE AS
+RETURN
+WITH constructs AS (
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM 
+      [dw].[_Anchor] a
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '')
+   ) s (temporalization, suffix)
+   UNION ALL
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM
+      [dw].[_Knot] k
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '')
+   ) s (temporalization, suffix)
+   UNION ALL
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM
+      [dw].[_Attribute] b
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+   ) s (temporalization, suffix)
+   UNION ALL
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM
+      [dw].[_Tie] t
+   CROSS APPLY (
+      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+   ) s (temporalization, suffix)
+), 
+selectedSchema AS (
+   SELECT TOP 1
+      *
+   FROM
+      [dw].[_Schema_Expanded]
+   WHERE
+      [activation] <= @timepoint
+   ORDER BY
+      [activation] DESC
+),
+presentConstructs AS (
+   SELECT
+      C.*
+   FROM
+      selectedSchema S
+   JOIN
+      constructs C
+   ON
+      S.[version] = C.[version]
+   AND
+      S.temporalization = C.temporalization 
+), 
+allConstructs AS (
+   SELECT
+      C.*
+   FROM
+      selectedSchema S
+   JOIN
+      constructs C
+   ON
+      S.temporalization = C.temporalization
+)
+SELECT
+   COALESCE(P.[version], X.[version]) as [version],
+   COALESCE(P.[qualifiedName], T.[qualifiedName]) AS [name],
+   COALESCE(P.[activation], X.[activation], T.[create_date]) AS [activation],
+   CASE
+      WHEN P.[activation] = S.[activation] THEN 'Present'
+      WHEN X.[activation] > S.[activation] THEN 'Future'
+      WHEN X.[activation] < S.[activation] THEN 'Past'
+      ELSE 'Missing'
+   END AS Existence
+FROM 
+   presentConstructs P
+FULL OUTER JOIN (
+   SELECT 
+      s.[name] + '.' + t.[name] AS [qualifiedName],
+      t.[create_date]
+   FROM 
+      sys.tables t
+   JOIN
+      sys.schemas s
+   ON
+      s.schema_id = t.schema_id
+   WHERE
+      t.[type] = 'U'
+   AND
+      LEFT(t.[name], 1) <> '_'
+) T
+ON
+   T.[qualifiedName] = P.[qualifiedName]
+LEFT JOIN
+   allConstructs X
+ON
+   X.[qualifiedName] = T.[qualifiedName]
+AND
+   X.[activation] = (
+      SELECT
+         MIN(sub.[activation])
+      FROM
+         constructs sub
+      WHERE
+         sub.[qualifiedName] = T.[qualifiedName]
+      AND 
+         sub.[activation] >= T.[create_date]
+   )
+CROSS APPLY (
+   SELECT
+      *
+   FROM
+      selectedSchema
+) S;
+GO
+-- Drop Script Generator ----------------------------------------------------------------------------------------------
+-- generates a drop script, that must be run separately, dropping everything in an Anchor Modeled database
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._GenerateDropScript', 'P') IS NOT NULL
+DROP PROCEDURE [dw].[_GenerateDropScript];
+GO
+CREATE PROCEDURE [dw].[_GenerateDropScript] (
+   @exclusionPattern varchar(42) = '%.[[][_]%', -- exclude Metadata by default
+   @inclusionPattern varchar(42) = '%', -- include everything by default
+   @directions varchar(42) = 'Upwards, Downwards', -- do both up and down by default
+   @qualifiedName varchar(555) = null -- can specify a single object
+)
+AS
+BEGIN
+	set nocount on;
+	create table #entities (
+		[object_id] int not null unique,
+		[schema] varchar(42) not null,
+		[entity] varchar(555) not null,
+		[type] varchar(10) not null,
+		qualifiedName varchar(597) not null,
+		primary key (
+			[schema],
+			[entity]
+		)
+	);
+	insert into #entities (
+		[object_id],
+		[schema], 
+		[entity],
+		[type],
+		qualifiedName
+	)
+	select 
+		o.[object_id],
+		s.[name],
+		o.[name],
+		o.[type],
+		n.qualifiedName
+	from sys.objects o
+	join sys.schemas s
+	on s.schema_id = o.schema_id
+	cross apply (
+		values (
+			'[' + s.[name] + '].[' + o.[name] + ']'
+		)
+	) n (qualifiedName)
+	where o.[type] not in ('S', 'IT');
+	create table #exclusions (
+		[object_id] int not null unique,
+		[schema] varchar(42) not null,
+		[entity] varchar(555) not null,
+		qualifiedName varchar(597) not null,
+		primary key (
+			[schema],
+			[entity]
+		)
+	);
+	insert into #exclusions (
+		[object_id],
+		[schema], 
+		[entity],
+		qualifiedName
+	)
+	select 
+		[object_id],
+		[schema], 
+		[entity],
+		qualifiedName
+	from #entities
+	where qualifiedName like @exclusionPattern;
+	-- select * from #exclusions;
+	create table #inclusions (
+		[object_id] int not null unique,
+		[schema] varchar(42) not null,
+		[entity] varchar(555) not null,
+		qualifiedName varchar(597) not null,
+		primary key (
+			[schema],
+			[entity]
+		)
+	);
+	insert into #inclusions (
+		[object_id],
+		[schema], 
+		[entity],
+		qualifiedName
+	)
+	select 
+		[object_id],
+		[schema], 
+		[entity],
+		qualifiedName
+	from #entities e
+	where coalesce(@qualifiedName, qualifiedName) in (qualifiedName, [schema] + '.' + [entity])
+	and not exists (
+		select top 1 [entity] from #exclusions where [schema] = e.[schema] and [entity] = e.[entity]
+	);
+	-- select * from #inclusions;
+	create table #downward (
+		referenced_id int not null unique, 
+		referenced_schema_name varchar(42) not null,
+		referenced_entity_name varchar(555) not null,
+		[level] smallint not null, 
+		[direction] char(1) not null, 
+		primary key (
+			referenced_schema_name,
+			referenced_entity_name
+		)
+	);
+	with downward as (
+		select 
+			r.referenced_schema_name, 
+			r.referenced_entity_name, 
+			-2 as [level], 
+			'D' as direction, 
+			r.referenced_id
+		from #inclusions 
+		cross apply sys.dm_sql_referenced_entities(qualifiedName, 'OBJECT') r
+		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
+		union all
+		select 
+			r.referenced_schema_name, 
+			r.referenced_entity_name, 
+			d.[level] - 2, 
+			d.direction, 
+			r.referenced_id
+		from downward d
+		cross apply sys.dm_sql_referenced_entities(d.referenced_schema_name + '.' + d.referenced_entity_name, 'OBJECT') r
+		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
+	)
+	insert into #downward (
+		referenced_id, 
+		referenced_schema_name, 
+		referenced_entity_name, 
+		[level], 
+		[direction]
+	)
+	select 
+		referenced_id,
+		referenced_schema_name, 
+		referenced_entity_name, 
+		max([level]) as [level],
+		min([direction]) as [direction]
+	from (
+		select referenced_id, referenced_schema_name, referenced_entity_name, [level], [direction] from downward
+		union all
+		select [object_id], [schema], [entity], 0, 'D' from #inclusions
+	) d
+	where not exists (
+		select top 1 [entity] from #exclusions where [schema] = referenced_schema_name and [entity] = referenced_entity_name
+	)
+	group by 
+		referenced_id,
+		referenced_schema_name, 
+		referenced_entity_name;
+	-- select * from #downward order by level desc;
+	create table #entities_at_level (
+		[schema] varchar(42) not null,
+		[entity] varchar(555) not null,
+		qualifiedName varchar(597) not null,
+		[level] int null,
+		primary key (
+			[schema],
+			[entity]
+		)
+	);
+	insert into #entities_at_level (
+		[schema], 
+		[entity],
+		qualifiedName,
+		[level]
+	)
+	select 
+		e.[schema], 
+		e.[entity],
+		e.qualifiedName,
+		d.[level]
+	from #entities e
+	left join #downward d
+	on d.referenced_schema_name = e.[schema]
+	and d.referenced_entity_name = e.[entity]
+	where not exists (
+		select top 1 [entity] from #exclusions where [schema] = e.[schema] and [entity] = e.[entity]
+	);
+	create table #upward (
+		referenced_id int not null unique, 
+		referenced_schema_name varchar(42) not null,
+		referenced_entity_name varchar(555) not null,
+		[level] smallint not null, 
+		[direction] char(1) not null, 
+		primary key (
+			referenced_schema_name,
+			referenced_entity_name
+		)
+	);
+	with upward as (
+		select 
+			referenced_schema_name, 
+			referenced_entity_name, 
+			[level], 
+			direction, 
+			referenced_id
+		from #downward
+		union all
+		select 
+			cast(r.referencing_schema_name as varchar(42)), 
+			cast(r.referencing_entity_name as varchar(555)), 
+			cast(u.[level] + 2 as smallint), -- series becomes 0, 2, 4, 6, ...
+			cast('U' as char(1)), 
+			r.referencing_id
+		from upward u
+		cross apply sys.dm_sql_referencing_entities(u.referenced_schema_name + '.' + u.referenced_entity_name, 'OBJECT') r
+		join #entities_at_level e
+		on e.[schema] = r.referencing_schema_name and e.[entity] = r.referencing_entity_name
+		and (e.[level] is null or u.[level] + 2 > e.[level])
+		where r.referencing_id <> OBJECT_ID(u.referenced_schema_name + '.' + u.referenced_entity_name)
+	)
+	insert into #upward (
+		referenced_id, 
+		referenced_schema_name, 
+		referenced_entity_name, 
+		[level], 
+		[direction]
+	)
+	select 
+		referenced_id,
+		referenced_schema_name, 
+		referenced_entity_name, 
+		max([level]) as [level],
+		min([direction]) as [direction]
+	from upward 
+	where referenced_schema_name + '.' + referenced_entity_name like @inclusionPattern
+	group by 
+		referenced_id,
+		referenced_schema_name, 
+		referenced_entity_name;
+	with adjustment as (
+		select 
+			u.referenced_id,
+			fk.referenced_object_id,
+			1 as adjustment
+		from #upward u
+		join sys.foreign_keys fk
+		on fk.parent_object_id = u.referenced_id
+		union all 
+		select
+			a.referenced_object_id,
+			fk.referenced_object_id, 
+			a.adjustment + 2 -- series becomes 1, 3, 5, 7, ... so ends up between already defined order
+		from adjustment a
+		join sys.foreign_keys fk
+		on fk.parent_object_id = a.referenced_object_id
+	)
+	update u
+		set u.[level] = u.[level] + a.adjustment
+	from #upward u
+	join adjustment a
+	on a.referenced_id = u.referenced_id;
+	select
+		case 
+			when t.objectType = 'CHECK'
+			then 'ALTER TABLE ' + n.parentName + ' DROP CONSTRAINT ' + u.referenced_entity_name
+			else 'DROP ' + t.objectType + ' ' + n.qualifiedName
+		end + ';' + CHAR(13) as [text()]
+	from #upward u
+	join sys.objects o
+	on o.object_id = u.referenced_id
+	cross apply (
+		values (
+			'[' + u.referenced_schema_name + '].[' + u.referenced_entity_name + ']',
+			'[' + u.referenced_schema_name + '].[' + OBJECT_NAME(o.parent_object_id) + ']'
+		)
+	) n (qualifiedName, parentName)
+	cross apply (
+		select
+		case o.[type]
+			when 'C' then 'CHECK'
+			when 'TR' then 'TRIGGER'
+			when 'V' then 'VIEW'
+			when 'IF' then 'FUNCTION'
+			when 'FN' then 'FUNCTION'
+			when 'P' then 'PROCEDURE'
+			when 'PK' then 'CONSTRAINT'
+			when 'UQ' then 'CONSTRAINT'
+			when 'F' then 'CONSTRAINT'
+			when 'U' then 'TABLE'
+		end
+		) t (objectType)
+	where @directions like '%' + u.direction + '%'
+	and t.objectType in (
+			'CHECK',
+			'VIEW',
+			'FUNCTION',
+			'PROCEDURE',
+			'TABLE'
+		)
+	order by 
+		[referenced_schema_name],
+		[level] desc, 
+		[direction] asc,
+		case [type]
+			when 'C' then 0 -- CHECK CONSTRAINT
+			when 'TR' then 1 -- SQL_TRIGGER
+			when 'P' then 2 -- SQL_STORED_PROCEDURE
+			when 'V' then 3 -- VIEW
+			when 'IF' then 4 -- SQL_INLINE_TABLE_VALUED_FUNCTION
+			when 'FN' then 5 -- SQL_SCALAR_FUNCTION
+			when 'PK' then 6 -- PRIMARY_KEY_CONSTRAINT
+			when 'UQ' then 7 -- UNIQUE_CONSTRAINT
+			when 'F' then 8 -- FOREIGN_KEY_CONSTRAINT
+			when 'U' then 9 -- USER_TABLE
+		end asc,
+		[referenced_entity_name]
+	for xml path('');
+END
+GO
+-- Database Copy Script Generator -------------------------------------------------------------------------------------
+-- generates a copy script, that must be run separately, copying all data between two identically modeled databases
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._GenerateCopyScript', 'P') IS NOT NULL
+DROP PROCEDURE [dw].[_GenerateCopyScript];
+GO
+CREATE PROCEDURE [dw]._GenerateCopyScript (
+	@source varchar(123),
+	@target varchar(123)
+)
+as
+begin
+	declare @R char(1);
+    set @R = CHAR(13);
+	-- stores the built SQL code
+	declare @sql varchar(max);
+    set @sql = 'USE ' + @target + ';' + @R;
+	declare @xml xml;
+	-- find which version of the schema that is in effect
+	declare @version int;
+	select
+		@version = max([version])
+	from
+		[dw]._Schema;
+	-- declare and set other variables we need
+	declare @equivalentSuffix varchar(42);
+	declare @identitySuffix varchar(42);
+	declare @annexSuffix varchar(42);
+	declare @positSuffix varchar(42);
+	declare @temporalization varchar(42);
+	select
+		@equivalentSuffix = equivalentSuffix,
+		@identitySuffix = identitySuffix,
+		@annexSuffix = annexSuffix,
+		@positSuffix = positSuffix,
+		@temporalization = temporalization
+	from
+		[dw]._Schema_Expanded
+	where
+		[version] = @version;
+	-- build non-equivalent knot copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			[dw]._Knot x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		and
+			isnull(equivalent, 'false') = 'false'
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build equivalent knot copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @identitySuffix + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @identitySuffix + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @identitySuffix + ' OFF;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @equivalentSuffix + ';' + @R
+		from
+			[dw]._Knot x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		and
+			isnull(equivalent, 'false') = 'true'
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build anchor copy
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			[dw]._Anchor x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build attribute copy
+	if (@temporalization = 'crt')
+	begin
+		set @xml = (
+			select
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
+				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
+				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
+			from
+				[dw]._Attribute x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) pc ([positColumns])
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) ac ([annexColumns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	else -- uni
+	begin
+		set @xml = (
+			select
+				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
+			from
+				[dw]._Attribute x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) c ([columns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build tie copy
+	if (@temporalization = 'crt')
+	begin
+		set @xml = (
+			select
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' ON;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @positSuffix + '(' + [positColumns] + ')' + @R +
+				'SELECT ' + [positColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @positSuffix + ';' + @R,
+				case
+					when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + '_' + @positSuffix + ' OFF;' + @R
+				end,
+				'INSERT INTO ' + [capsule] + '.' + [name] + '_' + @annexSuffix + '(' + [annexColumns] + ')' + @R +
+				'SELECT ' + [annexColumns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + '_' + @annexSuffix + ';' + @R
+			from
+				[dw]._Tie x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @positSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) pc ([positColumns])
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name] + '_' + @annexSuffix)
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) ac ([annexColumns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	else -- uni
+	begin
+		set @xml = (
+			select
+				'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+				'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R
+			from
+				[dw]._Tie x
+			cross apply (
+				select stuff((
+					select
+						', ' + [name]
+					from
+						sys.columns
+					where
+						[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+					and
+						is_computed = 0
+					for xml path('')
+				), 1, 2, '')
+			) c ([columns])
+			where
+				[version] = @version
+			for xml path('')
+		);
+	end
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	select @sql for xml path('');
+end
+go
+-- Delete Everything with a Certain Metadata Id -----------------------------------------------------------------------
+-- deletes all rows from all tables that have the specified metadata id
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dw._DeleteWhereMetadataEquals', 'P') IS NOT NULL
+DROP PROCEDURE [dw].[_DeleteWhereMetadataEquals];
+GO
+CREATE PROCEDURE [dw]._DeleteWhereMetadataEquals (
+	@metadataID int,
+	@schemaVersion int = null,
+	@includeKnots bit = 0
+)
+as
+begin
+	declare @sql varchar(max);
+	set @sql = 'print ''Null is not a valid value for @metadataId''';
+	if(@metadataId is not null)
+	begin
+		if(@schemaVersion is null)
+		begin
+			select
+				@schemaVersion = max(Version)
+			from
+				[dw]._Schema;
+		end;
+		with constructs as (
+			select
+				'l' + name as name,
+				2 as prio,
+				'Metadata' + name as metadataColumn
+			from
+				[dw]._Tie
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				'l' + name as name,
+				3 as prio,
+				'Metadata' + mnemonic as metadataColumn
+			from
+				[dw]._Anchor
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				name,
+				4 as prio,
+				'Metadata' + mnemonic as metadataColumn
+			from
+				[dw]._Knot
+			where
+				[version] = @schemaVersion
+			and
+				@includeKnots = 1
+		)
+		select
+			@sql = (
+				select
+					'DELETE FROM ' + name + ' WHERE ' + metadataColumn + ' = ' + cast(@metadataId as varchar(max)) + '; '
+				from
+					constructs
+        order by
+					prio, name
+				for xml
+					path('')
+			);
+	end
+	exec(@sql);
+end
+go
+if OBJECT_ID('dw._FindWhatToRemove', 'P') is not null
+drop proc [dw].[_FindWhatToRemove];
+go
+-- _FindWhatToRemove finds what else to remove given 
+-- some input data containing data about to be removed.
+--
+--	Note that the table #removed must be created and 
+--	have at least one row before calling this SP. This 
+--	table will be populated with additional rows during
+--	the walking of the ties.
+--
+--	Parameters: 
+--
+--	@current	The mnemonic of the anchor in which to 
+--	start the tie walking.
+--	@forbid	Comma separated list of anchor mnemonics
+--	that never should be walked over.
+--	(optional)
+--	@visited	Keeps track of which anchors have been
+--	visited. Should never be passed to the
+--	procedure.
+--
+--	----------------------------------------------------
+--	-- EXAMPLE USAGE
+--	----------------------------------------------------
+--	if object_id('tempdb..#visited') is not null
+--	drop table #visited;
+--
+--	create table #visited (
+--	Visited varchar(max), 
+--	CurrentRole varchar(42),
+--	CurrentMnemonic char(2),
+--	Occurrences int, 
+--	Tie varchar(555), 
+--	AnchorRole varchar(42),
+--	AnchorMnemonic char(2), 
+--	VisitingOrder int
+--	);
+--
+--	if object_id('tempdb..#removed') is not null
+--	drop table #removed;
+--	create table #removed (
+--	AnchorMnemonic char(2), 
+--	AnchorID int, 
+--	primary key (
+--	AnchorMnemonic,
+--	AnchorID
+--	)
+--	);
+--
+--	insert into #removed 
+--	values ('CO', 3);
+--
+--	insert into #visited
+--	EXEC _FindWhatToRemove 'CO', 'AA';
+--
+--	select * from #visited;
+--	select * from #removed;
+create proc [dw].[_FindWhatToRemove] (
+	@current char(2), 
+	@forbid varchar(max) = null,
+	@visited varchar(max) = null
+)
+as 
+begin
+	-- dummy creation to make intellisense work 
+	if object_id('tempdb..#removed') is null
+	create table #removed (
+		AnchorMnemonic char(2), 
+		AnchorID int, 
+		primary key (
+			AnchorMnemonic,
+			AnchorID
+		)
+	);
+	set @visited = isnull(@visited, '');
+	if @visited not like '%-' + @current + '%'
+	begin
+		set @visited = @visited + '-' + @current;
+		declare @version int = (select max(version) from [dw]._Schema);
+		declare @ties xml = (
+			select
+				*
+			from (
+				select [schema].query('//tie[anchorRole[@type = sql:variable("@current")]]')
+				from [dw]._Schema
+				where version = @version
+			) t (ties)
+		);
+		select 
+			@visited as Visited,
+			Tie.value('../anchorRole[@type = sql:variable("@current")][1]/@role', 'varchar(42)') as CurrentRole,
+			@current as CurrentMnemonic,
+			cast(null as int) as Occurrences,
+			replace(Tie.query('
+				for $tie in ..
+				return <name> {
+					for $role in ($tie/anchorRole, $tie/knotRole)
+					return concat($role/@type, "_", $role/@role)
+				} </name>
+			').value('name[1]', 'varchar(555)'), ' ', '_') as Tie,
+			Tie.value('@role', 'varchar(42)') as AnchorRole,
+			Tie.value('@type', 'char(2)') as AnchorMnemonic, 
+			row_number() over (order by (select 1)) as VisitingOrder
+		into #walk
+		from @ties.nodes('tie/anchorRole[@type != sql:variable("@current")]') AS t (Tie)
+		delete #walk where @forbid + ',' like '%' + AnchorMnemonic + ',%';
+		declare @update varchar(max) = (
+			select '
+				update #walk
+				set Occurrences = (
+					select count(*)
+					from ' + Tie + ' t
+					join #removed x
+					on x.AnchorMnemonic = ''' + CurrentMnemonic + '''
+					and x.AnchorId = t.' + CurrentMnemonic + '_ID_' + CurrentRole + '
+				)
+				where Tie = ''' + Tie + '''
+			' as [text()]
+			from #walk
+			for xml path(''), type
+		).value('.', 'varchar(max)');
+		exec(@update);
+		select 
+			substring(Visited, 2, len(Visited)-1) as Visited, 
+			CurrentRole, 
+			CurrentMnemonic, 
+			Occurrences,
+			Tie, 
+			AnchorRole, 
+			AnchorMnemonic, 
+			VisitingOrder
+		from #walk;
+		declare @i int = 0;
+		declare @max int = (select max(VisitingOrder) from #walk);
+		declare @next char(2);
+		declare @occurrences int = 0;
+		declare @insert varchar(max);
+		declare @tie varchar(555);
+		declare @anchor_column varchar(555);
+		declare @current_column varchar(555);
+		while @i < @max
+		begin
+			set @i = @i + 1;
+			select 
+				@occurrences = Occurrences,
+				@tie = Tie,
+				@next = AnchorMnemonic, 
+				@anchor_column = AnchorMnemonic + '_ID_' + AnchorRole, 
+				@current_column = CurrentMnemonic + '_ID_' + CurrentRole
+			from #walk
+			where VisitingOrder = @i;
+			if @occurrences > 0
+			begin
+				set @insert = '
+					insert into #removed (AnchorMnemonic, AnchorID)
+					select distinct ''' + @next + ''', t.' + @anchor_column + '
+					from ' + @tie + ' t
+					join #removed x
+					on x.AnchorMnemonic = ''' + @current + '''
+					and x.AnchorId = t.' + @current_column + '
+					left join #removed seen
+					on seen.AnchorMnemonic = ''' + @next + '''
+					and seen.AnchorId = t.' + @anchor_column + '
+					where seen.AnchorId is null; 
+				';
+				exec(@insert);
+				exec _FindWhatToRemove @next, @forbid, @visited;
+			end
+		end
+	end
+end
+go
+if OBJECT_ID('dw._GenerateDeleteScript') is not null
+drop proc [dw]._GenerateDeleteScript;
+go
+-- _GenerateDeleteScript creates delete statements 
+-- that can be used to empty a database or parts of 
+-- a database.
+--
+--	Parameters: 
+--
+--	@anchorList	An optional parameter specified as a 
+-- list of anchors to be deleted. If not
+-- specified, delete statements will be
+-- generated for all anchors.
+-- 
+-- EXAMPLE:
+-- _GenerateDeleteScript @anchorList = 'AC PE'
+--
+create proc [dw]._GenerateDeleteScript (
+	@anchorList varchar(max) = null
+)
+as
+begin
+	declare @batchSize int = 100000;
+	declare @currentVersion int = (
+		select max([version]) from _Schema
+	);
+	select a.[capsule] + '.' + a.[name] as qualifiedName, a.[mnemonic], a.[generator]
+	into #anchor 
+	from [dw]._Anchor a
+	where a.[version] = @currentVersion
+	and (@anchorList is null or @anchorList like '%' + a.[mnemonic] + '%');
+	select b.[capsule] + '.' + b.[name] as qualifiedName, b.[generator], b.[knotRange]
+	into #attribute
+	from [dw]._Attribute b
+	join #anchor a
+	on a.[mnemonic] = b.[anchorMnemonic]
+	where b.[version] = @currentVersion;
+	select distinct t.[capsule] + '.' + t.[name] as qualifiedName, t.[generator], t.[knots]
+	into #tie 
+	from [dw]._Tie t
+	join #anchor a
+	on t.[anchors] like '%' + a.[mnemonic] + '%'
+	where t.[version] = @currentVersion;
+	select distinct k.[capsule] + '.' + k.[name] as qualifiedName, k.[generator]
+	into #knot
+	from [dw]._Knot k
+	outer apply (
+		select qualifiedName 
+		from #tie t
+		where t.[knots] like '%' + k.[mnemonic] + '%'
+	) kt
+	left join #attribute a
+	on a.[knotRange] = k.[mnemonic]
+	where k.[version] = @currentVersion
+	and (kt.qualifiedName is not null or a.qualifiedName is not null)
+	and not exists (
+		select top 1 t.[knots]
+		from [dw]._Tie t
+		where t.[version] = @currentVersion
+		and t.[knots] like '%' + k.[mnemonic] + '%'
+		and t.[capsule] + '.' + t.[name] not in (
+			select qualifiedName from #tie
+		)
+	)
+	and not exists (
+		select top 1 a.[mnemonic]
+		from [dw]._Attribute a
+		where a.[version] = @currentVersion
+		and a.[knotRange] = k.[mnemonic]
+		and a.[capsule] + '.' + a.[name] not in (
+			select qualifiedName from #attribute
+		)
+	);
+	select 
+		case 
+			when ROW_NUMBER() over (order by ordering, qualifiedName) = 1
+			then 'DECLARE @deletedRows INT; ' + CHAR(13)
+			else ''
+		end +
+		'SET @deletedRows = 1; ' + CHAR(13) +
+		'WHILE @deletedRows != 0 ' + CHAR(13) +
+		'BEGIN' + CHAR(13) +
+		CHAR(9) + 'DELETE TOP (' + cast(@batchSize as varchar(10)) + ') ' + qualifiedName + '; ' + CHAR(13) +
+		CHAR(9) + 'SET @deletedRows = @@ROWCOUNT; ' + CHAR(13) +
+		'END' + CHAR(13) +
+		case 
+			when [generator] = 'true'
+			then 'DBCC CHECKIDENT (''' + qualifiedName + ''', RESEED, 0); ' + CHAR(13) 
+			else ''
+		end as [text()] 
+	from (
+		select 1 as ordering, qualifiedName, [generator] from #attribute
+		union all
+		select 2 as ordering, qualifiedName, [generator] from #tie
+		union all
+		select 3 as ordering, qualifiedName, [generator] from #anchor
+		union all
+		select 4 as ordering, qualifiedName, [generator] from #knot
+	) x
+	order by ordering, qualifiedName asc
+	for xml path('');
+end
+go
+-- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Kind of parent-child relationship between two actors, such as biological or adoptive parent.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'GEN_Gender';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Gender of an actor.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'GEN_Gender';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'UTL_Utilization';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'UTL_Utilization';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'ONG_Ongoing';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Yes or No flag indicating whether a relationship is still ongoing or has ended.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'ONG_Ongoing';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'RAT_Rating';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Rating of how well an actor performs a part in a program, such as good, mediocre or bad.
+',
+@level0type = N'Schema', @level0name = 'knots',
+@level1type = N'Table', @level1name = 'RAT_Rating';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'PN_Person';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+A person. Persons who perform are also registered as actors.
+',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'PN_Person';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'ST_Stage';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+A stage or venue where programs are played and events are held.
+',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'ST_Stage';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_NAM_Stage_Name_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Name of the stage. Historized, since a stage may be renamed over time.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_NAM_Stage_Name_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_LOC_Stage_Location_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Geographic location of the stage as a geography point.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_LOC_Stage_Location_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_AVG_Stage_Average_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Average utilization of the stage capacity, recalculated over time.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_AVG_Stage_Average_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_MIN_Stage_Minimum_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Minimum utilization of the stage capacity required for a performance to take place.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'ST_MIN_Stage_Minimum_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'AC_Actor';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+An actor, a person who performs parts in programs and is cast in events.
+',
+@level0type = N'Schema', @level0name = 'anchors',
+@level1type = N'Table', @level1name = 'AC_Actor';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_NAM_Actor_Name_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Name of the actor, such as a stage name. Historized, since it may change over time.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_NAM_Actor_Name_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_GEN_Actor_Gender_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Gender of the actor.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_GEN_Actor_Gender_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_PLV_Actor_ProfessionalLevel_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Professional level of the actor, which may change as the actor gains experience.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'AC_PLV_Actor_ProfessionalLevel_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'PR_NAM_Program_Name_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Name or title of the program.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'PR_NAM_Program_Name_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'PR_LEN_Program_Length_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Running time of the program. Historized, since the program may be shortened or extended over time.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'PR_LEN_Program_Length_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+An event, a single performance of a program held at a stage at a specific date and time.
+',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_partner';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+One of the actors in the partnership.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_partner';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_with';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The other actor in the partnership.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_with';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'ONG_ID_currently';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Whether the partnership is still ongoing (Yes) or has ended (No).
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit',
+@level2type = N'Column', @level2name = 'ONG_ID_currently';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_subset_PN_of_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_subset';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+An actor, a person who performs parts in programs and is cast in events.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_subset_PN_of_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_subset';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_subset_PN_of_Posit',
+@level2type = N'Column', @level2name = 'PN_ID_of';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The person who is the actor.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_subset_PN_of_Posit',
+@level2type = N'Column', @level2name = 'PN_ID_of';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The actors that were cast in an event, meaning those who performed at that performance.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit',
+@level2type = N'Column', @level2name = 'EV_ID_in';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The event the actor was cast in.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit',
+@level2type = N'Column', @level2name = 'EV_ID_in';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_wasCast';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+An actor cast in the event.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'EV_in_AC_wasCast_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_wasCast';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_part';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The actor having a part in the program.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_part';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_in';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program the actor has a part in.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_in';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'RAT_ID_got';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The rating the actor got for the part.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_part_PR_in_RAT_got_Posit',
+@level2type = N'Column', @level2name = 'RAT_ID_got';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit',
+@level2type = N'Column', @level2name = 'ST_ID_at';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage where the program is playing.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit',
+@level2type = N'Column', @level2name = 'ST_ID_at';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_isPlaying';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program playing at the stage.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'ST_at_PR_isPlaying_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_isPlaying';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Parent-child relationships between actors, along with the type of parental relationship.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_parent';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The actor who is the parent.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_parent';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_child';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The actor who is the child.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'AC_ID_child';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'PAT_ID_having';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The type of parental relationship.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'AC_parent_AC_child_PAT_having_Posit',
+@level2type = N'Column', @level2name = 'PAT_ID_having';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_content';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program that made up the content of the event.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'PR_ID_content';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'ST_ID_location';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage where the event was located.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'ST_ID_location';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'EV_ID_of';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The event.
+',
+@level0type = N'Schema', @level0name = 'ties',
+@level1type = N'Table', @level1name = 'PR_content_ST_location_EV_of_Posit',
+@level2type = N'Column', @level2name = 'EV_ID_of';
+GO
