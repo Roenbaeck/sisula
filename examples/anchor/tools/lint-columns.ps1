@@ -14,7 +14,7 @@
 # It is a heuristic over generated text, not a SQL parser.
 
 $script:KeywordsForAlias = @('WHERE', 'JOIN', 'ON', 'LEFT', 'RIGHT', 'INNER', 'CROSS', 'FULL', 'UNION', 'GROUP', 'ORDER', 'LIMIT', 'AND', 'OR', 'NATURAL', 'QUALIFY', 'HAVING', 'LATERAL')
-$script:KeywordsInQuery = @('SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'IS', 'NULL', 'NOT', 'LIKE', 'BETWEEN', 'IN', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'ON', 'JOIN', 'UNION', 'ALL', 'TRUE', 'FALSE', 'ASC', 'DESC', 'BY', 'ORDER', 'LIMIT', 'GROUP')
+$script:KeywordsInQuery = @('SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'IS', 'NULL', 'NOT', 'LIKE', 'BETWEEN', 'IN', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'ON', 'JOIN', 'UNION', 'ALL', 'TRUE', 'FALSE', 'ASC', 'DESC', 'BY', 'ORDER', 'LIMIT', 'GROUP', 'HAVING')
 
 # name (lower case, schema.name) -> @{ Kind; Columns (a hashtable of lower case names, or $null if unknown); Params }
 function Get-ObjectColumns([System.Collections.Generic.List[string]] $code) {
