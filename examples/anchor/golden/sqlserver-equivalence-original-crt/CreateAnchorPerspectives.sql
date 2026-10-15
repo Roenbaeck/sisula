@@ -21,7 +21,7 @@
 -- @changingTimepoint the point in changing time to travel to
 --
 -- The difference perspective shows changes between the two given timepoints, and for
--- changes in all or a selection of attributes, with latest positing time.
+-- changes in all or a selection of attributes, with latest positing time, for each positor, which each row names.
 --
 -- @intervalStart the start of the interval for finding changes
 -- @intervalEnd the end of the interval for finding changes
@@ -273,6 +273,7 @@ CREATE FUNCTION [anchors].[dST_Stage] (
 )
 RETURNS TABLE AS RETURN
 SELECT
+    p.Positor,
     timepoints.inspectedTimepoint,
     [ST].*
 FROM
@@ -520,6 +521,7 @@ CREATE FUNCTION [anchors].[dAC_Actor] (
 )
 RETURNS TABLE AS RETURN
 SELECT
+    p.Positor,
     timepoints.inspectedTimepoint,
     [AC].*
 FROM
@@ -720,6 +722,7 @@ CREATE FUNCTION [anchors].[dPR_Program] (
 )
 RETURNS TABLE AS RETURN
 SELECT
+    p.Positor,
     timepoints.inspectedTimepoint,
     [PR].*
 FROM
