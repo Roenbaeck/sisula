@@ -763,445 +763,6 @@ CREATE TABLE [ties].[PR_content_ST_location_EV_of] (
     )
 );
 GO
--- Materialized Natural Key Table -------------------------------------------------
--- 2nd key table for lookups of identities in ST_Stage
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.ST_Stage_2nd', 'U') IS NOT NULL
-DROP TABLE [anchors].[ST_Stage_2nd];
-GO
-CREATE TABLE [anchors].[ST_Stage_2nd](
-    ST_ID int NOT NULL,
-    ST_NAM_Stage_Name nvarchar(42) NOT NULL,
-    ST_ChangedAt datetime2 NOT NULL,
-    Metadata_ST int NOT NULL,
-    CONSTRAINT pkST_Stage_2nd PRIMARY KEY CLUSTERED (
-        ST_ID,
-        ST_ChangedAt
-    ),
-    CONSTRAINT uqST_Stage_2nd UNIQUE (
-        ST_NAM_Stage_Name,
-        ST_ChangedAt
-    )
-);
-GO
--- Key view -----------------------------------------------------------------------------------------------------------
--- 2nd key view for lookups of identities in ST_Stage
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.key_ST_Stage_2nd', 'V') IS NOT NULL
-DROP VIEW [anchors].[key_ST_Stage_2nd];
-GO
-CREATE VIEW [anchors].[key_ST_Stage_2nd] WITH SCHEMABINDING AS
-SELECT
-    twine.ST_NAM_Stage_Name,
-    twine.[ChangedAt],
-    [ST].ST_ID
-FROM
-    [anchors].[ST_Stage] [ST]
-LEFT JOIN (
-    SELECT TOP 1 WITH TIES
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_NAM_Stage_Name'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    ST_ID, 
-                    ST_NAM_Stage_Name_ChangedAt
-            ) AS nvarchar(42)
-        ) AS ST_NAM_Stage_Name,
-        ST_ID,
-        [ChangedAt]
-    FROM (
-        SELECT
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_NAM_Stage_Name' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY ST_ID 
-                ORDER BY [ChangedAt]
-            ) AS ST_NAM_Stage_Name_ChangedAt,
-            ST_ID,
-            [Value],
-            [QualifiedType],
-            [ChangedAt]
-        FROM (
-            SELECT
-                ST_NAM_ST_ID AS ST_ID, 
-                CAST(ST_NAM_Stage_Name AS VARBINARY(max)) AS [Value],
-                'ST_NAM_Stage_Name' AS [QualifiedType],
-                CAST(ST_NAM_ChangedAt AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[ST_NAM_Stage_Name] 
-        ) unified_timelines
-    ) resolved_changes
-    ORDER BY 
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                ST_ID, 
-                [ChangedAt] 
-            ORDER BY
-                (select 1)
-        )
-) twine
-ON
-    twine.ST_ID = [ST].ST_ID;
-GO
--- Materialized Natural Key Table -------------------------------------------------
--- 1st key table for lookups of identities in ST_Stage
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.ST_Stage_1st', 'U') IS NOT NULL
-DROP TABLE [anchors].[ST_Stage_1st];
-GO
-CREATE TABLE [anchors].[ST_Stage_1st](
-    ST_ID int NOT NULL,
-    ST_LOC_Stage_Location geography NOT NULL,
-    ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
-    Metadata_ST int NOT NULL,
-    CONSTRAINT pkST_Stage_1st PRIMARY KEY CLUSTERED (
-        ST_ID
-    ),
-    CONSTRAINT uqST_Stage_1st UNIQUE (
-        ST_LOC_Checksum
-    )
-);
-GO
--- Key view -----------------------------------------------------------------------------------------------------------
--- 1st key view for lookups of identities in ST_Stage
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.key_ST_Stage_1st', 'V') IS NOT NULL
-DROP VIEW [anchors].[key_ST_Stage_1st];
-GO
-CREATE VIEW [anchors].[key_ST_Stage_1st] WITH SCHEMABINDING AS
-SELECT
-    twine.ST_LOC_Stage_Location,
-    [ST].ST_ID
-FROM
-    [anchors].[ST_Stage] [ST]
-LEFT JOIN (
-    SELECT TOP 1 WITH TIES
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_LOC_Stage_Location'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    ST_ID, 
-                    ST_LOC_Stage_Location_ChangedAt
-            ) AS geography
-        ) AS ST_LOC_Stage_Location,
-        ST_ID,
-        [ChangedAt]
-    FROM (
-        SELECT
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_LOC_Stage_Location' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY ST_ID 
-                ORDER BY [ChangedAt]
-            ) AS ST_LOC_Stage_Location_ChangedAt,
-            ST_ID,
-            [Value],
-            [QualifiedType],
-            [ChangedAt]
-        FROM (
-            SELECT
-                ST_LOC_ST_ID AS ST_ID, 
-                CAST(ST_LOC_Stage_Location AS VARBINARY(max)) AS [Value],
-                'ST_LOC_Stage_Location' AS [QualifiedType],
-                CAST(NULL AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[ST_LOC_Stage_Location] 
-        ) unified_timelines
-    ) resolved_changes
-    ORDER BY 
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                ST_ID, 
-                [ChangedAt] 
-            ORDER BY
-                (select 1)
-        )
-) twine
-ON
-    twine.ST_ID = [ST].ST_ID;
-GO
--- Materialized Natural Key Table -------------------------------------------------
--- 1st key table for lookups of identities in AC_Actor
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
-DROP TABLE [anchors].[AC_Actor_1st];
-GO
-CREATE TABLE [anchors].[AC_Actor_1st](
-    AC_ID smallint NOT NULL,
-    AC_NAM_Actor_Name varbinary(max) NOT NULL,
-    AC_ChangedAt datetime2 NOT NULL,
-    Metadata_AC int NOT NULL,
-    CONSTRAINT pkAC_Actor_1st PRIMARY KEY CLUSTERED (
-        AC_ID,
-        AC_ChangedAt
-    ),
-    CONSTRAINT uqAC_Actor_1st UNIQUE (
-        AC_NAM_Actor_Name,
-        AC_ChangedAt
-    )
-);
-GO
--- Key view -----------------------------------------------------------------------------------------------------------
--- 1st key view for lookups of identities in AC_Actor
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.key_AC_Actor_1st', 'V') IS NOT NULL
-DROP VIEW [anchors].[key_AC_Actor_1st];
-GO
-CREATE VIEW [anchors].[key_AC_Actor_1st] WITH SCHEMABINDING AS
-SELECT
-    twine.AC_NAM_Actor_Name,
-    twine.[ChangedAt],
-    [AC].AC_ID
-FROM
-    [anchors].[AC_Actor] [AC]
-LEFT JOIN (
-    SELECT TOP 1 WITH TIES
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'AC_NAM_Actor_Name'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    AC_ID, 
-                    AC_NAM_Actor_Name_ChangedAt
-            ) AS varbinary(max)
-        ) AS AC_NAM_Actor_Name,
-        AC_ID,
-        [ChangedAt]
-    FROM (
-        SELECT
-            MAX(CASE
-                WHEN [QualifiedType] = 'AC_NAM_Actor_Name' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY AC_ID 
-                ORDER BY [ChangedAt]
-            ) AS AC_NAM_Actor_Name_ChangedAt,
-            AC_ID,
-            [Value],
-            [QualifiedType],
-            [ChangedAt]
-        FROM (
-            SELECT
-                AC_NAM_AC_ID AS AC_ID, 
-                CAST(AC_NAM_Actor_Name AS VARBINARY(max)) AS [Value],
-                'AC_NAM_Actor_Name' AS [QualifiedType],
-                CAST(AC_NAM_ChangedAt AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[AC_NAM_Actor_Name] 
-        ) unified_timelines
-    ) resolved_changes
-    ORDER BY 
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                AC_ID, 
-                [ChangedAt] 
-            ORDER BY
-                (select 1)
-        )
-) twine
-ON
-    twine.AC_ID = [AC].AC_ID;
-GO
--- Materialized Natural Key Table -------------------------------------------------
--- 1st key table for lookups of identities in PR_Program
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.PR_Program_1st', 'U') IS NOT NULL
-DROP TABLE [anchors].[PR_Program_1st];
-GO
-CREATE TABLE [anchors].[PR_Program_1st](
-    PR_ID bigint NOT NULL,
-    PR_NAM_Program_Name nvarchar(42) NOT NULL,
-    Metadata_PR int NOT NULL,
-    CONSTRAINT pkPR_Program_1st PRIMARY KEY CLUSTERED (
-        PR_ID
-    ),
-    CONSTRAINT uqPR_Program_1st UNIQUE (
-        PR_NAM_Program_Name
-    )
-);
-GO
--- Key view -----------------------------------------------------------------------------------------------------------
--- 1st key view for lookups of identities in PR_Program
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.key_PR_Program_1st', 'V') IS NOT NULL
-DROP VIEW [anchors].[key_PR_Program_1st];
-GO
-CREATE VIEW [anchors].[key_PR_Program_1st] WITH SCHEMABINDING AS
-SELECT
-    twine.PR_NAM_Program_Name,
-    [PR].PR_ID
-FROM
-    [anchors].[PR_Program] [PR]
-LEFT JOIN (
-    SELECT TOP 1 WITH TIES
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'PR_NAM_Program_Name'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    PR_ID, 
-                    PR_NAM_Program_Name_ChangedAt
-            ) AS nvarchar(42)
-        ) AS PR_NAM_Program_Name,
-        PR_ID,
-        [ChangedAt]
-    FROM (
-        SELECT
-            MAX(CASE
-                WHEN [QualifiedType] = 'PR_NAM_Program_Name' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY PR_ID 
-                ORDER BY [ChangedAt]
-            ) AS PR_NAM_Program_Name_ChangedAt,
-            PR_ID,
-            [Value],
-            [QualifiedType],
-            [ChangedAt]
-        FROM (
-            SELECT
-                PR_NAM_PR_ID AS PR_ID, 
-                CAST(PR_NAM_Program_Name AS VARBINARY(max)) AS [Value],
-                'PR_NAM_Program_Name' AS [QualifiedType],
-                CAST(NULL AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[PR_NAM_Program_Name] 
-        ) unified_timelines
-    ) resolved_changes
-    ORDER BY 
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                PR_ID, 
-                [ChangedAt] 
-            ORDER BY
-                (select 1)
-        )
-) twine
-ON
-    twine.PR_ID = [PR].PR_ID;
-GO
--- Materialized Natural Key Table -------------------------------------------------
--- 1st key table for lookups of identities in EV_Event
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('nexuses.EV_Event_1st', 'U') IS NOT NULL
-DROP TABLE [nexuses].[EV_Event_1st];
-GO
-CREATE TABLE [nexuses].[EV_Event_1st](
-    EV_ID numeric(12,0) NOT NULL,
-    ST_LOC_Stage_Location geography NULL,
-    ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
-    PR_NAM_Program_Name nvarchar(42) NULL,
-    Metadata_EV int NOT NULL,
-    CONSTRAINT pkEV_Event_1st PRIMARY KEY CLUSTERED (
-        EV_ID
-    ),
-    CONSTRAINT uqEV_Event_1st UNIQUE (
-        ST_LOC_Checksum,
-        PR_NAM_Program_Name
-    )
-);
-GO
--- Key view -----------------------------------------------------------------------------------------------------------
--- 1st key view for lookups of identities in EV_Event
------------------------------------------------------------------------------------------------------------------------
-IF Object_ID('nexuses.key_EV_Event_1st', 'V') IS NOT NULL
-DROP VIEW [nexuses].[key_EV_Event_1st];
-GO
-CREATE VIEW [nexuses].[key_EV_Event_1st] WITH SCHEMABINDING AS
-SELECT
-    twine.ST_LOC_Stage_Location,
-    twine.PR_NAM_Program_Name,
-    [EV].EV_ID
-FROM
-    [nexuses].[EV_Event] [EV]
-LEFT JOIN (
-    SELECT TOP 1 WITH TIES
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_LOC_Stage_Location'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    EV_ID, 
-                    ST_LOC_Stage_Location_ChangedAt
-            ) AS geography
-        ) AS ST_LOC_Stage_Location,
-        CAST(
-            MAX(CASE
-                WHEN [QualifiedType] = 'PR_NAM_Program_Name'
-                THEN [Value] END
-            ) OVER (
-                PARTITION BY 
-                    EV_ID, 
-                    PR_NAM_Program_Name_ChangedAt
-            ) AS nvarchar(42)
-        ) AS PR_NAM_Program_Name,
-        EV_ID,
-        [ChangedAt]
-    FROM (
-        SELECT
-            MAX(CASE
-                WHEN [QualifiedType] = 'ST_LOC_Stage_Location' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY EV_ID 
-                ORDER BY [ChangedAt]
-            ) AS ST_LOC_Stage_Location_ChangedAt,
-            MAX(CASE
-                WHEN [QualifiedType] = 'PR_NAM_Program_Name' 
-                 AND [Value] is not null
-                THEN [ChangedAt] END
-            ) OVER (
-                PARTITION BY EV_ID 
-                ORDER BY [ChangedAt]
-            ) AS PR_NAM_Program_Name_ChangedAt,
-            EV_ID,
-            [Value],
-            [QualifiedType],
-            [ChangedAt]
-        FROM (
-            SELECT
-                ST_LOC_ST_ID AS EV_ID, 
-                CAST(ST_LOC_Stage_Location AS VARBINARY(max)) AS [Value],
-                'ST_LOC_Stage_Location' AS [QualifiedType],
-                CAST(NULL AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[ST_LOC_Stage_Location] 
-            UNION ALL
-            SELECT
-                PR_NAM_PR_ID AS EV_ID, 
-                CAST(PR_NAM_Program_Name AS VARBINARY(max)) AS [Value],
-                'PR_NAM_Program_Name' AS [QualifiedType],
-                CAST(NULL AS datetime2) AS [ChangedAt]
-            FROM
-                [attributes].[PR_NAM_Program_Name] 
-        ) unified_timelines
-    ) resolved_changes
-    ORDER BY 
-        ROW_NUMBER() OVER (
-            PARTITION BY 
-                EV_ID, 
-                [ChangedAt] 
-            ORDER BY
-                (select 1)
-        )
-) twine
-ON
-    twine.EV_ID = [EV].EV_ID;
-GO
 -- KNOT EQUIVALENCE VIEWS ---------------------------------------------------------------------------------------------
 --
 -- Equivalence views combine the identity and equivalent parts of a knot into a single view, making
@@ -6683,6 +6244,568 @@ SELECT
     tie.EV_ID_of as [of_Unknown_Id]
 FROM
     [ties].[dPR_content_ST_location_EV_of](@intervalStart, @intervalEnd) tie;
+GO
+-- NATURAL KEYS -------------------------------------------------------------------------------------------------------
+--
+-- A natural key is a route in the model: the values that identify an anchor or a nexus, reached from it through its
+-- attributes, its roles and ties (see naturalKeys() in Helpers.js for the rules a route follows). For each route of
+-- each anchor and nexus there is
+--
+--   key_<anchor or nexus>_<route>          the key of every identity, from the latest values, with one column for
+--                                          each value; a value with a checksum, such as a geography, is followed by
+--                                          its checksum, which is what it is matched on
+--   pkey_<anchor or nexus>_<route>(time)   the key of every identity at a changing time, for a route that passes
+--                                          something historized, since its key can change
+--   ic_key_<anchor or nexus>_<route>       the keys that more than one identity has, and the identities that have
+--                                          more than one key; a view that returns nothing has nothing wrong
+--   <anchor or nexus>_<route>              a table with the key of every identity that has all of its values, and a
+--   refresh_<anchor or nexus>_<route>      procedure that fills it from the key view; its unique constraint makes the
+--                                          procedure fail when two identities have the same key, and it can be indexed
+--
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.key_ST_Stage_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[key_ST_Stage_1st];
+GO
+CREATE VIEW [anchors].[key_ST_Stage_1st] AS
+SELECT
+    [ST].ST_ID,
+    [ST].ST_LOC_Stage_Location AS ST_LOC_Stage_Location,
+    [ST].ST_LOC_Checksum AS ST_LOC_Checksum
+FROM
+    [anchors].[lST_Stage] [ST]
+;
+GO
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ic_key_ST_Stage_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[ic_key_ST_Stage_1st];
+GO
+CREATE VIEW [anchors].[ic_key_ST_Stage_1st] AS
+SELECT
+    'key_ST_Stage_1st' AS Construct,
+    'duplicate natural key' AS Violation,
+    CONCAT(
+        'ST_LOC_Checksum=', CONVERT(varchar(max), d.ST_LOC_Checksum, 1)
+    ) AS ViolationKey,
+    d.Occurrences
+FROM (
+    SELECT
+        ST_LOC_Checksum,
+        COUNT(DISTINCT ST_ID) AS Occurrences
+    FROM
+        [anchors].[key_ST_Stage_1st]
+    WHERE
+        ST_LOC_Checksum is not null
+    GROUP BY
+        ST_LOC_Checksum
+    HAVING
+        COUNT(DISTINCT ST_ID) > 1
+) d
+UNION ALL
+SELECT
+    'key_ST_Stage_1st',
+    'more than one natural key',
+    CONCAT(
+        'ST_ID=', d.ST_ID
+    ),
+    d.Occurrences
+FROM (
+    SELECT
+        ST_ID,
+        COUNT(*) AS Occurrences
+    FROM
+        [anchors].[key_ST_Stage_1st]
+    GROUP BY
+        ST_ID
+    HAVING
+        COUNT(*) > 1
+) d;
+GO
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage, filled by refresh_ST_Stage_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ST_Stage_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[ST_Stage_1st];
+GO
+CREATE TABLE [anchors].[ST_Stage_1st] (
+    ST_ID int not null,
+    ST_LOC_Stage_Location geography not null,
+    ST_LOC_Checksum varbinary(16) not null,
+    constraint pkST_Stage_1st primary key (
+        ST_ID
+    ),
+    constraint uqST_Stage_1st unique (
+        ST_LOC_Checksum
+    )
+);
+GO
+IF Object_ID('anchors.refresh_ST_Stage_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_ST_Stage_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_ST_Stage_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[ST_Stage_1st];
+    INSERT INTO [anchors].[ST_Stage_1st] (
+        ST_ID,
+        ST_LOC_Stage_Location,
+        ST_LOC_Checksum
+    )
+    SELECT
+        ST_ID,
+        ST_LOC_Stage_Location,
+        ST_LOC_Checksum
+    FROM
+        [anchors].[key_ST_Stage_1st]
+    WHERE
+        ST_LOC_Checksum is not null
+    ;
+    COMMIT;
+END
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.key_ST_Stage_2nd', 'V') IS NOT NULL
+DROP VIEW [anchors].[key_ST_Stage_2nd];
+GO
+CREATE VIEW [anchors].[key_ST_Stage_2nd] AS
+SELECT
+    [ST].ST_ID,
+    [ST].ST_NAM_Stage_Name AS ST_NAM_Stage_Name
+FROM
+    [anchors].[lST_Stage] [ST]
+;
+GO
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.pkey_ST_Stage_2nd', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pkey_ST_Stage_2nd];
+GO
+CREATE FUNCTION [anchors].[pkey_ST_Stage_2nd] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [ST].ST_ID,
+    [ST].ST_NAM_Stage_Name AS ST_NAM_Stage_Name
+FROM
+    [anchors].[pST_Stage](@changingTimepoint) [ST]
+;
+GO
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ic_key_ST_Stage_2nd', 'V') IS NOT NULL
+DROP VIEW [anchors].[ic_key_ST_Stage_2nd];
+GO
+CREATE VIEW [anchors].[ic_key_ST_Stage_2nd] AS
+SELECT
+    'key_ST_Stage_2nd' AS Construct,
+    'duplicate natural key' AS Violation,
+    CONCAT(
+        'ST_NAM_Stage_Name=', d.ST_NAM_Stage_Name
+    ) AS ViolationKey,
+    d.Occurrences
+FROM (
+    SELECT
+        ST_NAM_Stage_Name,
+        COUNT(DISTINCT ST_ID) AS Occurrences
+    FROM
+        [anchors].[key_ST_Stage_2nd]
+    WHERE
+        ST_NAM_Stage_Name is not null
+    GROUP BY
+        ST_NAM_Stage_Name
+    HAVING
+        COUNT(DISTINCT ST_ID) > 1
+) d
+UNION ALL
+SELECT
+    'key_ST_Stage_2nd',
+    'more than one natural key',
+    CONCAT(
+        'ST_ID=', d.ST_ID
+    ),
+    d.Occurrences
+FROM (
+    SELECT
+        ST_ID,
+        COUNT(*) AS Occurrences
+    FROM
+        [anchors].[key_ST_Stage_2nd]
+    GROUP BY
+        ST_ID
+    HAVING
+        COUNT(*) > 1
+) d;
+GO
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage, filled by refresh_ST_Stage_2nd
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ST_Stage_2nd', 'U') IS NOT NULL
+DROP TABLE [anchors].[ST_Stage_2nd];
+GO
+CREATE TABLE [anchors].[ST_Stage_2nd] (
+    ST_ID int not null,
+    ST_NAM_Stage_Name nvarchar(42) not null,
+    constraint pkST_Stage_2nd primary key (
+        ST_ID
+    ),
+    constraint uqST_Stage_2nd unique (
+        ST_NAM_Stage_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_ST_Stage_2nd', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_ST_Stage_2nd];
+GO
+CREATE PROCEDURE [anchors].[refresh_ST_Stage_2nd] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[ST_Stage_2nd];
+    INSERT INTO [anchors].[ST_Stage_2nd] (
+        ST_ID,
+        ST_NAM_Stage_Name
+    )
+    SELECT
+        ST_ID,
+        ST_NAM_Stage_Name
+    FROM
+        [anchors].[key_ST_Stage_2nd]
+    WHERE
+        ST_NAM_Stage_Name is not null
+    ;
+    COMMIT;
+END
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.key_AC_Actor_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[key_AC_Actor_1st];
+GO
+CREATE VIEW [anchors].[key_AC_Actor_1st] AS
+SELECT
+    [AC].AC_ID,
+    [AC].AC_NAM_Actor_Name AS AC_NAM_Actor_Name
+FROM
+    [anchors].[lAC_Actor] [AC]
+;
+GO
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.pkey_AC_Actor_1st', 'IF') IS NOT NULL
+DROP FUNCTION [anchors].[pkey_AC_Actor_1st];
+GO
+CREATE FUNCTION [anchors].[pkey_AC_Actor_1st] (
+    @changingTimepoint datetime2
+)
+RETURNS TABLE AS RETURN
+SELECT
+    [AC].AC_ID,
+    [AC].AC_NAM_Actor_Name AS AC_NAM_Actor_Name
+FROM
+    [anchors].[pAC_Actor](@changingTimepoint) [AC]
+;
+GO
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ic_key_AC_Actor_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[ic_key_AC_Actor_1st];
+GO
+CREATE VIEW [anchors].[ic_key_AC_Actor_1st] AS
+SELECT
+    'key_AC_Actor_1st' AS Construct,
+    'duplicate natural key' AS Violation,
+    CONCAT(
+        'AC_NAM_Actor_Name=', d.AC_NAM_Actor_Name
+    ) AS ViolationKey,
+    d.Occurrences
+FROM (
+    SELECT
+        AC_NAM_Actor_Name,
+        COUNT(DISTINCT AC_ID) AS Occurrences
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    GROUP BY
+        AC_NAM_Actor_Name
+    HAVING
+        COUNT(DISTINCT AC_ID) > 1
+) d
+UNION ALL
+SELECT
+    'key_AC_Actor_1st',
+    'more than one natural key',
+    CONCAT(
+        'AC_ID=', d.AC_ID
+    ),
+    d.Occurrences
+FROM (
+    SELECT
+        AC_ID,
+        COUNT(*) AS Occurrences
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    GROUP BY
+        AC_ID
+    HAVING
+        COUNT(*) > 1
+) d;
+GO
+-- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
+-- hold; give its attribute a checksum.
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.key_PR_Program_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[key_PR_Program_1st];
+GO
+CREATE VIEW [anchors].[key_PR_Program_1st] AS
+SELECT
+    [PR].PR_ID,
+    [PR].PR_NAM_Program_Name AS PR_NAM_Program_Name
+FROM
+    [anchors].[lPR_Program] [PR]
+;
+GO
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ic_key_PR_Program_1st', 'V') IS NOT NULL
+DROP VIEW [anchors].[ic_key_PR_Program_1st];
+GO
+CREATE VIEW [anchors].[ic_key_PR_Program_1st] AS
+SELECT
+    'key_PR_Program_1st' AS Construct,
+    'duplicate natural key' AS Violation,
+    CONCAT(
+        'PR_NAM_Program_Name=', d.PR_NAM_Program_Name
+    ) AS ViolationKey,
+    d.Occurrences
+FROM (
+    SELECT
+        PR_NAM_Program_Name,
+        COUNT(DISTINCT PR_ID) AS Occurrences
+    FROM
+        [anchors].[key_PR_Program_1st]
+    WHERE
+        PR_NAM_Program_Name is not null
+    GROUP BY
+        PR_NAM_Program_Name
+    HAVING
+        COUNT(DISTINCT PR_ID) > 1
+) d
+UNION ALL
+SELECT
+    'key_PR_Program_1st',
+    'more than one natural key',
+    CONCAT(
+        'PR_ID=', d.PR_ID
+    ),
+    d.Occurrences
+FROM (
+    SELECT
+        PR_ID,
+        COUNT(*) AS Occurrences
+    FROM
+        [anchors].[key_PR_Program_1st]
+    GROUP BY
+        PR_ID
+    HAVING
+        COUNT(*) > 1
+) d;
+GO
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program, filled by refresh_PR_Program_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.PR_Program_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[PR_Program_1st];
+GO
+CREATE TABLE [anchors].[PR_Program_1st] (
+    PR_ID bigint not null,
+    PR_NAM_Program_Name nvarchar(42) not null,
+    constraint pkPR_Program_1st primary key (
+        PR_ID
+    ),
+    constraint uqPR_Program_1st unique (
+        PR_NAM_Program_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_PR_Program_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_PR_Program_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_PR_Program_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[PR_Program_1st];
+    INSERT INTO [anchors].[PR_Program_1st] (
+        PR_ID,
+        PR_NAM_Program_Name
+    )
+    SELECT
+        PR_ID,
+        PR_NAM_Program_Name
+    FROM
+        [anchors].[key_PR_Program_1st]
+    WHERE
+        PR_NAM_Program_Name is not null
+    ;
+    COMMIT;
+END
+GO
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.key_EV_Event_1st', 'V') IS NOT NULL
+DROP VIEW [nexuses].[key_EV_Event_1st];
+GO
+CREATE VIEW [nexuses].[key_EV_Event_1st] AS
+SELECT
+    [EV].EV_ID,
+    [EV].EV_DAT_Event_Date AS EV_DAT_Event_Date,
+    [s2].ST_LOC_Stage_Location AS wasHeldAt_ST_LOC_Stage_Location,
+    [s2].ST_LOC_Checksum AS wasHeldAt_ST_LOC_Checksum,
+    [s4].PR_NAM_Program_Name AS wasPlayed_PR_NAM_Program_Name
+FROM
+    [nexuses].[lEV_Event] [EV]
+LEFT JOIN
+    [anchors].[lST_Stage] [s2]
+ON
+    [s2].ST_ID = [EV].ST_ID_wasHeldAt
+LEFT JOIN
+    [anchors].[lPR_Program] [s4]
+ON
+    [s4].PR_ID = [EV].PR_ID_wasPlayed
+;
+GO
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.ic_key_EV_Event_1st', 'V') IS NOT NULL
+DROP VIEW [nexuses].[ic_key_EV_Event_1st];
+GO
+CREATE VIEW [nexuses].[ic_key_EV_Event_1st] AS
+SELECT
+    'key_EV_Event_1st' AS Construct,
+    'duplicate natural key' AS Violation,
+    CONCAT(
+        'EV_DAT_Event_Date=', d.EV_DAT_Event_Date, ', ',
+        'wasHeldAt_ST_LOC_Checksum=', CONVERT(varchar(max), d.wasHeldAt_ST_LOC_Checksum, 1), ', ',
+        'wasPlayed_PR_NAM_Program_Name=', d.wasPlayed_PR_NAM_Program_Name
+    ) AS ViolationKey,
+    d.Occurrences
+FROM (
+    SELECT
+        EV_DAT_Event_Date,
+        wasHeldAt_ST_LOC_Checksum,
+        wasPlayed_PR_NAM_Program_Name,
+        COUNT(DISTINCT EV_ID) AS Occurrences
+    FROM
+        [nexuses].[key_EV_Event_1st]
+    WHERE
+        EV_DAT_Event_Date is not null
+    AND
+        wasHeldAt_ST_LOC_Checksum is not null
+    AND
+        wasPlayed_PR_NAM_Program_Name is not null
+    GROUP BY
+        EV_DAT_Event_Date,
+        wasHeldAt_ST_LOC_Checksum,
+        wasPlayed_PR_NAM_Program_Name
+    HAVING
+        COUNT(DISTINCT EV_ID) > 1
+) d
+UNION ALL
+SELECT
+    'key_EV_Event_1st',
+    'more than one natural key',
+    CONCAT(
+        'EV_ID=', d.EV_ID
+    ),
+    d.Occurrences
+FROM (
+    SELECT
+        EV_ID,
+        COUNT(*) AS Occurrences
+    FROM
+        [nexuses].[key_EV_Event_1st]
+    GROUP BY
+        EV_ID
+    HAVING
+        COUNT(*) > 1
+) d;
+GO
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event, filled by refresh_EV_Event_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('nexuses.EV_Event_1st', 'U') IS NOT NULL
+DROP TABLE [nexuses].[EV_Event_1st];
+GO
+CREATE TABLE [nexuses].[EV_Event_1st] (
+    EV_ID numeric(12,0) not null,
+    EV_DAT_Event_Date datetime2 not null,
+    wasHeldAt_ST_LOC_Stage_Location geography not null,
+    wasHeldAt_ST_LOC_Checksum varbinary(16) not null,
+    wasPlayed_PR_NAM_Program_Name nvarchar(42) not null,
+    constraint pkEV_Event_1st primary key (
+        EV_ID
+    ),
+    constraint uqEV_Event_1st unique (
+        EV_DAT_Event_Date,
+        wasHeldAt_ST_LOC_Checksum,
+        wasPlayed_PR_NAM_Program_Name
+    )
+);
+GO
+IF Object_ID('nexuses.refresh_EV_Event_1st', 'P') IS NOT NULL
+DROP PROCEDURE [nexuses].[refresh_EV_Event_1st];
+GO
+CREATE PROCEDURE [nexuses].[refresh_EV_Event_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [nexuses].[EV_Event_1st];
+    INSERT INTO [nexuses].[EV_Event_1st] (
+        EV_ID,
+        EV_DAT_Event_Date,
+        wasHeldAt_ST_LOC_Stage_Location,
+        wasHeldAt_ST_LOC_Checksum,
+        wasPlayed_PR_NAM_Program_Name
+    )
+    SELECT
+        EV_ID,
+        EV_DAT_Event_Date,
+        wasHeldAt_ST_LOC_Stage_Location,
+        wasHeldAt_ST_LOC_Checksum,
+        wasPlayed_PR_NAM_Program_Name
+    FROM
+        [nexuses].[key_EV_Event_1st]
+    WHERE
+        EV_DAT_Event_Date is not null
+    AND
+        wasHeldAt_ST_LOC_Checksum is not null
+    AND
+        wasPlayed_PR_NAM_Program_Name is not null
+    ;
+    COMMIT;
+END
 GO
 -- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
 --

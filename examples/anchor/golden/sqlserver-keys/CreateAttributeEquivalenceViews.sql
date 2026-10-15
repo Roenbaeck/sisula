@@ -1,0 +1,6 @@
+-- ATTRIBUTE EQUIVALENCE VIEWS ----------------------------------------------------------------------------------------
+--
+-- Equivalence views of attributes make it possible to retrieve data for only the given equivalent.
+--
+-- @equivalent the equivalent that you want to retrieve data for
+--
