@@ -14,7 +14,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16');
+INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -394,6 +394,200 @@ END CATCH
 SET @n = (SELECT COUNT(*) FROM dbo.lSU_holder_OB_item_GRD_grade WHERE SU_ID_holder = @s AND OB_ID_item = @o AND Positor = 0);
 INSERT INTO #result SELECT N'c16 a tie: another reliability at a positing time that is taken is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_holder_OB_item_GRD_grade%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' shown; ', ISNULL(@error, 'no error'));
 UPDATE #group SET finished = 1 WHERE name = 'c16';
+GO
+
+-- c17 decisive: another value at the same changing time is a correction, which retracts what it corrects at its own
+--     positing time, so retracting the correction leaves nothing of the corrected value in effect (it used to come
+--     back)
+DECLARE @s int, @n int, @shown nvarchar(42);
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_NAM_PositedAt) VALUES (0, N'n1', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+UPDATE dbo.lSU_Subject SET SU_NAM_Subject_Name = N'n2', SU_NAM_PositedAt = '2024-02-01' WHERE SU_ID = @s AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_Subject_Name_Posit p ON p.SU_NAM_ID = a.SU_NAM_ID
+    WHERE p.SU_NAM_SU_ID = @s AND p.SU_NAM_Subject_Name = N'n1' AND a.SU_NAM_Positor = 0 AND a.SU_NAM_PositedAt = '2024-02-01' AND a.SU_NAM_Reliability = 0);
+INSERT INTO #result SELECT N'c17 a static correction retracts the corrected posit at its positing time', CASE WHEN @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' retractions of n1, expected 1');
+UPDATE dbo.lSU_Subject SET SU_NAM_Reliability = 0, SU_NAM_PositedAt = '2024-03-01' WHERE SU_ID = @s AND Positor = 0;
+SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c17 retracting a static correction leaves nothing in effect', CASE WHEN @shown IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
+-- historized: a value at the changing time of the shown version corrects it, and only it
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt) VALUES (0, N'early', '2019-01-01', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N't1', SU_TTL_ChangedAt = '2020-01-01', SU_TTL_PositedAt = '2024-02-01' WHERE SU_ID = @s AND Positor = 0;
+UPDATE dbo.lSU_Subject SET SU_TTL_Subject_Title = N't2', SU_TTL_ChangedAt = '2020-01-01', SU_TTL_PositedAt = '2024-03-01' WHERE SU_ID = @s AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.SU_TTL_Subject_Title_Annex a JOIN dbo.SU_TTL_Subject_Title_Posit p ON p.SU_TTL_ID = a.SU_TTL_ID
+    WHERE p.SU_TTL_SU_ID = @s AND a.SU_TTL_Reliability = 0);
+INSERT INTO #result SELECT N'c17 a historized correction retracts the version it corrects and no other', CASE WHEN @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' retractions, expected 1');
+UPDATE dbo.lSU_Subject SET SU_TTL_Reliability = 0, SU_TTL_PositedAt = '2024-04-01' WHERE SU_ID = @s AND Positor = 0;
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c17 retracting a historized correction shows the version before it', CASE WHEN @shown = N'early' THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'), ', expected early');
+-- knotted, by the value of the knot, and with a checksum
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_GRD_GRD_ID, SU_GRD_PositedAt, SU_NOT_Subject_Note, SU_NOT_PositedAt) VALUES (0, 1, '2024-01-01', N'note one', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+UPDATE dbo.lSU_Subject SET SU_GRD_GRD_Grade = N'B', SU_GRD_PositedAt = '2024-02-01', SU_NOT_Subject_Note = N'note two', SU_NOT_PositedAt = '2024-02-01' WHERE SU_ID = @s AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.SU_GRD_Subject_Grade_Annex a JOIN dbo.SU_GRD_Subject_Grade_Posit p ON p.SU_GRD_ID = a.SU_GRD_ID
+        WHERE p.SU_GRD_SU_ID = @s AND p.SU_GRD_GRD_ID = 1 AND a.SU_GRD_PositedAt = '2024-02-01' AND a.SU_GRD_Reliability = 0)
+    + (SELECT COUNT(*) FROM dbo.SU_NOT_Subject_Note_Annex a JOIN dbo.SU_NOT_Subject_Note_Posit p ON p.SU_NOT_ID = a.SU_NOT_ID
+        WHERE p.SU_NOT_SU_ID = @s AND p.SU_NOT_Subject_Note = N'note one' AND a.SU_NOT_PositedAt = '2024-02-01' AND a.SU_NOT_Reliability = 0);
+INSERT INTO #result SELECT N'c17 a correction of a knotted attribute and of one with a checksum retracts the corrected posits', CASE WHEN @n = 2 THEN 1 ELSE 0 END, CONCAT(@n, ' retractions, expected 2');
+UPDATE #group SET finished = 1 WHERE name = 'c17';
+GO
+
+-- c18 decisive: a positive assertion retracts what the same positor held before it, also within one insert into the
+--     assembled view, and leaves the other positors alone; a value that two positors state in one insert is one posit
+--     (it used to be made twice, which broke the key of the posit table)
+DECLARE @s int, @n int, @zero int, @shown nvarchar(42), @other nvarchar(42), @error nvarchar(2048);
+IF NOT EXISTS (SELECT 1 FROM dbo._Positor WHERE Positor = 1) INSERT INTO dbo._Positor (Positor) VALUES (1);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability)
+    VALUES (0, @s, N'a', '2024-01-01', 0, 1), (0, @s, N'a', '2024-01-01', 1, 1), (0, @s, N'b', '2024-02-01', 1, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_Subject_Name_Posit p ON p.SU_NAM_ID = a.SU_NAM_ID
+    WHERE p.SU_NAM_SU_ID = @s AND p.SU_NAM_Subject_Name = N'a' AND a.SU_NAM_Positor = 1 AND a.SU_NAM_PositedAt = '2024-02-01' AND a.SU_NAM_Reliability = 0);
+SET @zero = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_Subject_Name_Posit p ON p.SU_NAM_ID = a.SU_NAM_ID
+    WHERE p.SU_NAM_SU_ID = @s AND a.SU_NAM_Reliability = 0 AND a.SU_NAM_Positor = 0);
+SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 1);
+SET @other = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c18 a later value in the same insert retracts the earlier one of its positor, and only of its positor', CASE WHEN @error IS NULL AND @n = 1 AND @zero = 0 AND @shown = N'b' AND @other = N'a' THEN 1 ELSE 0 END,
+    CONCAT(@n, ' retractions of a by positor 1, ', @zero, ' by positor 0; shown ', ISNULL(@shown, 'nothing'), ' and ', ISNULL(@other, 'nothing'), ' ' + @error);
+INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability)
+VALUES (0, @s, N'a', '2024-03-01', 1, 1);
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_Subject_Name_Posit p ON p.SU_NAM_ID = a.SU_NAM_ID
+    WHERE p.SU_NAM_SU_ID = @s AND p.SU_NAM_Subject_Name = N'b' AND a.SU_NAM_Positor = 1 AND a.SU_NAM_PositedAt = '2024-03-01' AND a.SU_NAM_Reliability = 0);
+SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 1);
+INSERT INTO #result SELECT N'c18 asserting an earlier value again retracts the one held since', CASE WHEN @n = 1 AND @shown = N'a' THEN 1 ELSE 0 END, CONCAT(@n, ' retractions of b; shown ', ISNULL(@shown, 'nothing'));
+UPDATE #group SET finished = 1 WHERE name = 'c18';
+GO
+
+-- c19 decisive ties: other values of a static tie are a correction, which retracts what it corrects; one insert may
+--     have two positors, or two versions, of the same tie (that used to break the key of the trigger's own table)
+DECLARE @s1 int, @s2 int, @o int, @n int, @owner int, @other int, @error nvarchar(2048);
+IF NOT EXISTS (SELECT 1 FROM dbo._Positor WHERE Positor = 1) INSERT INTO dbo._Positor (Positor) VALUES (1);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s1 = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s2 = SCOPE_IDENTITY();
+INSERT INTO dbo.OB_Object (Metadata_OB) VALUES (0); SET @o = SCOPE_IDENTITY();
+BEGIN TRY
+    INSERT INTO dbo.OB_part_SU_owner (Metadata_OB_part_SU_owner, OB_ID_part, SU_ID_owner, OB_part_SU_owner_PositedAt, OB_part_SU_owner_Positor, OB_part_SU_owner_Reliability)
+    VALUES (0, @o, @s1, '2024-01-01', 0, 1), (0, @o, @s1, '2024-01-01', 1, 1), (0, @o, @s2, '2024-02-01', 1, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @owner = (SELECT SU_ID_owner FROM dbo.lOB_part_SU_owner WHERE OB_ID_part = @o AND Positor = 1);
+SET @other = (SELECT SU_ID_owner FROM dbo.lOB_part_SU_owner WHERE OB_ID_part = @o AND Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.OB_part_SU_owner_Annex a JOIN dbo.OB_part_SU_owner_Posit p ON p.OB_part_SU_owner_ID = a.OB_part_SU_owner_ID
+    WHERE p.OB_ID_part = @o AND p.SU_ID_owner = @s1 AND a.OB_part_SU_owner_Positor = 1 AND a.OB_part_SU_owner_PositedAt = '2024-02-01' AND a.OB_part_SU_owner_Reliability = 0);
+INSERT INTO #result SELECT N'c19 one insert with two positors and two versions of a static tie', CASE WHEN @error IS NULL AND @owner = @s2 AND @other = @s1 AND @n = 1 THEN 1 ELSE 0 END,
+    CONCAT('owners ', @owner, ' and ', @other, ', ', @n, ' retractions by positor 1', ' ' + @error);
+UPDATE dbo.lOB_part_SU_owner SET SU_ID_owner = @s2, OB_part_SU_owner_PositedAt = '2024-03-01' WHERE OB_ID_part = @o AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.OB_part_SU_owner_Annex a JOIN dbo.OB_part_SU_owner_Posit p ON p.OB_part_SU_owner_ID = a.OB_part_SU_owner_ID
+    WHERE p.OB_ID_part = @o AND p.SU_ID_owner = @s1 AND a.OB_part_SU_owner_Positor = 0 AND a.OB_part_SU_owner_PositedAt = '2024-03-01' AND a.OB_part_SU_owner_Reliability = 0);
+INSERT INTO #result SELECT N'c19 a static tie correction retracts the corrected posit at its positing time', CASE WHEN @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' retractions, expected 1');
+UPDATE dbo.lOB_part_SU_owner SET OB_part_SU_owner_Reliability = 0, OB_part_SU_owner_PositedAt = '2024-04-01' WHERE OB_ID_part = @o AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.lOB_part_SU_owner WHERE OB_ID_part = @o AND Positor = 0);
+INSERT INTO #result SELECT N'c19 retracting a static tie correction leaves nothing in effect', CASE WHEN @n = 0 THEN 1 ELSE 0 END, CONCAT(@n, ' shown, expected 0');
+UPDATE #group SET finished = 1 WHERE name = 'c19';
+GO
+
+-- c20 a nexus is updated and deleted through its latest view, as an anchor is (there were no such triggers), and its
+--     roles are not updatable
+DECLARE @s int, @s2 int, @e int, @n int, @quantity int, @for int, @error nvarchar(2048);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s2 = SCOPE_IDENTITY();
+INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_QTY_Event_Quantity, EV_QTY_PositedAt) VALUES (0, @s, 5, '2024-01-01');
+SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
+BEGIN TRY
+    UPDATE dbo.lEV_Event SET EV_QTY_Event_Quantity = 6, EV_QTY_PositedAt = '2024-02-01' WHERE EV_ID = @e AND Positor = 0;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @quantity = (SELECT EV_QTY_Event_Quantity FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.EV_QTY_Event_Quantity_Annex a JOIN dbo.EV_QTY_Event_Quantity_Posit p ON p.EV_QTY_ID = a.EV_QTY_ID
+    WHERE p.EV_QTY_EV_ID = @e AND p.EV_QTY_Event_Quantity = 5 AND a.EV_QTY_PositedAt = '2024-02-01' AND a.EV_QTY_Reliability = 0);
+INSERT INTO #result SELECT N'c20 an update of a nexus attribute through the latest view is a correction', CASE WHEN @error IS NULL AND @quantity = 6 AND @n = 1 THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(CAST(@quantity AS varchar), 'nothing'), ', ', @n, ' retractions of 5', ' ' + @error);
+SET @error = NULL;
+BEGIN TRY
+    UPDATE dbo.lEV_Event SET SU_ID_for = @s2 WHERE EV_ID = @e AND Positor = 0;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @for = (SELECT SU_ID_for FROM dbo.EV_Event WHERE EV_ID = @e);
+INSERT INTO #result SELECT N'c20 a role of a nexus is not updatable', CASE WHEN @error LIKE N'The role column SU_ID_for is not updatable%' AND @for = @s THEN 1 ELSE 0 END, CONCAT('for ', @for, '; ', ISNULL(@error, 'no error'));
+SET @error = NULL;
+BEGIN TRY
+    DELETE FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @quantity = (SELECT EV_QTY_Event_Quantity FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
+INSERT INTO #result SELECT N'c20 a delete through the latest view of a nexus retracts its shown values', CASE WHEN @error IS NULL AND @quantity IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(CAST(@quantity AS varchar), 'nothing'), ' ' + @error);
+UPDATE #group SET finished = 1 WHERE name = 'c20';
+GO
+
+-- c21 the schema tracking views read the roles of ties as the modeler writes them now (role elements, which they used
+--     to miss), and know nexuses and their attributes
+DECLARE @tie nvarchar(400), @anchors int, @knots int, @nexuses int, @attribute int, @evolution int;
+SELECT TOP 1 @tie = [name], @anchors = numberOfAnchors, @knots = numberOfKnots FROM dbo._Tie WHERE [name] LIKE N'SU[_]holder%' ORDER BY [version] DESC;
+INSERT INTO #result SELECT N'c21 the tie view names a tie by its roles', CASE WHEN @tie = N'SU_holder_OB_item_GRD_grade' AND @anchors = 2 AND @knots = 1 THEN 1 ELSE 0 END, CONCAT(ISNULL(@tie, 'no tie'), ', ', @anchors, ' anchors, ', @knots, ' knots');
+SET @nexuses = (SELECT COUNT(*) FROM dbo._Nexus WHERE [name] = N'EV_Event' AND numberOfRoles = 1 AND numberOfAttributes = 2);
+SET @attribute = (SELECT COUNT(*) FROM dbo._Attribute WHERE [name] = N'EV_QTY_Event_Quantity' AND [parent] = N'nexus');
+INSERT INTO #result SELECT N'c21 the nexus view shows the nexus, and the attribute view its attribute', CASE WHEN @nexuses > 0 AND @attribute > 0 THEN 1 ELSE 0 END, CONCAT(@nexuses, ' nexus rows, ', @attribute, ' attribute rows');
+SET @evolution = (SELECT COUNT(*) FROM dbo._Evolution(sysdatetime()) WHERE [name] IN (N'dbo.EV_Event', N'dbo.EV_QTY_Event_Quantity_Posit', N'dbo.SU_holder_OB_item_GRD_grade_Annex') AND Existence = 'Present');
+INSERT INTO #result SELECT N'c21 the evolution function finds the nexus, its attribute and the ties present', CASE WHEN @evolution = 3 THEN 1 ELSE 0 END, CONCAT(@evolution, ' of 3 present');
+UPDATE #group SET finished = 1 WHERE name = 'c21';
+GO
+
+-- c22 a historized attribute of a nexus: a new value is a new version, which the difference perspective shows (it
+--     used to call functions that are not made), and a restatement is an error when the attribute is not restatable
+--     (the restatement constraints used to leave the attributes of nexuses out)
+DECLARE @s int, @e int, @n int, @place nvarchar(42), @error nvarchar(2048);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_PLC_Event_Place, EV_PLC_ChangedAt, EV_PLC_PositedAt) VALUES (0, @s, N'p1', '2020-01-01', '2024-01-01');
+SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
+UPDATE dbo.lEV_Event SET EV_PLC_Event_Place = N'p2', EV_PLC_ChangedAt = '2021-01-01', EV_PLC_PositedAt = '2024-02-01' WHERE EV_ID = @e AND Positor = 0;
+SET @place = (SELECT EV_PLC_Event_Place FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.dEV_Event('2019-01-01', '2022-01-01', NULL) WHERE EV_ID = @e AND Positor = 0);
+INSERT INTO #result SELECT N'c22 a new value of a historized nexus attribute is a new version, which the difference perspective shows', CASE WHEN @place = N'p2' AND @n = 2 THEN 1 ELSE 0 END,
+    CONCAT('shown ', ISNULL(@place, 'nothing'), ', ', @n, ' differences, expected 2');
+BEGIN TRY
+    UPDATE dbo.lEV_Event SET EV_PLC_Event_Place = N'p2', EV_PLC_ChangedAt = '2022-01-01', EV_PLC_PositedAt = '2024-03-01' WHERE EV_ID = @e AND Positor = 0;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.EV_PLC_Event_Place_Posit WHERE EV_PLC_EV_ID = @e);
+INSERT INTO #result SELECT N'c22 a restatement of a nexus attribute that is not restatable is an error', CASE WHEN @error LIKE N'%rcEV_PLC_Event_Place_Annex%' AND @n = 2 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+UPDATE #group SET finished = 1 WHERE name = 'c22';
+GO
+
+-- c23 the sheet stacks run, for an attribute of an anchor and of a nexus (their statement could not see the parameter
+--     of the procedure, so they always failed); each shows its sheets as result sets of its own
+DECLARE @s int, @e int, @error nvarchar(2048);
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt) VALUES (0, N'sheet', '2020-01-01', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_PLC_Event_Place, EV_PLC_ChangedAt, EV_PLC_PositedAt) VALUES (0, @s, N'sheet', '2020-01-01', '2024-01-01');
+SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
+BEGIN TRY
+    EXEC dbo.ssSU_TTL_Subject_Title @SU_ID = @s;
+    EXEC dbo.ssEV_PLC_Event_Place @EV_ID = @e;
+END TRY
+BEGIN CATCH
+    SET @error = ERROR_MESSAGE();
+END CATCH
+INSERT INTO #result SELECT N'c23 the sheet stacks of an anchor attribute and of a nexus attribute run', CASE WHEN @error IS NULL THEN 1 ELSE 0 END, @error;
+UPDATE #group SET finished = 1 WHERE name = 'c23';
 GO
 
 -- the result

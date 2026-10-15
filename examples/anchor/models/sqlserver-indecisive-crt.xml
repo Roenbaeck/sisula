@@ -1,0 +1,224 @@
+<schema format="0.101.4" date="2026-10-09" time="12:00:00">
+<metadata changingRange="datetime2" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="false" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="crt" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="false"/>
+<description>
+A model for testing the triggers of the latest views: an attribute for each combination of the settings that the
+triggers read (restatable, idempotent, assertive, deletable, checksum, knotted, static or historized), ties with and
+without identifiers, and a nexus with an attribute. The scripts in sqlserver-tests/ run against its output.
+</description>
+<knot mnemonic="GRD" descriptor="Grade" identity="tinyint" dataRange="nvarchar(42)">
+<metadata capsule="dbo" generator="false"/>
+<layout x="514.71" y="209.97" fixed="false"/>
+<description>
+A grade, used by knotted attributes and by the value roles of ties.
+</description>
+</knot>
+<anchor mnemonic="SU" descriptor="Subject" identity="int">
+<metadata capsule="dbo" generator="true"/>
+<attribute mnemonic="NAM" descriptor="Name" identity="int" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="false" deletable="false"/>
+<layout x="338.35" y="444.47" fixed="false"/>
+<description>
+Static.
+</description>
+</attribute>
+<attribute mnemonic="COD" descriptor="Code" identity="int" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="true" deletable="false"/>
+<layout x="462.21" y="22.46" fixed="false"/>
+<description>
+Static and idempotent.
+</description>
+</attribute>
+<attribute mnemonic="GRD" descriptor="Grade" identity="int" knotRange="GRD">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="false" deletable="false"/>
+<layout x="693.16" y="69.30" fixed="false"/>
+<description>
+Static and knotted.
+</description>
+</attribute>
+<attribute mnemonic="NOT" descriptor="Note" identity="int" dataRange="nvarchar(max)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" checksum="true" idempotent="false" deletable="false"/>
+<layout x="691.37" y="260.74" fixed="false"/>
+<description>
+Static, with a checksum.
+</description>
+</attribute>
+<attribute mnemonic="TTL" descriptor="Title" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false"/>
+<layout x="586.06" y="359.40" fixed="false"/>
+<description>
+Historized, restatable.
+</description>
+</attribute>
+<attribute mnemonic="STA" descriptor="State" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="false" idempotent="false" deletable="false"/>
+<layout x="171.44" y="145.51" fixed="false"/>
+<description>
+Historized, not restatable: a restatement is an error.
+</description>
+</attribute>
+<attribute mnemonic="LBL" descriptor="Label" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="false" idempotent="true" deletable="false"/>
+<layout x="672.99" y="69.40" fixed="false"/>
+<description>
+Historized, not restatable and idempotent: a restatement is skipped.
+</description>
+</attribute>
+<attribute mnemonic="TAG" descriptor="Tag" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="true" idempotent="true" deletable="false"/>
+<layout x="124.58" y="55.45" fixed="false"/>
+<description>
+Historized, restatable and idempotent: a restatement is skipped.
+</description>
+</attribute>
+<attribute mnemonic="LVL" descriptor="Level" identity="int" timeRange="datetime2" knotRange="GRD">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="true" idempotent="false" deletable="false"/>
+<layout x="595.66" y="366.57" fixed="false"/>
+<description>
+Historized and knotted.
+</description>
+</attribute>
+<attribute mnemonic="TXT" descriptor="Text" identity="int" timeRange="datetime2" dataRange="nvarchar(max)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" checksum="true" restatable="true" idempotent="false" deletable="false"/>
+<layout x="161.78" y="299.68" fixed="false"/>
+<description>
+Historized, with a checksum.
+</description>
+</attribute>
+<attribute mnemonic="ASR" descriptor="Assessment" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="false" restatable="true" idempotent="false" deletable="false"/>
+<layout x="38.94" y="13.34" fixed="false"/>
+<description>
+Historized, not assertive: a re-assertion is skipped (bitemporal and concurrent-reliance-temporal).
+</description>
+</attribute>
+<attribute mnemonic="ERS" descriptor="Erasable" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="true" idempotent="false" deletable="true"/>
+<layout x="702.84" y="234.70" fixed="false"/>
+<description>
+Historized and deletable (uni-temporal).
+</description>
+</attribute>
+<layout x="536.84" y="394.14" fixed="false"/>
+<description>
+The subject of the tests.
+</description>
+</anchor>
+<anchor mnemonic="OB" descriptor="Object" identity="int">
+<metadata capsule="dbo" generator="true"/>
+<attribute mnemonic="NAM" descriptor="Name" identity="int" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="false" deletable="false"/>
+<layout x="105.77" y="236.02" fixed="false"/>
+<description>
+Static.
+</description>
+</attribute>
+<layout x="210.81" y="66.61" fixed="false"/>
+<description>
+Something the subject has or keeps.
+</description>
+</anchor>
+<nexus mnemonic="EV" descriptor="Event" identity="int">
+<metadata capsule="dbo" generator="true"/>
+<attribute mnemonic="QTY" descriptor="Quantity" identity="int" dataRange="int">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="false" deletable="false"/>
+<layout x="707.79" y="332.18" fixed="false"/>
+<description>
+Static.
+</description>
+</attribute>
+<attribute mnemonic="PLC" descriptor="Place" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="false" idempotent="false" deletable="false"/>
+<layout x="460.00" y="140.00" fixed="false"/>
+<description>
+Historized and not restatable, as an attribute of an anchor may be.
+</description>
+</attribute>
+<role role="for" type="SU" identifier="false">
+<description>
+The subject the event is for.
+</description>
+</role>
+<layout x="649.43" y="274.34" fixed="false"/>
+<description>
+An event, with attributes of its own, a static one and a historized one.
+</description>
+</nexus>
+<tie identity="int" timeRange="datetime2">
+<role role="holder" type="SU" identifier="true">
+<description>
+The subject of the tests.
+</description>
+</role>
+<role role="item" type="OB" identifier="true">
+<description>
+Something the subject has or keeps.
+</description>
+</role>
+<role role="grade" type="GRD" identifier="false">
+<description>
+A grade, used by knotted attributes and by the value roles of ties.
+</description>
+</role>
+<metadata capsule="dbo" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false"/>
+<layout x="678.49" y="33.31" fixed="false"/>
+<description>
+Historized, with identifiers and a knotted value role, restatable.
+</description>
+</tie>
+<tie identity="int" timeRange="datetime2">
+<role role="keeper" type="SU" identifier="true">
+<description>
+The subject of the tests.
+</description>
+</role>
+<role role="thing" type="OB" identifier="true">
+<description>
+Something the subject has or keeps.
+</description>
+</role>
+<role role="rank" type="GRD" identifier="false">
+<description>
+A grade, used by knotted attributes and by the value roles of ties.
+</description>
+</role>
+<metadata capsule="dbo" generator="true" assertive="false" restatable="false" deletable="false" idempotent="true"/>
+<layout x="97.00" y="341.33" fixed="false"/>
+<description>
+Historized, with identifiers and a knotted value role, idempotent and not assertive.
+</description>
+</tie>
+<tie identity="int">
+<role role="part" type="OB" identifier="true">
+<description>
+Something the subject has or keeps.
+</description>
+</role>
+<role role="owner" type="SU" identifier="false">
+<description>
+The subject of the tests.
+</description>
+</role>
+<metadata capsule="dbo" generator="true" assertive="true" deletable="false" idempotent="false"/>
+<layout x="236.41" y="66.65" fixed="false"/>
+<description>
+Static, with an identifier and a value role: each object has one owner.
+</description>
+</tie>
+<tie identity="int" timeRange="datetime2">
+<role role="partner" type="SU" identifier="false">
+<description>
+The subject of the tests.
+</description>
+</role>
+<role role="with" type="SU" identifier="false">
+<description>
+The subject of the tests.
+</description>
+</role>
+<metadata capsule="dbo" generator="true" assertive="true" restatable="true" deletable="false" idempotent="false"/>
+<layout x="85.24" y="156.10" fixed="false"/>
+<description>
+Historized, without identifiers.
+</description>
+</tie>
+</schema>

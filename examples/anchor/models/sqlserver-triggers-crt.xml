@@ -1,4 +1,4 @@
-<schema format="0.101.3" date="2026-10-09" time="12:00:00">
+<schema format="0.101.4" date="2026-10-09" time="12:00:00">
 <metadata changingRange="datetime2" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="crt" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="false"/>
 <description>
 A model for testing the triggers of the latest views: an attribute for each combination of the settings that the
@@ -123,7 +123,14 @@ Something the subject has or keeps.
 <metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" idempotent="false" deletable="false"/>
 <layout x="707.79" y="332.18" fixed="false"/>
 <description>
-Static, as the attributes of a nexus are.
+Static.
+</description>
+</attribute>
+<attribute mnemonic="PLC" descriptor="Place" identity="int" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" generator="true" assertive="true" restatable="false" idempotent="false" deletable="false"/>
+<layout x="460.00" y="140.00" fixed="false"/>
+<description>
+Historized and not restatable, as an attribute of an anchor may be.
 </description>
 </attribute>
 <role role="for" type="SU" identifier="false">
@@ -133,7 +140,7 @@ The subject the event is for.
 </role>
 <layout x="649.43" y="274.34" fixed="false"/>
 <description>
-An event, with an attribute of its own.
+An event, with attributes of its own, a static one and a historized one.
 </description>
 </nexus>
 <tie identity="int" timeRange="datetime2">

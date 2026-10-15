@@ -1,17 +1,18 @@
 <#
-    Runs the SQL Server tests: the trigger tests and the natural key tests. For each suite and temporalization it creates
-    an empty database, runs the SQL generated for the suite's test model in it (golden/sqlserver-triggers/_full.sql or
-    golden/sqlserver-keys/_full.sql, or the -bi or -crt one), runs the tests (sqlserver-tests/<suite>-<t>.sql) and drops
-    the database again. It prints what sqlcmd prints, the result of every check among it, and exits 1 if a check failed
-    or a script did not run through.
+    Runs the SQL Server tests: the trigger tests, the natural key tests, and the trigger tests without decisiveness. For
+    each suite and temporalization it creates an empty database, runs the SQL generated for the suite's test model in it
+    (golden/sqlserver-triggers/_full.sql or golden/sqlserver-keys/_full.sql, or the -bi or -crt one, and
+    golden/sqlserver-indecisive-crt/_full.sql), runs the tests (sqlserver-tests/<suite>-<t>.sql) and drops the database
+    again. The indecisive suite is crt only: its model is the crt trigger model with decisiveness off. It prints what
+    sqlcmd prints, the result of every check among it, and exits 1 if a check failed or a script did not run through.
 
     The SQL that is run is the golden output, so regenerate it first when Anchor's templates have changed
-    (regenerate-golden.ps1 -Variant sqlserver-triggers,sqlserver-triggers-bi,sqlserver-triggers-crt, and the same for
-    sqlserver-keys). The tests need SQL Server 2016 or later, sqlcmd (the ODBC one or the newer go-sqlcmd), and a login
-    that may create databases.
+    (regenerate-golden.ps1 -Variant sqlserver-triggers,sqlserver-triggers-bi,sqlserver-triggers-crt, the same for
+    sqlserver-keys, and sqlserver-indecisive-crt). The tests need SQL Server 2016 or later, sqlcmd (the ODBC one or the
+    newer go-sqlcmd), and a login that may create databases.
 
     Usage:
-      sqlserver-tests.ps1 [-Server <name>] [-Suite triggers,keys] [-Temporalization uni,bi,crt]
+      sqlserver-tests.ps1 [-Server <name>] [-Suite triggers,keys,indecisive] [-Temporalization uni,bi,crt]
                           [-Username <login> -Password <password>] [-TrustServerCertificate] [-Keep] [-Prefix <name>]
                           [-Sqlcmd <path>]
 
@@ -23,7 +24,7 @@
 [CmdletBinding()]
 param(
     [string] $Server = 'localhost',
-    [string[]] $Suite = @('triggers', 'keys'),
+    [string[]] $Suite = @('triggers', 'keys', 'indecisive'),
     [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [string] $Username,
     [string] $Password,
@@ -38,8 +39,10 @@ $root = Split-Path -Parent $PSScriptRoot
 
 # powershell -File passes "a,b" as one string.
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+# the temporalizations that each suite has a model for
+$temporalizationsOf = @{ triggers = @('uni', 'bi', 'crt'); keys = @('uni', 'bi', 'crt'); indecisive = @('crt') }
 foreach ($s in $Suite) {
-    if (@('triggers', 'keys') -notcontains $s) { throw "Unknown suite '$s': use triggers or keys." }
+    if (-not $temporalizationsOf.ContainsKey($s)) { throw "Unknown suite '$s': use triggers, keys or indecisive." }
 }
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($t in $Temporalization) {
@@ -67,9 +70,23 @@ function Write-Lines($lines) {
     }
 }
 
+# Runs a script of checks and returns why it failed, or nothing if every check passed.
+function Invoke-Checks([string] $database, [string] $checksFile) {
+    # without -b, so that every group of checks runs even if one of them stops on an error
+    $out = Invoke-SqlcmdLines @('-d', $database, '-I', '-f', '65001', '-h', '-1', '-W', '-i', $checksFile)
+    Write-Lines $out
+    $checks = @($out | Where-Object { $_ -match '^(PASS|FAIL) ' })
+    $failures = @($checks | Where-Object { $_ -match '^FAIL ' })
+    $summary = @($out | Where-Object { $_ -match '^\d+ of \d+ checks passed' })
+    if ($failures.Count -or -not $checks.Count -or -not $summary.Count) {
+        "$($failures.Count) of $($checks.Count) checks failed"
+    }
+}
+
 $failed = @()
 foreach ($s in $Suite) {
     foreach ($t in $Temporalization) {
+        if ($temporalizationsOf[$s] -notcontains $t) { continue }
         $suffix = ''
         if ($t -ne 'uni') { $suffix = "-$t" }
         $generated = Join-Path $root "golden\sqlserver-$s$suffix\_full.sql"
@@ -90,14 +107,30 @@ foreach ($s in $Suite) {
             $failed += "$s $t (the generated SQL did not run)"
         }
         else {
-            # without -b, so that every group of checks runs even if one of them stops on an error
-            $out = Invoke-SqlcmdLines @('-d', $database, '-I', '-f', '65001', '-h', '-1', '-W', '-i', $tests)
-            Write-Lines $out
-            $checks = @($out | Where-Object { $_ -match '^(PASS|FAIL) ' })
-            $failures = @($checks | Where-Object { $_ -match '^FAIL ' })
-            $summary = @($out | Where-Object { $_ -match '^\d+ of \d+ checks passed' })
-            if ($failures.Count -or -not $checks.Count -or -not $summary.Count) {
-                $failed += "$s $t ($($failures.Count) of $($checks.Count) checks failed)"
+            $why = Invoke-Checks $database $tests
+            if ($why) { $failed += "$s $t ($why)" }
+            # An upgrade: <suite>-<t>-upgrade.sql makes the database look like one that older generated SQL made, the
+            # generated SQL runs again on it, as it does when a changed model is generated again, and
+            # <suite>-<t>-upgraded.sql checks the result.
+            $upgrade = Join-Path $root "sqlserver-tests\$s-$t-upgrade.sql"
+            if (Test-Path $upgrade) {
+                Write-Host "$s $t`: upgrade"
+                $out = Invoke-SqlcmdLines @('-d', $database, '-b', '-I', '-f', '65001', '-i', $upgrade)
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Lines ($out | Select-Object -Last 20)
+                    $failed += "$s $t (the upgrade script did not run)"
+                }
+                else {
+                    $out = Invoke-SqlcmdLines @('-d', $database, '-b', '-I', '-f', '65001', '-i', $generated)
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Lines ($out | Select-Object -Last 20)
+                        $failed += "$s $t (the generated SQL did not run again)"
+                    }
+                    else {
+                        $why = Invoke-Checks $database (Join-Path $root "sqlserver-tests\$s-$t-upgraded.sql")
+                        if ($why) { $failed += "$s $t upgraded ($why)" }
+                    }
+                }
             }
         }
         if (-not $Keep) {
