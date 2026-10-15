@@ -108,10 +108,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNAM]
     WHERE
-		[rNAM].ST_NAM_ST_ID = [ST].ST_ID
-	AND 
-		[rNAM].ST_NAM_Reliability = 1
-	ORDER BY
+        [rNAM].ST_NAM_ST_ID = [ST].ST_ID
+    AND
+        [rNAM].ST_NAM_Reliability = 1
+    ORDER BY
         [rNAM].ST_NAM_ChangedAt DESC,
         [rNAM].ST_NAM_PositedAt DESC
 ) [NAM]
@@ -129,10 +129,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rLOC]
     WHERE
-		[rLOC].ST_LOC_ST_ID = [ST].ST_ID
-	AND 
-		[rLOC].ST_LOC_Reliability = 1
-	ORDER BY
+        [rLOC].ST_LOC_ST_ID = [ST].ST_ID
+    AND
+        [rLOC].ST_LOC_Reliability = 1
+    ORDER BY
         [rLOC].ST_LOC_PositedAt DESC
 ) [LOC]
 OUTER APPLY (
@@ -156,10 +156,10 @@ OUTER APPLY (
     ON
         [kAVG].UTL_ID = [rAVG].ST_AVG_UTL_ID
     WHERE
-		[rAVG].ST_AVG_ST_ID = [ST].ST_ID
-	AND 
-		[rAVG].ST_AVG_Reliability = 1
-	ORDER BY
+        [rAVG].ST_AVG_ST_ID = [ST].ST_ID
+    AND
+        [rAVG].ST_AVG_Reliability = 1
+    ORDER BY
         [rAVG].ST_AVG_ChangedAt DESC,
         [rAVG].ST_AVG_PositedAt DESC
 ) [AVG]
@@ -182,10 +182,10 @@ OUTER APPLY (
     ON
         [kMIN].UTL_ID = [rMIN].ST_MIN_UTL_ID
     WHERE
-		[rMIN].ST_MIN_ST_ID = [ST].ST_ID
-	AND 
-		[rMIN].ST_MIN_Reliability = 1
-	ORDER BY
+        [rMIN].ST_MIN_ST_ID = [ST].ST_ID
+    AND
+        [rMIN].ST_MIN_Reliability = 1
+    ORDER BY
         [rMIN].ST_MIN_PositedAt DESC
 ) [MIN];
 GO
@@ -341,10 +341,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNAM]
     WHERE
-		[rNAM].AC_NAM_AC_ID = [AC].AC_ID
-	AND 
-		[rNAM].AC_NAM_Reliability = 1
-	ORDER BY
+        [rNAM].AC_NAM_AC_ID = [AC].AC_ID
+    AND
+        [rNAM].AC_NAM_Reliability = 1
+    ORDER BY
         [rNAM].AC_NAM_ChangedAt DESC,
         [rNAM].AC_NAM_PositedAt DESC
 ) [NAM]
@@ -367,10 +367,10 @@ OUTER APPLY (
     ON
         [kGEN].GEN_ID = [rGEN].AC_GEN_GEN_ID
     WHERE
-		[rGEN].AC_GEN_AC_ID = [AC].AC_ID
-	AND 
-		[rGEN].AC_GEN_Reliability = 1
-	ORDER BY
+        [rGEN].AC_GEN_AC_ID = [AC].AC_ID
+    AND
+        [rGEN].AC_GEN_Reliability = 1
+    ORDER BY
         [rGEN].AC_GEN_PositedAt DESC
 ) [GEN]
 OUTER APPLY (
@@ -395,10 +395,10 @@ OUTER APPLY (
     ON
         [kPLV].PLV_ID = [rPLV].AC_PLV_PLV_ID
     WHERE
-		[rPLV].AC_PLV_AC_ID = [AC].AC_ID
-	AND 
-		[rPLV].AC_PLV_Reliability = 1
-	ORDER BY
+        [rPLV].AC_PLV_AC_ID = [AC].AC_ID
+    AND
+        [rPLV].AC_PLV_Reliability = 1
+    ORDER BY
         [rPLV].AC_PLV_ChangedAt DESC,
         [rPLV].AC_PLV_PositedAt DESC
 ) [PLV];
@@ -541,10 +541,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNAM]
     WHERE
-		[rNAM].PR_NAM_PR_ID = [PR].PR_ID
-	AND 
-		[rNAM].PR_NAM_Reliability = 1
-	ORDER BY
+        [rNAM].PR_NAM_PR_ID = [PR].PR_ID
+    AND
+        [rNAM].PR_NAM_Reliability = 1
+    ORDER BY
         [rNAM].PR_NAM_PositedAt DESC
 ) [NAM]
 OUTER APPLY (
@@ -562,10 +562,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rLEN]
     WHERE
-		[rLEN].PR_LEN_PR_ID = [PR].PR_ID
-	AND 
-		[rLEN].PR_LEN_Reliability = 1
-	ORDER BY
+        [rLEN].PR_LEN_PR_ID = [PR].PR_ID
+    AND
+        [rLEN].PR_LEN_Reliability = 1
+    ORDER BY
         [rLEN].PR_LEN_ChangedAt DESC,
         [rLEN].PR_LEN_PositedAt DESC
 ) [LEN];

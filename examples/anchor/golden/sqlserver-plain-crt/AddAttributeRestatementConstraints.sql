@@ -50,7 +50,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -61,7 +61,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -111,7 +111,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -122,7 +122,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -181,7 +181,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -192,7 +192,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -251,7 +251,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -262,7 +262,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -312,7 +312,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -323,7 +323,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )

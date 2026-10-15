@@ -297,6 +297,96 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Date and time when the event took place.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Number of people in the audience at the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Revenue from ticket sales for the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage at which the event was held.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program that was played at the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The type of the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Posit';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty

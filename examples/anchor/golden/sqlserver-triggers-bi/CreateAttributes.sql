@@ -42,6 +42,46 @@ CREATE TABLE [dbo].[EV_QTY_Event_Quantity_Annex] (
     )
 );
 GO
+-- Historized attribute posit table -----------------------------------------------------------------------------------
+-- EV_PLC_Event_Place_Posit table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_PLC_Event_Place_Posit', 'U') IS NULL
+CREATE TABLE [dbo].[EV_PLC_Event_Place_Posit] (
+    EV_PLC_ID int IDENTITY(1,1) not null,
+    EV_PLC_EV_ID int not null,
+    EV_PLC_Event_Place nvarchar(42) not null,
+    EV_PLC_ChangedAt datetime2 not null,
+    constraint fkEV_PLC_Event_Place_Posit foreign key (
+        EV_PLC_EV_ID
+    ) references [dbo].[EV_Event](EV_ID),
+    constraint pkEV_PLC_Event_Place_Posit primary key nonclustered (
+        EV_PLC_ID asc
+    ),
+    constraint uqEV_PLC_Event_Place_Posit unique clustered (
+        EV_PLC_EV_ID asc,
+        EV_PLC_ChangedAt desc,
+        EV_PLC_Event_Place asc
+    )
+);
+GO
+-- Attribute annex table ----------------------------------------------------------------------------------------------
+-- EV_PLC_Event_Place_Annex table (of EV_PLC_Event_Place_Posit on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_PLC_Event_Place_Annex', 'U') IS NULL
+CREATE TABLE [dbo].[EV_PLC_Event_Place_Annex] (
+    EV_PLC_ID int not null,
+    EV_PLC_PositedAt datetime2 not null,
+    EV_PLC_Reliability bit not null,
+    Metadata_EV_PLC int not null,
+    constraint fkEV_PLC_Event_Place_Annex foreign key (
+        EV_PLC_ID
+    ) references [dbo].[EV_PLC_Event_Place_Posit](EV_PLC_ID),
+    constraint pkEV_PLC_Event_Place_Annex primary key clustered (
+        EV_PLC_ID asc,
+        EV_PLC_PositedAt desc
+    )
+);
+GO
 -- Static attribute posit table -----------------------------------------------------------------------------------
 -- SU_NAM_Subject_Name_Posit table (on SU_Subject)
 -----------------------------------------------------------------------------------------------------------------------
@@ -176,7 +216,7 @@ CREATE TABLE [dbo].[SU_NOT_Subject_Note_Posit] (
     ),
     constraint uqSU_NOT_Subject_Note_Posit unique clustered (
         SU_NOT_SU_ID asc,
-        SU_NOT_Checksum asc 
+        SU_NOT_Checksum asc
     )
 );
 GO
@@ -420,7 +460,7 @@ CREATE TABLE [dbo].[SU_TXT_Subject_Text_Posit] (
     constraint uqSU_TXT_Subject_Text_Posit unique clustered (
         SU_TXT_SU_ID asc,
         SU_TXT_ChangedAt desc,
-        SU_TXT_Checksum asc 
+        SU_TXT_Checksum asc
     )
 );
 GO

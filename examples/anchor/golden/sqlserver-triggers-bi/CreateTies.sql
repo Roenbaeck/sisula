@@ -12,16 +12,16 @@
 IF Object_ID('dbo.SU_holder_OB_item_GRD_grade_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[SU_holder_OB_item_GRD_grade_Posit] (
     SU_holder_OB_item_GRD_grade_ID int IDENTITY(1,1) not null,
-    SU_ID_holder int not null, 
-    OB_ID_item int not null, 
+    SU_ID_holder int not null,
+    OB_ID_item int not null,
     GRD_ID_grade tinyint not null,
     SU_holder_OB_item_GRD_grade_ChangedAt datetime2 not null,
     constraint SU_holder_OB_item_GRD_grade_Posit_fkSU_holder foreign key (
         SU_ID_holder
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_holder_OB_item_GRD_grade_Posit_fkOB_item foreign key (
         OB_ID_item
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint SU_holder_OB_item_GRD_grade_Posit_fkGRD_grade foreign key (
         GRD_ID_grade
     ) references [dbo].[GRD_Grade](GRD_ID),
@@ -59,16 +59,16 @@ GO
 IF Object_ID('dbo.SU_keeper_OB_thing_GRD_rank_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] (
     SU_keeper_OB_thing_GRD_rank_ID int IDENTITY(1,1) not null,
-    SU_ID_keeper int not null, 
-    OB_ID_thing int not null, 
+    SU_ID_keeper int not null,
+    OB_ID_thing int not null,
     GRD_ID_rank tinyint not null,
     SU_keeper_OB_thing_GRD_rank_ChangedAt datetime2 not null,
     constraint SU_keeper_OB_thing_GRD_rank_Posit_fkSU_keeper foreign key (
         SU_ID_keeper
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_keeper_OB_thing_GRD_rank_Posit_fkOB_thing foreign key (
         OB_ID_thing
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint SU_keeper_OB_thing_GRD_rank_Posit_fkGRD_rank foreign key (
         GRD_ID_rank
     ) references [dbo].[GRD_Grade](GRD_ID),
@@ -100,20 +100,20 @@ CREATE TABLE [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] (
     )
 );
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- OB_part_SU_owner_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.OB_part_SU_owner_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[OB_part_SU_owner_Posit] (
     OB_part_SU_owner_ID int IDENTITY(1,1) not null,
-    OB_ID_part int not null, 
-    SU_ID_owner int not null, 
+    OB_ID_part int not null,
+    SU_ID_owner int not null,
     constraint OB_part_SU_owner_Posit_fkOB_part foreign key (
         OB_ID_part
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint OB_part_SU_owner_Posit_fkSU_owner foreign key (
         SU_ID_owner
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint pkOB_part_SU_owner_Posit primary key nonclustered (
         OB_part_SU_owner_ID asc
     ),
@@ -140,21 +140,21 @@ CREATE TABLE [dbo].[OB_part_SU_owner_Annex] (
     )
 );
 GO
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- SU_partner_SU_with_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.SU_partner_SU_with_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[SU_partner_SU_with_Posit] (
     SU_partner_SU_with_ID int IDENTITY(1,1) not null,
-    SU_ID_partner int not null, 
-    SU_ID_with int not null, 
+    SU_ID_partner int not null,
+    SU_ID_with int not null,
     SU_partner_SU_with_ChangedAt datetime2 not null,
     constraint SU_partner_SU_with_Posit_fkSU_partner foreign key (
         SU_ID_partner
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_partner_SU_with_Posit_fkSU_with foreign key (
         SU_ID_with
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_partner_SU_with_Posit_uqSU_partner unique (
         SU_ID_partner,
         SU_partner_SU_with_ChangedAt

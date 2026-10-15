@@ -20,13 +20,13 @@ BEGIN
     CREATE CERTIFICATE [PII] WITH SUBJECT = 'PII';
 END
 -- GROUP KEY ----------------------------------------------------------------------------------------------------------
--- An encryption key used to encrypt the data in the attributes: 
+-- An encryption key used to encrypt the data in the attributes:
 --	AC_NAM_Actor_Name
 -----------------------------------------------------------------------------------------------------------------------
 IF NOT EXISTS (SELECT * FROM sys.symmetric_keys WHERE [name] = 'PII')
 BEGIN
     CREATE SYMMETRIC KEY [PII]
-    WITH ALGORITHM = AES_256, 
+    WITH ALGORITHM = AES_256,
     IDENTITY_VALUE = 'PII'
     ENCRYPTION BY CERTIFICATE [PII];
 END

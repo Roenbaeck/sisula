@@ -16,7 +16,7 @@ DROP TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank];
 GO
 CREATE TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank] ON [dbo].[SU_keeper_OB_thing_GRD_rank]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -64,8 +64,8 @@ BEGIN
         SELECT DISTINCT
             SU_ID_keeper,
             OB_ID_thing
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank] p
@@ -78,7 +78,7 @@ BEGIN
             42
         FROM
             @inserted x
-        WHERE 
+        WHERE
             x.SU_keeper_OB_thing_GRD_rank_ChangedAt = p.SU_keeper_OB_thing_GRD_rank_ChangedAt
         AND
             x.SU_ID_keeper = i.SU_ID_keeper
@@ -89,7 +89,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted i
         CROSS APPLY (
             SELECT TOP 1
@@ -105,9 +105,9 @@ BEGIN
                 h.OB_ID_thing = i.OB_ID_thing
             AND
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt < i.SU_keeper_OB_thing_GRD_rank_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC
-        ) pre 
+        ) pre
         WHERE
             i.SU_ID_keeper = pre.SU_ID_keeper
         AND

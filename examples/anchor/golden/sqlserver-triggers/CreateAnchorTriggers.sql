@@ -25,14 +25,14 @@ BEGIN
         SU_ID int not null
     );
     INSERT INTO [dbo].[SU_Subject] (
-        Metadata_SU 
+        Metadata_SU
     )
     OUTPUT
         inserted.SU_ID
     INTO
         @SU
     SELECT
-        Metadata_SU 
+        Metadata_SU
     FROM
         inserted
     WHERE
@@ -235,7 +235,7 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_SU_GRD,
         i.SU_GRD_SU_ID,
-        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID) 
+        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -327,7 +327,7 @@ BEGIN
         i.Metadata_SU_LVL,
         i.SU_LVL_SU_ID,
         i.SU_LVL_ChangedAt,
-        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID) 
+        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -830,17 +830,17 @@ BEGIN
         IF(@@ROWCOUNT > 0)
         BEGIN
             IF OBJECT_ID('[dbo].[SU_ERS_Subject_Erasable_Deleted]') is null
-            SELECT TOP 0 
-                *, 
+            SELECT TOP 0
+                *,
                 CAST(null as datetime2) as SU_ERS_Deleted
-            INTO 
+            INTO
                 [dbo].[SU_ERS_Subject_Erasable_Deleted]
-            FROM 
+            FROM
                 [dbo].[SU_ERS_Subject_Erasable];
             DELETE [ERS]
             OUTPUT
                 deleted.*,
-                ISNULL(d.SU_ERS_Deleted, @now) 
+                ISNULL(d.SU_ERS_Deleted, @now)
             INTO
                 [dbo].[SU_ERS_Subject_Erasable_Deleted]
             FROM
@@ -1065,14 +1065,14 @@ BEGIN
         OB_ID int not null
     );
     INSERT INTO [dbo].[OB_Object] (
-        Metadata_OB 
+        Metadata_OB
     )
     OUTPUT
         inserted.OB_ID
     INTO
         @OB
     SELECT
-        Metadata_OB 
+        Metadata_OB
     FROM
         inserted
     WHERE

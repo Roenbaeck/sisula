@@ -25,14 +25,14 @@ BEGIN
         ST_ID int not null
     );
     INSERT INTO [anchors].[ST_Stage] (
-        Metadata_ST 
+        Metadata_ST
     )
     OUTPUT
         inserted.ST_ID
     INTO
         @ST
     SELECT
-        Metadata_ST 
+        Metadata_ST
     FROM
         inserted
     WHERE
@@ -155,7 +155,7 @@ BEGIN
         i.Metadata_ST_AVG,
         i.ST_AVG_ST_ID,
         i.ST_AVG_ChangedAt,
-        ISNULL(i.ST_AVG_UTL_ID, [kUTL].UTL_ID) 
+        ISNULL(i.ST_AVG_UTL_ID, [kUTL].UTL_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -172,7 +172,7 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_ST_MIN,
         i.ST_MIN_ST_ID,
-        ISNULL(i.ST_MIN_UTL_ID, [kUTL].UTL_ID) 
+        ISNULL(i.ST_MIN_UTL_ID, [kUTL].UTL_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -359,12 +359,12 @@ BEGIN
         IF(@@ROWCOUNT > 0)
         BEGIN
             IF OBJECT_ID('[attributes].[ST_MIN_Stage_Minimum_Deleted]') is null
-            SELECT TOP 0 
-                *, 
+            SELECT TOP 0
+                *,
                 CAST(null as datetime2) as ST_MIN_Deleted
-            INTO 
+            INTO
                 [attributes].[ST_MIN_Stage_Minimum_Deleted]
-            FROM 
+            FROM
                 [attributes].[ST_MIN_Stage_Minimum];
             DELETE [MIN]
             OUTPUT
@@ -482,14 +482,14 @@ BEGIN
         AC_ID smallint not null
     );
     INSERT INTO [anchors].[AC_Actor] (
-        Metadata_AC 
+        Metadata_AC
     )
     OUTPUT
         inserted.AC_ID
     INTO
         @AC
     SELECT
-        Metadata_AC 
+        Metadata_AC
     FROM
         inserted
     WHERE
@@ -578,7 +578,7 @@ BEGIN
         i.Metadata_AC_NAM,
         i.AC_NAM_AC_ID,
         i.AC_NAM_ChangedAt,
-        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_NAM_Actor_Name as varbinary(max))) 
+        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_NAM_Actor_Name as varbinary(max)))
     FROM
         @inserted i
     WHERE
@@ -591,13 +591,13 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_AC_GEN,
         i.AC_GEN_AC_ID,
-        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID) 
+        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID)
     FROM
         @inserted i
     LEFT JOIN
         [knots].[GEN_Gender] [kGEN]
     ON
-        [kGEN].GEN_Checksum = i.AC_GEN_GEN_Checksum 
+        [kGEN].GEN_Checksum = i.AC_GEN_GEN_Checksum
     WHERE
         ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID) is not null;
     INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
@@ -610,13 +610,13 @@ BEGIN
         i.Metadata_AC_PLV,
         i.AC_PLV_AC_ID,
         i.AC_PLV_ChangedAt,
-        ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID) 
+        ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID)
     FROM
         @inserted i
     LEFT JOIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
-        [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum 
+        [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum
     AND
         [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
     WHERE
@@ -656,7 +656,7 @@ BEGIN
                 WHEN i.AC_NAM_Actor_Name is null THEN i.AC_NAM_ChangedAt
                 WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
             END, @now) as datetime2),
-        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_NAM_Actor_Name as varbinary(max))) 
+        ENCRYPTBYKEY(KEY_GUID('PII'), cast(i.AC_NAM_Actor_Name as varbinary(max)))
         FROM
             inserted i
         LEFT JOIN
@@ -693,7 +693,7 @@ BEGIN
         LEFT JOIN
             [knots].[GEN_Gender] [kGEN]
         ON
-            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max))) 
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -732,7 +732,7 @@ BEGIN
         LEFT JOIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
         AND
             [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
         LEFT JOIN
@@ -832,14 +832,14 @@ BEGIN
         PR_ID bigint not null
     );
     INSERT INTO [anchors].[PR_Program] (
-        Metadata_PR 
+        Metadata_PR
     )
     OUTPUT
         inserted.PR_ID
     INTO
         @PR
     SELECT
-        Metadata_PR 
+        Metadata_PR
     FROM
         inserted
     WHERE

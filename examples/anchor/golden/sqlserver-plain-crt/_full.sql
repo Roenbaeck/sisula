@@ -8,7 +8,7 @@
 -- MD5 hashing function
 -----------------------------------------------------------------------------------------------------------------------
 DECLARE @version smallint =
-    CASE 
+    CASE
         WHEN patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
         THEN substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
         ELSE 0
@@ -19,7 +19,7 @@ BEGIN
     BEGIN
         EXEC('
         CREATE FUNCTION dbo.MD5(@binaryData AS varbinary(max))
-        RETURNS varbinary(16) 
+        RETURNS varbinary(16)
         WITH SCHEMABINDING AS
         BEGIN
             RETURN HASHBYTES(''MD5'', @binaryData)
@@ -29,7 +29,7 @@ BEGIN
     ELSE
     BEGIN
         -- since some version of 2017 assemblies must be explicitly whitelisted
-        IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+        IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL)
             IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636)
                 EXEC sys.sp_add_trusted_assembly @hash = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636, @description = N'Anchor';
         CREATE ASSEMBLY Anchor
@@ -45,7 +45,7 @@ BEGIN
         ');
         EXEC sys.sp_configure 'clr enabled', 1;
         reconfigure with override;
-    END 
+    END
 END
 GO
 -- schema.PARTITIONING -------------------------------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ CREATE TABLE [dbo].[PLV_ProfessionalLevel] (
         PLV_ID asc
     ),
     constraint uqPLV_ProfessionalLevel unique (
-        PLV_Checksum 
+        PLV_Checksum
     )
 );
 GO
@@ -279,15 +279,15 @@ GO
 IF Object_ID('dbo.EV_Event', 'U') IS NULL
 CREATE TABLE [dbo].[EV_Event] (
     EV_ID int IDENTITY(1,1) not null,
-    ST_ID_wasHeldAt int not null, 
-    PR_ID_wasPlayed int not null, 
+    ST_ID_wasHeldAt int not null,
+    PR_ID_wasPlayed int not null,
     ETY_ID_of tinyint not null,
     constraint EV_Event_fkST_wasHeldAt foreign key (
         ST_ID_wasHeldAt
-    ) references [dbo].[ST_Stage](ST_ID), 
+    ) references [dbo].[ST_Stage](ST_ID),
     constraint EV_Event_fkPR_wasPlayed foreign key (
         PR_ID_wasPlayed
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
     ) references [dbo].[ETY_EventType](ETY_ID),
@@ -506,7 +506,7 @@ CREATE TABLE [dbo].[ST_LOC_Stage_Location_Posit] (
     ),
     constraint uqST_LOC_Stage_Location_Posit unique clustered (
         ST_ID asc,
-        ST_LOC_Checksum asc 
+        ST_LOC_Checksum asc
     )
 );
 GO
@@ -912,7 +912,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
     ON [dbo].[EV_DAT_Event_Date] (
-        EV_DAT_Assertion desc, 
+        EV_DAT_Assertion desc,
         EV_ID asc,
         EV_DAT_PositedAt desc,
         EV_DAT_Positor asc
@@ -948,7 +948,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
     ON [dbo].[EV_AUD_Event_Audience] (
-        EV_AUD_Assertion desc, 
+        EV_AUD_Assertion desc,
         EV_ID asc,
         EV_AUD_PositedAt desc,
         EV_AUD_Positor asc
@@ -984,7 +984,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
     ON [dbo].[EV_REV_Event_Revenue] (
-        EV_REV_Assertion desc, 
+        EV_REV_Assertion desc,
         EV_ID asc,
         EV_REV_PositedAt desc,
         EV_REV_Positor asc
@@ -1021,7 +1021,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_NAM_Stage_Name]
     ON [dbo].[ST_NAM_Stage_Name] (
-        ST_NAM_Assertion desc, 
+        ST_NAM_Assertion desc,
         ST_ID asc,
         ST_NAM_ChangedAt desc,
         ST_NAM_PositedAt desc,
@@ -1059,7 +1059,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_LOC_Stage_Location]
     ON [dbo].[ST_LOC_Stage_Location] (
-        ST_LOC_Assertion desc, 
+        ST_LOC_Assertion desc,
         ST_ID asc,
         ST_LOC_PositedAt desc,
         ST_LOC_Positor asc
@@ -1096,7 +1096,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_AVG_Stage_Average]
     ON [dbo].[ST_AVG_Stage_Average] (
-        ST_AVG_Assertion desc, 
+        ST_AVG_Assertion desc,
         ST_ID asc,
         ST_AVG_ChangedAt desc,
         ST_AVG_PositedAt desc,
@@ -1133,7 +1133,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_MIN_Stage_Minimum]
     ON [dbo].[ST_MIN_Stage_Minimum] (
-        ST_MIN_Assertion desc, 
+        ST_MIN_Assertion desc,
         ST_ID asc,
         ST_MIN_PositedAt desc,
         ST_MIN_Positor asc
@@ -1170,7 +1170,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_NAM_Actor_Name]
     ON [dbo].[AC_NAM_Actor_Name] (
-        AC_NAM_Assertion desc, 
+        AC_NAM_Assertion desc,
         AC_ID asc,
         AC_NAM_ChangedAt desc,
         AC_NAM_PositedAt desc,
@@ -1207,7 +1207,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_GEN_Actor_Gender]
     ON [dbo].[AC_GEN_Actor_Gender] (
-        AC_GEN_Assertion desc, 
+        AC_GEN_Assertion desc,
         AC_ID asc,
         AC_GEN_PositedAt desc,
         AC_GEN_Positor asc
@@ -1244,7 +1244,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_PLV_Actor_ProfessionalLevel]
     ON [dbo].[AC_PLV_Actor_ProfessionalLevel] (
-        AC_PLV_Assertion desc, 
+        AC_PLV_Assertion desc,
         AC_ID asc,
         AC_PLV_ChangedAt desc,
         AC_PLV_PositedAt desc,
@@ -1281,7 +1281,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkPR_NAM_Program_Name]
     ON [dbo].[PR_NAM_Program_Name] (
-        PR_NAM_Assertion desc, 
+        PR_NAM_Assertion desc,
         PR_ID asc,
         PR_NAM_PositedAt desc,
         PR_NAM_Positor asc
@@ -1318,7 +1318,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkPR_LEN_Program_Length]
     ON [dbo].[PR_LEN_Program_Length] (
-        PR_LEN_Assertion desc, 
+        PR_LEN_Assertion desc,
         PR_ID asc,
         PR_LEN_ChangedAt desc,
         PR_LEN_PositedAt desc,
@@ -1333,7 +1333,7 @@ GO
 -- point in changing time, or an attribute annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that the 
+-- in time. The forwarder is the opposite of the rewinder, such that the
 -- union of the two will produce all rows in a posit table.
 --
 -- @positor the view of which positor to adopt (defaults to 0)
@@ -1705,7 +1705,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS nvarchar(42)
@@ -1743,7 +1743,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS nvarchar(42)
@@ -2005,7 +2005,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -2043,7 +2043,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -2304,7 +2304,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS nvarchar(42)
@@ -2342,7 +2342,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS nvarchar(42)
@@ -2603,7 +2603,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -2641,7 +2641,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -2902,7 +2902,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint date = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS time
@@ -2940,7 +2940,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint date = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS time
@@ -3020,7 +3020,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -3031,7 +3031,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -3081,7 +3081,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -3092,7 +3092,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -3151,7 +3151,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -3162,7 +3162,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -3221,7 +3221,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -3232,7 +3232,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -3282,7 +3282,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -3293,7 +3293,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -3552,7 +3552,7 @@ GO
 CREATE VIEW [dbo].[lST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -3592,7 +3592,7 @@ GO
 CREATE VIEW [dbo].[nST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -3792,7 +3792,7 @@ GO
 CREATE VIEW [dbo].[lAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -3832,7 +3832,7 @@ GO
 CREATE VIEW [dbo].[nAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -3989,7 +3989,7 @@ GO
 CREATE VIEW [dbo].[lPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM
@@ -4029,7 +4029,7 @@ GO
 CREATE VIEW [dbo].[nPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM
@@ -4501,7 +4501,7 @@ GO
 CREATE VIEW [dbo].[lEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
@@ -4541,7 +4541,7 @@ GO
 CREATE VIEW [dbo].[nEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
@@ -4944,14 +4944,30 @@ BEGIN
             EV_DAT_Event_Date
         )
         SELECT
-            EV_ID,
-            EV_DAT_Event_Date
+            v.EV_ID,
+            v.EV_DAT_Event_Date
         FROM
-            @EV_DAT_Event_Date
+            @EV_DAT_Event_Date v
         WHERE
-            EV_DAT_Version = @currentVersion
+            v.EV_DAT_Version = @currentVersion
         AND
-            EV_DAT_StatementType in ('N');
+            v.EV_DAT_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_DAT_Event_Date w
+            WHERE
+                w.EV_DAT_Version = v.EV_DAT_Version
+            AND
+                w.EV_DAT_Positor < v.EV_DAT_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+            AND
+                w.EV_DAT_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
             EV_DAT_ID,
             EV_DAT_Positor,
@@ -4975,6 +4991,74 @@ BEGIN
             v.EV_DAT_Version = @currentVersion
         AND
             EV_DAT_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
+            EV_DAT_ID,
+            EV_DAT_Positor,
+            EV_DAT_PositedAt,
+            EV_DAT_Reliability
+        )
+        SELECT
+            e.EV_DAT_ID,
+            v.EV_DAT_Positor,
+            v.EV_DAT_PositedAt,
+            0
+        FROM
+            @EV_DAT_Event_Date v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_DAT_ID,
+                p.EV_DAT_Event_Date
+            FROM
+                [dbo].[EV_DAT_Event_Date_Posit] p
+            JOIN
+                [dbo].[EV_DAT_Event_Date_Annex] a
+            ON
+                a.EV_DAT_ID = p.EV_DAT_ID
+            AND
+                a.EV_DAT_Positor = v.EV_DAT_Positor
+            AND
+                a.EV_DAT_PositedAt = (
+                    SELECT
+                        max(s.EV_DAT_PositedAt)
+                    FROM
+                        [dbo].[EV_DAT_Event_Date_Annex] s
+                    WHERE
+                        s.EV_DAT_ID = p.EV_DAT_ID
+                    AND
+                        s.EV_DAT_Positor = v.EV_DAT_Positor
+                    AND
+                        s.EV_DAT_PositedAt < v.EV_DAT_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_DAT_Reliability > 0
+            ORDER BY
+                a.EV_DAT_PositedAt DESC,
+                a.EV_DAT_Reliability DESC
+        ) e
+        WHERE
+            v.EV_DAT_Version = @currentVersion
+        AND
+            v.EV_DAT_StatementType in ('S','N','D')
+        AND
+            v.EV_DAT_Reliability > 0
+        AND
+            e.EV_DAT_Event_Date <> v.EV_DAT_Event_Date
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_DAT_Event_Date_Annex] x
+            WHERE
+                x.EV_DAT_ID = e.EV_DAT_ID
+            AND
+                x.EV_DAT_Positor = v.EV_DAT_Positor
+            AND
+                x.EV_DAT_PositedAt = v.EV_DAT_PositedAt
+        );
     END
 END
 GO
@@ -5130,14 +5214,30 @@ BEGIN
             EV_AUD_Event_Audience
         )
         SELECT
-            EV_ID,
-            EV_AUD_Event_Audience
+            v.EV_ID,
+            v.EV_AUD_Event_Audience
         FROM
-            @EV_AUD_Event_Audience
+            @EV_AUD_Event_Audience v
         WHERE
-            EV_AUD_Version = @currentVersion
+            v.EV_AUD_Version = @currentVersion
         AND
-            EV_AUD_StatementType in ('N');
+            v.EV_AUD_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_AUD_Event_Audience w
+            WHERE
+                w.EV_AUD_Version = v.EV_AUD_Version
+            AND
+                w.EV_AUD_Positor < v.EV_AUD_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+            AND
+                w.EV_AUD_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
             EV_AUD_ID,
             EV_AUD_Positor,
@@ -5161,6 +5261,74 @@ BEGIN
             v.EV_AUD_Version = @currentVersion
         AND
             EV_AUD_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
+            EV_AUD_ID,
+            EV_AUD_Positor,
+            EV_AUD_PositedAt,
+            EV_AUD_Reliability
+        )
+        SELECT
+            e.EV_AUD_ID,
+            v.EV_AUD_Positor,
+            v.EV_AUD_PositedAt,
+            0
+        FROM
+            @EV_AUD_Event_Audience v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_AUD_ID,
+                p.EV_AUD_Event_Audience
+            FROM
+                [dbo].[EV_AUD_Event_Audience_Posit] p
+            JOIN
+                [dbo].[EV_AUD_Event_Audience_Annex] a
+            ON
+                a.EV_AUD_ID = p.EV_AUD_ID
+            AND
+                a.EV_AUD_Positor = v.EV_AUD_Positor
+            AND
+                a.EV_AUD_PositedAt = (
+                    SELECT
+                        max(s.EV_AUD_PositedAt)
+                    FROM
+                        [dbo].[EV_AUD_Event_Audience_Annex] s
+                    WHERE
+                        s.EV_AUD_ID = p.EV_AUD_ID
+                    AND
+                        s.EV_AUD_Positor = v.EV_AUD_Positor
+                    AND
+                        s.EV_AUD_PositedAt < v.EV_AUD_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_AUD_Reliability > 0
+            ORDER BY
+                a.EV_AUD_PositedAt DESC,
+                a.EV_AUD_Reliability DESC
+        ) e
+        WHERE
+            v.EV_AUD_Version = @currentVersion
+        AND
+            v.EV_AUD_StatementType in ('S','N','D')
+        AND
+            v.EV_AUD_Reliability > 0
+        AND
+            e.EV_AUD_Event_Audience <> v.EV_AUD_Event_Audience
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_AUD_Event_Audience_Annex] x
+            WHERE
+                x.EV_AUD_ID = e.EV_AUD_ID
+            AND
+                x.EV_AUD_Positor = v.EV_AUD_Positor
+            AND
+                x.EV_AUD_PositedAt = v.EV_AUD_PositedAt
+        );
     END
 END
 GO
@@ -5316,14 +5484,30 @@ BEGIN
             EV_REV_Event_Revenue
         )
         SELECT
-            EV_ID,
-            EV_REV_Event_Revenue
+            v.EV_ID,
+            v.EV_REV_Event_Revenue
         FROM
-            @EV_REV_Event_Revenue
+            @EV_REV_Event_Revenue v
         WHERE
-            EV_REV_Version = @currentVersion
+            v.EV_REV_Version = @currentVersion
         AND
-            EV_REV_StatementType in ('N');
+            v.EV_REV_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_REV_Event_Revenue w
+            WHERE
+                w.EV_REV_Version = v.EV_REV_Version
+            AND
+                w.EV_REV_Positor < v.EV_REV_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+            AND
+                w.EV_REV_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
             EV_REV_ID,
             EV_REV_Positor,
@@ -5347,6 +5531,74 @@ BEGIN
             v.EV_REV_Version = @currentVersion
         AND
             EV_REV_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
+            EV_REV_ID,
+            EV_REV_Positor,
+            EV_REV_PositedAt,
+            EV_REV_Reliability
+        )
+        SELECT
+            e.EV_REV_ID,
+            v.EV_REV_Positor,
+            v.EV_REV_PositedAt,
+            0
+        FROM
+            @EV_REV_Event_Revenue v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_REV_ID,
+                p.EV_REV_Event_Revenue
+            FROM
+                [dbo].[EV_REV_Event_Revenue_Posit] p
+            JOIN
+                [dbo].[EV_REV_Event_Revenue_Annex] a
+            ON
+                a.EV_REV_ID = p.EV_REV_ID
+            AND
+                a.EV_REV_Positor = v.EV_REV_Positor
+            AND
+                a.EV_REV_PositedAt = (
+                    SELECT
+                        max(s.EV_REV_PositedAt)
+                    FROM
+                        [dbo].[EV_REV_Event_Revenue_Annex] s
+                    WHERE
+                        s.EV_REV_ID = p.EV_REV_ID
+                    AND
+                        s.EV_REV_Positor = v.EV_REV_Positor
+                    AND
+                        s.EV_REV_PositedAt < v.EV_REV_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_REV_Reliability > 0
+            ORDER BY
+                a.EV_REV_PositedAt DESC,
+                a.EV_REV_Reliability DESC
+        ) e
+        WHERE
+            v.EV_REV_Version = @currentVersion
+        AND
+            v.EV_REV_StatementType in ('S','N','D')
+        AND
+            v.EV_REV_Reliability > 0
+        AND
+            e.EV_REV_Event_Revenue <> v.EV_REV_Event_Revenue
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_REV_Event_Revenue_Annex] x
+            WHERE
+                x.EV_REV_ID = e.EV_REV_ID
+            AND
+                x.EV_REV_Positor = v.EV_REV_Positor
+            AND
+                x.EV_REV_PositedAt = v.EV_REV_PositedAt
+        );
     END
 END
 GO
@@ -5541,15 +5793,33 @@ BEGIN
             ST_NAM_Stage_Name
         )
         SELECT
-            ST_ID,
-            ST_NAM_ChangedAt,
-            ST_NAM_Stage_Name
+            v.ST_ID,
+            v.ST_NAM_ChangedAt,
+            v.ST_NAM_Stage_Name
         FROM
-            @ST_NAM_Stage_Name
+            @ST_NAM_Stage_Name v
         WHERE
-            ST_NAM_Version = @currentVersion
+            v.ST_NAM_Version = @currentVersion
         AND
-            ST_NAM_StatementType in ('N','R');
+            v.ST_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_NAM_Stage_Name w
+            WHERE
+                w.ST_NAM_Version = v.ST_NAM_Version
+            AND
+                w.ST_NAM_Positor < v.ST_NAM_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+            AND
+                w.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+            AND
+                w.ST_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[ST_NAM_Stage_Name_Annex] (
             ST_NAM_ID,
             ST_NAM_Positor,
@@ -5575,6 +5845,76 @@ BEGIN
             v.ST_NAM_Version = @currentVersion
         AND
             ST_NAM_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[ST_NAM_Stage_Name_Annex] (
+            ST_NAM_ID,
+            ST_NAM_Positor,
+            ST_NAM_PositedAt,
+            ST_NAM_Reliability
+        )
+        SELECT
+            e.ST_NAM_ID,
+            v.ST_NAM_Positor,
+            v.ST_NAM_PositedAt,
+            0
+        FROM
+            @ST_NAM_Stage_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_NAM_ID,
+                p.ST_NAM_Stage_Name
+            FROM
+                [dbo].[ST_NAM_Stage_Name_Posit] p
+            JOIN
+                [dbo].[ST_NAM_Stage_Name_Annex] a
+            ON
+                a.ST_NAM_ID = p.ST_NAM_ID
+            AND
+                a.ST_NAM_Positor = v.ST_NAM_Positor
+            AND
+                a.ST_NAM_PositedAt = (
+                    SELECT
+                        max(s.ST_NAM_PositedAt)
+                    FROM
+                        [dbo].[ST_NAM_Stage_Name_Annex] s
+                    WHERE
+                        s.ST_NAM_ID = p.ST_NAM_ID
+                    AND
+                        s.ST_NAM_Positor = v.ST_NAM_Positor
+                    AND
+                        s.ST_NAM_PositedAt < v.ST_NAM_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+            AND
+                a.ST_NAM_Reliability > 0
+            ORDER BY
+                a.ST_NAM_PositedAt DESC,
+                a.ST_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.ST_NAM_Version = @currentVersion
+        AND
+            v.ST_NAM_StatementType in ('S','N','D','R')
+        AND
+            v.ST_NAM_Reliability > 0
+        AND
+            e.ST_NAM_Stage_Name <> v.ST_NAM_Stage_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_NAM_Stage_Name_Annex] x
+            WHERE
+                x.ST_NAM_ID = e.ST_NAM_ID
+            AND
+                x.ST_NAM_Positor = v.ST_NAM_Positor
+            AND
+                x.ST_NAM_PositedAt = v.ST_NAM_PositedAt
+        );
     END
 END
 GO
@@ -5628,7 +5968,7 @@ BEGIN
             WHERE
                 p.ST_ID = i.ST_ID
             AND
-                p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+                p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
             AND
                 a.ST_LOC_Positor = i.ST_LOC_Positor
             AND
@@ -5682,7 +6022,7 @@ BEGIN
         WHERE
             p.ST_ID = i.ST_ID
         AND
-            p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+            p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         AND
             a.ST_LOC_Positor = i.ST_LOC_Positor
         AND
@@ -5710,7 +6050,7 @@ BEGIN
                         AND
                             t.ST_LOC_Reliability = v.ST_LOC_Reliability
                         AND
-                            t.ST_LOC_Checksum = v.ST_LOC_Checksum 
+                            t.ST_LOC_Checksum = v.ST_LOC_Checksum
                     )
                     THEN 'D' -- duplicate assertion
                     WHEN p.ST_ID is not null
@@ -5724,7 +6064,7 @@ BEGIN
         ON
             p.ST_ID = v.ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion;
         INSERT INTO [dbo].[ST_LOC_Stage_Location_Posit] (
@@ -5732,14 +6072,30 @@ BEGIN
             ST_LOC_Stage_Location
         )
         SELECT
-            ST_ID,
-            ST_LOC_Stage_Location
+            v.ST_ID,
+            v.ST_LOC_Stage_Location
         FROM
-            @ST_LOC_Stage_Location
+            @ST_LOC_Stage_Location v
         WHERE
-            ST_LOC_Version = @currentVersion
+            v.ST_LOC_Version = @currentVersion
         AND
-            ST_LOC_StatementType in ('N');
+            v.ST_LOC_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_LOC_Stage_Location w
+            WHERE
+                w.ST_LOC_Version = v.ST_LOC_Version
+            AND
+                w.ST_LOC_Positor < v.ST_LOC_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_LOC_Checksum = v.ST_LOC_Checksum
+            AND
+                w.ST_LOC_StatementType in ('N')
+        );
         INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
             ST_LOC_ID,
             ST_LOC_Positor,
@@ -5758,11 +6114,79 @@ BEGIN
         ON
             p.ST_ID = v.ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion
         AND
             ST_LOC_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
+            ST_LOC_ID,
+            ST_LOC_Positor,
+            ST_LOC_PositedAt,
+            ST_LOC_Reliability
+        )
+        SELECT
+            e.ST_LOC_ID,
+            v.ST_LOC_Positor,
+            v.ST_LOC_PositedAt,
+            0
+        FROM
+            @ST_LOC_Stage_Location v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_LOC_ID,
+                p.ST_LOC_Checksum
+            FROM
+                [dbo].[ST_LOC_Stage_Location_Posit] p
+            JOIN
+                [dbo].[ST_LOC_Stage_Location_Annex] a
+            ON
+                a.ST_LOC_ID = p.ST_LOC_ID
+            AND
+                a.ST_LOC_Positor = v.ST_LOC_Positor
+            AND
+                a.ST_LOC_PositedAt = (
+                    SELECT
+                        max(s.ST_LOC_PositedAt)
+                    FROM
+                        [dbo].[ST_LOC_Stage_Location_Annex] s
+                    WHERE
+                        s.ST_LOC_ID = p.ST_LOC_ID
+                    AND
+                        s.ST_LOC_Positor = v.ST_LOC_Positor
+                    AND
+                        s.ST_LOC_PositedAt < v.ST_LOC_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                a.ST_LOC_Reliability > 0
+            ORDER BY
+                a.ST_LOC_PositedAt DESC,
+                a.ST_LOC_Reliability DESC
+        ) e
+        WHERE
+            v.ST_LOC_Version = @currentVersion
+        AND
+            v.ST_LOC_StatementType in ('S','N','D')
+        AND
+            v.ST_LOC_Reliability > 0
+        AND
+            e.ST_LOC_Checksum <> v.ST_LOC_Checksum
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_LOC_Stage_Location_Annex] x
+            WHERE
+                x.ST_LOC_ID = e.ST_LOC_ID
+            AND
+                x.ST_LOC_Positor = v.ST_LOC_Positor
+            AND
+                x.ST_LOC_PositedAt = v.ST_LOC_PositedAt
+        );
     END
 END
 GO
@@ -5786,7 +6210,7 @@ BEGIN
         ST_AVG_PositedAt datetime2 not null,
         ST_AVG_Reliability decimal(5,2) not null,
         ST_AVG_Assertion char(1) not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         ST_AVG_Version bigint not null,
         ST_AVG_StatementType char(1) not null,
         primary key(
@@ -5959,15 +6383,33 @@ BEGIN
             UTL_ID
         )
         SELECT
-            ST_ID,
-            ST_AVG_ChangedAt,
-            UTL_ID
+            v.ST_ID,
+            v.ST_AVG_ChangedAt,
+            v.UTL_ID
         FROM
-            @ST_AVG_Stage_Average
+            @ST_AVG_Stage_Average v
         WHERE
-            ST_AVG_Version = @currentVersion
+            v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N','F');
+            v.ST_AVG_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_AVG_Stage_Average w
+            WHERE
+                w.ST_AVG_Version = v.ST_AVG_Version
+            AND
+                w.ST_AVG_Positor < v.ST_AVG_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+            AND
+                w.UTL_ID = v.UTL_ID
+            AND
+                w.ST_AVG_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
             ST_AVG_ID,
@@ -6033,6 +6475,76 @@ BEGIN
             v.ST_AVG_Version = @currentVersion
         AND
             ST_AVG_StatementType in ('S','N','D','F');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            e.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            0
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_AVG_ID,
+                p.UTL_ID
+            FROM
+                [dbo].[ST_AVG_Stage_Average_Posit] p
+            JOIN
+                [dbo].[ST_AVG_Stage_Average_Annex] a
+            ON
+                a.ST_AVG_ID = p.ST_AVG_ID
+            AND
+                a.ST_AVG_Positor = v.ST_AVG_Positor
+            AND
+                a.ST_AVG_PositedAt = (
+                    SELECT
+                        max(s.ST_AVG_PositedAt)
+                    FROM
+                        [dbo].[ST_AVG_Stage_Average_Annex] s
+                    WHERE
+                        s.ST_AVG_ID = p.ST_AVG_ID
+                    AND
+                        s.ST_AVG_Positor = v.ST_AVG_Positor
+                    AND
+                        s.ST_AVG_PositedAt < v.ST_AVG_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+            AND
+                a.ST_AVG_Reliability > 0
+            ORDER BY
+                a.ST_AVG_PositedAt DESC,
+                a.ST_AVG_Reliability DESC
+        ) e
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType in ('S','N','D','F')
+        AND
+            v.ST_AVG_Reliability > 0
+        AND
+            e.UTL_ID <> v.UTL_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_AVG_Stage_Average_Annex] x
+            WHERE
+                x.ST_AVG_ID = e.ST_AVG_ID
+            AND
+                x.ST_AVG_Positor = v.ST_AVG_Positor
+            AND
+                x.ST_AVG_PositedAt = v.ST_AVG_PositedAt
+        );
     END
 END
 GO
@@ -6055,7 +6567,7 @@ BEGIN
         ST_MIN_PositedAt datetime2 not null,
         ST_MIN_Reliability decimal(5,2) not null,
         ST_MIN_Assertion char(1) not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         ST_MIN_Version bigint not null,
         ST_MIN_StatementType char(1) not null,
         primary key(
@@ -6188,14 +6700,30 @@ BEGIN
             UTL_ID
         )
         SELECT
-            ST_ID,
-            UTL_ID
+            v.ST_ID,
+            v.UTL_ID
         FROM
-            @ST_MIN_Stage_Minimum
+            @ST_MIN_Stage_Minimum v
         WHERE
-            ST_MIN_Version = @currentVersion
+            v.ST_MIN_Version = @currentVersion
         AND
-            ST_MIN_StatementType in ('N');
+            v.ST_MIN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_MIN_Stage_Minimum w
+            WHERE
+                w.ST_MIN_Version = v.ST_MIN_Version
+            AND
+                w.ST_MIN_Positor < v.ST_MIN_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.UTL_ID = v.UTL_ID
+            AND
+                w.ST_MIN_StatementType in ('N')
+        );
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
             ST_MIN_ID,
             ST_MIN_Positor,
@@ -6219,6 +6747,74 @@ BEGIN
             v.ST_MIN_Version = @currentVersion
         AND
             ST_MIN_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
+            ST_MIN_ID,
+            ST_MIN_Positor,
+            ST_MIN_PositedAt,
+            ST_MIN_Reliability
+        )
+        SELECT
+            e.ST_MIN_ID,
+            v.ST_MIN_Positor,
+            v.ST_MIN_PositedAt,
+            0
+        FROM
+            @ST_MIN_Stage_Minimum v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_MIN_ID,
+                p.UTL_ID
+            FROM
+                [dbo].[ST_MIN_Stage_Minimum_Posit] p
+            JOIN
+                [dbo].[ST_MIN_Stage_Minimum_Annex] a
+            ON
+                a.ST_MIN_ID = p.ST_MIN_ID
+            AND
+                a.ST_MIN_Positor = v.ST_MIN_Positor
+            AND
+                a.ST_MIN_PositedAt = (
+                    SELECT
+                        max(s.ST_MIN_PositedAt)
+                    FROM
+                        [dbo].[ST_MIN_Stage_Minimum_Annex] s
+                    WHERE
+                        s.ST_MIN_ID = p.ST_MIN_ID
+                    AND
+                        s.ST_MIN_Positor = v.ST_MIN_Positor
+                    AND
+                        s.ST_MIN_PositedAt < v.ST_MIN_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                a.ST_MIN_Reliability > 0
+            ORDER BY
+                a.ST_MIN_PositedAt DESC,
+                a.ST_MIN_Reliability DESC
+        ) e
+        WHERE
+            v.ST_MIN_Version = @currentVersion
+        AND
+            v.ST_MIN_StatementType in ('S','N','D')
+        AND
+            v.ST_MIN_Reliability > 0
+        AND
+            e.UTL_ID <> v.UTL_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_MIN_Stage_Minimum_Annex] x
+            WHERE
+                x.ST_MIN_ID = e.ST_MIN_ID
+            AND
+                x.ST_MIN_Positor = v.ST_MIN_Positor
+            AND
+                x.ST_MIN_PositedAt = v.ST_MIN_PositedAt
+        );
     END
 END
 GO
@@ -6413,15 +7009,33 @@ BEGIN
             AC_NAM_Actor_Name
         )
         SELECT
-            AC_ID,
-            AC_NAM_ChangedAt,
-            AC_NAM_Actor_Name
+            v.AC_ID,
+            v.AC_NAM_ChangedAt,
+            v.AC_NAM_Actor_Name
         FROM
-            @AC_NAM_Actor_Name
+            @AC_NAM_Actor_Name v
         WHERE
-            AC_NAM_Version = @currentVersion
+            v.AC_NAM_Version = @currentVersion
         AND
-            AC_NAM_StatementType in ('N','R');
+            v.AC_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_NAM_Actor_Name w
+            WHERE
+                w.AC_NAM_Version = v.AC_NAM_Version
+            AND
+                w.AC_NAM_Positor < v.AC_NAM_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+            AND
+                w.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+            AND
+                w.AC_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[AC_NAM_Actor_Name_Annex] (
             AC_NAM_ID,
             AC_NAM_Positor,
@@ -6447,6 +7061,76 @@ BEGIN
             v.AC_NAM_Version = @currentVersion
         AND
             AC_NAM_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[AC_NAM_Actor_Name_Annex] (
+            AC_NAM_ID,
+            AC_NAM_Positor,
+            AC_NAM_PositedAt,
+            AC_NAM_Reliability
+        )
+        SELECT
+            e.AC_NAM_ID,
+            v.AC_NAM_Positor,
+            v.AC_NAM_PositedAt,
+            0
+        FROM
+            @AC_NAM_Actor_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_NAM_ID,
+                p.AC_NAM_Actor_Name
+            FROM
+                [dbo].[AC_NAM_Actor_Name_Posit] p
+            JOIN
+                [dbo].[AC_NAM_Actor_Name_Annex] a
+            ON
+                a.AC_NAM_ID = p.AC_NAM_ID
+            AND
+                a.AC_NAM_Positor = v.AC_NAM_Positor
+            AND
+                a.AC_NAM_PositedAt = (
+                    SELECT
+                        max(s.AC_NAM_PositedAt)
+                    FROM
+                        [dbo].[AC_NAM_Actor_Name_Annex] s
+                    WHERE
+                        s.AC_NAM_ID = p.AC_NAM_ID
+                    AND
+                        s.AC_NAM_Positor = v.AC_NAM_Positor
+                    AND
+                        s.AC_NAM_PositedAt < v.AC_NAM_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+            AND
+                a.AC_NAM_Reliability > 0
+            ORDER BY
+                a.AC_NAM_PositedAt DESC,
+                a.AC_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.AC_NAM_Version = @currentVersion
+        AND
+            v.AC_NAM_StatementType in ('S','N','D','R')
+        AND
+            v.AC_NAM_Reliability > 0
+        AND
+            e.AC_NAM_Actor_Name <> v.AC_NAM_Actor_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_NAM_Actor_Name_Annex] x
+            WHERE
+                x.AC_NAM_ID = e.AC_NAM_ID
+            AND
+                x.AC_NAM_Positor = v.AC_NAM_Positor
+            AND
+                x.AC_NAM_PositedAt = v.AC_NAM_PositedAt
+        );
     END
 END
 GO
@@ -6469,7 +7153,7 @@ BEGIN
         AC_GEN_PositedAt datetime2 not null,
         AC_GEN_Reliability decimal(5,2) not null,
         AC_GEN_Assertion char(1) not null,
-        GEN_ID tinyint not null, 
+        GEN_ID tinyint not null,
         AC_GEN_Version bigint not null,
         AC_GEN_StatementType char(1) not null,
         primary key(
@@ -6602,14 +7286,30 @@ BEGIN
             GEN_ID
         )
         SELECT
-            AC_ID,
-            GEN_ID
+            v.AC_ID,
+            v.GEN_ID
         FROM
-            @AC_GEN_Actor_Gender
+            @AC_GEN_Actor_Gender v
         WHERE
-            AC_GEN_Version = @currentVersion
+            v.AC_GEN_Version = @currentVersion
         AND
-            AC_GEN_StatementType in ('N');
+            v.AC_GEN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_GEN_Actor_Gender w
+            WHERE
+                w.AC_GEN_Version = v.AC_GEN_Version
+            AND
+                w.AC_GEN_Positor < v.AC_GEN_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.GEN_ID = v.GEN_ID
+            AND
+                w.AC_GEN_StatementType in ('N')
+        );
         INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
             AC_GEN_ID,
             AC_GEN_Positor,
@@ -6633,6 +7333,74 @@ BEGIN
             v.AC_GEN_Version = @currentVersion
         AND
             AC_GEN_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
+            AC_GEN_ID,
+            AC_GEN_Positor,
+            AC_GEN_PositedAt,
+            AC_GEN_Reliability
+        )
+        SELECT
+            e.AC_GEN_ID,
+            v.AC_GEN_Positor,
+            v.AC_GEN_PositedAt,
+            0
+        FROM
+            @AC_GEN_Actor_Gender v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_GEN_ID,
+                p.GEN_ID
+            FROM
+                [dbo].[AC_GEN_Actor_Gender_Posit] p
+            JOIN
+                [dbo].[AC_GEN_Actor_Gender_Annex] a
+            ON
+                a.AC_GEN_ID = p.AC_GEN_ID
+            AND
+                a.AC_GEN_Positor = v.AC_GEN_Positor
+            AND
+                a.AC_GEN_PositedAt = (
+                    SELECT
+                        max(s.AC_GEN_PositedAt)
+                    FROM
+                        [dbo].[AC_GEN_Actor_Gender_Annex] s
+                    WHERE
+                        s.AC_GEN_ID = p.AC_GEN_ID
+                    AND
+                        s.AC_GEN_Positor = v.AC_GEN_Positor
+                    AND
+                        s.AC_GEN_PositedAt < v.AC_GEN_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                a.AC_GEN_Reliability > 0
+            ORDER BY
+                a.AC_GEN_PositedAt DESC,
+                a.AC_GEN_Reliability DESC
+        ) e
+        WHERE
+            v.AC_GEN_Version = @currentVersion
+        AND
+            v.AC_GEN_StatementType in ('S','N','D')
+        AND
+            v.AC_GEN_Reliability > 0
+        AND
+            e.GEN_ID <> v.GEN_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_GEN_Actor_Gender_Annex] x
+            WHERE
+                x.AC_GEN_ID = e.AC_GEN_ID
+            AND
+                x.AC_GEN_Positor = v.AC_GEN_Positor
+            AND
+                x.AC_GEN_PositedAt = v.AC_GEN_PositedAt
+        );
     END
 END
 GO
@@ -6656,7 +7424,7 @@ BEGIN
         AC_PLV_PositedAt datetime2 not null,
         AC_PLV_Reliability decimal(5,2) not null,
         AC_PLV_Assertion char(1) not null,
-        PLV_ID tinyint not null, 
+        PLV_ID tinyint not null,
         AC_PLV_Version bigint not null,
         AC_PLV_StatementType char(1) not null,
         primary key(
@@ -6827,15 +7595,33 @@ BEGIN
             PLV_ID
         )
         SELECT
-            AC_ID,
-            AC_PLV_ChangedAt,
-            PLV_ID
+            v.AC_ID,
+            v.AC_PLV_ChangedAt,
+            v.PLV_ID
         FROM
-            @AC_PLV_Actor_ProfessionalLevel
+            @AC_PLV_Actor_ProfessionalLevel v
         WHERE
-            AC_PLV_Version = @currentVersion
+            v.AC_PLV_Version = @currentVersion
         AND
-            AC_PLV_StatementType in ('N','R');
+            v.AC_PLV_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_PLV_Actor_ProfessionalLevel w
+            WHERE
+                w.AC_PLV_Version = v.AC_PLV_Version
+            AND
+                w.AC_PLV_Positor < v.AC_PLV_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+            AND
+                w.PLV_ID = v.PLV_ID
+            AND
+                w.AC_PLV_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
             AC_PLV_ID,
             AC_PLV_Positor,
@@ -6861,6 +7647,76 @@ BEGIN
             v.AC_PLV_Version = @currentVersion
         AND
             AC_PLV_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
+            AC_PLV_ID,
+            AC_PLV_Positor,
+            AC_PLV_PositedAt,
+            AC_PLV_Reliability
+        )
+        SELECT
+            e.AC_PLV_ID,
+            v.AC_PLV_Positor,
+            v.AC_PLV_PositedAt,
+            0
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_PLV_ID,
+                p.PLV_ID
+            FROM
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+            JOIN
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+            ON
+                a.AC_PLV_ID = p.AC_PLV_ID
+            AND
+                a.AC_PLV_Positor = v.AC_PLV_Positor
+            AND
+                a.AC_PLV_PositedAt = (
+                    SELECT
+                        max(s.AC_PLV_PositedAt)
+                    FROM
+                        [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] s
+                    WHERE
+                        s.AC_PLV_ID = p.AC_PLV_ID
+                    AND
+                        s.AC_PLV_Positor = v.AC_PLV_Positor
+                    AND
+                        s.AC_PLV_PositedAt < v.AC_PLV_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+            AND
+                a.AC_PLV_Reliability > 0
+            ORDER BY
+                a.AC_PLV_PositedAt DESC,
+                a.AC_PLV_Reliability DESC
+        ) e
+        WHERE
+            v.AC_PLV_Version = @currentVersion
+        AND
+            v.AC_PLV_StatementType in ('S','N','D','R')
+        AND
+            v.AC_PLV_Reliability > 0
+        AND
+            e.PLV_ID <> v.PLV_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] x
+            WHERE
+                x.AC_PLV_ID = e.AC_PLV_ID
+            AND
+                x.AC_PLV_Positor = v.AC_PLV_Positor
+            AND
+                x.AC_PLV_PositedAt = v.AC_PLV_PositedAt
+        );
     END
 END
 GO
@@ -7016,14 +7872,30 @@ BEGIN
             PR_NAM_Program_Name
         )
         SELECT
-            PR_ID,
-            PR_NAM_Program_Name
+            v.PR_ID,
+            v.PR_NAM_Program_Name
         FROM
-            @PR_NAM_Program_Name
+            @PR_NAM_Program_Name v
         WHERE
-            PR_NAM_Version = @currentVersion
+            v.PR_NAM_Version = @currentVersion
         AND
-            PR_NAM_StatementType in ('N');
+            v.PR_NAM_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_NAM_Program_Name w
+            WHERE
+                w.PR_NAM_Version = v.PR_NAM_Version
+            AND
+                w.PR_NAM_Positor < v.PR_NAM_Positor
+            AND
+                w.PR_ID = v.PR_ID
+            AND
+                w.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+            AND
+                w.PR_NAM_StatementType in ('N')
+        );
         INSERT INTO [dbo].[PR_NAM_Program_Name_Annex] (
             PR_NAM_ID,
             PR_NAM_Positor,
@@ -7047,6 +7919,74 @@ BEGIN
             v.PR_NAM_Version = @currentVersion
         AND
             PR_NAM_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[PR_NAM_Program_Name_Annex] (
+            PR_NAM_ID,
+            PR_NAM_Positor,
+            PR_NAM_PositedAt,
+            PR_NAM_Reliability
+        )
+        SELECT
+            e.PR_NAM_ID,
+            v.PR_NAM_Positor,
+            v.PR_NAM_PositedAt,
+            0
+        FROM
+            @PR_NAM_Program_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.PR_NAM_ID,
+                p.PR_NAM_Program_Name
+            FROM
+                [dbo].[PR_NAM_Program_Name_Posit] p
+            JOIN
+                [dbo].[PR_NAM_Program_Name_Annex] a
+            ON
+                a.PR_NAM_ID = p.PR_NAM_ID
+            AND
+                a.PR_NAM_Positor = v.PR_NAM_Positor
+            AND
+                a.PR_NAM_PositedAt = (
+                    SELECT
+                        max(s.PR_NAM_PositedAt)
+                    FROM
+                        [dbo].[PR_NAM_Program_Name_Annex] s
+                    WHERE
+                        s.PR_NAM_ID = p.PR_NAM_ID
+                    AND
+                        s.PR_NAM_Positor = v.PR_NAM_Positor
+                    AND
+                        s.PR_NAM_PositedAt < v.PR_NAM_PositedAt
+                )
+            WHERE
+                p.PR_ID = v.PR_ID
+            AND
+                a.PR_NAM_Reliability > 0
+            ORDER BY
+                a.PR_NAM_PositedAt DESC,
+                a.PR_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.PR_NAM_Version = @currentVersion
+        AND
+            v.PR_NAM_StatementType in ('S','N','D')
+        AND
+            v.PR_NAM_Reliability > 0
+        AND
+            e.PR_NAM_Program_Name <> v.PR_NAM_Program_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_NAM_Program_Name_Annex] x
+            WHERE
+                x.PR_NAM_ID = e.PR_NAM_ID
+            AND
+                x.PR_NAM_Positor = v.PR_NAM_Positor
+            AND
+                x.PR_NAM_PositedAt = v.PR_NAM_PositedAt
+        );
     END
 END
 GO
@@ -7243,15 +8183,33 @@ BEGIN
             PR_LEN_Program_Length
         )
         SELECT
-            PR_ID,
-            PR_LEN_ChangedAt,
-            PR_LEN_Program_Length
+            v.PR_ID,
+            v.PR_LEN_ChangedAt,
+            v.PR_LEN_Program_Length
         FROM
-            @PR_LEN_Program_Length
+            @PR_LEN_Program_Length v
         WHERE
-            PR_LEN_Version = @currentVersion
+            v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N','F');
+            v.PR_LEN_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_LEN_Program_Length w
+            WHERE
+                w.PR_LEN_Version = v.PR_LEN_Version
+            AND
+                w.PR_LEN_Positor < v.PR_LEN_Positor
+            AND
+                w.PR_ID = v.PR_ID
+            AND
+                w.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+            AND
+                w.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+            AND
+                w.PR_LEN_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
             PR_LEN_ID,
@@ -7317,6 +8275,76 @@ BEGIN
             v.PR_LEN_Version = @currentVersion
         AND
             PR_LEN_StatementType in ('S','N','D','F');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            e.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            0
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.PR_LEN_ID,
+                p.PR_LEN_Program_Length
+            FROM
+                [dbo].[PR_LEN_Program_Length_Posit] p
+            JOIN
+                [dbo].[PR_LEN_Program_Length_Annex] a
+            ON
+                a.PR_LEN_ID = p.PR_LEN_ID
+            AND
+                a.PR_LEN_Positor = v.PR_LEN_Positor
+            AND
+                a.PR_LEN_PositedAt = (
+                    SELECT
+                        max(s.PR_LEN_PositedAt)
+                    FROM
+                        [dbo].[PR_LEN_Program_Length_Annex] s
+                    WHERE
+                        s.PR_LEN_ID = p.PR_LEN_ID
+                    AND
+                        s.PR_LEN_Positor = v.PR_LEN_Positor
+                    AND
+                        s.PR_LEN_PositedAt < v.PR_LEN_PositedAt
+                )
+            WHERE
+                p.PR_ID = v.PR_ID
+            AND
+                p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+            AND
+                a.PR_LEN_Reliability > 0
+            ORDER BY
+                a.PR_LEN_PositedAt DESC,
+                a.PR_LEN_Reliability DESC
+        ) e
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType in ('S','N','D','F')
+        AND
+            v.PR_LEN_Reliability > 0
+        AND
+            e.PR_LEN_Program_Length <> v.PR_LEN_Program_Length
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_LEN_Program_Length_Annex] x
+            WHERE
+                x.PR_LEN_ID = e.PR_LEN_ID
+            AND
+                x.PR_LEN_Positor = v.PR_LEN_Positor
+            AND
+                x.PR_LEN_PositedAt = v.PR_LEN_PositedAt
+        );
     END
 END
 GO
@@ -7484,7 +8512,7 @@ BEGIN
     )
     SELECT
         i.ST_ID,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID),
         i.ST_AVG_ChangedAt,
         i.ST_AVG_PositedAt,
         i.ST_AVG_Positor,
@@ -7506,7 +8534,7 @@ BEGIN
     )
     SELECT
         i.ST_ID,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID),
         i.ST_MIN_PositedAt,
         i.ST_MIN_Positor,
         i.ST_MIN_Reliability
@@ -7600,7 +8628,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_NAM_Stage_Name) 
+        UPDATE(ST_NAM_Stage_Name)
     )
     BEGIN
         INSERT INTO [dbo].[ST_NAM_Stage_Name] (
@@ -7626,7 +8654,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[ST_NAM_Stage_Name_Posit] p
         ON
             p.ST_NAM_ID = i.ST_NAM_ID
@@ -7682,7 +8710,7 @@ BEGIN
             UPDATE(ST_LOC_Positor) OR
             UPDATE(Positor) OR
             d.ST_LOC_Stage_Location is null OR
-            d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR
             d.ST_LOC_Reliability <> ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
                 WHEN UPDATE(Reliability) THEN i.Reliability
@@ -7694,7 +8722,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_LOC_Stage_Location) 
+        UPDATE(ST_LOC_Stage_Location)
     )
     BEGIN
         INSERT INTO [dbo].[ST_LOC_Stage_Location] (
@@ -7717,7 +8745,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[ST_LOC_Stage_Location_Posit] p
         ON
             p.ST_LOC_ID = i.ST_LOC_ID
@@ -7804,7 +8832,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) 
+        UPDATE(UTL_Utilization)
     )
     BEGIN
         INSERT INTO [dbo].[ST_AVG_Stage_Average] (
@@ -7830,13 +8858,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[ST_AVG_Stage_Average_Posit] p
         ON
             p.ST_AVG_ID = i.ST_AVG_ID
         WHERE
             (UPDATE(UTL_ID) AND i.UTL_ID is null)
-        OR 
+        OR
             (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
     END
     IF(UPDATE(ST_MIN_ID))
@@ -7912,7 +8940,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) 
+        UPDATE(UTL_Utilization)
     )
     BEGIN
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum] (
@@ -7935,13 +8963,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[ST_MIN_Stage_Minimum_Posit] p
         ON
             p.ST_MIN_ID = i.ST_MIN_ID
         WHERE
             (UPDATE(UTL_ID) AND i.UTL_ID is null)
-        OR 
+        OR
             (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
     END
 END
@@ -8143,7 +9171,7 @@ BEGIN
     )
     SELECT
         i.AC_ID,
-        ISNULL(i.GEN_ID, [kGEN].GEN_ID), 
+        ISNULL(i.GEN_ID, [kGEN].GEN_ID),
         i.AC_GEN_PositedAt,
         i.AC_GEN_Positor,
         i.AC_GEN_Reliability
@@ -8165,7 +9193,7 @@ BEGIN
     )
     SELECT
         i.AC_ID,
-        ISNULL(i.PLV_ID, [kPLV].PLV_ID), 
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID),
         i.AC_PLV_ChangedAt,
         i.AC_PLV_PositedAt,
         i.AC_PLV_Positor,
@@ -8175,7 +9203,7 @@ BEGIN
     LEFT JOIN
         [dbo].[PLV_ProfessionalLevel] [kPLV]
     ON
-        [kPLV].PLV_Checksum = i.PLV_Checksum 
+        [kPLV].PLV_Checksum = i.PLV_Checksum
     WHERE
         ISNULL(i.PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -8260,7 +9288,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(AC_NAM_Actor_Name) 
+        UPDATE(AC_NAM_Actor_Name)
     )
     BEGIN
         INSERT INTO [dbo].[AC_NAM_Actor_Name] (
@@ -8286,7 +9314,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[AC_NAM_Actor_Name_Posit] p
         ON
             p.AC_NAM_ID = i.AC_NAM_ID
@@ -8366,7 +9394,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(GEN_ID) OR
-        UPDATE(GEN_Gender) 
+        UPDATE(GEN_Gender)
     )
     BEGIN
         INSERT INTO [dbo].[AC_GEN_Actor_Gender] (
@@ -8389,13 +9417,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[AC_GEN_Actor_Gender_Posit] p
         ON
             p.AC_GEN_ID = i.AC_GEN_ID
         WHERE
             (UPDATE(GEN_ID) AND i.GEN_ID is null)
-        OR 
+        OR
             (UPDATE(GEN_Gender) AND i.GEN_Gender is null);
     END
     IF(UPDATE(AC_PLV_ID))
@@ -8447,7 +9475,7 @@ BEGIN
         LEFT JOIN
             [dbo].[PLV_ProfessionalLevel] [kPLV]
         ON
-            [kPLV].PLV_Checksum = dbo.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
+            [kPLV].PLV_Checksum = dbo.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -8478,7 +9506,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(PLV_ID) OR
-        UPDATE(PLV_ProfessionalLevel) 
+        UPDATE(PLV_ProfessionalLevel)
     )
     BEGIN
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel] (
@@ -8504,13 +9532,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[AC_PLV_Actor_ProfessionalLevel_Posit] p
         ON
             p.AC_PLV_ID = i.AC_PLV_ID
         WHERE
             (UPDATE(PLV_ID) AND i.PLV_ID is null)
-        OR 
+        OR
             (UPDATE(PLV_ProfessionalLevel) AND i.PLV_ProfessionalLevel is null);
     END
 END
@@ -8756,7 +9784,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_NAM_Program_Name) 
+        UPDATE(PR_NAM_Program_Name)
     )
     BEGIN
         INSERT INTO [dbo].[PR_NAM_Program_Name] (
@@ -8779,7 +9807,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[PR_NAM_Program_Name_Posit] p
         ON
             p.PR_NAM_ID = i.PR_NAM_ID
@@ -8854,7 +9882,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_LEN_Program_Length) 
+        UPDATE(PR_LEN_Program_Length)
     )
     BEGIN
         INSERT INTO [dbo].[PR_LEN_Program_Length] (
@@ -8880,7 +9908,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[PR_LEN_Program_Length_Posit] p
         ON
             p.PR_LEN_ID = i.PR_LEN_ID
@@ -8935,6 +9963,7 @@ GO
 --
 -- The following triggers on the latest view make it behave like a table.
 -- There are three different 'instead of' triggers: insert, update, and delete.
+-- The roles of a nexus are part of its identity, so they are not updatable.
 -- They will ensure that such operations are propagated to the underlying tables
 -- in a consistent way. Default values are used for some columns if not provided
 -- by the corresponding SQL statements.
@@ -9074,6 +10103,358 @@ BEGIN
         i.EV_REV_Event_Revenue is not null;
 END
 GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lEV_Event instead of UPDATE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [dbo].[ut_lEV_Event] ON [dbo].[lEV_Event]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(EV_ID))
+        RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID_wasHeldAt))
+        RAISERROR('The role column ST_ID_wasHeldAt is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID_wasPlayed))
+        RAISERROR('The role column PR_ID_wasPlayed is not updatable.', 16, 1);
+    IF(UPDATE(ETY_ID_of))
+        RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
+    IF(UPDATE(ETY_EventType))
+        RAISERROR('The role column ETY_EventType is not updatable.', 16, 1);
+    IF(UPDATE(EV_DAT_ID))
+        RAISERROR('The identity column EV_DAT_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_ID))
+        RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_DAT_Assertion))
+        RAISERROR('The computed assertion column EV_DAT_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_DAT_Event_Date) OR
+        UPDATE(EV_DAT_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_DAT_Event_Date] (
+            EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Positor,
+            EV_DAT_Reliability
+        )
+        SELECT
+            ISNULL(i.EV_ID, i.EV_ID),
+            i.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_DAT_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_DAT_PositedAt) OR
+            UPDATE(EV_DAT_Positor) OR
+            UPDATE(Positor) OR
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date OR
+            d.EV_DAT_Reliability <> ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_DAT_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_DAT_Event_Date)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_DAT_Event_Date] (
+            EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Positor,
+            EV_DAT_Reliability
+        )
+        SELECT
+            p.EV_ID,
+            p.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_DAT_ID = i.EV_DAT_ID
+        WHERE
+            i.EV_DAT_Event_Date is null
+    END
+    IF(UPDATE(EV_AUD_ID))
+        RAISERROR('The identity column EV_AUD_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_ID))
+        RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_AUD_Assertion))
+        RAISERROR('The computed assertion column EV_AUD_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_AUD_Event_Audience) OR
+        UPDATE(EV_AUD_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_AUD_Event_Audience] (
+            EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Positor,
+            EV_AUD_Reliability
+        )
+        SELECT
+            ISNULL(i.EV_ID, i.EV_ID),
+            i.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_AUD_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_AUD_PositedAt) OR
+            UPDATE(EV_AUD_Positor) OR
+            UPDATE(Positor) OR
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience OR
+            d.EV_AUD_Reliability <> ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_AUD_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_AUD_Event_Audience)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_AUD_Event_Audience] (
+            EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Positor,
+            EV_AUD_Reliability
+        )
+        SELECT
+            p.EV_ID,
+            p.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_AUD_ID = i.EV_AUD_ID
+        WHERE
+            i.EV_AUD_Event_Audience is null
+    END
+    IF(UPDATE(EV_REV_ID))
+        RAISERROR('The identity column EV_REV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_ID))
+        RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_REV_Assertion))
+        RAISERROR('The computed assertion column EV_REV_Assertion is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_REV_Event_Revenue) OR
+        UPDATE(EV_REV_Reliability) OR
+        UPDATE(Reliability)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_REV_Event_Revenue] (
+            EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Positor,
+            EV_REV_Reliability
+        )
+        SELECT
+            ISNULL(i.EV_ID, i.EV_ID),
+            i.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                ELSE i.Positor
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_REV_Reliability
+            END, 1)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        WHERE
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_REV_PositedAt) OR
+            UPDATE(EV_REV_Positor) OR
+            UPDATE(Positor) OR
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue OR
+            d.EV_REV_Reliability <> ISNULL(CASE
+                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_REV_Reliability
+            END, 1)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_REV_Event_Revenue)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_REV_Event_Revenue] (
+            EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Positor,
+            EV_REV_Reliability
+        )
+        SELECT
+            p.EV_ID,
+            p.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                ELSE i.Positor
+            END, 0),
+            0
+        FROM
+            inserted i
+        JOIN
+            [dbo].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_REV_ID = i.EV_REV_ID
+        WHERE
+            i.EV_REV_Event_Revenue is null
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_Event instead of DELETE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [dbo].[dt_lEV_Event] ON [dbo].[lEV_Event]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
+        EV_DAT_ID,
+        EV_DAT_Positor,
+        EV_DAT_PositedAt,
+        EV_DAT_Reliability
+    )
+    SELECT
+        d.EV_DAT_ID,
+        d.EV_DAT_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.EV_DAT_ID is not null;
+    INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
+        EV_AUD_ID,
+        EV_AUD_Positor,
+        EV_AUD_PositedAt,
+        EV_AUD_Reliability
+    )
+    SELECT
+        d.EV_AUD_ID,
+        d.EV_AUD_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.EV_AUD_ID is not null;
+    INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
+        EV_REV_ID,
+        EV_REV_Positor,
+        EV_REV_PositedAt,
+        EV_REV_Reliability
+    )
+    SELECT
+        d.EV_REV_ID,
+        d.EV_REV_Positor,
+        @now,
+        0
+    FROM
+        deleted d
+    WHERE
+        d.EV_REV_ID is not null;
+END
+GO
 -- TIES ---------------------------------------------------------------------------------------------------------------
 --
 -- Ties are used to represent relationships between entities.
@@ -9088,16 +10469,16 @@ GO
 IF Object_ID('dbo.AC_partner_AC_with_ONG_currently_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_partner_AC_with_ONG_currently_Posit] (
     AC_partner_AC_with_ONG_currently_ID int IDENTITY(1,1) not null,
-    AC_ID_partner int not null, 
-    AC_ID_with int not null, 
+    AC_ID_partner int not null,
+    AC_ID_with int not null,
     ONG_ID_currently tinyint not null,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
     constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_partner foreign key (
         AC_ID_partner
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_with foreign key (
         AC_ID_with
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_partner_AC_with_ONG_currently_Posit_fkONG_currently foreign key (
         ONG_ID_currently
     ) references [dbo].[ONG_Ongoing](ONG_ID),
@@ -9145,20 +10526,20 @@ CREATE TABLE [dbo].[AC_partner_AC_with_ONG_currently_Annex] (
     )
 ) ON PositorScheme(AC_partner_AC_with_ONG_currently_Positor);
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- AC_subset_PN_of_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.AC_subset_PN_of_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_subset_PN_of_Posit] (
     AC_subset_PN_of_ID int IDENTITY(1,1) not null,
-    AC_ID_subset int not null, 
-    PN_ID_of int not null, 
+    AC_ID_subset int not null,
+    PN_ID_of int not null,
     constraint AC_subset_PN_of_Posit_fkAC_subset foreign key (
         AC_ID_subset
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_subset_PN_of_Posit_fkPN_of foreign key (
         PN_ID_of
-    ) references [dbo].[PN_Person](PN_ID), 
+    ) references [dbo].[PN_Person](PN_ID),
     constraint AC_subset_PN_of_Posit_uqAC_subset unique (
         AC_ID_subset
     ),
@@ -9199,20 +10580,20 @@ CREATE TABLE [dbo].[AC_subset_PN_of_Annex] (
     )
 ) ON PositorScheme(AC_subset_PN_of_Positor);
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- EV_in_AC_wasCast_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.EV_in_AC_wasCast_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[EV_in_AC_wasCast_Posit] (
     EV_in_AC_wasCast_ID int IDENTITY(1,1) not null,
-    EV_ID_in int not null, 
-    AC_ID_wasCast int not null, 
+    EV_ID_in int not null,
+    AC_ID_wasCast int not null,
     constraint EV_in_AC_wasCast_Posit_fkEV_in foreign key (
         EV_ID_in
-    ) references [dbo].[EV_Event](EV_ID), 
+    ) references [dbo].[EV_Event](EV_ID),
     constraint EV_in_AC_wasCast_Posit_fkAC_wasCast foreign key (
         AC_ID_wasCast
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint pkEV_in_AC_wasCast_Posit primary key nonclustered (
         EV_in_AC_wasCast_ID asc
     ),
@@ -9253,16 +10634,16 @@ GO
 IF Object_ID('dbo.AC_part_PR_in_RAT_got_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_part_PR_in_RAT_got_Posit] (
     AC_part_PR_in_RAT_got_ID int IDENTITY(1,1) not null,
-    AC_ID_part int not null, 
-    PR_ID_in int not null, 
+    AC_ID_part int not null,
+    PR_ID_in int not null,
     RAT_ID_got tinyint not null,
     AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
     constraint AC_part_PR_in_RAT_got_Posit_fkAC_part foreign key (
         AC_ID_part
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_part_PR_in_RAT_got_Posit_fkPR_in foreign key (
         PR_ID_in
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint AC_part_PR_in_RAT_got_Posit_fkRAT_got foreign key (
         RAT_ID_got
     ) references [dbo].[RAT_Rating](RAT_ID),
@@ -9302,21 +10683,21 @@ CREATE TABLE [dbo].[AC_part_PR_in_RAT_got_Annex] (
     )
 ) ON PositorScheme(AC_part_PR_in_RAT_got_Positor);
 GO
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- ST_at_PR_isPlaying_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.ST_at_PR_isPlaying_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[ST_at_PR_isPlaying_Posit] (
     ST_at_PR_isPlaying_ID int IDENTITY(1,1) not null,
-    ST_ID_at int not null, 
-    PR_ID_isPlaying int not null, 
+    ST_ID_at int not null,
+    PR_ID_isPlaying int not null,
     ST_at_PR_isPlaying_ChangedAt datetime2 not null,
     constraint ST_at_PR_isPlaying_Posit_fkST_at foreign key (
         ST_ID_at
-    ) references [dbo].[ST_Stage](ST_ID), 
+    ) references [dbo].[ST_Stage](ST_ID),
     constraint ST_at_PR_isPlaying_Posit_fkPR_isPlaying foreign key (
         PR_ID_isPlaying
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint pkST_at_PR_isPlaying_Posit primary key nonclustered (
         ST_at_PR_isPlaying_ID asc
     ),
@@ -9358,15 +10739,15 @@ GO
 IF Object_ID('dbo.AC_parent_AC_child_PAT_having_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_parent_AC_child_PAT_having_Posit] (
     AC_parent_AC_child_PAT_having_ID int IDENTITY(1,1) not null,
-    AC_ID_parent int not null, 
-    AC_ID_child int not null, 
+    AC_ID_parent int not null,
+    AC_ID_child int not null,
     PAT_ID_having tinyint not null,
     constraint AC_parent_AC_child_PAT_having_Posit_fkAC_parent foreign key (
         AC_ID_parent
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_Posit_fkAC_child foreign key (
         AC_ID_child
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_Posit_fkPAT_having foreign key (
         PAT_ID_having
     ) references [dbo].[PAT_ParentalType](PAT_ID),
@@ -9405,24 +10786,24 @@ CREATE TABLE [dbo].[AC_parent_AC_child_PAT_having_Annex] (
     )
 ) ON PositorScheme(AC_parent_AC_child_PAT_having_Positor);
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- PR_content_ST_location_EV_of_Posit table (having 3 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.PR_content_ST_location_EV_of_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[PR_content_ST_location_EV_of_Posit] (
     PR_content_ST_location_EV_of_ID int IDENTITY(1,1) not null,
-    PR_ID_content int not null, 
-    ST_ID_location int not null, 
-    EV_ID_of int not null, 
+    PR_ID_content int not null,
+    ST_ID_location int not null,
+    EV_ID_of int not null,
     constraint PR_content_ST_location_EV_of_Posit_fkPR_content foreign key (
         PR_ID_content
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint PR_content_ST_location_EV_of_Posit_fkST_location foreign key (
         ST_ID_location
-    ) references [dbo].[ST_Stage](ST_ID), 
+    ) references [dbo].[ST_Stage](ST_ID),
     constraint PR_content_ST_location_EV_of_Posit_fkEV_of foreign key (
         EV_ID_of
-    ) references [dbo].[EV_Event](EV_ID), 
+    ) references [dbo].[EV_Event](EV_ID),
     constraint pkPR_content_ST_location_EV_of_Posit primary key nonclustered (
         PR_content_ST_location_EV_of_ID asc
     ),
@@ -9763,8 +11144,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_partner int; 
-    DECLARE @AC_with int; 
+    DECLARE @AC_partner int;
+    DECLARE @AC_with int;
     DECLARE @ONG_currently tinyint;
     SELECT
         @AC_partner = p.AC_ID_partner,
@@ -9816,7 +11197,7 @@ BEGIN
                 [dbo].[fAC_partner_AC_with_ONG_currently] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
             (
@@ -9861,8 +11242,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_part int; 
-    DECLARE @PR_in int; 
+    DECLARE @AC_part int;
+    DECLARE @PR_in int;
     DECLARE @RAT_got tinyint;
     SELECT
         @AC_part = p.AC_ID_part,
@@ -9908,7 +11289,7 @@ BEGIN
                 [dbo].[fAC_part_PR_in_RAT_got] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
                 fol.AC_ID_part = @AC_part
@@ -9937,7 +11318,7 @@ GO
 -- point in changing time, or a tie annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that 
+-- in time. The forwarder is the opposite of the rewinder, such that
 -- their union corresponds to all rows in the posit table.
 --
 -- @positor the view of which positor to adopt (defaults to 0)
@@ -10036,7 +11417,7 @@ BEGIN
         a.AC_partner_AC_with_ONG_currently_Reliability,
         a.AC_partner_AC_with_ONG_currently_Assertion
     FROM
-        [dbo].[rAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+        [dbo].[rAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
     ON
@@ -10082,7 +11463,7 @@ BEGIN
         a.AC_partner_AC_with_ONG_currently_Reliability,
         a.AC_partner_AC_with_ONG_currently_Assertion
     FROM
-        [dbo].[fAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+        [dbo].[fAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
     ON
@@ -10415,7 +11796,7 @@ BEGIN
         a.AC_part_PR_in_RAT_got_Reliability,
         a.AC_part_PR_in_RAT_got_Assertion
     FROM
-        [dbo].[rAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+        [dbo].[rAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
     ON
@@ -10461,7 +11842,7 @@ BEGIN
         a.AC_part_PR_in_RAT_got_Reliability,
         a.AC_part_PR_in_RAT_got_Assertion
     FROM
-        [dbo].[fAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+        [dbo].[fAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
     ON
@@ -10573,7 +11954,7 @@ BEGIN
         a.ST_at_PR_isPlaying_Reliability,
         a.ST_at_PR_isPlaying_Assertion
     FROM
-        [dbo].[rST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+        [dbo].[rST_at_PR_isPlaying_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
     ON
@@ -10618,7 +11999,7 @@ BEGIN
         a.ST_at_PR_isPlaying_Reliability,
         a.ST_at_PR_isPlaying_Assertion
     FROM
-        [dbo].[fST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+        [dbo].[fST_at_PR_isPlaying_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
     ON
@@ -12833,6 +14214,7 @@ BEGIN
         ONG_ID_currently tinyint not null,
         primary key (
             AC_partner_AC_with_ONG_currently_Version,
+            AC_partner_AC_with_ONG_currently_Positor,
             AC_ID_partner,
             AC_ID_with,
             ONG_ID_currently
@@ -13072,7 +14454,7 @@ BEGIN
             AC_ID_with,
             ONG_ID_currently
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_partner_AC_with_ONG_currently_ChangedAt,
             AC_ID_partner,
             AC_ID_with,
@@ -13136,7 +14518,7 @@ BEGIN
         i.AC_partner_AC_with_ONG_currently_ChangedAt,
         i.AC_ID_partner,
         i.AC_ID_with,
-        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
+        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, i.Positor),
         i.AC_partner_AC_with_ONG_currently_PositedAt,
         i.AC_partner_AC_with_ONG_currently_Reliability
@@ -13190,7 +14572,7 @@ BEGIN
     OR
         i.AC_ID_with is null
     OR
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_partner_AC_with_ONG_currently] (
@@ -13219,13 +14601,13 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
         ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
@@ -13240,7 +14622,7 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
@@ -13261,7 +14643,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
                 AND
                     d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
             )
@@ -13318,6 +14700,8 @@ BEGIN
         AC_ID_subset int not null,
         PN_ID_of int not null,
         primary key (
+            AC_subset_PN_of_Version,
+            AC_subset_PN_of_Positor,
             AC_ID_subset,
             PN_ID_of
         )
@@ -13454,7 +14838,7 @@ BEGIN
             AC_ID_subset,
             PN_ID_of
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_ID_subset,
             PN_ID_of
         FROM
@@ -13647,6 +15031,8 @@ BEGIN
         EV_ID_in int not null,
         AC_ID_wasCast int not null,
         primary key (
+            EV_in_AC_wasCast_Version,
+            EV_in_AC_wasCast_Positor,
             EV_ID_in,
             AC_ID_wasCast
         )
@@ -13783,7 +15169,7 @@ BEGIN
             EV_ID_in,
             AC_ID_wasCast
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             EV_ID_in,
             AC_ID_wasCast
         FROM
@@ -13898,6 +15284,7 @@ BEGIN
         RAT_ID_got tinyint not null,
         primary key (
             AC_part_PR_in_RAT_got_Version,
+            AC_part_PR_in_RAT_got_Positor,
             AC_ID_part,
             PR_ID_in
         )
@@ -14113,7 +15500,7 @@ BEGIN
             PR_ID_in,
             RAT_ID_got
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_part_PR_in_RAT_got_ChangedAt,
             AC_ID_part,
             PR_ID_in,
@@ -14151,6 +15538,79 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
+        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        INSERT INTO [dbo].[AC_part_PR_in_RAT_got_Annex] (
+            AC_part_PR_in_RAT_got_ID,
+            AC_part_PR_in_RAT_got_Positor,
+            AC_part_PR_in_RAT_got_PositedAt,
+            AC_part_PR_in_RAT_got_Reliability
+        )
+        SELECT
+            e.AC_part_PR_in_RAT_got_ID,
+            v.AC_part_PR_in_RAT_got_Positor,
+            v.AC_part_PR_in_RAT_got_PositedAt,
+            0
+        FROM
+            @inserted v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_part_PR_in_RAT_got_ID,
+                p.RAT_ID_got
+            FROM
+                [dbo].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [dbo].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            AND
+                a.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = (
+                    SELECT
+                        max(s.AC_part_PR_in_RAT_got_PositedAt)
+                    FROM
+                        [dbo].[AC_part_PR_in_RAT_got_Annex] s
+                    WHERE
+                        s.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                    AND
+                        s.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                    AND
+                        s.AC_part_PR_in_RAT_got_PositedAt < v.AC_part_PR_in_RAT_got_PositedAt
+                )
+            WHERE
+                p.AC_ID_part = v.AC_ID_part
+            AND
+                p.PR_ID_in = v.PR_ID_in
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+            AND
+                a.AC_part_PR_in_RAT_got_Reliability > 0
+            ORDER BY
+                a.AC_part_PR_in_RAT_got_PositedAt DESC,
+                a.AC_part_PR_in_RAT_got_Reliability DESC
+        ) e
+        WHERE
+            v.AC_part_PR_in_RAT_got_Version = @currentVersion
+        AND
+            v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R')
+        AND
+            v.AC_part_PR_in_RAT_got_Reliability > 0
+        AND (
+            e.RAT_ID_got <> v.RAT_ID_got
+        )
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_part_PR_in_RAT_got_Annex] x
+            WHERE
+                x.AC_part_PR_in_RAT_got_ID = e.AC_part_PR_in_RAT_got_ID
+            AND
+                x.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+            AND
+                x.AC_part_PR_in_RAT_got_PositedAt = v.AC_part_PR_in_RAT_got_PositedAt
+        );
     END
 END
 GO
@@ -14177,7 +15637,7 @@ BEGIN
         i.AC_part_PR_in_RAT_got_ChangedAt,
         i.AC_ID_part,
         i.PR_ID_in,
-        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
+        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID),
         ISNULL(i.AC_part_PR_in_RAT_got_Positor, i.Positor),
         i.AC_part_PR_in_RAT_got_PositedAt,
         i.AC_part_PR_in_RAT_got_Reliability
@@ -14231,7 +15691,7 @@ BEGIN
     WHERE
         i.AC_part_PR_in_RAT_got_ID is not null
     AND (
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
@@ -14256,13 +15716,13 @@ BEGIN
                 AND
                     d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
         ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
@@ -14273,7 +15733,7 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.RAT_Rating
     WHERE
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
@@ -14290,7 +15750,7 @@ BEGIN
                 AND
                     d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
                 AND
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
@@ -14349,6 +15809,7 @@ BEGIN
         PR_ID_isPlaying int not null,
         primary key (
             ST_at_PR_isPlaying_Version,
+            ST_at_PR_isPlaying_Positor,
             ST_ID_at,
             PR_ID_isPlaying
         )
@@ -14497,7 +15958,7 @@ BEGIN
             ST_ID_at,
             PR_ID_isPlaying
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             ST_at_PR_isPlaying_ChangedAt,
             ST_ID_at,
             PR_ID_isPlaying
@@ -14615,6 +16076,8 @@ BEGIN
         AC_ID_child int not null,
         PAT_ID_having tinyint not null,
         primary key (
+            AC_parent_AC_child_PAT_having_Version,
+            AC_parent_AC_child_PAT_having_Positor,
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having
@@ -14766,7 +16229,7 @@ BEGIN
             AC_ID_child,
             PAT_ID_having
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having
@@ -14825,7 +16288,7 @@ BEGIN
     SELECT
         i.AC_ID_parent,
         i.AC_ID_child,
-        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
+        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID),
         ISNULL(i.AC_parent_AC_child_PAT_having_Positor, i.Positor),
         i.AC_parent_AC_child_PAT_having_PositedAt,
         i.AC_parent_AC_child_PAT_having_Reliability
@@ -14888,6 +16351,8 @@ BEGIN
         ST_ID_location int not null,
         EV_ID_of int not null,
         primary key (
+            PR_content_ST_location_EV_of_Version,
+            PR_content_ST_location_EV_of_Positor,
             EV_ID_of
         )
     );
@@ -15031,7 +16496,7 @@ BEGIN
             ST_ID_location,
             EV_ID_of
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             PR_ID_content,
             ST_ID_location,
             EV_ID_of
@@ -15066,6 +16531,78 @@ BEGIN
             v.PR_content_ST_location_EV_of_Version = @currentVersion
         AND
             v.PR_content_ST_location_EV_of_StatementType in ('S','N','D');
+        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
+        -- positing time, the posit in effect for the positor when that has other values (a correction)
+        INSERT INTO [dbo].[PR_content_ST_location_EV_of_Annex] (
+            PR_content_ST_location_EV_of_ID,
+            PR_content_ST_location_EV_of_Positor,
+            PR_content_ST_location_EV_of_PositedAt,
+            PR_content_ST_location_EV_of_Reliability
+        )
+        SELECT
+            e.PR_content_ST_location_EV_of_ID,
+            v.PR_content_ST_location_EV_of_Positor,
+            v.PR_content_ST_location_EV_of_PositedAt,
+            0
+        FROM
+            @inserted v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.PR_content_ST_location_EV_of_ID,
+                p.PR_ID_content,
+                p.ST_ID_location
+            FROM
+                [dbo].[PR_content_ST_location_EV_of_Posit] p
+            JOIN
+                [dbo].[PR_content_ST_location_EV_of_Annex] a
+            ON
+                a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+            AND
+                a.PR_content_ST_location_EV_of_Positor = v.PR_content_ST_location_EV_of_Positor
+            AND
+                a.PR_content_ST_location_EV_of_PositedAt = (
+                    SELECT
+                        max(s.PR_content_ST_location_EV_of_PositedAt)
+                    FROM
+                        [dbo].[PR_content_ST_location_EV_of_Annex] s
+                    WHERE
+                        s.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+                    AND
+                        s.PR_content_ST_location_EV_of_Positor = v.PR_content_ST_location_EV_of_Positor
+                    AND
+                        s.PR_content_ST_location_EV_of_PositedAt < v.PR_content_ST_location_EV_of_PositedAt
+                )
+            WHERE
+                p.EV_ID_of = v.EV_ID_of
+            AND
+                a.PR_content_ST_location_EV_of_Reliability > 0
+            ORDER BY
+                a.PR_content_ST_location_EV_of_PositedAt DESC,
+                a.PR_content_ST_location_EV_of_Reliability DESC
+        ) e
+        WHERE
+            v.PR_content_ST_location_EV_of_Version = @currentVersion
+        AND
+            v.PR_content_ST_location_EV_of_StatementType in ('S','N','D')
+        AND
+            v.PR_content_ST_location_EV_of_Reliability > 0
+        AND (
+            e.PR_ID_content <> v.PR_ID_content
+        OR
+            e.ST_ID_location <> v.ST_ID_location
+        )
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_content_ST_location_EV_of_Annex] x
+            WHERE
+                x.PR_content_ST_location_EV_of_ID = e.PR_content_ST_location_EV_of_ID
+            AND
+                x.PR_content_ST_location_EV_of_Positor = v.PR_content_ST_location_EV_of_Positor
+            AND
+                x.PR_content_ST_location_EV_of_PositedAt = v.PR_content_ST_location_EV_of_PositedAt
+        );
     END
 END
 GO
@@ -15241,7 +16778,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -15286,7 +16823,8 @@ BEGIN
                 ST_NAM_PositedAt,
                 ST_NAM_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@ST_ID int', @ST_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -15326,7 +16864,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -15371,7 +16909,8 @@ BEGIN
                 ST_AVG_PositedAt,
                 ST_AVG_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@ST_ID int', @ST_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -15411,7 +16950,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -15456,7 +16995,8 @@ BEGIN
                 AC_NAM_PositedAt,
                 AC_NAM_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@AC_ID int', @AC_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -15496,7 +17036,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -15541,7 +17081,8 @@ BEGIN
                 AC_PLV_PositedAt,
                 AC_PLV_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@AC_ID int', @AC_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -15581,7 +17122,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -15626,7 +17167,8 @@ BEGIN
                 PR_LEN_PositedAt,
                 PR_LEN_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@PR_ID int', @PR_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -16095,6 +17637,39 @@ FROM
 CROSS APPLY
    S.[schema].nodes('/schema/anchor') as Nodeset(anchor);
 GO
+-- Nexus view ---------------------------------------------------------------------------------------------------------
+-- The nexus view shows information about all the nexuses in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo._Nexus', 'V') IS NOT NULL
+DROP VIEW [dbo].[_Nexus]
+GO
+CREATE VIEW [dbo].[_Nexus]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.nexus.value('concat(@mnemonic, "_", @descriptor)', 'nvarchar(max)') as [name],
+   Nodeset.nexus.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.nexus.value('@mnemonic', 'nvarchar(max)') as [mnemonic],
+   Nodeset.nexus.value('@descriptor', 'nvarchar(max)') as [descriptor],
+   Nodeset.nexus.value('@identity', 'nvarchar(max)') as [identity],
+   Nodeset.nexus.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.nexus.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.nexus.value('count(role)', 'int') as [numberOfRoles],
+   Nodeset.nexus.query('
+      for $role in role
+      return string($role/@role)
+   ').value('.', 'nvarchar(max)') as [roles],
+   Nodeset.nexus.query('
+      for $role in role
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [types],
+   Nodeset.nexus.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dbo].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/nexus') as Nodeset(nexus);
+GO
 -- Knot view ----------------------------------------------------------------------------------------------------------
 -- The knot view shows information about all the knots in a schema
 -----------------------------------------------------------------------------------------------------------------------
@@ -16122,7 +17697,8 @@ CROSS APPLY
    S.[schema].nodes('/schema/knot') as Nodeset(knot);
 GO
 -- Attribute view -----------------------------------------------------------------------------------------------------
--- The attribute view shows information about all the attributes in a schema
+-- The attribute view shows information about all the attributes in a schema, those of anchors and those of nexuses,
+-- where the anchor columns show the nexus and parent says which of the two it is
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo._Attribute', 'V') IS NOT NULL
 DROP VIEW [dbo].[_Attribute]
@@ -16155,16 +17731,18 @@ SELECT
    Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
    Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
    Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
-   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description],
+   ParentNodeset.anchor.value('local-name(.)', 'nvarchar(max)') as [parent]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
-   S.[schema].nodes('/schema/anchor') as ParentNodeset(anchor)
+   S.[schema].nodes('/schema/*[local-name() = "anchor" or local-name() = "nexus"]') as ParentNodeset(anchor)
 OUTER APPLY
    ParentNodeset.anchor.nodes('attribute') as Nodeset(attribute);
 GO
 -- Tie view -----------------------------------------------------------------------------------------------------------
--- The tie view shows information about all the ties in a schema
+-- The tie view shows information about all the ties in a schema. The roles of a tie are role elements, whose type is
+-- an anchor, a nexus or a knot, or in schemas from before nexuses anchorRole and knotRole elements.
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo._Tie', 'V') IS NOT NULL
 DROP VIEW [dbo].[_Tie]
@@ -16175,28 +17753,28 @@ SELECT
    S.version,
    S.activation,
    REPLACE(Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
       return concat($role/@type, "_", $role/@role)
    ').value('.', 'nvarchar(max)'), ' ', '_') as [name],
    Nodeset.tie.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
-   Nodeset.tie.value('count(anchorRole) + count(knotRole)', 'int') as [numberOfRoles],
+   Nodeset.tie.value('count(*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"])', 'int') as [numberOfRoles],
    Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
       return string($role/@role)
    ').value('.', 'nvarchar(max)') as [roles],
-   Nodeset.tie.value('count(anchorRole)', 'int') as [numberOfAnchors],
+   Nodeset.tie.value('count(anchorRole) + count(role[@type = /schema/anchor/@mnemonic])', 'int') as [numberOfAnchors],
    Nodeset.tie.query('
-      for $role in anchorRole
+      for $role in *[local-name() = "anchorRole" or (local-name() = "role" and @type = /schema/anchor/@mnemonic)]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [anchors],
-   Nodeset.tie.value('count(knotRole)', 'int') as [numberOfKnots],
+   Nodeset.tie.value('count(knotRole) + count(role[@type = /schema/knot/@mnemonic])', 'int') as [numberOfKnots],
    Nodeset.tie.query('
-      for $role in knotRole
+      for $role in *[local-name() = "knotRole" or (local-name() = "role" and @type = /schema/knot/@mnemonic)]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [knots],
-   Nodeset.tie.value('count(*[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"])', 'int') as [numberOfIdentifiers],
+   Nodeset.tie.value('count(*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"])', 'int') as [numberOfIdentifiers],
    Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [identifiers],
    Nodeset.tie.value('@timeRange', 'nvarchar(max)') as [timeRange],
@@ -16204,7 +17782,12 @@ SELECT
    Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
    Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
    Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
-   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description],
+   Nodeset.tie.value('count(role[@type = /schema/nexus/@mnemonic])', 'int') as [numberOfNexuses],
+   Nodeset.tie.query('
+      for $role in role[@type = /schema/nexus/@mnemonic]
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [nexuses]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -16224,24 +17807,27 @@ SELECT
    Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
    Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
    Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
-   case [parent]
-      when 'tie'
+   case
+      when [parent] in ('tie', 'nexus')
       then Nodeset.keys.value('../@role', 'nvarchar(max)')
    end as [role],
    case [parent]
       when 'knot'
       then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
-          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)')
       when 'attribute'
       then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
           Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
           Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
-          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)')
       when 'tie'
       then REPLACE(Nodeset.keys.query('
-            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            for $role in ../../*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
             return concat($role/@type, "_", $role/@role)
           ').value('.', 'nvarchar(max)'), ' ', '_')
+      when 'nexus'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../../@descriptor', 'nvarchar(max)')
    end as [in],
    [parent]
 FROM
@@ -16253,8 +17839,10 @@ CROSS APPLY (
       case
          when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
          then 'tie'
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') = 'role' -- of a tie or of a nexus
+         then Nodeset.keys.value('local-name(../..)', 'nvarchar(max)')
          else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
-      end 
+      end
    )
 ) p ([parent]);
 GO
@@ -16279,10 +17867,21 @@ WITH constructs AS (
       [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
       [version],
       [activation]
-   FROM 
+   FROM
       [dbo].[_Anchor] a
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '')
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
+   ) s (temporalization, suffix)
+   UNION ALL
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM
+      [dbo].[_Nexus] n
+   CROSS APPLY (
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -16293,7 +17892,7 @@ WITH constructs AS (
    FROM
       [dbo].[_Knot] k
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '')
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -16304,7 +17903,7 @@ WITH constructs AS (
    FROM
       [dbo].[_Attribute] b
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+      VALUES ('uni', ''), ('bi', '_Annex'), ('bi', '_Posit'), ('crt', '_Annex'), ('crt', '_Posit')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -16315,9 +17914,9 @@ WITH constructs AS (
    FROM
       [dbo].[_Tie] t
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+      VALUES ('uni', ''), ('bi', '_Annex'), ('bi', '_Posit'), ('crt', '_Annex'), ('crt', '_Posit')
    ) s (temporalization, suffix)
-), 
+),
 selectedSchema AS (
    SELECT TOP 1
       *
@@ -16338,8 +17937,8 @@ presentConstructs AS (
    ON
       S.[version] = C.[version]
    AND
-      S.temporalization = C.temporalization 
-), 
+      S.temporalization = C.temporalization
+),
 allConstructs AS (
    SELECT
       C.*
@@ -16360,13 +17959,13 @@ SELECT
       WHEN X.[activation] < S.[activation] THEN 'Past'
       ELSE 'Missing'
    END AS Existence
-FROM 
+FROM
    presentConstructs P
 FULL OUTER JOIN (
-   SELECT 
+   SELECT
       s.[name] + '.' + t.[name] AS [qualifiedName],
       t.[create_date]
-   FROM 
+   FROM
       sys.tables t
    JOIN
       sys.schemas s
@@ -16391,7 +17990,7 @@ AND
          constructs sub
       WHERE
          sub.[qualifiedName] = T.[qualifiedName]
-      AND 
+      AND
          sub.[activation] >= T.[create_date]
    )
 CROSS APPLY (
@@ -16429,12 +18028,12 @@ BEGIN
 	);
 	insert into #entities (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		[type],
 		qualifiedName
 	)
-	select 
+	select
 		o.[object_id],
 		s.[name],
 		o.[name],
@@ -16461,13 +18060,13 @@ BEGIN
 	);
 	insert into #exclusions (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	)
-	select 
+	select
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	from #entities
@@ -16485,13 +18084,13 @@ BEGIN
 	);
 	insert into #inclusions (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	)
-	select 
+	select
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	from #entities e
@@ -16501,48 +18100,48 @@ BEGIN
 	);
 	-- select * from #inclusions;
 	create table #downward (
-		referenced_id int not null unique, 
+		referenced_id int not null unique,
 		referenced_schema_name varchar(42) not null,
 		referenced_entity_name varchar(555) not null,
-		[level] smallint not null, 
-		[direction] char(1) not null, 
+		[level] smallint not null,
+		[direction] char(1) not null,
 		primary key (
 			referenced_schema_name,
 			referenced_entity_name
 		)
 	);
 	with downward as (
-		select 
-			r.referenced_schema_name, 
-			r.referenced_entity_name, 
-			-2 as [level], 
-			'D' as direction, 
+		select
+			r.referenced_schema_name,
+			r.referenced_entity_name,
+			-2 as [level],
+			'D' as direction,
 			r.referenced_id
-		from #inclusions 
+		from #inclusions
 		cross apply sys.dm_sql_referenced_entities(qualifiedName, 'OBJECT') r
 		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
 		union all
-		select 
-			r.referenced_schema_name, 
-			r.referenced_entity_name, 
-			d.[level] - 2, 
-			d.direction, 
+		select
+			r.referenced_schema_name,
+			r.referenced_entity_name,
+			d.[level] - 2,
+			d.direction,
 			r.referenced_id
 		from downward d
 		cross apply sys.dm_sql_referenced_entities(d.referenced_schema_name + '.' + d.referenced_entity_name, 'OBJECT') r
 		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
 	)
 	insert into #downward (
-		referenced_id, 
-		referenced_schema_name, 
-		referenced_entity_name, 
-		[level], 
+		referenced_id,
+		referenced_schema_name,
+		referenced_entity_name,
+		[level],
 		[direction]
 	)
-	select 
+	select
 		referenced_id,
-		referenced_schema_name, 
-		referenced_entity_name, 
+		referenced_schema_name,
+		referenced_entity_name,
 		max([level]) as [level],
 		min([direction]) as [direction]
 	from (
@@ -16553,9 +18152,9 @@ BEGIN
 	where not exists (
 		select top 1 [entity] from #exclusions where [schema] = referenced_schema_name and [entity] = referenced_entity_name
 	)
-	group by 
+	group by
 		referenced_id,
-		referenced_schema_name, 
+		referenced_schema_name,
 		referenced_entity_name;
 	-- select * from #downward order by level desc;
 	create table #entities_at_level (
@@ -16569,13 +18168,13 @@ BEGIN
 		)
 	);
 	insert into #entities_at_level (
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName,
 		[level]
 	)
-	select 
-		e.[schema], 
+	select
+		e.[schema],
 		e.[entity],
 		e.qualifiedName,
 		d.[level]
@@ -16587,30 +18186,30 @@ BEGIN
 		select top 1 [entity] from #exclusions where [schema] = e.[schema] and [entity] = e.[entity]
 	);
 	create table #upward (
-		referenced_id int not null unique, 
+		referenced_id int not null unique,
 		referenced_schema_name varchar(42) not null,
 		referenced_entity_name varchar(555) not null,
-		[level] smallint not null, 
-		[direction] char(1) not null, 
+		[level] smallint not null,
+		[direction] char(1) not null,
 		primary key (
 			referenced_schema_name,
 			referenced_entity_name
 		)
 	);
 	with upward as (
-		select 
-			referenced_schema_name, 
-			referenced_entity_name, 
-			[level], 
-			direction, 
+		select
+			referenced_schema_name,
+			referenced_entity_name,
+			[level],
+			direction,
 			referenced_id
 		from #downward
 		union all
-		select 
-			cast(r.referencing_schema_name as varchar(42)), 
-			cast(r.referencing_entity_name as varchar(555)), 
+		select
+			cast(r.referencing_schema_name as varchar(42)),
+			cast(r.referencing_entity_name as varchar(555)),
 			cast(u.[level] + 2 as smallint), -- series becomes 0, 2, 4, 6, ...
-			cast('U' as char(1)), 
+			cast('U' as char(1)),
 			r.referencing_id
 		from upward u
 		cross apply sys.dm_sql_referencing_entities(u.referenced_schema_name + '.' + u.referenced_entity_name, 'OBJECT') r
@@ -16620,36 +18219,36 @@ BEGIN
 		where r.referencing_id <> OBJECT_ID(u.referenced_schema_name + '.' + u.referenced_entity_name)
 	)
 	insert into #upward (
-		referenced_id, 
-		referenced_schema_name, 
-		referenced_entity_name, 
-		[level], 
+		referenced_id,
+		referenced_schema_name,
+		referenced_entity_name,
+		[level],
 		[direction]
 	)
-	select 
+	select
 		referenced_id,
-		referenced_schema_name, 
-		referenced_entity_name, 
+		referenced_schema_name,
+		referenced_entity_name,
 		max([level]) as [level],
 		min([direction]) as [direction]
-	from upward 
+	from upward
 	where referenced_schema_name + '.' + referenced_entity_name like @inclusionPattern
-	group by 
+	group by
 		referenced_id,
-		referenced_schema_name, 
+		referenced_schema_name,
 		referenced_entity_name;
 	with adjustment as (
-		select 
+		select
 			u.referenced_id,
 			fk.referenced_object_id,
 			1 as adjustment
 		from #upward u
 		join sys.foreign_keys fk
 		on fk.parent_object_id = u.referenced_id
-		union all 
+		union all
 		select
 			a.referenced_object_id,
-			fk.referenced_object_id, 
+			fk.referenced_object_id,
 			a.adjustment + 2 -- series becomes 1, 3, 5, 7, ... so ends up between already defined order
 		from adjustment a
 		join sys.foreign_keys fk
@@ -16661,7 +18260,7 @@ BEGIN
 	join adjustment a
 	on a.referenced_id = u.referenced_id;
 	select
-		case 
+		case
 			when t.objectType = 'CHECK'
 			then 'ALTER TABLE ' + n.parentName + ' DROP CONSTRAINT ' + u.referenced_entity_name
 			else 'DROP ' + t.objectType + ' ' + n.qualifiedName
@@ -16698,9 +18297,9 @@ BEGIN
 			'PROCEDURE',
 			'TABLE'
 		)
-	order by 
+	order by
 		[referenced_schema_name],
-		[level] desc, 
+		[level] desc,
 		[direction] asc,
 		case [type]
 			when 'C' then 0 -- CHECK CONSTRAINT
@@ -16857,8 +18456,39 @@ begin
 		for xml path('')
 	);
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-	-- build attribute copy
-	if (@temporalization = 'crt')
+	-- build nexus copy, after the anchors and knots that its roles reference
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			[dbo]._Nexus x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build attribute copy, of anchors and nexuses
+	if (@temporalization in ('bi', 'crt'))
 	begin
 		set @xml = (
 			select
@@ -16933,7 +18563,7 @@ begin
 	end
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
 	-- build tie copy
-	if (@temporalization = 'crt')
+	if (@temporalization in ('bi', 'crt'))
 	begin
 		set @xml = (
 			select
@@ -17046,7 +18676,16 @@ begin
 			union all
 			select
 				'l' + name as name,
-				3 as prio,
+				3 as prio, -- after the ties that may reference a nexus, before what its roles reference
+				'Metadata' + mnemonic as metadataColumn
+			from
+				[dbo]._Nexus
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				'l' + name as name,
+				4 as prio,
 				'Metadata' + mnemonic as metadataColumn
 			from
 				[dbo]._Anchor
@@ -17055,7 +18694,7 @@ begin
 			union all
 			select
 				name,
-				4 as prio,
+				5 as prio,
 				'Metadata' + mnemonic as metadataColumn
 			from
 				[dbo]._Knot
@@ -17082,17 +18721,17 @@ go
 if OBJECT_ID('dbo._FindWhatToRemove', 'P') is not null
 drop proc [dbo].[_FindWhatToRemove];
 go
--- _FindWhatToRemove finds what else to remove given 
+-- _FindWhatToRemove finds what else to remove given
 -- some input data containing data about to be removed.
 --
---	Note that the table #removed must be created and 
---	have at least one row before calling this SP. This 
+--	Note that the table #removed must be created and
+--	have at least one row before calling this SP. This
 --	table will be populated with additional rows during
 --	the walking of the ties.
 --
---	Parameters: 
+--	Parameters:
 --
---	@current	The mnemonic of the anchor in which to 
+--	@current	The mnemonic of the anchor in which to
 --	start the tie walking.
 --	@forbid	Comma separated list of anchor mnemonics
 --	that never should be walked over.
@@ -17108,28 +18747,28 @@ go
 --	drop table #visited;
 --
 --	create table #visited (
---	Visited varchar(max), 
+--	Visited varchar(max),
 --	CurrentRole varchar(42),
 --	CurrentMnemonic char(2),
---	Occurrences int, 
---	Tie varchar(555), 
+--	Occurrences int,
+--	Tie varchar(555),
 --	AnchorRole varchar(42),
---	AnchorMnemonic char(2), 
+--	AnchorMnemonic char(2),
 --	VisitingOrder int
 --	);
 --
 --	if object_id('tempdb..#removed') is not null
 --	drop table #removed;
 --	create table #removed (
---	AnchorMnemonic char(2), 
---	AnchorID int, 
+--	AnchorMnemonic char(2),
+--	AnchorID int,
 --	primary key (
 --	AnchorMnemonic,
 --	AnchorID
 --	)
 --	);
 --
---	insert into #removed 
+--	insert into #removed
 --	values ('CO', 3);
 --
 --	insert into #visited
@@ -17138,17 +18777,17 @@ go
 --	select * from #visited;
 --	select * from #removed;
 create proc [dbo].[_FindWhatToRemove] (
-	@current char(2), 
+	@current char(2),
 	@forbid varchar(max) = null,
 	@visited varchar(max) = null
 )
-as 
+as
 begin
-	-- dummy creation to make intellisense work 
+	-- dummy creation to make intellisense work
 	if object_id('tempdb..#removed') is null
 	create table #removed (
-		AnchorMnemonic char(2), 
-		AnchorID int, 
+		AnchorMnemonic char(2),
+		AnchorID int,
 		primary key (
 			AnchorMnemonic,
 			AnchorID
@@ -17163,28 +18802,32 @@ begin
 			select
 				*
 			from (
-				select [schema].query('//tie[anchorRole[@type = sql:variable("@current")]]')
+				select [schema].query('//tie[*[local-name() = "role" or local-name() = "anchorRole"][@type = sql:variable("@current")]]')
 				from [dbo]._Schema
 				where version = @version
 			) t (ties)
 		);
-		select 
+		select
 			@visited as Visited,
-			Tie.value('../anchorRole[@type = sql:variable("@current")][1]/@role', 'varchar(42)') as CurrentRole,
+			Tie.value('(../*[local-name() = "role" or local-name() = "anchorRole"][@type = sql:variable("@current")]/@role)[1]', 'varchar(42)') as CurrentRole,
 			@current as CurrentMnemonic,
 			cast(null as int) as Occurrences,
 			replace(Tie.query('
 				for $tie in ..
 				return <name> {
-					for $role in ($tie/anchorRole, $tie/knotRole)
+					for $role in $tie/*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
 					return concat($role/@type, "_", $role/@role)
 				} </name>
 			').value('name[1]', 'varchar(555)'), ' ', '_') as Tie,
 			Tie.value('@role', 'varchar(42)') as AnchorRole,
-			Tie.value('@type', 'char(2)') as AnchorMnemonic, 
+			Tie.value('@type', 'char(2)') as AnchorMnemonic,
 			row_number() over (order by (select 1)) as VisitingOrder
 		into #walk
-		from @ties.nodes('tie/anchorRole[@type != sql:variable("@current")]') AS t (Tie)
+		from @ties.nodes('tie/*[local-name() = "role" or local-name() = "anchorRole"][@type != sql:variable("@current")]') AS t (Tie)
+		-- the walk goes over anchors, not over the knots or nexuses that the roles of a tie may also have
+		delete #walk where AnchorMnemonic not in (
+			select mnemonic from [dbo]._Anchor where [version] = @version
+		);
 		delete #walk where @forbid + ',' like '%' + AnchorMnemonic + ',%';
 		declare @update varchar(max) = (
 			select '
@@ -17202,14 +18845,14 @@ begin
 			for xml path(''), type
 		).value('.', 'varchar(max)');
 		exec(@update);
-		select 
-			substring(Visited, 2, len(Visited)-1) as Visited, 
-			CurrentRole, 
-			CurrentMnemonic, 
+		select
+			substring(Visited, 2, len(Visited)-1) as Visited,
+			CurrentRole,
+			CurrentMnemonic,
 			Occurrences,
-			Tie, 
-			AnchorRole, 
-			AnchorMnemonic, 
+			Tie,
+			AnchorRole,
+			AnchorMnemonic,
 			VisitingOrder
 		from #walk;
 		declare @i int = 0;
@@ -17223,11 +18866,11 @@ begin
 		while @i < @max
 		begin
 			set @i = @i + 1;
-			select 
+			select
 				@occurrences = Occurrences,
 				@tie = Tie,
-				@next = AnchorMnemonic, 
-				@anchor_column = AnchorMnemonic + '_ID_' + AnchorRole, 
+				@next = AnchorMnemonic,
+				@anchor_column = AnchorMnemonic + '_ID_' + AnchorRole,
 				@current_column = CurrentMnemonic + '_ID_' + CurrentRole
 			from #walk
 			where VisitingOrder = @i;
@@ -17243,7 +18886,7 @@ begin
 					left join #removed seen
 					on seen.AnchorMnemonic = ''' + @next + '''
 					and seen.AnchorId = t.' + @anchor_column + '
-					where seen.AnchorId is null; 
+					where seen.AnchorId is null;
 				';
 				exec(@insert);
 				exec _FindWhatToRemove @next, @forbid, @visited;
@@ -17255,17 +18898,17 @@ go
 if OBJECT_ID('dbo._GenerateDeleteScript') is not null
 drop proc [dbo]._GenerateDeleteScript;
 go
--- _GenerateDeleteScript creates delete statements 
--- that can be used to empty a database or parts of 
+-- _GenerateDeleteScript creates delete statements
+-- that can be used to empty a database or parts of
 -- a database.
 --
---	Parameters: 
+--	Parameters:
 --
---	@anchorList	An optional parameter specified as a 
+--	@anchorList	An optional parameter specified as a
 -- list of anchors to be deleted. If not
 -- specified, delete statements will be
 -- generated for all anchors.
--- 
+--
 -- EXAMPLE:
 -- _GenerateDeleteScript @anchorList = 'AC PE'
 --
@@ -17279,7 +18922,7 @@ begin
 		select max([version]) from _Schema
 	);
 	select a.[capsule] + '.' + a.[name] as qualifiedName, a.[mnemonic], a.[generator]
-	into #anchor 
+	into #anchor
 	from [dbo]._Anchor a
 	where a.[version] = @currentVersion
 	and (@anchorList is null or @anchorList like '%' + a.[mnemonic] + '%');
@@ -17290,7 +18933,7 @@ begin
 	on a.[mnemonic] = b.[anchorMnemonic]
 	where b.[version] = @currentVersion;
 	select distinct t.[capsule] + '.' + t.[name] as qualifiedName, t.[generator], t.[knots]
-	into #tie 
+	into #tie
 	from [dbo]._Tie t
 	join #anchor a
 	on t.[anchors] like '%' + a.[mnemonic] + '%'
@@ -17299,7 +18942,7 @@ begin
 	into #knot
 	from [dbo]._Knot k
 	outer apply (
-		select qualifiedName 
+		select qualifiedName
 		from #tie t
 		where t.[knots] like '%' + k.[mnemonic] + '%'
 	) kt
@@ -17325,8 +18968,8 @@ begin
 			select qualifiedName from #attribute
 		)
 	);
-	select 
-		case 
+	select
+		case
 			when ROW_NUMBER() over (order by ordering, qualifiedName) = 1
 			then 'DECLARE @deletedRows INT; ' + CHAR(13)
 			else ''
@@ -17337,11 +18980,11 @@ begin
 		CHAR(9) + 'DELETE TOP (' + cast(@batchSize as varchar(10)) + ') ' + qualifiedName + '; ' + CHAR(13) +
 		CHAR(9) + 'SET @deletedRows = @@ROWCOUNT; ' + CHAR(13) +
 		'END' + CHAR(13) +
-		case 
+		case
 			when [generator] = 'true'
-			then 'DBCC CHECKIDENT (''' + qualifiedName + ''', RESEED, 0); ' + CHAR(13) 
+			then 'DBCC CHECKIDENT (''' + qualifiedName + ''', RESEED, 0); ' + CHAR(13)
 			else ''
-		end as [text()] 
+		end as [text()]
 	from (
 		select 1 as ordering, qualifiedName, [generator] from #attribute
 		union all
@@ -17649,6 +19292,96 @@ An event, a single performance of a program held at a stage at a specific date a
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_Event';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Date and time when the event took place.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Number of people in the audience at the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Posit';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Revenue from ticket sales for the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Posit';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage at which the event was held.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program that was played at the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The type of the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

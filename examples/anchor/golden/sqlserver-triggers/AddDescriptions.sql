@@ -266,10 +266,26 @@ END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
 @value = '
-An event, with an attribute of its own.
+An event, with attributes of its own, a static one and a historized one.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_Event';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'SU_ID_for';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The subject the event is for.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'SU_ID_for';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -280,10 +296,24 @@ END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
 @value = '
-Static, as the attributes of a nexus are.
+Static.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_QTY_Event_Quantity';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_PLC_Event_Place';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Historized and not restatable, as an attribute of an anchor may be.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_PLC_Event_Place';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

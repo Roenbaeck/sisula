@@ -214,7 +214,7 @@ GO
 CREATE VIEW [dbo].[lST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -254,7 +254,7 @@ GO
 CREATE VIEW [dbo].[nST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -463,7 +463,7 @@ GO
 CREATE VIEW [dbo].[lAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -503,7 +503,7 @@ GO
 CREATE VIEW [dbo].[nAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -665,7 +665,7 @@ GO
 CREATE VIEW [dbo].[lPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM
@@ -705,7 +705,7 @@ GO
 CREATE VIEW [dbo].[nPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM

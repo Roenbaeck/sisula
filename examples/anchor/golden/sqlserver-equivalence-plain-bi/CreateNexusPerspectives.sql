@@ -84,10 +84,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rDAT]
     WHERE
-		[rDAT].EV_DAT_EV_ID = [EV].EV_ID
-	AND 
-		[rDAT].EV_DAT_Reliability = 1
-	ORDER BY
+        [rDAT].EV_DAT_EV_ID = [EV].EV_ID
+    AND
+        [rDAT].EV_DAT_Reliability = 1
+    ORDER BY
         [rDAT].EV_DAT_PositedAt DESC
 ) [DAT]
 OUTER APPLY (
@@ -102,10 +102,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rAUD]
     WHERE
-		[rAUD].EV_AUD_EV_ID = [EV].EV_ID
-	AND 
-		[rAUD].EV_AUD_Reliability = 1
-	ORDER BY
+        [rAUD].EV_AUD_EV_ID = [EV].EV_ID
+    AND
+        [rAUD].EV_AUD_Reliability = 1
+    ORDER BY
         [rAUD].EV_AUD_PositedAt DESC
 ) [AUD]
 OUTER APPLY (
@@ -120,10 +120,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rREV]
     WHERE
-		[rREV].EV_REV_EV_ID = [EV].EV_ID
-	AND 
-		[rREV].EV_REV_Reliability = 1
-	ORDER BY
+        [rREV].EV_REV_EV_ID = [EV].EV_ID
+    AND
+        [rREV].EV_REV_Reliability = 1
+    ORDER BY
         [rREV].EV_REV_PositedAt DESC
 ) [REV];
 GO
@@ -136,7 +136,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         DEFAULT,
         DEFAULT
     ) [EV];
@@ -144,7 +144,7 @@ GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pEV_Event viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].pEV_Event (
+CREATE FUNCTION [dbo].[pEV_Event] (
     @changingTimepoint datetime2
 )
 RETURNS TABLE AS RETURN
@@ -152,7 +152,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         @changingTimepoint,
         DEFAULT
     ) [EV];
@@ -160,13 +160,13 @@ GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nEV_Event viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].nEV_Event
+CREATE VIEW [dbo].[nEV_Event]
 AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         sysdatetime(),
         DEFAULT
     ) [EV];

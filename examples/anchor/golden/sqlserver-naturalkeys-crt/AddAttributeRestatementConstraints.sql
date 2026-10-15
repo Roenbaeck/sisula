@@ -13,6 +13,128 @@
 -- @assertion whether this posit is positively or negatively asserted, or unreliable
 --
 -- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfEV_STA_Event_Status restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcEV_STA_Event_Status restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfEV_STA_Event_Status', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfEV_STA_Event_Status] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id numeric(12,0);
+    DECLARE @value nvarchar(20);
+    DECLARE @changed datetime2;
+    SELECT
+        @id = EV_STA_EV_ID,
+        @value = EV_STA_Event_Status,
+        @changed = EV_STA_ChangedAt
+    FROM
+        [attributes].[EV_STA_Event_Status_Posit]
+    WHERE
+        EV_STA_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preEV_STA_Event_Status] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folEV_STA_Event_Status] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfEV_LVL_Event_Level restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcEV_LVL_Event_Level restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('attributes.rfEV_LVL_Event_Level', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [attributes].[rfEV_LVL_Event_Level] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id numeric(12,0);
+    DECLARE @value tinyint;
+    DECLARE @changed date;
+    SELECT
+        @id = EV_LVL_EV_ID,
+        @value = EV_LVL_PLV_ID,
+        @changed = EV_LVL_ChangedAt
+    FROM
+        [attributes].[EV_LVL_Event_Level_Posit]
+    WHERE
+        EV_LVL_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[preEV_LVL_Event_Level] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [attributes].[folEV_LVL_Event_Level] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
 -- rfST_NAM_Stage_Name restatement finder, also used by the insert and update triggers for idempotent attributes
 -- rcST_NAM_Stage_Name restatement constraint (available only in attributes that cannot have restatements)
 -----------------------------------------------------------------------------------------------------------------------
@@ -50,7 +172,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -61,7 +183,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -111,7 +233,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -122,7 +244,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -151,7 +273,7 @@ IF Object_ID('attributes.rfAC_NAM_Actor_Name', 'FN') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rfAC_NAM_Actor_Name] (
-        @posit smallint,
+        @posit int,
         @posited datetime2,
         @positor tinyint,
         @assertion char(1)
@@ -181,7 +303,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -192,7 +314,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -221,7 +343,7 @@ IF Object_ID('attributes.rfAC_PLV_Actor_ProfessionalLevel', 'FN') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rfAC_PLV_Actor_ProfessionalLevel] (
-        @posit smallint,
+        @posit int,
         @posited datetime2,
         @positor tinyint,
         @assertion char(1)
@@ -251,7 +373,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -262,7 +384,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -282,7 +404,7 @@ IF Object_ID('attributes.rfPR_LEN_Program_Length', 'FN') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rfPR_LEN_Program_Length] (
-        @posit bigint,
+        @posit int,
         @posited datetime2,
         @positor tinyint,
         @assertion char(1)
@@ -312,7 +434,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -323,7 +445,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )

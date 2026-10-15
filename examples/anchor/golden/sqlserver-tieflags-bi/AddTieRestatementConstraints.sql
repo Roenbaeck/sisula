@@ -16,7 +16,7 @@ DROP TRIGGER [ties].[rt_AC_partner_AC_with_ONG_currently];
 GO
 CREATE TRIGGER [ties].[rt_AC_partner_AC_with_ONG_currently] ON [ties].[AC_partner_AC_with_ONG_currently_Annex]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -34,9 +34,10 @@ BEGIN
             AC_ID_with asc,
             ONG_ID_currently asc,
             AC_partner_AC_with_ONG_currently_ChangedAt desc,
-            AC_partner_AC_with_ONG_currently_PositedAt desc
-        ), 
-        unique ( 
+            AC_partner_AC_with_ONG_currently_PositedAt desc,
+            AC_partner_AC_with_ONG_currently_Reliability desc
+        ),
+        unique (
             AC_partner_AC_with_ONG_currently_ID,
             AC_partner_AC_with_ONG_currently_PositedAt
         )
@@ -50,7 +51,7 @@ BEGIN
         AC_ID_partner,
         AC_ID_with,
         ONG_ID_currently
-    ) 
+    )
     SELECT
         i.AC_partner_AC_with_ONG_currently_ID,
         i.Metadata_AC_partner_AC_with_ONG_currently,
@@ -62,9 +63,9 @@ BEGIN
         p.ONG_ID_currently
     FROM
         inserted i
-    JOIN 
+    JOIN
         [ties].[AC_partner_AC_with_ONG_currently_Posit] p
-    ON 
+    ON
         p.AC_partner_AC_with_ONG_currently_ID = i.AC_partner_AC_with_ONG_currently_ID; -- the posit has already been created
     INSERT INTO @inserted (
         AC_partner_AC_with_ONG_currently_ID,
@@ -75,7 +76,7 @@ BEGIN
         AC_ID_partner,
         AC_ID_with,
         ONG_ID_currently
-    ) 
+    )
     SELECT
         p.AC_partner_AC_with_ONG_currently_ID,
         p.Metadata_AC_partner_AC_with_ONG_currently,
@@ -90,8 +91,8 @@ BEGIN
             AC_ID_partner,
             AC_ID_with,
             ONG_ID_currently
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [ties].[AC_partner_AC_with_ONG_currently] p
@@ -101,7 +102,7 @@ BEGIN
         p.AC_ID_with = i.AC_ID_with
     AND
         p.ONG_ID_currently = i.ONG_ID_currently
-    LEFT JOIN 
+    LEFT JOIN
         @inserted x
     ON
         x.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
@@ -110,13 +111,13 @@ BEGIN
     WHERE
         x.AC_partner_AC_with_ONG_currently_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @inserted a
     OUTER APPLY (
         SELECT TOP 1
             x.AC_partner_AC_with_ONG_currently_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.AC_partner_AC_with_ONG_currently_ID = a.AC_partner_AC_with_ONG_currently_ID
@@ -124,11 +125,11 @@ BEGIN
             x.AC_partner_AC_with_ONG_currently_PositedAt < a.AC_partner_AC_with_ONG_currently_PositedAt
         ORDER BY
             x.AC_partner_AC_with_ONG_currently_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.AC_partner_AC_with_ONG_currently_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.AC_partner_AC_with_ONG_currently_ID = a.AC_partner_AC_with_ONG_currently_ID
@@ -136,7 +137,7 @@ BEGIN
             x.AC_partner_AC_with_ONG_currently_PositedAt > a.AC_partner_AC_with_ONG_currently_PositedAt
         ORDER BY
             x.AC_partner_AC_with_ONG_currently_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.AC_partner_AC_with_ONG_currently_Reliability = 1 AND fol.AC_partner_AC_with_ONG_currently_Reliability = 0)
     OR
@@ -145,7 +146,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted a
         CROSS APPLY (
             SELECT TOP 1
@@ -163,10 +164,11 @@ BEGIN
                 h.ONG_ID_currently = a.ONG_ID_currently
             AND
                 h.AC_partner_AC_with_ONG_currently_ChangedAt < a.AC_partner_AC_with_ONG_currently_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
-                h.AC_partner_AC_with_ONG_currently_PositedAt DESC
-        ) pre 
+                h.AC_partner_AC_with_ONG_currently_PositedAt DESC,
+                h.AC_partner_AC_with_ONG_currently_Reliability DESC
+        ) pre
         WHERE
             a.AC_ID_partner = pre.AC_ID_partner
         AND
@@ -193,7 +195,7 @@ DROP TRIGGER [ties].[rt_AC_part_PR_in_RAT_got];
 GO
 CREATE TRIGGER [ties].[rt_AC_part_PR_in_RAT_got] ON [ties].[AC_part_PR_in_RAT_got_Annex]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -210,9 +212,10 @@ BEGIN
             AC_ID_part asc,
             PR_ID_in asc,
             AC_part_PR_in_RAT_got_ChangedAt desc,
-            AC_part_PR_in_RAT_got_PositedAt desc
-        ), 
-        unique ( 
+            AC_part_PR_in_RAT_got_PositedAt desc,
+            AC_part_PR_in_RAT_got_Reliability desc
+        ),
+        unique (
             AC_part_PR_in_RAT_got_ID,
             AC_part_PR_in_RAT_got_PositedAt
         )
@@ -226,7 +229,7 @@ BEGIN
         AC_ID_part,
         PR_ID_in,
         RAT_ID_got
-    ) 
+    )
     SELECT
         i.AC_part_PR_in_RAT_got_ID,
         i.Metadata_AC_part_PR_in_RAT_got,
@@ -238,9 +241,9 @@ BEGIN
         p.RAT_ID_got
     FROM
         inserted i
-    JOIN 
+    JOIN
         [ties].[AC_part_PR_in_RAT_got_Posit] p
-    ON 
+    ON
         p.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID; -- the posit has already been created
     INSERT INTO @inserted (
         AC_part_PR_in_RAT_got_ID,
@@ -251,7 +254,7 @@ BEGIN
         AC_ID_part,
         PR_ID_in,
         RAT_ID_got
-    ) 
+    )
     SELECT
         p.AC_part_PR_in_RAT_got_ID,
         p.Metadata_AC_part_PR_in_RAT_got,
@@ -265,8 +268,8 @@ BEGIN
         SELECT DISTINCT
             AC_ID_part,
             PR_ID_in
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [ties].[AC_part_PR_in_RAT_got] p
@@ -274,7 +277,7 @@ BEGIN
         p.AC_ID_part = i.AC_ID_part
     AND
         p.PR_ID_in = i.PR_ID_in
-    LEFT JOIN 
+    LEFT JOIN
         @inserted x
     ON
         x.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
@@ -283,13 +286,13 @@ BEGIN
     WHERE
         x.AC_part_PR_in_RAT_got_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @inserted a
     OUTER APPLY (
         SELECT TOP 1
             x.AC_part_PR_in_RAT_got_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.AC_part_PR_in_RAT_got_ID = a.AC_part_PR_in_RAT_got_ID
@@ -297,11 +300,11 @@ BEGIN
             x.AC_part_PR_in_RAT_got_PositedAt < a.AC_part_PR_in_RAT_got_PositedAt
         ORDER BY
             x.AC_part_PR_in_RAT_got_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.AC_part_PR_in_RAT_got_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.AC_part_PR_in_RAT_got_ID = a.AC_part_PR_in_RAT_got_ID
@@ -309,7 +312,7 @@ BEGIN
             x.AC_part_PR_in_RAT_got_PositedAt > a.AC_part_PR_in_RAT_got_PositedAt
         ORDER BY
             x.AC_part_PR_in_RAT_got_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.AC_part_PR_in_RAT_got_Reliability = 1 AND fol.AC_part_PR_in_RAT_got_Reliability = 0)
     OR
@@ -318,7 +321,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted a
         CROSS APPLY (
             SELECT TOP 1
@@ -334,10 +337,11 @@ BEGIN
                 h.PR_ID_in = a.PR_ID_in
             AND
                 h.AC_part_PR_in_RAT_got_ChangedAt < a.AC_part_PR_in_RAT_got_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_part_PR_in_RAT_got_ChangedAt DESC,
-                h.AC_part_PR_in_RAT_got_PositedAt DESC
-        ) pre 
+                h.AC_part_PR_in_RAT_got_PositedAt DESC,
+                h.AC_part_PR_in_RAT_got_Reliability DESC
+        ) pre
         WHERE
             a.AC_ID_part = pre.AC_ID_part
         AND
@@ -364,7 +368,7 @@ DROP TRIGGER [ties].[rt_PR_content_ST_location_EV_of];
 GO
 CREATE TRIGGER [ties].[rt_PR_content_ST_location_EV_of] ON [ties].[PR_content_ST_location_EV_of_Annex]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -382,9 +386,10 @@ BEGIN
             ST_ID_location asc,
             EV_ID_of asc,
             PR_content_ST_location_EV_of_ChangedAt desc,
-            PR_content_ST_location_EV_of_PositedAt desc
-        ), 
-        unique ( 
+            PR_content_ST_location_EV_of_PositedAt desc,
+            PR_content_ST_location_EV_of_Reliability desc
+        ),
+        unique (
             PR_content_ST_location_EV_of_ID,
             PR_content_ST_location_EV_of_PositedAt
         )
@@ -398,7 +403,7 @@ BEGIN
         PR_ID_content,
         ST_ID_location,
         EV_ID_of
-    ) 
+    )
     SELECT
         i.PR_content_ST_location_EV_of_ID,
         i.Metadata_PR_content_ST_location_EV_of,
@@ -410,9 +415,9 @@ BEGIN
         p.EV_ID_of
     FROM
         inserted i
-    JOIN 
+    JOIN
         [ties].[PR_content_ST_location_EV_of_Posit] p
-    ON 
+    ON
         p.PR_content_ST_location_EV_of_ID = i.PR_content_ST_location_EV_of_ID; -- the posit has already been created
     INSERT INTO @inserted (
         PR_content_ST_location_EV_of_ID,
@@ -423,7 +428,7 @@ BEGIN
         PR_ID_content,
         ST_ID_location,
         EV_ID_of
-    ) 
+    )
     SELECT
         p.PR_content_ST_location_EV_of_ID,
         p.Metadata_PR_content_ST_location_EV_of,
@@ -438,8 +443,8 @@ BEGIN
             PR_ID_content,
             ST_ID_location,
             EV_ID_of
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [ties].[PR_content_ST_location_EV_of] p
@@ -449,7 +454,7 @@ BEGIN
         p.ST_ID_location = i.ST_ID_location
     AND
         p.EV_ID_of = i.EV_ID_of
-    LEFT JOIN 
+    LEFT JOIN
         @inserted x
     ON
         x.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
@@ -458,13 +463,13 @@ BEGIN
     WHERE
         x.PR_content_ST_location_EV_of_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @inserted a
     OUTER APPLY (
         SELECT TOP 1
             x.PR_content_ST_location_EV_of_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.PR_content_ST_location_EV_of_ID = a.PR_content_ST_location_EV_of_ID
@@ -472,11 +477,11 @@ BEGIN
             x.PR_content_ST_location_EV_of_PositedAt < a.PR_content_ST_location_EV_of_PositedAt
         ORDER BY
             x.PR_content_ST_location_EV_of_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.PR_content_ST_location_EV_of_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.PR_content_ST_location_EV_of_ID = a.PR_content_ST_location_EV_of_ID
@@ -484,7 +489,7 @@ BEGIN
             x.PR_content_ST_location_EV_of_PositedAt > a.PR_content_ST_location_EV_of_PositedAt
         ORDER BY
             x.PR_content_ST_location_EV_of_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.PR_content_ST_location_EV_of_Reliability = 1 AND fol.PR_content_ST_location_EV_of_Reliability = 0)
     OR
@@ -493,7 +498,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted a
         CROSS APPLY (
             SELECT TOP 1
@@ -511,10 +516,11 @@ BEGIN
                 h.EV_ID_of = a.EV_ID_of
             AND
                 h.PR_content_ST_location_EV_of_ChangedAt < a.PR_content_ST_location_EV_of_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.PR_content_ST_location_EV_of_ChangedAt DESC,
-                h.PR_content_ST_location_EV_of_PositedAt DESC
-        ) pre 
+                h.PR_content_ST_location_EV_of_PositedAt DESC,
+                h.PR_content_ST_location_EV_of_Reliability DESC
+        ) pre
         WHERE
             a.PR_ID_content = pre.PR_ID_content
         AND

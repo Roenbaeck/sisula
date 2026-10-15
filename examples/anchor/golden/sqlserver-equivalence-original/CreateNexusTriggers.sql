@@ -234,6 +234,14 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID_wasHeldAt))
+        RAISERROR('The role column ST_ID_wasHeldAt is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID_wasPlayed))
+        RAISERROR('The role column PR_ID_wasPlayed is not updatable.', 16, 1);
+    IF(UPDATE(ETY_ID_of))
+        RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
+    IF(UPDATE(ETY_EventType))
+        RAISERROR('The role column ETY_EventType is not updatable.', 16, 1);
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_DAT_Event_Date))

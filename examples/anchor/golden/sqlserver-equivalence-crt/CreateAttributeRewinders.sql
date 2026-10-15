@@ -4,7 +4,7 @@
 -- point in changing time, or an attribute annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that the 
+-- in time. The forwarder is the opposite of the rewinder, such that the
 -- union of the two will produce all rows in a posit table.
 --
 -- @positor the view of which positor to adopt (defaults to 0)
@@ -389,14 +389,14 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS varbinary(16)
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            pre.ST_NAM_Checksum 
+            pre.ST_NAM_Checksum
         FROM
             [dbo].[rST_NAM_Stage_Name](
                 @positor,
@@ -427,14 +427,14 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS varbinary(16)
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            fol.ST_NAM_Checksum 
+            fol.ST_NAM_Checksum
         FROM
             [dbo].[fST_NAM_Stage_Name](
                 @positor,
@@ -694,7 +694,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -732,7 +732,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -1002,14 +1002,14 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS varbinary(16)
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            pre.AC_NAM_Checksum 
+            pre.AC_NAM_Checksum
         FROM
             [dbo].[rAC_NAM_Actor_Name](
                 @positor,
@@ -1040,14 +1040,14 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS varbinary(16)
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            fol.AC_NAM_Checksum 
+            fol.AC_NAM_Checksum
         FROM
             [dbo].[fAC_NAM_Actor_Name](
                 @positor,
@@ -1306,7 +1306,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -1344,7 +1344,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint datetime2 = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS tinyint
@@ -1610,7 +1610,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint date = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS time
@@ -1648,7 +1648,7 @@ BEGIN
         @id int,
         @positor tinyint = 0,
         @changingTimepoint date = ''9999-12-31'',
-        @positingTimepoint datetime2 = ''9999-12-31'', 
+        @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
     RETURNS time

@@ -52,7 +52,7 @@ CREATE TABLE [dbo].[PLV_ProfessionalLevel] (
         PLV_ID asc
     ),
     constraint uqPLV_ProfessionalLevel unique (
-        PLV_Checksum 
+        PLV_Checksum
     )
 );
 GO

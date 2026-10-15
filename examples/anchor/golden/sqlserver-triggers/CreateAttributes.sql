@@ -20,6 +20,24 @@ CREATE TABLE [dbo].[EV_QTY_Event_Quantity] (
     )
 );
 GO
+-- Historized attribute table ----------------------------------------------------------------------------------------
+-- EV_PLC_Event_Place table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_PLC_Event_Place', 'U') IS NULL
+CREATE TABLE [dbo].[EV_PLC_Event_Place] (
+    EV_PLC_EV_ID int not null,
+    EV_PLC_Event_Place nvarchar(42) not null,
+    EV_PLC_ChangedAt datetime2 not null,
+    Metadata_EV_PLC int not null,
+    constraint fkEV_PLC_Event_Place foreign key (
+        EV_PLC_EV_ID
+    ) references [dbo].[EV_Event](EV_ID),
+    constraint pkEV_PLC_Event_Place primary key (
+        EV_PLC_EV_ID asc,
+        EV_PLC_ChangedAt desc
+    )
+);
+GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- SU_NAM_Subject_Name table (on SU_Subject)
 -----------------------------------------------------------------------------------------------------------------------

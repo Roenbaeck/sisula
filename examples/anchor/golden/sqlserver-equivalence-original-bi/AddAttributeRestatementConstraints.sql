@@ -15,8 +15,8 @@ IF Object_ID('attributes.rt_ST_AVG_Stage_Average', 'TR') IS NOT NULL
 DROP TRIGGER [attributes].[rt_ST_AVG_Stage_Average];
 GO
 CREATE TRIGGER [attributes].[rt_ST_AVG_Stage_Average] ON [attributes].[ST_AVG_Stage_Average_Annex]
-AFTER INSERT 
-AS 
+AFTER INSERT
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -27,11 +27,12 @@ BEGIN
         ST_AVG_ChangedAt datetime2 not null,
         ST_AVG_PositedAt datetime2 not null,
         ST_AVG_Reliability decimal(5,2) not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         primary key (
-            ST_ID asc, 
+            ST_ID asc,
             ST_AVG_ChangedAt desc,
-            ST_AVG_PositedAt desc
+            ST_AVG_PositedAt desc,
+            ST_AVG_Reliability desc
         ),
         unique (
             ST_AVG_ID,
@@ -55,11 +56,11 @@ BEGIN
         i.ST_AVG_PositedAt,
         i.ST_AVG_Reliability,
         p.UTL_ID
-    FROM 
+    FROM
         inserted i
-    JOIN 
+    JOIN
         [attributes].[ST_AVG_Stage_Average_Posit] p
-    ON 
+    ON
         p.ST_AVG_ID = i.ST_AVG_ID; -- the posit has already been created
     INSERT INTO @ST_AVG_Stage_Average (
         ST_AVG_ID,
@@ -78,13 +79,13 @@ BEGIN
         p.ST_AVG_PositedAt,
         p.ST_AVG_Reliability,
         p.UTL_ID
-    FROM 
+    FROM
         (SELECT DISTINCT ST_ID FROM @ST_AVG_Stage_Average) i
     JOIN
         [attributes].[ST_AVG_Stage_Average] p
-    ON 
+    ON
         p.ST_ID = i.ST_ID
-    LEFT JOIN 
+    LEFT JOIN
         @ST_AVG_Stage_Average x
     ON
         x.ST_AVG_ID = p.ST_AVG_ID
@@ -93,13 +94,13 @@ BEGIN
     WHERE
         x.ST_AVG_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @ST_AVG_Stage_Average a
     OUTER APPLY (
         SELECT TOP 1
             x.ST_AVG_Reliability
-        FROM 
+        FROM
             @ST_AVG_Stage_Average x
         WHERE
             x.ST_AVG_ID = a.ST_AVG_ID
@@ -107,11 +108,11 @@ BEGIN
             x.ST_AVG_PositedAt < a.ST_AVG_PositedAt
         ORDER BY
             x.ST_AVG_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.ST_AVG_Reliability
-        FROM 
+        FROM
             @ST_AVG_Stage_Average x
         WHERE
             x.ST_AVG_ID = a.ST_AVG_ID
@@ -119,7 +120,7 @@ BEGIN
             x.ST_AVG_PositedAt > a.ST_AVG_PositedAt
         ORDER BY
             x.ST_AVG_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.ST_AVG_Reliability = 1 AND fol.ST_AVG_Reliability = 0)
     OR
@@ -128,22 +129,23 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @ST_AVG_Stage_Average a
         CROSS APPLY (
             SELECT TOP 1
                 h.ST_ID,
                 h.ST_AVG_ChangedAt,
                 h.UTL_ID
-            FROM 
+            FROM
                 @ST_AVG_Stage_Average h
             WHERE
                 h.ST_ID = a.ST_ID
             AND
                 h.ST_AVG_ChangedAt < a.ST_AVG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_AVG_ChangedAt DESC,
-                h.ST_AVG_PositedAt DESC
+                h.ST_AVG_PositedAt DESC,
+                h.ST_AVG_Reliability DESC
         ) pre
         WHERE
             a.UTL_ID = pre.UTL_ID
@@ -166,8 +168,8 @@ IF Object_ID('attributes.rt_AC_NAM_Actor_Name', 'TR') IS NOT NULL
 DROP TRIGGER [attributes].[rt_AC_NAM_Actor_Name];
 GO
 CREATE TRIGGER [attributes].[rt_AC_NAM_Actor_Name] ON [attributes].[AC_NAM_Actor_Name_Annex]
-AFTER INSERT 
-AS 
+AFTER INSERT
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -180,9 +182,10 @@ BEGIN
         AC_NAM_Reliability decimal(5,2) not null,
         AC_NAM_Actor_Name varbinary(max) not null,
         primary key (
-            AC_ID asc, 
+            AC_ID asc,
             AC_NAM_ChangedAt desc,
-            AC_NAM_PositedAt desc
+            AC_NAM_PositedAt desc,
+            AC_NAM_Reliability desc
         ),
         unique (
             AC_NAM_ID,
@@ -206,11 +209,11 @@ BEGIN
         i.AC_NAM_PositedAt,
         i.AC_NAM_Reliability,
         p.AC_NAM_Actor_Name
-    FROM 
+    FROM
         inserted i
-    JOIN 
+    JOIN
         [attributes].[AC_NAM_Actor_Name_Posit] p
-    ON 
+    ON
         p.AC_NAM_ID = i.AC_NAM_ID; -- the posit has already been created
     INSERT INTO @AC_NAM_Actor_Name (
         AC_NAM_ID,
@@ -229,13 +232,13 @@ BEGIN
         p.AC_NAM_PositedAt,
         p.AC_NAM_Reliability,
         p.AC_NAM_Actor_Name
-    FROM 
+    FROM
         (SELECT DISTINCT AC_ID FROM @AC_NAM_Actor_Name) i
     JOIN
         [attributes].[AC_NAM_Actor_Name] p
-    ON 
+    ON
         p.AC_ID = i.AC_ID
-    LEFT JOIN 
+    LEFT JOIN
         @AC_NAM_Actor_Name x
     ON
         x.AC_NAM_ID = p.AC_NAM_ID
@@ -244,13 +247,13 @@ BEGIN
     WHERE
         x.AC_NAM_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @AC_NAM_Actor_Name a
     OUTER APPLY (
         SELECT TOP 1
             x.AC_NAM_Reliability
-        FROM 
+        FROM
             @AC_NAM_Actor_Name x
         WHERE
             x.AC_NAM_ID = a.AC_NAM_ID
@@ -258,11 +261,11 @@ BEGIN
             x.AC_NAM_PositedAt < a.AC_NAM_PositedAt
         ORDER BY
             x.AC_NAM_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.AC_NAM_Reliability
-        FROM 
+        FROM
             @AC_NAM_Actor_Name x
         WHERE
             x.AC_NAM_ID = a.AC_NAM_ID
@@ -270,7 +273,7 @@ BEGIN
             x.AC_NAM_PositedAt > a.AC_NAM_PositedAt
         ORDER BY
             x.AC_NAM_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.AC_NAM_Reliability = 1 AND fol.AC_NAM_Reliability = 0)
     OR
@@ -279,22 +282,23 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @AC_NAM_Actor_Name a
         CROSS APPLY (
             SELECT TOP 1
                 h.AC_ID,
                 h.AC_NAM_ChangedAt,
                 h.AC_NAM_Actor_Name
-            FROM 
+            FROM
                 @AC_NAM_Actor_Name h
             WHERE
                 h.AC_ID = a.AC_ID
             AND
                 h.AC_NAM_ChangedAt < a.AC_NAM_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_NAM_ChangedAt DESC,
-                h.AC_NAM_PositedAt DESC
+                h.AC_NAM_PositedAt DESC,
+                h.AC_NAM_Reliability DESC
         ) pre
         WHERE
             a.AC_NAM_Actor_Name = pre.AC_NAM_Actor_Name

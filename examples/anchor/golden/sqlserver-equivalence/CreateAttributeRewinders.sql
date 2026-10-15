@@ -26,7 +26,7 @@ BEGIN
         ST_NAM_Stage_Name,
         ST_NAM_ChangedAt
     FROM
-        [dbo].[eST_NAM_Stage_Name](@equivalent) 
+        [dbo].[eST_NAM_Stage_Name](@equivalent)
     WHERE
         ST_NAM_ChangedAt <= @changingTimepoint;
     ');
@@ -73,7 +73,7 @@ BEGIN
         AC_NAM_Actor_Name,
         AC_NAM_ChangedAt
     FROM
-        [dbo].[eAC_NAM_Actor_Name](@equivalent) 
+        [dbo].[eAC_NAM_Actor_Name](@equivalent)
     WHERE
         AC_NAM_ChangedAt <= @changingTimepoint;
     ');

@@ -4,7 +4,7 @@
 -- point in changing time, or a tie annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that 
+-- in time. The forwarder is the opposite of the rewinder, such that
 -- their union corresponds to all rows in the posit table.
 --
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
@@ -99,7 +99,7 @@ BEGIN
         a.SU_holder_OB_item_GRD_grade_PositedAt,
         a.SU_holder_OB_item_GRD_grade_Reliability
     FROM
-        [dbo].[rSU_holder_OB_item_GRD_grade_Posit](@changingTimepoint) p 
+        [dbo].[rSU_holder_OB_item_GRD_grade_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_holder_OB_item_GRD_grade_Annex](@positingTimepoint) a
     ON
@@ -139,7 +139,7 @@ BEGIN
         a.SU_holder_OB_item_GRD_grade_PositedAt,
         a.SU_holder_OB_item_GRD_grade_Reliability
     FROM
-        [dbo].[fSU_holder_OB_item_GRD_grade_Posit](@changingTimepoint) p 
+        [dbo].[fSU_holder_OB_item_GRD_grade_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_holder_OB_item_GRD_grade_Annex](@positingTimepoint) a
     ON
@@ -247,7 +247,7 @@ BEGIN
         a.SU_keeper_OB_thing_GRD_rank_PositedAt,
         a.SU_keeper_OB_thing_GRD_rank_Reliability
     FROM
-        [dbo].[rSU_keeper_OB_thing_GRD_rank_Posit](@changingTimepoint) p 
+        [dbo].[rSU_keeper_OB_thing_GRD_rank_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_keeper_OB_thing_GRD_rank_Annex](@positingTimepoint) a
     ON
@@ -287,7 +287,7 @@ BEGIN
         a.SU_keeper_OB_thing_GRD_rank_PositedAt,
         a.SU_keeper_OB_thing_GRD_rank_Reliability
     FROM
-        [dbo].[fSU_keeper_OB_thing_GRD_rank_Posit](@changingTimepoint) p 
+        [dbo].[fSU_keeper_OB_thing_GRD_rank_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_keeper_OB_thing_GRD_rank_Annex](@positingTimepoint) a
     ON
@@ -488,7 +488,7 @@ BEGIN
         a.SU_partner_SU_with_PositedAt,
         a.SU_partner_SU_with_Reliability
     FROM
-        [dbo].[rSU_partner_SU_with_Posit](@changingTimepoint) p 
+        [dbo].[rSU_partner_SU_with_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_partner_SU_with_Annex](@positingTimepoint) a
     ON
@@ -527,7 +527,7 @@ BEGIN
         a.SU_partner_SU_with_PositedAt,
         a.SU_partner_SU_with_Reliability
     FROM
-        [dbo].[fSU_partner_SU_with_Posit](@changingTimepoint) p 
+        [dbo].[fSU_partner_SU_with_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rSU_partner_SU_with_Annex](@positingTimepoint) a
     ON

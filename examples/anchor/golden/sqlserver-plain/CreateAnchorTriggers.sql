@@ -110,7 +110,7 @@ BEGIN
     SELECT DISTINCT
         i.ST_ID,
         i.ST_AVG_ChangedAt,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID) 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -125,7 +125,7 @@ BEGIN
     )
     SELECT DISTINCT
         i.ST_ID,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID) 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -282,12 +282,12 @@ BEGIN
         IF(@@ROWCOUNT > 0)
         BEGIN
             IF OBJECT_ID('[dbo].[ST_MIN_Stage_Minimum_Deleted]') is null
-            SELECT TOP 0 
-                *, 
+            SELECT TOP 0
+                *,
                 CAST(null as datetime2) as ST_MIN_Deleted
-            INTO 
+            INTO
                 [dbo].[ST_MIN_Stage_Minimum_Deleted]
-            FROM 
+            FROM
                 [dbo].[ST_MIN_Stage_Minimum];
             DELETE [MIN]
             OUTPUT
@@ -473,7 +473,7 @@ BEGIN
     )
     SELECT DISTINCT
         i.AC_ID,
-        ISNULL(i.GEN_ID, [kGEN].GEN_ID) 
+        ISNULL(i.GEN_ID, [kGEN].GEN_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -490,13 +490,13 @@ BEGIN
     SELECT DISTINCT
         i.AC_ID,
         i.AC_PLV_ChangedAt,
-        ISNULL(i.PLV_ID, [kPLV].PLV_ID) 
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID)
     FROM
         @inserted i
     LEFT JOIN
         [dbo].[PLV_ProfessionalLevel] [kPLV]
     ON
-        [kPLV].PLV_Checksum = i.PLV_Checksum 
+        [kPLV].PLV_Checksum = i.PLV_Checksum
     WHERE
         ISNULL(i.PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -592,7 +592,7 @@ BEGIN
         LEFT JOIN
             [dbo].[PLV_ProfessionalLevel] [kPLV]
         ON
-            [kPLV].PLV_Checksum = dbo.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
+            [kPLV].PLV_Checksum = dbo.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))
         LEFT JOIN
             deleted d
         ON

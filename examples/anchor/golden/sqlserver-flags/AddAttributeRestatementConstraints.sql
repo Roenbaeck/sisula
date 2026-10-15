@@ -16,7 +16,7 @@ DROP TRIGGER [attributes].[rt_EV_STA_Event_Status];
 GO
 CREATE TRIGGER [attributes].[rt_EV_STA_Event_Status] ON [attributes].[EV_STA_Event_Status]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -27,7 +27,7 @@ BEGIN
         EV_STA_ChangedAt datetime2 not null,
         EV_STA_Event_Status nvarchar(20) not null,
         primary key(
-            EV_STA_EV_ID asc, 
+            EV_STA_EV_ID asc,
             EV_STA_ChangedAt desc
         )
     );
@@ -44,7 +44,7 @@ BEGIN
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
-    FROM 
+    FROM
         inserted;
     INSERT INTO @EV_STA_Event_Status (
         EV_STA_EV_ID,
@@ -60,17 +60,17 @@ BEGIN
         p.EV_STA_ChangedAt,
         p.EV_STA_Event_Status
     FROM (
-        SELECT DISTINCT 
+        SELECT DISTINCT
             EV_STA_EQ,
-            EV_STA_EV_ID 
-        FROM 
+            EV_STA_EV_ID
+        FROM
             @EV_STA_Event_Status
-    ) i 
+    ) i
     JOIN
         [attributes].[EV_STA_Event_Status] p
-    ON 
+    ON
         p.EV_STA_EQ = i.EV_STA_EQ
-    AND 
+    AND
         p.EV_STA_EV_ID = i.EV_STA_EV_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -79,7 +79,7 @@ BEGIN
             @EV_STA_Event_Status x
         WHERE
             p.EV_STA_EQ = i.EV_STA_EQ
-        AND 
+        AND
             x.EV_STA_EV_ID = p.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = p.EV_STA_ChangedAt
@@ -88,7 +88,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @EV_STA_Event_Status i
         CROSS APPLY (
             SELECT TOP 1
@@ -96,15 +96,15 @@ BEGIN
                 h.EV_STA_EV_ID,
                 h.EV_STA_ChangedAt,
                 h.EV_STA_Event_Status
-            FROM 
+            FROM
                 @EV_STA_Event_Status h
             WHERE
                 h.EV_STA_EQ = i.EV_STA_EQ
-            AND 
+            AND
                 h.EV_STA_EV_ID = i.EV_STA_EV_ID
             AND
                 h.EV_STA_ChangedAt < i.EV_STA_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.EV_STA_ChangedAt DESC
         ) pre
         WHERE
@@ -127,7 +127,7 @@ DROP TRIGGER [attributes].[rt_EV_LVL_Event_Level];
 GO
 CREATE TRIGGER [attributes].[rt_EV_LVL_Event_Level] ON [attributes].[EV_LVL_Event_Level]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -135,9 +135,9 @@ BEGIN
         EV_LVL_EV_ID numeric(12,0) not null,
         Metadata_EV_LVL int not null,
         EV_LVL_ChangedAt date not null,
-        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_PLV_ID tinyint not null,
         primary key(
-            EV_LVL_EV_ID asc, 
+            EV_LVL_EV_ID asc,
             EV_LVL_ChangedAt desc
         )
     );
@@ -152,7 +152,7 @@ BEGIN
         Metadata_EV_LVL,
         EV_LVL_ChangedAt,
         EV_LVL_PLV_ID
-    FROM 
+    FROM
         inserted;
     INSERT INTO @EV_LVL_Event_Level (
         EV_LVL_EV_ID,
@@ -166,14 +166,14 @@ BEGIN
         p.EV_LVL_ChangedAt,
         p.EV_LVL_PLV_ID
     FROM (
-        SELECT DISTINCT 
-            EV_LVL_EV_ID 
-        FROM 
+        SELECT DISTINCT
+            EV_LVL_EV_ID
+        FROM
             @EV_LVL_Event_Level
-    ) i 
+    ) i
     JOIN
         [attributes].[EV_LVL_Event_Level] p
-    ON 
+    ON
         p.EV_LVL_EV_ID = i.EV_LVL_EV_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -189,20 +189,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @EV_LVL_Event_Level i
         CROSS APPLY (
             SELECT TOP 1
                 h.EV_LVL_EV_ID,
                 h.EV_LVL_ChangedAt,
                 h.EV_LVL_PLV_ID
-            FROM 
+            FROM
                 @EV_LVL_Event_Level h
             WHERE
                 h.EV_LVL_EV_ID = i.EV_LVL_EV_ID
             AND
                 h.EV_LVL_ChangedAt < i.EV_LVL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.EV_LVL_ChangedAt DESC
         ) pre
         WHERE
@@ -225,7 +225,7 @@ DROP TRIGGER [attributes].[rt_ST_AVG_Stage_Average];
 GO
 CREATE TRIGGER [attributes].[rt_ST_AVG_Stage_Average] ON [attributes].[ST_AVG_Stage_Average]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -233,9 +233,9 @@ BEGIN
         ST_AVG_ST_ID int not null,
         Metadata_ST_AVG int not null,
         ST_AVG_ChangedAt datetime2 not null,
-        ST_AVG_UTL_ID tinyint not null, 
+        ST_AVG_UTL_ID tinyint not null,
         primary key(
-            ST_AVG_ST_ID asc, 
+            ST_AVG_ST_ID asc,
             ST_AVG_ChangedAt desc
         )
     );
@@ -250,7 +250,7 @@ BEGIN
         Metadata_ST_AVG,
         ST_AVG_ChangedAt,
         ST_AVG_UTL_ID
-    FROM 
+    FROM
         inserted;
     INSERT INTO @ST_AVG_Stage_Average (
         ST_AVG_ST_ID,
@@ -264,14 +264,14 @@ BEGIN
         p.ST_AVG_ChangedAt,
         p.ST_AVG_UTL_ID
     FROM (
-        SELECT DISTINCT 
-            ST_AVG_ST_ID 
-        FROM 
+        SELECT DISTINCT
+            ST_AVG_ST_ID
+        FROM
             @ST_AVG_Stage_Average
-    ) i 
+    ) i
     JOIN
         [attributes].[ST_AVG_Stage_Average] p
-    ON 
+    ON
         p.ST_AVG_ST_ID = i.ST_AVG_ST_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -287,20 +287,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @ST_AVG_Stage_Average i
         CROSS APPLY (
             SELECT TOP 1
                 h.ST_AVG_ST_ID,
                 h.ST_AVG_ChangedAt,
                 h.ST_AVG_UTL_ID
-            FROM 
+            FROM
                 @ST_AVG_Stage_Average h
             WHERE
                 h.ST_AVG_ST_ID = i.ST_AVG_ST_ID
             AND
                 h.ST_AVG_ChangedAt < i.ST_AVG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_AVG_ChangedAt DESC
         ) pre
         WHERE
@@ -323,7 +323,7 @@ DROP TRIGGER [attributes].[rt_AC_NAM_Actor_Name];
 GO
 CREATE TRIGGER [attributes].[rt_AC_NAM_Actor_Name] ON [attributes].[AC_NAM_Actor_Name]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -333,7 +333,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_Actor_Name varbinary(max) not null,
         primary key(
-            AC_NAM_AC_ID asc, 
+            AC_NAM_AC_ID asc,
             AC_NAM_ChangedAt desc
         )
     );
@@ -348,7 +348,7 @@ BEGIN
         Metadata_AC_NAM,
         AC_NAM_ChangedAt,
         AC_NAM_Actor_Name
-    FROM 
+    FROM
         inserted;
     INSERT INTO @AC_NAM_Actor_Name (
         AC_NAM_AC_ID,
@@ -362,14 +362,14 @@ BEGIN
         p.AC_NAM_ChangedAt,
         p.AC_NAM_Actor_Name
     FROM (
-        SELECT DISTINCT 
-            AC_NAM_AC_ID 
-        FROM 
+        SELECT DISTINCT
+            AC_NAM_AC_ID
+        FROM
             @AC_NAM_Actor_Name
-    ) i 
+    ) i
     JOIN
         [attributes].[AC_NAM_Actor_Name] p
-    ON 
+    ON
         p.AC_NAM_AC_ID = i.AC_NAM_AC_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -385,20 +385,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @AC_NAM_Actor_Name i
         CROSS APPLY (
             SELECT TOP 1
                 h.AC_NAM_AC_ID,
                 h.AC_NAM_ChangedAt,
                 h.AC_NAM_Actor_Name
-            FROM 
+            FROM
                 @AC_NAM_Actor_Name h
             WHERE
                 h.AC_NAM_AC_ID = i.AC_NAM_AC_ID
             AND
                 h.AC_NAM_ChangedAt < i.AC_NAM_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_NAM_ChangedAt DESC
         ) pre
         WHERE

@@ -268,6 +268,108 @@ GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Fact';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Date and time when the event took place.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_DAT_Event_Date_Fact';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Fact';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Number of people in the audience at the event.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_AUD_Event_Audience_Fact';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Fact';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Revenue from ticket sales for the event.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_REV_Event_Revenue_Fact';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_STA_Event_Status_Fact';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Status of the event, which may change until it has taken place.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_STA_Event_Status_Fact';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_LVL_Event_Level_Fact';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Professional level required for the event, over time.
+',
+@level0type = N'Schema', @level0name = 'attributes',
+@level1type = N'Table', @level1name = 'EV_LVL_Event_Level_Fact';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage at which the event was held.
+',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program that was played at the event.
+',
+@level0type = N'Schema', @level0name = 'nexuses',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'ties',
 @level1type = N'Table', @level1name = 'AC_partner_AC_with_ONG_currently_Fact';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556

@@ -135,15 +135,60 @@ BEGIN
     ON
         a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID;
     ');
-    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    -- Constraint ensuring that recorded and erased posits are temporally consistent: one posit at a time is asserted,
+    -- and a correction retracts what it corrects at the same positing time
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_part_PR_in_RAT_got]
     ON [dbo].[AC_part_PR_in_RAT_got] (
         AC_ID_part asc,
         PR_ID_in asc,
         AC_part_PR_in_RAT_got_ChangedAt desc,
-        AC_part_PR_in_RAT_got_PositedAt desc
+        AC_part_PR_in_RAT_got_PositedAt desc,
+        AC_part_PR_in_RAT_got_Reliability desc
     );
+    ');
+END
+GO
+-- the constraint of an assembled view made before corrections retracted what they correct has no reliability
+IF EXISTS (
+    SELECT TOP 1
+        42
+    FROM
+        sys.indexes x
+    WHERE
+        x.object_id = Object_ID('dbo.AC_part_PR_in_RAT_got', 'V')
+    AND
+        x.name = 'pkAC_part_PR_in_RAT_got'
+    AND NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            sys.index_columns c
+        JOIN
+            sys.columns k
+        ON
+            k.object_id = c.object_id
+        AND
+            k.column_id = c.column_id
+        WHERE
+            c.object_id = x.object_id
+        AND
+            c.index_id = x.index_id
+        AND
+            k.name = 'AC_part_PR_in_RAT_got_Reliability'
+    )
+)
+BEGIN
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkAC_part_PR_in_RAT_got]
+    ON [dbo].[AC_part_PR_in_RAT_got] (
+        AC_ID_part asc,
+        PR_ID_in asc,
+        AC_part_PR_in_RAT_got_ChangedAt desc,
+        AC_part_PR_in_RAT_got_PositedAt desc,
+        AC_part_PR_in_RAT_got_Reliability desc
+    )
+    WITH (DROP_EXISTING = ON);
     ');
 END
 GO
@@ -243,13 +288,56 @@ BEGIN
     ON
         a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID;
     ');
-    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    -- Constraint ensuring that recorded and erased posits are temporally consistent: one posit at a time is asserted,
+    -- and a correction retracts what it corrects at the same positing time
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkPR_content_ST_location_EV_of]
     ON [dbo].[PR_content_ST_location_EV_of] (
         EV_ID_of asc,
-        PR_content_ST_location_EV_of_PositedAt desc
+        PR_content_ST_location_EV_of_PositedAt desc,
+        PR_content_ST_location_EV_of_Reliability desc
     );
+    ');
+END
+GO
+-- the constraint of an assembled view made before corrections retracted what they correct has no reliability
+IF EXISTS (
+    SELECT TOP 1
+        42
+    FROM
+        sys.indexes x
+    WHERE
+        x.object_id = Object_ID('dbo.PR_content_ST_location_EV_of', 'V')
+    AND
+        x.name = 'pkPR_content_ST_location_EV_of'
+    AND NOT EXISTS (
+        SELECT TOP 1
+            42
+        FROM
+            sys.index_columns c
+        JOIN
+            sys.columns k
+        ON
+            k.object_id = c.object_id
+        AND
+            k.column_id = c.column_id
+        WHERE
+            c.object_id = x.object_id
+        AND
+            c.index_id = x.index_id
+        AND
+            k.name = 'PR_content_ST_location_EV_of_Reliability'
+    )
+)
+BEGIN
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkPR_content_ST_location_EV_of]
+    ON [dbo].[PR_content_ST_location_EV_of] (
+        EV_ID_of asc,
+        PR_content_ST_location_EV_of_PositedAt desc,
+        PR_content_ST_location_EV_of_Reliability desc
+    )
+    WITH (DROP_EXISTING = ON);
     ');
 END
 GO

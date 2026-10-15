@@ -51,7 +51,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_holder_OB_item_GRD_grade] x
-        WHERE 
+        WHERE
             x.SU_ID_holder = i.SU_ID_holder
         AND
             x.OB_ID_item = i.OB_ID_item
@@ -87,7 +87,7 @@ BEGIN
         RETURN;
     END
     INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade] (
-        Metadata_SU_holder_OB_item_GRD_grade, 
+        Metadata_SU_holder_OB_item_GRD_grade,
         SU_holder_OB_item_GRD_grade_ChangedAt,
         SU_ID_holder,
         OB_ID_item,
@@ -127,7 +127,7 @@ BEGIN
         i.SU_holder_OB_item_GRD_grade_ChangedAt,
         i.SU_ID_holder,
         i.OB_ID_item,
-        ISNULL(i.GRD_ID_grade, [GRD_grade].GRD_ID) 
+        ISNULL(i.GRD_ID_grade, [GRD_grade].GRD_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -162,7 +162,7 @@ BEGIN
         cast(CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_holder,
         i.OB_ID_item,
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END 
+        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
     FROM
         inserted i
     LEFT JOIN
@@ -170,7 +170,7 @@ BEGIN
     ON
         [GRD_grade].GRD_Grade = i.grade_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null 
+        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) OR
@@ -184,7 +184,7 @@ BEGIN
                 AND
                     d.OB_ID_item = i.OB_ID_item
                 AND
-                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END 
+                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
             )
         );
 END
@@ -251,7 +251,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_keeper_OB_thing_GRD_rank] x
-        WHERE 
+        WHERE
             x.SU_ID_keeper = i.SU_ID_keeper
         AND
             x.OB_ID_thing = i.OB_ID_thing
@@ -288,9 +288,9 @@ BEGIN
     END
     INSERT INTO @inserted
     SELECT
-        p.Metadata_SU_keeper_OB_thing_GRD_rank, 
+        p.Metadata_SU_keeper_OB_thing_GRD_rank,
         'X', -- existing data
-        p.SU_keeper_OB_thing_GRD_rank_ChangedAt, 
+        p.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         p.SU_ID_keeper,
         p.OB_ID_thing,
         p.GRD_ID_rank
@@ -298,8 +298,8 @@ BEGIN
         SELECT DISTINCT
             SU_ID_keeper,
             OB_ID_thing
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank] p
@@ -314,16 +314,16 @@ BEGIN
         GRD_ID_rank tinyint not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         x.SU_ID_keeper,
         x.OB_ID_thing,
         x.GRD_ID_rank
     FROM (
         DELETE t
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @inserted t
         OUTER APPLY (
             SELECT TOP 1
@@ -338,10 +338,10 @@ BEGIN
                 h.OB_ID_thing = t.OB_ID_thing
             AND
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt < t.SU_keeper_OB_thing_GRD_rank_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC
         ) pre
-        WHERE 
+        WHERE
             t.SU_ID_keeper = pre.SU_ID_keeper
         AND
             t.OB_ID_thing = pre.OB_ID_thing
@@ -352,11 +352,11 @@ BEGIN
         x.SU_keeper_OB_thing_GRD_rank_StatementType = 'X';
     -- delete the quenches (should be rare)
     DELETE t
-    FROM 
+    FROM
         [dbo].[SU_keeper_OB_thing_GRD_rank] t
-    JOIN 
+    JOIN
         @restated d
-    ON 
+    ON
         d.SU_keeper_OB_thing_GRD_rank_ChangedAt = t.SU_keeper_OB_thing_GRD_rank_ChangedAt
     AND
         d.SU_ID_keeper = t.SU_ID_keeper
@@ -365,7 +365,7 @@ BEGIN
     AND
         d.GRD_ID_rank = t.GRD_ID_rank
     INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank] (
-        Metadata_SU_keeper_OB_thing_GRD_rank, 
+        Metadata_SU_keeper_OB_thing_GRD_rank,
         SU_keeper_OB_thing_GRD_rank_ChangedAt,
         SU_ID_keeper,
         OB_ID_thing,
@@ -405,7 +405,7 @@ BEGIN
         i.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        ISNULL(i.GRD_ID_rank, [GRD_rank].GRD_ID) 
+        ISNULL(i.GRD_ID_rank, [GRD_rank].GRD_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -440,7 +440,7 @@ BEGIN
         cast(CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END 
+        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
     FROM
         inserted i
     LEFT JOIN
@@ -448,7 +448,7 @@ BEGIN
     ON
         [GRD_rank].GRD_Grade = i.rank_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null 
+        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) OR
@@ -462,7 +462,7 @@ BEGIN
                 AND
                     d.OB_ID_thing = i.OB_ID_thing
                 AND
-                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END 
+                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
             )
         );
 END
@@ -523,7 +523,7 @@ BEGIN
         RETURN;
     END
     INSERT INTO [dbo].[OB_part_SU_owner] (
-        Metadata_OB_part_SU_owner, 
+        Metadata_OB_part_SU_owner,
         OB_ID_part,
         SU_ID_owner
     )
@@ -538,7 +538,7 @@ BEGIN
             42
         FROM
             [dbo].[OB_part_SU_owner] x
-        WHERE 
+        WHERE
             x.OB_ID_part = i.OB_ID_part
         AND
             x.SU_ID_owner = i.SU_ID_owner
@@ -664,7 +664,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_partner_SU_with] x
-        WHERE 
+        WHERE
             x.SU_ID_partner = i.SU_ID_partner
         AND
             x.SU_ID_with = i.SU_ID_with
@@ -672,7 +672,7 @@ BEGIN
             x.SU_partner_SU_with_ChangedAt = i.SU_partner_SU_with_ChangedAt
     );
     INSERT INTO [dbo].[SU_partner_SU_with] (
-        Metadata_SU_partner_SU_with, 
+        Metadata_SU_partner_SU_with,
         SU_partner_SU_with_ChangedAt,
         SU_ID_partner,
         SU_ID_with

@@ -362,7 +362,7 @@ CREATE TABLE [attributes].[ST_LOC_Stage_Location_Fact] (
     ),
     constraint uqST_LOC_Stage_Location_Fact unique clustered (
         ST_LOC_ST_ID asc,
-        ST_LOC_Checksum asc 
+        ST_LOC_Checksum asc
     )
 );
 GO

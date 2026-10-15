@@ -50,7 +50,7 @@ BEGIN
             42
         FROM
             [dbo].[AC_partner_AC_with_ONG_currently] x
-        WHERE 
+        WHERE
             x.AC_ID_partner = i.AC_ID_partner
         AND
             x.AC_ID_with = i.AC_ID_with
@@ -96,7 +96,7 @@ BEGIN
         i.AC_partner_AC_with_ONG_currently_ChangedAt,
         i.AC_ID_partner,
         i.AC_ID_with,
-        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID) 
+        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -125,7 +125,7 @@ BEGIN
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
     FROM
         inserted i
     LEFT JOIN
@@ -137,7 +137,7 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
@@ -151,7 +151,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             )
         );
 END
@@ -206,7 +206,7 @@ BEGIN
             42
         FROM
             [dbo].[AC_subset_PN_of] x
-        WHERE 
+        WHERE
             x.AC_ID_subset = i.AC_ID_subset
         AND
             x.PN_ID_of = i.PN_ID_of
@@ -318,7 +318,7 @@ BEGIN
             42
         FROM
             [dbo].[EV_in_AC_wasCast] x
-        WHERE 
+        WHERE
             x.EV_ID_in = i.EV_ID_in
         AND
             x.AC_ID_wasCast = i.AC_ID_wasCast
@@ -404,7 +404,7 @@ BEGIN
             42
         FROM
             [dbo].[AC_part_PR_in_RAT_got] x
-        WHERE 
+        WHERE
             x.AC_ID_part = i.AC_ID_part
         AND
             x.PR_ID_in = i.PR_ID_in
@@ -476,7 +476,7 @@ BEGIN
         i.AC_part_PR_in_RAT_got_ChangedAt,
         i.AC_ID_part,
         i.PR_ID_in,
-        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID) 
+        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -509,7 +509,7 @@ BEGIN
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
     FROM
         inserted i
     LEFT JOIN
@@ -517,7 +517,7 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.got_RAT_Rating
     WHERE
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
@@ -531,7 +531,7 @@ BEGIN
                 AND
                     d.PR_ID_in = i.PR_ID_in
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             )
         );
 END
@@ -594,7 +594,7 @@ BEGIN
             42
         FROM
             [dbo].[ST_at_PR_isPlaying] x
-        WHERE 
+        WHERE
             x.ST_ID_at = i.ST_ID_at
         AND
             x.PR_ID_isPlaying = i.PR_ID_isPlaying
@@ -687,7 +687,7 @@ BEGIN
             42
         FROM
             [dbo].[AC_parent_AC_child_PAT_having] x
-        WHERE 
+        WHERE
             x.AC_ID_parent = i.AC_ID_parent
         AND
             x.AC_ID_child = i.AC_ID_child
@@ -714,7 +714,7 @@ BEGIN
     SELECT
         i.AC_ID_parent,
         i.AC_ID_child,
-        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID) 
+        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -796,7 +796,7 @@ BEGIN
             42
         FROM
             [dbo].[PR_content_ST_location_EV_of] x
-        WHERE 
+        WHERE
             x.PR_ID_content = i.PR_ID_content
         AND
             x.ST_ID_location = i.ST_ID_location

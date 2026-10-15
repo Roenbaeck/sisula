@@ -3,7 +3,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID'; 
+@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -11,13 +11,13 @@ EXEC sp_addextendedproperty
 Kind of parent-child relationship between two actors, such as biological or adoptive parent.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID'; 
+@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'GEN_Gender_ID'; 
+@level1type = N'Table', @level1name = 'GEN_Gender_ID';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -25,7 +25,7 @@ EXEC sp_addextendedproperty
 Gender of an actor.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'GEN_Gender_ID'; 
+@level1type = N'Table', @level1name = 'GEN_Gender_ID';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -59,7 +59,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'ONG_Ongoing_ID'; 
+@level1type = N'Table', @level1name = 'ONG_Ongoing_ID';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -67,13 +67,13 @@ EXEC sp_addextendedproperty
 Yes or No flag indicating whether a relationship is still ongoing or has ended.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'ONG_Ongoing_ID'; 
+@level1type = N'Table', @level1name = 'ONG_Ongoing_ID';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID'; 
+@level1type = N'Table', @level1name = 'RAT_Rating_ID';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -81,7 +81,7 @@ EXEC sp_addextendedproperty
 Rating of how well an actor performs a part in a program, such as good, mediocre or bad.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID'; 
+@level1type = N'Table', @level1name = 'RAT_Rating_ID';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -552,6 +552,54 @@ An event, a single performance of a program held at a stage at a specific date a
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_Event';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The stage at which the event was held.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ST_ID_wasHeldAt';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The program that was played at the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'PR_ID_wasPlayed';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The type of the event.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'ETY_ID_of';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

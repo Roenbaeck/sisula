@@ -20,7 +20,7 @@ CREATE TABLE [dbo].[EV_DAT_Event_Date] (
         EV_DAT_EQ asc,
         EV_DAT_EV_ID asc
     )
-); 
+);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- EV_AUD_Event_Audience table (on EV_Event)
@@ -54,7 +54,7 @@ CREATE TABLE [dbo].[EV_REV_Event_Revenue] (
         EV_REV_EQ asc,
         EV_REV_EV_ID asc
     )
-); 
+);
 GO
 -- Historized attribute table ----------------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name table (on ST_Stage)
@@ -75,7 +75,7 @@ CREATE TABLE [dbo].[ST_NAM_Stage_Name] (
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc
     )
-); 
+);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
@@ -94,7 +94,7 @@ CREATE TABLE [dbo].[ST_LOC_Stage_Location] (
         ST_LOC_EQ asc,
         ST_LOC_ST_ID asc
     )
-); 
+);
 GO
 -- Knotted historized attribute table --------------------------------------------------------------------------------
 -- ST_AVG_Stage_Average table (on ST_Stage)
@@ -155,7 +155,7 @@ CREATE TABLE [dbo].[AC_NAM_Actor_Name] (
         AC_NAM_AC_ID asc,
         AC_NAM_ChangedAt desc
     )
-); 
+);
 GO
 -- Knotted static attribute table ------------------------------------------------------------------------------------
 -- AC_GEN_Actor_Gender table (on AC_Actor)

@@ -8,7 +8,7 @@
 -- MD5 hashing function
 -----------------------------------------------------------------------------------------------------------------------
 DECLARE @version smallint =
-    CASE 
+    CASE
         WHEN patindex('% 2[0-2][0-9][0-9] %', @@VERSION) > 0
         THEN substring(@@VERSION, patindex('% 2[0-2][0-9][0-9] %', @@VERSION) + 1, 4)
         ELSE 0
@@ -19,7 +19,7 @@ BEGIN
     BEGIN
         EXEC('
         CREATE FUNCTION dbo.MD5(@binaryData AS varbinary(max))
-        RETURNS varbinary(16) 
+        RETURNS varbinary(16)
         WITH SCHEMABINDING AS
         BEGIN
             RETURN HASHBYTES(''MD5'', @binaryData)
@@ -29,7 +29,7 @@ BEGIN
     ELSE
     BEGIN
         -- since some version of 2017 assemblies must be explicitly whitelisted
-        IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL) 
+        IF(@version >= 2017 AND OBJECT_ID('sys.sp_add_trusted_assembly') IS NOT NULL)
             IF NOT EXISTS(SELECT [hash] FROM sys.trusted_assemblies WHERE [hash] = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636)
                 EXEC sys.sp_add_trusted_assembly @hash = 0x57C34E8101BA13D5E5132DCEDCBBFAE8E9DCBA2F679A47766F50E5E723970186593B3C8B55F93378A91D226D7BAC82DD95D4074D841F5DFB92AA53228334E636, @description = N'Anchor';
         CREATE ASSEMBLY Anchor
@@ -45,7 +45,7 @@ BEGIN
         ');
         EXEC sys.sp_configure 'clr enabled', 1;
         reconfigure with override;
-    END 
+    END
 END
 GO
 -- KNOTS --------------------------------------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ GO
 IF Object_ID('dbo.SU_Subject', 'U') IS NULL
 CREATE TABLE [dbo].[SU_Subject] (
     SU_ID int IDENTITY(1,1) not null,
-    Metadata_SU int not null, 
+    Metadata_SU int not null,
     constraint pkSU_Subject primary key (
         SU_ID asc
     )
@@ -96,7 +96,7 @@ GO
 IF Object_ID('dbo.OB_Object', 'U') IS NULL
 CREATE TABLE [dbo].[OB_Object] (
     OB_ID int IDENTITY(1,1) not null,
-    Metadata_OB int not null, 
+    Metadata_OB int not null,
     constraint pkOB_Object primary key (
         OB_ID asc
     )
@@ -108,16 +108,16 @@ GO
 -- (Attribute tables moved to CreateAttributes.js.)
 --
 -- Nexus table -------------------------------------------------------------------------------------------------------
--- EV_Event table (with 1 attributes and 1 roles)
+-- EV_Event table (with 2 attributes and 1 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.EV_Event', 'U') IS NULL
 CREATE TABLE [dbo].[EV_Event] (
     EV_ID int IDENTITY(1,1) not null,
-    SU_ID_for int not null, 
+    SU_ID_for int not null,
     constraint EV_Event_fkSU_for foreign key (
         SU_ID_for
-    ) references [dbo].[SU_Subject](SU_ID), 
-    Metadata_EV int not null, 
+    ) references [dbo].[SU_Subject](SU_ID),
+    Metadata_EV int not null,
     constraint pkEV_Event primary key (
         EV_ID asc
     )
@@ -142,6 +142,24 @@ CREATE TABLE [dbo].[EV_QTY_Event_Quantity] (
     ) references [dbo].[EV_Event](EV_ID),
     constraint pkEV_QTY_Event_Quantity primary key (
         EV_QTY_EV_ID asc
+    )
+);
+GO
+-- Historized attribute table ----------------------------------------------------------------------------------------
+-- EV_PLC_Event_Place table (on EV_Event)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_PLC_Event_Place', 'U') IS NULL
+CREATE TABLE [dbo].[EV_PLC_Event_Place] (
+    EV_PLC_EV_ID int not null,
+    EV_PLC_Event_Place nvarchar(42) not null,
+    EV_PLC_ChangedAt datetime2 not null,
+    Metadata_EV_PLC int not null,
+    constraint fkEV_PLC_Event_Place foreign key (
+        EV_PLC_EV_ID
+    ) references [dbo].[EV_Event](EV_ID),
+    constraint pkEV_PLC_Event_Place primary key (
+        EV_PLC_EV_ID asc,
+        EV_PLC_ChangedAt desc
     )
 );
 GO
@@ -390,17 +408,17 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.SU_holder_OB_item_GRD_grade', 'U') IS NULL
 CREATE TABLE [dbo].[SU_holder_OB_item_GRD_grade] (
-    SU_ID_holder int not null, 
-    OB_ID_item int not null, 
+    SU_ID_holder int not null,
+    OB_ID_item int not null,
     GRD_ID_grade tinyint not null,
     SU_holder_OB_item_GRD_grade_ChangedAt datetime2 not null,
     Metadata_SU_holder_OB_item_GRD_grade int not null,
     constraint SU_holder_OB_item_GRD_grade_fkSU_holder foreign key (
         SU_ID_holder
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_holder_OB_item_GRD_grade_fkOB_item foreign key (
         OB_ID_item
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint SU_holder_OB_item_GRD_grade_fkGRD_grade foreign key (
         GRD_ID_grade
     ) references [dbo].[GRD_Grade](GRD_ID),
@@ -416,17 +434,17 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.SU_keeper_OB_thing_GRD_rank', 'U') IS NULL
 CREATE TABLE [dbo].[SU_keeper_OB_thing_GRD_rank] (
-    SU_ID_keeper int not null, 
-    OB_ID_thing int not null, 
+    SU_ID_keeper int not null,
+    OB_ID_thing int not null,
     GRD_ID_rank tinyint not null,
     SU_keeper_OB_thing_GRD_rank_ChangedAt datetime2 not null,
     Metadata_SU_keeper_OB_thing_GRD_rank int not null,
     constraint SU_keeper_OB_thing_GRD_rank_fkSU_keeper foreign key (
         SU_ID_keeper
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_keeper_OB_thing_GRD_rank_fkOB_thing foreign key (
         OB_ID_thing
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint SU_keeper_OB_thing_GRD_rank_fkGRD_rank foreign key (
         GRD_ID_rank
     ) references [dbo].[GRD_Grade](GRD_ID),
@@ -437,40 +455,40 @@ CREATE TABLE [dbo].[SU_keeper_OB_thing_GRD_rank] (
     )
 );
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- OB_part_SU_owner table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.OB_part_SU_owner', 'U') IS NULL
 CREATE TABLE [dbo].[OB_part_SU_owner] (
-    OB_ID_part int not null, 
-    SU_ID_owner int not null, 
+    OB_ID_part int not null,
+    SU_ID_owner int not null,
     Metadata_OB_part_SU_owner int not null,
     constraint OB_part_SU_owner_fkOB_part foreign key (
         OB_ID_part
-    ) references [dbo].[OB_Object](OB_ID), 
+    ) references [dbo].[OB_Object](OB_ID),
     constraint OB_part_SU_owner_fkSU_owner foreign key (
         SU_ID_owner
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint pkOB_part_SU_owner primary key (
         OB_ID_part asc
     )
 );
 GO
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- SU_partner_SU_with table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.SU_partner_SU_with', 'U') IS NULL
 CREATE TABLE [dbo].[SU_partner_SU_with] (
-    SU_ID_partner int not null, 
-    SU_ID_with int not null, 
+    SU_ID_partner int not null,
+    SU_ID_with int not null,
     SU_partner_SU_with_ChangedAt datetime2 not null,
     Metadata_SU_partner_SU_with int not null,
     constraint SU_partner_SU_with_fkSU_partner foreign key (
         SU_ID_partner
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_partner_SU_with_fkSU_with foreign key (
         SU_ID_with
-    ) references [dbo].[SU_Subject](SU_ID), 
+    ) references [dbo].[SU_Subject](SU_ID),
     constraint SU_partner_SU_with_uqSU_partner unique (
         SU_ID_partner,
         SU_partner_SU_with_ChangedAt
@@ -511,6 +529,104 @@ GO
 -- be checked for restatements.
 --
 -- Restatement Checking Trigger ---------------------------------------------------------------------------------------
+-- rt_EV_PLC_Event_Place (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rt_EV_PLC_Event_Place', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[rt_EV_PLC_Event_Place];
+GO
+CREATE TRIGGER [dbo].[rt_EV_PLC_Event_Place] ON [dbo].[EV_PLC_Event_Place]
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @message varchar(max);
+    DECLARE @EV_PLC_Event_Place TABLE (
+        EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        primary key(
+            EV_PLC_EV_ID asc,
+            EV_PLC_ChangedAt desc
+        )
+    );
+    INSERT INTO @EV_PLC_Event_Place (
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    FROM
+        inserted;
+    INSERT INTO @EV_PLC_Event_Place (
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        p.EV_PLC_EV_ID,
+        p.Metadata_EV_PLC,
+        p.EV_PLC_ChangedAt,
+        p.EV_PLC_Event_Place
+    FROM (
+        SELECT DISTINCT
+            EV_PLC_EV_ID
+        FROM
+            @EV_PLC_Event_Place
+    ) i
+    JOIN
+        [dbo].[EV_PLC_Event_Place] p
+    ON
+        p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_PLC_EV_ID
+        FROM
+            @EV_PLC_Event_Place x
+        WHERE
+            x.EV_PLC_EV_ID = p.EV_PLC_EV_ID
+        AND
+            x.EV_PLC_ChangedAt = p.EV_PLC_ChangedAt
+    );
+    -- check previous values
+    SET @message = (
+        SELECT TOP 1
+            pre.*
+        FROM
+            @EV_PLC_Event_Place i
+        CROSS APPLY (
+            SELECT TOP 1
+                h.EV_PLC_EV_ID,
+                h.EV_PLC_ChangedAt,
+                h.EV_PLC_Event_Place
+            FROM
+                @EV_PLC_Event_Place h
+            WHERE
+                h.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+            AND
+                h.EV_PLC_ChangedAt < i.EV_PLC_ChangedAt
+            ORDER BY
+                h.EV_PLC_ChangedAt DESC
+        ) pre
+        WHERE
+            i.EV_PLC_Event_Place = pre.EV_PLC_Event_Place
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Restatement in EV_PLC_Event_Place for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+    END
+END
+GO
+-- Restatement Checking Trigger ---------------------------------------------------------------------------------------
 -- rt_SU_STA_Subject_State (available only in attributes that cannot have restatements)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.rt_SU_STA_Subject_State', 'TR') IS NOT NULL
@@ -518,7 +634,7 @@ DROP TRIGGER [dbo].[rt_SU_STA_Subject_State];
 GO
 CREATE TRIGGER [dbo].[rt_SU_STA_Subject_State] ON [dbo].[SU_STA_Subject_State]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -528,7 +644,7 @@ BEGIN
         SU_STA_ChangedAt datetime2 not null,
         SU_STA_Subject_State nvarchar(42) not null,
         primary key(
-            SU_STA_SU_ID asc, 
+            SU_STA_SU_ID asc,
             SU_STA_ChangedAt desc
         )
     );
@@ -543,7 +659,7 @@ BEGIN
         Metadata_SU_STA,
         SU_STA_ChangedAt,
         SU_STA_Subject_State
-    FROM 
+    FROM
         inserted;
     INSERT INTO @SU_STA_Subject_State (
         SU_STA_SU_ID,
@@ -557,14 +673,14 @@ BEGIN
         p.SU_STA_ChangedAt,
         p.SU_STA_Subject_State
     FROM (
-        SELECT DISTINCT 
-            SU_STA_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_STA_SU_ID
+        FROM
             @SU_STA_Subject_State
-    ) i 
+    ) i
     JOIN
         [dbo].[SU_STA_Subject_State] p
-    ON 
+    ON
         p.SU_STA_SU_ID = i.SU_STA_SU_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -580,20 +696,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @SU_STA_Subject_State i
         CROSS APPLY (
             SELECT TOP 1
                 h.SU_STA_SU_ID,
                 h.SU_STA_ChangedAt,
                 h.SU_STA_Subject_State
-            FROM 
+            FROM
                 @SU_STA_Subject_State h
             WHERE
                 h.SU_STA_SU_ID = i.SU_STA_SU_ID
             AND
                 h.SU_STA_ChangedAt < i.SU_STA_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_STA_ChangedAt DESC
         ) pre
         WHERE
@@ -616,7 +732,7 @@ DROP TRIGGER [dbo].[rt_SU_LBL_Subject_Label];
 GO
 CREATE TRIGGER [dbo].[rt_SU_LBL_Subject_Label] ON [dbo].[SU_LBL_Subject_Label]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -626,7 +742,7 @@ BEGIN
         SU_LBL_ChangedAt datetime2 not null,
         SU_LBL_Subject_Label nvarchar(42) not null,
         primary key(
-            SU_LBL_SU_ID asc, 
+            SU_LBL_SU_ID asc,
             SU_LBL_ChangedAt desc
         )
     );
@@ -641,7 +757,7 @@ BEGIN
         Metadata_SU_LBL,
         SU_LBL_ChangedAt,
         SU_LBL_Subject_Label
-    FROM 
+    FROM
         inserted;
     INSERT INTO @SU_LBL_Subject_Label (
         SU_LBL_SU_ID,
@@ -655,14 +771,14 @@ BEGIN
         p.SU_LBL_ChangedAt,
         p.SU_LBL_Subject_Label
     FROM (
-        SELECT DISTINCT 
-            SU_LBL_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_LBL_SU_ID
+        FROM
             @SU_LBL_Subject_Label
-    ) i 
+    ) i
     JOIN
         [dbo].[SU_LBL_Subject_Label] p
-    ON 
+    ON
         p.SU_LBL_SU_ID = i.SU_LBL_SU_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -678,20 +794,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @SU_LBL_Subject_Label i
         CROSS APPLY (
             SELECT TOP 1
                 h.SU_LBL_SU_ID,
                 h.SU_LBL_ChangedAt,
                 h.SU_LBL_Subject_Label
-            FROM 
+            FROM
                 @SU_LBL_Subject_Label h
             WHERE
                 h.SU_LBL_SU_ID = i.SU_LBL_SU_ID
             AND
                 h.SU_LBL_ChangedAt < i.SU_LBL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_LBL_ChangedAt DESC
         ) pre
         WHERE
@@ -828,6 +944,28 @@ GO
 --
 -- @changingTimepoint the point in changing time to rewind to
 --
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rEV_PLC_Event_Place rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rEV_PLC_Event_Place','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rEV_PLC_Event_Place] (
+        @changingTimepoint datetime2
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_Event_Place,
+        EV_PLC_ChangedAt
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        EV_PLC_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
 -- Attribute rewinder -------------------------------------------------------------------------------------------------
 -- rSU_TTL_Subject_Title rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
@@ -1638,13 +1776,30 @@ SELECT
     [EV].SU_ID_for,
     [QTY].EV_QTY_EV_ID,
     [QTY].Metadata_EV_QTY,
-    [QTY].EV_QTY_Event_Quantity
+    [QTY].EV_QTY_Event_Quantity,
+    [PLC].EV_PLC_EV_ID,
+    [PLC].Metadata_EV_PLC,
+    [PLC].EV_PLC_ChangedAt,
+    [PLC].EV_PLC_Event_Place
 FROM
     [dbo].[EV_Event] [EV]
 LEFT JOIN
     [dbo].[EV_QTY_Event_Quantity] [QTY]
 ON
-    [QTY].EV_QTY_EV_ID = [EV].EV_ID;
+    [QTY].EV_QTY_EV_ID = [EV].EV_ID
+LEFT JOIN
+    [dbo].[EV_PLC_Event_Place] [PLC]
+ON
+    [PLC].EV_PLC_EV_ID = [EV].EV_ID
+AND
+    [PLC].EV_PLC_ChangedAt = (
+        SELECT
+            max(sub.EV_PLC_ChangedAt)
+        FROM
+            [dbo].[EV_PLC_Event_Place] sub
+        WHERE
+            sub.EV_PLC_EV_ID = [EV].EV_ID
+   );
 GO
 -- Point-in-time perspective -----------------------------------------------------------------------------------------
 -- pEV_Event viewed as it was on the given timepoint
@@ -1659,13 +1814,30 @@ SELECT
     [EV].SU_ID_for,
     [QTY].EV_QTY_EV_ID,
     [QTY].Metadata_EV_QTY,
-    [QTY].EV_QTY_Event_Quantity
+    [QTY].EV_QTY_Event_Quantity,
+    [PLC].EV_PLC_EV_ID,
+    [PLC].Metadata_EV_PLC,
+    [PLC].EV_PLC_ChangedAt,
+    [PLC].EV_PLC_Event_Place
 FROM
     [dbo].[EV_Event] [EV]
 LEFT JOIN
     [dbo].[EV_QTY_Event_Quantity] [QTY]
 ON
-    [QTY].EV_QTY_EV_ID = [EV].EV_ID;
+    [QTY].EV_QTY_EV_ID = [EV].EV_ID
+LEFT JOIN
+    [dbo].[rEV_PLC_Event_Place](@changingTimepoint) [PLC]
+ON
+    [PLC].EV_PLC_EV_ID = [EV].EV_ID
+AND
+    [PLC].EV_PLC_ChangedAt = (
+        SELECT
+            max(sub.EV_PLC_ChangedAt)
+        FROM
+            [dbo].[rEV_PLC_Event_Place](@changingTimepoint) sub
+        WHERE
+            sub.EV_PLC_EV_ID = [EV].EV_ID
+   );
 GO
 -- Now perspective --------------------------------------------------------------------------------------------------
 -- nEV_Event viewed as it currently is (cannot include future versions)
@@ -1676,6 +1848,36 @@ SELECT
     *
 FROM
     [dbo].[pEV_Event](sysdatetime());
+GO
+-- Difference perspective -------------------------------------------------------------------------------------------
+-- dEV_Event showing all differences between the given timepoints and optionally for a subset of attributes
+----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [dbo].[dEV_Event] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pEV].*
+FROM (
+    SELECT DISTINCT
+        EV_PLC_EV_ID AS EV_ID,
+        EV_PLC_ChangedAt AS inspectedTimepoint,
+        'PLC' AS mnemonic
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        (@selection is null OR @selection like '%PLC%')
+    AND
+        EV_PLC_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [dbo].[pEV_Event](timepoints.inspectedTimepoint) [pEV]
+WHERE
+    [pEV].EV_ID = timepoints.EV_ID;
 GO
 -- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
 --
@@ -1745,9 +1947,94 @@ BEGIN
             x.EV_QTY_EV_ID = i.EV_QTY_EV_ID
         AND
             x.EV_QTY_Event_Quantity = i.EV_QTY_Event_Quantity
-    ); 
+    );
 END
-GO 
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_PLC_Event_Place instead of INSERT trigger on EV_PLC_Event_Place
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_PLC_Event_Place', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_PLC_Event_Place];
+GO
+CREATE TRIGGER [dbo].[it_EV_PLC_Event_Place] ON [dbo].[EV_PLC_Event_Place]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @EV_PLC_Event_Place TABLE (
+    EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        EV_PLC_StatementType char(1) not null,
+        primary key (
+            EV_PLC_EV_ID asc,
+            EV_PLC_ChangedAt desc
+        )
+    );
+    INSERT INTO @EV_PLC_Event_Place
+    SELECT
+        i.EV_PLC_EV_ID,
+        i.Metadata_EV_PLC,
+        i.EV_PLC_ChangedAt,
+        i.EV_PLC_Event_Place,
+        'P' -- new posit
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_PLC_EV_ID
+        FROM
+            [dbo].[EV_PLC_Event_Place] x
+        WHERE
+            x.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+        AND
+            x.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+        AND
+            x.EV_PLC_Event_Place = i.EV_PLC_Event_Place
+    ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_PLC_EV_ID,
+            i.EV_PLC_ChangedAt
+        FROM
+            @EV_PLC_Event_Place i
+        JOIN
+            [dbo].[EV_PLC_Event_Place] x
+        ON
+            x.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+        AND
+            x.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_PLC_Event_Place for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[EV_PLC_Event_Place] (
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    FROM
+        @EV_PLC_Event_Place
+    WHERE
+        EV_PLC_StatementType = 'P';
+END
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_NAM_Subject_Name instead of INSERT trigger on SU_NAM_Subject_Name
 -----------------------------------------------------------------------------------------------------------------------
@@ -1804,9 +2091,9 @@ BEGIN
             x.SU_NAM_SU_ID = i.SU_NAM_SU_ID
         AND
             x.SU_NAM_Subject_Name = i.SU_NAM_Subject_Name
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_COD_Subject_Code instead of INSERT trigger on SU_COD_Subject_Code
 -----------------------------------------------------------------------------------------------------------------------
@@ -1863,9 +2150,9 @@ BEGIN
             x.SU_COD_SU_ID = i.SU_COD_SU_ID
         AND
             x.SU_COD_Subject_Code = i.SU_COD_Subject_Code
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_GRD_Subject_Grade instead of INSERT trigger on SU_GRD_Subject_Grade
 -----------------------------------------------------------------------------------------------------------------------
@@ -1922,9 +2209,9 @@ BEGIN
             x.SU_GRD_SU_ID = i.SU_GRD_SU_ID
         AND
             x.SU_GRD_GRD_ID = i.SU_GRD_GRD_ID
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_NOT_Subject_Note instead of INSERT trigger on SU_NOT_Subject_Note
 -----------------------------------------------------------------------------------------------------------------------
@@ -1950,7 +2237,7 @@ BEGIN
         ON
             x.SU_NOT_SU_ID = i.SU_NOT_SU_ID
         WHERE NOT (
-            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
+            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
         )
         FOR XML PATH('')
     );
@@ -1980,10 +2267,10 @@ BEGIN
         WHERE
             x.SU_NOT_SU_ID = i.SU_NOT_SU_ID
         AND
-            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
-    ); 
+            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_TTL_Subject_Title instead of INSERT trigger on SU_TTL_Subject_Title
 -----------------------------------------------------------------------------------------------------------------------
@@ -2004,7 +2291,7 @@ BEGIN
         SU_TTL_Subject_Title nvarchar(42) not null,
         SU_TTL_StatementType char(1) not null,
         primary key (
-            SU_TTL_SU_ID asc, 
+            SU_TTL_SU_ID asc,
             SU_TTL_ChangedAt desc
         )
     );
@@ -2089,7 +2376,7 @@ BEGIN
         SU_STA_Subject_State nvarchar(42) not null,
         SU_STA_StatementType char(1) not null,
         primary key (
-            SU_STA_SU_ID asc, 
+            SU_STA_SU_ID asc,
             SU_STA_ChangedAt desc
         )
     );
@@ -2174,7 +2461,7 @@ BEGIN
         SU_LBL_Subject_Label nvarchar(42) not null,
         SU_LBL_StatementType char(1) not null,
         primary key (
-            SU_LBL_SU_ID asc, 
+            SU_LBL_SU_ID asc,
             SU_LBL_ChangedAt desc
         )
     );
@@ -2230,9 +2517,9 @@ BEGIN
         p.SU_LBL_Subject_Label,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            SU_LBL_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_LBL_SU_ID
+        FROM
             @SU_LBL_Subject_Label
     ) i
     JOIN
@@ -2244,25 +2531,25 @@ BEGIN
         SU_LBL_ChangedAt datetime2 not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_LBL_SU_ID,
         x.SU_LBL_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @SU_LBL_Subject_Label a
         OUTER APPLY (
             SELECT TOP 1
                 h.SU_LBL_Subject_Label
-            FROM 
+            FROM
                 @SU_LBL_Subject_Label h
             WHERE
                 h.SU_LBL_SU_ID = a.SU_LBL_SU_ID
             AND
                 h.SU_LBL_ChangedAt < a.SU_LBL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_LBL_ChangedAt DESC
         ) pre
         WHERE
@@ -2271,15 +2558,15 @@ BEGIN
     WHERE
         x.SU_LBL_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[dbo].[SU_LBL_Subject_Label] a
-	JOIN 
-		@restated d
-	ON 
-		d.SU_LBL_SU_ID = a.SU_LBL_SU_ID
-	AND 
-		d.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt; 
+    DELETE a
+    FROM
+        [dbo].[SU_LBL_Subject_Label] a
+    JOIN
+        @restated d
+    ON
+        d.SU_LBL_SU_ID = a.SU_LBL_SU_ID
+    AND
+        d.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt;
     INSERT INTO [dbo].[SU_LBL_Subject_Label] (
         Metadata_SU_LBL,
         SU_LBL_SU_ID,
@@ -2317,7 +2604,7 @@ BEGIN
         SU_TAG_Subject_Tag nvarchar(42) not null,
         SU_TAG_StatementType char(1) not null,
         primary key (
-            SU_TAG_SU_ID asc, 
+            SU_TAG_SU_ID asc,
             SU_TAG_ChangedAt desc
         )
     );
@@ -2373,9 +2660,9 @@ BEGIN
         p.SU_TAG_Subject_Tag,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            SU_TAG_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_TAG_SU_ID
+        FROM
             @SU_TAG_Subject_Tag
     ) i
     JOIN
@@ -2387,25 +2674,25 @@ BEGIN
         SU_TAG_ChangedAt datetime2 not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_TAG_SU_ID,
         x.SU_TAG_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @SU_TAG_Subject_Tag a
         OUTER APPLY (
             SELECT TOP 1
                 h.SU_TAG_Subject_Tag
-            FROM 
+            FROM
                 @SU_TAG_Subject_Tag h
             WHERE
                 h.SU_TAG_SU_ID = a.SU_TAG_SU_ID
             AND
                 h.SU_TAG_ChangedAt < a.SU_TAG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_TAG_ChangedAt DESC
         ) pre
         WHERE
@@ -2414,15 +2701,15 @@ BEGIN
     WHERE
         x.SU_TAG_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[dbo].[SU_TAG_Subject_Tag] a
-	JOIN 
-		@restated d
-	ON 
-		d.SU_TAG_SU_ID = a.SU_TAG_SU_ID
-	AND 
-		d.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt; 
+    DELETE a
+    FROM
+        [dbo].[SU_TAG_Subject_Tag] a
+    JOIN
+        @restated d
+    ON
+        d.SU_TAG_SU_ID = a.SU_TAG_SU_ID
+    AND
+        d.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt;
     INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
         Metadata_SU_TAG,
         SU_TAG_SU_ID,
@@ -2457,10 +2744,10 @@ BEGIN
     SU_LVL_SU_ID int not null,
         Metadata_SU_LVL int not null,
         SU_LVL_ChangedAt datetime2 not null,
-        SU_LVL_GRD_ID tinyint not null, 
+        SU_LVL_GRD_ID tinyint not null,
         SU_LVL_StatementType char(1) not null,
         primary key (
-            SU_LVL_SU_ID asc, 
+            SU_LVL_SU_ID asc,
             SU_LVL_ChangedAt desc
         )
     );
@@ -2546,7 +2833,7 @@ BEGIN
         SU_TXT_Checksum varbinary(16) not null,
         SU_TXT_StatementType char(1) not null,
         primary key (
-            SU_TXT_SU_ID asc, 
+            SU_TXT_SU_ID asc,
             SU_TXT_ChangedAt desc
         )
     );
@@ -2570,7 +2857,7 @@ BEGIN
         AND
             x.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
         AND
-            x.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) 
+            x.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
     ); -- the posit must be different (exclude the identical)
     -- another value at a time that already has a value is a contradiction
     DECLARE @message varchar(max);
@@ -2632,7 +2919,7 @@ BEGIN
         SU_ASR_Subject_Assessment nvarchar(42) not null,
         SU_ASR_StatementType char(1) not null,
         primary key (
-            SU_ASR_SU_ID asc, 
+            SU_ASR_SU_ID asc,
             SU_ASR_ChangedAt desc
         )
     );
@@ -2717,7 +3004,7 @@ BEGIN
         SU_ERS_Subject_Erasable nvarchar(42) not null,
         SU_ERS_StatementType char(1) not null,
         primary key (
-            SU_ERS_SU_ID asc, 
+            SU_ERS_SU_ID asc,
             SU_ERS_ChangedAt desc
         )
     );
@@ -2838,9 +3125,9 @@ BEGIN
             x.OB_NAM_OB_ID = i.OB_NAM_OB_ID
         AND
             x.OB_NAM_Object_Name = i.OB_NAM_Object_Name
-    ); 
+    );
 END
-GO 
+GO
 -- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
 --
 -- The following triggers on the latest view make it behave like a table.
@@ -2868,14 +3155,14 @@ BEGIN
         SU_ID int not null
     );
     INSERT INTO [dbo].[SU_Subject] (
-        Metadata_SU 
+        Metadata_SU
     )
     OUTPUT
         inserted.SU_ID
     INTO
         @SU
     SELECT
-        Metadata_SU 
+        Metadata_SU
     FROM
         inserted
     WHERE
@@ -3078,7 +3365,7 @@ BEGIN
     SELECT DISTINCT
         i.Metadata_SU_GRD,
         i.SU_GRD_SU_ID,
-        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID) 
+        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -3170,7 +3457,7 @@ BEGIN
         i.Metadata_SU_LVL,
         i.SU_LVL_SU_ID,
         i.SU_LVL_ChangedAt,
-        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID) 
+        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID)
     FROM
         @inserted i
     LEFT JOIN
@@ -3673,17 +3960,17 @@ BEGIN
         IF(@@ROWCOUNT > 0)
         BEGIN
             IF OBJECT_ID('[dbo].[SU_ERS_Subject_Erasable_Deleted]') is null
-            SELECT TOP 0 
-                *, 
+            SELECT TOP 0
+                *,
                 CAST(null as datetime2) as SU_ERS_Deleted
-            INTO 
+            INTO
                 [dbo].[SU_ERS_Subject_Erasable_Deleted]
-            FROM 
+            FROM
                 [dbo].[SU_ERS_Subject_Erasable];
             DELETE [ERS]
             OUTPUT
                 deleted.*,
-                ISNULL(d.SU_ERS_Deleted, @now) 
+                ISNULL(d.SU_ERS_Deleted, @now)
             INTO
                 [dbo].[SU_ERS_Subject_Erasable_Deleted]
             FROM
@@ -3908,14 +4195,14 @@ BEGIN
         OB_ID int not null
     );
     INSERT INTO [dbo].[OB_Object] (
-        Metadata_OB 
+        Metadata_OB
     )
     OUTPUT
         inserted.OB_ID
     INTO
         @OB
     SELECT
-        Metadata_OB 
+        Metadata_OB
     FROM
         inserted
     WHERE
@@ -4077,7 +4364,11 @@ BEGIN
         Metadata_EV int not null,
         EV_QTY_EV_ID int null,
         Metadata_EV_QTY int null,
-        EV_QTY_Event_Quantity int null
+        EV_QTY_Event_Quantity int null,
+        EV_PLC_EV_ID int null,
+        Metadata_EV_PLC int null,
+        EV_PLC_ChangedAt datetime2 null,
+        EV_PLC_Event_Place nvarchar(42) null
     );
     -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
     -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
@@ -4097,7 +4388,11 @@ BEGIN
         i.Metadata_EV,
         ISNULL(i.EV_QTY_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
-        i.EV_QTY_Event_Quantity
+        i.EV_QTY_Event_Quantity,
+        ISNULL(i.EV_PLC_EV_ID, inserted.EV_ID),
+        ISNULL(i.Metadata_EV_PLC, i.Metadata_EV),
+        ISNULL(i.EV_PLC_ChangedAt, @now),
+        i.EV_PLC_Event_Place
     INTO
         @inserted;
     -- the rows that come with the identity of a nexus row
@@ -4107,7 +4402,11 @@ BEGIN
         i.Metadata_EV,
         ISNULL(i.EV_QTY_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
-        i.EV_QTY_Event_Quantity
+        i.EV_QTY_Event_Quantity,
+        ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_PLC, i.Metadata_EV),
+        ISNULL(i.EV_PLC_ChangedAt, @now),
+        i.EV_PLC_Event_Place
     FROM
         inserted i
     WHERE
@@ -4125,6 +4424,21 @@ BEGIN
         @inserted i
     WHERE
         i.EV_QTY_Event_Quantity is not null;
+    INSERT INTO [dbo].[EV_PLC_Event_Place] (
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT DISTINCT
+        i.Metadata_EV_PLC,
+        i.EV_PLC_EV_ID,
+        i.EV_PLC_ChangedAt,
+        i.EV_PLC_Event_Place
+    FROM
+        @inserted i
+    WHERE
+        i.EV_PLC_Event_Place is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -4139,6 +4453,8 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(SU_ID_for))
+        RAISERROR('The role column SU_ID_for is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_EV_ID))
         RAISERROR('The foreign key column EV_QTY_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_Event_Quantity))
@@ -4169,6 +4485,42 @@ BEGIN
             d.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
         );
     END
+    IF(UPDATE(EV_PLC_EV_ID))
+        RAISERROR('The foreign key column EV_PLC_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_PLC_Event_Place))
+    BEGIN
+        INSERT INTO [dbo].[EV_PLC_Event_Place] (
+            Metadata_EV_PLC,
+            EV_PLC_EV_ID,
+            EV_PLC_ChangedAt,
+            EV_PLC_Event_Place
+        )
+        SELECT DISTINCT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_PLC
+            END, i.Metadata_EV),
+            ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
+            cast(ISNULL(CASE
+                WHEN i.EV_PLC_Event_Place is null THEN i.EV_PLC_ChangedAt
+                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+            END, @now) as datetime2),
+            i.EV_PLC_Event_Place
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        WHERE
+            i.EV_PLC_Event_Place is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_PLC_ChangedAt) OR
+            d.EV_PLC_Event_Place is null OR
+            d.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
+        );
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -4186,6 +4538,15 @@ BEGIN
         deleted d
     ON
         d.EV_QTY_EV_ID = [QTY].EV_QTY_EV_ID;
+    DELETE [PLC]
+    FROM
+        [dbo].[EV_PLC_Event_Place] [PLC]
+    JOIN
+        deleted d
+    ON
+        d.EV_PLC_ChangedAt = [PLC].EV_PLC_ChangedAt
+    AND
+        d.EV_PLC_EV_ID = [PLC].EV_PLC_EV_ID;
     DECLARE @deleted TABLE (
         EV_ID int NOT NULL PRIMARY KEY
     );
@@ -4199,6 +4560,12 @@ BEGIN
             SELECT TOP 1 EV_QTY_EV_ID
             FROM [dbo].[EV_QTY_Event_Quantity] WITH(NOLOCK)
             WHERE EV_QTY_EV_ID = [EV].EV_ID
+        )
+        AND
+        NOT EXISTS (
+            SELECT TOP 1 EV_PLC_EV_ID
+            FROM [dbo].[EV_PLC_Event_Place] WITH(NOLOCK)
+            WHERE EV_PLC_EV_ID = [EV].EV_ID
         )
     ) a
     JOIN deleted d
@@ -4227,7 +4594,7 @@ DROP TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank];
 GO
 CREATE TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank] ON [dbo].[SU_keeper_OB_thing_GRD_rank]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -4275,8 +4642,8 @@ BEGIN
         SELECT DISTINCT
             SU_ID_keeper,
             OB_ID_thing
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank] p
@@ -4289,7 +4656,7 @@ BEGIN
             42
         FROM
             @inserted x
-        WHERE 
+        WHERE
             x.SU_keeper_OB_thing_GRD_rank_ChangedAt = p.SU_keeper_OB_thing_GRD_rank_ChangedAt
         AND
             x.SU_ID_keeper = i.SU_ID_keeper
@@ -4300,7 +4667,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted i
         CROSS APPLY (
             SELECT TOP 1
@@ -4316,9 +4683,9 @@ BEGIN
                 h.OB_ID_thing = i.OB_ID_thing
             AND
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt < i.SU_keeper_OB_thing_GRD_rank_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC
-        ) pre 
+        ) pre
         WHERE
             i.SU_ID_keeper = pre.SU_ID_keeper
         AND
@@ -4766,7 +5133,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_holder_OB_item_GRD_grade] x
-        WHERE 
+        WHERE
             x.SU_ID_holder = i.SU_ID_holder
         AND
             x.OB_ID_item = i.OB_ID_item
@@ -4802,7 +5169,7 @@ BEGIN
         RETURN;
     END
     INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade] (
-        Metadata_SU_holder_OB_item_GRD_grade, 
+        Metadata_SU_holder_OB_item_GRD_grade,
         SU_holder_OB_item_GRD_grade_ChangedAt,
         SU_ID_holder,
         OB_ID_item,
@@ -4842,7 +5209,7 @@ BEGIN
         i.SU_holder_OB_item_GRD_grade_ChangedAt,
         i.SU_ID_holder,
         i.OB_ID_item,
-        ISNULL(i.GRD_ID_grade, [GRD_grade].GRD_ID) 
+        ISNULL(i.GRD_ID_grade, [GRD_grade].GRD_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -4877,7 +5244,7 @@ BEGIN
         cast(CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_holder,
         i.OB_ID_item,
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END 
+        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
     FROM
         inserted i
     LEFT JOIN
@@ -4885,7 +5252,7 @@ BEGIN
     ON
         [GRD_grade].GRD_Grade = i.grade_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null 
+        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) OR
@@ -4899,7 +5266,7 @@ BEGIN
                 AND
                     d.OB_ID_item = i.OB_ID_item
                 AND
-                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END 
+                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
             )
         );
 END
@@ -4966,7 +5333,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_keeper_OB_thing_GRD_rank] x
-        WHERE 
+        WHERE
             x.SU_ID_keeper = i.SU_ID_keeper
         AND
             x.OB_ID_thing = i.OB_ID_thing
@@ -5003,9 +5370,9 @@ BEGIN
     END
     INSERT INTO @inserted
     SELECT
-        p.Metadata_SU_keeper_OB_thing_GRD_rank, 
+        p.Metadata_SU_keeper_OB_thing_GRD_rank,
         'X', -- existing data
-        p.SU_keeper_OB_thing_GRD_rank_ChangedAt, 
+        p.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         p.SU_ID_keeper,
         p.OB_ID_thing,
         p.GRD_ID_rank
@@ -5013,8 +5380,8 @@ BEGIN
         SELECT DISTINCT
             SU_ID_keeper,
             OB_ID_thing
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank] p
@@ -5029,16 +5396,16 @@ BEGIN
         GRD_ID_rank tinyint not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         x.SU_ID_keeper,
         x.OB_ID_thing,
         x.GRD_ID_rank
     FROM (
         DELETE t
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @inserted t
         OUTER APPLY (
             SELECT TOP 1
@@ -5053,10 +5420,10 @@ BEGIN
                 h.OB_ID_thing = t.OB_ID_thing
             AND
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt < t.SU_keeper_OB_thing_GRD_rank_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC
         ) pre
-        WHERE 
+        WHERE
             t.SU_ID_keeper = pre.SU_ID_keeper
         AND
             t.OB_ID_thing = pre.OB_ID_thing
@@ -5067,11 +5434,11 @@ BEGIN
         x.SU_keeper_OB_thing_GRD_rank_StatementType = 'X';
     -- delete the quenches (should be rare)
     DELETE t
-    FROM 
+    FROM
         [dbo].[SU_keeper_OB_thing_GRD_rank] t
-    JOIN 
+    JOIN
         @restated d
-    ON 
+    ON
         d.SU_keeper_OB_thing_GRD_rank_ChangedAt = t.SU_keeper_OB_thing_GRD_rank_ChangedAt
     AND
         d.SU_ID_keeper = t.SU_ID_keeper
@@ -5080,7 +5447,7 @@ BEGIN
     AND
         d.GRD_ID_rank = t.GRD_ID_rank
     INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank] (
-        Metadata_SU_keeper_OB_thing_GRD_rank, 
+        Metadata_SU_keeper_OB_thing_GRD_rank,
         SU_keeper_OB_thing_GRD_rank_ChangedAt,
         SU_ID_keeper,
         OB_ID_thing,
@@ -5120,7 +5487,7 @@ BEGIN
         i.SU_keeper_OB_thing_GRD_rank_ChangedAt,
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        ISNULL(i.GRD_ID_rank, [GRD_rank].GRD_ID) 
+        ISNULL(i.GRD_ID_rank, [GRD_rank].GRD_ID)
     FROM
         inserted i
     LEFT JOIN
@@ -5155,7 +5522,7 @@ BEGIN
         cast(CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END 
+        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
     FROM
         inserted i
     LEFT JOIN
@@ -5163,7 +5530,7 @@ BEGIN
     ON
         [GRD_rank].GRD_Grade = i.rank_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null 
+        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
     AND
         ( -- values that are left as they are state nothing
             UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) OR
@@ -5177,7 +5544,7 @@ BEGIN
                 AND
                     d.OB_ID_thing = i.OB_ID_thing
                 AND
-                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END 
+                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
             )
         );
 END
@@ -5238,7 +5605,7 @@ BEGIN
         RETURN;
     END
     INSERT INTO [dbo].[OB_part_SU_owner] (
-        Metadata_OB_part_SU_owner, 
+        Metadata_OB_part_SU_owner,
         OB_ID_part,
         SU_ID_owner
     )
@@ -5253,7 +5620,7 @@ BEGIN
             42
         FROM
             [dbo].[OB_part_SU_owner] x
-        WHERE 
+        WHERE
             x.OB_ID_part = i.OB_ID_part
         AND
             x.SU_ID_owner = i.SU_ID_owner
@@ -5379,7 +5746,7 @@ BEGIN
             42
         FROM
             [dbo].[SU_partner_SU_with] x
-        WHERE 
+        WHERE
             x.SU_ID_partner = i.SU_ID_partner
         AND
             x.SU_ID_with = i.SU_ID_with
@@ -5387,7 +5754,7 @@ BEGIN
             x.SU_partner_SU_with_ChangedAt = i.SU_partner_SU_with_ChangedAt
     );
     INSERT INTO [dbo].[SU_partner_SU_with] (
-        Metadata_SU_partner_SU_with, 
+        Metadata_SU_partner_SU_with,
         SU_partner_SU_with_ChangedAt,
         SU_ID_partner,
         SU_ID_with
@@ -5520,7 +5887,7 @@ INSERT INTO [dbo].[_Schema] (
 )
 SELECT
    current_timestamp,
-   N'<schema format="0.101.3" date="2026-10-09" time="12:00:00">
+   N'<schema format="0.101.4" date="2026-10-09" time="12:00:00">
 <metadata changingRange="datetime2" encapsulation="dbo" identity="int" metadataPrefix="Metadata" metadataType="int" metadataUsage="true" changingSuffix="ChangedAt" identitySuffix="ID" positIdentity="int" positGenerator="true" positingRange="datetime2" positingSuffix="PositedAt" positorRange="tinyint" positorSuffix="Positor" reliabilityRange="decimal(5,2)" reliabilitySuffix="Reliability" defaultReliability="1" deleteReliability="0" assertionSuffix="Assertion" partitioning="false" entityIntegrity="true" restatability="true" idempotency="false" assertiveness="true" naming="improved" positSuffix="Posit" annexSuffix="Annex" chronon="datetime2" now="sysdatetime()" dummySuffix="Dummy" versionSuffix="Version" statementTypeSuffix="StatementType" checksumSuffix="Checksum" businessViews="false" decisiveness="true" equivalence="false" equivalentSuffix="EQ" equivalentRange="tinyint" databaseTarget="SQLServer" temporalization="uni" deletability="false" deletablePrefix="Deletable" deletionSuffix="Deleted" privacy="Ignore" checksum="false" triggers="true" knotAliases="false" naturalKeyAttributes="false" />
 <description>
 A model for testing the triggers of the latest views: an attribute for each combination of the settings that the
@@ -5645,7 +6012,14 @@ Something the subject has or keeps.
 <metadata privacy="Ignore" capsule="dbo" idempotent="false" deletable="false" />
 <layout x="298.39" y="426.06" fixed="false" />
 <description>
-Static, as the attributes of a nexus are.
+Static.
+</description>
+</attribute>
+<attribute mnemonic="PLC" descriptor="Place" timeRange="datetime2" dataRange="nvarchar(42)">
+<metadata privacy="Ignore" capsule="dbo" restatable="false" idempotent="false" deletable="false" />
+<layout x="460.00" y="140.00" fixed="false" />
+<description>
+Historized and not restatable, as an attribute of an anchor may be.
 </description>
 </attribute>
 <role role="for" type="SU" identifier="false">
@@ -5655,7 +6029,7 @@ The subject the event is for.
 </role>
 <layout x="218.57" y="16.32" fixed="false" />
 <description>
-An event, with an attribute of its own.
+An event, with attributes of its own, a static one and a historized one.
 </description>
 </nexus>
 <tie timeRange="datetime2">
@@ -5816,6 +6190,39 @@ FROM
 CROSS APPLY
    S.[schema].nodes('/schema/anchor') as Nodeset(anchor);
 GO
+-- Nexus view ---------------------------------------------------------------------------------------------------------
+-- The nexus view shows information about all the nexuses in a schema
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo._Nexus', 'V') IS NOT NULL
+DROP VIEW [dbo].[_Nexus]
+GO
+CREATE VIEW [dbo].[_Nexus]
+AS
+SELECT
+   S.version,
+   S.activation,
+   Nodeset.nexus.value('concat(@mnemonic, "_", @descriptor)', 'nvarchar(max)') as [name],
+   Nodeset.nexus.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
+   Nodeset.nexus.value('@mnemonic', 'nvarchar(max)') as [mnemonic],
+   Nodeset.nexus.value('@descriptor', 'nvarchar(max)') as [descriptor],
+   Nodeset.nexus.value('@identity', 'nvarchar(max)') as [identity],
+   Nodeset.nexus.value('metadata[1]/@generator', 'nvarchar(max)') as [generator],
+   Nodeset.nexus.value('count(attribute)', 'int') as [numberOfAttributes],
+   Nodeset.nexus.value('count(role)', 'int') as [numberOfRoles],
+   Nodeset.nexus.query('
+      for $role in role
+      return string($role/@role)
+   ').value('.', 'nvarchar(max)') as [roles],
+   Nodeset.nexus.query('
+      for $role in role
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [types],
+   Nodeset.nexus.value('description[1]/.', 'nvarchar(max)') as [description]
+FROM
+   [dbo].[_Schema] S
+CROSS APPLY
+   S.[schema].nodes('/schema/nexus') as Nodeset(nexus);
+GO
 -- Knot view ----------------------------------------------------------------------------------------------------------
 -- The knot view shows information about all the knots in a schema
 -----------------------------------------------------------------------------------------------------------------------
@@ -5843,7 +6250,8 @@ CROSS APPLY
    S.[schema].nodes('/schema/knot') as Nodeset(knot);
 GO
 -- Attribute view -----------------------------------------------------------------------------------------------------
--- The attribute view shows information about all the attributes in a schema
+-- The attribute view shows information about all the attributes in a schema, those of anchors and those of nexuses,
+-- where the anchor columns show the nexus and parent says which of the two it is
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo._Attribute', 'V') IS NOT NULL
 DROP VIEW [dbo].[_Attribute]
@@ -5876,16 +6284,18 @@ SELECT
    Nodeset.attribute.value('@timeRange', 'nvarchar(max)') as [timeRange],
    Nodeset.attribute.value('metadata[1]/@deletable', 'nvarchar(max)') as [deletable],
    Nodeset.attribute.value('metadata[1]/@encryptionGroup', 'nvarchar(max)') as [encryptionGroup],
-   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description]
+   Nodeset.attribute.value('description[1]/.', 'nvarchar(max)') as [description],
+   ParentNodeset.anchor.value('local-name(.)', 'nvarchar(max)') as [parent]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
-   S.[schema].nodes('/schema/anchor') as ParentNodeset(anchor)
+   S.[schema].nodes('/schema/*[local-name() = "anchor" or local-name() = "nexus"]') as ParentNodeset(anchor)
 OUTER APPLY
    ParentNodeset.anchor.nodes('attribute') as Nodeset(attribute);
 GO
 -- Tie view -----------------------------------------------------------------------------------------------------------
--- The tie view shows information about all the ties in a schema
+-- The tie view shows information about all the ties in a schema. The roles of a tie are role elements, whose type is
+-- an anchor, a nexus or a knot, or in schemas from before nexuses anchorRole and knotRole elements.
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo._Tie', 'V') IS NOT NULL
 DROP VIEW [dbo].[_Tie]
@@ -5896,28 +6306,28 @@ SELECT
    S.version,
    S.activation,
    REPLACE(Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
       return concat($role/@type, "_", $role/@role)
    ').value('.', 'nvarchar(max)'), ' ', '_') as [name],
    Nodeset.tie.value('metadata[1]/@capsule', 'nvarchar(max)') as [capsule],
-   Nodeset.tie.value('count(anchorRole) + count(knotRole)', 'int') as [numberOfRoles],
+   Nodeset.tie.value('count(*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"])', 'int') as [numberOfRoles],
    Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
       return string($role/@role)
    ').value('.', 'nvarchar(max)') as [roles],
-   Nodeset.tie.value('count(anchorRole)', 'int') as [numberOfAnchors],
+   Nodeset.tie.value('count(anchorRole) + count(role[@type = /schema/anchor/@mnemonic])', 'int') as [numberOfAnchors],
    Nodeset.tie.query('
-      for $role in anchorRole
+      for $role in *[local-name() = "anchorRole" or (local-name() = "role" and @type = /schema/anchor/@mnemonic)]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [anchors],
-   Nodeset.tie.value('count(knotRole)', 'int') as [numberOfKnots],
+   Nodeset.tie.value('count(knotRole) + count(role[@type = /schema/knot/@mnemonic])', 'int') as [numberOfKnots],
    Nodeset.tie.query('
-      for $role in knotRole
+      for $role in *[local-name() = "knotRole" or (local-name() = "role" and @type = /schema/knot/@mnemonic)]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [knots],
-   Nodeset.tie.value('count(*[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"])', 'int') as [numberOfIdentifiers],
+   Nodeset.tie.value('count(*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"])', 'int') as [numberOfIdentifiers],
    Nodeset.tie.query('
-      for $role in *[local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"]
+      for $role in *[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"][@identifier = "true"]
       return string($role/@type)
    ').value('.', 'nvarchar(max)') as [identifiers],
    Nodeset.tie.value('@timeRange', 'nvarchar(max)') as [timeRange],
@@ -5925,7 +6335,12 @@ SELECT
    Nodeset.tie.value('metadata[1]/@assertive', 'nvarchar(max)') as [assertive],
    Nodeset.tie.value('metadata[1]/@restatable', 'nvarchar(max)') as [restatable],
    Nodeset.tie.value('metadata[1]/@idempotent', 'nvarchar(max)') as [idempotent],
-   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description]
+   Nodeset.tie.value('description[1]/.', 'nvarchar(max)') as [description],
+   Nodeset.tie.value('count(role[@type = /schema/nexus/@mnemonic])', 'int') as [numberOfNexuses],
+   Nodeset.tie.query('
+      for $role in role[@type = /schema/nexus/@mnemonic]
+      return string($role/@type)
+   ').value('.', 'nvarchar(max)') as [nexuses]
 FROM
    [dbo].[_Schema] S
 CROSS APPLY
@@ -5945,24 +6360,27 @@ SELECT
    Nodeset.keys.value('@of', 'nvarchar(max)') as [of],
    Nodeset.keys.value('@route', 'nvarchar(max)') as [route],
    Nodeset.keys.value('@stop', 'nvarchar(max)') as [stop],
-   case [parent]
-      when 'tie'
+   case
+      when [parent] in ('tie', 'nexus')
       then Nodeset.keys.value('../@role', 'nvarchar(max)')
    end as [role],
    case [parent]
       when 'knot'
       then Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
-          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)')
       when 'attribute'
       then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
           Nodeset.keys.value('concat(../@mnemonic, "_")', 'nvarchar(max)') +
           Nodeset.keys.value('concat(../../@descriptor, "_")', 'nvarchar(max)') +
-          Nodeset.keys.value('../@descriptor', 'nvarchar(max)') 
+          Nodeset.keys.value('../@descriptor', 'nvarchar(max)')
       when 'tie'
       then REPLACE(Nodeset.keys.query('
-            for $role in ../../*[local-name() = "anchorRole" or local-name() = "knotRole"]
+            for $role in ../../*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
             return concat($role/@type, "_", $role/@role)
           ').value('.', 'nvarchar(max)'), ' ', '_')
+      when 'nexus'
+      then Nodeset.keys.value('concat(../../@mnemonic, "_")', 'nvarchar(max)') +
+          Nodeset.keys.value('../../@descriptor', 'nvarchar(max)')
    end as [in],
    [parent]
 FROM
@@ -5974,8 +6392,10 @@ CROSS APPLY (
       case
          when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') in ('anchorRole', 'knotRole')
          then 'tie'
+         when Nodeset.keys.value('local-name(..)', 'nvarchar(max)') = 'role' -- of a tie or of a nexus
+         then Nodeset.keys.value('local-name(../..)', 'nvarchar(max)')
          else Nodeset.keys.value('local-name(..)', 'nvarchar(max)')
-      end 
+      end
    )
 ) p ([parent]);
 GO
@@ -6000,10 +6420,21 @@ WITH constructs AS (
       [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
       [version],
       [activation]
-   FROM 
+   FROM
       [dbo].[_Anchor] a
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '')
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
+   ) s (temporalization, suffix)
+   UNION ALL
+   SELECT
+      temporalization,
+      [capsule] + '.' + [name] + s.suffix AS [qualifiedName],
+      [version],
+      [activation]
+   FROM
+      [dbo].[_Nexus] n
+   CROSS APPLY (
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -6014,7 +6445,7 @@ WITH constructs AS (
    FROM
       [dbo].[_Knot] k
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '')
+      VALUES ('uni', ''), ('bi', ''), ('crt', '')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -6025,7 +6456,7 @@ WITH constructs AS (
    FROM
       [dbo].[_Attribute] b
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+      VALUES ('uni', ''), ('bi', '_Annex'), ('bi', '_Posit'), ('crt', '_Annex'), ('crt', '_Posit')
    ) s (temporalization, suffix)
    UNION ALL
    SELECT
@@ -6036,9 +6467,9 @@ WITH constructs AS (
    FROM
       [dbo].[_Tie] t
    CROSS APPLY (
-      VALUES ('uni', ''), ('crt', '_Annex'), ('crt', '_Posit')
+      VALUES ('uni', ''), ('bi', '_Annex'), ('bi', '_Posit'), ('crt', '_Annex'), ('crt', '_Posit')
    ) s (temporalization, suffix)
-), 
+),
 selectedSchema AS (
    SELECT TOP 1
       *
@@ -6059,8 +6490,8 @@ presentConstructs AS (
    ON
       S.[version] = C.[version]
    AND
-      S.temporalization = C.temporalization 
-), 
+      S.temporalization = C.temporalization
+),
 allConstructs AS (
    SELECT
       C.*
@@ -6081,13 +6512,13 @@ SELECT
       WHEN X.[activation] < S.[activation] THEN 'Past'
       ELSE 'Missing'
    END AS Existence
-FROM 
+FROM
    presentConstructs P
 FULL OUTER JOIN (
-   SELECT 
+   SELECT
       s.[name] + '.' + t.[name] AS [qualifiedName],
       t.[create_date]
-   FROM 
+   FROM
       sys.tables t
    JOIN
       sys.schemas s
@@ -6112,7 +6543,7 @@ AND
          constructs sub
       WHERE
          sub.[qualifiedName] = T.[qualifiedName]
-      AND 
+      AND
          sub.[activation] >= T.[create_date]
    )
 CROSS APPLY (
@@ -6150,12 +6581,12 @@ BEGIN
 	);
 	insert into #entities (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		[type],
 		qualifiedName
 	)
-	select 
+	select
 		o.[object_id],
 		s.[name],
 		o.[name],
@@ -6182,13 +6613,13 @@ BEGIN
 	);
 	insert into #exclusions (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	)
-	select 
+	select
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	from #entities
@@ -6206,13 +6637,13 @@ BEGIN
 	);
 	insert into #inclusions (
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	)
-	select 
+	select
 		[object_id],
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName
 	from #entities e
@@ -6222,48 +6653,48 @@ BEGIN
 	);
 	-- select * from #inclusions;
 	create table #downward (
-		referenced_id int not null unique, 
+		referenced_id int not null unique,
 		referenced_schema_name varchar(42) not null,
 		referenced_entity_name varchar(555) not null,
-		[level] smallint not null, 
-		[direction] char(1) not null, 
+		[level] smallint not null,
+		[direction] char(1) not null,
 		primary key (
 			referenced_schema_name,
 			referenced_entity_name
 		)
 	);
 	with downward as (
-		select 
-			r.referenced_schema_name, 
-			r.referenced_entity_name, 
-			-2 as [level], 
-			'D' as direction, 
+		select
+			r.referenced_schema_name,
+			r.referenced_entity_name,
+			-2 as [level],
+			'D' as direction,
 			r.referenced_id
-		from #inclusions 
+		from #inclusions
 		cross apply sys.dm_sql_referenced_entities(qualifiedName, 'OBJECT') r
 		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
 		union all
-		select 
-			r.referenced_schema_name, 
-			r.referenced_entity_name, 
-			d.[level] - 2, 
-			d.direction, 
+		select
+			r.referenced_schema_name,
+			r.referenced_entity_name,
+			d.[level] - 2,
+			d.direction,
 			r.referenced_id
 		from downward d
 		cross apply sys.dm_sql_referenced_entities(d.referenced_schema_name + '.' + d.referenced_entity_name, 'OBJECT') r
 		where r.referenced_minor_id = 0 and r.is_incomplete = 0 and r.referenced_id is not null and r.referenced_schema_name is not null
 	)
 	insert into #downward (
-		referenced_id, 
-		referenced_schema_name, 
-		referenced_entity_name, 
-		[level], 
+		referenced_id,
+		referenced_schema_name,
+		referenced_entity_name,
+		[level],
 		[direction]
 	)
-	select 
+	select
 		referenced_id,
-		referenced_schema_name, 
-		referenced_entity_name, 
+		referenced_schema_name,
+		referenced_entity_name,
 		max([level]) as [level],
 		min([direction]) as [direction]
 	from (
@@ -6274,9 +6705,9 @@ BEGIN
 	where not exists (
 		select top 1 [entity] from #exclusions where [schema] = referenced_schema_name and [entity] = referenced_entity_name
 	)
-	group by 
+	group by
 		referenced_id,
-		referenced_schema_name, 
+		referenced_schema_name,
 		referenced_entity_name;
 	-- select * from #downward order by level desc;
 	create table #entities_at_level (
@@ -6290,13 +6721,13 @@ BEGIN
 		)
 	);
 	insert into #entities_at_level (
-		[schema], 
+		[schema],
 		[entity],
 		qualifiedName,
 		[level]
 	)
-	select 
-		e.[schema], 
+	select
+		e.[schema],
 		e.[entity],
 		e.qualifiedName,
 		d.[level]
@@ -6308,30 +6739,30 @@ BEGIN
 		select top 1 [entity] from #exclusions where [schema] = e.[schema] and [entity] = e.[entity]
 	);
 	create table #upward (
-		referenced_id int not null unique, 
+		referenced_id int not null unique,
 		referenced_schema_name varchar(42) not null,
 		referenced_entity_name varchar(555) not null,
-		[level] smallint not null, 
-		[direction] char(1) not null, 
+		[level] smallint not null,
+		[direction] char(1) not null,
 		primary key (
 			referenced_schema_name,
 			referenced_entity_name
 		)
 	);
 	with upward as (
-		select 
-			referenced_schema_name, 
-			referenced_entity_name, 
-			[level], 
-			direction, 
+		select
+			referenced_schema_name,
+			referenced_entity_name,
+			[level],
+			direction,
 			referenced_id
 		from #downward
 		union all
-		select 
-			cast(r.referencing_schema_name as varchar(42)), 
-			cast(r.referencing_entity_name as varchar(555)), 
+		select
+			cast(r.referencing_schema_name as varchar(42)),
+			cast(r.referencing_entity_name as varchar(555)),
 			cast(u.[level] + 2 as smallint), -- series becomes 0, 2, 4, 6, ...
-			cast('U' as char(1)), 
+			cast('U' as char(1)),
 			r.referencing_id
 		from upward u
 		cross apply sys.dm_sql_referencing_entities(u.referenced_schema_name + '.' + u.referenced_entity_name, 'OBJECT') r
@@ -6341,36 +6772,36 @@ BEGIN
 		where r.referencing_id <> OBJECT_ID(u.referenced_schema_name + '.' + u.referenced_entity_name)
 	)
 	insert into #upward (
-		referenced_id, 
-		referenced_schema_name, 
-		referenced_entity_name, 
-		[level], 
+		referenced_id,
+		referenced_schema_name,
+		referenced_entity_name,
+		[level],
 		[direction]
 	)
-	select 
+	select
 		referenced_id,
-		referenced_schema_name, 
-		referenced_entity_name, 
+		referenced_schema_name,
+		referenced_entity_name,
 		max([level]) as [level],
 		min([direction]) as [direction]
-	from upward 
+	from upward
 	where referenced_schema_name + '.' + referenced_entity_name like @inclusionPattern
-	group by 
+	group by
 		referenced_id,
-		referenced_schema_name, 
+		referenced_schema_name,
 		referenced_entity_name;
 	with adjustment as (
-		select 
+		select
 			u.referenced_id,
 			fk.referenced_object_id,
 			1 as adjustment
 		from #upward u
 		join sys.foreign_keys fk
 		on fk.parent_object_id = u.referenced_id
-		union all 
+		union all
 		select
 			a.referenced_object_id,
-			fk.referenced_object_id, 
+			fk.referenced_object_id,
 			a.adjustment + 2 -- series becomes 1, 3, 5, 7, ... so ends up between already defined order
 		from adjustment a
 		join sys.foreign_keys fk
@@ -6382,7 +6813,7 @@ BEGIN
 	join adjustment a
 	on a.referenced_id = u.referenced_id;
 	select
-		case 
+		case
 			when t.objectType = 'CHECK'
 			then 'ALTER TABLE ' + n.parentName + ' DROP CONSTRAINT ' + u.referenced_entity_name
 			else 'DROP ' + t.objectType + ' ' + n.qualifiedName
@@ -6419,9 +6850,9 @@ BEGIN
 			'PROCEDURE',
 			'TABLE'
 		)
-	order by 
+	order by
 		[referenced_schema_name],
-		[level] desc, 
+		[level] desc,
 		[direction] asc,
 		case [type]
 			when 'C' then 0 -- CHECK CONSTRAINT
@@ -6578,8 +7009,39 @@ begin
 		for xml path('')
 	);
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
-	-- build attribute copy
-	if (@temporalization = 'crt')
+	-- build nexus copy, after the anchors and knots that its roles reference
+	set @xml = (
+		select
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' ON;' + @R
+			end,
+			'INSERT INTO ' + [capsule] + '.' + [name] + '(' + [columns] + ')' + @R +
+			'SELECT ' + [columns] + ' FROM ' + @source + '.' + [capsule] + '.' + [name] + ';' + @R,
+			case
+				when [generator] = 'true' then 'SET IDENTITY_INSERT ' + [capsule] + '.' + [name] + ' OFF;' + @R
+			end
+		from
+			[dbo]._Nexus x
+		cross apply (
+			select stuff((
+				select
+					', ' + [name]
+				from
+					sys.columns
+				where
+					[object_Id] = object_Id(x.[capsule] + '.' + x.[name])
+				and
+					is_computed = 0
+				for xml path('')
+			), 1, 2, '')
+		) c ([columns])
+		where
+			[version] = @version
+		for xml path('')
+	);
+	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
+	-- build attribute copy, of anchors and nexuses
+	if (@temporalization in ('bi', 'crt'))
 	begin
 		set @xml = (
 			select
@@ -6654,7 +7116,7 @@ begin
 	end
 	set @sql = @sql + isnull(@xml.value('.', 'varchar(max)'), '');
 	-- build tie copy
-	if (@temporalization = 'crt')
+	if (@temporalization in ('bi', 'crt'))
 	begin
 		set @xml = (
 			select
@@ -6767,7 +7229,16 @@ begin
 			union all
 			select
 				'l' + name as name,
-				3 as prio,
+				3 as prio, -- after the ties that may reference a nexus, before what its roles reference
+				'Metadata' + mnemonic as metadataColumn
+			from
+				[dbo]._Nexus
+			where
+				[version] = @schemaVersion
+			union all
+			select
+				'l' + name as name,
+				4 as prio,
 				'Metadata' + mnemonic as metadataColumn
 			from
 				[dbo]._Anchor
@@ -6776,7 +7247,7 @@ begin
 			union all
 			select
 				name,
-				4 as prio,
+				5 as prio,
 				'Metadata' + mnemonic as metadataColumn
 			from
 				[dbo]._Knot
@@ -6803,17 +7274,17 @@ go
 if OBJECT_ID('dbo._FindWhatToRemove', 'P') is not null
 drop proc [dbo].[_FindWhatToRemove];
 go
--- _FindWhatToRemove finds what else to remove given 
+-- _FindWhatToRemove finds what else to remove given
 -- some input data containing data about to be removed.
 --
---	Note that the table #removed must be created and 
---	have at least one row before calling this SP. This 
+--	Note that the table #removed must be created and
+--	have at least one row before calling this SP. This
 --	table will be populated with additional rows during
 --	the walking of the ties.
 --
---	Parameters: 
+--	Parameters:
 --
---	@current	The mnemonic of the anchor in which to 
+--	@current	The mnemonic of the anchor in which to
 --	start the tie walking.
 --	@forbid	Comma separated list of anchor mnemonics
 --	that never should be walked over.
@@ -6829,28 +7300,28 @@ go
 --	drop table #visited;
 --
 --	create table #visited (
---	Visited varchar(max), 
+--	Visited varchar(max),
 --	CurrentRole varchar(42),
 --	CurrentMnemonic char(2),
---	Occurrences int, 
---	Tie varchar(555), 
+--	Occurrences int,
+--	Tie varchar(555),
 --	AnchorRole varchar(42),
---	AnchorMnemonic char(2), 
+--	AnchorMnemonic char(2),
 --	VisitingOrder int
 --	);
 --
 --	if object_id('tempdb..#removed') is not null
 --	drop table #removed;
 --	create table #removed (
---	AnchorMnemonic char(2), 
---	AnchorID int, 
+--	AnchorMnemonic char(2),
+--	AnchorID int,
 --	primary key (
 --	AnchorMnemonic,
 --	AnchorID
 --	)
 --	);
 --
---	insert into #removed 
+--	insert into #removed
 --	values ('CO', 3);
 --
 --	insert into #visited
@@ -6859,17 +7330,17 @@ go
 --	select * from #visited;
 --	select * from #removed;
 create proc [dbo].[_FindWhatToRemove] (
-	@current char(2), 
+	@current char(2),
 	@forbid varchar(max) = null,
 	@visited varchar(max) = null
 )
-as 
+as
 begin
-	-- dummy creation to make intellisense work 
+	-- dummy creation to make intellisense work
 	if object_id('tempdb..#removed') is null
 	create table #removed (
-		AnchorMnemonic char(2), 
-		AnchorID int, 
+		AnchorMnemonic char(2),
+		AnchorID int,
 		primary key (
 			AnchorMnemonic,
 			AnchorID
@@ -6884,28 +7355,32 @@ begin
 			select
 				*
 			from (
-				select [schema].query('//tie[anchorRole[@type = sql:variable("@current")]]')
+				select [schema].query('//tie[*[local-name() = "role" or local-name() = "anchorRole"][@type = sql:variable("@current")]]')
 				from [dbo]._Schema
 				where version = @version
 			) t (ties)
 		);
-		select 
+		select
 			@visited as Visited,
-			Tie.value('../anchorRole[@type = sql:variable("@current")][1]/@role', 'varchar(42)') as CurrentRole,
+			Tie.value('(../*[local-name() = "role" or local-name() = "anchorRole"][@type = sql:variable("@current")]/@role)[1]', 'varchar(42)') as CurrentRole,
 			@current as CurrentMnemonic,
 			cast(null as int) as Occurrences,
 			replace(Tie.query('
 				for $tie in ..
 				return <name> {
-					for $role in ($tie/anchorRole, $tie/knotRole)
+					for $role in $tie/*[local-name() = "role" or local-name() = "anchorRole" or local-name() = "knotRole"]
 					return concat($role/@type, "_", $role/@role)
 				} </name>
 			').value('name[1]', 'varchar(555)'), ' ', '_') as Tie,
 			Tie.value('@role', 'varchar(42)') as AnchorRole,
-			Tie.value('@type', 'char(2)') as AnchorMnemonic, 
+			Tie.value('@type', 'char(2)') as AnchorMnemonic,
 			row_number() over (order by (select 1)) as VisitingOrder
 		into #walk
-		from @ties.nodes('tie/anchorRole[@type != sql:variable("@current")]') AS t (Tie)
+		from @ties.nodes('tie/*[local-name() = "role" or local-name() = "anchorRole"][@type != sql:variable("@current")]') AS t (Tie)
+		-- the walk goes over anchors, not over the knots or nexuses that the roles of a tie may also have
+		delete #walk where AnchorMnemonic not in (
+			select mnemonic from [dbo]._Anchor where [version] = @version
+		);
 		delete #walk where @forbid + ',' like '%' + AnchorMnemonic + ',%';
 		declare @update varchar(max) = (
 			select '
@@ -6923,14 +7398,14 @@ begin
 			for xml path(''), type
 		).value('.', 'varchar(max)');
 		exec(@update);
-		select 
-			substring(Visited, 2, len(Visited)-1) as Visited, 
-			CurrentRole, 
-			CurrentMnemonic, 
+		select
+			substring(Visited, 2, len(Visited)-1) as Visited,
+			CurrentRole,
+			CurrentMnemonic,
 			Occurrences,
-			Tie, 
-			AnchorRole, 
-			AnchorMnemonic, 
+			Tie,
+			AnchorRole,
+			AnchorMnemonic,
 			VisitingOrder
 		from #walk;
 		declare @i int = 0;
@@ -6944,11 +7419,11 @@ begin
 		while @i < @max
 		begin
 			set @i = @i + 1;
-			select 
+			select
 				@occurrences = Occurrences,
 				@tie = Tie,
-				@next = AnchorMnemonic, 
-				@anchor_column = AnchorMnemonic + '_ID_' + AnchorRole, 
+				@next = AnchorMnemonic,
+				@anchor_column = AnchorMnemonic + '_ID_' + AnchorRole,
 				@current_column = CurrentMnemonic + '_ID_' + CurrentRole
 			from #walk
 			where VisitingOrder = @i;
@@ -6964,7 +7439,7 @@ begin
 					left join #removed seen
 					on seen.AnchorMnemonic = ''' + @next + '''
 					and seen.AnchorId = t.' + @anchor_column + '
-					where seen.AnchorId is null; 
+					where seen.AnchorId is null;
 				';
 				exec(@insert);
 				exec _FindWhatToRemove @next, @forbid, @visited;
@@ -6976,17 +7451,17 @@ go
 if OBJECT_ID('dbo._GenerateDeleteScript') is not null
 drop proc [dbo]._GenerateDeleteScript;
 go
--- _GenerateDeleteScript creates delete statements 
--- that can be used to empty a database or parts of 
+-- _GenerateDeleteScript creates delete statements
+-- that can be used to empty a database or parts of
 -- a database.
 --
---	Parameters: 
+--	Parameters:
 --
---	@anchorList	An optional parameter specified as a 
+--	@anchorList	An optional parameter specified as a
 -- list of anchors to be deleted. If not
 -- specified, delete statements will be
 -- generated for all anchors.
--- 
+--
 -- EXAMPLE:
 -- _GenerateDeleteScript @anchorList = 'AC PE'
 --
@@ -7000,7 +7475,7 @@ begin
 		select max([version]) from _Schema
 	);
 	select a.[capsule] + '.' + a.[name] as qualifiedName, a.[mnemonic], a.[generator]
-	into #anchor 
+	into #anchor
 	from [dbo]._Anchor a
 	where a.[version] = @currentVersion
 	and (@anchorList is null or @anchorList like '%' + a.[mnemonic] + '%');
@@ -7011,7 +7486,7 @@ begin
 	on a.[mnemonic] = b.[anchorMnemonic]
 	where b.[version] = @currentVersion;
 	select distinct t.[capsule] + '.' + t.[name] as qualifiedName, t.[generator], t.[knots]
-	into #tie 
+	into #tie
 	from [dbo]._Tie t
 	join #anchor a
 	on t.[anchors] like '%' + a.[mnemonic] + '%'
@@ -7020,7 +7495,7 @@ begin
 	into #knot
 	from [dbo]._Knot k
 	outer apply (
-		select qualifiedName 
+		select qualifiedName
 		from #tie t
 		where t.[knots] like '%' + k.[mnemonic] + '%'
 	) kt
@@ -7046,8 +7521,8 @@ begin
 			select qualifiedName from #attribute
 		)
 	);
-	select 
-		case 
+	select
+		case
 			when ROW_NUMBER() over (order by ordering, qualifiedName) = 1
 			then 'DECLARE @deletedRows INT; ' + CHAR(13)
 			else ''
@@ -7058,11 +7533,11 @@ begin
 		CHAR(9) + 'DELETE TOP (' + cast(@batchSize as varchar(10)) + ') ' + qualifiedName + '; ' + CHAR(13) +
 		CHAR(9) + 'SET @deletedRows = @@ROWCOUNT; ' + CHAR(13) +
 		'END' + CHAR(13) +
-		case 
+		case
 			when [generator] = 'true'
-			then 'DBCC CHECKIDENT (''' + qualifiedName + ''', RESEED, 0); ' + CHAR(13) 
+			then 'DBCC CHECKIDENT (''' + qualifiedName + ''', RESEED, 0); ' + CHAR(13)
 			else ''
-		end as [text()] 
+		end as [text()]
 	from (
 		select 1 as ordering, qualifiedName, [generator] from #attribute
 		union all
@@ -7344,10 +7819,26 @@ END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
 @value = '
-An event, with an attribute of its own.
+An event, with attributes of its own, a static one and a historized one.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_Event';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'SU_ID_for';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+The subject the event is for.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_Event',
+@level2type = N'Column', @level2name = 'SU_ID_for';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -7358,10 +7849,24 @@ END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
 @value = '
-Static, as the attributes of a nexus are.
+Static.
 ',
 @level0type = N'Schema', @level0name = 'dbo',
 @level1type = N'Table', @level1name = 'EV_QTY_Event_Quantity';
+GO
+BEGIN TRY
+EXEC sp_dropextendedproperty
+@name = N'MS_Description',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_PLC_Event_Place';
+END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
+EXEC sp_addextendedproperty
+@name = N'MS_Description',
+@value = '
+Historized and not restatable, as an attribute of an anchor may be.
+',
+@level0type = N'Schema', @level0name = 'dbo',
+@level1type = N'Table', @level1name = 'EV_PLC_Event_Place';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

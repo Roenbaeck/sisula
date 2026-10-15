@@ -33,7 +33,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_DAT_Event_Date]
     ON [attributes].[EV_DAT_Event_Date] (
-        EV_DAT_Assertion desc, 
+        EV_DAT_Assertion desc,
         EV_DAT_EV_ID asc,
         EV_DAT_PositedAt desc,
         EV_DAT_Positor asc
@@ -70,7 +70,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_AUD_Event_Audience]
     ON [attributes].[EV_AUD_Event_Audience] (
-        EV_AUD_Assertion desc, 
+        EV_AUD_Assertion desc,
         EV_AUD_EV_ID asc,
         EV_AUD_PositedAt desc,
         EV_AUD_Positor asc
@@ -107,7 +107,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_REV_Event_Revenue]
     ON [attributes].[EV_REV_Event_Revenue] (
-        EV_REV_Assertion desc, 
+        EV_REV_Assertion desc,
         EV_REV_EV_ID asc,
         EV_REV_PositedAt desc,
         EV_REV_Positor asc
@@ -145,7 +145,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_STA_Event_Status]
     ON [attributes].[EV_STA_Event_Status] (
-        EV_STA_Assertion desc, 
+        EV_STA_Assertion desc,
         EV_STA_EV_ID asc,
         EV_STA_ChangedAt desc,
         EV_STA_PositedAt desc,
@@ -183,7 +183,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_UTL_Event_Utilization]
     ON [attributes].[EV_UTL_Event_Utilization] (
-        EV_UTL_Assertion desc, 
+        EV_UTL_Assertion desc,
         EV_UTL_EV_ID asc,
         EV_UTL_PositedAt desc,
         EV_UTL_Positor asc
@@ -221,7 +221,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_LVL_Event_Level]
     ON [attributes].[EV_LVL_Event_Level] (
-        EV_LVL_Assertion desc, 
+        EV_LVL_Assertion desc,
         EV_LVL_EV_ID asc,
         EV_LVL_ChangedAt desc,
         EV_LVL_PositedAt desc,
@@ -260,7 +260,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_NAM_Stage_Name]
     ON [attributes].[ST_NAM_Stage_Name] (
-        ST_NAM_Assertion desc, 
+        ST_NAM_Assertion desc,
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc,
         ST_NAM_PositedAt desc,
@@ -299,7 +299,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_LOC_Stage_Location]
     ON [attributes].[ST_LOC_Stage_Location] (
-        ST_LOC_Assertion desc, 
+        ST_LOC_Assertion desc,
         ST_LOC_ST_ID asc,
         ST_LOC_PositedAt desc,
         ST_LOC_Positor asc
@@ -337,7 +337,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_AVG_Stage_Average]
     ON [attributes].[ST_AVG_Stage_Average] (
-        ST_AVG_Assertion desc, 
+        ST_AVG_Assertion desc,
         ST_AVG_ST_ID asc,
         ST_AVG_ChangedAt desc,
         ST_AVG_PositedAt desc,
@@ -375,7 +375,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkST_MIN_Stage_Minimum]
     ON [attributes].[ST_MIN_Stage_Minimum] (
-        ST_MIN_Assertion desc, 
+        ST_MIN_Assertion desc,
         ST_MIN_ST_ID asc,
         ST_MIN_PositedAt desc,
         ST_MIN_Positor asc
@@ -413,7 +413,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_NAM_Actor_Name]
     ON [attributes].[AC_NAM_Actor_Name] (
-        AC_NAM_Assertion desc, 
+        AC_NAM_Assertion desc,
         AC_NAM_AC_ID asc,
         AC_NAM_ChangedAt desc,
         AC_NAM_PositedAt desc,
@@ -451,7 +451,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_GEN_Actor_Gender]
     ON [attributes].[AC_GEN_Actor_Gender] (
-        AC_GEN_Assertion desc, 
+        AC_GEN_Assertion desc,
         AC_GEN_AC_ID asc,
         AC_GEN_PositedAt desc,
         AC_GEN_Positor asc
@@ -489,7 +489,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkAC_PLV_Actor_ProfessionalLevel]
     ON [attributes].[AC_PLV_Actor_ProfessionalLevel] (
-        AC_PLV_Assertion desc, 
+        AC_PLV_Assertion desc,
         AC_PLV_AC_ID asc,
         AC_PLV_ChangedAt desc,
         AC_PLV_PositedAt desc,
@@ -527,7 +527,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkPR_NAM_Program_Name]
     ON [attributes].[PR_NAM_Program_Name] (
-        PR_NAM_Assertion desc, 
+        PR_NAM_Assertion desc,
         PR_NAM_PR_ID asc,
         PR_NAM_PositedAt desc,
         PR_NAM_Positor asc
@@ -565,7 +565,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkPR_LEN_Program_Length]
     ON [attributes].[PR_LEN_Program_Length] (
-        PR_LEN_Assertion desc, 
+        PR_LEN_Assertion desc,
         PR_LEN_PR_ID asc,
         PR_LEN_ChangedAt desc,
         PR_LEN_PositedAt desc,

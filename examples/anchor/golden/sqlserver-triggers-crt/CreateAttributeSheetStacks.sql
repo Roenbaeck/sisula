@@ -1,4 +1,90 @@
 -- Attribute sheet stack ----------------------------------------------------------------------------------------------
+-- ssEV_PLC_Event_Place procedure returning one temporal sheet per positor
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.ssEV_PLC_Event_Place', 'P') IS NOT NULL
+DROP PROCEDURE [dbo].[ssEV_PLC_Event_Place];
+GO
+CREATE PROCEDURE [dbo].[ssEV_PLC_Event_Place] (
+    @EV_ID int = null
+)
+AS
+BEGIN
+    DECLARE @pivot varchar(max);
+    SET @pivot = REPLACE((
+        SELECT DISTINCT
+            '[' + convert(varchar(23), EV_PLC_ChangedAt, 126) + ']' AS [text()]
+        FROM
+            [dbo].[EV_PLC_Event_Place]
+        WHERE
+            EV_PLC_EV_ID = ISNULL(@EV_ID, EV_PLC_EV_ID)
+        FOR XML PATH('')
+    ), '][', '], [');
+    DECLARE positor CURSOR FOR
+    SELECT DISTINCT
+        EV_PLC_Positor
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        EV_PLC_EV_ID = ISNULL(@EV_ID, EV_PLC_EV_ID)
+    AND
+        EV_PLC_Event_Place is not null;
+    DECLARE @positor varchar(20);
+    OPEN positor;
+    FETCH NEXT FROM positor INTO @positor;
+    DECLARE @sql nvarchar(max);
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @sql = '
+            SELECT
+                b.EV_PLC_Positor,
+                x.EV_PLC_EV_ID,
+                x.EV_PLC_PositedAt,
+                b.EV_PLC_Assertion,
+                ' + @pivot + '
+            FROM (
+                SELECT DISTINCT
+                    EV_PLC_EV_ID,
+                    EV_PLC_PositedAt
+                FROM
+                    [dbo].[EV_PLC_Event_Place]
+                WHERE
+                    EV_PLC_EV_ID = ISNULL(@EV_ID, EV_PLC_EV_ID)
+            ) x
+            LEFT JOIN (
+                SELECT
+                    EV_PLC_Positor,
+                    EV_PLC_EV_ID,
+                    EV_PLC_PositedAt,
+                    EV_PLC_Assertion,
+                    ' + @pivot + '
+                FROM
+                    [dbo].[EV_PLC_Event_Place]
+                PIVOT (
+                    MIN(EV_PLC_Event_Place) FOR EV_PLC_ChangedAt IN (' + @pivot + ')
+                ) p
+                WHERE
+                    EV_PLC_EV_ID = ISNULL(@EV_ID, EV_PLC_EV_ID)
+                AND
+                    EV_PLC_Positor = ' + @positor + '
+            ) b
+            ON
+                b.EV_PLC_EV_ID = x.EV_PLC_EV_ID
+            AND
+                b.EV_PLC_PositedAt = x.EV_PLC_PositedAt
+            ORDER BY
+                EV_PLC_EV_ID,
+                EV_PLC_PositedAt,
+                EV_PLC_Assertion
+        ';
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@EV_ID int', @EV_ID;
+        FETCH NEXT FROM positor INTO @positor;
+    END
+    CLOSE positor;
+    DEALLOCATE positor;
+END
+GO
+-- Attribute sheet stack ----------------------------------------------------------------------------------------------
 -- ssSU_TTL_Subject_Title procedure returning one temporal sheet per positor
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.ssSU_TTL_Subject_Title', 'P') IS NOT NULL
@@ -31,7 +117,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -76,7 +162,8 @@ BEGIN
                 SU_TTL_PositedAt,
                 SU_TTL_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -116,7 +203,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -161,7 +248,8 @@ BEGIN
                 SU_STA_PositedAt,
                 SU_STA_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -201,7 +289,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -246,7 +334,8 @@ BEGIN
                 SU_LBL_PositedAt,
                 SU_LBL_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -286,7 +375,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -331,7 +420,8 @@ BEGIN
                 SU_TAG_PositedAt,
                 SU_TAG_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -371,7 +461,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -416,7 +506,8 @@ BEGIN
                 SU_LVL_PositedAt,
                 SU_LVL_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -456,7 +547,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -501,7 +592,8 @@ BEGIN
                 SU_TXT_PositedAt,
                 SU_TXT_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -541,7 +633,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -586,7 +678,8 @@ BEGIN
                 SU_ASR_PositedAt,
                 SU_ASR_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -626,7 +719,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -671,7 +764,8 @@ BEGIN
                 SU_ERS_PositedAt,
                 SU_ERS_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@SU_ID int', @SU_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;

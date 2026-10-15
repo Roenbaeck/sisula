@@ -25,7 +25,7 @@ BEGIN
         EV_STA_Event_Status,
         EV_STA_ChangedAt
     FROM
-        [attributes].[eEV_STA_Event_Status](@equivalent) 
+        [attributes].[eEV_STA_Event_Status](@equivalent)
     WHERE
         EV_STA_ChangedAt <= @changingTimepoint;
     ');
@@ -71,7 +71,7 @@ BEGIN
         ST_NAM_Stage_Name,
         ST_NAM_ChangedAt
     FROM
-        [attributes].[eST_NAM_Stage_Name](@equivalent) 
+        [attributes].[eST_NAM_Stage_Name](@equivalent)
     WHERE
         ST_NAM_ChangedAt <= @changingTimepoint;
     ');
@@ -161,7 +161,7 @@ BEGIN
         PR_LEN_Program_Length,
         PR_LEN_ChangedAt
     FROM
-        [attributes].[ePR_LEN_Program_Length](@equivalent) 
+        [attributes].[ePR_LEN_Program_Length](@equivalent)
     WHERE
         PR_LEN_ChangedAt <= @changingTimepoint;
     ');

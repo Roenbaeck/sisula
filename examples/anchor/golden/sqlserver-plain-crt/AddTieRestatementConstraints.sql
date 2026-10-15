@@ -27,8 +27,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_partner int; 
-    DECLARE @AC_with int; 
+    DECLARE @AC_partner int;
+    DECLARE @AC_with int;
     DECLARE @ONG_currently tinyint;
     SELECT
         @AC_partner = p.AC_ID_partner,
@@ -80,7 +80,7 @@ BEGIN
                 [dbo].[fAC_partner_AC_with_ONG_currently] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
             (
@@ -125,8 +125,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_part int; 
-    DECLARE @PR_in int; 
+    DECLARE @AC_part int;
+    DECLARE @PR_in int;
     DECLARE @RAT_got tinyint;
     SELECT
         @AC_part = p.AC_ID_part,
@@ -172,7 +172,7 @@ BEGIN
                 [dbo].[fAC_part_PR_in_RAT_got] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
                 fol.AC_ID_part = @AC_part

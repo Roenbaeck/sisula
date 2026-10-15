@@ -36,7 +36,7 @@ CREATE TABLE [attributes].[EV_AUD_Event_Audience] (
         EV_AUD_EQ asc,
         EV_AUD_EV_ID asc
     )
-); 
+);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- EV_REV_Event_Revenue table (on EV_Event)
@@ -72,7 +72,7 @@ CREATE TABLE [attributes].[EV_STA_Event_Status] (
         EV_STA_EV_ID asc,
         EV_STA_ChangedAt desc
     )
-); 
+);
 GO
 -- Knotted static attribute table ------------------------------------------------------------------------------------
 -- EV_UTL_Event_Utilization table (on EV_Event)
@@ -132,7 +132,7 @@ CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc
     )
-); 
+);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
@@ -151,7 +151,7 @@ CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
         ST_LOC_EQ asc,
         ST_LOC_ST_ID asc
     )
-); 
+);
 GO
 -- Knotted historized attribute table --------------------------------------------------------------------------------
 -- ST_AVG_Stage_Average table (on ST_Stage)

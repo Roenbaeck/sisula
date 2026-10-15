@@ -4,7 +4,7 @@
 -- point in changing time, or a tie annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that 
+-- in time. The forwarder is the opposite of the rewinder, such that
 -- their union corresponds to all rows in the posit table.
 --
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
@@ -97,7 +97,7 @@ BEGIN
         a.AC_partner_AC_with_ONG_currently_PositedAt,
         a.AC_partner_AC_with_ONG_currently_Reliability
     FROM
-        [dbo].[rAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+        [dbo].[rAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
     ON
@@ -136,7 +136,7 @@ BEGIN
         a.AC_partner_AC_with_ONG_currently_PositedAt,
         a.AC_partner_AC_with_ONG_currently_Reliability
     FROM
-        [dbo].[fAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p 
+        [dbo].[fAC_partner_AC_with_ONG_currently_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_partner_AC_with_ONG_currently_Annex](@positingTimepoint) a
     ON
@@ -428,7 +428,7 @@ BEGIN
         a.AC_part_PR_in_RAT_got_PositedAt,
         a.AC_part_PR_in_RAT_got_Reliability
     FROM
-        [dbo].[rAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+        [dbo].[rAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
     ON
@@ -467,7 +467,7 @@ BEGIN
         a.AC_part_PR_in_RAT_got_PositedAt,
         a.AC_part_PR_in_RAT_got_Reliability
     FROM
-        [dbo].[fAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p 
+        [dbo].[fAC_part_PR_in_RAT_got_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rAC_part_PR_in_RAT_got_Annex](@positingTimepoint) a
     ON
@@ -570,7 +570,7 @@ BEGIN
         a.ST_at_PR_isPlaying_PositedAt,
         a.ST_at_PR_isPlaying_Reliability
     FROM
-        [dbo].[rST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+        [dbo].[rST_at_PR_isPlaying_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
     ON
@@ -608,7 +608,7 @@ BEGIN
         a.ST_at_PR_isPlaying_PositedAt,
         a.ST_at_PR_isPlaying_Reliability
     FROM
-        [dbo].[fST_at_PR_isPlaying_Posit](@changingTimepoint) p 
+        [dbo].[fST_at_PR_isPlaying_Posit](@changingTimepoint) p
     JOIN
         [dbo].[rST_at_PR_isPlaying_Annex](@positingTimepoint) a
     ON

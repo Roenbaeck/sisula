@@ -16,7 +16,7 @@ DROP TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank];
 GO
 CREATE TRIGGER [dbo].[rt_SU_keeper_OB_thing_GRD_rank] ON [dbo].[SU_keeper_OB_thing_GRD_rank_Annex]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -33,9 +33,10 @@ BEGIN
             SU_ID_keeper asc,
             OB_ID_thing asc,
             SU_keeper_OB_thing_GRD_rank_ChangedAt desc,
-            SU_keeper_OB_thing_GRD_rank_PositedAt desc
-        ), 
-        unique ( 
+            SU_keeper_OB_thing_GRD_rank_PositedAt desc,
+            SU_keeper_OB_thing_GRD_rank_Reliability desc
+        ),
+        unique (
             SU_keeper_OB_thing_GRD_rank_ID,
             SU_keeper_OB_thing_GRD_rank_PositedAt
         )
@@ -49,7 +50,7 @@ BEGIN
         SU_ID_keeper,
         OB_ID_thing,
         GRD_ID_rank
-    ) 
+    )
     SELECT
         i.SU_keeper_OB_thing_GRD_rank_ID,
         i.Metadata_SU_keeper_OB_thing_GRD_rank,
@@ -61,9 +62,9 @@ BEGIN
         p.GRD_ID_rank
     FROM
         inserted i
-    JOIN 
+    JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] p
-    ON 
+    ON
         p.SU_keeper_OB_thing_GRD_rank_ID = i.SU_keeper_OB_thing_GRD_rank_ID; -- the posit has already been created
     INSERT INTO @inserted (
         SU_keeper_OB_thing_GRD_rank_ID,
@@ -74,7 +75,7 @@ BEGIN
         SU_ID_keeper,
         OB_ID_thing,
         GRD_ID_rank
-    ) 
+    )
     SELECT
         p.SU_keeper_OB_thing_GRD_rank_ID,
         p.Metadata_SU_keeper_OB_thing_GRD_rank,
@@ -88,8 +89,8 @@ BEGIN
         SELECT DISTINCT
             SU_ID_keeper,
             OB_ID_thing
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [dbo].[SU_keeper_OB_thing_GRD_rank] p
@@ -97,7 +98,7 @@ BEGIN
         p.SU_ID_keeper = i.SU_ID_keeper
     AND
         p.OB_ID_thing = i.OB_ID_thing
-    LEFT JOIN 
+    LEFT JOIN
         @inserted x
     ON
         x.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
@@ -106,13 +107,13 @@ BEGIN
     WHERE
         x.SU_keeper_OB_thing_GRD_rank_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @inserted a
     OUTER APPLY (
         SELECT TOP 1
             x.SU_keeper_OB_thing_GRD_rank_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.SU_keeper_OB_thing_GRD_rank_ID = a.SU_keeper_OB_thing_GRD_rank_ID
@@ -120,11 +121,11 @@ BEGIN
             x.SU_keeper_OB_thing_GRD_rank_PositedAt < a.SU_keeper_OB_thing_GRD_rank_PositedAt
         ORDER BY
             x.SU_keeper_OB_thing_GRD_rank_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.SU_keeper_OB_thing_GRD_rank_Reliability
-        FROM 
+        FROM
             @inserted x
         WHERE
             x.SU_keeper_OB_thing_GRD_rank_ID = a.SU_keeper_OB_thing_GRD_rank_ID
@@ -132,7 +133,7 @@ BEGIN
             x.SU_keeper_OB_thing_GRD_rank_PositedAt > a.SU_keeper_OB_thing_GRD_rank_PositedAt
         ORDER BY
             x.SU_keeper_OB_thing_GRD_rank_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.SU_keeper_OB_thing_GRD_rank_Reliability = 1 AND fol.SU_keeper_OB_thing_GRD_rank_Reliability = 0)
     OR
@@ -141,7 +142,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted a
         CROSS APPLY (
             SELECT TOP 1
@@ -157,10 +158,11 @@ BEGIN
                 h.OB_ID_thing = a.OB_ID_thing
             AND
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt < a.SU_keeper_OB_thing_GRD_rank_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC,
-                h.SU_keeper_OB_thing_GRD_rank_PositedAt DESC
-        ) pre 
+                h.SU_keeper_OB_thing_GRD_rank_PositedAt DESC,
+                h.SU_keeper_OB_thing_GRD_rank_Reliability DESC
+        ) pre
         WHERE
             a.SU_ID_keeper = pre.SU_ID_keeper
         AND

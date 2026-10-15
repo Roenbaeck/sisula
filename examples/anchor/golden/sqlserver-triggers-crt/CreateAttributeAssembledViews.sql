@@ -33,10 +33,49 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkEV_QTY_Event_Quantity]
     ON [dbo].[EV_QTY_Event_Quantity] (
-        EV_QTY_Assertion desc, 
+        EV_QTY_Assertion desc,
         EV_QTY_EV_ID asc,
         EV_QTY_PositedAt desc,
         EV_QTY_Positor asc
+    );
+    ');
+END
+GO
+-- Attribute assembled view -------------------------------------------------------------------------------------------
+-- EV_PLC_Event_Place assembled view of the posit and annex tables,
+-- pkEV_PLC_Event_Place optional temporal consistency constraint
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.EV_PLC_Event_Place', 'V') IS NULL
+BEGIN
+    EXEC('
+    CREATE VIEW [dbo].[EV_PLC_Event_Place]
+    WITH SCHEMABINDING AS
+    SELECT
+        a.Metadata_EV_PLC,
+        p.EV_PLC_ID,
+        p.EV_PLC_EV_ID,
+        p.EV_PLC_Event_Place,
+        p.EV_PLC_ChangedAt,
+        a.EV_PLC_PositedAt,
+        a.EV_PLC_Positor,
+        a.EV_PLC_Reliability,
+        a.EV_PLC_Assertion
+    FROM
+        [dbo].[EV_PLC_Event_Place_Posit] p
+    JOIN
+        [dbo].[EV_PLC_Event_Place_Annex] a
+    ON
+        a.EV_PLC_ID = p.EV_PLC_ID;
+    ');
+    -- Constraint ensuring that recorded and erased posits are temporally consistent
+    EXEC('
+    CREATE UNIQUE CLUSTERED INDEX [pkEV_PLC_Event_Place]
+    ON [dbo].[EV_PLC_Event_Place] (
+        EV_PLC_Assertion desc,
+        EV_PLC_EV_ID asc,
+        EV_PLC_ChangedAt desc,
+        EV_PLC_PositedAt desc,
+        EV_PLC_Positor asc
     );
     ');
 END
@@ -70,7 +109,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_NAM_Subject_Name]
     ON [dbo].[SU_NAM_Subject_Name] (
-        SU_NAM_Assertion desc, 
+        SU_NAM_Assertion desc,
         SU_NAM_SU_ID asc,
         SU_NAM_PositedAt desc,
         SU_NAM_Positor asc
@@ -107,7 +146,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_COD_Subject_Code]
     ON [dbo].[SU_COD_Subject_Code] (
-        SU_COD_Assertion desc, 
+        SU_COD_Assertion desc,
         SU_COD_SU_ID asc,
         SU_COD_PositedAt desc,
         SU_COD_Positor asc
@@ -144,7 +183,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_GRD_Subject_Grade]
     ON [dbo].[SU_GRD_Subject_Grade] (
-        SU_GRD_Assertion desc, 
+        SU_GRD_Assertion desc,
         SU_GRD_SU_ID asc,
         SU_GRD_PositedAt desc,
         SU_GRD_Positor asc
@@ -182,7 +221,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_NOT_Subject_Note]
     ON [dbo].[SU_NOT_Subject_Note] (
-        SU_NOT_Assertion desc, 
+        SU_NOT_Assertion desc,
         SU_NOT_SU_ID asc,
         SU_NOT_PositedAt desc,
         SU_NOT_Positor asc
@@ -220,7 +259,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_TTL_Subject_Title]
     ON [dbo].[SU_TTL_Subject_Title] (
-        SU_TTL_Assertion desc, 
+        SU_TTL_Assertion desc,
         SU_TTL_SU_ID asc,
         SU_TTL_ChangedAt desc,
         SU_TTL_PositedAt desc,
@@ -259,7 +298,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_STA_Subject_State]
     ON [dbo].[SU_STA_Subject_State] (
-        SU_STA_Assertion desc, 
+        SU_STA_Assertion desc,
         SU_STA_SU_ID asc,
         SU_STA_ChangedAt desc,
         SU_STA_PositedAt desc,
@@ -298,7 +337,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_LBL_Subject_Label]
     ON [dbo].[SU_LBL_Subject_Label] (
-        SU_LBL_Assertion desc, 
+        SU_LBL_Assertion desc,
         SU_LBL_SU_ID asc,
         SU_LBL_ChangedAt desc,
         SU_LBL_PositedAt desc,
@@ -337,7 +376,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_TAG_Subject_Tag]
     ON [dbo].[SU_TAG_Subject_Tag] (
-        SU_TAG_Assertion desc, 
+        SU_TAG_Assertion desc,
         SU_TAG_SU_ID asc,
         SU_TAG_ChangedAt desc,
         SU_TAG_PositedAt desc,
@@ -376,7 +415,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_LVL_Subject_Level]
     ON [dbo].[SU_LVL_Subject_Level] (
-        SU_LVL_Assertion desc, 
+        SU_LVL_Assertion desc,
         SU_LVL_SU_ID asc,
         SU_LVL_ChangedAt desc,
         SU_LVL_PositedAt desc,
@@ -416,7 +455,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_TXT_Subject_Text]
     ON [dbo].[SU_TXT_Subject_Text] (
-        SU_TXT_Assertion desc, 
+        SU_TXT_Assertion desc,
         SU_TXT_SU_ID asc,
         SU_TXT_ChangedAt desc,
         SU_TXT_PositedAt desc,
@@ -455,7 +494,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_ASR_Subject_Assessment]
     ON [dbo].[SU_ASR_Subject_Assessment] (
-        SU_ASR_Assertion desc, 
+        SU_ASR_Assertion desc,
         SU_ASR_SU_ID asc,
         SU_ASR_ChangedAt desc,
         SU_ASR_PositedAt desc,
@@ -494,7 +533,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkSU_ERS_Subject_Erasable]
     ON [dbo].[SU_ERS_Subject_Erasable] (
-        SU_ERS_Assertion desc, 
+        SU_ERS_Assertion desc,
         SU_ERS_SU_ID asc,
         SU_ERS_ChangedAt desc,
         SU_ERS_PositedAt desc,
@@ -532,7 +571,7 @@ BEGIN
     EXEC('
     CREATE UNIQUE CLUSTERED INDEX [pkOB_NAM_Object_Name]
     ON [dbo].[OB_NAM_Object_Name] (
-        OB_NAM_Assertion desc, 
+        OB_NAM_Assertion desc,
         OB_NAM_OB_ID asc,
         OB_NAM_PositedAt desc,
         OB_NAM_Positor asc

@@ -16,7 +16,7 @@ DROP TRIGGER [attributes].[rt_ST_AVG_Stage_Average];
 GO
 CREATE TRIGGER [attributes].[rt_ST_AVG_Stage_Average] ON [attributes].[ST_AVG_Stage_Average]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -24,9 +24,9 @@ BEGIN
         ST_ID int not null,
         Metadata_ST_AVG int not null,
         ST_AVG_ChangedAt datetime2 not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         primary key(
-            ST_ID asc, 
+            ST_ID asc,
             ST_AVG_ChangedAt desc
         )
     );
@@ -41,7 +41,7 @@ BEGIN
         Metadata_ST_AVG,
         ST_AVG_ChangedAt,
         UTL_ID
-    FROM 
+    FROM
         inserted;
     INSERT INTO @ST_AVG_Stage_Average (
         ST_ID,
@@ -55,14 +55,14 @@ BEGIN
         p.ST_AVG_ChangedAt,
         p.UTL_ID
     FROM (
-        SELECT DISTINCT 
-            ST_ID 
-        FROM 
+        SELECT DISTINCT
+            ST_ID
+        FROM
             @ST_AVG_Stage_Average
-    ) i 
+    ) i
     JOIN
         [attributes].[ST_AVG_Stage_Average] p
-    ON 
+    ON
         p.ST_ID = i.ST_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -78,20 +78,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @ST_AVG_Stage_Average i
         CROSS APPLY (
             SELECT TOP 1
                 h.ST_ID,
                 h.ST_AVG_ChangedAt,
                 h.UTL_ID
-            FROM 
+            FROM
                 @ST_AVG_Stage_Average h
             WHERE
                 h.ST_ID = i.ST_ID
             AND
                 h.ST_AVG_ChangedAt < i.ST_AVG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_AVG_ChangedAt DESC
         ) pre
         WHERE
@@ -114,7 +114,7 @@ DROP TRIGGER [attributes].[rt_AC_NAM_Actor_Name];
 GO
 CREATE TRIGGER [attributes].[rt_AC_NAM_Actor_Name] ON [attributes].[AC_NAM_Actor_Name]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -124,7 +124,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_Actor_Name varbinary(max) not null,
         primary key(
-            AC_ID asc, 
+            AC_ID asc,
             AC_NAM_ChangedAt desc
         )
     );
@@ -139,7 +139,7 @@ BEGIN
         Metadata_AC_NAM,
         AC_NAM_ChangedAt,
         AC_NAM_Actor_Name
-    FROM 
+    FROM
         inserted;
     INSERT INTO @AC_NAM_Actor_Name (
         AC_ID,
@@ -153,14 +153,14 @@ BEGIN
         p.AC_NAM_ChangedAt,
         p.AC_NAM_Actor_Name
     FROM (
-        SELECT DISTINCT 
-            AC_ID 
-        FROM 
+        SELECT DISTINCT
+            AC_ID
+        FROM
             @AC_NAM_Actor_Name
-    ) i 
+    ) i
     JOIN
         [attributes].[AC_NAM_Actor_Name] p
-    ON 
+    ON
         p.AC_ID = i.AC_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -176,20 +176,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @AC_NAM_Actor_Name i
         CROSS APPLY (
             SELECT TOP 1
                 h.AC_ID,
                 h.AC_NAM_ChangedAt,
                 h.AC_NAM_Actor_Name
-            FROM 
+            FROM
                 @AC_NAM_Actor_Name h
             WHERE
                 h.AC_ID = i.AC_ID
             AND
                 h.AC_NAM_ChangedAt < i.AC_NAM_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_NAM_ChangedAt DESC
         ) pre
         WHERE

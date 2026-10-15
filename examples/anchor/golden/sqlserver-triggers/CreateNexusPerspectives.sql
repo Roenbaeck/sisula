@@ -42,13 +42,30 @@ SELECT
     [EV].SU_ID_for,
     [QTY].EV_QTY_EV_ID,
     [QTY].Metadata_EV_QTY,
-    [QTY].EV_QTY_Event_Quantity
+    [QTY].EV_QTY_Event_Quantity,
+    [PLC].EV_PLC_EV_ID,
+    [PLC].Metadata_EV_PLC,
+    [PLC].EV_PLC_ChangedAt,
+    [PLC].EV_PLC_Event_Place
 FROM
     [dbo].[EV_Event] [EV]
 LEFT JOIN
     [dbo].[EV_QTY_Event_Quantity] [QTY]
 ON
-    [QTY].EV_QTY_EV_ID = [EV].EV_ID;
+    [QTY].EV_QTY_EV_ID = [EV].EV_ID
+LEFT JOIN
+    [dbo].[EV_PLC_Event_Place] [PLC]
+ON
+    [PLC].EV_PLC_EV_ID = [EV].EV_ID
+AND
+    [PLC].EV_PLC_ChangedAt = (
+        SELECT
+            max(sub.EV_PLC_ChangedAt)
+        FROM
+            [dbo].[EV_PLC_Event_Place] sub
+        WHERE
+            sub.EV_PLC_EV_ID = [EV].EV_ID
+   );
 GO
 -- Point-in-time perspective -----------------------------------------------------------------------------------------
 -- pEV_Event viewed as it was on the given timepoint
@@ -63,13 +80,30 @@ SELECT
     [EV].SU_ID_for,
     [QTY].EV_QTY_EV_ID,
     [QTY].Metadata_EV_QTY,
-    [QTY].EV_QTY_Event_Quantity
+    [QTY].EV_QTY_Event_Quantity,
+    [PLC].EV_PLC_EV_ID,
+    [PLC].Metadata_EV_PLC,
+    [PLC].EV_PLC_ChangedAt,
+    [PLC].EV_PLC_Event_Place
 FROM
     [dbo].[EV_Event] [EV]
 LEFT JOIN
     [dbo].[EV_QTY_Event_Quantity] [QTY]
 ON
-    [QTY].EV_QTY_EV_ID = [EV].EV_ID;
+    [QTY].EV_QTY_EV_ID = [EV].EV_ID
+LEFT JOIN
+    [dbo].[rEV_PLC_Event_Place](@changingTimepoint) [PLC]
+ON
+    [PLC].EV_PLC_EV_ID = [EV].EV_ID
+AND
+    [PLC].EV_PLC_ChangedAt = (
+        SELECT
+            max(sub.EV_PLC_ChangedAt)
+        FROM
+            [dbo].[rEV_PLC_Event_Place](@changingTimepoint) sub
+        WHERE
+            sub.EV_PLC_EV_ID = [EV].EV_ID
+   );
 GO
 -- Now perspective --------------------------------------------------------------------------------------------------
 -- nEV_Event viewed as it currently is (cannot include future versions)
@@ -80,4 +114,34 @@ SELECT
     *
 FROM
     [dbo].[pEV_Event](sysdatetime());
+GO
+-- Difference perspective -------------------------------------------------------------------------------------------
+-- dEV_Event showing all differences between the given timepoints and optionally for a subset of attributes
+----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [dbo].[dEV_Event] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    [pEV].*
+FROM (
+    SELECT DISTINCT
+        EV_PLC_EV_ID AS EV_ID,
+        EV_PLC_ChangedAt AS inspectedTimepoint,
+        'PLC' AS mnemonic
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        (@selection is null OR @selection like '%PLC%')
+    AND
+        EV_PLC_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [dbo].[pEV_Event](timepoints.inspectedTimepoint) [pEV]
+WHERE
+    [pEV].EV_ID = timepoints.EV_ID;
 GO
