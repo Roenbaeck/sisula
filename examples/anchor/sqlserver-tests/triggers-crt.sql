@@ -14,7 +14,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23');
+INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23'), ('c24');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -557,7 +557,7 @@ INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_PLC_Event_Place, EV_PLC_Ch
 SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
 UPDATE dbo.lEV_Event SET EV_PLC_Event_Place = N'p2', EV_PLC_ChangedAt = '2021-01-01', EV_PLC_PositedAt = '2024-02-01' WHERE EV_ID = @e AND Positor = 0;
 SET @place = (SELECT EV_PLC_Event_Place FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
-SET @n = (SELECT COUNT(*) FROM dbo.dEV_Event('2019-01-01', '2022-01-01', NULL) WHERE EV_ID = @e AND EV_PLC_Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.dEV_Event('2019-01-01', '2022-01-01', NULL) WHERE EV_ID = @e AND Positor = 0);
 INSERT INTO #result SELECT N'c22 a new value of a historized nexus attribute is a new version, which the difference perspective shows', CASE WHEN @place = N'p2' AND @n = 2 THEN 1 ELSE 0 END,
     CONCAT('shown ', ISNULL(@place, 'nothing'), ', ', @n, ' differences, expected 2');
 BEGIN TRY
@@ -588,6 +588,20 @@ BEGIN CATCH
 END CATCH
 INSERT INTO #result SELECT N'c23 the sheet stacks of an anchor attribute and of a nexus attribute run', CASE WHEN @error IS NULL THEN 1 ELSE 0 END, @error;
 UPDATE #group SET finished = 1 WHERE name = 'c23';
+GO
+
+-- c24 the difference perspectives name the positor of each row (they had no such column, so the rows of different
+--     positors could not be told apart)
+DECLARE @s int, @zero int, @one int, @error nvarchar(2048);
+IF NOT EXISTS (SELECT 1 FROM dbo._Positor WHERE Positor = 1) INSERT INTO dbo._Positor (Positor) VALUES (1);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'zero', '2020-01-01', '2024-01-01', 0, 1), (0, @s, N'one', '2021-01-01', '2024-01-01', 1, 1);
+SET @zero = (SELECT COUNT(*) FROM dbo.dSU_Subject('2019-01-01', '2022-01-01', NULL) WHERE SU_ID = @s AND Positor = 0 AND SU_TTL_Subject_Title = N'zero');
+SET @one = (SELECT COUNT(*) FROM dbo.dSU_Subject('2019-01-01', '2022-01-01', NULL) WHERE SU_ID = @s AND Positor = 1 AND SU_TTL_Subject_Title = N'one');
+INSERT INTO #result SELECT N'c24 the difference perspective of an anchor names the positor of each row', CASE WHEN @zero = 1 AND @one = 1 THEN 1 ELSE 0 END,
+    CONCAT(@zero, ' rows by positor 0 and ', @one, ' by positor 1, expected 1 each');
+UPDATE #group SET finished = 1 WHERE name = 'c24';
 GO
 
 -- the result
