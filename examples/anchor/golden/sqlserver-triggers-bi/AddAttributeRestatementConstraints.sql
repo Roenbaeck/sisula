@@ -9,14 +9,167 @@
 -- be checked for restatements.
 --
 -- Restatement Checking Trigger ---------------------------------------------------------------------------------------
+-- rt_EV_PLC_Event_Place (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rt_EV_PLC_Event_Place', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[rt_EV_PLC_Event_Place];
+GO
+CREATE TRIGGER [dbo].[rt_EV_PLC_Event_Place] ON [dbo].[EV_PLC_Event_Place_Annex]
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @message varchar(max);
+    DECLARE @EV_PLC_Event_Place TABLE (
+        EV_PLC_ID int not null,
+        EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_PositedAt datetime2 not null,
+        EV_PLC_Reliability decimal(5,2) not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        primary key (
+            EV_PLC_EV_ID asc,
+            EV_PLC_ChangedAt desc,
+            EV_PLC_PositedAt desc,
+            EV_PLC_Reliability desc
+        ),
+        unique (
+            EV_PLC_ID,
+            EV_PLC_PositedAt
+        )
+    );
+    INSERT INTO @EV_PLC_Event_Place (
+        EV_PLC_ID,
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        i.EV_PLC_ID,
+        p.EV_PLC_EV_ID,
+        i.Metadata_EV_PLC,
+        p.EV_PLC_ChangedAt,
+        i.EV_PLC_PositedAt,
+        i.EV_PLC_Reliability,
+        p.EV_PLC_Event_Place
+    FROM
+        inserted i
+    JOIN
+        [dbo].[EV_PLC_Event_Place_Posit] p
+    ON
+        p.EV_PLC_ID = i.EV_PLC_ID; -- the posit has already been created
+    INSERT INTO @EV_PLC_Event_Place (
+        EV_PLC_ID,
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        p.EV_PLC_ID,
+        p.EV_PLC_EV_ID,
+        p.Metadata_EV_PLC,
+        p.EV_PLC_ChangedAt,
+        p.EV_PLC_PositedAt,
+        p.EV_PLC_Reliability,
+        p.EV_PLC_Event_Place
+    FROM
+        (SELECT DISTINCT EV_PLC_EV_ID FROM @EV_PLC_Event_Place) i
+    JOIN
+        [dbo].[EV_PLC_Event_Place] p
+    ON
+        p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+    LEFT JOIN
+        @EV_PLC_Event_Place x
+    ON
+        x.EV_PLC_ID = p.EV_PLC_ID
+    AND
+        x.EV_PLC_PositedAt = p.EV_PLC_PositedAt
+    WHERE
+        x.EV_PLC_ID is null;
+    -- no need to check retracted information
+    DELETE a
+    FROM
+        @EV_PLC_Event_Place a
+    OUTER APPLY (
+        SELECT TOP 1
+            x.EV_PLC_Reliability
+        FROM
+            @EV_PLC_Event_Place x
+        WHERE
+            x.EV_PLC_ID = a.EV_PLC_ID
+        AND
+            x.EV_PLC_PositedAt < a.EV_PLC_PositedAt
+        ORDER BY
+            x.EV_PLC_PositedAt DESC
+    ) pre
+    OUTER APPLY (
+        SELECT TOP 1
+            x.EV_PLC_Reliability
+        FROM
+            @EV_PLC_Event_Place x
+        WHERE
+            x.EV_PLC_ID = a.EV_PLC_ID
+        AND
+            x.EV_PLC_PositedAt > a.EV_PLC_PositedAt
+        ORDER BY
+            x.EV_PLC_PositedAt ASC
+    ) fol
+    WHERE
+        (a.EV_PLC_Reliability = 1 AND fol.EV_PLC_Reliability = 0)
+    OR
+        (a.EV_PLC_Reliability = 0 AND pre.EV_PLC_Reliability = 1);
+    -- check previous values
+    SET @message = (
+        SELECT TOP 1
+            pre.*
+        FROM
+            @EV_PLC_Event_Place a
+        CROSS APPLY (
+            SELECT TOP 1
+                h.EV_PLC_EV_ID,
+                h.EV_PLC_ChangedAt,
+                h.EV_PLC_Event_Place
+            FROM
+                @EV_PLC_Event_Place h
+            WHERE
+                h.EV_PLC_EV_ID = a.EV_PLC_EV_ID
+            AND
+                h.EV_PLC_ChangedAt < a.EV_PLC_ChangedAt
+            ORDER BY
+                h.EV_PLC_ChangedAt DESC,
+                h.EV_PLC_PositedAt DESC,
+                h.EV_PLC_Reliability DESC
+        ) pre
+        WHERE
+            a.EV_PLC_Event_Place = pre.EV_PLC_Event_Place
+        AND
+            a.EV_PLC_Reliability = 1
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Restatement in EV_PLC_Event_Place for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+    END
+END
+GO
+-- Restatement Checking Trigger ---------------------------------------------------------------------------------------
 -- rt_SU_STA_Subject_State (available only in attributes that cannot have restatements)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.rt_SU_STA_Subject_State', 'TR') IS NOT NULL
 DROP TRIGGER [dbo].[rt_SU_STA_Subject_State];
 GO
 CREATE TRIGGER [dbo].[rt_SU_STA_Subject_State] ON [dbo].[SU_STA_Subject_State_Annex]
-AFTER INSERT 
-AS 
+AFTER INSERT
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -29,9 +182,10 @@ BEGIN
         SU_STA_Reliability decimal(5,2) not null,
         SU_STA_Subject_State nvarchar(42) not null,
         primary key (
-            SU_STA_SU_ID asc, 
+            SU_STA_SU_ID asc,
             SU_STA_ChangedAt desc,
-            SU_STA_PositedAt desc
+            SU_STA_PositedAt desc,
+            SU_STA_Reliability desc
         ),
         unique (
             SU_STA_ID,
@@ -55,11 +209,11 @@ BEGIN
         i.SU_STA_PositedAt,
         i.SU_STA_Reliability,
         p.SU_STA_Subject_State
-    FROM 
+    FROM
         inserted i
-    JOIN 
+    JOIN
         [dbo].[SU_STA_Subject_State_Posit] p
-    ON 
+    ON
         p.SU_STA_ID = i.SU_STA_ID; -- the posit has already been created
     INSERT INTO @SU_STA_Subject_State (
         SU_STA_ID,
@@ -78,13 +232,13 @@ BEGIN
         p.SU_STA_PositedAt,
         p.SU_STA_Reliability,
         p.SU_STA_Subject_State
-    FROM 
+    FROM
         (SELECT DISTINCT SU_STA_SU_ID FROM @SU_STA_Subject_State) i
     JOIN
         [dbo].[SU_STA_Subject_State] p
-    ON 
+    ON
         p.SU_STA_SU_ID = i.SU_STA_SU_ID
-    LEFT JOIN 
+    LEFT JOIN
         @SU_STA_Subject_State x
     ON
         x.SU_STA_ID = p.SU_STA_ID
@@ -93,13 +247,13 @@ BEGIN
     WHERE
         x.SU_STA_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @SU_STA_Subject_State a
     OUTER APPLY (
         SELECT TOP 1
             x.SU_STA_Reliability
-        FROM 
+        FROM
             @SU_STA_Subject_State x
         WHERE
             x.SU_STA_ID = a.SU_STA_ID
@@ -107,11 +261,11 @@ BEGIN
             x.SU_STA_PositedAt < a.SU_STA_PositedAt
         ORDER BY
             x.SU_STA_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.SU_STA_Reliability
-        FROM 
+        FROM
             @SU_STA_Subject_State x
         WHERE
             x.SU_STA_ID = a.SU_STA_ID
@@ -119,7 +273,7 @@ BEGIN
             x.SU_STA_PositedAt > a.SU_STA_PositedAt
         ORDER BY
             x.SU_STA_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.SU_STA_Reliability = 1 AND fol.SU_STA_Reliability = 0)
     OR
@@ -128,22 +282,23 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @SU_STA_Subject_State a
         CROSS APPLY (
             SELECT TOP 1
                 h.SU_STA_SU_ID,
                 h.SU_STA_ChangedAt,
                 h.SU_STA_Subject_State
-            FROM 
+            FROM
                 @SU_STA_Subject_State h
             WHERE
                 h.SU_STA_SU_ID = a.SU_STA_SU_ID
             AND
                 h.SU_STA_ChangedAt < a.SU_STA_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_STA_ChangedAt DESC,
-                h.SU_STA_PositedAt DESC
+                h.SU_STA_PositedAt DESC,
+                h.SU_STA_Reliability DESC
         ) pre
         WHERE
             a.SU_STA_Subject_State = pre.SU_STA_Subject_State
@@ -166,8 +321,8 @@ IF Object_ID('dbo.rt_SU_LBL_Subject_Label', 'TR') IS NOT NULL
 DROP TRIGGER [dbo].[rt_SU_LBL_Subject_Label];
 GO
 CREATE TRIGGER [dbo].[rt_SU_LBL_Subject_Label] ON [dbo].[SU_LBL_Subject_Label_Annex]
-AFTER INSERT 
-AS 
+AFTER INSERT
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -180,9 +335,10 @@ BEGIN
         SU_LBL_Reliability decimal(5,2) not null,
         SU_LBL_Subject_Label nvarchar(42) not null,
         primary key (
-            SU_LBL_SU_ID asc, 
+            SU_LBL_SU_ID asc,
             SU_LBL_ChangedAt desc,
-            SU_LBL_PositedAt desc
+            SU_LBL_PositedAt desc,
+            SU_LBL_Reliability desc
         ),
         unique (
             SU_LBL_ID,
@@ -206,11 +362,11 @@ BEGIN
         i.SU_LBL_PositedAt,
         i.SU_LBL_Reliability,
         p.SU_LBL_Subject_Label
-    FROM 
+    FROM
         inserted i
-    JOIN 
+    JOIN
         [dbo].[SU_LBL_Subject_Label_Posit] p
-    ON 
+    ON
         p.SU_LBL_ID = i.SU_LBL_ID; -- the posit has already been created
     INSERT INTO @SU_LBL_Subject_Label (
         SU_LBL_ID,
@@ -229,13 +385,13 @@ BEGIN
         p.SU_LBL_PositedAt,
         p.SU_LBL_Reliability,
         p.SU_LBL_Subject_Label
-    FROM 
+    FROM
         (SELECT DISTINCT SU_LBL_SU_ID FROM @SU_LBL_Subject_Label) i
     JOIN
         [dbo].[SU_LBL_Subject_Label] p
-    ON 
+    ON
         p.SU_LBL_SU_ID = i.SU_LBL_SU_ID
-    LEFT JOIN 
+    LEFT JOIN
         @SU_LBL_Subject_Label x
     ON
         x.SU_LBL_ID = p.SU_LBL_ID
@@ -244,13 +400,13 @@ BEGIN
     WHERE
         x.SU_LBL_ID is null;
     -- no need to check retracted information
-    DELETE a 
-    FROM 
+    DELETE a
+    FROM
         @SU_LBL_Subject_Label a
     OUTER APPLY (
         SELECT TOP 1
             x.SU_LBL_Reliability
-        FROM 
+        FROM
             @SU_LBL_Subject_Label x
         WHERE
             x.SU_LBL_ID = a.SU_LBL_ID
@@ -258,11 +414,11 @@ BEGIN
             x.SU_LBL_PositedAt < a.SU_LBL_PositedAt
         ORDER BY
             x.SU_LBL_PositedAt DESC
-    ) pre 
+    ) pre
     OUTER APPLY (
         SELECT TOP 1
             x.SU_LBL_Reliability
-        FROM 
+        FROM
             @SU_LBL_Subject_Label x
         WHERE
             x.SU_LBL_ID = a.SU_LBL_ID
@@ -270,7 +426,7 @@ BEGIN
             x.SU_LBL_PositedAt > a.SU_LBL_PositedAt
         ORDER BY
             x.SU_LBL_PositedAt ASC
-    ) fol 
+    ) fol
     WHERE
         (a.SU_LBL_Reliability = 1 AND fol.SU_LBL_Reliability = 0)
     OR
@@ -279,22 +435,23 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @SU_LBL_Subject_Label a
         CROSS APPLY (
             SELECT TOP 1
                 h.SU_LBL_SU_ID,
                 h.SU_LBL_ChangedAt,
                 h.SU_LBL_Subject_Label
-            FROM 
+            FROM
                 @SU_LBL_Subject_Label h
             WHERE
                 h.SU_LBL_SU_ID = a.SU_LBL_SU_ID
             AND
                 h.SU_LBL_ChangedAt < a.SU_LBL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_LBL_ChangedAt DESC,
-                h.SU_LBL_PositedAt DESC
+                h.SU_LBL_PositedAt DESC,
+                h.SU_LBL_Reliability DESC
         ) pre
         WHERE
             a.SU_LBL_Subject_Label = pre.SU_LBL_Subject_Label

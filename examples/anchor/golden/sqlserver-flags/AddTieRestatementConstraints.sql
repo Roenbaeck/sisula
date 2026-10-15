@@ -16,7 +16,7 @@ DROP TRIGGER [ties].[rt_AC_part_PR_in_RAT_got];
 GO
 CREATE TRIGGER [ties].[rt_AC_part_PR_in_RAT_got] ON [ties].[AC_part_PR_in_RAT_got]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -64,8 +64,8 @@ BEGIN
         SELECT DISTINCT
             AC_ID_part,
             PR_ID_in
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [ties].[AC_part_PR_in_RAT_got] p
@@ -78,7 +78,7 @@ BEGIN
             42
         FROM
             @inserted x
-        WHERE 
+        WHERE
             x.AC_part_PR_in_RAT_got_ChangedAt = p.AC_part_PR_in_RAT_got_ChangedAt
         AND
             x.AC_ID_part = i.AC_ID_part
@@ -89,7 +89,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted i
         CROSS APPLY (
             SELECT TOP 1
@@ -105,9 +105,9 @@ BEGIN
                 h.PR_ID_in = i.PR_ID_in
             AND
                 h.AC_part_PR_in_RAT_got_ChangedAt < i.AC_part_PR_in_RAT_got_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_part_PR_in_RAT_got_ChangedAt DESC
-        ) pre 
+        ) pre
         WHERE
             i.AC_ID_part = pre.AC_ID_part
         AND
@@ -132,7 +132,7 @@ DROP TRIGGER [ties].[rt_PR_content_ST_location_EV_of];
 GO
 CREATE TRIGGER [ties].[rt_PR_content_ST_location_EV_of] ON [ties].[PR_content_ST_location_EV_of]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -182,8 +182,8 @@ BEGIN
             PR_ID_content,
             ST_ID_location,
             EV_ID_of
-        FROM 
-            @inserted 
+        FROM
+            @inserted
     ) i
     JOIN
         [ties].[PR_content_ST_location_EV_of] p
@@ -198,7 +198,7 @@ BEGIN
             42
         FROM
             @inserted x
-        WHERE 
+        WHERE
             x.PR_content_ST_location_EV_of_ChangedAt = p.PR_content_ST_location_EV_of_ChangedAt
         AND
             x.PR_ID_content = i.PR_ID_content
@@ -211,7 +211,7 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @inserted i
         CROSS APPLY (
             SELECT TOP 1
@@ -229,9 +229,9 @@ BEGIN
                 h.EV_ID_of = i.EV_ID_of
             AND
                 h.PR_content_ST_location_EV_of_ChangedAt < i.PR_content_ST_location_EV_of_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.PR_content_ST_location_EV_of_ChangedAt DESC
-        ) pre 
+        ) pre
         WHERE
             i.PR_ID_content = pre.PR_ID_content
         AND

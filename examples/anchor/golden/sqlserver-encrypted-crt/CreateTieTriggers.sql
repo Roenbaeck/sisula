@@ -39,6 +39,7 @@ BEGIN
         ONG_ID_currently tinyint not null,
         primary key (
             AC_partner_AC_with_ONG_currently_Version,
+            AC_partner_AC_with_ONG_currently_Positor,
             AC_ID_partner,
             AC_ID_with,
             ONG_ID_currently
@@ -279,7 +280,7 @@ BEGIN
             AC_ID_with,
             ONG_ID_currently
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_partner_AC_with_ONG_currently_ChangedAt,
             AC_ID_partner,
             AC_ID_with,
@@ -347,7 +348,7 @@ BEGIN
         i.AC_partner_AC_with_ONG_currently_ChangedAt,
         i.AC_ID_partner,
         i.AC_ID_with,
-        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
+        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Positor, i.Positor),
         i.AC_partner_AC_with_ONG_currently_PositedAt,
         i.AC_partner_AC_with_ONG_currently_Reliability
@@ -403,7 +404,7 @@ BEGIN
     OR
         i.AC_ID_with is null
     OR
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
@@ -434,13 +435,13 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
         ISNULL(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_Positor) THEN i.AC_partner_AC_with_ONG_currently_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
@@ -455,7 +456,7 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
@@ -476,7 +477,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
                 AND
                     d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
             )
@@ -536,6 +537,8 @@ BEGIN
         AC_ID_subset smallint not null,
         PN_ID_of bigint not null,
         primary key (
+            AC_subset_PN_of_Version,
+            AC_subset_PN_of_Positor,
             AC_ID_subset,
             PN_ID_of
         )
@@ -673,7 +676,7 @@ BEGIN
             AC_ID_subset,
             PN_ID_of
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_ID_subset,
             PN_ID_of
         FROM
@@ -877,6 +880,8 @@ BEGIN
         EV_ID_in numeric(12,0) not null,
         AC_ID_wasCast smallint not null,
         primary key (
+            EV_in_AC_wasCast_Version,
+            EV_in_AC_wasCast_Positor,
             EV_ID_in,
             AC_ID_wasCast
         )
@@ -1014,7 +1019,7 @@ BEGIN
             EV_ID_in,
             AC_ID_wasCast
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             EV_ID_in,
             AC_ID_wasCast
         FROM
@@ -1136,6 +1141,7 @@ BEGIN
         RAT_ID_got tinyint not null,
         primary key (
             AC_part_PR_in_RAT_got_Version,
+            AC_part_PR_in_RAT_got_Positor,
             AC_ID_part,
             PR_ID_in
         )
@@ -1352,7 +1358,7 @@ BEGIN
             PR_ID_in,
             RAT_ID_got
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_part_PR_in_RAT_got_ChangedAt,
             AC_ID_part,
             PR_ID_in,
@@ -1392,6 +1398,81 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
+        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+            Metadata_AC_part_PR_in_RAT_got,
+            AC_part_PR_in_RAT_got_ID,
+            AC_part_PR_in_RAT_got_Positor,
+            AC_part_PR_in_RAT_got_PositedAt,
+            AC_part_PR_in_RAT_got_Reliability
+        )
+        SELECT
+            v.Metadata_AC_part_PR_in_RAT_got,
+            e.AC_part_PR_in_RAT_got_ID,
+            v.AC_part_PR_in_RAT_got_Positor,
+            v.AC_part_PR_in_RAT_got_PositedAt,
+            0
+        FROM
+            @inserted v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_part_PR_in_RAT_got_ID,
+                p.RAT_ID_got
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Posit] p
+            JOIN
+                [ties].[AC_part_PR_in_RAT_got_Annex] a
+            ON
+                a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+            AND
+                a.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+            AND
+                a.AC_part_PR_in_RAT_got_PositedAt = (
+                    SELECT
+                        max(s.AC_part_PR_in_RAT_got_PositedAt)
+                    FROM
+                        [ties].[AC_part_PR_in_RAT_got_Annex] s
+                    WHERE
+                        s.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                    AND
+                        s.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                    AND
+                        s.AC_part_PR_in_RAT_got_PositedAt < v.AC_part_PR_in_RAT_got_PositedAt
+                )
+            WHERE
+                p.AC_ID_part = v.AC_ID_part
+            AND
+                p.PR_ID_in = v.PR_ID_in
+            AND
+                p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+            AND
+                a.AC_part_PR_in_RAT_got_Reliability > 0
+            ORDER BY
+                a.AC_part_PR_in_RAT_got_PositedAt DESC,
+                a.AC_part_PR_in_RAT_got_Reliability DESC
+        ) e
+        WHERE
+            v.AC_part_PR_in_RAT_got_Version = @currentVersion
+        AND
+            v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R')
+        AND
+            v.AC_part_PR_in_RAT_got_Reliability > 0
+        AND (
+            e.RAT_ID_got <> v.RAT_ID_got
+        )
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [ties].[AC_part_PR_in_RAT_got_Annex] x
+            WHERE
+                x.AC_part_PR_in_RAT_got_ID = e.AC_part_PR_in_RAT_got_ID
+            AND
+                x.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+            AND
+                x.AC_part_PR_in_RAT_got_PositedAt = v.AC_part_PR_in_RAT_got_PositedAt
+        );
     END
 END
 GO
@@ -1420,7 +1501,7 @@ BEGIN
         i.AC_part_PR_in_RAT_got_ChangedAt,
         i.AC_ID_part,
         i.PR_ID_in,
-        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
+        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID),
         ISNULL(i.AC_part_PR_in_RAT_got_Positor, i.Positor),
         i.AC_part_PR_in_RAT_got_PositedAt,
         i.AC_part_PR_in_RAT_got_Reliability
@@ -1476,7 +1557,7 @@ BEGIN
     WHERE
         i.AC_part_PR_in_RAT_got_ID is not null
     AND (
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
@@ -1503,13 +1584,13 @@ BEGIN
                 AND
                     d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
         ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0),
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
@@ -1520,7 +1601,7 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.got_RAT_Rating
     WHERE
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
@@ -1537,7 +1618,7 @@ BEGIN
                 AND
                     d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
                 AND
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
@@ -1599,6 +1680,7 @@ BEGIN
         PR_ID_isPlaying bigint not null,
         primary key (
             ST_at_PR_isPlaying_Version,
+            ST_at_PR_isPlaying_Positor,
             ST_ID_at,
             PR_ID_isPlaying
         )
@@ -1748,7 +1830,7 @@ BEGIN
             ST_ID_at,
             PR_ID_isPlaying
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             ST_at_PR_isPlaying_ChangedAt,
             ST_ID_at,
             PR_ID_isPlaying
@@ -1873,6 +1955,8 @@ BEGIN
         AC_ID_child smallint not null,
         PAT_ID_having tinyint not null,
         primary key (
+            AC_parent_AC_child_PAT_having_Version,
+            AC_parent_AC_child_PAT_having_Positor,
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having
@@ -2025,7 +2109,7 @@ BEGIN
             AC_ID_child,
             PAT_ID_having
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having
@@ -2088,7 +2172,7 @@ BEGIN
         i.Metadata_AC_parent_AC_child_PAT_having,
         i.AC_ID_parent,
         i.AC_ID_child,
-        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
+        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID),
         ISNULL(i.AC_parent_AC_child_PAT_having_Positor, i.Positor),
         i.AC_parent_AC_child_PAT_having_PositedAt,
         i.AC_parent_AC_child_PAT_having_Reliability
@@ -2156,6 +2240,7 @@ BEGIN
         EV_ID_of numeric(12,0) not null,
         primary key (
             PR_content_ST_location_EV_of_Version,
+            PR_content_ST_location_EV_of_Positor,
             PR_ID_content,
             ST_ID_location,
             EV_ID_of
@@ -2396,7 +2481,7 @@ BEGIN
             ST_ID_location,
             EV_ID_of
         )
-        SELECT
+        SELECT DISTINCT -- a posit that several positors state is made once
             PR_content_ST_location_EV_of_ChangedAt,
             PR_ID_content,
             ST_ID_location,

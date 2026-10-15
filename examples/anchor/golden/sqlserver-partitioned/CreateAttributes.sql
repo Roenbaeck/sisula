@@ -36,7 +36,7 @@ CREATE TABLE [attributes].[EV_AUD_Event_Audience] (
         EV_AUD_EQ asc,
         EV_AUD_EV_ID asc
     )
-) ON EquivalenceScheme(EV_AUD_EQ); 
+) ON EquivalenceScheme(EV_AUD_EQ);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- EV_REV_Event_Revenue table (on EV_Event)
@@ -54,7 +54,7 @@ CREATE TABLE [attributes].[EV_REV_Event_Revenue] (
         EV_REV_EQ asc,
         EV_REV_EV_ID asc
     )
-) ON EquivalenceScheme(EV_REV_EQ); 
+) ON EquivalenceScheme(EV_REV_EQ);
 GO
 -- Historized attribute table ----------------------------------------------------------------------------------------
 -- EV_STA_Event_Status table (on EV_Event)
@@ -74,7 +74,7 @@ CREATE TABLE [attributes].[EV_STA_Event_Status] (
         EV_STA_EV_ID asc,
         EV_STA_ChangedAt desc
     )
-) ON EquivalenceScheme(EV_STA_EQ); 
+) ON EquivalenceScheme(EV_STA_EQ);
 GO
 -- Knotted static attribute table ------------------------------------------------------------------------------------
 -- EV_UTL_Event_Utilization table (on EV_Event)
@@ -134,7 +134,7 @@ CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc
     )
-) ON EquivalenceScheme(ST_NAM_EQ); 
+) ON EquivalenceScheme(ST_NAM_EQ);
 GO
 -- Static attribute table --------------------------------------------------------------------------------------------
 -- ST_LOC_Stage_Location table (on ST_Stage)
@@ -153,7 +153,7 @@ CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
         ST_LOC_EQ asc,
         ST_LOC_ST_ID asc
     )
-) ON EquivalenceScheme(ST_LOC_EQ); 
+) ON EquivalenceScheme(ST_LOC_EQ);
 GO
 -- Knotted historized attribute table --------------------------------------------------------------------------------
 -- ST_AVG_Stage_Average table (on ST_Stage)
@@ -287,5 +287,5 @@ CREATE TABLE [attributes].[PR_LEN_Program_Length] (
         PR_LEN_PR_ID asc,
         PR_LEN_ChangedAt desc
     )
-) ON EquivalenceScheme(PR_LEN_EQ); 
+) ON EquivalenceScheme(PR_LEN_EQ);
 GO

@@ -4,7 +4,7 @@
 -- point in changing time, or an attribute annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that the 
+-- in time. The forwarder is the opposite of the rewinder, such that the
 -- union of the two will produce all rows in a posit table.
 --
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
@@ -341,7 +341,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            pre.ST_NAM_Checksum 
+            pre.ST_NAM_Checksum
         FROM
             [dbo].[rST_NAM_Stage_Name](
                 @changingTimepoint,
@@ -376,7 +376,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            fol.ST_NAM_Checksum 
+            fol.ST_NAM_Checksum
         FROM
             [dbo].[fST_NAM_Stage_Name](
                 @changingTimepoint,
@@ -882,7 +882,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            pre.AC_NAM_Checksum 
+            pre.AC_NAM_Checksum
         FROM
             [dbo].[rAC_NAM_Actor_Name](
                 @changingTimepoint,
@@ -917,7 +917,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            fol.AC_NAM_Checksum 
+            fol.AC_NAM_Checksum
         FROM
             [dbo].[fAC_NAM_Actor_Name](
                 @changingTimepoint,

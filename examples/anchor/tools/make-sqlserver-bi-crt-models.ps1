@@ -5,7 +5,8 @@
     it is for, and the tools take the directive from that. Each copy then has to be saved through the modeler
     (browser-check.ps1 -Canonicalize), which adds what a bitemporal or concurrent-reliance-temporal model has and a uni one does not
     (the identities of ties, whether an attribute or a tie is assertive, and so on); this script does not do that, so that the step
-    can be seen. sqlserver-handwritten is copied too and is, on purpose, not saved through the modeler.
+    can be seen. sqlserver-handwritten is copied too and is, on purpose, not saved through the modeler. It also makes
+    models/sqlserver-indecisive-crt.xml, the crt trigger model with decisiveness off.
 
     Usage:
       make-sqlserver-bi-crt-models.ps1
@@ -27,6 +28,14 @@ foreach ($file in Get-ChildItem $models -Filter 'sqlserver-*.xml' | Sort-Object 
         $name = "$($file.BaseName)-$t"
         [IO.File]::WriteAllText((Join-Path $models "$name.xml"), $copy, $utf8)
         $made.Add($name)
+        # the trigger model without decisiveness, for the tests of corrections and alternatives (sqlserver-tests.ps1
+        # -Suite indecisive)
+        if ($file.BaseName -eq 'sqlserver-triggers' -and $t -eq 'crt') {
+            $indecisive = $copy.Replace('decisiveness="true"', 'decisiveness="false"')
+            if ($indecisive -ceq $copy) { throw "$($file.Name): decisiveness was not changed" }
+            [IO.File]::WriteAllText((Join-Path $models 'sqlserver-indecisive-crt.xml'), $indecisive, $utf8)
+            $made.Add('sqlserver-indecisive-crt')
+        }
     }
 }
 Write-Host ('made ' + $made.Count + ' models:')

@@ -272,7 +272,7 @@ GO
 CREATE VIEW [nexuses].[lEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(7,3)) as Confidence,
     [EV].*
 FROM
@@ -312,7 +312,7 @@ GO
 CREATE VIEW [nexuses].[nEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(7,3)) as Confidence,
     [EV].*
 FROM
@@ -335,48 +335,44 @@ CREATE FUNCTION [nexuses].[dEV_Event] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    p.Who,
     timepoints.inspectedTimepoint,
     [EV].*
 FROM
     [dw].[_Who] p
-CROSS JOIN
-    (
-        SELECT DISTINCT
-            timepoint AS inspectedTimepoint
-        FROM
-            [dw].[pWho]
-        CROSS APPLY
-            [dw].[_AnchorTimepoints](
-                @intervalStart,
-                @intervalEnd
-            )
-    ) timepoints
+JOIN (
+    SELECT DISTINCT
+        EV_STA_Who AS positor,
+        EV_STA_EV_ID AS EV_ID,
+        EV_STA_ChangedAt AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        [attributes].[EV_STA_Event_Status]
+    WHERE
+        (@selection is null OR @selection like '%STA%')
+    AND
+        EV_STA_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        EV_LVL_Who AS positor,
+        EV_LVL_EV_ID AS EV_ID,
+        EV_LVL_ChangedAt AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        [attributes].[EV_LVL_Event_Level]
+    WHERE
+        (@selection is null OR @selection like '%LVL%')
+    AND
+        EV_LVL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+ON
+    timepoints.positor = p.Who
 CROSS APPLY
-    [nexuses].[tEV_Event](p.Who, timepoints.inspectedTimepoint, DEFAULT, '+') [EV]
-WHERE
-    @selection is null
-OR
-    EXISTS (
-        SELECT
-            1
-        FROM
-            [dw].[_SplitMnemonic](@selection)
-        JOIN
-            [dw].[_AnchorAttributes]
-        ON
-            mnemonic = [attribute]
-        AND
-            [anchor] = 'EV_Event'
-        CROSS APPLY
-            [dw].[_AttributeTimepoints](
-                [capsule],
-                [attribute],
-                p.Who,
-                @intervalStart,
-                @intervalEnd
-            )
-        WHERE
-            timepoint = timepoints.inspectedTimepoint
-    );
+    [nexuses].[tEV_Event] (
+        timepoints.positor,
+        timepoints.inspectedTimepoint,
+        DEFAULT,
+        '+' -- positve assertions only
+    ) [EV]
+ WHERE
+    [EV].EV_ID = timepoints.EV_ID;
 GO

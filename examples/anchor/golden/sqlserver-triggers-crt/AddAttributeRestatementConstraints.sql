@@ -13,6 +13,76 @@
 -- @assertion whether this posit is positively or negatively asserted, or unreliable
 --
 -- Restatement Finder Function and Constraint -------------------------------------------------------------------------
+-- rfEV_PLC_Event_Place restatement finder, also used by the insert and update triggers for idempotent attributes
+-- rcEV_PLC_Event_Place restatement constraint (available only in attributes that cannot have restatements)
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rfEV_PLC_Event_Place', 'FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rfEV_PLC_Event_Place] (
+        @posit int,
+        @posited datetime2,
+        @positor tinyint,
+        @assertion char(1)
+    )
+    RETURNS tinyint AS
+    BEGIN
+    DECLARE @id int;
+    DECLARE @value nvarchar(42);
+    DECLARE @changed datetime2;
+    SELECT
+        @id = EV_PLC_EV_ID,
+        @value = EV_PLC_Event_Place,
+        @changed = EV_PLC_ChangedAt
+    FROM
+        [dbo].[EV_PLC_Event_Place_Posit]
+    WHERE
+        EV_PLC_ID = @posit;
+    RETURN (
+        CASE
+        WHEN @assertion = ''?''
+        THEN 0
+        WHEN EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [dbo].[preEV_PLC_Event_Place] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        ) OR EXISTS (
+            SELECT
+                @value
+            WHERE
+                @value = [dbo].[folEV_PLC_Event_Place] (
+                    @id,
+                    @positor,
+                    @changed,
+                    @posited,
+                    @assertion
+                )
+        )
+        THEN 1
+        ELSE 0
+        END
+    );
+    END
+    ');
+    ALTER TABLE [dbo].[EV_PLC_Event_Place_Annex]
+    ADD CONSTRAINT [rcEV_PLC_Event_Place_Annex] CHECK (
+        [dbo].[rfEV_PLC_Event_Place] (
+            EV_PLC_ID,
+            EV_PLC_PositedAt,
+            EV_PLC_Positor,
+            EV_PLC_Assertion
+        ) = 0
+    );
+END
+GO
+-- Restatement Finder Function and Constraint -------------------------------------------------------------------------
 -- rfSU_TTL_Subject_Title restatement finder, also used by the insert and update triggers for idempotent attributes
 -- rcSU_TTL_Subject_Title restatement constraint (available only in attributes that cannot have restatements)
 -----------------------------------------------------------------------------------------------------------------------
@@ -50,7 +120,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -61,7 +131,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -111,7 +181,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -122,7 +192,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -181,7 +251,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -192,7 +262,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -251,7 +321,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -262,7 +332,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -312,7 +382,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -323,7 +393,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -373,7 +443,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -384,7 +454,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -434,7 +504,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -445,7 +515,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )
@@ -495,7 +565,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         ) OR EXISTS (
@@ -506,7 +576,7 @@ BEGIN
                     @id,
                     @positor,
                     @changed,
-                    @posited, 
+                    @posited,
                     @assertion
                 )
         )

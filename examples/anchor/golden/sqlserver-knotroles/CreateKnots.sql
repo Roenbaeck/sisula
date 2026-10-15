@@ -36,7 +36,7 @@ CREATE TABLE [knots].[GEN_Gender] (
         GEN_ID asc
     ),
     constraint uqGEN_Gender unique (
-        GEN_Checksum 
+        GEN_Checksum
     )
 );
 GO
@@ -53,7 +53,7 @@ CREATE TABLE [knots].[PLV_ProfessionalLevel] (
         PLV_ID asc
     ),
     constraint uqPLV_ProfessionalLevel unique (
-        PLV_Checksum 
+        PLV_Checksum
     )
 );
 GO
@@ -102,7 +102,7 @@ CREATE TABLE [knots].[RAT_Rating] (
         RAT_ID asc
     ),
     constraint uqRAT_Rating unique (
-        RAT_Checksum 
+        RAT_Checksum
     )
 );
 GO
@@ -119,7 +119,7 @@ CREATE TABLE [knots].[ETY_EventType] (
         ETY_ID asc
     ),
     constraint uqETY_EventType unique (
-        ETY_Checksum 
+        ETY_Checksum
     )
 );
 GO

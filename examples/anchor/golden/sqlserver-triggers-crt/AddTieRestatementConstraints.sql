@@ -27,8 +27,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @SU_holder int; 
-    DECLARE @OB_item int; 
+    DECLARE @SU_holder int;
+    DECLARE @OB_item int;
     DECLARE @GRD_grade tinyint;
     SELECT
         @SU_holder = p.SU_ID_holder,
@@ -74,7 +74,7 @@ BEGIN
                 [dbo].[fSU_holder_OB_item_GRD_grade] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
                 fol.SU_ID_holder = @SU_holder
@@ -113,8 +113,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @SU_keeper int; 
-    DECLARE @OB_thing int; 
+    DECLARE @SU_keeper int;
+    DECLARE @OB_thing int;
     DECLARE @GRD_rank tinyint;
     SELECT
         @SU_keeper = p.SU_ID_keeper,
@@ -160,7 +160,7 @@ BEGIN
                 [dbo].[fSU_keeper_OB_thing_GRD_rank] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
                 fol.SU_ID_keeper = @SU_keeper
@@ -208,8 +208,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @SU_partner int; 
-    DECLARE @SU_with int; 
+    DECLARE @SU_partner int;
+    DECLARE @SU_with int;
     SELECT
         @SU_partner = p.SU_ID_partner,
         @SU_with = p.SU_ID_with,
@@ -257,7 +257,7 @@ BEGIN
                 [dbo].[fSU_partner_SU_with] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
             (

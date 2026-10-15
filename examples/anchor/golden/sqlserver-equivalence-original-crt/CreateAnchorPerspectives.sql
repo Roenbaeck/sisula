@@ -210,7 +210,7 @@ GO
 CREATE VIEW [anchors].[lST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -250,7 +250,7 @@ GO
 CREATE VIEW [anchors].[nST_Stage]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [ST].*
 FROM
@@ -457,7 +457,7 @@ GO
 CREATE VIEW [anchors].[lAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -497,7 +497,7 @@ GO
 CREATE VIEW [anchors].[nAC_Actor]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [AC].*
 FROM
@@ -657,7 +657,7 @@ GO
 CREATE VIEW [anchors].[lPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM
@@ -697,7 +697,7 @@ GO
 CREATE VIEW [anchors].[nPR_Program]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [PR].*
 FROM

@@ -31,7 +31,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -76,7 +76,8 @@ BEGIN
                 ST_NAM_PositedAt,
                 ST_NAM_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@ST_ID int', @ST_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -116,7 +117,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -161,7 +162,8 @@ BEGIN
                 ST_AVG_PositedAt,
                 ST_AVG_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@ST_ID int', @ST_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -201,7 +203,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -246,7 +248,8 @@ BEGIN
                 AC_NAM_PositedAt,
                 AC_NAM_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@AC_ID int', @AC_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -286,7 +289,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -331,7 +334,8 @@ BEGIN
                 AC_PLV_PositedAt,
                 AC_PLV_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@AC_ID int', @AC_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;
@@ -371,7 +375,7 @@ BEGIN
     DECLARE @positor varchar(20);
     OPEN positor;
     FETCH NEXT FROM positor INTO @positor;
-    DECLARE @sql varchar(max);
+    DECLARE @sql nvarchar(max);
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @sql = '
@@ -416,7 +420,8 @@ BEGIN
                 PR_LEN_PositedAt,
                 PR_LEN_Assertion
         ';
-        EXEC(@sql);
+        -- the statement runs in a scope of its own, so the parameter is passed to it
+        EXEC sp_executesql @sql, N'@PR_ID int', @PR_ID;
         FETCH NEXT FROM positor INTO @positor;
     END
     CLOSE positor;

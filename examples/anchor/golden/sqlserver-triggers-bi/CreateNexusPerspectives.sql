@@ -54,7 +54,14 @@ SELECT
     [QTY].EV_QTY_ID,
     [QTY].EV_QTY_PositedAt,
     [QTY].EV_QTY_Reliability,
-    [QTY].EV_QTY_Event_Quantity
+    [QTY].EV_QTY_Event_Quantity,
+    [PLC].EV_PLC_EV_ID,
+    [PLC].Metadata_EV_PLC,
+    [PLC].EV_PLC_ID,
+    [PLC].EV_PLC_ChangedAt,
+    [PLC].EV_PLC_PositedAt,
+    [PLC].EV_PLC_Reliability,
+    [PLC].EV_PLC_Event_Place
 FROM
     [dbo].[EV_Event] [EV]
 OUTER APPLY (
@@ -70,12 +77,34 @@ OUTER APPLY (
             @positingTimepoint
         ) [rQTY]
     WHERE
-		[rQTY].EV_QTY_EV_ID = [EV].EV_ID
-	AND 
-		[rQTY].EV_QTY_Reliability = 1
-	ORDER BY
+        [rQTY].EV_QTY_EV_ID = [EV].EV_ID
+    AND
+        [rQTY].EV_QTY_Reliability = 1
+    ORDER BY
         [rQTY].EV_QTY_PositedAt DESC
-) [QTY];
+) [QTY]
+OUTER APPLY (
+    SELECT TOP 1
+        [rPLC].EV_PLC_EV_ID,
+        [rPLC].Metadata_EV_PLC,
+        [rPLC].EV_PLC_ID,
+        [rPLC].EV_PLC_ChangedAt,
+        [rPLC].EV_PLC_PositedAt,
+        [rPLC].EV_PLC_Reliability,
+        [rPLC].EV_PLC_Event_Place
+    FROM
+        [dbo].[rEV_PLC_Event_Place](
+            @changingTimepoint,
+            @positingTimepoint
+        ) [rPLC]
+    WHERE
+        [rPLC].EV_PLC_EV_ID = [EV].EV_ID
+    AND
+        [rPLC].EV_PLC_Reliability = 1
+    ORDER BY
+        [rPLC].EV_PLC_ChangedAt DESC,
+        [rPLC].EV_PLC_PositedAt DESC
+) [PLC];
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- lEV_Event viewed by the latest available information (may include future versions)
@@ -86,7 +115,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         DEFAULT,
         DEFAULT
     ) [EV];
@@ -94,7 +123,7 @@ GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pEV_Event viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [dbo].pEV_Event (
+CREATE FUNCTION [dbo].[pEV_Event] (
     @changingTimepoint datetime2
 )
 RETURNS TABLE AS RETURN
@@ -102,7 +131,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         @changingTimepoint,
         DEFAULT
     ) [EV];
@@ -110,14 +139,46 @@ GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nEV_Event viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [dbo].nEV_Event
+CREATE VIEW [dbo].[nEV_Event]
 AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [dbo].tEV_Event (
+    [dbo].[tEV_Event] (
         sysdatetime(),
         DEFAULT
     ) [EV];
+GO
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-- dEV_Event showing all differences between the given timepoints and optionally for a subset of attributes
+-----------------------------------------------------------------------------------------------------------------------
+CREATE FUNCTION [dbo].[dEV_Event] (
+    @intervalStart datetime2,
+    @intervalEnd datetime2,
+    @selection varchar(max) = null
+)
+RETURNS TABLE AS RETURN
+SELECT
+    timepoints.inspectedTimepoint,
+    [EV].*
+FROM (
+    SELECT DISTINCT
+        EV_PLC_EV_ID AS EV_ID,
+        EV_PLC_ChangedAt AS inspectedTimepoint,
+        'PLC' AS mnemonic
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        (@selection is null OR @selection like '%PLC%')
+    AND
+        EV_PLC_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
+CROSS APPLY
+    [dbo].[tEV_Event] (
+        timepoints.inspectedTimepoint,
+        DEFAULT
+    ) [EV]
+ WHERE
+    [EV].EV_ID = timepoints.EV_ID;
 GO

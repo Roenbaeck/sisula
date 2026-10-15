@@ -27,8 +27,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_partner smallint; 
-    DECLARE @AC_with smallint; 
+    DECLARE @AC_partner smallint;
+    DECLARE @AC_with smallint;
     DECLARE @ONG_currently tinyint;
     SELECT
         @AC_partner = p.AC_ID_partner,
@@ -80,7 +80,7 @@ BEGIN
                 [ties].[fAC_partner_AC_with_ONG_currently] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
             (
@@ -125,8 +125,8 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @AC_part smallint; 
-    DECLARE @PR_in bigint; 
+    DECLARE @AC_part smallint;
+    DECLARE @PR_in bigint;
     DECLARE @RAT_got tinyint;
     SELECT
         @AC_part = p.AC_ID_part,
@@ -172,7 +172,7 @@ BEGIN
                 [ties].[fAC_part_PR_in_RAT_got] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
                 fol.AC_ID_part = @AC_part
@@ -220,9 +220,9 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @changed datetime2;
-    DECLARE @PR_content bigint; 
-    DECLARE @ST_location int; 
-    DECLARE @EV_of numeric(12,0); 
+    DECLARE @PR_content bigint;
+    DECLARE @ST_location int;
+    DECLARE @EV_of numeric(12,0);
     SELECT
         @PR_content = p.PR_ID_content,
         @ST_location = p.ST_ID_location,
@@ -273,7 +273,7 @@ BEGIN
                 [ties].[fPR_content_ST_location_EV_of] (
                     @positor,
                     @changed,
-                    @posited 
+                    @posited
                 ) fol
             WHERE
             (

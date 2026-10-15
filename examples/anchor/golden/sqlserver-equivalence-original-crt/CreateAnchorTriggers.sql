@@ -25,14 +25,14 @@ BEGIN
         ST_ID int not null
     );
     INSERT INTO [anchors].[ST_Stage] (
-        Metadata_ST 
+        Metadata_ST
     )
     OUTPUT
         inserted.ST_ID
     INTO
         @ST
     SELECT
-        Metadata_ST 
+        Metadata_ST
     FROM
         inserted
     WHERE
@@ -189,7 +189,7 @@ BEGIN
     SELECT
         i.Metadata_ST_AVG,
         i.ST_ID,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID),
         i.ST_AVG_ChangedAt,
         i.ST_AVG_PositedAt,
         i.ST_AVG_Positor,
@@ -213,7 +213,7 @@ BEGIN
     SELECT
         i.Metadata_ST_MIN,
         i.ST_ID,
-        ISNULL(i.UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.UTL_ID, [kUTL].UTL_ID),
         i.ST_MIN_PositedAt,
         i.ST_MIN_Positor,
         i.ST_MIN_Reliability
@@ -313,7 +313,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_NAM_Stage_Name) 
+        UPDATE(ST_NAM_Stage_Name)
     )
     BEGIN
         INSERT INTO [attributes].[ST_NAM_Stage_Name] (
@@ -345,7 +345,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_NAM_Stage_Name_Posit] p
         ON
             p.ST_NAM_ID = i.ST_NAM_ID
@@ -407,7 +407,7 @@ BEGIN
             UPDATE(ST_LOC_Positor) OR
             UPDATE(Positor) OR
             d.ST_LOC_Stage_Location is null OR
-            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR
             d.ST_LOC_Reliability <> ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
                 WHEN UPDATE(Reliability) THEN i.Reliability
@@ -419,7 +419,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_LOC_Stage_Location) 
+        UPDATE(ST_LOC_Stage_Location)
     )
     BEGIN
         INSERT INTO [attributes].[ST_LOC_Stage_Location] (
@@ -448,7 +448,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_LOC_Stage_Location_Posit] p
         ON
             p.ST_LOC_ID = i.ST_LOC_ID
@@ -541,7 +541,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) 
+        UPDATE(UTL_Utilization)
     )
     BEGIN
         INSERT INTO [attributes].[ST_AVG_Stage_Average] (
@@ -573,13 +573,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_AVG_Stage_Average_Posit] p
         ON
             p.ST_AVG_ID = i.ST_AVG_ID
         WHERE
             (UPDATE(UTL_ID) AND i.UTL_ID is null)
-        OR 
+        OR
             (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
     END
     IF(UPDATE(ST_MIN_ID))
@@ -661,7 +661,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) 
+        UPDATE(UTL_Utilization)
     )
     BEGIN
         INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
@@ -690,13 +690,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_MIN_Stage_Minimum_Posit] p
         ON
             p.ST_MIN_ID = i.ST_MIN_ID
         WHERE
             (UPDATE(UTL_ID) AND i.UTL_ID is null)
-        OR 
+        OR
             (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
     END
 END
@@ -796,14 +796,14 @@ BEGIN
         AC_ID smallint not null
     );
     INSERT INTO [anchors].[AC_Actor] (
-        Metadata_AC 
+        Metadata_AC
     )
     OUTPUT
         inserted.AC_ID
     INTO
         @AC
     SELECT
-        Metadata_AC 
+        Metadata_AC
     FROM
         inserted
     WHERE
@@ -931,7 +931,7 @@ BEGIN
     SELECT
         i.Metadata_AC_GEN,
         i.AC_ID,
-        ISNULL(i.GEN_ID, [kGEN].GEN_ID), 
+        ISNULL(i.GEN_ID, [kGEN].GEN_ID),
         i.AC_GEN_PositedAt,
         i.AC_GEN_Positor,
         i.AC_GEN_Reliability
@@ -940,7 +940,7 @@ BEGIN
     LEFT JOIN
         [knots].[GEN_Gender] [kGEN]
     ON
-        [kGEN].GEN_Checksum = i.GEN_Checksum 
+        [kGEN].GEN_Checksum = i.GEN_Checksum
     WHERE
         ISNULL(i.GEN_ID, [kGEN].GEN_ID) is not null;
     INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
@@ -955,7 +955,7 @@ BEGIN
     SELECT
         i.Metadata_AC_PLV,
         i.AC_ID,
-        ISNULL(i.PLV_ID, [kPLV].PLV_ID), 
+        ISNULL(i.PLV_ID, [kPLV].PLV_ID),
         i.AC_PLV_ChangedAt,
         i.AC_PLV_PositedAt,
         i.AC_PLV_Positor,
@@ -965,7 +965,7 @@ BEGIN
     LEFT JOIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
-        [kPLV].PLV_Checksum = i.PLV_Checksum 
+        [kPLV].PLV_Checksum = i.PLV_Checksum
     WHERE
         ISNULL(i.PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -1056,7 +1056,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(AC_NAM_Actor_Name) 
+        UPDATE(AC_NAM_Actor_Name)
     )
     BEGIN
         INSERT INTO [attributes].[AC_NAM_Actor_Name] (
@@ -1088,7 +1088,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_NAM_Actor_Name_Posit] p
         ON
             p.AC_NAM_ID = i.AC_NAM_ID
@@ -1144,7 +1144,7 @@ BEGIN
         LEFT JOIN
             [knots].[GEN_Gender] [kGEN]
         ON
-            [kGEN].GEN_Checksum = dw.MD5(cast(i.GEN_Gender as varbinary(max))) 
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.GEN_Gender as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -1174,7 +1174,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(GEN_ID) OR
-        UPDATE(GEN_Gender) 
+        UPDATE(GEN_Gender)
     )
     BEGIN
         INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
@@ -1203,13 +1203,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_GEN_Actor_Gender_Posit] p
         ON
             p.AC_GEN_ID = i.AC_GEN_ID
         WHERE
             (UPDATE(GEN_ID) AND i.GEN_ID is null)
-        OR 
+        OR
             (UPDATE(GEN_Gender) AND i.GEN_Gender is null);
     END
     IF(UPDATE(AC_PLV_ID))
@@ -1267,7 +1267,7 @@ BEGIN
         LEFT JOIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max))) 
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.PLV_ProfessionalLevel as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -1298,7 +1298,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(PLV_ID) OR
-        UPDATE(PLV_ProfessionalLevel) 
+        UPDATE(PLV_ProfessionalLevel)
     )
     BEGIN
         INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
@@ -1330,13 +1330,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
         ON
             p.AC_PLV_ID = i.AC_PLV_ID
         WHERE
             (UPDATE(PLV_ID) AND i.PLV_ID is null)
-        OR 
+        OR
             (UPDATE(PLV_ProfessionalLevel) AND i.PLV_ProfessionalLevel is null);
     END
 END
@@ -1419,14 +1419,14 @@ BEGIN
         PR_ID bigint not null
     );
     INSERT INTO [anchors].[PR_Program] (
-        Metadata_PR 
+        Metadata_PR
     )
     OUTPUT
         inserted.PR_ID
     INTO
         @PR
     SELECT
-        Metadata_PR 
+        Metadata_PR
     FROM
         inserted
     WHERE
@@ -1607,7 +1607,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_NAM_Program_Name) 
+        UPDATE(PR_NAM_Program_Name)
     )
     BEGIN
         INSERT INTO [attributes].[PR_NAM_Program_Name] (
@@ -1636,7 +1636,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[PR_NAM_Program_Name_Posit] p
         ON
             p.PR_NAM_ID = i.PR_NAM_ID
@@ -1717,7 +1717,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_LEN_Program_Length) 
+        UPDATE(PR_LEN_Program_Length)
     )
     BEGIN
         INSERT INTO [attributes].[PR_LEN_Program_Length] (
@@ -1749,7 +1749,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[PR_LEN_Program_Length_Posit] p
         ON
             p.PR_LEN_ID = i.PR_LEN_ID

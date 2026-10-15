@@ -2,6 +2,7 @@
 --
 -- The following triggers on the latest view make it behave like a table.
 -- There are three different 'instead of' triggers: insert, update, and delete.
+-- The roles of a nexus are part of its identity, so they are not updatable.
 -- They will ensure that such operations are propagated to the underlying tables
 -- in a consistent way. Default values are used for some columns if not provided
 -- by the corresponding SQL statements.
@@ -310,5 +311,807 @@ BEGIN
         [kPLV].PLV_Checksum = i.EV_LVL_PLV_Checksum 
     WHERE
         ISNULL(i.EV_LVL_PLV_ID, [kPLV].PLV_ID) is not null;
+END
+GO
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lEV_Event instead of UPDATE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [nexuses].[ut_lEV_Event] ON [nexuses].[lEV_Event]
+INSTEAD OF UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    IF(UPDATE(EV_ID))
+        RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(ST_ID_wasHeldAt))
+        RAISERROR('The role column ST_ID_wasHeldAt is not updatable.', 16, 1);
+    IF(UPDATE(PR_ID_wasPlayed))
+        RAISERROR('The role column PR_ID_wasPlayed is not updatable.', 16, 1);
+    IF(UPDATE(ETY_ID_of))
+        RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
+    IF(UPDATE(of_ETY_EventType))
+        RAISERROR('The role column of_ETY_EventType is not updatable.', 16, 1);
+    IF(UPDATE(EV_DAT_ID))
+        RAISERROR('The identity column EV_DAT_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_DAT_EV_ID))
+        RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_DAT_Stance))
+        RAISERROR('The computed assertion column EV_DAT_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_DAT_Event_Date) OR
+        UPDATE(EV_DAT_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_DAT_Event_Date] (
+            Metadata_EV_DAT,
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Who,
+            EV_DAT_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_DAT
+            END, i.Metadata_EV),
+            ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
+            i.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Who) THEN i.EV_DAT_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Confidence) THEN i.EV_DAT_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_DAT_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            i.EV_DAT_Event_Date is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_DAT_PositedAt) OR
+            UPDATE(EV_DAT_Who) OR
+            UPDATE(Who) OR
+            d.EV_DAT_Event_Date is null OR
+            d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date OR
+            d.EV_DAT_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Confidence) THEN i.EV_DAT_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_DAT_Confidence
+            END, 0.75)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_DAT_Event_Date)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_DAT_Event_Date] (
+            Metadata_EV_DAT,
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Who,
+            EV_DAT_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_DAT
+            END, i.Metadata_EV),
+            p.EV_DAT_EV_ID,
+            p.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Who) THEN i.EV_DAT_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Fact] p
+        ON
+            p.EV_DAT_ID = i.EV_DAT_ID
+        WHERE
+            i.EV_DAT_Event_Date is null
+    END
+    IF(UPDATE(EV_AUD_ID))
+        RAISERROR('The identity column EV_AUD_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_AUD_EV_ID))
+        RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_AUD_Stance))
+        RAISERROR('The computed assertion column EV_AUD_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_AUD_Event_Audience) OR
+        UPDATE(EV_AUD_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
+            Metadata_EV_AUD,
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Who,
+            EV_AUD_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_AUD
+            END, i.Metadata_EV),
+            ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
+            i.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Who) THEN i.EV_AUD_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Confidence) THEN i.EV_AUD_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_AUD_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            i.EV_AUD_Event_Audience is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_AUD_PositedAt) OR
+            UPDATE(EV_AUD_Who) OR
+            UPDATE(Who) OR
+            d.EV_AUD_Event_Audience is null OR
+            d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience OR
+            d.EV_AUD_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Confidence) THEN i.EV_AUD_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_AUD_Confidence
+            END, 0.75)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_AUD_Event_Audience)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
+            Metadata_EV_AUD,
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Who,
+            EV_AUD_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_AUD
+            END, i.Metadata_EV),
+            p.EV_AUD_EV_ID,
+            p.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Who) THEN i.EV_AUD_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Fact] p
+        ON
+            p.EV_AUD_ID = i.EV_AUD_ID
+        WHERE
+            i.EV_AUD_Event_Audience is null
+    END
+    IF(UPDATE(EV_REV_ID))
+        RAISERROR('The identity column EV_REV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_REV_EV_ID))
+        RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_REV_Stance))
+        RAISERROR('The computed assertion column EV_REV_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_REV_Event_Revenue) OR
+        UPDATE(EV_REV_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
+            Metadata_EV_REV,
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Who,
+            EV_REV_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_REV
+            END, i.Metadata_EV),
+            ISNULL(i.EV_REV_EV_ID, i.EV_ID),
+            i.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Who) THEN i.EV_REV_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Confidence) THEN i.EV_REV_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_REV_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            i.EV_REV_Event_Revenue is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_REV_PositedAt) OR
+            UPDATE(EV_REV_Who) OR
+            UPDATE(Who) OR
+            d.EV_REV_Event_Revenue is null OR
+            d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue OR
+            d.EV_REV_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_REV_Confidence) THEN i.EV_REV_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_REV_Confidence
+            END, 0.75)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_REV_Event_Revenue)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
+            Metadata_EV_REV,
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Who,
+            EV_REV_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_REV
+            END, i.Metadata_EV),
+            p.EV_REV_EV_ID,
+            p.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Who) THEN i.EV_REV_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Fact] p
+        ON
+            p.EV_REV_ID = i.EV_REV_ID
+        WHERE
+            i.EV_REV_Event_Revenue is null
+    END
+    IF(UPDATE(EV_STA_ID))
+        RAISERROR('The identity column EV_STA_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_STA_EV_ID))
+        RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_STA_Stance))
+        RAISERROR('The computed assertion column EV_STA_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_STA_Event_Status) OR
+        UPDATE(EV_STA_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_STA_Event_Status] (
+            Metadata_EV_STA,
+            EV_STA_EV_ID,
+            EV_STA_Event_Status,
+            EV_STA_ChangedAt,
+            EV_STA_PositedAt,
+            EV_STA_Who,
+            EV_STA_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_STA
+            END, i.Metadata_EV),
+            ISNULL(i.EV_STA_EV_ID, i.EV_ID),
+            i.EV_STA_Event_Status,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
+                WHEN d.EV_STA_Event_Status = i.EV_STA_Event_Status
+                THEN i.EV_STA_ChangedAt -- the shown version is asserted again
+            END, @now) as datetime2),
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_STA_Who) THEN i.EV_STA_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_STA_Confidence) THEN i.EV_STA_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_STA_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            i.EV_STA_Event_Status is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_STA_ChangedAt) OR
+            UPDATE(EV_STA_PositedAt) OR
+            UPDATE(EV_STA_Who) OR
+            UPDATE(Who) OR
+            d.EV_STA_Event_Status is null OR
+            d.EV_STA_Event_Status <> i.EV_STA_Event_Status OR
+            d.EV_STA_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_STA_Confidence) THEN i.EV_STA_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_STA_Confidence
+            END, 0.75)
+        )
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_STA_Event_Status)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_STA_Event_Status] (
+            Metadata_EV_STA,
+            EV_STA_EV_ID,
+            EV_STA_Event_Status,
+            EV_STA_ChangedAt,
+            EV_STA_PositedAt,
+            EV_STA_Who,
+            EV_STA_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_STA
+            END, i.Metadata_EV),
+            p.EV_STA_EV_ID,
+            p.EV_STA_Event_Status,
+            p.EV_STA_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+                WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_STA_Who) THEN i.EV_STA_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_STA_Event_Status_Fact] p
+        ON
+            p.EV_STA_ID = i.EV_STA_ID
+        WHERE
+            i.EV_STA_Event_Status is null
+    END
+    IF(UPDATE(EV_UTL_ID))
+        RAISERROR('The identity column EV_UTL_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_UTL_EV_ID))
+        RAISERROR('The foreign key column EV_UTL_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_UTL_Stance))
+        RAISERROR('The computed assertion column EV_UTL_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_UTL_UTL_ID) OR
+        UPDATE(EV_UTL_UTL_Utilization) OR
+        UPDATE(EV_UTL_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
+            Metadata_EV_UTL,
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID,
+            EV_UTL_PositedAt,
+            EV_UTL_Who,
+            EV_UTL_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_UTL
+            END, i.Metadata_EV),
+            ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
+            CASE
+                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Who) THEN i.EV_UTL_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Confidence) THEN i.EV_UTL_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_UTL_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            CASE
+                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_UTL_PositedAt) OR
+            UPDATE(EV_UTL_Who) OR
+            UPDATE(Who) OR
+            d.EV_UTL_UTL_ID is null OR
+            d.EV_UTL_UTL_ID <> CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.EV_UTL_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Confidence) THEN i.EV_UTL_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_UTL_Confidence
+            END, 0.75)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_UTL_UTL_ID) OR
+        UPDATE(EV_UTL_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
+            Metadata_EV_UTL,
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID,
+            EV_UTL_PositedAt,
+            EV_UTL_Who,
+            EV_UTL_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_UTL
+            END, i.Metadata_EV),
+            p.EV_UTL_EV_ID,
+            p.EV_UTL_UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Who) THEN i.EV_UTL_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Fact] p
+        ON
+            p.EV_UTL_ID = i.EV_UTL_ID
+        WHERE
+            (UPDATE(EV_UTL_UTL_ID) AND i.EV_UTL_UTL_ID is null)
+        OR
+            (UPDATE(EV_UTL_UTL_Utilization) AND i.EV_UTL_UTL_Utilization is null);
+    END
+    IF(UPDATE(EV_LVL_ID))
+        RAISERROR('The identity column EV_LVL_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_LVL_EV_ID))
+        RAISERROR('The foreign key column EV_LVL_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_LVL_Stance))
+        RAISERROR('The computed assertion column EV_LVL_Stance is not updatable.', 16, 1);
+    IF (
+        UPDATE(EV_LVL_PLV_ID) OR
+        UPDATE(EV_LVL_PLV_ProfessionalLevel) OR
+        UPDATE(EV_LVL_Confidence) OR
+        UPDATE(Confidence)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_LVL_Event_Level] (
+            Metadata_EV_LVL,
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PositedAt,
+            EV_LVL_Who,
+            EV_LVL_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_LVL
+            END, i.Metadata_EV),
+            ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
+            CASE
+                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_ChangedAt) THEN i.EV_LVL_ChangedAt
+                WHEN d.EV_LVL_PLV_ID = CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
+                THEN i.EV_LVL_ChangedAt -- the shown version is asserted again
+            END, @now) as date),
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Who) THEN i.EV_LVL_Who
+                ELSE i.Who
+            END, 0),
+            ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Confidence) THEN i.EV_LVL_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_LVL_Confidence
+            END, 0.75)
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Who = i.Who
+        WHERE
+            CASE
+                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END is not null
+        AND ( -- a statement that leaves everything as it is states nothing
+            UPDATE(EV_LVL_ChangedAt) OR
+            UPDATE(EV_LVL_PositedAt) OR
+            UPDATE(EV_LVL_Who) OR
+            UPDATE(Who) OR
+            d.EV_LVL_PLV_ID is null OR
+            d.EV_LVL_PLV_ID <> CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.EV_LVL_Confidence <> ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Confidence) THEN i.EV_LVL_Confidence
+                WHEN UPDATE(Confidence) THEN i.Confidence
+                ELSE i.EV_LVL_Confidence
+            END, 0.75)
+        );
+    END
+    -- logical delete by setting to value to null
+    -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
+    -- will use @timepoint as a proxy for positing time
+    IF (
+        UPDATE(EV_LVL_PLV_ID) OR
+        UPDATE(EV_LVL_PLV_ProfessionalLevel)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_LVL_Event_Level] (
+            Metadata_EV_LVL,
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PositedAt,
+            EV_LVL_Who,
+            EV_LVL_Confidence
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_LVL
+            END, i.Metadata_EV),
+            p.EV_LVL_EV_ID,
+            p.EV_LVL_PLV_ID,
+            p.EV_LVL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+                WHEN UPDATE(EV_LVL_ChangedAt) THEN i.EV_LVL_ChangedAt
+            END, @now) as datetime2(3)),
+            ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Who) THEN i.EV_LVL_Who
+                ELSE i.Who
+            END, 0),
+            0.25
+        FROM
+            inserted i
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Fact] p
+        ON
+            p.EV_LVL_ID = i.EV_LVL_ID
+        WHERE
+            (UPDATE(EV_LVL_PLV_ID) AND i.EV_LVL_PLV_ID is null)
+        OR
+            (UPDATE(EV_LVL_PLV_ProfessionalLevel) AND i.EV_LVL_PLV_ProfessionalLevel is null);
+    END
+END
+GO
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_Event instead of DELETE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE TRIGGER [nexuses].[dt_lEV_Event] ON [nexuses].[lEV_Event]
+INSTEAD OF DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    INSERT INTO [attributes].[EV_DAT_Event_Date_Meta] (
+        Metadata_EV_DAT,
+        EV_DAT_ID,
+        EV_DAT_Who,
+        EV_DAT_PositedAt,
+        EV_DAT_Confidence
+    )
+    SELECT
+        d.Metadata_EV_DAT,
+        d.EV_DAT_ID,
+        d.EV_DAT_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_DAT_ID is not null;
+    INSERT INTO [attributes].[EV_AUD_Event_Audience_Meta] (
+        Metadata_EV_AUD,
+        EV_AUD_ID,
+        EV_AUD_Who,
+        EV_AUD_PositedAt,
+        EV_AUD_Confidence
+    )
+    SELECT
+        d.Metadata_EV_AUD,
+        d.EV_AUD_ID,
+        d.EV_AUD_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_AUD_ID is not null;
+    INSERT INTO [attributes].[EV_REV_Event_Revenue_Meta] (
+        Metadata_EV_REV,
+        EV_REV_ID,
+        EV_REV_Who,
+        EV_REV_PositedAt,
+        EV_REV_Confidence
+    )
+    SELECT
+        d.Metadata_EV_REV,
+        d.EV_REV_ID,
+        d.EV_REV_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_REV_ID is not null;
+    INSERT INTO [attributes].[EV_STA_Event_Status_Meta] (
+        Metadata_EV_STA,
+        EV_STA_ID,
+        EV_STA_Who,
+        EV_STA_PositedAt,
+        EV_STA_Confidence
+    )
+    SELECT
+        d.Metadata_EV_STA,
+        d.EV_STA_ID,
+        d.EV_STA_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_STA_ID is not null;
+    INSERT INTO [attributes].[EV_UTL_Event_Utilization_Meta] (
+        Metadata_EV_UTL,
+        EV_UTL_ID,
+        EV_UTL_Who,
+        EV_UTL_PositedAt,
+        EV_UTL_Confidence
+    )
+    SELECT
+        d.Metadata_EV_UTL,
+        d.EV_UTL_ID,
+        d.EV_UTL_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_UTL_ID is not null;
+    INSERT INTO [attributes].[EV_LVL_Event_Level_Meta] (
+        Metadata_EV_LVL,
+        EV_LVL_ID,
+        EV_LVL_Who,
+        EV_LVL_PositedAt,
+        EV_LVL_Confidence
+    )
+    SELECT
+        d.Metadata_EV_LVL,
+        d.EV_LVL_ID,
+        d.EV_LVL_Who,
+        @now,
+        0.25
+    FROM
+        deleted d
+    WHERE
+        d.EV_LVL_ID is not null;
 END
 GO

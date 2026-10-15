@@ -4,7 +4,7 @@
 -- point in changing time, or an attribute annex table to the given point
 -- in positing time. It does not pick a temporal perspective and
 -- instead shows all rows that have been in effect before that point
--- in time. The forwarder is the opposite of the rewinder, such that the 
+-- in time. The forwarder is the opposite of the rewinder, such that the
 -- union of the two will produce all rows in a posit table.
 --
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
@@ -66,6 +66,220 @@ BEGIN
             ORDER BY
                 sub.EV_QTY_PositedAt DESC
         )
+    ');
+END
+GO
+-- Attribute posit rewinder -------------------------------------------------------------------------------------------
+-- rEV_PLC_Event_Place_Posit rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rEV_PLC_Event_Place_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rEV_PLC_Event_Place_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_PLC_ID,
+        EV_PLC_EV_ID,
+        EV_PLC_Event_Place,
+        EV_PLC_ChangedAt
+    FROM
+        [dbo].[EV_PLC_Event_Place_Posit]
+    WHERE
+        EV_PLC_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute posit forwarder ------------------------------------------------------------------------------------------
+-- fEV_PLC_Event_Place_Posit forwarding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.fEV_PLC_Event_Place_Posit','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[fEV_PLC_Event_Place_Posit] (
+        @changingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        EV_PLC_ID,
+        EV_PLC_EV_ID,
+        EV_PLC_Event_Place,
+        EV_PLC_ChangedAt
+    FROM
+        [dbo].[EV_PLC_Event_Place_Posit]
+    WHERE
+        EV_PLC_ChangedAt > @changingTimepoint;
+    ');
+END
+GO
+-- Attribute annex rewinder -------------------------------------------------------------------------------------------
+-- rEV_PLC_Event_Place_Annex rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rEV_PLC_Event_Place_Annex','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rEV_PLC_Event_Place_Annex] (
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_PLC,
+        EV_PLC_ID,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability
+    FROM
+        [dbo].[EV_PLC_Event_Place_Annex]
+    WHERE
+        EV_PLC_PositedAt <= @positingTimepoint;
+    ');
+END
+GO
+-- Attribute assembled rewinder ---------------------------------------------------------------------------------------
+-- rEV_PLC_Event_Place rewinding over changing and positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rEV_PLC_Event_Place','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rEV_PLC_Event_Place] (
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_PLC,
+        p.EV_PLC_ID,
+        a.EV_PLC_PositedAt,
+        a.EV_PLC_Reliability,
+        p.EV_PLC_EV_ID,
+        p.EV_PLC_Event_Place,
+        p.EV_PLC_ChangedAt
+    FROM
+        [dbo].[rEV_PLC_Event_Place_Posit](@changingTimepoint) p
+    JOIN
+        [dbo].[rEV_PLC_Event_Place_Annex](@positingTimepoint) a
+    ON
+        a.EV_PLC_ID = p.EV_PLC_ID
+    AND
+        a.EV_PLC_PositedAt = (
+            SELECT TOP 1
+                sub.EV_PLC_PositedAt
+            FROM
+                [dbo].[rEV_PLC_Event_Place_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_PLC_ID = p.EV_PLC_ID
+            ORDER BY
+                sub.EV_PLC_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute assembled forwarder --------------------------------------------------------------------------------------
+-- fEV_PLC_Event_Place forwarding over changing and rewinding over positing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.fEV_PLC_Event_Place','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[fEV_PLC_Event_Place] (
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        a.Metadata_EV_PLC,
+        p.EV_PLC_ID,
+        a.EV_PLC_PositedAt,
+        a.EV_PLC_Reliability,
+        p.EV_PLC_EV_ID,
+        p.EV_PLC_Event_Place,
+        p.EV_PLC_ChangedAt
+    FROM
+        [dbo].[fEV_PLC_Event_Place_Posit](@changingTimepoint) p
+    JOIN
+        [dbo].[rEV_PLC_Event_Place_Annex](@positingTimepoint) a
+    ON
+        a.EV_PLC_ID = p.EV_PLC_ID
+    AND
+        a.EV_PLC_PositedAt = (
+            SELECT TOP 1
+                sub.EV_PLC_PositedAt
+            FROM
+                [dbo].[rEV_PLC_Event_Place_Annex](@positingTimepoint) sub
+            WHERE
+                sub.EV_PLC_ID = p.EV_PLC_ID
+            ORDER BY
+                sub.EV_PLC_PositedAt DESC
+        )
+    ');
+END
+GO
+-- Attribute previous value -------------------------------------------------------------------------------------------
+-- preEV_PLC_Event_Place function for getting previous value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.preEV_PLC_Event_Place','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[preEV_PLC_Event_Place] (
+        @id int,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS nvarchar(42)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            pre.EV_PLC_Event_Place
+        FROM
+            [dbo].[rEV_PLC_Event_Place](
+                @changingTimepoint,
+                @positingTimepoint
+            ) pre
+        WHERE
+            pre.EV_PLC_EV_ID = @id
+        AND
+            pre.EV_PLC_ChangedAt < @changingTimepoint
+        AND
+            pre.EV_PLC_Reliability = 1
+        ORDER BY
+            pre.EV_PLC_ChangedAt DESC,
+            pre.EV_PLC_PositedAt DESC
+    );
+    END
+    ');
+END
+GO
+-- Attribute following value ------------------------------------------------------------------------------------------
+-- folEV_PLC_Event_Place function for getting following value
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.folEV_PLC_Event_Place','FN') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[folEV_PLC_Event_Place] (
+        @id int,
+        @changingTimepoint datetime2 = ''9999-12-31'',
+        @positingTimepoint datetime2 = ''9999-12-31''
+    )
+    RETURNS nvarchar(42)
+    AS
+    BEGIN RETURN (
+        SELECT TOP 1
+            fol.EV_PLC_Event_Place
+        FROM
+            [dbo].[fEV_PLC_Event_Place](
+                @changingTimepoint,
+                @positingTimepoint
+            ) fol
+        WHERE
+            fol.EV_PLC_EV_ID = @id
+        AND
+            fol.EV_PLC_ChangedAt > @changingTimepoint
+        AND
+            fol.EV_PLC_Reliability = 1
+        ORDER BY
+            fol.EV_PLC_ChangedAt ASC,
+            fol.EV_PLC_PositedAt DESC
+    );
+    END
     ');
 END
 GO
@@ -1539,7 +1753,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            pre.SU_TXT_Checksum 
+            pre.SU_TXT_Checksum
         FROM
             [dbo].[rSU_TXT_Subject_Text](
                 @changingTimepoint,
@@ -1574,7 +1788,7 @@ BEGIN
     AS
     BEGIN RETURN (
         SELECT TOP 1
-            fol.SU_TXT_Checksum 
+            fol.SU_TXT_Checksum
         FROM
             [dbo].[fSU_TXT_Subject_Text](
                 @changingTimepoint,

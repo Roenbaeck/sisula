@@ -29,7 +29,7 @@ BEGIN
         EV_QTY_Event_Quantity int not null,
         EV_QTY_StatementType char(1) not null,
         primary key (
-            EV_QTY_EV_ID asc, 
+            EV_QTY_EV_ID asc,
             EV_QTY_PositedAt desc
         )
     );
@@ -75,8 +75,8 @@ BEGIN
         i.EV_QTY_PositedAt,
         i.EV_QTY_Reliability,
         i.EV_QTY_Event_Quantity,
-        CASE 
-            WHEN p.EV_QTY_ID is null 
+        CASE
+            WHEN p.EV_QTY_ID is null
             THEN 'P' -- new posit
             WHEN a.EV_QTY_ID is null
             THEN 'A' -- new assertion
@@ -89,9 +89,9 @@ BEGIN
         p.EV_QTY_EV_ID = i.EV_QTY_EV_ID
     AND
         p.EV_QTY_Event_Quantity = i.EV_QTY_Event_Quantity
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[EV_QTY_Event_Quantity_Annex] a
-    ON 
+    ON
         a.EV_QTY_ID = p.EV_QTY_ID
     AND
         a.EV_QTY_PositedAt = i.EV_QTY_PositedAt
@@ -103,25 +103,43 @@ BEGIN
         EV_QTY_PositedAt,
         EV_QTY_Reliability,
         EV_QTY_Event_Quantity,
-        EV_QTY_StatementType 
+        EV_QTY_StatementType
     )
     SELECT
-        i.EV_QTY_EV_ID,
-        a.Metadata_EV_QTY,
-        a.EV_QTY_PositedAt,
-        a.EV_QTY_Reliability,
-        p.EV_QTY_Event_Quantity,
+        x.EV_QTY_EV_ID,
+        x.Metadata_EV_QTY,
+        x.EV_QTY_PositedAt,
+        x.EV_QTY_Reliability,
+        x.EV_QTY_Event_Quantity,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT EV_QTY_EV_ID FROM @EV_QTY_Event_Quantity) i
-    JOIN
-        [dbo].[EV_QTY_Event_Quantity_Posit] p
-    ON
-        p.EV_QTY_EV_ID = i.EV_QTY_EV_ID
-    JOIN 
-        [dbo].[EV_QTY_Event_Quantity_Annex] a
-    ON 
-        a.EV_QTY_ID = p.EV_QTY_ID;
+    FROM (
+        SELECT
+            i.EV_QTY_EV_ID,
+            a.Metadata_EV_QTY,
+            a.EV_QTY_PositedAt,
+            a.EV_QTY_Reliability,
+            p.EV_QTY_Event_Quantity,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.EV_QTY_EV_ID,
+                    a.EV_QTY_PositedAt
+                ORDER BY
+                    a.EV_QTY_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT EV_QTY_EV_ID FROM @EV_QTY_Event_Quantity) i
+        JOIN
+            [dbo].[EV_QTY_Event_Quantity_Posit] p
+        ON
+            p.EV_QTY_EV_ID = i.EV_QTY_EV_ID
+        JOIN
+            [dbo].[EV_QTY_Event_Quantity_Annex] a
+        ON
+            a.EV_QTY_ID = p.EV_QTY_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         EV_QTY_EV_ID int not null,
         Metadata_EV_QTY int not null,
@@ -136,7 +154,7 @@ BEGIN
         EV_QTY_PositedAt,
         EV_QTY_Reliability,
         EV_QTY_Event_Quantity,
-        EV_QTY_StatementType 
+        EV_QTY_StatementType
     )
     SELECT
         EV_QTY_EV_ID,
@@ -144,12 +162,12 @@ BEGIN
         EV_QTY_PositedAt,
         EV_QTY_Reliability,
         EV_QTY_Event_Quantity,
-        EV_QTY_StatementType 
+        EV_QTY_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.EV_QTY_Reliability as previous_EV_QTY_Reliability, 
+            pre.EV_QTY_Reliability as previous_EV_QTY_Reliability,
             fol.EV_QTY_Reliability as following_EV_QTY_Reliability
         FROM
             @EV_QTY_Event_Quantity a
@@ -162,7 +180,7 @@ BEGIN
                 p.EV_QTY_EV_ID = a.EV_QTY_EV_ID
             AND
                 p.EV_QTY_PositedAt < a.EV_QTY_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.EV_QTY_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -174,11 +192,11 @@ BEGIN
                 p.EV_QTY_EV_ID = a.EV_QTY_EV_ID
             AND
                 p.EV_QTY_PositedAt > a.EV_QTY_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.EV_QTY_PositedAt ASC
         ) fol
         WHERE
-            (a.EV_QTY_Reliability = 0 AND isnull(pre.EV_QTY_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.EV_QTY_Reliability = 0 AND isnull(pre.EV_QTY_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.EV_QTY_Reliability = 1 AND fol.EV_QTY_Reliability = 0)
     ) i
@@ -196,12 +214,26 @@ BEGIN
         EV_QTY_Event_Quantity
     )
     SELECT
-        EV_QTY_EV_ID,
-        EV_QTY_Event_Quantity
+        v.EV_QTY_EV_ID,
+        v.EV_QTY_Event_Quantity
     FROM
-        @EV_QTY_Event_Quantity
+        @EV_QTY_Event_Quantity v
     WHERE
-        EV_QTY_StatementType = 'P';
+        v.EV_QTY_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @EV_QTY_Event_Quantity w
+        WHERE
+            w.EV_QTY_StatementType = 'P'
+        AND
+            w.EV_QTY_EV_ID = v.EV_QTY_EV_ID
+        AND
+            w.EV_QTY_Event_Quantity = v.EV_QTY_Event_Quantity
+        AND
+            w.EV_QTY_PositedAt < v.EV_QTY_PositedAt
+    );
     INSERT INTO [dbo].[EV_QTY_Event_Quantity_Annex] (
         Metadata_EV_QTY,
         EV_QTY_ID,
@@ -223,6 +255,398 @@ BEGIN
         p.EV_QTY_Event_Quantity = v.EV_QTY_Event_Quantity
     WHERE
         EV_QTY_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[EV_QTY_Event_Quantity_Annex] (
+        Metadata_EV_QTY,
+        EV_QTY_ID,
+        EV_QTY_PositedAt,
+        EV_QTY_Reliability
+    )
+    SELECT
+        v.Metadata_EV_QTY,
+        e.EV_QTY_ID,
+        v.EV_QTY_PositedAt,
+        0
+    FROM
+        @EV_QTY_Event_Quantity v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.EV_QTY_ID,
+            p.EV_QTY_Event_Quantity
+        FROM
+            [dbo].[EV_QTY_Event_Quantity_Posit] p
+        JOIN
+            [dbo].[EV_QTY_Event_Quantity_Annex] a
+        ON
+            a.EV_QTY_ID = p.EV_QTY_ID
+        AND
+            a.EV_QTY_PositedAt = (
+                SELECT
+                    max(s.EV_QTY_PositedAt)
+                FROM
+                    [dbo].[EV_QTY_Event_Quantity_Annex] s
+                WHERE
+                    s.EV_QTY_ID = p.EV_QTY_ID
+                AND
+                    s.EV_QTY_PositedAt < v.EV_QTY_PositedAt
+            )
+        WHERE
+            p.EV_QTY_EV_ID = v.EV_QTY_EV_ID
+        AND
+            a.EV_QTY_Reliability = 1
+        ORDER BY
+            a.EV_QTY_PositedAt DESC
+    ) e
+    WHERE
+        v.EV_QTY_StatementType in ('P', 'A')
+    AND
+        v.EV_QTY_Reliability = 1
+    AND
+        e.EV_QTY_Event_Quantity <> v.EV_QTY_Event_Quantity
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_QTY_Event_Quantity_Annex] x
+        WHERE
+            x.EV_QTY_ID = e.EV_QTY_ID
+        AND
+            x.EV_QTY_PositedAt = v.EV_QTY_PositedAt
+    );
+END
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_PLC_Event_Place instead of INSERT trigger on EV_PLC_Event_Place
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_PLC_Event_Place', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_PLC_Event_Place];
+GO
+CREATE TRIGGER [dbo].[it_EV_PLC_Event_Place] ON [dbo].[EV_PLC_Event_Place]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @EV_PLC_Event_Place TABLE (
+        EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_PositedAt datetime2 not null,
+        EV_PLC_Reliability decimal(5,2) not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        EV_PLC_StatementType char(1) not null,
+        primary key (
+            EV_PLC_EV_ID asc,
+            EV_PLC_ChangedAt desc,
+            EV_PLC_PositedAt desc
+        )
+    );
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_PLC_EV_ID,
+            i.EV_PLC_ChangedAt,
+            i.EV_PLC_PositedAt
+        FROM
+            inserted i
+        WHERE EXISTS (
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_PLC_Event_Place_Posit] p
+            JOIN
+                [dbo].[EV_PLC_Event_Place_Annex] a
+            ON
+                a.EV_PLC_ID = p.EV_PLC_ID
+            WHERE
+                p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+            AND
+                p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+            AND
+                p.EV_PLC_Event_Place = i.EV_PLC_Event_Place
+            AND
+                a.EV_PLC_PositedAt = i.EV_PLC_PositedAt
+            AND
+                a.EV_PLC_Reliability <> i.EV_PLC_Reliability
+        )
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_PLC_Event_Place for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO @EV_PLC_Event_Place
+    SELECT
+        i.EV_PLC_EV_ID,
+        i.Metadata_EV_PLC,
+        i.EV_PLC_ChangedAt,
+        i.EV_PLC_PositedAt,
+        i.EV_PLC_Reliability,
+        i.EV_PLC_Event_Place,
+        CASE
+            WHEN p.EV_PLC_ID is null
+            THEN 'P' -- new posit
+            WHEN a.EV_PLC_ID is null
+            THEN 'A' -- new assertion
+        END
+    FROM
+        inserted i
+    LEFT JOIN
+        [dbo].[EV_PLC_Event_Place_Posit] p
+    ON
+        p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+    AND
+        p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+    AND
+        p.EV_PLC_Event_Place = i.EV_PLC_Event_Place
+    LEFT JOIN
+        [dbo].[EV_PLC_Event_Place_Annex] a
+    ON
+        a.EV_PLC_ID = p.EV_PLC_ID
+    AND
+        a.EV_PLC_PositedAt = i.EV_PLC_PositedAt
+    WHERE -- either the posit or the assertion must be different (exclude the identical)
+        (p.EV_PLC_ID is null OR a.EV_PLC_ID is null);
+    INSERT INTO @EV_PLC_Event_Place (
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability,
+        EV_PLC_Event_Place,
+        EV_PLC_StatementType
+    )
+    SELECT
+        x.EV_PLC_EV_ID,
+        x.Metadata_EV_PLC,
+        x.EV_PLC_ChangedAt,
+        x.EV_PLC_PositedAt,
+        x.EV_PLC_Reliability,
+        x.EV_PLC_Event_Place,
+        'X' -- existing data
+    FROM (
+        SELECT
+            i.EV_PLC_EV_ID,
+            a.Metadata_EV_PLC,
+            p.EV_PLC_ChangedAt,
+            a.EV_PLC_PositedAt,
+            a.EV_PLC_Reliability,
+            p.EV_PLC_Event_Place,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.EV_PLC_EV_ID,
+                    p.EV_PLC_ChangedAt,
+                    a.EV_PLC_PositedAt
+                ORDER BY
+                    a.EV_PLC_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT EV_PLC_EV_ID FROM @EV_PLC_Event_Place) i
+        JOIN
+            [dbo].[EV_PLC_Event_Place_Posit] p
+        ON
+            p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+        JOIN
+            [dbo].[EV_PLC_Event_Place_Annex] a
+        ON
+            a.EV_PLC_ID = p.EV_PLC_ID
+    ) x
+    WHERE
+        x.shown = 1;
+    DECLARE @retracted TABLE (
+        EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_PositedAt datetime2 not null,
+        EV_PLC_Reliability decimal(5,2) not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        EV_PLC_StatementType char(1) not null
+    );
+    INSERT INTO @retracted (
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability,
+        EV_PLC_Event_Place,
+        EV_PLC_StatementType
+    )
+    SELECT
+        EV_PLC_EV_ID,
+        Metadata_EV_PLC,
+        EV_PLC_ChangedAt,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability,
+        EV_PLC_Event_Place,
+        EV_PLC_StatementType
+    FROM (
+        DELETE a
+        OUTPUT
+            deleted.*,
+            pre.EV_PLC_Reliability as previous_EV_PLC_Reliability,
+            fol.EV_PLC_Reliability as following_EV_PLC_Reliability
+        FROM
+            @EV_PLC_Event_Place a
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_PLC_Reliability
+            FROM
+                @EV_PLC_Event_Place p
+            WHERE
+                p.EV_PLC_EV_ID = a.EV_PLC_EV_ID
+            AND
+                p.EV_PLC_ChangedAt = a.EV_PLC_ChangedAt
+            AND
+                p.EV_PLC_PositedAt < a.EV_PLC_PositedAt
+            ORDER BY
+                p.EV_PLC_PositedAt DESC
+        ) pre
+        OUTER APPLY (
+            SELECT TOP 1
+                p.EV_PLC_Reliability
+            FROM
+                @EV_PLC_Event_Place p
+            WHERE
+                p.EV_PLC_EV_ID = a.EV_PLC_EV_ID
+            AND
+                p.EV_PLC_ChangedAt = a.EV_PLC_ChangedAt
+            AND
+                p.EV_PLC_PositedAt > a.EV_PLC_PositedAt
+            ORDER BY
+                p.EV_PLC_PositedAt ASC
+        ) fol
+        WHERE
+            (a.EV_PLC_Reliability = 0 AND isnull(pre.EV_PLC_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
+        OR
+            (a.EV_PLC_Reliability = 1 AND fol.EV_PLC_Reliability = 0)
+    ) i
+    WHERE
+        i.EV_PLC_StatementType <> 'X'
+    AND (
+            (i.EV_PLC_Reliability = 0 AND i.previous_EV_PLC_Reliability = 1)
+        OR
+            (i.EV_PLC_Reliability = 1 AND i.following_EV_PLC_Reliability = 0)
+        );
+    -- add the retractions
+    INSERT INTO @EV_PLC_Event_Place SELECT * FROM @retracted;
+    INSERT INTO [dbo].[EV_PLC_Event_Place_Posit] (
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        v.EV_PLC_EV_ID,
+        v.EV_PLC_ChangedAt,
+        v.EV_PLC_Event_Place
+    FROM
+        @EV_PLC_Event_Place v
+    WHERE
+        v.EV_PLC_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @EV_PLC_Event_Place w
+        WHERE
+            w.EV_PLC_StatementType = 'P'
+        AND
+            w.EV_PLC_EV_ID = v.EV_PLC_EV_ID
+        AND
+            w.EV_PLC_ChangedAt = v.EV_PLC_ChangedAt
+        AND
+            w.EV_PLC_Event_Place = v.EV_PLC_Event_Place
+        AND
+            w.EV_PLC_PositedAt < v.EV_PLC_PositedAt
+    );
+    INSERT INTO [dbo].[EV_PLC_Event_Place_Annex] (
+        Metadata_EV_PLC,
+        EV_PLC_ID,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability
+    )
+    SELECT
+        v.Metadata_EV_PLC,
+        p.EV_PLC_ID,
+        v.EV_PLC_PositedAt,
+        v.EV_PLC_Reliability
+    FROM
+        @EV_PLC_Event_Place v
+    JOIN
+        [dbo].[EV_PLC_Event_Place_Posit] p
+    ON
+        p.EV_PLC_EV_ID = v.EV_PLC_EV_ID
+    AND
+        p.EV_PLC_ChangedAt = v.EV_PLC_ChangedAt
+    AND
+        p.EV_PLC_Event_Place = v.EV_PLC_Event_Place
+    WHERE
+        EV_PLC_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[EV_PLC_Event_Place_Annex] (
+        Metadata_EV_PLC,
+        EV_PLC_ID,
+        EV_PLC_PositedAt,
+        EV_PLC_Reliability
+    )
+    SELECT
+        v.Metadata_EV_PLC,
+        e.EV_PLC_ID,
+        v.EV_PLC_PositedAt,
+        0
+    FROM
+        @EV_PLC_Event_Place v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.EV_PLC_ID,
+            p.EV_PLC_Event_Place
+        FROM
+            [dbo].[EV_PLC_Event_Place_Posit] p
+        JOIN
+            [dbo].[EV_PLC_Event_Place_Annex] a
+        ON
+            a.EV_PLC_ID = p.EV_PLC_ID
+        AND
+            a.EV_PLC_PositedAt = (
+                SELECT
+                    max(s.EV_PLC_PositedAt)
+                FROM
+                    [dbo].[EV_PLC_Event_Place_Annex] s
+                WHERE
+                    s.EV_PLC_ID = p.EV_PLC_ID
+                AND
+                    s.EV_PLC_PositedAt < v.EV_PLC_PositedAt
+            )
+        WHERE
+            p.EV_PLC_EV_ID = v.EV_PLC_EV_ID
+        AND
+            p.EV_PLC_ChangedAt = v.EV_PLC_ChangedAt
+        AND
+            a.EV_PLC_Reliability = 1
+        ORDER BY
+            a.EV_PLC_PositedAt DESC
+    ) e
+    WHERE
+        v.EV_PLC_StatementType in ('P', 'A')
+    AND
+        v.EV_PLC_Reliability = 1
+    AND
+        e.EV_PLC_Event_Place <> v.EV_PLC_Event_Place
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[EV_PLC_Event_Place_Annex] x
+        WHERE
+            x.EV_PLC_ID = e.EV_PLC_ID
+        AND
+            x.EV_PLC_PositedAt = v.EV_PLC_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -244,7 +668,7 @@ BEGIN
         SU_NAM_Subject_Name nvarchar(42) not null,
         SU_NAM_StatementType char(1) not null,
         primary key (
-            SU_NAM_SU_ID asc, 
+            SU_NAM_SU_ID asc,
             SU_NAM_PositedAt desc
         )
     );
@@ -290,8 +714,8 @@ BEGIN
         i.SU_NAM_PositedAt,
         i.SU_NAM_Reliability,
         i.SU_NAM_Subject_Name,
-        CASE 
-            WHEN p.SU_NAM_ID is null 
+        CASE
+            WHEN p.SU_NAM_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_NAM_ID is null
             THEN 'A' -- new assertion
@@ -304,9 +728,9 @@ BEGIN
         p.SU_NAM_SU_ID = i.SU_NAM_SU_ID
     AND
         p.SU_NAM_Subject_Name = i.SU_NAM_Subject_Name
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_NAM_Subject_Name_Annex] a
-    ON 
+    ON
         a.SU_NAM_ID = p.SU_NAM_ID
     AND
         a.SU_NAM_PositedAt = i.SU_NAM_PositedAt
@@ -318,25 +742,43 @@ BEGIN
         SU_NAM_PositedAt,
         SU_NAM_Reliability,
         SU_NAM_Subject_Name,
-        SU_NAM_StatementType 
+        SU_NAM_StatementType
     )
     SELECT
-        i.SU_NAM_SU_ID,
-        a.Metadata_SU_NAM,
-        a.SU_NAM_PositedAt,
-        a.SU_NAM_Reliability,
-        p.SU_NAM_Subject_Name,
+        x.SU_NAM_SU_ID,
+        x.Metadata_SU_NAM,
+        x.SU_NAM_PositedAt,
+        x.SU_NAM_Reliability,
+        x.SU_NAM_Subject_Name,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_NAM_SU_ID FROM @SU_NAM_Subject_Name) i
-    JOIN
-        [dbo].[SU_NAM_Subject_Name_Posit] p
-    ON
-        p.SU_NAM_SU_ID = i.SU_NAM_SU_ID
-    JOIN 
-        [dbo].[SU_NAM_Subject_Name_Annex] a
-    ON 
-        a.SU_NAM_ID = p.SU_NAM_ID;
+    FROM (
+        SELECT
+            i.SU_NAM_SU_ID,
+            a.Metadata_SU_NAM,
+            a.SU_NAM_PositedAt,
+            a.SU_NAM_Reliability,
+            p.SU_NAM_Subject_Name,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_NAM_SU_ID,
+                    a.SU_NAM_PositedAt
+                ORDER BY
+                    a.SU_NAM_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_NAM_SU_ID FROM @SU_NAM_Subject_Name) i
+        JOIN
+            [dbo].[SU_NAM_Subject_Name_Posit] p
+        ON
+            p.SU_NAM_SU_ID = i.SU_NAM_SU_ID
+        JOIN
+            [dbo].[SU_NAM_Subject_Name_Annex] a
+        ON
+            a.SU_NAM_ID = p.SU_NAM_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_NAM_SU_ID int not null,
         Metadata_SU_NAM int not null,
@@ -351,7 +793,7 @@ BEGIN
         SU_NAM_PositedAt,
         SU_NAM_Reliability,
         SU_NAM_Subject_Name,
-        SU_NAM_StatementType 
+        SU_NAM_StatementType
     )
     SELECT
         SU_NAM_SU_ID,
@@ -359,12 +801,12 @@ BEGIN
         SU_NAM_PositedAt,
         SU_NAM_Reliability,
         SU_NAM_Subject_Name,
-        SU_NAM_StatementType 
+        SU_NAM_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_NAM_Reliability as previous_SU_NAM_Reliability, 
+            pre.SU_NAM_Reliability as previous_SU_NAM_Reliability,
             fol.SU_NAM_Reliability as following_SU_NAM_Reliability
         FROM
             @SU_NAM_Subject_Name a
@@ -377,7 +819,7 @@ BEGIN
                 p.SU_NAM_SU_ID = a.SU_NAM_SU_ID
             AND
                 p.SU_NAM_PositedAt < a.SU_NAM_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_NAM_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -389,11 +831,11 @@ BEGIN
                 p.SU_NAM_SU_ID = a.SU_NAM_SU_ID
             AND
                 p.SU_NAM_PositedAt > a.SU_NAM_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_NAM_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_NAM_Reliability = 0 AND isnull(pre.SU_NAM_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_NAM_Reliability = 0 AND isnull(pre.SU_NAM_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_NAM_Reliability = 1 AND fol.SU_NAM_Reliability = 0)
     ) i
@@ -411,12 +853,26 @@ BEGIN
         SU_NAM_Subject_Name
     )
     SELECT
-        SU_NAM_SU_ID,
-        SU_NAM_Subject_Name
+        v.SU_NAM_SU_ID,
+        v.SU_NAM_Subject_Name
     FROM
-        @SU_NAM_Subject_Name
+        @SU_NAM_Subject_Name v
     WHERE
-        SU_NAM_StatementType = 'P';
+        v.SU_NAM_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_NAM_Subject_Name w
+        WHERE
+            w.SU_NAM_StatementType = 'P'
+        AND
+            w.SU_NAM_SU_ID = v.SU_NAM_SU_ID
+        AND
+            w.SU_NAM_Subject_Name = v.SU_NAM_Subject_Name
+        AND
+            w.SU_NAM_PositedAt < v.SU_NAM_PositedAt
+    );
     INSERT INTO [dbo].[SU_NAM_Subject_Name_Annex] (
         Metadata_SU_NAM,
         SU_NAM_ID,
@@ -438,6 +894,65 @@ BEGIN
         p.SU_NAM_Subject_Name = v.SU_NAM_Subject_Name
     WHERE
         SU_NAM_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_NAM_Subject_Name_Annex] (
+        Metadata_SU_NAM,
+        SU_NAM_ID,
+        SU_NAM_PositedAt,
+        SU_NAM_Reliability
+    )
+    SELECT
+        v.Metadata_SU_NAM,
+        e.SU_NAM_ID,
+        v.SU_NAM_PositedAt,
+        0
+    FROM
+        @SU_NAM_Subject_Name v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_NAM_ID,
+            p.SU_NAM_Subject_Name
+        FROM
+            [dbo].[SU_NAM_Subject_Name_Posit] p
+        JOIN
+            [dbo].[SU_NAM_Subject_Name_Annex] a
+        ON
+            a.SU_NAM_ID = p.SU_NAM_ID
+        AND
+            a.SU_NAM_PositedAt = (
+                SELECT
+                    max(s.SU_NAM_PositedAt)
+                FROM
+                    [dbo].[SU_NAM_Subject_Name_Annex] s
+                WHERE
+                    s.SU_NAM_ID = p.SU_NAM_ID
+                AND
+                    s.SU_NAM_PositedAt < v.SU_NAM_PositedAt
+            )
+        WHERE
+            p.SU_NAM_SU_ID = v.SU_NAM_SU_ID
+        AND
+            a.SU_NAM_Reliability = 1
+        ORDER BY
+            a.SU_NAM_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_NAM_StatementType in ('P', 'A')
+    AND
+        v.SU_NAM_Reliability = 1
+    AND
+        e.SU_NAM_Subject_Name <> v.SU_NAM_Subject_Name
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_NAM_Subject_Name_Annex] x
+        WHERE
+            x.SU_NAM_ID = e.SU_NAM_ID
+        AND
+            x.SU_NAM_PositedAt = v.SU_NAM_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -459,7 +974,7 @@ BEGIN
         SU_COD_Subject_Code nvarchar(42) not null,
         SU_COD_StatementType char(1) not null,
         primary key (
-            SU_COD_SU_ID asc, 
+            SU_COD_SU_ID asc,
             SU_COD_PositedAt desc
         )
     );
@@ -505,8 +1020,8 @@ BEGIN
         i.SU_COD_PositedAt,
         i.SU_COD_Reliability,
         i.SU_COD_Subject_Code,
-        CASE 
-            WHEN p.SU_COD_ID is null 
+        CASE
+            WHEN p.SU_COD_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_COD_ID is null
             THEN 'A' -- new assertion
@@ -519,9 +1034,9 @@ BEGIN
         p.SU_COD_SU_ID = i.SU_COD_SU_ID
     AND
         p.SU_COD_Subject_Code = i.SU_COD_Subject_Code
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_COD_Subject_Code_Annex] a
-    ON 
+    ON
         a.SU_COD_ID = p.SU_COD_ID
     AND
         a.SU_COD_PositedAt = i.SU_COD_PositedAt
@@ -533,25 +1048,43 @@ BEGIN
         SU_COD_PositedAt,
         SU_COD_Reliability,
         SU_COD_Subject_Code,
-        SU_COD_StatementType 
+        SU_COD_StatementType
     )
     SELECT
-        i.SU_COD_SU_ID,
-        a.Metadata_SU_COD,
-        a.SU_COD_PositedAt,
-        a.SU_COD_Reliability,
-        p.SU_COD_Subject_Code,
+        x.SU_COD_SU_ID,
+        x.Metadata_SU_COD,
+        x.SU_COD_PositedAt,
+        x.SU_COD_Reliability,
+        x.SU_COD_Subject_Code,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_COD_SU_ID FROM @SU_COD_Subject_Code) i
-    JOIN
-        [dbo].[SU_COD_Subject_Code_Posit] p
-    ON
-        p.SU_COD_SU_ID = i.SU_COD_SU_ID
-    JOIN 
-        [dbo].[SU_COD_Subject_Code_Annex] a
-    ON 
-        a.SU_COD_ID = p.SU_COD_ID;
+    FROM (
+        SELECT
+            i.SU_COD_SU_ID,
+            a.Metadata_SU_COD,
+            a.SU_COD_PositedAt,
+            a.SU_COD_Reliability,
+            p.SU_COD_Subject_Code,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_COD_SU_ID,
+                    a.SU_COD_PositedAt
+                ORDER BY
+                    a.SU_COD_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_COD_SU_ID FROM @SU_COD_Subject_Code) i
+        JOIN
+            [dbo].[SU_COD_Subject_Code_Posit] p
+        ON
+            p.SU_COD_SU_ID = i.SU_COD_SU_ID
+        JOIN
+            [dbo].[SU_COD_Subject_Code_Annex] a
+        ON
+            a.SU_COD_ID = p.SU_COD_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_COD_SU_ID int not null,
         Metadata_SU_COD int not null,
@@ -566,7 +1099,7 @@ BEGIN
         SU_COD_PositedAt,
         SU_COD_Reliability,
         SU_COD_Subject_Code,
-        SU_COD_StatementType 
+        SU_COD_StatementType
     )
     SELECT
         SU_COD_SU_ID,
@@ -574,12 +1107,12 @@ BEGIN
         SU_COD_PositedAt,
         SU_COD_Reliability,
         SU_COD_Subject_Code,
-        SU_COD_StatementType 
+        SU_COD_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_COD_Reliability as previous_SU_COD_Reliability, 
+            pre.SU_COD_Reliability as previous_SU_COD_Reliability,
             fol.SU_COD_Reliability as following_SU_COD_Reliability
         FROM
             @SU_COD_Subject_Code a
@@ -592,7 +1125,7 @@ BEGIN
                 p.SU_COD_SU_ID = a.SU_COD_SU_ID
             AND
                 p.SU_COD_PositedAt < a.SU_COD_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_COD_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -604,11 +1137,11 @@ BEGIN
                 p.SU_COD_SU_ID = a.SU_COD_SU_ID
             AND
                 p.SU_COD_PositedAt > a.SU_COD_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_COD_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_COD_Reliability = 0 AND isnull(pre.SU_COD_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_COD_Reliability = 0 AND isnull(pre.SU_COD_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_COD_Reliability = 1 AND fol.SU_COD_Reliability = 0)
     ) i
@@ -626,12 +1159,26 @@ BEGIN
         SU_COD_Subject_Code
     )
     SELECT
-        SU_COD_SU_ID,
-        SU_COD_Subject_Code
+        v.SU_COD_SU_ID,
+        v.SU_COD_Subject_Code
     FROM
-        @SU_COD_Subject_Code
+        @SU_COD_Subject_Code v
     WHERE
-        SU_COD_StatementType = 'P';
+        v.SU_COD_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_COD_Subject_Code w
+        WHERE
+            w.SU_COD_StatementType = 'P'
+        AND
+            w.SU_COD_SU_ID = v.SU_COD_SU_ID
+        AND
+            w.SU_COD_Subject_Code = v.SU_COD_Subject_Code
+        AND
+            w.SU_COD_PositedAt < v.SU_COD_PositedAt
+    );
     INSERT INTO [dbo].[SU_COD_Subject_Code_Annex] (
         Metadata_SU_COD,
         SU_COD_ID,
@@ -653,6 +1200,65 @@ BEGIN
         p.SU_COD_Subject_Code = v.SU_COD_Subject_Code
     WHERE
         SU_COD_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_COD_Subject_Code_Annex] (
+        Metadata_SU_COD,
+        SU_COD_ID,
+        SU_COD_PositedAt,
+        SU_COD_Reliability
+    )
+    SELECT
+        v.Metadata_SU_COD,
+        e.SU_COD_ID,
+        v.SU_COD_PositedAt,
+        0
+    FROM
+        @SU_COD_Subject_Code v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_COD_ID,
+            p.SU_COD_Subject_Code
+        FROM
+            [dbo].[SU_COD_Subject_Code_Posit] p
+        JOIN
+            [dbo].[SU_COD_Subject_Code_Annex] a
+        ON
+            a.SU_COD_ID = p.SU_COD_ID
+        AND
+            a.SU_COD_PositedAt = (
+                SELECT
+                    max(s.SU_COD_PositedAt)
+                FROM
+                    [dbo].[SU_COD_Subject_Code_Annex] s
+                WHERE
+                    s.SU_COD_ID = p.SU_COD_ID
+                AND
+                    s.SU_COD_PositedAt < v.SU_COD_PositedAt
+            )
+        WHERE
+            p.SU_COD_SU_ID = v.SU_COD_SU_ID
+        AND
+            a.SU_COD_Reliability = 1
+        ORDER BY
+            a.SU_COD_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_COD_StatementType in ('P', 'A')
+    AND
+        v.SU_COD_Reliability = 1
+    AND
+        e.SU_COD_Subject_Code <> v.SU_COD_Subject_Code
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_COD_Subject_Code_Annex] x
+        WHERE
+            x.SU_COD_ID = e.SU_COD_ID
+        AND
+            x.SU_COD_PositedAt = v.SU_COD_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -671,10 +1277,10 @@ BEGIN
         Metadata_SU_GRD int not null,
         SU_GRD_PositedAt datetime2 not null,
         SU_GRD_Reliability decimal(5,2) not null,
-        SU_GRD_GRD_ID tinyint not null, 
+        SU_GRD_GRD_ID tinyint not null,
         SU_GRD_StatementType char(1) not null,
         primary key (
-            SU_GRD_SU_ID asc, 
+            SU_GRD_SU_ID asc,
             SU_GRD_PositedAt desc
         )
     );
@@ -720,8 +1326,8 @@ BEGIN
         i.SU_GRD_PositedAt,
         i.SU_GRD_Reliability,
         i.SU_GRD_GRD_ID,
-        CASE 
-            WHEN p.SU_GRD_ID is null 
+        CASE
+            WHEN p.SU_GRD_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_GRD_ID is null
             THEN 'A' -- new assertion
@@ -734,9 +1340,9 @@ BEGIN
         p.SU_GRD_SU_ID = i.SU_GRD_SU_ID
     AND
         p.SU_GRD_GRD_ID = i.SU_GRD_GRD_ID
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_GRD_Subject_Grade_Annex] a
-    ON 
+    ON
         a.SU_GRD_ID = p.SU_GRD_ID
     AND
         a.SU_GRD_PositedAt = i.SU_GRD_PositedAt
@@ -748,31 +1354,49 @@ BEGIN
         SU_GRD_PositedAt,
         SU_GRD_Reliability,
         SU_GRD_GRD_ID,
-        SU_GRD_StatementType 
+        SU_GRD_StatementType
     )
     SELECT
-        i.SU_GRD_SU_ID,
-        a.Metadata_SU_GRD,
-        a.SU_GRD_PositedAt,
-        a.SU_GRD_Reliability,
-        p.SU_GRD_GRD_ID,
+        x.SU_GRD_SU_ID,
+        x.Metadata_SU_GRD,
+        x.SU_GRD_PositedAt,
+        x.SU_GRD_Reliability,
+        x.SU_GRD_GRD_ID,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_GRD_SU_ID FROM @SU_GRD_Subject_Grade) i
-    JOIN
-        [dbo].[SU_GRD_Subject_Grade_Posit] p
-    ON
-        p.SU_GRD_SU_ID = i.SU_GRD_SU_ID
-    JOIN 
-        [dbo].[SU_GRD_Subject_Grade_Annex] a
-    ON 
-        a.SU_GRD_ID = p.SU_GRD_ID;
+    FROM (
+        SELECT
+            i.SU_GRD_SU_ID,
+            a.Metadata_SU_GRD,
+            a.SU_GRD_PositedAt,
+            a.SU_GRD_Reliability,
+            p.SU_GRD_GRD_ID,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_GRD_SU_ID,
+                    a.SU_GRD_PositedAt
+                ORDER BY
+                    a.SU_GRD_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_GRD_SU_ID FROM @SU_GRD_Subject_Grade) i
+        JOIN
+            [dbo].[SU_GRD_Subject_Grade_Posit] p
+        ON
+            p.SU_GRD_SU_ID = i.SU_GRD_SU_ID
+        JOIN
+            [dbo].[SU_GRD_Subject_Grade_Annex] a
+        ON
+            a.SU_GRD_ID = p.SU_GRD_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_GRD_SU_ID int not null,
         Metadata_SU_GRD int not null,
         SU_GRD_PositedAt datetime2 not null,
         SU_GRD_Reliability decimal(5,2) not null,
-        SU_GRD_GRD_ID tinyint not null, 
+        SU_GRD_GRD_ID tinyint not null,
         SU_GRD_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -781,7 +1405,7 @@ BEGIN
         SU_GRD_PositedAt,
         SU_GRD_Reliability,
         SU_GRD_GRD_ID,
-        SU_GRD_StatementType 
+        SU_GRD_StatementType
     )
     SELECT
         SU_GRD_SU_ID,
@@ -789,12 +1413,12 @@ BEGIN
         SU_GRD_PositedAt,
         SU_GRD_Reliability,
         SU_GRD_GRD_ID,
-        SU_GRD_StatementType 
+        SU_GRD_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_GRD_Reliability as previous_SU_GRD_Reliability, 
+            pre.SU_GRD_Reliability as previous_SU_GRD_Reliability,
             fol.SU_GRD_Reliability as following_SU_GRD_Reliability
         FROM
             @SU_GRD_Subject_Grade a
@@ -807,7 +1431,7 @@ BEGIN
                 p.SU_GRD_SU_ID = a.SU_GRD_SU_ID
             AND
                 p.SU_GRD_PositedAt < a.SU_GRD_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_GRD_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -819,11 +1443,11 @@ BEGIN
                 p.SU_GRD_SU_ID = a.SU_GRD_SU_ID
             AND
                 p.SU_GRD_PositedAt > a.SU_GRD_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_GRD_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_GRD_Reliability = 0 AND isnull(pre.SU_GRD_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_GRD_Reliability = 0 AND isnull(pre.SU_GRD_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_GRD_Reliability = 1 AND fol.SU_GRD_Reliability = 0)
     ) i
@@ -841,12 +1465,26 @@ BEGIN
         SU_GRD_GRD_ID
     )
     SELECT
-        SU_GRD_SU_ID,
-        SU_GRD_GRD_ID
+        v.SU_GRD_SU_ID,
+        v.SU_GRD_GRD_ID
     FROM
-        @SU_GRD_Subject_Grade
+        @SU_GRD_Subject_Grade v
     WHERE
-        SU_GRD_StatementType = 'P';
+        v.SU_GRD_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_GRD_Subject_Grade w
+        WHERE
+            w.SU_GRD_StatementType = 'P'
+        AND
+            w.SU_GRD_SU_ID = v.SU_GRD_SU_ID
+        AND
+            w.SU_GRD_GRD_ID = v.SU_GRD_GRD_ID
+        AND
+            w.SU_GRD_PositedAt < v.SU_GRD_PositedAt
+    );
     INSERT INTO [dbo].[SU_GRD_Subject_Grade_Annex] (
         Metadata_SU_GRD,
         SU_GRD_ID,
@@ -868,6 +1506,65 @@ BEGIN
         p.SU_GRD_GRD_ID = v.SU_GRD_GRD_ID
     WHERE
         SU_GRD_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_GRD_Subject_Grade_Annex] (
+        Metadata_SU_GRD,
+        SU_GRD_ID,
+        SU_GRD_PositedAt,
+        SU_GRD_Reliability
+    )
+    SELECT
+        v.Metadata_SU_GRD,
+        e.SU_GRD_ID,
+        v.SU_GRD_PositedAt,
+        0
+    FROM
+        @SU_GRD_Subject_Grade v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_GRD_ID,
+            p.SU_GRD_GRD_ID
+        FROM
+            [dbo].[SU_GRD_Subject_Grade_Posit] p
+        JOIN
+            [dbo].[SU_GRD_Subject_Grade_Annex] a
+        ON
+            a.SU_GRD_ID = p.SU_GRD_ID
+        AND
+            a.SU_GRD_PositedAt = (
+                SELECT
+                    max(s.SU_GRD_PositedAt)
+                FROM
+                    [dbo].[SU_GRD_Subject_Grade_Annex] s
+                WHERE
+                    s.SU_GRD_ID = p.SU_GRD_ID
+                AND
+                    s.SU_GRD_PositedAt < v.SU_GRD_PositedAt
+            )
+        WHERE
+            p.SU_GRD_SU_ID = v.SU_GRD_SU_ID
+        AND
+            a.SU_GRD_Reliability = 1
+        ORDER BY
+            a.SU_GRD_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_GRD_StatementType in ('P', 'A')
+    AND
+        v.SU_GRD_Reliability = 1
+    AND
+        e.SU_GRD_GRD_ID <> v.SU_GRD_GRD_ID
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_GRD_Subject_Grade_Annex] x
+        WHERE
+            x.SU_GRD_ID = e.SU_GRD_ID
+        AND
+            x.SU_GRD_PositedAt = v.SU_GRD_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -890,7 +1587,7 @@ BEGIN
         SU_NOT_Checksum varbinary(16) not null,
         SU_NOT_StatementType char(1) not null,
         primary key (
-            SU_NOT_SU_ID asc, 
+            SU_NOT_SU_ID asc,
             SU_NOT_PositedAt desc
         )
     );
@@ -914,7 +1611,7 @@ BEGIN
             WHERE
                 p.SU_NOT_SU_ID = i.SU_NOT_SU_ID
             AND
-                p.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
+                p.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
             AND
                 a.SU_NOT_PositedAt = i.SU_NOT_PositedAt
             AND
@@ -937,8 +1634,8 @@ BEGIN
         i.SU_NOT_Reliability,
         i.SU_NOT_Subject_Note,
         dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))),
-        CASE 
-            WHEN p.SU_NOT_ID is null 
+        CASE
+            WHEN p.SU_NOT_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_NOT_ID is null
             THEN 'A' -- new assertion
@@ -950,10 +1647,10 @@ BEGIN
     ON
         p.SU_NOT_SU_ID = i.SU_NOT_SU_ID
     AND
-        p.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
-    LEFT JOIN 
+        p.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+    LEFT JOIN
         [dbo].[SU_NOT_Subject_Note_Annex] a
-    ON 
+    ON
         a.SU_NOT_ID = p.SU_NOT_ID
     AND
         a.SU_NOT_PositedAt = i.SU_NOT_PositedAt
@@ -966,26 +1663,45 @@ BEGIN
         SU_NOT_Reliability,
         SU_NOT_Subject_Note,
         SU_NOT_Checksum,
-        SU_NOT_StatementType 
+        SU_NOT_StatementType
     )
     SELECT
-        i.SU_NOT_SU_ID,
-        a.Metadata_SU_NOT,
-        a.SU_NOT_PositedAt,
-        a.SU_NOT_Reliability,
-        p.SU_NOT_Subject_Note,
-        p.SU_NOT_Checksum,
+        x.SU_NOT_SU_ID,
+        x.Metadata_SU_NOT,
+        x.SU_NOT_PositedAt,
+        x.SU_NOT_Reliability,
+        x.SU_NOT_Subject_Note,
+        x.SU_NOT_Checksum,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_NOT_SU_ID FROM @SU_NOT_Subject_Note) i
-    JOIN
-        [dbo].[SU_NOT_Subject_Note_Posit] p
-    ON
-        p.SU_NOT_SU_ID = i.SU_NOT_SU_ID
-    JOIN 
-        [dbo].[SU_NOT_Subject_Note_Annex] a
-    ON 
-        a.SU_NOT_ID = p.SU_NOT_ID;
+    FROM (
+        SELECT
+            i.SU_NOT_SU_ID,
+            a.Metadata_SU_NOT,
+            a.SU_NOT_PositedAt,
+            a.SU_NOT_Reliability,
+            p.SU_NOT_Subject_Note,
+            p.SU_NOT_Checksum,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_NOT_SU_ID,
+                    a.SU_NOT_PositedAt
+                ORDER BY
+                    a.SU_NOT_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_NOT_SU_ID FROM @SU_NOT_Subject_Note) i
+        JOIN
+            [dbo].[SU_NOT_Subject_Note_Posit] p
+        ON
+            p.SU_NOT_SU_ID = i.SU_NOT_SU_ID
+        JOIN
+            [dbo].[SU_NOT_Subject_Note_Annex] a
+        ON
+            a.SU_NOT_ID = p.SU_NOT_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_NOT_SU_ID int not null,
         Metadata_SU_NOT int not null,
@@ -1002,7 +1718,7 @@ BEGIN
         SU_NOT_Reliability,
         SU_NOT_Subject_Note,
         SU_NOT_Checksum,
-        SU_NOT_StatementType 
+        SU_NOT_StatementType
     )
     SELECT
         SU_NOT_SU_ID,
@@ -1011,12 +1727,12 @@ BEGIN
         SU_NOT_Reliability,
         SU_NOT_Subject_Note,
         SU_NOT_Checksum,
-        SU_NOT_StatementType 
+        SU_NOT_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_NOT_Reliability as previous_SU_NOT_Reliability, 
+            pre.SU_NOT_Reliability as previous_SU_NOT_Reliability,
             fol.SU_NOT_Reliability as following_SU_NOT_Reliability
         FROM
             @SU_NOT_Subject_Note a
@@ -1029,7 +1745,7 @@ BEGIN
                 p.SU_NOT_SU_ID = a.SU_NOT_SU_ID
             AND
                 p.SU_NOT_PositedAt < a.SU_NOT_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_NOT_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1041,11 +1757,11 @@ BEGIN
                 p.SU_NOT_SU_ID = a.SU_NOT_SU_ID
             AND
                 p.SU_NOT_PositedAt > a.SU_NOT_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_NOT_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_NOT_Reliability = 0 AND isnull(pre.SU_NOT_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_NOT_Reliability = 0 AND isnull(pre.SU_NOT_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_NOT_Reliability = 1 AND fol.SU_NOT_Reliability = 0)
     ) i
@@ -1063,12 +1779,26 @@ BEGIN
         SU_NOT_Subject_Note
     )
     SELECT
-        SU_NOT_SU_ID,
-        SU_NOT_Subject_Note
+        v.SU_NOT_SU_ID,
+        v.SU_NOT_Subject_Note
     FROM
-        @SU_NOT_Subject_Note
+        @SU_NOT_Subject_Note v
     WHERE
-        SU_NOT_StatementType = 'P';
+        v.SU_NOT_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_NOT_Subject_Note w
+        WHERE
+            w.SU_NOT_StatementType = 'P'
+        AND
+            w.SU_NOT_SU_ID = v.SU_NOT_SU_ID
+        AND
+            w.SU_NOT_Checksum = v.SU_NOT_Checksum
+        AND
+            w.SU_NOT_PositedAt < v.SU_NOT_PositedAt
+    );
     INSERT INTO [dbo].[SU_NOT_Subject_Note_Annex] (
         Metadata_SU_NOT,
         SU_NOT_ID,
@@ -1087,9 +1817,68 @@ BEGIN
     ON
         p.SU_NOT_SU_ID = v.SU_NOT_SU_ID
     AND
-        p.SU_NOT_Checksum = v.SU_NOT_Checksum 
+        p.SU_NOT_Checksum = v.SU_NOT_Checksum
     WHERE
         SU_NOT_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_NOT_Subject_Note_Annex] (
+        Metadata_SU_NOT,
+        SU_NOT_ID,
+        SU_NOT_PositedAt,
+        SU_NOT_Reliability
+    )
+    SELECT
+        v.Metadata_SU_NOT,
+        e.SU_NOT_ID,
+        v.SU_NOT_PositedAt,
+        0
+    FROM
+        @SU_NOT_Subject_Note v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_NOT_ID,
+            p.SU_NOT_Checksum
+        FROM
+            [dbo].[SU_NOT_Subject_Note_Posit] p
+        JOIN
+            [dbo].[SU_NOT_Subject_Note_Annex] a
+        ON
+            a.SU_NOT_ID = p.SU_NOT_ID
+        AND
+            a.SU_NOT_PositedAt = (
+                SELECT
+                    max(s.SU_NOT_PositedAt)
+                FROM
+                    [dbo].[SU_NOT_Subject_Note_Annex] s
+                WHERE
+                    s.SU_NOT_ID = p.SU_NOT_ID
+                AND
+                    s.SU_NOT_PositedAt < v.SU_NOT_PositedAt
+            )
+        WHERE
+            p.SU_NOT_SU_ID = v.SU_NOT_SU_ID
+        AND
+            a.SU_NOT_Reliability = 1
+        ORDER BY
+            a.SU_NOT_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_NOT_StatementType in ('P', 'A')
+    AND
+        v.SU_NOT_Reliability = 1
+    AND
+        e.SU_NOT_Checksum <> v.SU_NOT_Checksum
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_NOT_Subject_Note_Annex] x
+        WHERE
+            x.SU_NOT_ID = e.SU_NOT_ID
+        AND
+            x.SU_NOT_PositedAt = v.SU_NOT_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1112,7 +1901,7 @@ BEGIN
         SU_TTL_Subject_Title nvarchar(42) not null,
         SU_TTL_StatementType char(1) not null,
         primary key (
-            SU_TTL_SU_ID asc, 
+            SU_TTL_SU_ID asc,
             SU_TTL_ChangedAt desc,
             SU_TTL_PositedAt desc
         )
@@ -1163,8 +1952,8 @@ BEGIN
         i.SU_TTL_PositedAt,
         i.SU_TTL_Reliability,
         i.SU_TTL_Subject_Title,
-        CASE 
-            WHEN p.SU_TTL_ID is null 
+        CASE
+            WHEN p.SU_TTL_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_TTL_ID is null
             THEN 'A' -- new assertion
@@ -1179,9 +1968,9 @@ BEGIN
         p.SU_TTL_ChangedAt = i.SU_TTL_ChangedAt
     AND
         p.SU_TTL_Subject_Title = i.SU_TTL_Subject_Title
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_TTL_Subject_Title_Annex] a
-    ON 
+    ON
         a.SU_TTL_ID = p.SU_TTL_ID
     AND
         a.SU_TTL_PositedAt = i.SU_TTL_PositedAt
@@ -1194,26 +1983,46 @@ BEGIN
         SU_TTL_PositedAt,
         SU_TTL_Reliability,
         SU_TTL_Subject_Title,
-        SU_TTL_StatementType 
+        SU_TTL_StatementType
     )
     SELECT
-        i.SU_TTL_SU_ID,
-        a.Metadata_SU_TTL,
-        p.SU_TTL_ChangedAt,
-        a.SU_TTL_PositedAt,
-        a.SU_TTL_Reliability,
-        p.SU_TTL_Subject_Title,
+        x.SU_TTL_SU_ID,
+        x.Metadata_SU_TTL,
+        x.SU_TTL_ChangedAt,
+        x.SU_TTL_PositedAt,
+        x.SU_TTL_Reliability,
+        x.SU_TTL_Subject_Title,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_TTL_SU_ID FROM @SU_TTL_Subject_Title) i
-    JOIN
-        [dbo].[SU_TTL_Subject_Title_Posit] p
-    ON
-        p.SU_TTL_SU_ID = i.SU_TTL_SU_ID
-    JOIN 
-        [dbo].[SU_TTL_Subject_Title_Annex] a
-    ON 
-        a.SU_TTL_ID = p.SU_TTL_ID;
+    FROM (
+        SELECT
+            i.SU_TTL_SU_ID,
+            a.Metadata_SU_TTL,
+            p.SU_TTL_ChangedAt,
+            a.SU_TTL_PositedAt,
+            a.SU_TTL_Reliability,
+            p.SU_TTL_Subject_Title,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_TTL_SU_ID,
+                    p.SU_TTL_ChangedAt,
+                    a.SU_TTL_PositedAt
+                ORDER BY
+                    a.SU_TTL_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_TTL_SU_ID FROM @SU_TTL_Subject_Title) i
+        JOIN
+            [dbo].[SU_TTL_Subject_Title_Posit] p
+        ON
+            p.SU_TTL_SU_ID = i.SU_TTL_SU_ID
+        JOIN
+            [dbo].[SU_TTL_Subject_Title_Annex] a
+        ON
+            a.SU_TTL_ID = p.SU_TTL_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_TTL_SU_ID int not null,
         Metadata_SU_TTL int not null,
@@ -1230,7 +2039,7 @@ BEGIN
         SU_TTL_PositedAt,
         SU_TTL_Reliability,
         SU_TTL_Subject_Title,
-        SU_TTL_StatementType 
+        SU_TTL_StatementType
     )
     SELECT
         SU_TTL_SU_ID,
@@ -1239,12 +2048,12 @@ BEGIN
         SU_TTL_PositedAt,
         SU_TTL_Reliability,
         SU_TTL_Subject_Title,
-        SU_TTL_StatementType 
+        SU_TTL_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_TTL_Reliability as previous_SU_TTL_Reliability, 
+            pre.SU_TTL_Reliability as previous_SU_TTL_Reliability,
             fol.SU_TTL_Reliability as following_SU_TTL_Reliability
         FROM
             @SU_TTL_Subject_Title a
@@ -1259,7 +2068,7 @@ BEGIN
                 p.SU_TTL_ChangedAt = a.SU_TTL_ChangedAt
             AND
                 p.SU_TTL_PositedAt < a.SU_TTL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TTL_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1273,11 +2082,11 @@ BEGIN
                 p.SU_TTL_ChangedAt = a.SU_TTL_ChangedAt
             AND
                 p.SU_TTL_PositedAt > a.SU_TTL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TTL_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_TTL_Reliability = 0 AND isnull(pre.SU_TTL_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_TTL_Reliability = 0 AND isnull(pre.SU_TTL_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_TTL_Reliability = 1 AND fol.SU_TTL_Reliability = 0)
     ) i
@@ -1296,13 +2105,29 @@ BEGIN
         SU_TTL_Subject_Title
     )
     SELECT
-        SU_TTL_SU_ID,
-        SU_TTL_ChangedAt,
-        SU_TTL_Subject_Title
+        v.SU_TTL_SU_ID,
+        v.SU_TTL_ChangedAt,
+        v.SU_TTL_Subject_Title
     FROM
-        @SU_TTL_Subject_Title
+        @SU_TTL_Subject_Title v
     WHERE
-        SU_TTL_StatementType = 'P';
+        v.SU_TTL_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_TTL_Subject_Title w
+        WHERE
+            w.SU_TTL_StatementType = 'P'
+        AND
+            w.SU_TTL_SU_ID = v.SU_TTL_SU_ID
+        AND
+            w.SU_TTL_ChangedAt = v.SU_TTL_ChangedAt
+        AND
+            w.SU_TTL_Subject_Title = v.SU_TTL_Subject_Title
+        AND
+            w.SU_TTL_PositedAt < v.SU_TTL_PositedAt
+    );
     INSERT INTO [dbo].[SU_TTL_Subject_Title_Annex] (
         Metadata_SU_TTL,
         SU_TTL_ID,
@@ -1326,6 +2151,67 @@ BEGIN
         p.SU_TTL_Subject_Title = v.SU_TTL_Subject_Title
     WHERE
         SU_TTL_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_TTL_Subject_Title_Annex] (
+        Metadata_SU_TTL,
+        SU_TTL_ID,
+        SU_TTL_PositedAt,
+        SU_TTL_Reliability
+    )
+    SELECT
+        v.Metadata_SU_TTL,
+        e.SU_TTL_ID,
+        v.SU_TTL_PositedAt,
+        0
+    FROM
+        @SU_TTL_Subject_Title v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_TTL_ID,
+            p.SU_TTL_Subject_Title
+        FROM
+            [dbo].[SU_TTL_Subject_Title_Posit] p
+        JOIN
+            [dbo].[SU_TTL_Subject_Title_Annex] a
+        ON
+            a.SU_TTL_ID = p.SU_TTL_ID
+        AND
+            a.SU_TTL_PositedAt = (
+                SELECT
+                    max(s.SU_TTL_PositedAt)
+                FROM
+                    [dbo].[SU_TTL_Subject_Title_Annex] s
+                WHERE
+                    s.SU_TTL_ID = p.SU_TTL_ID
+                AND
+                    s.SU_TTL_PositedAt < v.SU_TTL_PositedAt
+            )
+        WHERE
+            p.SU_TTL_SU_ID = v.SU_TTL_SU_ID
+        AND
+            p.SU_TTL_ChangedAt = v.SU_TTL_ChangedAt
+        AND
+            a.SU_TTL_Reliability = 1
+        ORDER BY
+            a.SU_TTL_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_TTL_StatementType in ('P', 'A')
+    AND
+        v.SU_TTL_Reliability = 1
+    AND
+        e.SU_TTL_Subject_Title <> v.SU_TTL_Subject_Title
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_TTL_Subject_Title_Annex] x
+        WHERE
+            x.SU_TTL_ID = e.SU_TTL_ID
+        AND
+            x.SU_TTL_PositedAt = v.SU_TTL_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1348,7 +2234,7 @@ BEGIN
         SU_STA_Subject_State nvarchar(42) not null,
         SU_STA_StatementType char(1) not null,
         primary key (
-            SU_STA_SU_ID asc, 
+            SU_STA_SU_ID asc,
             SU_STA_ChangedAt desc,
             SU_STA_PositedAt desc
         )
@@ -1399,8 +2285,8 @@ BEGIN
         i.SU_STA_PositedAt,
         i.SU_STA_Reliability,
         i.SU_STA_Subject_State,
-        CASE 
-            WHEN p.SU_STA_ID is null 
+        CASE
+            WHEN p.SU_STA_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_STA_ID is null
             THEN 'A' -- new assertion
@@ -1415,9 +2301,9 @@ BEGIN
         p.SU_STA_ChangedAt = i.SU_STA_ChangedAt
     AND
         p.SU_STA_Subject_State = i.SU_STA_Subject_State
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_STA_Subject_State_Annex] a
-    ON 
+    ON
         a.SU_STA_ID = p.SU_STA_ID
     AND
         a.SU_STA_PositedAt = i.SU_STA_PositedAt
@@ -1430,26 +2316,46 @@ BEGIN
         SU_STA_PositedAt,
         SU_STA_Reliability,
         SU_STA_Subject_State,
-        SU_STA_StatementType 
+        SU_STA_StatementType
     )
     SELECT
-        i.SU_STA_SU_ID,
-        a.Metadata_SU_STA,
-        p.SU_STA_ChangedAt,
-        a.SU_STA_PositedAt,
-        a.SU_STA_Reliability,
-        p.SU_STA_Subject_State,
+        x.SU_STA_SU_ID,
+        x.Metadata_SU_STA,
+        x.SU_STA_ChangedAt,
+        x.SU_STA_PositedAt,
+        x.SU_STA_Reliability,
+        x.SU_STA_Subject_State,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_STA_SU_ID FROM @SU_STA_Subject_State) i
-    JOIN
-        [dbo].[SU_STA_Subject_State_Posit] p
-    ON
-        p.SU_STA_SU_ID = i.SU_STA_SU_ID
-    JOIN 
-        [dbo].[SU_STA_Subject_State_Annex] a
-    ON 
-        a.SU_STA_ID = p.SU_STA_ID;
+    FROM (
+        SELECT
+            i.SU_STA_SU_ID,
+            a.Metadata_SU_STA,
+            p.SU_STA_ChangedAt,
+            a.SU_STA_PositedAt,
+            a.SU_STA_Reliability,
+            p.SU_STA_Subject_State,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_STA_SU_ID,
+                    p.SU_STA_ChangedAt,
+                    a.SU_STA_PositedAt
+                ORDER BY
+                    a.SU_STA_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_STA_SU_ID FROM @SU_STA_Subject_State) i
+        JOIN
+            [dbo].[SU_STA_Subject_State_Posit] p
+        ON
+            p.SU_STA_SU_ID = i.SU_STA_SU_ID
+        JOIN
+            [dbo].[SU_STA_Subject_State_Annex] a
+        ON
+            a.SU_STA_ID = p.SU_STA_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_STA_SU_ID int not null,
         Metadata_SU_STA int not null,
@@ -1466,7 +2372,7 @@ BEGIN
         SU_STA_PositedAt,
         SU_STA_Reliability,
         SU_STA_Subject_State,
-        SU_STA_StatementType 
+        SU_STA_StatementType
     )
     SELECT
         SU_STA_SU_ID,
@@ -1475,12 +2381,12 @@ BEGIN
         SU_STA_PositedAt,
         SU_STA_Reliability,
         SU_STA_Subject_State,
-        SU_STA_StatementType 
+        SU_STA_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_STA_Reliability as previous_SU_STA_Reliability, 
+            pre.SU_STA_Reliability as previous_SU_STA_Reliability,
             fol.SU_STA_Reliability as following_SU_STA_Reliability
         FROM
             @SU_STA_Subject_State a
@@ -1495,7 +2401,7 @@ BEGIN
                 p.SU_STA_ChangedAt = a.SU_STA_ChangedAt
             AND
                 p.SU_STA_PositedAt < a.SU_STA_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_STA_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1509,11 +2415,11 @@ BEGIN
                 p.SU_STA_ChangedAt = a.SU_STA_ChangedAt
             AND
                 p.SU_STA_PositedAt > a.SU_STA_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_STA_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_STA_Reliability = 0 AND isnull(pre.SU_STA_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_STA_Reliability = 0 AND isnull(pre.SU_STA_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_STA_Reliability = 1 AND fol.SU_STA_Reliability = 0)
     ) i
@@ -1532,13 +2438,29 @@ BEGIN
         SU_STA_Subject_State
     )
     SELECT
-        SU_STA_SU_ID,
-        SU_STA_ChangedAt,
-        SU_STA_Subject_State
+        v.SU_STA_SU_ID,
+        v.SU_STA_ChangedAt,
+        v.SU_STA_Subject_State
     FROM
-        @SU_STA_Subject_State
+        @SU_STA_Subject_State v
     WHERE
-        SU_STA_StatementType = 'P';
+        v.SU_STA_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_STA_Subject_State w
+        WHERE
+            w.SU_STA_StatementType = 'P'
+        AND
+            w.SU_STA_SU_ID = v.SU_STA_SU_ID
+        AND
+            w.SU_STA_ChangedAt = v.SU_STA_ChangedAt
+        AND
+            w.SU_STA_Subject_State = v.SU_STA_Subject_State
+        AND
+            w.SU_STA_PositedAt < v.SU_STA_PositedAt
+    );
     INSERT INTO [dbo].[SU_STA_Subject_State_Annex] (
         Metadata_SU_STA,
         SU_STA_ID,
@@ -1562,6 +2484,67 @@ BEGIN
         p.SU_STA_Subject_State = v.SU_STA_Subject_State
     WHERE
         SU_STA_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_STA_Subject_State_Annex] (
+        Metadata_SU_STA,
+        SU_STA_ID,
+        SU_STA_PositedAt,
+        SU_STA_Reliability
+    )
+    SELECT
+        v.Metadata_SU_STA,
+        e.SU_STA_ID,
+        v.SU_STA_PositedAt,
+        0
+    FROM
+        @SU_STA_Subject_State v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_STA_ID,
+            p.SU_STA_Subject_State
+        FROM
+            [dbo].[SU_STA_Subject_State_Posit] p
+        JOIN
+            [dbo].[SU_STA_Subject_State_Annex] a
+        ON
+            a.SU_STA_ID = p.SU_STA_ID
+        AND
+            a.SU_STA_PositedAt = (
+                SELECT
+                    max(s.SU_STA_PositedAt)
+                FROM
+                    [dbo].[SU_STA_Subject_State_Annex] s
+                WHERE
+                    s.SU_STA_ID = p.SU_STA_ID
+                AND
+                    s.SU_STA_PositedAt < v.SU_STA_PositedAt
+            )
+        WHERE
+            p.SU_STA_SU_ID = v.SU_STA_SU_ID
+        AND
+            p.SU_STA_ChangedAt = v.SU_STA_ChangedAt
+        AND
+            a.SU_STA_Reliability = 1
+        ORDER BY
+            a.SU_STA_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_STA_StatementType in ('P', 'A')
+    AND
+        v.SU_STA_Reliability = 1
+    AND
+        e.SU_STA_Subject_State <> v.SU_STA_Subject_State
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_STA_Subject_State_Annex] x
+        WHERE
+            x.SU_STA_ID = e.SU_STA_ID
+        AND
+            x.SU_STA_PositedAt = v.SU_STA_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1584,7 +2567,7 @@ BEGIN
         SU_LBL_Subject_Label nvarchar(42) not null,
         SU_LBL_StatementType char(1) not null,
         primary key (
-            SU_LBL_SU_ID asc, 
+            SU_LBL_SU_ID asc,
             SU_LBL_ChangedAt desc,
             SU_LBL_PositedAt desc
         )
@@ -1635,8 +2618,8 @@ BEGIN
         i.SU_LBL_PositedAt,
         i.SU_LBL_Reliability,
         i.SU_LBL_Subject_Label,
-        CASE 
-            WHEN p.SU_LBL_ID is null 
+        CASE
+            WHEN p.SU_LBL_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_LBL_ID is null
             THEN 'A' -- new assertion
@@ -1651,9 +2634,9 @@ BEGIN
         p.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
     AND
         p.SU_LBL_Subject_Label = i.SU_LBL_Subject_Label
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_LBL_Subject_Label_Annex] a
-    ON 
+    ON
         a.SU_LBL_ID = p.SU_LBL_ID
     AND
         a.SU_LBL_PositedAt = i.SU_LBL_PositedAt
@@ -1666,26 +2649,46 @@ BEGIN
         SU_LBL_PositedAt,
         SU_LBL_Reliability,
         SU_LBL_Subject_Label,
-        SU_LBL_StatementType 
+        SU_LBL_StatementType
     )
     SELECT
-        i.SU_LBL_SU_ID,
-        a.Metadata_SU_LBL,
-        p.SU_LBL_ChangedAt,
-        a.SU_LBL_PositedAt,
-        a.SU_LBL_Reliability,
-        p.SU_LBL_Subject_Label,
+        x.SU_LBL_SU_ID,
+        x.Metadata_SU_LBL,
+        x.SU_LBL_ChangedAt,
+        x.SU_LBL_PositedAt,
+        x.SU_LBL_Reliability,
+        x.SU_LBL_Subject_Label,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_LBL_SU_ID FROM @SU_LBL_Subject_Label) i
-    JOIN
-        [dbo].[SU_LBL_Subject_Label_Posit] p
-    ON
-        p.SU_LBL_SU_ID = i.SU_LBL_SU_ID
-    JOIN 
-        [dbo].[SU_LBL_Subject_Label_Annex] a
-    ON 
-        a.SU_LBL_ID = p.SU_LBL_ID;
+    FROM (
+        SELECT
+            i.SU_LBL_SU_ID,
+            a.Metadata_SU_LBL,
+            p.SU_LBL_ChangedAt,
+            a.SU_LBL_PositedAt,
+            a.SU_LBL_Reliability,
+            p.SU_LBL_Subject_Label,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_LBL_SU_ID,
+                    p.SU_LBL_ChangedAt,
+                    a.SU_LBL_PositedAt
+                ORDER BY
+                    a.SU_LBL_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_LBL_SU_ID FROM @SU_LBL_Subject_Label) i
+        JOIN
+            [dbo].[SU_LBL_Subject_Label_Posit] p
+        ON
+            p.SU_LBL_SU_ID = i.SU_LBL_SU_ID
+        JOIN
+            [dbo].[SU_LBL_Subject_Label_Annex] a
+        ON
+            a.SU_LBL_ID = p.SU_LBL_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_LBL_SU_ID int not null,
         Metadata_SU_LBL int not null,
@@ -1702,7 +2705,7 @@ BEGIN
         SU_LBL_PositedAt,
         SU_LBL_Reliability,
         SU_LBL_Subject_Label,
-        SU_LBL_StatementType 
+        SU_LBL_StatementType
     )
     SELECT
         SU_LBL_SU_ID,
@@ -1711,12 +2714,12 @@ BEGIN
         SU_LBL_PositedAt,
         SU_LBL_Reliability,
         SU_LBL_Subject_Label,
-        SU_LBL_StatementType 
+        SU_LBL_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_LBL_Reliability as previous_SU_LBL_Reliability, 
+            pre.SU_LBL_Reliability as previous_SU_LBL_Reliability,
             fol.SU_LBL_Reliability as following_SU_LBL_Reliability
         FROM
             @SU_LBL_Subject_Label a
@@ -1731,7 +2734,7 @@ BEGIN
                 p.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt
             AND
                 p.SU_LBL_PositedAt < a.SU_LBL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_LBL_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1745,11 +2748,11 @@ BEGIN
                 p.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt
             AND
                 p.SU_LBL_PositedAt > a.SU_LBL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_LBL_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_LBL_Reliability = 0 AND isnull(pre.SU_LBL_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_LBL_Reliability = 0 AND isnull(pre.SU_LBL_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_LBL_Reliability = 1 AND fol.SU_LBL_Reliability = 0)
     ) i
@@ -1761,11 +2764,11 @@ BEGIN
             (i.SU_LBL_Reliability = 1 AND i.following_SU_LBL_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            SU_LBL_StatementType 
-        FROM 
+        SELECT TOP 1
+            SU_LBL_StatementType
+        FROM
             @SU_LBL_Subject_Label
-        WHERE 
+        WHERE
             SU_LBL_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -1785,39 +2788,39 @@ BEGIN
         SU_LBL_PositedAt,
         SU_LBL_Reliability,
         SU_LBL_Subject_Label,
-        SU_LBL_StatementType 
+        SU_LBL_StatementType
     )
-    SELECT 
+    SELECT
         x.SU_LBL_SU_ID,
         x.Metadata_SU_LBL,
         x.SU_LBL_ChangedAt,
-        CASE 
-            WHEN x.previous_SU_LBL_PositedAt < x.SU_LBL_PositedAt THEN x.SU_LBL_PositedAt 
-            ELSE x.previous_SU_LBL_PositedAt 
+        CASE
+            WHEN x.previous_SU_LBL_PositedAt < x.SU_LBL_PositedAt THEN x.SU_LBL_PositedAt
+            ELSE x.previous_SU_LBL_PositedAt
         END,
         0, -- quench the existing restatements
         x.SU_LBL_Subject_Label,
-        CASE 
-            WHEN x.previous_SU_LBL_PositedAt < x.SU_LBL_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_SU_LBL_PositedAt < x.SU_LBL_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.SU_LBL_PositedAt as previous_SU_LBL_PositedAt
-        FROM 
+        FROM
             @SU_LBL_Subject_Label a
         OUTER APPLY (
             SELECT TOP 1
                 *
-            FROM 
+            FROM
                 @SU_LBL_Subject_Label h
             WHERE
                 h.SU_LBL_SU_ID = a.SU_LBL_SU_ID
             AND
                 h.SU_LBL_ChangedAt < a.SU_LBL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_LBL_ChangedAt DESC,
                 h.SU_LBL_PositedAt DESC
         ) pre
@@ -1827,17 +2830,17 @@ BEGIN
     WHERE
         x.SU_LBL_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @SU_LBL_Subject_Label 
-    SELECT 
-        * 
+    INSERT INTO @SU_LBL_Subject_Label
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE SU_LBL_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [dbo].[SU_LBL_Subject_Label_Posit] p
@@ -1847,9 +2850,9 @@ BEGIN
         p.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
     AND
         p.SU_LBL_Subject_Label = i.SU_LBL_Subject_Label
-    JOIN 
+    JOIN
         [dbo].[SU_LBL_Subject_Label_Annex] a
-    ON 
+    ON
         a.SU_LBL_ID = p.SU_LBL_ID
     AND
         a.SU_LBL_PositedAt = i.SU_LBL_PositedAt;
@@ -1862,13 +2865,29 @@ BEGIN
         SU_LBL_Subject_Label
     )
     SELECT
-        SU_LBL_SU_ID,
-        SU_LBL_ChangedAt,
-        SU_LBL_Subject_Label
+        v.SU_LBL_SU_ID,
+        v.SU_LBL_ChangedAt,
+        v.SU_LBL_Subject_Label
     FROM
-        @SU_LBL_Subject_Label
+        @SU_LBL_Subject_Label v
     WHERE
-        SU_LBL_StatementType = 'P';
+        v.SU_LBL_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_LBL_Subject_Label w
+        WHERE
+            w.SU_LBL_StatementType = 'P'
+        AND
+            w.SU_LBL_SU_ID = v.SU_LBL_SU_ID
+        AND
+            w.SU_LBL_ChangedAt = v.SU_LBL_ChangedAt
+        AND
+            w.SU_LBL_Subject_Label = v.SU_LBL_Subject_Label
+        AND
+            w.SU_LBL_PositedAt < v.SU_LBL_PositedAt
+    );
     INSERT INTO [dbo].[SU_LBL_Subject_Label_Annex] (
         Metadata_SU_LBL,
         SU_LBL_ID,
@@ -1892,6 +2911,67 @@ BEGIN
         p.SU_LBL_Subject_Label = v.SU_LBL_Subject_Label
     WHERE
         SU_LBL_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_LBL_Subject_Label_Annex] (
+        Metadata_SU_LBL,
+        SU_LBL_ID,
+        SU_LBL_PositedAt,
+        SU_LBL_Reliability
+    )
+    SELECT
+        v.Metadata_SU_LBL,
+        e.SU_LBL_ID,
+        v.SU_LBL_PositedAt,
+        0
+    FROM
+        @SU_LBL_Subject_Label v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_LBL_ID,
+            p.SU_LBL_Subject_Label
+        FROM
+            [dbo].[SU_LBL_Subject_Label_Posit] p
+        JOIN
+            [dbo].[SU_LBL_Subject_Label_Annex] a
+        ON
+            a.SU_LBL_ID = p.SU_LBL_ID
+        AND
+            a.SU_LBL_PositedAt = (
+                SELECT
+                    max(s.SU_LBL_PositedAt)
+                FROM
+                    [dbo].[SU_LBL_Subject_Label_Annex] s
+                WHERE
+                    s.SU_LBL_ID = p.SU_LBL_ID
+                AND
+                    s.SU_LBL_PositedAt < v.SU_LBL_PositedAt
+            )
+        WHERE
+            p.SU_LBL_SU_ID = v.SU_LBL_SU_ID
+        AND
+            p.SU_LBL_ChangedAt = v.SU_LBL_ChangedAt
+        AND
+            a.SU_LBL_Reliability = 1
+        ORDER BY
+            a.SU_LBL_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_LBL_StatementType in ('P', 'A')
+    AND
+        v.SU_LBL_Reliability = 1
+    AND
+        e.SU_LBL_Subject_Label <> v.SU_LBL_Subject_Label
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_LBL_Subject_Label_Annex] x
+        WHERE
+            x.SU_LBL_ID = e.SU_LBL_ID
+        AND
+            x.SU_LBL_PositedAt = v.SU_LBL_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1914,7 +2994,7 @@ BEGIN
         SU_TAG_Subject_Tag nvarchar(42) not null,
         SU_TAG_StatementType char(1) not null,
         primary key (
-            SU_TAG_SU_ID asc, 
+            SU_TAG_SU_ID asc,
             SU_TAG_ChangedAt desc,
             SU_TAG_PositedAt desc
         )
@@ -1965,8 +3045,8 @@ BEGIN
         i.SU_TAG_PositedAt,
         i.SU_TAG_Reliability,
         i.SU_TAG_Subject_Tag,
-        CASE 
-            WHEN p.SU_TAG_ID is null 
+        CASE
+            WHEN p.SU_TAG_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_TAG_ID is null
             THEN 'A' -- new assertion
@@ -1981,9 +3061,9 @@ BEGIN
         p.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
     AND
         p.SU_TAG_Subject_Tag = i.SU_TAG_Subject_Tag
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_TAG_Subject_Tag_Annex] a
-    ON 
+    ON
         a.SU_TAG_ID = p.SU_TAG_ID
     AND
         a.SU_TAG_PositedAt = i.SU_TAG_PositedAt
@@ -1996,26 +3076,46 @@ BEGIN
         SU_TAG_PositedAt,
         SU_TAG_Reliability,
         SU_TAG_Subject_Tag,
-        SU_TAG_StatementType 
+        SU_TAG_StatementType
     )
     SELECT
-        i.SU_TAG_SU_ID,
-        a.Metadata_SU_TAG,
-        p.SU_TAG_ChangedAt,
-        a.SU_TAG_PositedAt,
-        a.SU_TAG_Reliability,
-        p.SU_TAG_Subject_Tag,
+        x.SU_TAG_SU_ID,
+        x.Metadata_SU_TAG,
+        x.SU_TAG_ChangedAt,
+        x.SU_TAG_PositedAt,
+        x.SU_TAG_Reliability,
+        x.SU_TAG_Subject_Tag,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_TAG_SU_ID FROM @SU_TAG_Subject_Tag) i
-    JOIN
-        [dbo].[SU_TAG_Subject_Tag_Posit] p
-    ON
-        p.SU_TAG_SU_ID = i.SU_TAG_SU_ID
-    JOIN 
-        [dbo].[SU_TAG_Subject_Tag_Annex] a
-    ON 
-        a.SU_TAG_ID = p.SU_TAG_ID;
+    FROM (
+        SELECT
+            i.SU_TAG_SU_ID,
+            a.Metadata_SU_TAG,
+            p.SU_TAG_ChangedAt,
+            a.SU_TAG_PositedAt,
+            a.SU_TAG_Reliability,
+            p.SU_TAG_Subject_Tag,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_TAG_SU_ID,
+                    p.SU_TAG_ChangedAt,
+                    a.SU_TAG_PositedAt
+                ORDER BY
+                    a.SU_TAG_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_TAG_SU_ID FROM @SU_TAG_Subject_Tag) i
+        JOIN
+            [dbo].[SU_TAG_Subject_Tag_Posit] p
+        ON
+            p.SU_TAG_SU_ID = i.SU_TAG_SU_ID
+        JOIN
+            [dbo].[SU_TAG_Subject_Tag_Annex] a
+        ON
+            a.SU_TAG_ID = p.SU_TAG_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_TAG_SU_ID int not null,
         Metadata_SU_TAG int not null,
@@ -2032,7 +3132,7 @@ BEGIN
         SU_TAG_PositedAt,
         SU_TAG_Reliability,
         SU_TAG_Subject_Tag,
-        SU_TAG_StatementType 
+        SU_TAG_StatementType
     )
     SELECT
         SU_TAG_SU_ID,
@@ -2041,12 +3141,12 @@ BEGIN
         SU_TAG_PositedAt,
         SU_TAG_Reliability,
         SU_TAG_Subject_Tag,
-        SU_TAG_StatementType 
+        SU_TAG_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_TAG_Reliability as previous_SU_TAG_Reliability, 
+            pre.SU_TAG_Reliability as previous_SU_TAG_Reliability,
             fol.SU_TAG_Reliability as following_SU_TAG_Reliability
         FROM
             @SU_TAG_Subject_Tag a
@@ -2061,7 +3161,7 @@ BEGIN
                 p.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt
             AND
                 p.SU_TAG_PositedAt < a.SU_TAG_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TAG_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2075,11 +3175,11 @@ BEGIN
                 p.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt
             AND
                 p.SU_TAG_PositedAt > a.SU_TAG_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TAG_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_TAG_Reliability = 0 AND isnull(pre.SU_TAG_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_TAG_Reliability = 0 AND isnull(pre.SU_TAG_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_TAG_Reliability = 1 AND fol.SU_TAG_Reliability = 0)
     ) i
@@ -2091,11 +3191,11 @@ BEGIN
             (i.SU_TAG_Reliability = 1 AND i.following_SU_TAG_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            SU_TAG_StatementType 
-        FROM 
+        SELECT TOP 1
+            SU_TAG_StatementType
+        FROM
             @SU_TAG_Subject_Tag
-        WHERE 
+        WHERE
             SU_TAG_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -2115,39 +3215,39 @@ BEGIN
         SU_TAG_PositedAt,
         SU_TAG_Reliability,
         SU_TAG_Subject_Tag,
-        SU_TAG_StatementType 
+        SU_TAG_StatementType
     )
-    SELECT 
+    SELECT
         x.SU_TAG_SU_ID,
         x.Metadata_SU_TAG,
         x.SU_TAG_ChangedAt,
-        CASE 
-            WHEN x.previous_SU_TAG_PositedAt < x.SU_TAG_PositedAt THEN x.SU_TAG_PositedAt 
-            ELSE x.previous_SU_TAG_PositedAt 
+        CASE
+            WHEN x.previous_SU_TAG_PositedAt < x.SU_TAG_PositedAt THEN x.SU_TAG_PositedAt
+            ELSE x.previous_SU_TAG_PositedAt
         END,
         0, -- quench the existing restatements
         x.SU_TAG_Subject_Tag,
-        CASE 
-            WHEN x.previous_SU_TAG_PositedAt < x.SU_TAG_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_SU_TAG_PositedAt < x.SU_TAG_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.SU_TAG_PositedAt as previous_SU_TAG_PositedAt
-        FROM 
+        FROM
             @SU_TAG_Subject_Tag a
         OUTER APPLY (
             SELECT TOP 1
                 *
-            FROM 
+            FROM
                 @SU_TAG_Subject_Tag h
             WHERE
                 h.SU_TAG_SU_ID = a.SU_TAG_SU_ID
             AND
                 h.SU_TAG_ChangedAt < a.SU_TAG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_TAG_ChangedAt DESC,
                 h.SU_TAG_PositedAt DESC
         ) pre
@@ -2157,17 +3257,17 @@ BEGIN
     WHERE
         x.SU_TAG_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @SU_TAG_Subject_Tag 
-    SELECT 
-        * 
+    INSERT INTO @SU_TAG_Subject_Tag
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE SU_TAG_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [dbo].[SU_TAG_Subject_Tag_Posit] p
@@ -2177,9 +3277,9 @@ BEGIN
         p.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
     AND
         p.SU_TAG_Subject_Tag = i.SU_TAG_Subject_Tag
-    JOIN 
+    JOIN
         [dbo].[SU_TAG_Subject_Tag_Annex] a
-    ON 
+    ON
         a.SU_TAG_ID = p.SU_TAG_ID
     AND
         a.SU_TAG_PositedAt = i.SU_TAG_PositedAt;
@@ -2192,13 +3292,29 @@ BEGIN
         SU_TAG_Subject_Tag
     )
     SELECT
-        SU_TAG_SU_ID,
-        SU_TAG_ChangedAt,
-        SU_TAG_Subject_Tag
+        v.SU_TAG_SU_ID,
+        v.SU_TAG_ChangedAt,
+        v.SU_TAG_Subject_Tag
     FROM
-        @SU_TAG_Subject_Tag
+        @SU_TAG_Subject_Tag v
     WHERE
-        SU_TAG_StatementType = 'P';
+        v.SU_TAG_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_TAG_Subject_Tag w
+        WHERE
+            w.SU_TAG_StatementType = 'P'
+        AND
+            w.SU_TAG_SU_ID = v.SU_TAG_SU_ID
+        AND
+            w.SU_TAG_ChangedAt = v.SU_TAG_ChangedAt
+        AND
+            w.SU_TAG_Subject_Tag = v.SU_TAG_Subject_Tag
+        AND
+            w.SU_TAG_PositedAt < v.SU_TAG_PositedAt
+    );
     INSERT INTO [dbo].[SU_TAG_Subject_Tag_Annex] (
         Metadata_SU_TAG,
         SU_TAG_ID,
@@ -2222,6 +3338,67 @@ BEGIN
         p.SU_TAG_Subject_Tag = v.SU_TAG_Subject_Tag
     WHERE
         SU_TAG_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_TAG_Subject_Tag_Annex] (
+        Metadata_SU_TAG,
+        SU_TAG_ID,
+        SU_TAG_PositedAt,
+        SU_TAG_Reliability
+    )
+    SELECT
+        v.Metadata_SU_TAG,
+        e.SU_TAG_ID,
+        v.SU_TAG_PositedAt,
+        0
+    FROM
+        @SU_TAG_Subject_Tag v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_TAG_ID,
+            p.SU_TAG_Subject_Tag
+        FROM
+            [dbo].[SU_TAG_Subject_Tag_Posit] p
+        JOIN
+            [dbo].[SU_TAG_Subject_Tag_Annex] a
+        ON
+            a.SU_TAG_ID = p.SU_TAG_ID
+        AND
+            a.SU_TAG_PositedAt = (
+                SELECT
+                    max(s.SU_TAG_PositedAt)
+                FROM
+                    [dbo].[SU_TAG_Subject_Tag_Annex] s
+                WHERE
+                    s.SU_TAG_ID = p.SU_TAG_ID
+                AND
+                    s.SU_TAG_PositedAt < v.SU_TAG_PositedAt
+            )
+        WHERE
+            p.SU_TAG_SU_ID = v.SU_TAG_SU_ID
+        AND
+            p.SU_TAG_ChangedAt = v.SU_TAG_ChangedAt
+        AND
+            a.SU_TAG_Reliability = 1
+        ORDER BY
+            a.SU_TAG_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_TAG_StatementType in ('P', 'A')
+    AND
+        v.SU_TAG_Reliability = 1
+    AND
+        e.SU_TAG_Subject_Tag <> v.SU_TAG_Subject_Tag
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_TAG_Subject_Tag_Annex] x
+        WHERE
+            x.SU_TAG_ID = e.SU_TAG_ID
+        AND
+            x.SU_TAG_PositedAt = v.SU_TAG_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -2241,10 +3418,10 @@ BEGIN
         SU_LVL_ChangedAt datetime2 not null,
         SU_LVL_PositedAt datetime2 not null,
         SU_LVL_Reliability decimal(5,2) not null,
-        SU_LVL_GRD_ID tinyint not null, 
+        SU_LVL_GRD_ID tinyint not null,
         SU_LVL_StatementType char(1) not null,
         primary key (
-            SU_LVL_SU_ID asc, 
+            SU_LVL_SU_ID asc,
             SU_LVL_ChangedAt desc,
             SU_LVL_PositedAt desc
         )
@@ -2295,8 +3472,8 @@ BEGIN
         i.SU_LVL_PositedAt,
         i.SU_LVL_Reliability,
         i.SU_LVL_GRD_ID,
-        CASE 
-            WHEN p.SU_LVL_ID is null 
+        CASE
+            WHEN p.SU_LVL_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_LVL_ID is null
             THEN 'A' -- new assertion
@@ -2311,9 +3488,9 @@ BEGIN
         p.SU_LVL_ChangedAt = i.SU_LVL_ChangedAt
     AND
         p.SU_LVL_GRD_ID = i.SU_LVL_GRD_ID
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_LVL_Subject_Level_Annex] a
-    ON 
+    ON
         a.SU_LVL_ID = p.SU_LVL_ID
     AND
         a.SU_LVL_PositedAt = i.SU_LVL_PositedAt
@@ -2326,33 +3503,53 @@ BEGIN
         SU_LVL_PositedAt,
         SU_LVL_Reliability,
         SU_LVL_GRD_ID,
-        SU_LVL_StatementType 
+        SU_LVL_StatementType
     )
     SELECT
-        i.SU_LVL_SU_ID,
-        a.Metadata_SU_LVL,
-        p.SU_LVL_ChangedAt,
-        a.SU_LVL_PositedAt,
-        a.SU_LVL_Reliability,
-        p.SU_LVL_GRD_ID,
+        x.SU_LVL_SU_ID,
+        x.Metadata_SU_LVL,
+        x.SU_LVL_ChangedAt,
+        x.SU_LVL_PositedAt,
+        x.SU_LVL_Reliability,
+        x.SU_LVL_GRD_ID,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_LVL_SU_ID FROM @SU_LVL_Subject_Level) i
-    JOIN
-        [dbo].[SU_LVL_Subject_Level_Posit] p
-    ON
-        p.SU_LVL_SU_ID = i.SU_LVL_SU_ID
-    JOIN 
-        [dbo].[SU_LVL_Subject_Level_Annex] a
-    ON 
-        a.SU_LVL_ID = p.SU_LVL_ID;
+    FROM (
+        SELECT
+            i.SU_LVL_SU_ID,
+            a.Metadata_SU_LVL,
+            p.SU_LVL_ChangedAt,
+            a.SU_LVL_PositedAt,
+            a.SU_LVL_Reliability,
+            p.SU_LVL_GRD_ID,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_LVL_SU_ID,
+                    p.SU_LVL_ChangedAt,
+                    a.SU_LVL_PositedAt
+                ORDER BY
+                    a.SU_LVL_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_LVL_SU_ID FROM @SU_LVL_Subject_Level) i
+        JOIN
+            [dbo].[SU_LVL_Subject_Level_Posit] p
+        ON
+            p.SU_LVL_SU_ID = i.SU_LVL_SU_ID
+        JOIN
+            [dbo].[SU_LVL_Subject_Level_Annex] a
+        ON
+            a.SU_LVL_ID = p.SU_LVL_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_LVL_SU_ID int not null,
         Metadata_SU_LVL int not null,
         SU_LVL_ChangedAt datetime2 not null,
         SU_LVL_PositedAt datetime2 not null,
         SU_LVL_Reliability decimal(5,2) not null,
-        SU_LVL_GRD_ID tinyint not null, 
+        SU_LVL_GRD_ID tinyint not null,
         SU_LVL_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -2362,7 +3559,7 @@ BEGIN
         SU_LVL_PositedAt,
         SU_LVL_Reliability,
         SU_LVL_GRD_ID,
-        SU_LVL_StatementType 
+        SU_LVL_StatementType
     )
     SELECT
         SU_LVL_SU_ID,
@@ -2371,12 +3568,12 @@ BEGIN
         SU_LVL_PositedAt,
         SU_LVL_Reliability,
         SU_LVL_GRD_ID,
-        SU_LVL_StatementType 
+        SU_LVL_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_LVL_Reliability as previous_SU_LVL_Reliability, 
+            pre.SU_LVL_Reliability as previous_SU_LVL_Reliability,
             fol.SU_LVL_Reliability as following_SU_LVL_Reliability
         FROM
             @SU_LVL_Subject_Level a
@@ -2391,7 +3588,7 @@ BEGIN
                 p.SU_LVL_ChangedAt = a.SU_LVL_ChangedAt
             AND
                 p.SU_LVL_PositedAt < a.SU_LVL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_LVL_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2405,11 +3602,11 @@ BEGIN
                 p.SU_LVL_ChangedAt = a.SU_LVL_ChangedAt
             AND
                 p.SU_LVL_PositedAt > a.SU_LVL_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_LVL_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_LVL_Reliability = 0 AND isnull(pre.SU_LVL_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_LVL_Reliability = 0 AND isnull(pre.SU_LVL_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_LVL_Reliability = 1 AND fol.SU_LVL_Reliability = 0)
     ) i
@@ -2428,13 +3625,29 @@ BEGIN
         SU_LVL_GRD_ID
     )
     SELECT
-        SU_LVL_SU_ID,
-        SU_LVL_ChangedAt,
-        SU_LVL_GRD_ID
+        v.SU_LVL_SU_ID,
+        v.SU_LVL_ChangedAt,
+        v.SU_LVL_GRD_ID
     FROM
-        @SU_LVL_Subject_Level
+        @SU_LVL_Subject_Level v
     WHERE
-        SU_LVL_StatementType = 'P';
+        v.SU_LVL_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_LVL_Subject_Level w
+        WHERE
+            w.SU_LVL_StatementType = 'P'
+        AND
+            w.SU_LVL_SU_ID = v.SU_LVL_SU_ID
+        AND
+            w.SU_LVL_ChangedAt = v.SU_LVL_ChangedAt
+        AND
+            w.SU_LVL_GRD_ID = v.SU_LVL_GRD_ID
+        AND
+            w.SU_LVL_PositedAt < v.SU_LVL_PositedAt
+    );
     INSERT INTO [dbo].[SU_LVL_Subject_Level_Annex] (
         Metadata_SU_LVL,
         SU_LVL_ID,
@@ -2458,6 +3671,67 @@ BEGIN
         p.SU_LVL_GRD_ID = v.SU_LVL_GRD_ID
     WHERE
         SU_LVL_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_LVL_Subject_Level_Annex] (
+        Metadata_SU_LVL,
+        SU_LVL_ID,
+        SU_LVL_PositedAt,
+        SU_LVL_Reliability
+    )
+    SELECT
+        v.Metadata_SU_LVL,
+        e.SU_LVL_ID,
+        v.SU_LVL_PositedAt,
+        0
+    FROM
+        @SU_LVL_Subject_Level v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_LVL_ID,
+            p.SU_LVL_GRD_ID
+        FROM
+            [dbo].[SU_LVL_Subject_Level_Posit] p
+        JOIN
+            [dbo].[SU_LVL_Subject_Level_Annex] a
+        ON
+            a.SU_LVL_ID = p.SU_LVL_ID
+        AND
+            a.SU_LVL_PositedAt = (
+                SELECT
+                    max(s.SU_LVL_PositedAt)
+                FROM
+                    [dbo].[SU_LVL_Subject_Level_Annex] s
+                WHERE
+                    s.SU_LVL_ID = p.SU_LVL_ID
+                AND
+                    s.SU_LVL_PositedAt < v.SU_LVL_PositedAt
+            )
+        WHERE
+            p.SU_LVL_SU_ID = v.SU_LVL_SU_ID
+        AND
+            p.SU_LVL_ChangedAt = v.SU_LVL_ChangedAt
+        AND
+            a.SU_LVL_Reliability = 1
+        ORDER BY
+            a.SU_LVL_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_LVL_StatementType in ('P', 'A')
+    AND
+        v.SU_LVL_Reliability = 1
+    AND
+        e.SU_LVL_GRD_ID <> v.SU_LVL_GRD_ID
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_LVL_Subject_Level_Annex] x
+        WHERE
+            x.SU_LVL_ID = e.SU_LVL_ID
+        AND
+            x.SU_LVL_PositedAt = v.SU_LVL_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -2481,7 +3755,7 @@ BEGIN
         SU_TXT_Checksum varbinary(16) not null,
         SU_TXT_StatementType char(1) not null,
         primary key (
-            SU_TXT_SU_ID asc, 
+            SU_TXT_SU_ID asc,
             SU_TXT_ChangedAt desc,
             SU_TXT_PositedAt desc
         )
@@ -2509,7 +3783,7 @@ BEGIN
             AND
                 p.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
             AND
-                p.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) 
+                p.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
             AND
                 a.SU_TXT_PositedAt = i.SU_TXT_PositedAt
             AND
@@ -2533,8 +3807,8 @@ BEGIN
         i.SU_TXT_Reliability,
         i.SU_TXT_Subject_Text,
         dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))),
-        CASE 
-            WHEN p.SU_TXT_ID is null 
+        CASE
+            WHEN p.SU_TXT_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_TXT_ID is null
             THEN 'A' -- new assertion
@@ -2548,10 +3822,10 @@ BEGIN
     AND
         p.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
     AND
-        p.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) 
-    LEFT JOIN 
+        p.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
+    LEFT JOIN
         [dbo].[SU_TXT_Subject_Text_Annex] a
-    ON 
+    ON
         a.SU_TXT_ID = p.SU_TXT_ID
     AND
         a.SU_TXT_PositedAt = i.SU_TXT_PositedAt
@@ -2565,27 +3839,48 @@ BEGIN
         SU_TXT_Reliability,
         SU_TXT_Subject_Text,
         SU_TXT_Checksum,
-        SU_TXT_StatementType 
+        SU_TXT_StatementType
     )
     SELECT
-        i.SU_TXT_SU_ID,
-        a.Metadata_SU_TXT,
-        p.SU_TXT_ChangedAt,
-        a.SU_TXT_PositedAt,
-        a.SU_TXT_Reliability,
-        p.SU_TXT_Subject_Text,
-        p.SU_TXT_Checksum,
+        x.SU_TXT_SU_ID,
+        x.Metadata_SU_TXT,
+        x.SU_TXT_ChangedAt,
+        x.SU_TXT_PositedAt,
+        x.SU_TXT_Reliability,
+        x.SU_TXT_Subject_Text,
+        x.SU_TXT_Checksum,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_TXT_SU_ID FROM @SU_TXT_Subject_Text) i
-    JOIN
-        [dbo].[SU_TXT_Subject_Text_Posit] p
-    ON
-        p.SU_TXT_SU_ID = i.SU_TXT_SU_ID
-    JOIN 
-        [dbo].[SU_TXT_Subject_Text_Annex] a
-    ON 
-        a.SU_TXT_ID = p.SU_TXT_ID;
+    FROM (
+        SELECT
+            i.SU_TXT_SU_ID,
+            a.Metadata_SU_TXT,
+            p.SU_TXT_ChangedAt,
+            a.SU_TXT_PositedAt,
+            a.SU_TXT_Reliability,
+            p.SU_TXT_Subject_Text,
+            p.SU_TXT_Checksum,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_TXT_SU_ID,
+                    p.SU_TXT_ChangedAt,
+                    a.SU_TXT_PositedAt
+                ORDER BY
+                    a.SU_TXT_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_TXT_SU_ID FROM @SU_TXT_Subject_Text) i
+        JOIN
+            [dbo].[SU_TXT_Subject_Text_Posit] p
+        ON
+            p.SU_TXT_SU_ID = i.SU_TXT_SU_ID
+        JOIN
+            [dbo].[SU_TXT_Subject_Text_Annex] a
+        ON
+            a.SU_TXT_ID = p.SU_TXT_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_TXT_SU_ID int not null,
         Metadata_SU_TXT int not null,
@@ -2604,7 +3899,7 @@ BEGIN
         SU_TXT_Reliability,
         SU_TXT_Subject_Text,
         SU_TXT_Checksum,
-        SU_TXT_StatementType 
+        SU_TXT_StatementType
     )
     SELECT
         SU_TXT_SU_ID,
@@ -2614,12 +3909,12 @@ BEGIN
         SU_TXT_Reliability,
         SU_TXT_Subject_Text,
         SU_TXT_Checksum,
-        SU_TXT_StatementType 
+        SU_TXT_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_TXT_Reliability as previous_SU_TXT_Reliability, 
+            pre.SU_TXT_Reliability as previous_SU_TXT_Reliability,
             fol.SU_TXT_Reliability as following_SU_TXT_Reliability
         FROM
             @SU_TXT_Subject_Text a
@@ -2634,7 +3929,7 @@ BEGIN
                 p.SU_TXT_ChangedAt = a.SU_TXT_ChangedAt
             AND
                 p.SU_TXT_PositedAt < a.SU_TXT_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TXT_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2648,11 +3943,11 @@ BEGIN
                 p.SU_TXT_ChangedAt = a.SU_TXT_ChangedAt
             AND
                 p.SU_TXT_PositedAt > a.SU_TXT_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_TXT_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_TXT_Reliability = 0 AND isnull(pre.SU_TXT_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_TXT_Reliability = 0 AND isnull(pre.SU_TXT_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_TXT_Reliability = 1 AND fol.SU_TXT_Reliability = 0)
     ) i
@@ -2671,13 +3966,29 @@ BEGIN
         SU_TXT_Subject_Text
     )
     SELECT
-        SU_TXT_SU_ID,
-        SU_TXT_ChangedAt,
-        SU_TXT_Subject_Text
+        v.SU_TXT_SU_ID,
+        v.SU_TXT_ChangedAt,
+        v.SU_TXT_Subject_Text
     FROM
-        @SU_TXT_Subject_Text
+        @SU_TXT_Subject_Text v
     WHERE
-        SU_TXT_StatementType = 'P';
+        v.SU_TXT_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_TXT_Subject_Text w
+        WHERE
+            w.SU_TXT_StatementType = 'P'
+        AND
+            w.SU_TXT_SU_ID = v.SU_TXT_SU_ID
+        AND
+            w.SU_TXT_ChangedAt = v.SU_TXT_ChangedAt
+        AND
+            w.SU_TXT_Checksum = v.SU_TXT_Checksum
+        AND
+            w.SU_TXT_PositedAt < v.SU_TXT_PositedAt
+    );
     INSERT INTO [dbo].[SU_TXT_Subject_Text_Annex] (
         Metadata_SU_TXT,
         SU_TXT_ID,
@@ -2698,9 +4009,70 @@ BEGIN
     AND
         p.SU_TXT_ChangedAt = v.SU_TXT_ChangedAt
     AND
-        p.SU_TXT_Checksum = v.SU_TXT_Checksum 
+        p.SU_TXT_Checksum = v.SU_TXT_Checksum
     WHERE
         SU_TXT_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_TXT_Subject_Text_Annex] (
+        Metadata_SU_TXT,
+        SU_TXT_ID,
+        SU_TXT_PositedAt,
+        SU_TXT_Reliability
+    )
+    SELECT
+        v.Metadata_SU_TXT,
+        e.SU_TXT_ID,
+        v.SU_TXT_PositedAt,
+        0
+    FROM
+        @SU_TXT_Subject_Text v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_TXT_ID,
+            p.SU_TXT_Checksum
+        FROM
+            [dbo].[SU_TXT_Subject_Text_Posit] p
+        JOIN
+            [dbo].[SU_TXT_Subject_Text_Annex] a
+        ON
+            a.SU_TXT_ID = p.SU_TXT_ID
+        AND
+            a.SU_TXT_PositedAt = (
+                SELECT
+                    max(s.SU_TXT_PositedAt)
+                FROM
+                    [dbo].[SU_TXT_Subject_Text_Annex] s
+                WHERE
+                    s.SU_TXT_ID = p.SU_TXT_ID
+                AND
+                    s.SU_TXT_PositedAt < v.SU_TXT_PositedAt
+            )
+        WHERE
+            p.SU_TXT_SU_ID = v.SU_TXT_SU_ID
+        AND
+            p.SU_TXT_ChangedAt = v.SU_TXT_ChangedAt
+        AND
+            a.SU_TXT_Reliability = 1
+        ORDER BY
+            a.SU_TXT_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_TXT_StatementType in ('P', 'A')
+    AND
+        v.SU_TXT_Reliability = 1
+    AND
+        e.SU_TXT_Checksum <> v.SU_TXT_Checksum
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_TXT_Subject_Text_Annex] x
+        WHERE
+            x.SU_TXT_ID = e.SU_TXT_ID
+        AND
+            x.SU_TXT_PositedAt = v.SU_TXT_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -2723,7 +4095,7 @@ BEGIN
         SU_ASR_Subject_Assessment nvarchar(42) not null,
         SU_ASR_StatementType char(1) not null,
         primary key (
-            SU_ASR_SU_ID asc, 
+            SU_ASR_SU_ID asc,
             SU_ASR_ChangedAt desc,
             SU_ASR_PositedAt desc
         )
@@ -2774,8 +4146,8 @@ BEGIN
         i.SU_ASR_PositedAt,
         i.SU_ASR_Reliability,
         i.SU_ASR_Subject_Assessment,
-        CASE 
-            WHEN p.SU_ASR_ID is null 
+        CASE
+            WHEN p.SU_ASR_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_ASR_ID is null
             THEN 'A' -- new assertion
@@ -2790,9 +4162,9 @@ BEGIN
         p.SU_ASR_ChangedAt = i.SU_ASR_ChangedAt
     AND
         p.SU_ASR_Subject_Assessment = i.SU_ASR_Subject_Assessment
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_ASR_Subject_Assessment_Annex] a
-    ON 
+    ON
         a.SU_ASR_ID = p.SU_ASR_ID
     AND
         a.SU_ASR_PositedAt = i.SU_ASR_PositedAt
@@ -2805,26 +4177,46 @@ BEGIN
         SU_ASR_PositedAt,
         SU_ASR_Reliability,
         SU_ASR_Subject_Assessment,
-        SU_ASR_StatementType 
+        SU_ASR_StatementType
     )
     SELECT
-        i.SU_ASR_SU_ID,
-        a.Metadata_SU_ASR,
-        p.SU_ASR_ChangedAt,
-        a.SU_ASR_PositedAt,
-        a.SU_ASR_Reliability,
-        p.SU_ASR_Subject_Assessment,
+        x.SU_ASR_SU_ID,
+        x.Metadata_SU_ASR,
+        x.SU_ASR_ChangedAt,
+        x.SU_ASR_PositedAt,
+        x.SU_ASR_Reliability,
+        x.SU_ASR_Subject_Assessment,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_ASR_SU_ID FROM @SU_ASR_Subject_Assessment) i
-    JOIN
-        [dbo].[SU_ASR_Subject_Assessment_Posit] p
-    ON
-        p.SU_ASR_SU_ID = i.SU_ASR_SU_ID
-    JOIN 
-        [dbo].[SU_ASR_Subject_Assessment_Annex] a
-    ON 
-        a.SU_ASR_ID = p.SU_ASR_ID;
+    FROM (
+        SELECT
+            i.SU_ASR_SU_ID,
+            a.Metadata_SU_ASR,
+            p.SU_ASR_ChangedAt,
+            a.SU_ASR_PositedAt,
+            a.SU_ASR_Reliability,
+            p.SU_ASR_Subject_Assessment,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_ASR_SU_ID,
+                    p.SU_ASR_ChangedAt,
+                    a.SU_ASR_PositedAt
+                ORDER BY
+                    a.SU_ASR_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_ASR_SU_ID FROM @SU_ASR_Subject_Assessment) i
+        JOIN
+            [dbo].[SU_ASR_Subject_Assessment_Posit] p
+        ON
+            p.SU_ASR_SU_ID = i.SU_ASR_SU_ID
+        JOIN
+            [dbo].[SU_ASR_Subject_Assessment_Annex] a
+        ON
+            a.SU_ASR_ID = p.SU_ASR_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_ASR_SU_ID int not null,
         Metadata_SU_ASR int not null,
@@ -2841,7 +4233,7 @@ BEGIN
         SU_ASR_PositedAt,
         SU_ASR_Reliability,
         SU_ASR_Subject_Assessment,
-        SU_ASR_StatementType 
+        SU_ASR_StatementType
     )
     SELECT
         SU_ASR_SU_ID,
@@ -2850,12 +4242,12 @@ BEGIN
         SU_ASR_PositedAt,
         SU_ASR_Reliability,
         SU_ASR_Subject_Assessment,
-        SU_ASR_StatementType 
+        SU_ASR_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_ASR_Reliability as previous_SU_ASR_Reliability, 
+            pre.SU_ASR_Reliability as previous_SU_ASR_Reliability,
             fol.SU_ASR_Reliability as following_SU_ASR_Reliability
         FROM
             @SU_ASR_Subject_Assessment a
@@ -2870,7 +4262,7 @@ BEGIN
                 p.SU_ASR_ChangedAt = a.SU_ASR_ChangedAt
             AND
                 p.SU_ASR_PositedAt < a.SU_ASR_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_ASR_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2884,11 +4276,11 @@ BEGIN
                 p.SU_ASR_ChangedAt = a.SU_ASR_ChangedAt
             AND
                 p.SU_ASR_PositedAt > a.SU_ASR_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_ASR_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_ASR_Reliability = 0 AND isnull(pre.SU_ASR_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_ASR_Reliability = 0 AND isnull(pre.SU_ASR_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_ASR_Reliability = 1 AND fol.SU_ASR_Reliability = 0)
     ) i
@@ -2900,15 +4292,15 @@ BEGIN
             (i.SU_ASR_Reliability = 1 AND i.following_SU_ASR_Reliability = 0)
         );
     -- remove remaining (dangling) retractions
-	DELETE @SU_ASR_Subject_Assessment 
-	WHERE 
+    DELETE @SU_ASR_Subject_Assessment
+    WHERE
         SU_ASR_Reliability = 0;
     IF EXISTS (
-        SELECT TOP 1 
-            SU_ASR_StatementType 
-        FROM 
+        SELECT TOP 1
+            SU_ASR_StatementType
+        FROM
             @SU_ASR_Subject_Assessment
-        WHERE 
+        WHERE
             SU_ASR_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -2921,7 +4313,7 @@ BEGIN
         SU_ASR_Subject_Assessment nvarchar(42) not null,
         previous_SU_ASR_PositedAt datetime2 not null,
         primary key(
-            SU_ASR_SU_ID asc, 
+            SU_ASR_SU_ID asc,
             SU_ASR_ChangedAt desc,
             SU_ASR_PositedAt desc
         )
@@ -2932,7 +4324,7 @@ BEGIN
         SU_ASR_ChangedAt,
         SU_ASR_PositedAt,
         SU_ASR_Reliability,
-        SU_ASR_Subject_Assessment, 
+        SU_ASR_Subject_Assessment,
         previous_SU_ASR_PositedAt
     )
     SELECT
@@ -2941,28 +4333,28 @@ BEGIN
         SU_ASR_ChangedAt,
         SU_ASR_PositedAt,
         SU_ASR_Reliability,
-        SU_ASR_Subject_Assessment, 
+        SU_ASR_Subject_Assessment,
         previous_SU_ASR_PositedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.SU_ASR_PositedAt AS previous_SU_ASR_PositedAt,
             pre.SU_ASR_StatementType AS previous_SU_ASR_StatementType
-        FROM 
+        FROM
             @SU_ASR_Subject_Assessment a
         CROSS APPLY (
             SELECT TOP 1
-                * 
-            FROM 
+                *
+            FROM
                 @SU_ASR_Subject_Assessment s
             WHERE
                 s.SU_ASR_SU_ID = a.SU_ASR_SU_ID
             AND
                 s.SU_ASR_ChangedAt = a.SU_ASR_ChangedAt
-            AND 
+            AND
                 s.SU_ASR_PositedAt < a.SU_ASR_PositedAt
-            ORDER BY 
+            ORDER BY
                 s.SU_ASR_PositedAt DESC
         ) pre -- what is shown just before
         WHERE
@@ -2973,17 +4365,17 @@ BEGIN
     WHERE
         u.previous_SU_ASR_StatementType = 'A';
     DELETE a
-    FROM 
+    FROM
         @SU_ASR_Subject_Assessment a
-    JOIN 
+    JOIN
         @updated u
-    ON 
+    ON
         u.SU_ASR_SU_ID = a.SU_ASR_SU_ID
     AND
         u.SU_ASR_ChangedAt = a.SU_ASR_ChangedAt
     AND
         u.SU_ASR_Subject_Assessment = a.SU_ASR_Subject_Assessment
-    AND 
+    AND
         u.previous_SU_ASR_PositedAt = a.SU_ASR_PositedAt;
     END --- (only run if necessary) ---
     -- add the retractions
@@ -2994,17 +4386,33 @@ BEGIN
         SU_ASR_Subject_Assessment
     )
     SELECT
-        SU_ASR_SU_ID,
-        SU_ASR_ChangedAt,
-        SU_ASR_Subject_Assessment
+        v.SU_ASR_SU_ID,
+        v.SU_ASR_ChangedAt,
+        v.SU_ASR_Subject_Assessment
     FROM
-        @SU_ASR_Subject_Assessment
+        @SU_ASR_Subject_Assessment v
     WHERE
-        SU_ASR_StatementType = 'P';
+        v.SU_ASR_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_ASR_Subject_Assessment w
+        WHERE
+            w.SU_ASR_StatementType = 'P'
+        AND
+            w.SU_ASR_SU_ID = v.SU_ASR_SU_ID
+        AND
+            w.SU_ASR_ChangedAt = v.SU_ASR_ChangedAt
+        AND
+            w.SU_ASR_Subject_Assessment = v.SU_ASR_Subject_Assessment
+        AND
+            w.SU_ASR_PositedAt < v.SU_ASR_PositedAt
+    );
     UPDATE a
-    SET 
+    SET
         a.SU_ASR_PositedAt = u.previous_SU_ASR_PositedAt
-    FROM 
+    FROM
         @updated u
     JOIN
         [dbo].[SU_ASR_Subject_Assessment_Posit] p
@@ -3016,7 +4424,7 @@ BEGIN
         u.SU_ASR_Subject_Assessment = p.SU_ASR_Subject_Assessment
     JOIN
         [dbo].[SU_ASR_Subject_Assessment_Annex] a
-    ON 
+    ON
         a.SU_ASR_ID = p.SU_ASR_ID
     AND
         a.SU_ASR_PositedAt = u.SU_ASR_PositedAt;
@@ -3043,6 +4451,67 @@ BEGIN
         p.SU_ASR_Subject_Assessment = v.SU_ASR_Subject_Assessment
     WHERE
         SU_ASR_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_ASR_Subject_Assessment_Annex] (
+        Metadata_SU_ASR,
+        SU_ASR_ID,
+        SU_ASR_PositedAt,
+        SU_ASR_Reliability
+    )
+    SELECT
+        v.Metadata_SU_ASR,
+        e.SU_ASR_ID,
+        v.SU_ASR_PositedAt,
+        0
+    FROM
+        @SU_ASR_Subject_Assessment v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_ASR_ID,
+            p.SU_ASR_Subject_Assessment
+        FROM
+            [dbo].[SU_ASR_Subject_Assessment_Posit] p
+        JOIN
+            [dbo].[SU_ASR_Subject_Assessment_Annex] a
+        ON
+            a.SU_ASR_ID = p.SU_ASR_ID
+        AND
+            a.SU_ASR_PositedAt = (
+                SELECT
+                    max(s.SU_ASR_PositedAt)
+                FROM
+                    [dbo].[SU_ASR_Subject_Assessment_Annex] s
+                WHERE
+                    s.SU_ASR_ID = p.SU_ASR_ID
+                AND
+                    s.SU_ASR_PositedAt < v.SU_ASR_PositedAt
+            )
+        WHERE
+            p.SU_ASR_SU_ID = v.SU_ASR_SU_ID
+        AND
+            p.SU_ASR_ChangedAt = v.SU_ASR_ChangedAt
+        AND
+            a.SU_ASR_Reliability = 1
+        ORDER BY
+            a.SU_ASR_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_ASR_StatementType in ('P', 'A')
+    AND
+        v.SU_ASR_Reliability = 1
+    AND
+        e.SU_ASR_Subject_Assessment <> v.SU_ASR_Subject_Assessment
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_ASR_Subject_Assessment_Annex] x
+        WHERE
+            x.SU_ASR_ID = e.SU_ASR_ID
+        AND
+            x.SU_ASR_PositedAt = v.SU_ASR_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -3065,7 +4534,7 @@ BEGIN
         SU_ERS_Subject_Erasable nvarchar(42) not null,
         SU_ERS_StatementType char(1) not null,
         primary key (
-            SU_ERS_SU_ID asc, 
+            SU_ERS_SU_ID asc,
             SU_ERS_ChangedAt desc,
             SU_ERS_PositedAt desc
         )
@@ -3116,8 +4585,8 @@ BEGIN
         i.SU_ERS_PositedAt,
         i.SU_ERS_Reliability,
         i.SU_ERS_Subject_Erasable,
-        CASE 
-            WHEN p.SU_ERS_ID is null 
+        CASE
+            WHEN p.SU_ERS_ID is null
             THEN 'P' -- new posit
             WHEN a.SU_ERS_ID is null
             THEN 'A' -- new assertion
@@ -3132,9 +4601,9 @@ BEGIN
         p.SU_ERS_ChangedAt = i.SU_ERS_ChangedAt
     AND
         p.SU_ERS_Subject_Erasable = i.SU_ERS_Subject_Erasable
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[SU_ERS_Subject_Erasable_Annex] a
-    ON 
+    ON
         a.SU_ERS_ID = p.SU_ERS_ID
     AND
         a.SU_ERS_PositedAt = i.SU_ERS_PositedAt
@@ -3147,26 +4616,46 @@ BEGIN
         SU_ERS_PositedAt,
         SU_ERS_Reliability,
         SU_ERS_Subject_Erasable,
-        SU_ERS_StatementType 
+        SU_ERS_StatementType
     )
     SELECT
-        i.SU_ERS_SU_ID,
-        a.Metadata_SU_ERS,
-        p.SU_ERS_ChangedAt,
-        a.SU_ERS_PositedAt,
-        a.SU_ERS_Reliability,
-        p.SU_ERS_Subject_Erasable,
+        x.SU_ERS_SU_ID,
+        x.Metadata_SU_ERS,
+        x.SU_ERS_ChangedAt,
+        x.SU_ERS_PositedAt,
+        x.SU_ERS_Reliability,
+        x.SU_ERS_Subject_Erasable,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT SU_ERS_SU_ID FROM @SU_ERS_Subject_Erasable) i
-    JOIN
-        [dbo].[SU_ERS_Subject_Erasable_Posit] p
-    ON
-        p.SU_ERS_SU_ID = i.SU_ERS_SU_ID
-    JOIN 
-        [dbo].[SU_ERS_Subject_Erasable_Annex] a
-    ON 
-        a.SU_ERS_ID = p.SU_ERS_ID;
+    FROM (
+        SELECT
+            i.SU_ERS_SU_ID,
+            a.Metadata_SU_ERS,
+            p.SU_ERS_ChangedAt,
+            a.SU_ERS_PositedAt,
+            a.SU_ERS_Reliability,
+            p.SU_ERS_Subject_Erasable,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.SU_ERS_SU_ID,
+                    p.SU_ERS_ChangedAt,
+                    a.SU_ERS_PositedAt
+                ORDER BY
+                    a.SU_ERS_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT SU_ERS_SU_ID FROM @SU_ERS_Subject_Erasable) i
+        JOIN
+            [dbo].[SU_ERS_Subject_Erasable_Posit] p
+        ON
+            p.SU_ERS_SU_ID = i.SU_ERS_SU_ID
+        JOIN
+            [dbo].[SU_ERS_Subject_Erasable_Annex] a
+        ON
+            a.SU_ERS_ID = p.SU_ERS_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         SU_ERS_SU_ID int not null,
         Metadata_SU_ERS int not null,
@@ -3183,7 +4672,7 @@ BEGIN
         SU_ERS_PositedAt,
         SU_ERS_Reliability,
         SU_ERS_Subject_Erasable,
-        SU_ERS_StatementType 
+        SU_ERS_StatementType
     )
     SELECT
         SU_ERS_SU_ID,
@@ -3192,12 +4681,12 @@ BEGIN
         SU_ERS_PositedAt,
         SU_ERS_Reliability,
         SU_ERS_Subject_Erasable,
-        SU_ERS_StatementType 
+        SU_ERS_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.SU_ERS_Reliability as previous_SU_ERS_Reliability, 
+            pre.SU_ERS_Reliability as previous_SU_ERS_Reliability,
             fol.SU_ERS_Reliability as following_SU_ERS_Reliability
         FROM
             @SU_ERS_Subject_Erasable a
@@ -3212,7 +4701,7 @@ BEGIN
                 p.SU_ERS_ChangedAt = a.SU_ERS_ChangedAt
             AND
                 p.SU_ERS_PositedAt < a.SU_ERS_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_ERS_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -3226,11 +4715,11 @@ BEGIN
                 p.SU_ERS_ChangedAt = a.SU_ERS_ChangedAt
             AND
                 p.SU_ERS_PositedAt > a.SU_ERS_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.SU_ERS_PositedAt ASC
         ) fol
         WHERE
-            (a.SU_ERS_Reliability = 0 AND isnull(pre.SU_ERS_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.SU_ERS_Reliability = 0 AND isnull(pre.SU_ERS_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.SU_ERS_Reliability = 1 AND fol.SU_ERS_Reliability = 0)
     ) i
@@ -3249,13 +4738,29 @@ BEGIN
         SU_ERS_Subject_Erasable
     )
     SELECT
-        SU_ERS_SU_ID,
-        SU_ERS_ChangedAt,
-        SU_ERS_Subject_Erasable
+        v.SU_ERS_SU_ID,
+        v.SU_ERS_ChangedAt,
+        v.SU_ERS_Subject_Erasable
     FROM
-        @SU_ERS_Subject_Erasable
+        @SU_ERS_Subject_Erasable v
     WHERE
-        SU_ERS_StatementType = 'P';
+        v.SU_ERS_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @SU_ERS_Subject_Erasable w
+        WHERE
+            w.SU_ERS_StatementType = 'P'
+        AND
+            w.SU_ERS_SU_ID = v.SU_ERS_SU_ID
+        AND
+            w.SU_ERS_ChangedAt = v.SU_ERS_ChangedAt
+        AND
+            w.SU_ERS_Subject_Erasable = v.SU_ERS_Subject_Erasable
+        AND
+            w.SU_ERS_PositedAt < v.SU_ERS_PositedAt
+    );
     INSERT INTO [dbo].[SU_ERS_Subject_Erasable_Annex] (
         Metadata_SU_ERS,
         SU_ERS_ID,
@@ -3279,6 +4784,67 @@ BEGIN
         p.SU_ERS_Subject_Erasable = v.SU_ERS_Subject_Erasable
     WHERE
         SU_ERS_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[SU_ERS_Subject_Erasable_Annex] (
+        Metadata_SU_ERS,
+        SU_ERS_ID,
+        SU_ERS_PositedAt,
+        SU_ERS_Reliability
+    )
+    SELECT
+        v.Metadata_SU_ERS,
+        e.SU_ERS_ID,
+        v.SU_ERS_PositedAt,
+        0
+    FROM
+        @SU_ERS_Subject_Erasable v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.SU_ERS_ID,
+            p.SU_ERS_Subject_Erasable
+        FROM
+            [dbo].[SU_ERS_Subject_Erasable_Posit] p
+        JOIN
+            [dbo].[SU_ERS_Subject_Erasable_Annex] a
+        ON
+            a.SU_ERS_ID = p.SU_ERS_ID
+        AND
+            a.SU_ERS_PositedAt = (
+                SELECT
+                    max(s.SU_ERS_PositedAt)
+                FROM
+                    [dbo].[SU_ERS_Subject_Erasable_Annex] s
+                WHERE
+                    s.SU_ERS_ID = p.SU_ERS_ID
+                AND
+                    s.SU_ERS_PositedAt < v.SU_ERS_PositedAt
+            )
+        WHERE
+            p.SU_ERS_SU_ID = v.SU_ERS_SU_ID
+        AND
+            p.SU_ERS_ChangedAt = v.SU_ERS_ChangedAt
+        AND
+            a.SU_ERS_Reliability = 1
+        ORDER BY
+            a.SU_ERS_PositedAt DESC
+    ) e
+    WHERE
+        v.SU_ERS_StatementType in ('P', 'A')
+    AND
+        v.SU_ERS_Reliability = 1
+    AND
+        e.SU_ERS_Subject_Erasable <> v.SU_ERS_Subject_Erasable
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[SU_ERS_Subject_Erasable_Annex] x
+        WHERE
+            x.SU_ERS_ID = e.SU_ERS_ID
+        AND
+            x.SU_ERS_PositedAt = v.SU_ERS_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -3300,7 +4866,7 @@ BEGIN
         OB_NAM_Object_Name nvarchar(42) not null,
         OB_NAM_StatementType char(1) not null,
         primary key (
-            OB_NAM_OB_ID asc, 
+            OB_NAM_OB_ID asc,
             OB_NAM_PositedAt desc
         )
     );
@@ -3346,8 +4912,8 @@ BEGIN
         i.OB_NAM_PositedAt,
         i.OB_NAM_Reliability,
         i.OB_NAM_Object_Name,
-        CASE 
-            WHEN p.OB_NAM_ID is null 
+        CASE
+            WHEN p.OB_NAM_ID is null
             THEN 'P' -- new posit
             WHEN a.OB_NAM_ID is null
             THEN 'A' -- new assertion
@@ -3360,9 +4926,9 @@ BEGIN
         p.OB_NAM_OB_ID = i.OB_NAM_OB_ID
     AND
         p.OB_NAM_Object_Name = i.OB_NAM_Object_Name
-    LEFT JOIN 
+    LEFT JOIN
         [dbo].[OB_NAM_Object_Name_Annex] a
-    ON 
+    ON
         a.OB_NAM_ID = p.OB_NAM_ID
     AND
         a.OB_NAM_PositedAt = i.OB_NAM_PositedAt
@@ -3374,25 +4940,43 @@ BEGIN
         OB_NAM_PositedAt,
         OB_NAM_Reliability,
         OB_NAM_Object_Name,
-        OB_NAM_StatementType 
+        OB_NAM_StatementType
     )
     SELECT
-        i.OB_NAM_OB_ID,
-        a.Metadata_OB_NAM,
-        a.OB_NAM_PositedAt,
-        a.OB_NAM_Reliability,
-        p.OB_NAM_Object_Name,
+        x.OB_NAM_OB_ID,
+        x.Metadata_OB_NAM,
+        x.OB_NAM_PositedAt,
+        x.OB_NAM_Reliability,
+        x.OB_NAM_Object_Name,
         'X' -- existing data
-    FROM
-        (SELECT DISTINCT OB_NAM_OB_ID FROM @OB_NAM_Object_Name) i
-    JOIN
-        [dbo].[OB_NAM_Object_Name_Posit] p
-    ON
-        p.OB_NAM_OB_ID = i.OB_NAM_OB_ID
-    JOIN 
-        [dbo].[OB_NAM_Object_Name_Annex] a
-    ON 
-        a.OB_NAM_ID = p.OB_NAM_ID;
+    FROM (
+        SELECT
+            i.OB_NAM_OB_ID,
+            a.Metadata_OB_NAM,
+            a.OB_NAM_PositedAt,
+            a.OB_NAM_Reliability,
+            p.OB_NAM_Object_Name,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    i.OB_NAM_OB_ID,
+                    a.OB_NAM_PositedAt
+                ORDER BY
+                    a.OB_NAM_Reliability DESC
+            ) as shown
+        FROM
+            (SELECT DISTINCT OB_NAM_OB_ID FROM @OB_NAM_Object_Name) i
+        JOIN
+            [dbo].[OB_NAM_Object_Name_Posit] p
+        ON
+            p.OB_NAM_OB_ID = i.OB_NAM_OB_ID
+        JOIN
+            [dbo].[OB_NAM_Object_Name_Annex] a
+        ON
+            a.OB_NAM_ID = p.OB_NAM_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         OB_NAM_OB_ID int not null,
         Metadata_OB_NAM int not null,
@@ -3407,7 +4991,7 @@ BEGIN
         OB_NAM_PositedAt,
         OB_NAM_Reliability,
         OB_NAM_Object_Name,
-        OB_NAM_StatementType 
+        OB_NAM_StatementType
     )
     SELECT
         OB_NAM_OB_ID,
@@ -3415,12 +4999,12 @@ BEGIN
         OB_NAM_PositedAt,
         OB_NAM_Reliability,
         OB_NAM_Object_Name,
-        OB_NAM_StatementType 
+        OB_NAM_StatementType
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.OB_NAM_Reliability as previous_OB_NAM_Reliability, 
+            pre.OB_NAM_Reliability as previous_OB_NAM_Reliability,
             fol.OB_NAM_Reliability as following_OB_NAM_Reliability
         FROM
             @OB_NAM_Object_Name a
@@ -3433,7 +5017,7 @@ BEGIN
                 p.OB_NAM_OB_ID = a.OB_NAM_OB_ID
             AND
                 p.OB_NAM_PositedAt < a.OB_NAM_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.OB_NAM_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -3445,11 +5029,11 @@ BEGIN
                 p.OB_NAM_OB_ID = a.OB_NAM_OB_ID
             AND
                 p.OB_NAM_PositedAt > a.OB_NAM_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.OB_NAM_PositedAt ASC
         ) fol
         WHERE
-            (a.OB_NAM_Reliability = 0 AND isnull(pre.OB_NAM_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.OB_NAM_Reliability = 0 AND isnull(pre.OB_NAM_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.OB_NAM_Reliability = 1 AND fol.OB_NAM_Reliability = 0)
     ) i
@@ -3467,12 +5051,26 @@ BEGIN
         OB_NAM_Object_Name
     )
     SELECT
-        OB_NAM_OB_ID,
-        OB_NAM_Object_Name
+        v.OB_NAM_OB_ID,
+        v.OB_NAM_Object_Name
     FROM
-        @OB_NAM_Object_Name
+        @OB_NAM_Object_Name v
     WHERE
-        OB_NAM_StatementType = 'P';
+        v.OB_NAM_StatementType = 'P'
+    AND NOT EXISTS ( -- a posit stated at several positing times is made once
+        SELECT TOP 1
+            42
+        FROM
+            @OB_NAM_Object_Name w
+        WHERE
+            w.OB_NAM_StatementType = 'P'
+        AND
+            w.OB_NAM_OB_ID = v.OB_NAM_OB_ID
+        AND
+            w.OB_NAM_Object_Name = v.OB_NAM_Object_Name
+        AND
+            w.OB_NAM_PositedAt < v.OB_NAM_PositedAt
+    );
     INSERT INTO [dbo].[OB_NAM_Object_Name_Annex] (
         Metadata_OB_NAM,
         OB_NAM_ID,
@@ -3494,5 +5092,64 @@ BEGIN
         p.OB_NAM_Object_Name = v.OB_NAM_Object_Name
     WHERE
         OB_NAM_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect when that has another
+    -- value (a correction), so that one posit at a time is asserted
+    INSERT INTO [dbo].[OB_NAM_Object_Name_Annex] (
+        Metadata_OB_NAM,
+        OB_NAM_ID,
+        OB_NAM_PositedAt,
+        OB_NAM_Reliability
+    )
+    SELECT
+        v.Metadata_OB_NAM,
+        e.OB_NAM_ID,
+        v.OB_NAM_PositedAt,
+        0
+    FROM
+        @OB_NAM_Object_Name v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.OB_NAM_ID,
+            p.OB_NAM_Object_Name
+        FROM
+            [dbo].[OB_NAM_Object_Name_Posit] p
+        JOIN
+            [dbo].[OB_NAM_Object_Name_Annex] a
+        ON
+            a.OB_NAM_ID = p.OB_NAM_ID
+        AND
+            a.OB_NAM_PositedAt = (
+                SELECT
+                    max(s.OB_NAM_PositedAt)
+                FROM
+                    [dbo].[OB_NAM_Object_Name_Annex] s
+                WHERE
+                    s.OB_NAM_ID = p.OB_NAM_ID
+                AND
+                    s.OB_NAM_PositedAt < v.OB_NAM_PositedAt
+            )
+        WHERE
+            p.OB_NAM_OB_ID = v.OB_NAM_OB_ID
+        AND
+            a.OB_NAM_Reliability = 1
+        ORDER BY
+            a.OB_NAM_PositedAt DESC
+    ) e
+    WHERE
+        v.OB_NAM_StatementType in ('P', 'A')
+    AND
+        v.OB_NAM_Reliability = 1
+    AND
+        e.OB_NAM_Object_Name <> v.OB_NAM_Object_Name
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [dbo].[OB_NAM_Object_Name_Annex] x
+        WHERE
+            x.OB_NAM_ID = e.OB_NAM_ID
+        AND
+            x.OB_NAM_PositedAt = v.OB_NAM_PositedAt
+    );
 END
 GO

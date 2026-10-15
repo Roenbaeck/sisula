@@ -29,7 +29,11 @@ BEGIN
         Metadata_EV int not null,
         EV_QTY_EV_ID int null,
         Metadata_EV_QTY int null,
-        EV_QTY_Event_Quantity int null
+        EV_QTY_Event_Quantity int null,
+        EV_PLC_EV_ID int null,
+        Metadata_EV_PLC int null,
+        EV_PLC_ChangedAt datetime2 null,
+        EV_PLC_Event_Place nvarchar(42) null
     );
     -- a nexus row for each row without an identity; the merge outputs every new identity together with the values of
     -- the row it was made for, so each new row keeps its own attributes, also when several are inserted at once
@@ -49,7 +53,11 @@ BEGIN
         i.Metadata_EV,
         ISNULL(i.EV_QTY_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
-        i.EV_QTY_Event_Quantity
+        i.EV_QTY_Event_Quantity,
+        ISNULL(i.EV_PLC_EV_ID, inserted.EV_ID),
+        ISNULL(i.Metadata_EV_PLC, i.Metadata_EV),
+        ISNULL(i.EV_PLC_ChangedAt, @now),
+        i.EV_PLC_Event_Place
     INTO
         @inserted;
     -- the rows that come with the identity of a nexus row
@@ -59,7 +67,11 @@ BEGIN
         i.Metadata_EV,
         ISNULL(i.EV_QTY_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_QTY, i.Metadata_EV),
-        i.EV_QTY_Event_Quantity
+        i.EV_QTY_Event_Quantity,
+        ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
+        ISNULL(i.Metadata_EV_PLC, i.Metadata_EV),
+        ISNULL(i.EV_PLC_ChangedAt, @now),
+        i.EV_PLC_Event_Place
     FROM
         inserted i
     WHERE
@@ -77,6 +89,21 @@ BEGIN
         @inserted i
     WHERE
         i.EV_QTY_Event_Quantity is not null;
+    INSERT INTO [dbo].[EV_PLC_Event_Place] (
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT DISTINCT
+        i.Metadata_EV_PLC,
+        i.EV_PLC_EV_ID,
+        i.EV_PLC_ChangedAt,
+        i.EV_PLC_Event_Place
+    FROM
+        @inserted i
+    WHERE
+        i.EV_PLC_Event_Place is not null;
 END
 GO
 -- UPDATE trigger -----------------------------------------------------------------------------------------------------
@@ -91,6 +118,8 @@ BEGIN
     SET @now = sysdatetime();
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(SU_ID_for))
+        RAISERROR('The role column SU_ID_for is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_EV_ID))
         RAISERROR('The foreign key column EV_QTY_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_Event_Quantity))
@@ -121,6 +150,42 @@ BEGIN
             d.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
         );
     END
+    IF(UPDATE(EV_PLC_EV_ID))
+        RAISERROR('The foreign key column EV_PLC_EV_ID is not updatable.', 16, 1);
+    IF(UPDATE(EV_PLC_Event_Place))
+    BEGIN
+        INSERT INTO [dbo].[EV_PLC_Event_Place] (
+            Metadata_EV_PLC,
+            EV_PLC_EV_ID,
+            EV_PLC_ChangedAt,
+            EV_PLC_Event_Place
+        )
+        SELECT DISTINCT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_PLC
+            END, i.Metadata_EV),
+            ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
+            cast(ISNULL(CASE
+                WHEN i.EV_PLC_Event_Place is null THEN i.EV_PLC_ChangedAt
+                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+            END, @now) as datetime2),
+            i.EV_PLC_Event_Place
+        FROM
+            inserted i
+        LEFT JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        WHERE
+            i.EV_PLC_Event_Place is not null
+        AND ( -- a value that is left as it is states nothing
+            UPDATE(EV_PLC_ChangedAt) OR
+            d.EV_PLC_Event_Place is null OR
+            d.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
+        );
+    END
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -138,6 +203,15 @@ BEGIN
         deleted d
     ON
         d.EV_QTY_EV_ID = [QTY].EV_QTY_EV_ID;
+    DELETE [PLC]
+    FROM
+        [dbo].[EV_PLC_Event_Place] [PLC]
+    JOIN
+        deleted d
+    ON
+        d.EV_PLC_ChangedAt = [PLC].EV_PLC_ChangedAt
+    AND
+        d.EV_PLC_EV_ID = [PLC].EV_PLC_EV_ID;
     DECLARE @deleted TABLE (
         EV_ID int NOT NULL PRIMARY KEY
     );
@@ -151,6 +225,12 @@ BEGIN
             SELECT TOP 1 EV_QTY_EV_ID
             FROM [dbo].[EV_QTY_Event_Quantity] WITH(NOLOCK)
             WHERE EV_QTY_EV_ID = [EV].EV_ID
+        )
+        AND
+        NOT EXISTS (
+            SELECT TOP 1 EV_PLC_EV_ID
+            FROM [dbo].[EV_PLC_Event_Place] WITH(NOLOCK)
+            WHERE EV_PLC_EV_ID = [EV].EV_ID
         )
     ) a
     JOIN deleted d

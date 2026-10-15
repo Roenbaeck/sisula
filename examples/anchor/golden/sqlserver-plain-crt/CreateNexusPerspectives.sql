@@ -152,7 +152,7 @@ GO
 CREATE VIEW [dbo].[lEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
@@ -192,7 +192,7 @@ GO
 CREATE VIEW [dbo].[nEV_Event]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM

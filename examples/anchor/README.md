@@ -32,7 +32,7 @@ these ways:
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
 | `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, and `sqlserver-keys`, `-bi` and `-crt` from `sqlserver-base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
-| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers` and `sqlserver-keys` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
+| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers`, `sqlserver-keys` and `sqlserver-indecisive-crt` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -70,8 +70,13 @@ default): `sqlserver-tests/keys-<t>.sql` loads stages, programs, events, actors 
 `sqlserver-keys`, then looks them up through every kind of route, reads a key that has changed at a time, and checks
 that a duplicate key and a route that is not functional are reported, that the refresh procedure fills the key table
 and fails on a duplicate, that the routes that break a rule are left out, and in crt that a key is per positor. The
-tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that run here; run them after the
-golden files of the test models have been regenerated.
+third suite, `-Suite indecisive`, is crt only: `sqlserver-indecisive-crt.xml` is the crt trigger model with
+decisiveness off, and `sqlserver-tests/indecisive-crt.sql` checks that an inserted value is then an alternative while
+an update is a correction that retracts the shown value. Where there is a `sqlserver-tests/<suite>-<t>-upgrade.sql`,
+as for the bitemporal triggers, the tests are followed by an upgrade: that script makes the database look like one
+that older generated SQL made, the generated SQL runs on it again, and `<suite>-<t>-upgraded.sql` checks the result.
+The tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that run here; run them after
+the golden files of the test models have been regenerated.
 
 ## How it works
 

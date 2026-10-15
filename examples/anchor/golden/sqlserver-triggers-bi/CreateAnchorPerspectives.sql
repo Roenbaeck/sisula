@@ -149,10 +149,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNAM]
     WHERE
-		[rNAM].SU_NAM_SU_ID = [SU].SU_ID
-	AND 
-		[rNAM].SU_NAM_Reliability = 1
-	ORDER BY
+        [rNAM].SU_NAM_SU_ID = [SU].SU_ID
+    AND
+        [rNAM].SU_NAM_Reliability = 1
+    ORDER BY
         [rNAM].SU_NAM_PositedAt DESC
 ) [NAM]
 OUTER APPLY (
@@ -168,10 +168,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rCOD]
     WHERE
-		[rCOD].SU_COD_SU_ID = [SU].SU_ID
-	AND 
-		[rCOD].SU_COD_Reliability = 1
-	ORDER BY
+        [rCOD].SU_COD_SU_ID = [SU].SU_ID
+    AND
+        [rCOD].SU_COD_Reliability = 1
+    ORDER BY
         [rCOD].SU_COD_PositedAt DESC
 ) [COD]
 OUTER APPLY (
@@ -193,10 +193,10 @@ OUTER APPLY (
     ON
         [kGRD].GRD_ID = [rGRD].SU_GRD_GRD_ID
     WHERE
-		[rGRD].SU_GRD_SU_ID = [SU].SU_ID
-	AND 
-		[rGRD].SU_GRD_Reliability = 1
-	ORDER BY
+        [rGRD].SU_GRD_SU_ID = [SU].SU_ID
+    AND
+        [rGRD].SU_GRD_Reliability = 1
+    ORDER BY
         [rGRD].SU_GRD_PositedAt DESC
 ) [GRD]
 OUTER APPLY (
@@ -213,10 +213,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNOT]
     WHERE
-		[rNOT].SU_NOT_SU_ID = [SU].SU_ID
-	AND 
-		[rNOT].SU_NOT_Reliability = 1
-	ORDER BY
+        [rNOT].SU_NOT_SU_ID = [SU].SU_ID
+    AND
+        [rNOT].SU_NOT_Reliability = 1
+    ORDER BY
         [rNOT].SU_NOT_PositedAt DESC
 ) [NOT]
 OUTER APPLY (
@@ -234,10 +234,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rTTL]
     WHERE
-		[rTTL].SU_TTL_SU_ID = [SU].SU_ID
-	AND 
-		[rTTL].SU_TTL_Reliability = 1
-	ORDER BY
+        [rTTL].SU_TTL_SU_ID = [SU].SU_ID
+    AND
+        [rTTL].SU_TTL_Reliability = 1
+    ORDER BY
         [rTTL].SU_TTL_ChangedAt DESC,
         [rTTL].SU_TTL_PositedAt DESC
 ) [TTL]
@@ -256,10 +256,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rSTA]
     WHERE
-		[rSTA].SU_STA_SU_ID = [SU].SU_ID
-	AND 
-		[rSTA].SU_STA_Reliability = 1
-	ORDER BY
+        [rSTA].SU_STA_SU_ID = [SU].SU_ID
+    AND
+        [rSTA].SU_STA_Reliability = 1
+    ORDER BY
         [rSTA].SU_STA_ChangedAt DESC,
         [rSTA].SU_STA_PositedAt DESC
 ) [STA]
@@ -278,10 +278,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rLBL]
     WHERE
-		[rLBL].SU_LBL_SU_ID = [SU].SU_ID
-	AND 
-		[rLBL].SU_LBL_Reliability = 1
-	ORDER BY
+        [rLBL].SU_LBL_SU_ID = [SU].SU_ID
+    AND
+        [rLBL].SU_LBL_Reliability = 1
+    ORDER BY
         [rLBL].SU_LBL_ChangedAt DESC,
         [rLBL].SU_LBL_PositedAt DESC
 ) [LBL]
@@ -300,10 +300,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rTAG]
     WHERE
-		[rTAG].SU_TAG_SU_ID = [SU].SU_ID
-	AND 
-		[rTAG].SU_TAG_Reliability = 1
-	ORDER BY
+        [rTAG].SU_TAG_SU_ID = [SU].SU_ID
+    AND
+        [rTAG].SU_TAG_Reliability = 1
+    ORDER BY
         [rTAG].SU_TAG_ChangedAt DESC,
         [rTAG].SU_TAG_PositedAt DESC
 ) [TAG]
@@ -328,10 +328,10 @@ OUTER APPLY (
     ON
         [kLVL].GRD_ID = [rLVL].SU_LVL_GRD_ID
     WHERE
-		[rLVL].SU_LVL_SU_ID = [SU].SU_ID
-	AND 
-		[rLVL].SU_LVL_Reliability = 1
-	ORDER BY
+        [rLVL].SU_LVL_SU_ID = [SU].SU_ID
+    AND
+        [rLVL].SU_LVL_Reliability = 1
+    ORDER BY
         [rLVL].SU_LVL_ChangedAt DESC,
         [rLVL].SU_LVL_PositedAt DESC
 ) [LVL]
@@ -351,10 +351,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rTXT]
     WHERE
-		[rTXT].SU_TXT_SU_ID = [SU].SU_ID
-	AND 
-		[rTXT].SU_TXT_Reliability = 1
-	ORDER BY
+        [rTXT].SU_TXT_SU_ID = [SU].SU_ID
+    AND
+        [rTXT].SU_TXT_Reliability = 1
+    ORDER BY
         [rTXT].SU_TXT_ChangedAt DESC,
         [rTXT].SU_TXT_PositedAt DESC
 ) [TXT]
@@ -373,10 +373,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rASR]
     WHERE
-		[rASR].SU_ASR_SU_ID = [SU].SU_ID
-	AND 
-		[rASR].SU_ASR_Reliability = 1
-	ORDER BY
+        [rASR].SU_ASR_SU_ID = [SU].SU_ID
+    AND
+        [rASR].SU_ASR_Reliability = 1
+    ORDER BY
         [rASR].SU_ASR_ChangedAt DESC,
         [rASR].SU_ASR_PositedAt DESC
 ) [ASR]
@@ -395,10 +395,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rERS]
     WHERE
-		[rERS].SU_ERS_SU_ID = [SU].SU_ID
-	AND 
-		[rERS].SU_ERS_Reliability = 1
-	ORDER BY
+        [rERS].SU_ERS_SU_ID = [SU].SU_ID
+    AND
+        [rERS].SU_ERS_Reliability = 1
+    ORDER BY
         [rERS].SU_ERS_ChangedAt DESC,
         [rERS].SU_ERS_PositedAt DESC
 ) [ERS];
@@ -600,10 +600,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rNAM]
     WHERE
-		[rNAM].OB_NAM_OB_ID = [OB].OB_ID
-	AND 
-		[rNAM].OB_NAM_Reliability = 1
-	ORDER BY
+        [rNAM].OB_NAM_OB_ID = [OB].OB_ID
+    AND
+        [rNAM].OB_NAM_Reliability = 1
+    ORDER BY
         [rNAM].OB_NAM_PositedAt DESC
 ) [NAM];
 GO

@@ -66,9 +66,94 @@ BEGIN
             x.EV_QTY_EV_ID = i.EV_QTY_EV_ID
         AND
             x.EV_QTY_Event_Quantity = i.EV_QTY_Event_Quantity
-    ); 
+    );
 END
-GO 
+GO
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_PLC_Event_Place instead of INSERT trigger on EV_PLC_Event_Place
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.it_EV_PLC_Event_Place', 'TR') IS NOT NULL
+DROP TRIGGER [dbo].[it_EV_PLC_Event_Place];
+GO
+CREATE TRIGGER [dbo].[it_EV_PLC_Event_Place] ON [dbo].[EV_PLC_Event_Place]
+INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @now datetime2;
+    SET @now = sysdatetime();
+    DECLARE @EV_PLC_Event_Place TABLE (
+    EV_PLC_EV_ID int not null,
+        Metadata_EV_PLC int not null,
+        EV_PLC_ChangedAt datetime2 not null,
+        EV_PLC_Event_Place nvarchar(42) not null,
+        EV_PLC_StatementType char(1) not null,
+        primary key (
+            EV_PLC_EV_ID asc,
+            EV_PLC_ChangedAt desc
+        )
+    );
+    INSERT INTO @EV_PLC_Event_Place
+    SELECT
+        i.EV_PLC_EV_ID,
+        i.Metadata_EV_PLC,
+        i.EV_PLC_ChangedAt,
+        i.EV_PLC_Event_Place,
+        'P' -- new posit
+    FROM
+        inserted i
+    WHERE NOT EXISTS (
+        SELECT TOP 1
+            x.EV_PLC_EV_ID
+        FROM
+            [dbo].[EV_PLC_Event_Place] x
+        WHERE
+            x.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+        AND
+            x.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+        AND
+            x.EV_PLC_Event_Place = i.EV_PLC_Event_Place
+    ); -- the posit must be different (exclude the identical)
+    -- another value at a time that already has a value is a contradiction
+    DECLARE @message varchar(max);
+    SET @message = (
+        SELECT TOP 1
+            i.EV_PLC_EV_ID,
+            i.EV_PLC_ChangedAt
+        FROM
+            @EV_PLC_Event_Place i
+        JOIN
+            [dbo].[EV_PLC_Event_Place] x
+        ON
+            x.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+        AND
+            x.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+        FOR XML PATH('')
+    );
+    IF @message is not null
+    BEGIN
+        SET @message = 'Contradiction in EV_PLC_Event_Place for: ' + @message;
+        RAISERROR(@message, 16, 1);
+        ROLLBACK;
+        RETURN;
+    END
+    INSERT INTO [dbo].[EV_PLC_Event_Place] (
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    )
+    SELECT
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_ChangedAt,
+        EV_PLC_Event_Place
+    FROM
+        @EV_PLC_Event_Place
+    WHERE
+        EV_PLC_StatementType = 'P';
+END
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_NAM_Subject_Name instead of INSERT trigger on SU_NAM_Subject_Name
 -----------------------------------------------------------------------------------------------------------------------
@@ -125,9 +210,9 @@ BEGIN
             x.SU_NAM_SU_ID = i.SU_NAM_SU_ID
         AND
             x.SU_NAM_Subject_Name = i.SU_NAM_Subject_Name
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_COD_Subject_Code instead of INSERT trigger on SU_COD_Subject_Code
 -----------------------------------------------------------------------------------------------------------------------
@@ -184,9 +269,9 @@ BEGIN
             x.SU_COD_SU_ID = i.SU_COD_SU_ID
         AND
             x.SU_COD_Subject_Code = i.SU_COD_Subject_Code
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_GRD_Subject_Grade instead of INSERT trigger on SU_GRD_Subject_Grade
 -----------------------------------------------------------------------------------------------------------------------
@@ -243,9 +328,9 @@ BEGIN
             x.SU_GRD_SU_ID = i.SU_GRD_SU_ID
         AND
             x.SU_GRD_GRD_ID = i.SU_GRD_GRD_ID
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_NOT_Subject_Note instead of INSERT trigger on SU_NOT_Subject_Note
 -----------------------------------------------------------------------------------------------------------------------
@@ -271,7 +356,7 @@ BEGIN
         ON
             x.SU_NOT_SU_ID = i.SU_NOT_SU_ID
         WHERE NOT (
-            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
+            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
         )
         FOR XML PATH('')
     );
@@ -301,10 +386,10 @@ BEGIN
         WHERE
             x.SU_NOT_SU_ID = i.SU_NOT_SU_ID
         AND
-            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) 
-    ); 
+            x.SU_NOT_Checksum = dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_SU_TTL_Subject_Title instead of INSERT trigger on SU_TTL_Subject_Title
 -----------------------------------------------------------------------------------------------------------------------
@@ -325,7 +410,7 @@ BEGIN
         SU_TTL_Subject_Title nvarchar(42) not null,
         SU_TTL_StatementType char(1) not null,
         primary key (
-            SU_TTL_SU_ID asc, 
+            SU_TTL_SU_ID asc,
             SU_TTL_ChangedAt desc
         )
     );
@@ -410,7 +495,7 @@ BEGIN
         SU_STA_Subject_State nvarchar(42) not null,
         SU_STA_StatementType char(1) not null,
         primary key (
-            SU_STA_SU_ID asc, 
+            SU_STA_SU_ID asc,
             SU_STA_ChangedAt desc
         )
     );
@@ -495,7 +580,7 @@ BEGIN
         SU_LBL_Subject_Label nvarchar(42) not null,
         SU_LBL_StatementType char(1) not null,
         primary key (
-            SU_LBL_SU_ID asc, 
+            SU_LBL_SU_ID asc,
             SU_LBL_ChangedAt desc
         )
     );
@@ -551,9 +636,9 @@ BEGIN
         p.SU_LBL_Subject_Label,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            SU_LBL_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_LBL_SU_ID
+        FROM
             @SU_LBL_Subject_Label
     ) i
     JOIN
@@ -565,25 +650,25 @@ BEGIN
         SU_LBL_ChangedAt datetime2 not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_LBL_SU_ID,
         x.SU_LBL_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @SU_LBL_Subject_Label a
         OUTER APPLY (
             SELECT TOP 1
                 h.SU_LBL_Subject_Label
-            FROM 
+            FROM
                 @SU_LBL_Subject_Label h
             WHERE
                 h.SU_LBL_SU_ID = a.SU_LBL_SU_ID
             AND
                 h.SU_LBL_ChangedAt < a.SU_LBL_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_LBL_ChangedAt DESC
         ) pre
         WHERE
@@ -592,15 +677,15 @@ BEGIN
     WHERE
         x.SU_LBL_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[dbo].[SU_LBL_Subject_Label] a
-	JOIN 
-		@restated d
-	ON 
-		d.SU_LBL_SU_ID = a.SU_LBL_SU_ID
-	AND 
-		d.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt; 
+    DELETE a
+    FROM
+        [dbo].[SU_LBL_Subject_Label] a
+    JOIN
+        @restated d
+    ON
+        d.SU_LBL_SU_ID = a.SU_LBL_SU_ID
+    AND
+        d.SU_LBL_ChangedAt = a.SU_LBL_ChangedAt;
     INSERT INTO [dbo].[SU_LBL_Subject_Label] (
         Metadata_SU_LBL,
         SU_LBL_SU_ID,
@@ -638,7 +723,7 @@ BEGIN
         SU_TAG_Subject_Tag nvarchar(42) not null,
         SU_TAG_StatementType char(1) not null,
         primary key (
-            SU_TAG_SU_ID asc, 
+            SU_TAG_SU_ID asc,
             SU_TAG_ChangedAt desc
         )
     );
@@ -694,9 +779,9 @@ BEGIN
         p.SU_TAG_Subject_Tag,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            SU_TAG_SU_ID 
-        FROM 
+        SELECT DISTINCT
+            SU_TAG_SU_ID
+        FROM
             @SU_TAG_Subject_Tag
     ) i
     JOIN
@@ -708,25 +793,25 @@ BEGIN
         SU_TAG_ChangedAt datetime2 not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.SU_TAG_SU_ID,
         x.SU_TAG_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @SU_TAG_Subject_Tag a
         OUTER APPLY (
             SELECT TOP 1
                 h.SU_TAG_Subject_Tag
-            FROM 
+            FROM
                 @SU_TAG_Subject_Tag h
             WHERE
                 h.SU_TAG_SU_ID = a.SU_TAG_SU_ID
             AND
                 h.SU_TAG_ChangedAt < a.SU_TAG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.SU_TAG_ChangedAt DESC
         ) pre
         WHERE
@@ -735,15 +820,15 @@ BEGIN
     WHERE
         x.SU_TAG_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[dbo].[SU_TAG_Subject_Tag] a
-	JOIN 
-		@restated d
-	ON 
-		d.SU_TAG_SU_ID = a.SU_TAG_SU_ID
-	AND 
-		d.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt; 
+    DELETE a
+    FROM
+        [dbo].[SU_TAG_Subject_Tag] a
+    JOIN
+        @restated d
+    ON
+        d.SU_TAG_SU_ID = a.SU_TAG_SU_ID
+    AND
+        d.SU_TAG_ChangedAt = a.SU_TAG_ChangedAt;
     INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
         Metadata_SU_TAG,
         SU_TAG_SU_ID,
@@ -778,10 +863,10 @@ BEGIN
     SU_LVL_SU_ID int not null,
         Metadata_SU_LVL int not null,
         SU_LVL_ChangedAt datetime2 not null,
-        SU_LVL_GRD_ID tinyint not null, 
+        SU_LVL_GRD_ID tinyint not null,
         SU_LVL_StatementType char(1) not null,
         primary key (
-            SU_LVL_SU_ID asc, 
+            SU_LVL_SU_ID asc,
             SU_LVL_ChangedAt desc
         )
     );
@@ -867,7 +952,7 @@ BEGIN
         SU_TXT_Checksum varbinary(16) not null,
         SU_TXT_StatementType char(1) not null,
         primary key (
-            SU_TXT_SU_ID asc, 
+            SU_TXT_SU_ID asc,
             SU_TXT_ChangedAt desc
         )
     );
@@ -891,7 +976,7 @@ BEGIN
         AND
             x.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
         AND
-            x.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) 
+            x.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
     ); -- the posit must be different (exclude the identical)
     -- another value at a time that already has a value is a contradiction
     DECLARE @message varchar(max);
@@ -953,7 +1038,7 @@ BEGIN
         SU_ASR_Subject_Assessment nvarchar(42) not null,
         SU_ASR_StatementType char(1) not null,
         primary key (
-            SU_ASR_SU_ID asc, 
+            SU_ASR_SU_ID asc,
             SU_ASR_ChangedAt desc
         )
     );
@@ -1038,7 +1123,7 @@ BEGIN
         SU_ERS_Subject_Erasable nvarchar(42) not null,
         SU_ERS_StatementType char(1) not null,
         primary key (
-            SU_ERS_SU_ID asc, 
+            SU_ERS_SU_ID asc,
             SU_ERS_ChangedAt desc
         )
     );
@@ -1159,6 +1244,6 @@ BEGIN
             x.OB_NAM_OB_ID = i.OB_NAM_OB_ID
         AND
             x.OB_NAM_Object_Name = i.OB_NAM_Object_Name
-    ); 
+    );
 END
-GO 
+GO

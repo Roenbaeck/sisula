@@ -66,9 +66,9 @@ BEGIN
             x.EV_DAT_EV_ID = i.EV_DAT_EV_ID
         AND
             x.EV_DAT_Event_Date = i.EV_DAT_Event_Date
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
 -----------------------------------------------------------------------------------------------------------------------
@@ -128,13 +128,13 @@ BEGIN
             [attributes].[EV_AUD_Event_Audience] x
         WHERE
             x.EV_AUD_EQ = i.EV_AUD_EQ
-        AND 
+        AND
             x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
         AND
             x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
 -----------------------------------------------------------------------------------------------------------------------
@@ -191,9 +191,9 @@ BEGIN
             x.EV_REV_EV_ID = i.EV_REV_EV_ID
         AND
             x.EV_REV_Event_Revenue = i.EV_REV_Event_Revenue
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_EV_STA_Event_Status instead of INSERT trigger on EV_STA_Event_Status
 -----------------------------------------------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ BEGIN
         EV_STA_StatementType char(1) not null,
         primary key (
             EV_STA_EQ asc,
-            EV_STA_EV_ID asc, 
+            EV_STA_EV_ID asc,
             EV_STA_ChangedAt desc
         )
     );
@@ -237,7 +237,7 @@ BEGIN
             [attributes].[EV_STA_Event_Status] x
         WHERE
             x.EV_STA_EQ = i.EV_STA_EQ
-        AND 
+        AND
             x.EV_STA_EV_ID = i.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = i.EV_STA_ChangedAt
@@ -345,9 +345,9 @@ BEGIN
             x.EV_UTL_EV_ID = i.EV_UTL_EV_ID
         AND
             x.EV_UTL_UTL_ID = i.EV_UTL_UTL_ID
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_EV_LVL_Event_Level instead of INSERT trigger on EV_LVL_Event_Level
 -----------------------------------------------------------------------------------------------------------------------
@@ -365,10 +365,10 @@ BEGIN
     EV_LVL_EV_ID numeric(12,0) not null,
         Metadata_EV_LVL int not null,
         EV_LVL_ChangedAt date not null,
-        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_PLV_ID tinyint not null,
         EV_LVL_StatementType char(1) not null,
         primary key (
-            EV_LVL_EV_ID asc, 
+            EV_LVL_EV_ID asc,
             EV_LVL_ChangedAt desc
         )
     );
@@ -455,7 +455,7 @@ BEGIN
         ST_NAM_StatementType char(1) not null,
         primary key (
             ST_NAM_EQ asc,
-            ST_NAM_ST_ID asc, 
+            ST_NAM_ST_ID asc,
             ST_NAM_ChangedAt desc
         )
     );
@@ -476,7 +476,7 @@ BEGIN
             [attributes].[ST_NAM_Stage_Name] x
         WHERE
             x.ST_NAM_EQ = i.ST_NAM_EQ
-        AND 
+        AND
             x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
@@ -556,7 +556,7 @@ BEGIN
         AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         WHERE NOT (
-            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         )
         FOR XML PATH('')
     );
@@ -587,13 +587,13 @@ BEGIN
             [attributes].[ST_LOC_Stage_Location] x
         WHERE
             x.ST_LOC_EQ = i.ST_LOC_EQ
-        AND 
+        AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
-            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
-    ); 
+            x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_ST_AVG_Stage_Average instead of INSERT trigger on ST_AVG_Stage_Average
 -----------------------------------------------------------------------------------------------------------------------
@@ -611,10 +611,10 @@ BEGIN
     ST_AVG_ST_ID int not null,
         Metadata_ST_AVG int not null,
         ST_AVG_ChangedAt datetime2 not null,
-        ST_AVG_UTL_ID tinyint not null, 
+        ST_AVG_UTL_ID tinyint not null,
         ST_AVG_StatementType char(1) not null,
         primary key (
-            ST_AVG_ST_ID asc, 
+            ST_AVG_ST_ID asc,
             ST_AVG_ChangedAt desc
         )
     );
@@ -670,9 +670,9 @@ BEGIN
         p.ST_AVG_UTL_ID,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            ST_AVG_ST_ID 
-        FROM 
+        SELECT DISTINCT
+            ST_AVG_ST_ID
+        FROM
             @ST_AVG_Stage_Average
     ) i
     JOIN
@@ -684,25 +684,25 @@ BEGIN
         ST_AVG_ChangedAt datetime2 not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.ST_AVG_ST_ID,
         x.ST_AVG_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @ST_AVG_Stage_Average a
         OUTER APPLY (
             SELECT TOP 1
                 h.ST_AVG_UTL_ID
-            FROM 
+            FROM
                 @ST_AVG_Stage_Average h
             WHERE
                 h.ST_AVG_ST_ID = a.ST_AVG_ST_ID
             AND
                 h.ST_AVG_ChangedAt < a.ST_AVG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_AVG_ChangedAt DESC
         ) pre
         WHERE
@@ -711,15 +711,15 @@ BEGIN
     WHERE
         x.ST_AVG_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[attributes].[ST_AVG_Stage_Average] a
-	JOIN 
-		@restated d
-	ON 
-		d.ST_AVG_ST_ID = a.ST_AVG_ST_ID
-	AND 
-		d.ST_AVG_ChangedAt = a.ST_AVG_ChangedAt; 
+    DELETE a
+    FROM
+        [attributes].[ST_AVG_Stage_Average] a
+    JOIN
+        @restated d
+    ON
+        d.ST_AVG_ST_ID = a.ST_AVG_ST_ID
+    AND
+        d.ST_AVG_ChangedAt = a.ST_AVG_ChangedAt;
     INSERT INTO [attributes].[ST_AVG_Stage_Average] (
         Metadata_ST_AVG,
         ST_AVG_ST_ID,
@@ -793,9 +793,9 @@ BEGIN
             x.ST_MIN_ST_ID = i.ST_MIN_ST_ID
         AND
             x.ST_MIN_UTL_ID = i.ST_MIN_UTL_ID
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_AC_NAM_Actor_Name instead of INSERT trigger on AC_NAM_Actor_Name
 -----------------------------------------------------------------------------------------------------------------------
@@ -810,14 +810,14 @@ BEGIN
     DECLARE @now datetime2;
     SET @now = sysdatetime();
     IF NOT EXISTS (
-        SELECT * FROM sys.openkeys 
+        SELECT * FROM sys.openkeys
         WHERE [key_name] = 'PII' AND [database_id] = DB_ID()
     ) AND EXISTS (
         SELECT TOP 1 AC_NAM_AC_ID FROM inserted
     )
     BEGIN
         RAISERROR('The key [PII] must be open in order to modify the attribute AC_NAM_Actor_Name.', 16, 1);
-    END 
+    END
     DECLARE @AC_NAM_Actor_Name TABLE (
     AC_NAM_AC_ID smallint not null,
         Metadata_AC_NAM int not null,
@@ -825,7 +825,7 @@ BEGIN
         AC_NAM_Actor_Name varbinary(max) not null,
         AC_NAM_StatementType char(1) not null,
         primary key (
-            AC_NAM_AC_ID asc, 
+            AC_NAM_AC_ID asc,
             AC_NAM_ChangedAt desc
         )
     );
@@ -946,9 +946,9 @@ BEGIN
             x.AC_GEN_AC_ID = i.AC_GEN_AC_ID
         AND
             x.AC_GEN_GEN_ID = i.AC_GEN_GEN_ID
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_AC_PLV_Actor_ProfessionalLevel instead of INSERT trigger on AC_PLV_Actor_ProfessionalLevel
 -----------------------------------------------------------------------------------------------------------------------
@@ -966,10 +966,10 @@ BEGIN
     AC_PLV_AC_ID smallint not null,
         Metadata_AC_PLV int not null,
         AC_PLV_ChangedAt datetime2 not null,
-        AC_PLV_PLV_ID tinyint not null, 
+        AC_PLV_PLV_ID tinyint not null,
         AC_PLV_StatementType char(1) not null,
         primary key (
-            AC_PLV_AC_ID asc, 
+            AC_PLV_AC_ID asc,
             AC_PLV_ChangedAt desc
         )
     );
@@ -1090,9 +1090,9 @@ BEGIN
             x.PR_NAM_PR_ID = i.PR_NAM_PR_ID
         AND
             x.PR_NAM_Program_Name = i.PR_NAM_Program_Name
-    ); 
+    );
 END
-GO 
+GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
 -- it_PR_LEN_Program_Length instead of INSERT trigger on PR_LEN_Program_Length
 -----------------------------------------------------------------------------------------------------------------------
@@ -1113,7 +1113,7 @@ BEGIN
         PR_LEN_Program_Length time not null,
         PR_LEN_StatementType char(1) not null,
         primary key (
-            PR_LEN_PR_ID asc, 
+            PR_LEN_PR_ID asc,
             PR_LEN_ChangedAt desc
         )
     );
@@ -1169,9 +1169,9 @@ BEGIN
         p.PR_LEN_Program_Length,
         'X' -- existing data
     FROM (
-        SELECT DISTINCT 
-            PR_LEN_PR_ID 
-        FROM 
+        SELECT DISTINCT
+            PR_LEN_PR_ID
+        FROM
             @PR_LEN_Program_Length
     ) i
     JOIN
@@ -1183,25 +1183,25 @@ BEGIN
         PR_LEN_ChangedAt date not null
     );
     INSERT INTO @restated
-    SELECT 
+    SELECT
         x.PR_LEN_PR_ID,
         x.PR_LEN_ChangedAt
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*
-        FROM 
+        FROM
             @PR_LEN_Program_Length a
         OUTER APPLY (
             SELECT TOP 1
                 h.PR_LEN_Program_Length
-            FROM 
+            FROM
                 @PR_LEN_Program_Length h
             WHERE
                 h.PR_LEN_PR_ID = a.PR_LEN_PR_ID
             AND
                 h.PR_LEN_ChangedAt < a.PR_LEN_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.PR_LEN_ChangedAt DESC
         ) pre
         WHERE
@@ -1210,15 +1210,15 @@ BEGIN
     WHERE
         x.PR_LEN_StatementType = 'X';
     -- remove the quenches (should happen rarely)
-	DELETE a
-	FROM 
-		[attributes].[PR_LEN_Program_Length] a
-	JOIN 
-		@restated d
-	ON 
-		d.PR_LEN_PR_ID = a.PR_LEN_PR_ID
-	AND 
-		d.PR_LEN_ChangedAt = a.PR_LEN_ChangedAt; 
+    DELETE a
+    FROM
+        [attributes].[PR_LEN_Program_Length] a
+    JOIN
+        @restated d
+    ON
+        d.PR_LEN_PR_ID = a.PR_LEN_PR_ID
+    AND
+        d.PR_LEN_ChangedAt = a.PR_LEN_ChangedAt;
     INSERT INTO [attributes].[PR_LEN_Program_Length] (
         Metadata_PR_LEN,
         PR_LEN_PR_ID,

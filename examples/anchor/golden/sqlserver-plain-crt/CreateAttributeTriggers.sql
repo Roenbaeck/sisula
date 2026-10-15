@@ -162,14 +162,30 @@ BEGIN
             EV_DAT_Event_Date
         )
         SELECT
-            EV_ID,
-            EV_DAT_Event_Date
+            v.EV_ID,
+            v.EV_DAT_Event_Date
         FROM
-            @EV_DAT_Event_Date
+            @EV_DAT_Event_Date v
         WHERE
-            EV_DAT_Version = @currentVersion
+            v.EV_DAT_Version = @currentVersion
         AND
-            EV_DAT_StatementType in ('N');
+            v.EV_DAT_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_DAT_Event_Date w
+            WHERE
+                w.EV_DAT_Version = v.EV_DAT_Version
+            AND
+                w.EV_DAT_Positor < v.EV_DAT_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+            AND
+                w.EV_DAT_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
             EV_DAT_ID,
             EV_DAT_Positor,
@@ -193,6 +209,74 @@ BEGIN
             v.EV_DAT_Version = @currentVersion
         AND
             EV_DAT_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
+            EV_DAT_ID,
+            EV_DAT_Positor,
+            EV_DAT_PositedAt,
+            EV_DAT_Reliability
+        )
+        SELECT
+            e.EV_DAT_ID,
+            v.EV_DAT_Positor,
+            v.EV_DAT_PositedAt,
+            0
+        FROM
+            @EV_DAT_Event_Date v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_DAT_ID,
+                p.EV_DAT_Event_Date
+            FROM
+                [dbo].[EV_DAT_Event_Date_Posit] p
+            JOIN
+                [dbo].[EV_DAT_Event_Date_Annex] a
+            ON
+                a.EV_DAT_ID = p.EV_DAT_ID
+            AND
+                a.EV_DAT_Positor = v.EV_DAT_Positor
+            AND
+                a.EV_DAT_PositedAt = (
+                    SELECT
+                        max(s.EV_DAT_PositedAt)
+                    FROM
+                        [dbo].[EV_DAT_Event_Date_Annex] s
+                    WHERE
+                        s.EV_DAT_ID = p.EV_DAT_ID
+                    AND
+                        s.EV_DAT_Positor = v.EV_DAT_Positor
+                    AND
+                        s.EV_DAT_PositedAt < v.EV_DAT_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_DAT_Reliability > 0
+            ORDER BY
+                a.EV_DAT_PositedAt DESC,
+                a.EV_DAT_Reliability DESC
+        ) e
+        WHERE
+            v.EV_DAT_Version = @currentVersion
+        AND
+            v.EV_DAT_StatementType in ('S','N','D')
+        AND
+            v.EV_DAT_Reliability > 0
+        AND
+            e.EV_DAT_Event_Date <> v.EV_DAT_Event_Date
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_DAT_Event_Date_Annex] x
+            WHERE
+                x.EV_DAT_ID = e.EV_DAT_ID
+            AND
+                x.EV_DAT_Positor = v.EV_DAT_Positor
+            AND
+                x.EV_DAT_PositedAt = v.EV_DAT_PositedAt
+        );
     END
 END
 GO
@@ -348,14 +432,30 @@ BEGIN
             EV_AUD_Event_Audience
         )
         SELECT
-            EV_ID,
-            EV_AUD_Event_Audience
+            v.EV_ID,
+            v.EV_AUD_Event_Audience
         FROM
-            @EV_AUD_Event_Audience
+            @EV_AUD_Event_Audience v
         WHERE
-            EV_AUD_Version = @currentVersion
+            v.EV_AUD_Version = @currentVersion
         AND
-            EV_AUD_StatementType in ('N');
+            v.EV_AUD_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_AUD_Event_Audience w
+            WHERE
+                w.EV_AUD_Version = v.EV_AUD_Version
+            AND
+                w.EV_AUD_Positor < v.EV_AUD_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+            AND
+                w.EV_AUD_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
             EV_AUD_ID,
             EV_AUD_Positor,
@@ -379,6 +479,74 @@ BEGIN
             v.EV_AUD_Version = @currentVersion
         AND
             EV_AUD_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
+            EV_AUD_ID,
+            EV_AUD_Positor,
+            EV_AUD_PositedAt,
+            EV_AUD_Reliability
+        )
+        SELECT
+            e.EV_AUD_ID,
+            v.EV_AUD_Positor,
+            v.EV_AUD_PositedAt,
+            0
+        FROM
+            @EV_AUD_Event_Audience v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_AUD_ID,
+                p.EV_AUD_Event_Audience
+            FROM
+                [dbo].[EV_AUD_Event_Audience_Posit] p
+            JOIN
+                [dbo].[EV_AUD_Event_Audience_Annex] a
+            ON
+                a.EV_AUD_ID = p.EV_AUD_ID
+            AND
+                a.EV_AUD_Positor = v.EV_AUD_Positor
+            AND
+                a.EV_AUD_PositedAt = (
+                    SELECT
+                        max(s.EV_AUD_PositedAt)
+                    FROM
+                        [dbo].[EV_AUD_Event_Audience_Annex] s
+                    WHERE
+                        s.EV_AUD_ID = p.EV_AUD_ID
+                    AND
+                        s.EV_AUD_Positor = v.EV_AUD_Positor
+                    AND
+                        s.EV_AUD_PositedAt < v.EV_AUD_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_AUD_Reliability > 0
+            ORDER BY
+                a.EV_AUD_PositedAt DESC,
+                a.EV_AUD_Reliability DESC
+        ) e
+        WHERE
+            v.EV_AUD_Version = @currentVersion
+        AND
+            v.EV_AUD_StatementType in ('S','N','D')
+        AND
+            v.EV_AUD_Reliability > 0
+        AND
+            e.EV_AUD_Event_Audience <> v.EV_AUD_Event_Audience
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_AUD_Event_Audience_Annex] x
+            WHERE
+                x.EV_AUD_ID = e.EV_AUD_ID
+            AND
+                x.EV_AUD_Positor = v.EV_AUD_Positor
+            AND
+                x.EV_AUD_PositedAt = v.EV_AUD_PositedAt
+        );
     END
 END
 GO
@@ -534,14 +702,30 @@ BEGIN
             EV_REV_Event_Revenue
         )
         SELECT
-            EV_ID,
-            EV_REV_Event_Revenue
+            v.EV_ID,
+            v.EV_REV_Event_Revenue
         FROM
-            @EV_REV_Event_Revenue
+            @EV_REV_Event_Revenue v
         WHERE
-            EV_REV_Version = @currentVersion
+            v.EV_REV_Version = @currentVersion
         AND
-            EV_REV_StatementType in ('N');
+            v.EV_REV_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_REV_Event_Revenue w
+            WHERE
+                w.EV_REV_Version = v.EV_REV_Version
+            AND
+                w.EV_REV_Positor < v.EV_REV_Positor
+            AND
+                w.EV_ID = v.EV_ID
+            AND
+                w.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+            AND
+                w.EV_REV_StatementType in ('N')
+        );
         INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
             EV_REV_ID,
             EV_REV_Positor,
@@ -565,6 +749,74 @@ BEGIN
             v.EV_REV_Version = @currentVersion
         AND
             EV_REV_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
+            EV_REV_ID,
+            EV_REV_Positor,
+            EV_REV_PositedAt,
+            EV_REV_Reliability
+        )
+        SELECT
+            e.EV_REV_ID,
+            v.EV_REV_Positor,
+            v.EV_REV_PositedAt,
+            0
+        FROM
+            @EV_REV_Event_Revenue v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.EV_REV_ID,
+                p.EV_REV_Event_Revenue
+            FROM
+                [dbo].[EV_REV_Event_Revenue_Posit] p
+            JOIN
+                [dbo].[EV_REV_Event_Revenue_Annex] a
+            ON
+                a.EV_REV_ID = p.EV_REV_ID
+            AND
+                a.EV_REV_Positor = v.EV_REV_Positor
+            AND
+                a.EV_REV_PositedAt = (
+                    SELECT
+                        max(s.EV_REV_PositedAt)
+                    FROM
+                        [dbo].[EV_REV_Event_Revenue_Annex] s
+                    WHERE
+                        s.EV_REV_ID = p.EV_REV_ID
+                    AND
+                        s.EV_REV_Positor = v.EV_REV_Positor
+                    AND
+                        s.EV_REV_PositedAt < v.EV_REV_PositedAt
+                )
+            WHERE
+                p.EV_ID = v.EV_ID
+            AND
+                a.EV_REV_Reliability > 0
+            ORDER BY
+                a.EV_REV_PositedAt DESC,
+                a.EV_REV_Reliability DESC
+        ) e
+        WHERE
+            v.EV_REV_Version = @currentVersion
+        AND
+            v.EV_REV_StatementType in ('S','N','D')
+        AND
+            v.EV_REV_Reliability > 0
+        AND
+            e.EV_REV_Event_Revenue <> v.EV_REV_Event_Revenue
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[EV_REV_Event_Revenue_Annex] x
+            WHERE
+                x.EV_REV_ID = e.EV_REV_ID
+            AND
+                x.EV_REV_Positor = v.EV_REV_Positor
+            AND
+                x.EV_REV_PositedAt = v.EV_REV_PositedAt
+        );
     END
 END
 GO
@@ -759,15 +1011,33 @@ BEGIN
             ST_NAM_Stage_Name
         )
         SELECT
-            ST_ID,
-            ST_NAM_ChangedAt,
-            ST_NAM_Stage_Name
+            v.ST_ID,
+            v.ST_NAM_ChangedAt,
+            v.ST_NAM_Stage_Name
         FROM
-            @ST_NAM_Stage_Name
+            @ST_NAM_Stage_Name v
         WHERE
-            ST_NAM_Version = @currentVersion
+            v.ST_NAM_Version = @currentVersion
         AND
-            ST_NAM_StatementType in ('N','R');
+            v.ST_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_NAM_Stage_Name w
+            WHERE
+                w.ST_NAM_Version = v.ST_NAM_Version
+            AND
+                w.ST_NAM_Positor < v.ST_NAM_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+            AND
+                w.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+            AND
+                w.ST_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[ST_NAM_Stage_Name_Annex] (
             ST_NAM_ID,
             ST_NAM_Positor,
@@ -793,6 +1063,76 @@ BEGIN
             v.ST_NAM_Version = @currentVersion
         AND
             ST_NAM_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[ST_NAM_Stage_Name_Annex] (
+            ST_NAM_ID,
+            ST_NAM_Positor,
+            ST_NAM_PositedAt,
+            ST_NAM_Reliability
+        )
+        SELECT
+            e.ST_NAM_ID,
+            v.ST_NAM_Positor,
+            v.ST_NAM_PositedAt,
+            0
+        FROM
+            @ST_NAM_Stage_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_NAM_ID,
+                p.ST_NAM_Stage_Name
+            FROM
+                [dbo].[ST_NAM_Stage_Name_Posit] p
+            JOIN
+                [dbo].[ST_NAM_Stage_Name_Annex] a
+            ON
+                a.ST_NAM_ID = p.ST_NAM_ID
+            AND
+                a.ST_NAM_Positor = v.ST_NAM_Positor
+            AND
+                a.ST_NAM_PositedAt = (
+                    SELECT
+                        max(s.ST_NAM_PositedAt)
+                    FROM
+                        [dbo].[ST_NAM_Stage_Name_Annex] s
+                    WHERE
+                        s.ST_NAM_ID = p.ST_NAM_ID
+                    AND
+                        s.ST_NAM_Positor = v.ST_NAM_Positor
+                    AND
+                        s.ST_NAM_PositedAt < v.ST_NAM_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+            AND
+                a.ST_NAM_Reliability > 0
+            ORDER BY
+                a.ST_NAM_PositedAt DESC,
+                a.ST_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.ST_NAM_Version = @currentVersion
+        AND
+            v.ST_NAM_StatementType in ('S','N','D','R')
+        AND
+            v.ST_NAM_Reliability > 0
+        AND
+            e.ST_NAM_Stage_Name <> v.ST_NAM_Stage_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_NAM_Stage_Name_Annex] x
+            WHERE
+                x.ST_NAM_ID = e.ST_NAM_ID
+            AND
+                x.ST_NAM_Positor = v.ST_NAM_Positor
+            AND
+                x.ST_NAM_PositedAt = v.ST_NAM_PositedAt
+        );
     END
 END
 GO
@@ -846,7 +1186,7 @@ BEGIN
             WHERE
                 p.ST_ID = i.ST_ID
             AND
-                p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+                p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
             AND
                 a.ST_LOC_Positor = i.ST_LOC_Positor
             AND
@@ -900,7 +1240,7 @@ BEGIN
         WHERE
             p.ST_ID = i.ST_ID
         AND
-            p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+            p.ST_LOC_Checksum = dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         AND
             a.ST_LOC_Positor = i.ST_LOC_Positor
         AND
@@ -928,7 +1268,7 @@ BEGIN
                         AND
                             t.ST_LOC_Reliability = v.ST_LOC_Reliability
                         AND
-                            t.ST_LOC_Checksum = v.ST_LOC_Checksum 
+                            t.ST_LOC_Checksum = v.ST_LOC_Checksum
                     )
                     THEN 'D' -- duplicate assertion
                     WHEN p.ST_ID is not null
@@ -942,7 +1282,7 @@ BEGIN
         ON
             p.ST_ID = v.ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion;
         INSERT INTO [dbo].[ST_LOC_Stage_Location_Posit] (
@@ -950,14 +1290,30 @@ BEGIN
             ST_LOC_Stage_Location
         )
         SELECT
-            ST_ID,
-            ST_LOC_Stage_Location
+            v.ST_ID,
+            v.ST_LOC_Stage_Location
         FROM
-            @ST_LOC_Stage_Location
+            @ST_LOC_Stage_Location v
         WHERE
-            ST_LOC_Version = @currentVersion
+            v.ST_LOC_Version = @currentVersion
         AND
-            ST_LOC_StatementType in ('N');
+            v.ST_LOC_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_LOC_Stage_Location w
+            WHERE
+                w.ST_LOC_Version = v.ST_LOC_Version
+            AND
+                w.ST_LOC_Positor < v.ST_LOC_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_LOC_Checksum = v.ST_LOC_Checksum
+            AND
+                w.ST_LOC_StatementType in ('N')
+        );
         INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
             ST_LOC_ID,
             ST_LOC_Positor,
@@ -976,11 +1332,79 @@ BEGIN
         ON
             p.ST_ID = v.ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion
         AND
             ST_LOC_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
+            ST_LOC_ID,
+            ST_LOC_Positor,
+            ST_LOC_PositedAt,
+            ST_LOC_Reliability
+        )
+        SELECT
+            e.ST_LOC_ID,
+            v.ST_LOC_Positor,
+            v.ST_LOC_PositedAt,
+            0
+        FROM
+            @ST_LOC_Stage_Location v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_LOC_ID,
+                p.ST_LOC_Checksum
+            FROM
+                [dbo].[ST_LOC_Stage_Location_Posit] p
+            JOIN
+                [dbo].[ST_LOC_Stage_Location_Annex] a
+            ON
+                a.ST_LOC_ID = p.ST_LOC_ID
+            AND
+                a.ST_LOC_Positor = v.ST_LOC_Positor
+            AND
+                a.ST_LOC_PositedAt = (
+                    SELECT
+                        max(s.ST_LOC_PositedAt)
+                    FROM
+                        [dbo].[ST_LOC_Stage_Location_Annex] s
+                    WHERE
+                        s.ST_LOC_ID = p.ST_LOC_ID
+                    AND
+                        s.ST_LOC_Positor = v.ST_LOC_Positor
+                    AND
+                        s.ST_LOC_PositedAt < v.ST_LOC_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                a.ST_LOC_Reliability > 0
+            ORDER BY
+                a.ST_LOC_PositedAt DESC,
+                a.ST_LOC_Reliability DESC
+        ) e
+        WHERE
+            v.ST_LOC_Version = @currentVersion
+        AND
+            v.ST_LOC_StatementType in ('S','N','D')
+        AND
+            v.ST_LOC_Reliability > 0
+        AND
+            e.ST_LOC_Checksum <> v.ST_LOC_Checksum
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_LOC_Stage_Location_Annex] x
+            WHERE
+                x.ST_LOC_ID = e.ST_LOC_ID
+            AND
+                x.ST_LOC_Positor = v.ST_LOC_Positor
+            AND
+                x.ST_LOC_PositedAt = v.ST_LOC_PositedAt
+        );
     END
 END
 GO
@@ -1004,7 +1428,7 @@ BEGIN
         ST_AVG_PositedAt datetime2 not null,
         ST_AVG_Reliability decimal(5,2) not null,
         ST_AVG_Assertion char(1) not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         ST_AVG_Version bigint not null,
         ST_AVG_StatementType char(1) not null,
         primary key(
@@ -1177,15 +1601,33 @@ BEGIN
             UTL_ID
         )
         SELECT
-            ST_ID,
-            ST_AVG_ChangedAt,
-            UTL_ID
+            v.ST_ID,
+            v.ST_AVG_ChangedAt,
+            v.UTL_ID
         FROM
-            @ST_AVG_Stage_Average
+            @ST_AVG_Stage_Average v
         WHERE
-            ST_AVG_Version = @currentVersion
+            v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N','F');
+            v.ST_AVG_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_AVG_Stage_Average w
+            WHERE
+                w.ST_AVG_Version = v.ST_AVG_Version
+            AND
+                w.ST_AVG_Positor < v.ST_AVG_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+            AND
+                w.UTL_ID = v.UTL_ID
+            AND
+                w.ST_AVG_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
             ST_AVG_ID,
@@ -1251,6 +1693,76 @@ BEGIN
             v.ST_AVG_Version = @currentVersion
         AND
             ST_AVG_StatementType in ('S','N','D','F');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
+            ST_AVG_ID,
+            ST_AVG_Positor,
+            ST_AVG_PositedAt,
+            ST_AVG_Reliability
+        )
+        SELECT
+            e.ST_AVG_ID,
+            v.ST_AVG_Positor,
+            v.ST_AVG_PositedAt,
+            0
+        FROM
+            @ST_AVG_Stage_Average v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_AVG_ID,
+                p.UTL_ID
+            FROM
+                [dbo].[ST_AVG_Stage_Average_Posit] p
+            JOIN
+                [dbo].[ST_AVG_Stage_Average_Annex] a
+            ON
+                a.ST_AVG_ID = p.ST_AVG_ID
+            AND
+                a.ST_AVG_Positor = v.ST_AVG_Positor
+            AND
+                a.ST_AVG_PositedAt = (
+                    SELECT
+                        max(s.ST_AVG_PositedAt)
+                    FROM
+                        [dbo].[ST_AVG_Stage_Average_Annex] s
+                    WHERE
+                        s.ST_AVG_ID = p.ST_AVG_ID
+                    AND
+                        s.ST_AVG_Positor = v.ST_AVG_Positor
+                    AND
+                        s.ST_AVG_PositedAt < v.ST_AVG_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+            AND
+                a.ST_AVG_Reliability > 0
+            ORDER BY
+                a.ST_AVG_PositedAt DESC,
+                a.ST_AVG_Reliability DESC
+        ) e
+        WHERE
+            v.ST_AVG_Version = @currentVersion
+        AND
+            v.ST_AVG_StatementType in ('S','N','D','F')
+        AND
+            v.ST_AVG_Reliability > 0
+        AND
+            e.UTL_ID <> v.UTL_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_AVG_Stage_Average_Annex] x
+            WHERE
+                x.ST_AVG_ID = e.ST_AVG_ID
+            AND
+                x.ST_AVG_Positor = v.ST_AVG_Positor
+            AND
+                x.ST_AVG_PositedAt = v.ST_AVG_PositedAt
+        );
     END
 END
 GO
@@ -1273,7 +1785,7 @@ BEGIN
         ST_MIN_PositedAt datetime2 not null,
         ST_MIN_Reliability decimal(5,2) not null,
         ST_MIN_Assertion char(1) not null,
-        UTL_ID tinyint not null, 
+        UTL_ID tinyint not null,
         ST_MIN_Version bigint not null,
         ST_MIN_StatementType char(1) not null,
         primary key(
@@ -1406,14 +1918,30 @@ BEGIN
             UTL_ID
         )
         SELECT
-            ST_ID,
-            UTL_ID
+            v.ST_ID,
+            v.UTL_ID
         FROM
-            @ST_MIN_Stage_Minimum
+            @ST_MIN_Stage_Minimum v
         WHERE
-            ST_MIN_Version = @currentVersion
+            v.ST_MIN_Version = @currentVersion
         AND
-            ST_MIN_StatementType in ('N');
+            v.ST_MIN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_MIN_Stage_Minimum w
+            WHERE
+                w.ST_MIN_Version = v.ST_MIN_Version
+            AND
+                w.ST_MIN_Positor < v.ST_MIN_Positor
+            AND
+                w.ST_ID = v.ST_ID
+            AND
+                w.UTL_ID = v.UTL_ID
+            AND
+                w.ST_MIN_StatementType in ('N')
+        );
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
             ST_MIN_ID,
             ST_MIN_Positor,
@@ -1437,6 +1965,74 @@ BEGIN
             v.ST_MIN_Version = @currentVersion
         AND
             ST_MIN_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
+            ST_MIN_ID,
+            ST_MIN_Positor,
+            ST_MIN_PositedAt,
+            ST_MIN_Reliability
+        )
+        SELECT
+            e.ST_MIN_ID,
+            v.ST_MIN_Positor,
+            v.ST_MIN_PositedAt,
+            0
+        FROM
+            @ST_MIN_Stage_Minimum v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.ST_MIN_ID,
+                p.UTL_ID
+            FROM
+                [dbo].[ST_MIN_Stage_Minimum_Posit] p
+            JOIN
+                [dbo].[ST_MIN_Stage_Minimum_Annex] a
+            ON
+                a.ST_MIN_ID = p.ST_MIN_ID
+            AND
+                a.ST_MIN_Positor = v.ST_MIN_Positor
+            AND
+                a.ST_MIN_PositedAt = (
+                    SELECT
+                        max(s.ST_MIN_PositedAt)
+                    FROM
+                        [dbo].[ST_MIN_Stage_Minimum_Annex] s
+                    WHERE
+                        s.ST_MIN_ID = p.ST_MIN_ID
+                    AND
+                        s.ST_MIN_Positor = v.ST_MIN_Positor
+                    AND
+                        s.ST_MIN_PositedAt < v.ST_MIN_PositedAt
+                )
+            WHERE
+                p.ST_ID = v.ST_ID
+            AND
+                a.ST_MIN_Reliability > 0
+            ORDER BY
+                a.ST_MIN_PositedAt DESC,
+                a.ST_MIN_Reliability DESC
+        ) e
+        WHERE
+            v.ST_MIN_Version = @currentVersion
+        AND
+            v.ST_MIN_StatementType in ('S','N','D')
+        AND
+            v.ST_MIN_Reliability > 0
+        AND
+            e.UTL_ID <> v.UTL_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[ST_MIN_Stage_Minimum_Annex] x
+            WHERE
+                x.ST_MIN_ID = e.ST_MIN_ID
+            AND
+                x.ST_MIN_Positor = v.ST_MIN_Positor
+            AND
+                x.ST_MIN_PositedAt = v.ST_MIN_PositedAt
+        );
     END
 END
 GO
@@ -1631,15 +2227,33 @@ BEGIN
             AC_NAM_Actor_Name
         )
         SELECT
-            AC_ID,
-            AC_NAM_ChangedAt,
-            AC_NAM_Actor_Name
+            v.AC_ID,
+            v.AC_NAM_ChangedAt,
+            v.AC_NAM_Actor_Name
         FROM
-            @AC_NAM_Actor_Name
+            @AC_NAM_Actor_Name v
         WHERE
-            AC_NAM_Version = @currentVersion
+            v.AC_NAM_Version = @currentVersion
         AND
-            AC_NAM_StatementType in ('N','R');
+            v.AC_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_NAM_Actor_Name w
+            WHERE
+                w.AC_NAM_Version = v.AC_NAM_Version
+            AND
+                w.AC_NAM_Positor < v.AC_NAM_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+            AND
+                w.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+            AND
+                w.AC_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[AC_NAM_Actor_Name_Annex] (
             AC_NAM_ID,
             AC_NAM_Positor,
@@ -1665,6 +2279,76 @@ BEGIN
             v.AC_NAM_Version = @currentVersion
         AND
             AC_NAM_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[AC_NAM_Actor_Name_Annex] (
+            AC_NAM_ID,
+            AC_NAM_Positor,
+            AC_NAM_PositedAt,
+            AC_NAM_Reliability
+        )
+        SELECT
+            e.AC_NAM_ID,
+            v.AC_NAM_Positor,
+            v.AC_NAM_PositedAt,
+            0
+        FROM
+            @AC_NAM_Actor_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_NAM_ID,
+                p.AC_NAM_Actor_Name
+            FROM
+                [dbo].[AC_NAM_Actor_Name_Posit] p
+            JOIN
+                [dbo].[AC_NAM_Actor_Name_Annex] a
+            ON
+                a.AC_NAM_ID = p.AC_NAM_ID
+            AND
+                a.AC_NAM_Positor = v.AC_NAM_Positor
+            AND
+                a.AC_NAM_PositedAt = (
+                    SELECT
+                        max(s.AC_NAM_PositedAt)
+                    FROM
+                        [dbo].[AC_NAM_Actor_Name_Annex] s
+                    WHERE
+                        s.AC_NAM_ID = p.AC_NAM_ID
+                    AND
+                        s.AC_NAM_Positor = v.AC_NAM_Positor
+                    AND
+                        s.AC_NAM_PositedAt < v.AC_NAM_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+            AND
+                a.AC_NAM_Reliability > 0
+            ORDER BY
+                a.AC_NAM_PositedAt DESC,
+                a.AC_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.AC_NAM_Version = @currentVersion
+        AND
+            v.AC_NAM_StatementType in ('S','N','D','R')
+        AND
+            v.AC_NAM_Reliability > 0
+        AND
+            e.AC_NAM_Actor_Name <> v.AC_NAM_Actor_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_NAM_Actor_Name_Annex] x
+            WHERE
+                x.AC_NAM_ID = e.AC_NAM_ID
+            AND
+                x.AC_NAM_Positor = v.AC_NAM_Positor
+            AND
+                x.AC_NAM_PositedAt = v.AC_NAM_PositedAt
+        );
     END
 END
 GO
@@ -1687,7 +2371,7 @@ BEGIN
         AC_GEN_PositedAt datetime2 not null,
         AC_GEN_Reliability decimal(5,2) not null,
         AC_GEN_Assertion char(1) not null,
-        GEN_ID tinyint not null, 
+        GEN_ID tinyint not null,
         AC_GEN_Version bigint not null,
         AC_GEN_StatementType char(1) not null,
         primary key(
@@ -1820,14 +2504,30 @@ BEGIN
             GEN_ID
         )
         SELECT
-            AC_ID,
-            GEN_ID
+            v.AC_ID,
+            v.GEN_ID
         FROM
-            @AC_GEN_Actor_Gender
+            @AC_GEN_Actor_Gender v
         WHERE
-            AC_GEN_Version = @currentVersion
+            v.AC_GEN_Version = @currentVersion
         AND
-            AC_GEN_StatementType in ('N');
+            v.AC_GEN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_GEN_Actor_Gender w
+            WHERE
+                w.AC_GEN_Version = v.AC_GEN_Version
+            AND
+                w.AC_GEN_Positor < v.AC_GEN_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.GEN_ID = v.GEN_ID
+            AND
+                w.AC_GEN_StatementType in ('N')
+        );
         INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
             AC_GEN_ID,
             AC_GEN_Positor,
@@ -1851,6 +2551,74 @@ BEGIN
             v.AC_GEN_Version = @currentVersion
         AND
             AC_GEN_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
+            AC_GEN_ID,
+            AC_GEN_Positor,
+            AC_GEN_PositedAt,
+            AC_GEN_Reliability
+        )
+        SELECT
+            e.AC_GEN_ID,
+            v.AC_GEN_Positor,
+            v.AC_GEN_PositedAt,
+            0
+        FROM
+            @AC_GEN_Actor_Gender v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_GEN_ID,
+                p.GEN_ID
+            FROM
+                [dbo].[AC_GEN_Actor_Gender_Posit] p
+            JOIN
+                [dbo].[AC_GEN_Actor_Gender_Annex] a
+            ON
+                a.AC_GEN_ID = p.AC_GEN_ID
+            AND
+                a.AC_GEN_Positor = v.AC_GEN_Positor
+            AND
+                a.AC_GEN_PositedAt = (
+                    SELECT
+                        max(s.AC_GEN_PositedAt)
+                    FROM
+                        [dbo].[AC_GEN_Actor_Gender_Annex] s
+                    WHERE
+                        s.AC_GEN_ID = p.AC_GEN_ID
+                    AND
+                        s.AC_GEN_Positor = v.AC_GEN_Positor
+                    AND
+                        s.AC_GEN_PositedAt < v.AC_GEN_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                a.AC_GEN_Reliability > 0
+            ORDER BY
+                a.AC_GEN_PositedAt DESC,
+                a.AC_GEN_Reliability DESC
+        ) e
+        WHERE
+            v.AC_GEN_Version = @currentVersion
+        AND
+            v.AC_GEN_StatementType in ('S','N','D')
+        AND
+            v.AC_GEN_Reliability > 0
+        AND
+            e.GEN_ID <> v.GEN_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_GEN_Actor_Gender_Annex] x
+            WHERE
+                x.AC_GEN_ID = e.AC_GEN_ID
+            AND
+                x.AC_GEN_Positor = v.AC_GEN_Positor
+            AND
+                x.AC_GEN_PositedAt = v.AC_GEN_PositedAt
+        );
     END
 END
 GO
@@ -1874,7 +2642,7 @@ BEGIN
         AC_PLV_PositedAt datetime2 not null,
         AC_PLV_Reliability decimal(5,2) not null,
         AC_PLV_Assertion char(1) not null,
-        PLV_ID tinyint not null, 
+        PLV_ID tinyint not null,
         AC_PLV_Version bigint not null,
         AC_PLV_StatementType char(1) not null,
         primary key(
@@ -2045,15 +2813,33 @@ BEGIN
             PLV_ID
         )
         SELECT
-            AC_ID,
-            AC_PLV_ChangedAt,
-            PLV_ID
+            v.AC_ID,
+            v.AC_PLV_ChangedAt,
+            v.PLV_ID
         FROM
-            @AC_PLV_Actor_ProfessionalLevel
+            @AC_PLV_Actor_ProfessionalLevel v
         WHERE
-            AC_PLV_Version = @currentVersion
+            v.AC_PLV_Version = @currentVersion
         AND
-            AC_PLV_StatementType in ('N','R');
+            v.AC_PLV_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_PLV_Actor_ProfessionalLevel w
+            WHERE
+                w.AC_PLV_Version = v.AC_PLV_Version
+            AND
+                w.AC_PLV_Positor < v.AC_PLV_Positor
+            AND
+                w.AC_ID = v.AC_ID
+            AND
+                w.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+            AND
+                w.PLV_ID = v.PLV_ID
+            AND
+                w.AC_PLV_StatementType in ('N','R')
+        );
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
             AC_PLV_ID,
             AC_PLV_Positor,
@@ -2079,6 +2865,76 @@ BEGIN
             v.AC_PLV_Version = @currentVersion
         AND
             AC_PLV_StatementType in ('S','N','D','R');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
+            AC_PLV_ID,
+            AC_PLV_Positor,
+            AC_PLV_PositedAt,
+            AC_PLV_Reliability
+        )
+        SELECT
+            e.AC_PLV_ID,
+            v.AC_PLV_Positor,
+            v.AC_PLV_PositedAt,
+            0
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.AC_PLV_ID,
+                p.PLV_ID
+            FROM
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+            JOIN
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+            ON
+                a.AC_PLV_ID = p.AC_PLV_ID
+            AND
+                a.AC_PLV_Positor = v.AC_PLV_Positor
+            AND
+                a.AC_PLV_PositedAt = (
+                    SELECT
+                        max(s.AC_PLV_PositedAt)
+                    FROM
+                        [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] s
+                    WHERE
+                        s.AC_PLV_ID = p.AC_PLV_ID
+                    AND
+                        s.AC_PLV_Positor = v.AC_PLV_Positor
+                    AND
+                        s.AC_PLV_PositedAt < v.AC_PLV_PositedAt
+                )
+            WHERE
+                p.AC_ID = v.AC_ID
+            AND
+                p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+            AND
+                a.AC_PLV_Reliability > 0
+            ORDER BY
+                a.AC_PLV_PositedAt DESC,
+                a.AC_PLV_Reliability DESC
+        ) e
+        WHERE
+            v.AC_PLV_Version = @currentVersion
+        AND
+            v.AC_PLV_StatementType in ('S','N','D','R')
+        AND
+            v.AC_PLV_Reliability > 0
+        AND
+            e.PLV_ID <> v.PLV_ID
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] x
+            WHERE
+                x.AC_PLV_ID = e.AC_PLV_ID
+            AND
+                x.AC_PLV_Positor = v.AC_PLV_Positor
+            AND
+                x.AC_PLV_PositedAt = v.AC_PLV_PositedAt
+        );
     END
 END
 GO
@@ -2234,14 +3090,30 @@ BEGIN
             PR_NAM_Program_Name
         )
         SELECT
-            PR_ID,
-            PR_NAM_Program_Name
+            v.PR_ID,
+            v.PR_NAM_Program_Name
         FROM
-            @PR_NAM_Program_Name
+            @PR_NAM_Program_Name v
         WHERE
-            PR_NAM_Version = @currentVersion
+            v.PR_NAM_Version = @currentVersion
         AND
-            PR_NAM_StatementType in ('N');
+            v.PR_NAM_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_NAM_Program_Name w
+            WHERE
+                w.PR_NAM_Version = v.PR_NAM_Version
+            AND
+                w.PR_NAM_Positor < v.PR_NAM_Positor
+            AND
+                w.PR_ID = v.PR_ID
+            AND
+                w.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+            AND
+                w.PR_NAM_StatementType in ('N')
+        );
         INSERT INTO [dbo].[PR_NAM_Program_Name_Annex] (
             PR_NAM_ID,
             PR_NAM_Positor,
@@ -2265,6 +3137,74 @@ BEGIN
             v.PR_NAM_Version = @currentVersion
         AND
             PR_NAM_StatementType in ('S','N','D');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor when that has another value (a correction)
+        INSERT INTO [dbo].[PR_NAM_Program_Name_Annex] (
+            PR_NAM_ID,
+            PR_NAM_Positor,
+            PR_NAM_PositedAt,
+            PR_NAM_Reliability
+        )
+        SELECT
+            e.PR_NAM_ID,
+            v.PR_NAM_Positor,
+            v.PR_NAM_PositedAt,
+            0
+        FROM
+            @PR_NAM_Program_Name v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.PR_NAM_ID,
+                p.PR_NAM_Program_Name
+            FROM
+                [dbo].[PR_NAM_Program_Name_Posit] p
+            JOIN
+                [dbo].[PR_NAM_Program_Name_Annex] a
+            ON
+                a.PR_NAM_ID = p.PR_NAM_ID
+            AND
+                a.PR_NAM_Positor = v.PR_NAM_Positor
+            AND
+                a.PR_NAM_PositedAt = (
+                    SELECT
+                        max(s.PR_NAM_PositedAt)
+                    FROM
+                        [dbo].[PR_NAM_Program_Name_Annex] s
+                    WHERE
+                        s.PR_NAM_ID = p.PR_NAM_ID
+                    AND
+                        s.PR_NAM_Positor = v.PR_NAM_Positor
+                    AND
+                        s.PR_NAM_PositedAt < v.PR_NAM_PositedAt
+                )
+            WHERE
+                p.PR_ID = v.PR_ID
+            AND
+                a.PR_NAM_Reliability > 0
+            ORDER BY
+                a.PR_NAM_PositedAt DESC,
+                a.PR_NAM_Reliability DESC
+        ) e
+        WHERE
+            v.PR_NAM_Version = @currentVersion
+        AND
+            v.PR_NAM_StatementType in ('S','N','D')
+        AND
+            v.PR_NAM_Reliability > 0
+        AND
+            e.PR_NAM_Program_Name <> v.PR_NAM_Program_Name
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_NAM_Program_Name_Annex] x
+            WHERE
+                x.PR_NAM_ID = e.PR_NAM_ID
+            AND
+                x.PR_NAM_Positor = v.PR_NAM_Positor
+            AND
+                x.PR_NAM_PositedAt = v.PR_NAM_PositedAt
+        );
     END
 END
 GO
@@ -2461,15 +3401,33 @@ BEGIN
             PR_LEN_Program_Length
         )
         SELECT
-            PR_ID,
-            PR_LEN_ChangedAt,
-            PR_LEN_Program_Length
+            v.PR_ID,
+            v.PR_LEN_ChangedAt,
+            v.PR_LEN_Program_Length
         FROM
-            @PR_LEN_Program_Length
+            @PR_LEN_Program_Length v
         WHERE
-            PR_LEN_Version = @currentVersion
+            v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N','F');
+            v.PR_LEN_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_LEN_Program_Length w
+            WHERE
+                w.PR_LEN_Version = v.PR_LEN_Version
+            AND
+                w.PR_LEN_Positor < v.PR_LEN_Positor
+            AND
+                w.PR_ID = v.PR_ID
+            AND
+                w.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+            AND
+                w.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+            AND
+                w.PR_LEN_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
             PR_LEN_ID,
@@ -2535,6 +3493,76 @@ BEGIN
             v.PR_LEN_Version = @currentVersion
         AND
             PR_LEN_StatementType in ('S','N','D','F');
+        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
+        -- in effect for the positor at the same changing time when that has another value (a correction)
+        INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
+            PR_LEN_ID,
+            PR_LEN_Positor,
+            PR_LEN_PositedAt,
+            PR_LEN_Reliability
+        )
+        SELECT
+            e.PR_LEN_ID,
+            v.PR_LEN_Positor,
+            v.PR_LEN_PositedAt,
+            0
+        FROM
+            @PR_LEN_Program_Length v
+        CROSS APPLY (
+            SELECT TOP 1
+                p.PR_LEN_ID,
+                p.PR_LEN_Program_Length
+            FROM
+                [dbo].[PR_LEN_Program_Length_Posit] p
+            JOIN
+                [dbo].[PR_LEN_Program_Length_Annex] a
+            ON
+                a.PR_LEN_ID = p.PR_LEN_ID
+            AND
+                a.PR_LEN_Positor = v.PR_LEN_Positor
+            AND
+                a.PR_LEN_PositedAt = (
+                    SELECT
+                        max(s.PR_LEN_PositedAt)
+                    FROM
+                        [dbo].[PR_LEN_Program_Length_Annex] s
+                    WHERE
+                        s.PR_LEN_ID = p.PR_LEN_ID
+                    AND
+                        s.PR_LEN_Positor = v.PR_LEN_Positor
+                    AND
+                        s.PR_LEN_PositedAt < v.PR_LEN_PositedAt
+                )
+            WHERE
+                p.PR_ID = v.PR_ID
+            AND
+                p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+            AND
+                a.PR_LEN_Reliability > 0
+            ORDER BY
+                a.PR_LEN_PositedAt DESC,
+                a.PR_LEN_Reliability DESC
+        ) e
+        WHERE
+            v.PR_LEN_Version = @currentVersion
+        AND
+            v.PR_LEN_StatementType in ('S','N','D','F')
+        AND
+            v.PR_LEN_Reliability > 0
+        AND
+            e.PR_LEN_Program_Length <> v.PR_LEN_Program_Length
+        AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+            SELECT TOP 1
+                42
+            FROM
+                [dbo].[PR_LEN_Program_Length_Annex] x
+            WHERE
+                x.PR_LEN_ID = e.PR_LEN_ID
+            AND
+                x.PR_LEN_Positor = v.PR_LEN_Positor
+            AND
+                x.PR_LEN_PositedAt = v.PR_LEN_PositedAt
+        );
     END
 END
 GO

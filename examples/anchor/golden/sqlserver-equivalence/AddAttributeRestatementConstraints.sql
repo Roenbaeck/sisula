@@ -16,7 +16,7 @@ DROP TRIGGER [dbo].[rt_ST_AVG_Stage_Average];
 GO
 CREATE TRIGGER [dbo].[rt_ST_AVG_Stage_Average] ON [dbo].[ST_AVG_Stage_Average]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -24,9 +24,9 @@ BEGIN
         ST_AVG_ST_ID int not null,
         Metadata_ST_AVG int not null,
         ST_AVG_ChangedAt datetime2 not null,
-        ST_AVG_UTL_ID tinyint not null, 
+        ST_AVG_UTL_ID tinyint not null,
         primary key(
-            ST_AVG_ST_ID asc, 
+            ST_AVG_ST_ID asc,
             ST_AVG_ChangedAt desc
         )
     );
@@ -41,7 +41,7 @@ BEGIN
         Metadata_ST_AVG,
         ST_AVG_ChangedAt,
         ST_AVG_UTL_ID
-    FROM 
+    FROM
         inserted;
     INSERT INTO @ST_AVG_Stage_Average (
         ST_AVG_ST_ID,
@@ -55,14 +55,14 @@ BEGIN
         p.ST_AVG_ChangedAt,
         p.ST_AVG_UTL_ID
     FROM (
-        SELECT DISTINCT 
-            ST_AVG_ST_ID 
-        FROM 
+        SELECT DISTINCT
+            ST_AVG_ST_ID
+        FROM
             @ST_AVG_Stage_Average
-    ) i 
+    ) i
     JOIN
         [dbo].[ST_AVG_Stage_Average] p
-    ON 
+    ON
         p.ST_AVG_ST_ID = i.ST_AVG_ST_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -78,20 +78,20 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @ST_AVG_Stage_Average i
         CROSS APPLY (
             SELECT TOP 1
                 h.ST_AVG_ST_ID,
                 h.ST_AVG_ChangedAt,
                 h.ST_AVG_UTL_ID
-            FROM 
+            FROM
                 @ST_AVG_Stage_Average h
             WHERE
                 h.ST_AVG_ST_ID = i.ST_AVG_ST_ID
             AND
                 h.ST_AVG_ChangedAt < i.ST_AVG_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_AVG_ChangedAt DESC
         ) pre
         WHERE
@@ -114,7 +114,7 @@ DROP TRIGGER [dbo].[rt_AC_NAM_Actor_Name];
 GO
 CREATE TRIGGER [dbo].[rt_AC_NAM_Actor_Name] ON [dbo].[AC_NAM_Actor_Name]
 AFTER INSERT
-AS 
+AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE @message varchar(max);
@@ -126,7 +126,7 @@ BEGIN
         AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_Checksum varbinary(16) not null,
         primary key(
-            AC_NAM_AC_ID asc, 
+            AC_NAM_AC_ID asc,
             AC_NAM_ChangedAt desc
         )
     );
@@ -135,7 +135,7 @@ BEGIN
         AC_NAM_EQ,
         Metadata_AC_NAM,
         AC_NAM_ChangedAt,
-        AC_NAM_Checksum, 
+        AC_NAM_Checksum,
         AC_NAM_Actor_Name
     )
     SELECT
@@ -143,16 +143,16 @@ BEGIN
         AC_NAM_EQ,
         Metadata_AC_NAM,
         AC_NAM_ChangedAt,
-        AC_NAM_Checksum, 
+        AC_NAM_Checksum,
         AC_NAM_Actor_Name
-    FROM 
+    FROM
         inserted;
     INSERT INTO @AC_NAM_Actor_Name (
         AC_NAM_AC_ID,
         AC_NAM_EQ,
         Metadata_AC_NAM,
         AC_NAM_ChangedAt,
-        AC_NAM_Checksum, 
+        AC_NAM_Checksum,
         AC_NAM_Actor_Name
     )
     SELECT
@@ -160,20 +160,20 @@ BEGIN
         p.AC_NAM_EQ,
         p.Metadata_AC_NAM,
         p.AC_NAM_ChangedAt,
-        p.AC_NAM_Checksum, 
+        p.AC_NAM_Checksum,
         p.AC_NAM_Actor_Name
     FROM (
-        SELECT DISTINCT 
+        SELECT DISTINCT
             AC_NAM_EQ,
-            AC_NAM_AC_ID 
-        FROM 
+            AC_NAM_AC_ID
+        FROM
             @AC_NAM_Actor_Name
-    ) i 
+    ) i
     JOIN
         [dbo].[AC_NAM_Actor_Name] p
-    ON 
+    ON
         p.AC_NAM_EQ = i.AC_NAM_EQ
-    AND 
+    AND
         p.AC_NAM_AC_ID = i.AC_NAM_AC_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -182,7 +182,7 @@ BEGIN
             @AC_NAM_Actor_Name x
         WHERE
             p.AC_NAM_EQ = i.AC_NAM_EQ
-        AND 
+        AND
             x.AC_NAM_AC_ID = p.AC_NAM_AC_ID
         AND
             x.AC_NAM_ChangedAt = p.AC_NAM_ChangedAt
@@ -191,27 +191,27 @@ BEGIN
     SET @message = (
         SELECT TOP 1
             pre.*
-        FROM 
+        FROM
             @AC_NAM_Actor_Name i
         CROSS APPLY (
             SELECT TOP 1
                 h.AC_NAM_EQ,
                 h.AC_NAM_AC_ID,
                 h.AC_NAM_ChangedAt,
-                h.AC_NAM_Checksum 
-            FROM 
+                h.AC_NAM_Checksum
+            FROM
                 @AC_NAM_Actor_Name h
             WHERE
                 h.AC_NAM_EQ = i.AC_NAM_EQ
-            AND 
+            AND
                 h.AC_NAM_AC_ID = i.AC_NAM_AC_ID
             AND
                 h.AC_NAM_ChangedAt < i.AC_NAM_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_NAM_ChangedAt DESC
         ) pre
         WHERE
-            i.AC_NAM_Checksum = pre.AC_NAM_Checksum 
+            i.AC_NAM_Checksum = pre.AC_NAM_Checksum
         FOR XML PATH('')
     );
     IF @message is not null

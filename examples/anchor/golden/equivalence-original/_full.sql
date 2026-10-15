@@ -592,7 +592,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_partner_AC_with_ONG_currently" (
     "AC_ID_partner",
     "AC_ID_with"
 );
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- AC_subset_PN_of table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ties."AC_subset_PN_of" (
@@ -619,7 +619,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_subset_PN_of" (
     "AC_ID_subset",
     "PN_ID_of"
 );
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- EV_in_AC_wasCast table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ties."EV_in_AC_wasCast" (
@@ -666,7 +666,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_part_PR_in_RAT_got" (
     "AC_ID_part",
     "PR_ID_in"
 );
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- ST_at_PR_isPlaying table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ties."ST_at_PR_isPlaying" (
@@ -715,7 +715,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_parent_AC_child_PAT_having" (
     "AC_ID_parent",
     "AC_ID_child"
 );
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- PR_content_ST_location_EV_of table (having 3 roles)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ties."PR_content_ST_location_EV_of" (

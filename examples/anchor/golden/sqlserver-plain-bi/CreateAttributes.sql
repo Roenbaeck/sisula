@@ -171,7 +171,7 @@ CREATE TABLE [dbo].[ST_LOC_Stage_Location_Posit] (
     ),
     constraint uqST_LOC_Stage_Location_Posit unique clustered (
         ST_ID asc,
-        ST_LOC_Checksum asc 
+        ST_LOC_Checksum asc
     )
 );
 GO

@@ -12,16 +12,16 @@
 IF Object_ID('dbo.AC_partner_AC_with_ONG_currently_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_partner_AC_with_ONG_currently_Posit] (
     AC_partner_AC_with_ONG_currently_ID int IDENTITY(1,1) not null,
-    AC_ID_partner int not null, 
-    AC_ID_with int not null, 
+    AC_ID_partner int not null,
+    AC_ID_with int not null,
     ONG_ID_currently tinyint not null,
     AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
     constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_partner foreign key (
         AC_ID_partner
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_partner_AC_with_ONG_currently_Posit_fkAC_with foreign key (
         AC_ID_with
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_partner_AC_with_ONG_currently_Posit_fkONG_currently foreign key (
         ONG_ID_currently
     ) references [dbo].[ONG_Ongoing](ONG_ID),
@@ -61,20 +61,20 @@ CREATE TABLE [dbo].[AC_partner_AC_with_ONG_currently_Annex] (
     )
 );
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- AC_subset_PN_of_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.AC_subset_PN_of_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_subset_PN_of_Posit] (
     AC_subset_PN_of_ID int IDENTITY(1,1) not null,
-    AC_ID_subset int not null, 
-    PN_ID_of int not null, 
+    AC_ID_subset int not null,
+    PN_ID_of int not null,
     constraint AC_subset_PN_of_Posit_fkAC_subset foreign key (
         AC_ID_subset
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_subset_PN_of_Posit_fkPN_of foreign key (
         PN_ID_of
-    ) references [dbo].[PN_Person](PN_ID), 
+    ) references [dbo].[PN_Person](PN_ID),
     constraint AC_subset_PN_of_Posit_uqAC_subset unique (
         AC_ID_subset
     ),
@@ -107,20 +107,20 @@ CREATE TABLE [dbo].[AC_subset_PN_of_Annex] (
     )
 );
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- EV_in_AC_wasCast_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.EV_in_AC_wasCast_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[EV_in_AC_wasCast_Posit] (
     EV_in_AC_wasCast_ID int IDENTITY(1,1) not null,
-    EV_ID_in int not null, 
-    AC_ID_wasCast int not null, 
+    EV_ID_in int not null,
+    AC_ID_wasCast int not null,
     constraint EV_in_AC_wasCast_Posit_fkEV_in foreign key (
         EV_ID_in
-    ) references [dbo].[EV_Event](EV_ID), 
+    ) references [dbo].[EV_Event](EV_ID),
     constraint EV_in_AC_wasCast_Posit_fkAC_wasCast foreign key (
         AC_ID_wasCast
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint pkEV_in_AC_wasCast_Posit primary key nonclustered (
         EV_in_AC_wasCast_ID asc
     ),
@@ -153,16 +153,16 @@ GO
 IF Object_ID('dbo.AC_part_PR_in_RAT_got_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_part_PR_in_RAT_got_Posit] (
     AC_part_PR_in_RAT_got_ID int IDENTITY(1,1) not null,
-    AC_ID_part int not null, 
-    PR_ID_in int not null, 
+    AC_ID_part int not null,
+    PR_ID_in int not null,
     RAT_ID_got tinyint not null,
     AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
     constraint AC_part_PR_in_RAT_got_Posit_fkAC_part foreign key (
         AC_ID_part
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_part_PR_in_RAT_got_Posit_fkPR_in foreign key (
         PR_ID_in
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint AC_part_PR_in_RAT_got_Posit_fkRAT_got foreign key (
         RAT_ID_got
     ) references [dbo].[RAT_Rating](RAT_ID),
@@ -194,21 +194,21 @@ CREATE TABLE [dbo].[AC_part_PR_in_RAT_got_Annex] (
     )
 );
 GO
--- Knotted historized tie table ---------------------------------------------------------------------------------------
+-- Historized tie table -----------------------------------------------------------------------------------------------
 -- ST_at_PR_isPlaying_Posit table (having 2 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.ST_at_PR_isPlaying_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[ST_at_PR_isPlaying_Posit] (
     ST_at_PR_isPlaying_ID int IDENTITY(1,1) not null,
-    ST_ID_at int not null, 
-    PR_ID_isPlaying int not null, 
+    ST_ID_at int not null,
+    PR_ID_isPlaying int not null,
     ST_at_PR_isPlaying_ChangedAt datetime2 not null,
     constraint ST_at_PR_isPlaying_Posit_fkST_at foreign key (
         ST_ID_at
-    ) references [dbo].[ST_Stage](ST_ID), 
+    ) references [dbo].[ST_Stage](ST_ID),
     constraint ST_at_PR_isPlaying_Posit_fkPR_isPlaying foreign key (
         PR_ID_isPlaying
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint pkST_at_PR_isPlaying_Posit primary key nonclustered (
         ST_at_PR_isPlaying_ID asc
     ),
@@ -242,15 +242,15 @@ GO
 IF Object_ID('dbo.AC_parent_AC_child_PAT_having_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[AC_parent_AC_child_PAT_having_Posit] (
     AC_parent_AC_child_PAT_having_ID int IDENTITY(1,1) not null,
-    AC_ID_parent int not null, 
-    AC_ID_child int not null, 
+    AC_ID_parent int not null,
+    AC_ID_child int not null,
     PAT_ID_having tinyint not null,
     constraint AC_parent_AC_child_PAT_having_Posit_fkAC_parent foreign key (
         AC_ID_parent
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_Posit_fkAC_child foreign key (
         AC_ID_child
-    ) references [dbo].[AC_Actor](AC_ID), 
+    ) references [dbo].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_Posit_fkPAT_having foreign key (
         PAT_ID_having
     ) references [dbo].[PAT_ParentalType](PAT_ID),
@@ -281,24 +281,24 @@ CREATE TABLE [dbo].[AC_parent_AC_child_PAT_having_Annex] (
     )
 );
 GO
--- Knotted static tie table -------------------------------------------------------------------------------------------
+-- Static tie table ---------------------------------------------------------------------------------------------------
 -- PR_content_ST_location_EV_of_Posit table (having 3 roles)
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.PR_content_ST_location_EV_of_Posit', 'U') IS NULL
 CREATE TABLE [dbo].[PR_content_ST_location_EV_of_Posit] (
     PR_content_ST_location_EV_of_ID int IDENTITY(1,1) not null,
-    PR_ID_content int not null, 
-    ST_ID_location int not null, 
-    EV_ID_of int not null, 
+    PR_ID_content int not null,
+    ST_ID_location int not null,
+    EV_ID_of int not null,
     constraint PR_content_ST_location_EV_of_Posit_fkPR_content foreign key (
         PR_ID_content
-    ) references [dbo].[PR_Program](PR_ID), 
+    ) references [dbo].[PR_Program](PR_ID),
     constraint PR_content_ST_location_EV_of_Posit_fkST_location foreign key (
         ST_ID_location
-    ) references [dbo].[ST_Stage](ST_ID), 
+    ) references [dbo].[ST_Stage](ST_ID),
     constraint PR_content_ST_location_EV_of_Posit_fkEV_of foreign key (
         EV_ID_of
-    ) references [dbo].[EV_Event](EV_ID), 
+    ) references [dbo].[EV_Event](EV_ID),
     constraint pkPR_content_ST_location_EV_of_Posit primary key nonclustered (
         PR_content_ST_location_EV_of_ID asc
     ),

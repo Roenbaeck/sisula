@@ -164,14 +164,30 @@ BEGIN
             EV_DAT_Event_Date
         )
         SELECT
-            EV_DAT_EV_ID,
-            EV_DAT_Event_Date
+            v.EV_DAT_EV_ID,
+            v.EV_DAT_Event_Date
         FROM
-            @EV_DAT_Event_Date
+            @EV_DAT_Event_Date v
         WHERE
-            EV_DAT_Version = @currentVersion
+            v.EV_DAT_Version = @currentVersion
         AND
-            EV_DAT_StatementType in ('N');
+            v.EV_DAT_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_DAT_Event_Date w
+            WHERE
+                w.EV_DAT_Version = v.EV_DAT_Version
+            AND
+                w.EV_DAT_Positor < v.EV_DAT_Positor
+            AND
+                w.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+            AND
+                w.EV_DAT_Event_Date = v.EV_DAT_Event_Date
+            AND
+                w.EV_DAT_StatementType in ('N')
+        );
         INSERT INTO [attributes].[EV_DAT_Event_Date_Annex] (
             Metadata_EV_DAT,
             EV_DAT_ID,
@@ -354,14 +370,30 @@ BEGIN
             EV_AUD_Event_Audience
         )
         SELECT
-            EV_AUD_EV_ID,
-            EV_AUD_Event_Audience
+            v.EV_AUD_EV_ID,
+            v.EV_AUD_Event_Audience
         FROM
-            @EV_AUD_Event_Audience
+            @EV_AUD_Event_Audience v
         WHERE
-            EV_AUD_Version = @currentVersion
+            v.EV_AUD_Version = @currentVersion
         AND
-            EV_AUD_StatementType in ('N');
+            v.EV_AUD_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_AUD_Event_Audience w
+            WHERE
+                w.EV_AUD_Version = v.EV_AUD_Version
+            AND
+                w.EV_AUD_Positor < v.EV_AUD_Positor
+            AND
+                w.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+            AND
+                w.EV_AUD_Event_Audience = v.EV_AUD_Event_Audience
+            AND
+                w.EV_AUD_StatementType in ('N')
+        );
         INSERT INTO [attributes].[EV_AUD_Event_Audience_Annex] (
             Metadata_EV_AUD,
             EV_AUD_ID,
@@ -544,14 +576,30 @@ BEGIN
             EV_REV_Event_Revenue
         )
         SELECT
-            EV_REV_EV_ID,
-            EV_REV_Event_Revenue
+            v.EV_REV_EV_ID,
+            v.EV_REV_Event_Revenue
         FROM
-            @EV_REV_Event_Revenue
+            @EV_REV_Event_Revenue v
         WHERE
-            EV_REV_Version = @currentVersion
+            v.EV_REV_Version = @currentVersion
         AND
-            EV_REV_StatementType in ('N');
+            v.EV_REV_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_REV_Event_Revenue w
+            WHERE
+                w.EV_REV_Version = v.EV_REV_Version
+            AND
+                w.EV_REV_Positor < v.EV_REV_Positor
+            AND
+                w.EV_REV_EV_ID = v.EV_REV_EV_ID
+            AND
+                w.EV_REV_Event_Revenue = v.EV_REV_Event_Revenue
+            AND
+                w.EV_REV_StatementType in ('N')
+        );
         INSERT INTO [attributes].[EV_REV_Event_Revenue_Annex] (
             Metadata_EV_REV,
             EV_REV_ID,
@@ -773,15 +821,33 @@ BEGIN
             EV_STA_Event_Status
         )
         SELECT
-            EV_STA_EV_ID,
-            EV_STA_ChangedAt,
-            EV_STA_Event_Status
+            v.EV_STA_EV_ID,
+            v.EV_STA_ChangedAt,
+            v.EV_STA_Event_Status
         FROM
-            @EV_STA_Event_Status
+            @EV_STA_Event_Status v
         WHERE
-            EV_STA_Version = @currentVersion
+            v.EV_STA_Version = @currentVersion
         AND
-            EV_STA_StatementType in ('N','R');
+            v.EV_STA_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_STA_Event_Status w
+            WHERE
+                w.EV_STA_Version = v.EV_STA_Version
+            AND
+                w.EV_STA_Positor < v.EV_STA_Positor
+            AND
+                w.EV_STA_EV_ID = v.EV_STA_EV_ID
+            AND
+                w.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+            AND
+                w.EV_STA_Event_Status = v.EV_STA_Event_Status
+            AND
+                w.EV_STA_StatementType in ('N','R')
+        );
         INSERT INTO [attributes].[EV_STA_Event_Status_Annex] (
             Metadata_EV_STA,
             EV_STA_ID,
@@ -832,7 +898,7 @@ BEGIN
         EV_UTL_PositedAt datetime2 not null,
         EV_UTL_Reliability decimal(5,2) not null,
         EV_UTL_Assertion char(1) not null,
-        EV_UTL_UTL_ID tinyint not null, 
+        EV_UTL_UTL_ID tinyint not null,
         EV_UTL_Version bigint not null,
         EV_UTL_StatementType char(1) not null,
         primary key(
@@ -966,14 +1032,30 @@ BEGIN
             EV_UTL_UTL_ID
         )
         SELECT
-            EV_UTL_EV_ID,
-            EV_UTL_UTL_ID
+            v.EV_UTL_EV_ID,
+            v.EV_UTL_UTL_ID
         FROM
-            @EV_UTL_Event_Utilization
+            @EV_UTL_Event_Utilization v
         WHERE
-            EV_UTL_Version = @currentVersion
+            v.EV_UTL_Version = @currentVersion
         AND
-            EV_UTL_StatementType in ('N');
+            v.EV_UTL_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_UTL_Event_Utilization w
+            WHERE
+                w.EV_UTL_Version = v.EV_UTL_Version
+            AND
+                w.EV_UTL_Positor < v.EV_UTL_Positor
+            AND
+                w.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+            AND
+                w.EV_UTL_UTL_ID = v.EV_UTL_UTL_ID
+            AND
+                w.EV_UTL_StatementType in ('N')
+        );
         INSERT INTO [attributes].[EV_UTL_Event_Utilization_Annex] (
             Metadata_EV_UTL,
             EV_UTL_ID,
@@ -1023,7 +1105,7 @@ BEGIN
         EV_LVL_PositedAt datetime2 not null,
         EV_LVL_Reliability decimal(5,2) not null,
         EV_LVL_Assertion char(1) not null,
-        EV_LVL_PLV_ID tinyint not null, 
+        EV_LVL_PLV_ID tinyint not null,
         EV_LVL_Version bigint not null,
         EV_LVL_StatementType char(1) not null,
         primary key(
@@ -1195,15 +1277,33 @@ BEGIN
             EV_LVL_PLV_ID
         )
         SELECT
-            EV_LVL_EV_ID,
-            EV_LVL_ChangedAt,
-            EV_LVL_PLV_ID
+            v.EV_LVL_EV_ID,
+            v.EV_LVL_ChangedAt,
+            v.EV_LVL_PLV_ID
         FROM
-            @EV_LVL_Event_Level
+            @EV_LVL_Event_Level v
         WHERE
-            EV_LVL_Version = @currentVersion
+            v.EV_LVL_Version = @currentVersion
         AND
-            EV_LVL_StatementType in ('N','R');
+            v.EV_LVL_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @EV_LVL_Event_Level w
+            WHERE
+                w.EV_LVL_Version = v.EV_LVL_Version
+            AND
+                w.EV_LVL_Positor < v.EV_LVL_Positor
+            AND
+                w.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+            AND
+                w.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+            AND
+                w.EV_LVL_PLV_ID = v.EV_LVL_PLV_ID
+            AND
+                w.EV_LVL_StatementType in ('N','R')
+        );
         INSERT INTO [attributes].[EV_LVL_Event_Level_Annex] (
             Metadata_EV_LVL,
             EV_LVL_ID,
@@ -1427,15 +1527,33 @@ BEGIN
             ST_NAM_Stage_Name
         )
         SELECT
-            ST_NAM_ST_ID,
-            ST_NAM_ChangedAt,
-            ST_NAM_Stage_Name
+            v.ST_NAM_ST_ID,
+            v.ST_NAM_ChangedAt,
+            v.ST_NAM_Stage_Name
         FROM
-            @ST_NAM_Stage_Name
+            @ST_NAM_Stage_Name v
         WHERE
-            ST_NAM_Version = @currentVersion
+            v.ST_NAM_Version = @currentVersion
         AND
-            ST_NAM_StatementType in ('N','R');
+            v.ST_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_NAM_Stage_Name w
+            WHERE
+                w.ST_NAM_Version = v.ST_NAM_Version
+            AND
+                w.ST_NAM_Positor < v.ST_NAM_Positor
+            AND
+                w.ST_NAM_ST_ID = v.ST_NAM_ST_ID
+            AND
+                w.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+            AND
+                w.ST_NAM_Stage_Name = v.ST_NAM_Stage_Name
+            AND
+                w.ST_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [attributes].[ST_NAM_Stage_Name_Annex] (
             Metadata_ST_NAM,
             ST_NAM_ID,
@@ -1517,7 +1635,7 @@ BEGIN
             WHERE
                 p.ST_LOC_ST_ID = i.ST_LOC_ST_ID
             AND
-                p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+                p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
             AND
                 a.ST_LOC_Positor = i.ST_LOC_Positor
             AND
@@ -1572,7 +1690,7 @@ BEGIN
         WHERE
             p.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
-            p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) 
+            p.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         AND
             a.ST_LOC_Positor = i.ST_LOC_Positor
         AND
@@ -1600,7 +1718,7 @@ BEGIN
                         AND
                             t.ST_LOC_Reliability = v.ST_LOC_Reliability
                         AND
-                            t.ST_LOC_Checksum = v.ST_LOC_Checksum 
+                            t.ST_LOC_Checksum = v.ST_LOC_Checksum
                     )
                     THEN 'D' -- duplicate assertion
                     WHEN p.ST_LOC_ST_ID is not null
@@ -1614,7 +1732,7 @@ BEGIN
         ON
             p.ST_LOC_ST_ID = v.ST_LOC_ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion;
         INSERT INTO [attributes].[ST_LOC_Stage_Location_Posit] (
@@ -1622,14 +1740,30 @@ BEGIN
             ST_LOC_Stage_Location
         )
         SELECT
-            ST_LOC_ST_ID,
-            ST_LOC_Stage_Location
+            v.ST_LOC_ST_ID,
+            v.ST_LOC_Stage_Location
         FROM
-            @ST_LOC_Stage_Location
+            @ST_LOC_Stage_Location v
         WHERE
-            ST_LOC_Version = @currentVersion
+            v.ST_LOC_Version = @currentVersion
         AND
-            ST_LOC_StatementType in ('N');
+            v.ST_LOC_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_LOC_Stage_Location w
+            WHERE
+                w.ST_LOC_Version = v.ST_LOC_Version
+            AND
+                w.ST_LOC_Positor < v.ST_LOC_Positor
+            AND
+                w.ST_LOC_ST_ID = v.ST_LOC_ST_ID
+            AND
+                w.ST_LOC_Checksum = v.ST_LOC_Checksum
+            AND
+                w.ST_LOC_StatementType in ('N')
+        );
         INSERT INTO [attributes].[ST_LOC_Stage_Location_Annex] (
             Metadata_ST_LOC,
             ST_LOC_ID,
@@ -1650,7 +1784,7 @@ BEGIN
         ON
             p.ST_LOC_ST_ID = v.ST_LOC_ST_ID
         AND
-            p.ST_LOC_Checksum = v.ST_LOC_Checksum 
+            p.ST_LOC_Checksum = v.ST_LOC_Checksum
         WHERE
             v.ST_LOC_Version = @currentVersion
         AND
@@ -1679,7 +1813,7 @@ BEGIN
         ST_AVG_PositedAt datetime2 not null,
         ST_AVG_Reliability decimal(5,2) not null,
         ST_AVG_Assertion char(1) not null,
-        ST_AVG_UTL_ID tinyint not null, 
+        ST_AVG_UTL_ID tinyint not null,
         ST_AVG_Version bigint not null,
         ST_AVG_StatementType char(1) not null,
         primary key(
@@ -1853,15 +1987,33 @@ BEGIN
             ST_AVG_UTL_ID
         )
         SELECT
-            ST_AVG_ST_ID,
-            ST_AVG_ChangedAt,
-            ST_AVG_UTL_ID
+            v.ST_AVG_ST_ID,
+            v.ST_AVG_ChangedAt,
+            v.ST_AVG_UTL_ID
         FROM
-            @ST_AVG_Stage_Average
+            @ST_AVG_Stage_Average v
         WHERE
-            ST_AVG_Version = @currentVersion
+            v.ST_AVG_Version = @currentVersion
         AND
-            ST_AVG_StatementType in ('N','F');
+            v.ST_AVG_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_AVG_Stage_Average w
+            WHERE
+                w.ST_AVG_Version = v.ST_AVG_Version
+            AND
+                w.ST_AVG_Positor < v.ST_AVG_Positor
+            AND
+                w.ST_AVG_ST_ID = v.ST_AVG_ST_ID
+            AND
+                w.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+            AND
+                w.ST_AVG_UTL_ID = v.ST_AVG_UTL_ID
+            AND
+                w.ST_AVG_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [attributes].[ST_AVG_Stage_Average_Annex] (
             Metadata_ST_AVG,
@@ -1954,7 +2106,7 @@ BEGIN
         ST_MIN_PositedAt datetime2 not null,
         ST_MIN_Reliability decimal(5,2) not null,
         ST_MIN_Assertion char(1) not null,
-        ST_MIN_UTL_ID tinyint not null, 
+        ST_MIN_UTL_ID tinyint not null,
         ST_MIN_Version bigint not null,
         ST_MIN_StatementType char(1) not null,
         primary key(
@@ -2088,14 +2240,30 @@ BEGIN
             ST_MIN_UTL_ID
         )
         SELECT
-            ST_MIN_ST_ID,
-            ST_MIN_UTL_ID
+            v.ST_MIN_ST_ID,
+            v.ST_MIN_UTL_ID
         FROM
-            @ST_MIN_Stage_Minimum
+            @ST_MIN_Stage_Minimum v
         WHERE
-            ST_MIN_Version = @currentVersion
+            v.ST_MIN_Version = @currentVersion
         AND
-            ST_MIN_StatementType in ('N');
+            v.ST_MIN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @ST_MIN_Stage_Minimum w
+            WHERE
+                w.ST_MIN_Version = v.ST_MIN_Version
+            AND
+                w.ST_MIN_Positor < v.ST_MIN_Positor
+            AND
+                w.ST_MIN_ST_ID = v.ST_MIN_ST_ID
+            AND
+                w.ST_MIN_UTL_ID = v.ST_MIN_UTL_ID
+            AND
+                w.ST_MIN_StatementType in ('N')
+        );
         INSERT INTO [attributes].[ST_MIN_Stage_Minimum_Annex] (
             Metadata_ST_MIN,
             ST_MIN_ID,
@@ -2317,15 +2485,33 @@ BEGIN
             AC_NAM_Actor_Name
         )
         SELECT
-            AC_NAM_AC_ID,
-            AC_NAM_ChangedAt,
-            AC_NAM_Actor_Name
+            v.AC_NAM_AC_ID,
+            v.AC_NAM_ChangedAt,
+            v.AC_NAM_Actor_Name
         FROM
-            @AC_NAM_Actor_Name
+            @AC_NAM_Actor_Name v
         WHERE
-            AC_NAM_Version = @currentVersion
+            v.AC_NAM_Version = @currentVersion
         AND
-            AC_NAM_StatementType in ('N','R');
+            v.AC_NAM_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_NAM_Actor_Name w
+            WHERE
+                w.AC_NAM_Version = v.AC_NAM_Version
+            AND
+                w.AC_NAM_Positor < v.AC_NAM_Positor
+            AND
+                w.AC_NAM_AC_ID = v.AC_NAM_AC_ID
+            AND
+                w.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+            AND
+                w.AC_NAM_Actor_Name = v.AC_NAM_Actor_Name
+            AND
+                w.AC_NAM_StatementType in ('N','R')
+        );
         INSERT INTO [attributes].[AC_NAM_Actor_Name_Annex] (
             Metadata_AC_NAM,
             AC_NAM_ID,
@@ -2376,7 +2562,7 @@ BEGIN
         AC_GEN_PositedAt datetime2 not null,
         AC_GEN_Reliability decimal(5,2) not null,
         AC_GEN_Assertion char(1) not null,
-        AC_GEN_GEN_ID tinyint not null, 
+        AC_GEN_GEN_ID tinyint not null,
         AC_GEN_Version bigint not null,
         AC_GEN_StatementType char(1) not null,
         primary key(
@@ -2510,14 +2696,30 @@ BEGIN
             AC_GEN_GEN_ID
         )
         SELECT
-            AC_GEN_AC_ID,
-            AC_GEN_GEN_ID
+            v.AC_GEN_AC_ID,
+            v.AC_GEN_GEN_ID
         FROM
-            @AC_GEN_Actor_Gender
+            @AC_GEN_Actor_Gender v
         WHERE
-            AC_GEN_Version = @currentVersion
+            v.AC_GEN_Version = @currentVersion
         AND
-            AC_GEN_StatementType in ('N');
+            v.AC_GEN_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_GEN_Actor_Gender w
+            WHERE
+                w.AC_GEN_Version = v.AC_GEN_Version
+            AND
+                w.AC_GEN_Positor < v.AC_GEN_Positor
+            AND
+                w.AC_GEN_AC_ID = v.AC_GEN_AC_ID
+            AND
+                w.AC_GEN_GEN_ID = v.AC_GEN_GEN_ID
+            AND
+                w.AC_GEN_StatementType in ('N')
+        );
         INSERT INTO [attributes].[AC_GEN_Actor_Gender_Annex] (
             Metadata_AC_GEN,
             AC_GEN_ID,
@@ -2567,7 +2769,7 @@ BEGIN
         AC_PLV_PositedAt datetime2 not null,
         AC_PLV_Reliability decimal(5,2) not null,
         AC_PLV_Assertion char(1) not null,
-        AC_PLV_PLV_ID tinyint not null, 
+        AC_PLV_PLV_ID tinyint not null,
         AC_PLV_Version bigint not null,
         AC_PLV_StatementType char(1) not null,
         primary key(
@@ -2739,15 +2941,33 @@ BEGIN
             AC_PLV_PLV_ID
         )
         SELECT
-            AC_PLV_AC_ID,
-            AC_PLV_ChangedAt,
-            AC_PLV_PLV_ID
+            v.AC_PLV_AC_ID,
+            v.AC_PLV_ChangedAt,
+            v.AC_PLV_PLV_ID
         FROM
-            @AC_PLV_Actor_ProfessionalLevel
+            @AC_PLV_Actor_ProfessionalLevel v
         WHERE
-            AC_PLV_Version = @currentVersion
+            v.AC_PLV_Version = @currentVersion
         AND
-            AC_PLV_StatementType in ('N','R');
+            v.AC_PLV_StatementType in ('N','R')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @AC_PLV_Actor_ProfessionalLevel w
+            WHERE
+                w.AC_PLV_Version = v.AC_PLV_Version
+            AND
+                w.AC_PLV_Positor < v.AC_PLV_Positor
+            AND
+                w.AC_PLV_AC_ID = v.AC_PLV_AC_ID
+            AND
+                w.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+            AND
+                w.AC_PLV_PLV_ID = v.AC_PLV_PLV_ID
+            AND
+                w.AC_PLV_StatementType in ('N','R')
+        );
         INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] (
             Metadata_AC_PLV,
             AC_PLV_ID,
@@ -2932,14 +3152,30 @@ BEGIN
             PR_NAM_Program_Name
         )
         SELECT
-            PR_NAM_PR_ID,
-            PR_NAM_Program_Name
+            v.PR_NAM_PR_ID,
+            v.PR_NAM_Program_Name
         FROM
-            @PR_NAM_Program_Name
+            @PR_NAM_Program_Name v
         WHERE
-            PR_NAM_Version = @currentVersion
+            v.PR_NAM_Version = @currentVersion
         AND
-            PR_NAM_StatementType in ('N');
+            v.PR_NAM_StatementType in ('N')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_NAM_Program_Name w
+            WHERE
+                w.PR_NAM_Version = v.PR_NAM_Version
+            AND
+                w.PR_NAM_Positor < v.PR_NAM_Positor
+            AND
+                w.PR_NAM_PR_ID = v.PR_NAM_PR_ID
+            AND
+                w.PR_NAM_Program_Name = v.PR_NAM_Program_Name
+            AND
+                w.PR_NAM_StatementType in ('N')
+        );
         INSERT INTO [attributes].[PR_NAM_Program_Name_Annex] (
             Metadata_PR_NAM,
             PR_NAM_ID,
@@ -3163,15 +3399,33 @@ BEGIN
             PR_LEN_Program_Length
         )
         SELECT
-            PR_LEN_PR_ID,
-            PR_LEN_ChangedAt,
-            PR_LEN_Program_Length
+            v.PR_LEN_PR_ID,
+            v.PR_LEN_ChangedAt,
+            v.PR_LEN_Program_Length
         FROM
-            @PR_LEN_Program_Length
+            @PR_LEN_Program_Length v
         WHERE
-            PR_LEN_Version = @currentVersion
+            v.PR_LEN_Version = @currentVersion
         AND
-            PR_LEN_StatementType in ('N','F');
+            v.PR_LEN_StatementType in ('N','F')
+        AND NOT EXISTS ( -- a posit that several positors state is made once
+            SELECT TOP 1
+                42
+            FROM
+                @PR_LEN_Program_Length w
+            WHERE
+                w.PR_LEN_Version = v.PR_LEN_Version
+            AND
+                w.PR_LEN_Positor < v.PR_LEN_Positor
+            AND
+                w.PR_LEN_PR_ID = v.PR_LEN_PR_ID
+            AND
+                w.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+            AND
+                w.PR_LEN_Program_Length = v.PR_LEN_Program_Length
+            AND
+                w.PR_LEN_StatementType in ('N','F')
+        );
         -- retract the following versions that the new ones make restatements
         INSERT INTO [attributes].[PR_LEN_Program_Length_Annex] (
             Metadata_PR_LEN,

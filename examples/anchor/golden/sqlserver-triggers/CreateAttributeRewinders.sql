@@ -8,6 +8,28 @@
 -- @changingTimepoint the point in changing time to rewind to
 --
 -- Attribute rewinder -------------------------------------------------------------------------------------------------
+-- rEV_PLC_Event_Place rewinding over changing time function
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('dbo.rEV_PLC_Event_Place','IF') IS NULL
+BEGIN
+    EXEC('
+    CREATE FUNCTION [dbo].[rEV_PLC_Event_Place] (
+        @changingTimepoint datetime2
+    )
+    RETURNS TABLE WITH SCHEMABINDING AS RETURN
+    SELECT
+        Metadata_EV_PLC,
+        EV_PLC_EV_ID,
+        EV_PLC_Event_Place,
+        EV_PLC_ChangedAt
+    FROM
+        [dbo].[EV_PLC_Event_Place]
+    WHERE
+        EV_PLC_ChangedAt <= @changingTimepoint;
+    ');
+END
+GO
+-- Attribute rewinder -------------------------------------------------------------------------------------------------
 -- rSU_TTL_Subject_Title rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 IF Object_ID('dbo.rSU_TTL_Subject_Title','IF') IS NULL

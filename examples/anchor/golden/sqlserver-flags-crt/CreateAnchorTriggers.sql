@@ -25,14 +25,14 @@ BEGIN
         ST_ID int not null
     );
     INSERT INTO [anchors].[ST_Stage] (
-        Metadata_ST 
+        Metadata_ST
     )
     OUTPUT
         inserted.ST_ID
     INTO
         @ST
     SELECT
-        Metadata_ST 
+        Metadata_ST
     FROM
         inserted
     WHERE
@@ -201,7 +201,7 @@ BEGIN
     SELECT
         i.Metadata_ST_AVG,
         i.ST_AVG_ST_ID,
-        ISNULL(i.ST_AVG_UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.ST_AVG_UTL_ID, [kUTL].UTL_ID),
         i.ST_AVG_ChangedAt,
         i.ST_AVG_PositedAt,
         i.ST_AVG_Positor,
@@ -225,7 +225,7 @@ BEGIN
     SELECT
         i.Metadata_ST_MIN,
         i.ST_MIN_ST_ID,
-        ISNULL(i.ST_MIN_UTL_ID, [kUTL].UTL_ID), 
+        ISNULL(i.ST_MIN_UTL_ID, [kUTL].UTL_ID),
         i.ST_MIN_PositedAt,
         i.ST_MIN_Positor,
         i.ST_MIN_Reliability
@@ -321,11 +321,73 @@ BEGIN
             END, 1)
         )
     END
+    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
+    IF (
+        UPDATE(ST_NAM_Stage_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_NAM_Stage_Name] (
+            Metadata_ST_NAM,
+            ST_NAM_ST_ID,
+            ST_NAM_Stage_Name,
+            ST_NAM_ChangedAt,
+            ST_NAM_PositedAt,
+            ST_NAM_Positor,
+            ST_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_NAM
+            END, i.Metadata_ST),
+            p.ST_NAM_ST_ID,
+            p.ST_NAM_Stage_Name,
+            p.ST_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+            END, @now) as datetime2),
+            d.ST_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        ON
+            p.ST_NAM_ID = d.ST_NAM_ID
+        WHERE
+            p.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+        AND
+            UPDATE(ST_NAM_ChangedAt)
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            d.ST_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Positor) THEN i.ST_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_NAM_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_NAM_Stage_Name) 
+        UPDATE(ST_NAM_Stage_Name)
     )
     BEGIN
         INSERT INTO [attributes].[ST_NAM_Stage_Name] (
@@ -357,7 +419,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_NAM_Stage_Name_Posit] p
         ON
             p.ST_NAM_ID = i.ST_NAM_ID
@@ -419,7 +481,7 @@ BEGIN
             UPDATE(ST_LOC_Positor) OR
             UPDATE(Positor) OR
             d.ST_LOC_Stage_Location is null OR
-            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR 
+            d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR
             d.ST_LOC_Reliability <> ISNULL(CASE
                 WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
                 WHEN UPDATE(Reliability) THEN i.Reliability
@@ -427,11 +489,67 @@ BEGIN
             END, 1)
         )
     END
+    -- indecisive: another value is a correction, which also retracts the shown one
+    IF (
+        UPDATE(ST_LOC_Stage_Location)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_LOC_Stage_Location] (
+            Metadata_ST_LOC,
+            ST_LOC_ST_ID,
+            ST_LOC_Stage_Location,
+            ST_LOC_PositedAt,
+            ST_LOC_Positor,
+            ST_LOC_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_LOC
+            END, i.Metadata_ST),
+            p.ST_LOC_ST_ID,
+            p.ST_LOC_Stage_Location,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2),
+            d.ST_LOC_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        ON
+            p.ST_LOC_ID = d.ST_LOC_ID
+        WHERE
+            p.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+        AND
+            d.ST_LOC_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Positor) THEN i.ST_LOC_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_LOC_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_LOC_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_LOC_Stage_Location) 
+        UPDATE(ST_LOC_Stage_Location)
     )
     BEGIN
         INSERT INTO [attributes].[ST_LOC_Stage_Location] (
@@ -460,7 +578,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_LOC_Stage_Location_Posit] p
         ON
             p.ST_LOC_ID = i.ST_LOC_ID
@@ -548,12 +666,82 @@ BEGIN
             END, 1)
         );
     END
+    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
+    IF (
+        UPDATE(ST_AVG_UTL_ID) OR
+        UPDATE(ST_AVG_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_AVG_Stage_Average] (
+            Metadata_ST_AVG,
+            ST_AVG_ST_ID,
+            ST_AVG_UTL_ID,
+            ST_AVG_ChangedAt,
+            ST_AVG_PositedAt,
+            ST_AVG_Positor,
+            ST_AVG_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_AVG
+            END, i.Metadata_ST),
+            p.ST_AVG_ST_ID,
+            p.ST_AVG_UTL_ID,
+            p.ST_AVG_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+            END, @now) as datetime2),
+            d.ST_AVG_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        ON
+            p.ST_AVG_ID = d.ST_AVG_ID
+        WHERE
+            p.ST_AVG_UTL_ID <> CASE
+                WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            UPDATE(ST_AVG_ChangedAt)
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            d.ST_AVG_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Positor) THEN i.ST_AVG_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_AVG_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_AVG_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(ST_AVG_UTL_ID) OR
-        UPDATE(ST_AVG_UTL_Utilization) 
+        UPDATE(ST_AVG_UTL_Utilization)
     )
     BEGIN
         INSERT INTO [attributes].[ST_AVG_Stage_Average] (
@@ -585,13 +773,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_AVG_Stage_Average_Posit] p
         ON
             p.ST_AVG_ID = i.ST_AVG_ID
         WHERE
             (UPDATE(ST_AVG_UTL_ID) AND i.ST_AVG_UTL_ID is null)
-        OR 
+        OR
             (UPDATE(ST_AVG_UTL_Utilization) AND i.ST_AVG_UTL_Utilization is null);
     END
     IF(UPDATE(ST_MIN_ID))
@@ -668,12 +856,76 @@ BEGIN
             END, 1)
         );
     END
+    -- indecisive: another value is a correction, which also retracts the shown one
+    IF (
+        UPDATE(ST_MIN_UTL_ID) OR
+        UPDATE(ST_MIN_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
+            Metadata_ST_MIN,
+            ST_MIN_ST_ID,
+            ST_MIN_UTL_ID,
+            ST_MIN_PositedAt,
+            ST_MIN_Positor,
+            ST_MIN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_MIN
+            END, i.Metadata_ST),
+            p.ST_MIN_ST_ID,
+            p.ST_MIN_UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2),
+            d.ST_MIN_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        ON
+            p.ST_MIN_ID = d.ST_MIN_ID
+        WHERE
+            p.ST_MIN_UTL_ID <> CASE
+                WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            d.ST_MIN_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Positor) THEN i.ST_MIN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_MIN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_MIN_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(ST_MIN_UTL_ID) OR
-        UPDATE(ST_MIN_UTL_Utilization) 
+        UPDATE(ST_MIN_UTL_Utilization)
     )
     BEGIN
         INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
@@ -702,13 +954,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[ST_MIN_Stage_Minimum_Posit] p
         ON
             p.ST_MIN_ID = i.ST_MIN_ID
         WHERE
             (UPDATE(ST_MIN_UTL_ID) AND i.ST_MIN_UTL_ID is null)
-        OR 
+        OR
             (UPDATE(ST_MIN_UTL_Utilization) AND i.ST_MIN_UTL_Utilization is null);
     END
 END
@@ -808,14 +1060,14 @@ BEGIN
         AC_ID smallint not null
     );
     INSERT INTO [anchors].[AC_Actor] (
-        Metadata_AC 
+        Metadata_AC
     )
     OUTPUT
         inserted.AC_ID
     INTO
         @AC
     SELECT
-        Metadata_AC 
+        Metadata_AC
     FROM
         inserted
     WHERE
@@ -952,7 +1204,7 @@ BEGIN
     SELECT
         i.Metadata_AC_GEN,
         i.AC_GEN_AC_ID,
-        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID), 
+        ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID),
         i.AC_GEN_PositedAt,
         i.AC_GEN_Positor,
         i.AC_GEN_Reliability
@@ -961,7 +1213,7 @@ BEGIN
     LEFT JOIN
         [knots].[GEN_Gender] [kGEN]
     ON
-        [kGEN].GEN_Checksum = i.AC_GEN_GEN_Checksum 
+        [kGEN].GEN_Checksum = i.AC_GEN_GEN_Checksum
     WHERE
         ISNULL(i.AC_GEN_GEN_ID, [kGEN].GEN_ID) is not null;
     INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
@@ -976,7 +1228,7 @@ BEGIN
     SELECT
         i.Metadata_AC_PLV,
         i.AC_PLV_AC_ID,
-        ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID), 
+        ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID),
         i.AC_PLV_ChangedAt,
         i.AC_PLV_PositedAt,
         i.AC_PLV_Positor,
@@ -986,7 +1238,7 @@ BEGIN
     LEFT JOIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
-        [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum 
+        [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum
     WHERE
         ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -1073,11 +1325,73 @@ BEGIN
             END, 1)
         )
     END
+    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
+    IF (
+        UPDATE(AC_NAM_Actor_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_NAM_Actor_Name] (
+            Metadata_AC_NAM,
+            AC_NAM_AC_ID,
+            AC_NAM_Actor_Name,
+            AC_NAM_ChangedAt,
+            AC_NAM_PositedAt,
+            AC_NAM_Positor,
+            AC_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_NAM
+            END, i.Metadata_AC),
+            p.AC_NAM_AC_ID,
+            p.AC_NAM_Actor_Name,
+            p.AC_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+            END, @now) as datetime2),
+            d.AC_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        ON
+            p.AC_NAM_ID = d.AC_NAM_ID
+        WHERE
+            p.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+        AND
+            UPDATE(AC_NAM_ChangedAt)
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            d.AC_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Positor) THEN i.AC_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_NAM_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(AC_NAM_Actor_Name) 
+        UPDATE(AC_NAM_Actor_Name)
     )
     BEGIN
         INSERT INTO [attributes].[AC_NAM_Actor_Name] (
@@ -1109,7 +1423,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_NAM_Actor_Name_Posit] p
         ON
             p.AC_NAM_ID = i.AC_NAM_ID
@@ -1165,7 +1479,7 @@ BEGIN
         LEFT JOIN
             [knots].[GEN_Gender] [kGEN]
         ON
-            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max))) 
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -1190,12 +1504,76 @@ BEGIN
             END, 1)
         );
     END
+    -- indecisive: another value is a correction, which also retracts the shown one
+    IF (
+        UPDATE(AC_GEN_GEN_ID) OR
+        UPDATE(AC_GEN_GEN_Gender)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
+            Metadata_AC_GEN,
+            AC_GEN_AC_ID,
+            AC_GEN_GEN_ID,
+            AC_GEN_PositedAt,
+            AC_GEN_Positor,
+            AC_GEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_GEN
+            END, i.Metadata_AC),
+            p.AC_GEN_AC_ID,
+            p.AC_GEN_GEN_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2),
+            d.AC_GEN_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[GEN_Gender] [kGEN]
+        ON
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        ON
+            p.AC_GEN_ID = d.AC_GEN_ID
+        WHERE
+            p.AC_GEN_GEN_ID <> CASE
+                WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
+                ELSE [kGEN].GEN_ID
+            END
+        AND
+            d.AC_GEN_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Positor) THEN i.AC_GEN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_GEN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_GEN_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(AC_GEN_GEN_ID) OR
-        UPDATE(AC_GEN_GEN_Gender) 
+        UPDATE(AC_GEN_GEN_Gender)
     )
     BEGIN
         INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
@@ -1224,13 +1602,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_GEN_Actor_Gender_Posit] p
         ON
             p.AC_GEN_ID = i.AC_GEN_ID
         WHERE
             (UPDATE(AC_GEN_GEN_ID) AND i.AC_GEN_GEN_ID is null)
-        OR 
+        OR
             (UPDATE(AC_GEN_GEN_Gender) AND i.AC_GEN_GEN_Gender is null);
     END
     IF(UPDATE(AC_PLV_ID))
@@ -1288,7 +1666,7 @@ BEGIN
         LEFT JOIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max))) 
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
         LEFT JOIN
             deleted d
         ON
@@ -1314,12 +1692,82 @@ BEGIN
             END, 1)
         );
     END
+    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
+    IF (
+        UPDATE(AC_PLV_PLV_ID) OR
+        UPDATE(AC_PLV_PLV_ProfessionalLevel)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+            Metadata_AC_PLV,
+            AC_PLV_AC_ID,
+            AC_PLV_PLV_ID,
+            AC_PLV_ChangedAt,
+            AC_PLV_PositedAt,
+            AC_PLV_Positor,
+            AC_PLV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_PLV
+            END, i.Metadata_AC),
+            p.AC_PLV_AC_ID,
+            p.AC_PLV_PLV_ID,
+            p.AC_PLV_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+            END, @now) as datetime2),
+            d.AC_PLV_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        ON
+            p.AC_PLV_ID = d.AC_PLV_ID
+        WHERE
+            p.AC_PLV_PLV_ID <> CASE
+                WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END
+        AND
+            UPDATE(AC_PLV_ChangedAt)
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            d.AC_PLV_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Positor) THEN i.AC_PLV_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_PLV_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_PLV_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(AC_PLV_PLV_ID) OR
-        UPDATE(AC_PLV_PLV_ProfessionalLevel) 
+        UPDATE(AC_PLV_PLV_ProfessionalLevel)
     )
     BEGIN
         INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
@@ -1351,13 +1799,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
         ON
             p.AC_PLV_ID = i.AC_PLV_ID
         WHERE
             (UPDATE(AC_PLV_PLV_ID) AND i.AC_PLV_PLV_ID is null)
-        OR 
+        OR
             (UPDATE(AC_PLV_PLV_ProfessionalLevel) AND i.AC_PLV_PLV_ProfessionalLevel is null);
     END
 END
@@ -1440,14 +1888,14 @@ BEGIN
         PR_ID bigint not null
     );
     INSERT INTO [anchors].[PR_Program] (
-        Metadata_PR 
+        Metadata_PR
     )
     OUTPUT
         inserted.PR_ID
     INTO
         @PR
     SELECT
-        Metadata_PR 
+        Metadata_PR
     FROM
         inserted
     WHERE
@@ -1630,11 +2078,67 @@ BEGIN
             END, 1)
         )
     END
+    -- indecisive: another value is a correction, which also retracts the shown one
+    IF (
+        UPDATE(PR_NAM_Program_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_NAM_Program_Name] (
+            Metadata_PR_NAM,
+            PR_NAM_PR_ID,
+            PR_NAM_Program_Name,
+            PR_NAM_PositedAt,
+            PR_NAM_Positor,
+            PR_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_NAM
+            END, i.Metadata_PR),
+            p.PR_NAM_PR_ID,
+            p.PR_NAM_Program_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2),
+            d.PR_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        ON
+            p.PR_NAM_ID = d.PR_NAM_ID
+        WHERE
+            p.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+        AND
+            d.PR_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Positor) THEN i.PR_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.PR_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_NAM_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_NAM_Program_Name) 
+        UPDATE(PR_NAM_Program_Name)
     )
     BEGIN
         INSERT INTO [attributes].[PR_NAM_Program_Name] (
@@ -1663,7 +2167,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[PR_NAM_Program_Name_Posit] p
         ON
             p.PR_NAM_ID = i.PR_NAM_ID
@@ -1740,11 +2244,73 @@ BEGIN
             END, 1)
         )
     END
+    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
+    IF (
+        UPDATE(PR_LEN_Program_Length)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_LEN_Program_Length] (
+            Metadata_PR_LEN,
+            PR_LEN_PR_ID,
+            PR_LEN_Program_Length,
+            PR_LEN_ChangedAt,
+            PR_LEN_PositedAt,
+            PR_LEN_Positor,
+            PR_LEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_LEN
+            END, i.Metadata_PR),
+            p.PR_LEN_PR_ID,
+            p.PR_LEN_Program_Length,
+            p.PR_LEN_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+            END, @now) as datetime2),
+            d.PR_LEN_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        ON
+            p.PR_LEN_ID = d.PR_LEN_ID
+        WHERE
+            p.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+        AND
+            UPDATE(PR_LEN_ChangedAt)
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            d.PR_LEN_Positor = ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Positor) THEN i.PR_LEN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.PR_LEN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_LEN_Reliability
+            END, 1) > 0;
+    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_LEN_Program_Length) 
+        UPDATE(PR_LEN_Program_Length)
     )
     BEGIN
         INSERT INTO [attributes].[PR_LEN_Program_Length] (
@@ -1776,7 +2342,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [attributes].[PR_LEN_Program_Length_Posit] p
         ON
             p.PR_LEN_ID = i.PR_LEN_ID

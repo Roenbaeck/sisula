@@ -467,7 +467,7 @@ GO
 CREATE VIEW [dbo].[lSU_Subject]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [SU].*
 FROM
@@ -507,7 +507,7 @@ GO
 CREATE VIEW [dbo].[nSU_Subject]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [SU].*
 FROM
@@ -707,7 +707,7 @@ GO
 CREATE VIEW [dbo].[lOB_Object]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [OB].*
 FROM
@@ -747,7 +747,7 @@ GO
 CREATE VIEW [dbo].[nOB_Object]
 AS
 SELECT
-    p.*, 
+    p.*,
     cast(null as decimal(5,2)) as Reliability,
     [OB].*
 FROM

@@ -164,7 +164,7 @@ CREATE TABLE [dbo].[ST_NAM_Stage_Name_Posit] (
     constraint uqST_NAM_Stage_Name_Posit unique clustered (
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc,
-        ST_NAM_Checksum asc 
+        ST_NAM_Checksum asc
     )
 );
 GO
@@ -212,7 +212,7 @@ CREATE TABLE [dbo].[ST_LOC_Stage_Location_Posit] (
     ),
     constraint uqST_LOC_Stage_Location_Posit unique clustered (
         ST_LOC_ST_ID asc,
-        ST_LOC_Checksum asc 
+        ST_LOC_Checksum asc
     )
 );
 GO
@@ -364,7 +364,7 @@ CREATE TABLE [dbo].[AC_NAM_Actor_Name_Posit] (
     constraint uqAC_NAM_Actor_Name_Posit unique clustered (
         AC_NAM_AC_ID asc,
         AC_NAM_ChangedAt desc,
-        AC_NAM_Checksum asc 
+        AC_NAM_Checksum asc
     )
 );
 GO

@@ -116,10 +116,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rDAT]
     WHERE
-		[rDAT].EV_DAT_EV_ID = [EV].EV_ID
-	AND 
-		[rDAT].EV_DAT_Reliability = 1
-	ORDER BY
+        [rDAT].EV_DAT_EV_ID = [EV].EV_ID
+    AND
+        [rDAT].EV_DAT_Reliability = 1
+    ORDER BY
         [rDAT].EV_DAT_PositedAt DESC
 ) [DAT]
 OUTER APPLY (
@@ -135,10 +135,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rAUD]
     WHERE
-		[rAUD].EV_AUD_EV_ID = [EV].EV_ID
-	AND 
-		[rAUD].EV_AUD_Reliability = 1
-	ORDER BY
+        [rAUD].EV_AUD_EV_ID = [EV].EV_ID
+    AND
+        [rAUD].EV_AUD_Reliability = 1
+    ORDER BY
         [rAUD].EV_AUD_PositedAt DESC
 ) [AUD]
 OUTER APPLY (
@@ -154,10 +154,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rREV]
     WHERE
-		[rREV].EV_REV_EV_ID = [EV].EV_ID
-	AND 
-		[rREV].EV_REV_Reliability = 1
-	ORDER BY
+        [rREV].EV_REV_EV_ID = [EV].EV_ID
+    AND
+        [rREV].EV_REV_Reliability = 1
+    ORDER BY
         [rREV].EV_REV_PositedAt DESC
 ) [REV]
 OUTER APPLY (
@@ -175,10 +175,10 @@ OUTER APPLY (
             @positingTimepoint
         ) [rSTA]
     WHERE
-		[rSTA].EV_STA_EV_ID = [EV].EV_ID
-	AND 
-		[rSTA].EV_STA_Reliability = 1
-	ORDER BY
+        [rSTA].EV_STA_EV_ID = [EV].EV_ID
+    AND
+        [rSTA].EV_STA_Reliability = 1
+    ORDER BY
         [rSTA].EV_STA_ChangedAt DESC,
         [rSTA].EV_STA_PositedAt DESC
 ) [STA]
@@ -201,10 +201,10 @@ OUTER APPLY (
     ON
         [kUTL].UTL_ID = [rUTL].EV_UTL_UTL_ID
     WHERE
-		[rUTL].EV_UTL_EV_ID = [EV].EV_ID
-	AND 
-		[rUTL].EV_UTL_Reliability = 1
-	ORDER BY
+        [rUTL].EV_UTL_EV_ID = [EV].EV_ID
+    AND
+        [rUTL].EV_UTL_Reliability = 1
+    ORDER BY
         [rUTL].EV_UTL_PositedAt DESC
 ) [UTL]
 OUTER APPLY (
@@ -229,10 +229,10 @@ OUTER APPLY (
     ON
         [kLVL].PLV_ID = [rLVL].EV_LVL_PLV_ID
     WHERE
-		[rLVL].EV_LVL_EV_ID = [EV].EV_ID
-	AND 
-		[rLVL].EV_LVL_Reliability = 1
-	ORDER BY
+        [rLVL].EV_LVL_EV_ID = [EV].EV_ID
+    AND
+        [rLVL].EV_LVL_Reliability = 1
+    ORDER BY
         [rLVL].EV_LVL_ChangedAt DESC,
         [rLVL].EV_LVL_PositedAt DESC
 ) [LVL];
@@ -246,7 +246,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [nexuses].tEV_Event (
+    [nexuses].[tEV_Event] (
         DEFAULT,
         DEFAULT
     ) [EV];
@@ -254,7 +254,7 @@ GO
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -- pEV_Event viewed as it was on the given timepoint
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].pEV_Event (
+CREATE FUNCTION [nexuses].[pEV_Event] (
     @changingTimepoint datetime2
 )
 RETURNS TABLE AS RETURN
@@ -262,7 +262,7 @@ SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [nexuses].tEV_Event (
+    [nexuses].[tEV_Event] (
         @changingTimepoint,
         DEFAULT
     ) [EV];
@@ -270,13 +270,13 @@ GO
 -- Now perspective ----------------------------------------------------------------------------------------------------
 -- nEV_Event viewed as it currently is (cannot include future versions)
 -----------------------------------------------------------------------------------------------------------------------
-CREATE VIEW [nexuses].nEV_Event
+CREATE VIEW [nexuses].[nEV_Event]
 AS
 SELECT
     cast(null as decimal(5,2)) as Reliability,
     [EV].*
 FROM
-    [nexuses].tEV_Event (
+    [nexuses].[tEV_Event] (
         sysdatetime(),
         DEFAULT
     ) [EV];
@@ -284,7 +284,7 @@ GO
 -- Difference perspective ---------------------------------------------------------------------------------------------
 -- dEV_Event showing all differences between the given timepoints and optionally for a subset of attributes
 -----------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].dEV_Event (
+CREATE FUNCTION [nexuses].[dEV_Event] (
     @intervalStart datetime2,
     @intervalEnd datetime2,
     @selection varchar(max) = null
@@ -293,47 +293,34 @@ RETURNS TABLE AS RETURN
 SELECT
     timepoints.inspectedTimepoint,
     [EV].*
-FROM
-    (
-        SELECT DISTINCT
-            timepoint AS inspectedTimepoint
-        FROM
-            [dw].[_AnchorTimepoints](
-                @intervalStart,
-                @intervalEnd
-            )
-    ) timepoints
+FROM (
+    SELECT DISTINCT
+        EV_STA_EV_ID AS EV_ID,
+        EV_STA_ChangedAt AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        [attributes].[EV_STA_Event_Status]
+    WHERE
+        (@selection is null OR @selection like '%STA%')
+    AND
+        EV_STA_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+    UNION
+    SELECT DISTINCT
+        EV_LVL_EV_ID AS EV_ID,
+        EV_LVL_ChangedAt AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        [attributes].[EV_LVL_Event_Level]
+    WHERE
+        (@selection is null OR @selection like '%LVL%')
+    AND
+        EV_LVL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
+) timepoints
 CROSS APPLY
-    [nexuses].pEV_Event(timepoints.inspectedTimepoint) [EV]
-WHERE
-    @selection is null
-OR
-    EXISTS (
-        SELECT
-            1
-        FROM
-            [dw].[pPositor]
-        CROSS APPLY
-            [dw].[_SplitMnemonic](@selection)
-        JOIN
-            [dw].[_AnchorAttributes]
-        ON
-            mnemonic = [attribute]
-        AND
-            [anchor] = 'EV_Event'
-        JOIN
-            [dw].[pPositor] positors
-        ON
-            positors.Positor = 0
-        CROSS APPLY
-            [dw].[_AttributeTimepoints](
-                [capsule],
-                [attribute],
-                positors.Positor,
-                @intervalStart,
-                @intervalEnd
-            )
-        WHERE
-            timepoint = timepoints.inspectedTimepoint
-    );
+    [nexuses].[tEV_Event] (
+        timepoints.inspectedTimepoint,
+        DEFAULT
+    ) [EV]
+ WHERE
+    [EV].EV_ID = timepoints.EV_ID;
 GO

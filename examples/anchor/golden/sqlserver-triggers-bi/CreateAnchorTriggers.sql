@@ -25,14 +25,14 @@ BEGIN
         SU_ID int not null
     );
     INSERT INTO [dbo].[SU_Subject] (
-        Metadata_SU 
+        Metadata_SU
     )
     OUTPUT
         inserted.SU_ID
     INTO
         @SU
     SELECT
-        Metadata_SU 
+        Metadata_SU
     FROM
         inserted
     WHERE
@@ -318,7 +318,7 @@ BEGIN
     SELECT
         i.Metadata_SU_GRD,
         i.SU_GRD_SU_ID,
-        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID), 
+        ISNULL(i.SU_GRD_GRD_ID, [kGRD].GRD_ID),
         i.SU_GRD_PositedAt,
         i.SU_GRD_Reliability
     FROM
@@ -433,7 +433,7 @@ BEGIN
     SELECT
         i.Metadata_SU_LVL,
         i.SU_LVL_SU_ID,
-        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID), 
+        ISNULL(i.SU_LVL_GRD_ID, [kGRD].GRD_ID),
         i.SU_LVL_ChangedAt,
         i.SU_LVL_PositedAt,
         i.SU_LVL_Reliability
@@ -572,7 +572,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_NAM_Subject_Name) 
+        UPDATE(SU_NAM_Subject_Name)
     )
     BEGIN
         INSERT INTO [dbo].[SU_NAM_Subject_Name] (
@@ -596,7 +596,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_NAM_Subject_Name_Posit] p
         ON
             p.SU_NAM_ID = i.SU_NAM_ID
@@ -659,7 +659,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_COD_Subject_Code) 
+        UPDATE(SU_COD_Subject_Code)
     )
     BEGIN
         INSERT INTO [dbo].[SU_COD_Subject_Code] (
@@ -683,7 +683,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_COD_Subject_Code_Posit] p
         ON
             p.SU_COD_ID = i.SU_COD_ID
@@ -758,7 +758,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(SU_GRD_GRD_ID) OR
-        UPDATE(SU_GRD_GRD_Grade) 
+        UPDATE(SU_GRD_GRD_Grade)
     )
     BEGIN
         INSERT INTO [dbo].[SU_GRD_Subject_Grade] (
@@ -782,13 +782,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_GRD_Subject_Grade_Posit] p
         ON
             p.SU_GRD_ID = i.SU_GRD_ID
         WHERE
             (UPDATE(SU_GRD_GRD_ID) AND i.SU_GRD_GRD_ID is null)
-        OR 
+        OR
             (UPDATE(SU_GRD_GRD_Grade) AND i.SU_GRD_GRD_Grade is null);
     END
     IF(UPDATE(SU_NOT_ID))
@@ -835,7 +835,7 @@ BEGIN
         AND ( -- a statement that leaves everything as it is states nothing
             UPDATE(SU_NOT_PositedAt) OR
             d.SU_NOT_Subject_Note is null OR
-            d.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) OR 
+            d.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max))) OR
             d.SU_NOT_Reliability <> ISNULL(CASE
                 WHEN UPDATE(SU_NOT_Reliability) THEN i.SU_NOT_Reliability
                 WHEN UPDATE(Reliability) THEN i.Reliability
@@ -847,7 +847,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_NOT_Subject_Note) 
+        UPDATE(SU_NOT_Subject_Note)
     )
     BEGIN
         INSERT INTO [dbo].[SU_NOT_Subject_Note] (
@@ -871,7 +871,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_NOT_Subject_Note_Posit] p
         ON
             p.SU_NOT_ID = i.SU_NOT_ID
@@ -941,7 +941,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_TTL_Subject_Title) 
+        UPDATE(SU_TTL_Subject_Title)
     )
     BEGIN
         INSERT INTO [dbo].[SU_TTL_Subject_Title] (
@@ -968,7 +968,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_TTL_Subject_Title_Posit] p
         ON
             p.SU_TTL_ID = i.SU_TTL_ID
@@ -1038,7 +1038,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_STA_Subject_State) 
+        UPDATE(SU_STA_Subject_State)
     )
     BEGIN
         INSERT INTO [dbo].[SU_STA_Subject_State] (
@@ -1065,7 +1065,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_STA_Subject_State_Posit] p
         ON
             p.SU_STA_ID = i.SU_STA_ID
@@ -1135,7 +1135,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_LBL_Subject_Label) 
+        UPDATE(SU_LBL_Subject_Label)
     )
     BEGIN
         INSERT INTO [dbo].[SU_LBL_Subject_Label] (
@@ -1162,7 +1162,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_LBL_Subject_Label_Posit] p
         ON
             p.SU_LBL_ID = i.SU_LBL_ID
@@ -1232,7 +1232,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_TAG_Subject_Tag) 
+        UPDATE(SU_TAG_Subject_Tag)
     )
     BEGIN
         INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
@@ -1259,7 +1259,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_TAG_Subject_Tag_Posit] p
         ON
             p.SU_TAG_ID = i.SU_TAG_ID
@@ -1341,7 +1341,7 @@ BEGIN
     -- will use @timepoint as a proxy for positing time
     IF (
         UPDATE(SU_LVL_GRD_ID) OR
-        UPDATE(SU_LVL_GRD_Grade) 
+        UPDATE(SU_LVL_GRD_Grade)
     )
     BEGIN
         INSERT INTO [dbo].[SU_LVL_Subject_Level] (
@@ -1368,13 +1368,13 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_LVL_Subject_Level_Posit] p
         ON
             p.SU_LVL_ID = i.SU_LVL_ID
         WHERE
             (UPDATE(SU_LVL_GRD_ID) AND i.SU_LVL_GRD_ID is null)
-        OR 
+        OR
             (UPDATE(SU_LVL_GRD_Grade) AND i.SU_LVL_GRD_Grade is null);
     END
     IF(UPDATE(SU_TXT_ID))
@@ -1405,7 +1405,7 @@ BEGIN
             i.SU_TXT_Subject_Text,
             cast(ISNULL(CASE
                 WHEN UPDATE(SU_TXT_ChangedAt) THEN i.SU_TXT_ChangedAt
-                WHEN d.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) 
+                WHEN d.SU_TXT_Checksum = dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
                 THEN i.SU_TXT_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
@@ -1428,7 +1428,7 @@ BEGIN
             UPDATE(SU_TXT_ChangedAt) OR
             UPDATE(SU_TXT_PositedAt) OR
             d.SU_TXT_Subject_Text is null OR
-            d.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) OR 
+            d.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max))) OR
             d.SU_TXT_Reliability <> ISNULL(CASE
                 WHEN UPDATE(SU_TXT_Reliability) THEN i.SU_TXT_Reliability
                 WHEN UPDATE(Reliability) THEN i.Reliability
@@ -1440,7 +1440,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_TXT_Subject_Text) 
+        UPDATE(SU_TXT_Subject_Text)
     )
     BEGIN
         INSERT INTO [dbo].[SU_TXT_Subject_Text] (
@@ -1467,7 +1467,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_TXT_Subject_Text_Posit] p
         ON
             p.SU_TXT_ID = i.SU_TXT_ID
@@ -1537,7 +1537,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_ASR_Subject_Assessment) 
+        UPDATE(SU_ASR_Subject_Assessment)
     )
     BEGIN
         INSERT INTO [dbo].[SU_ASR_Subject_Assessment] (
@@ -1564,7 +1564,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_ASR_Subject_Assessment_Posit] p
         ON
             p.SU_ASR_ID = i.SU_ASR_ID
@@ -1634,7 +1634,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(SU_ERS_Subject_Erasable) 
+        UPDATE(SU_ERS_Subject_Erasable)
     )
     BEGIN
         INSERT INTO [dbo].[SU_ERS_Subject_Erasable] (
@@ -1661,7 +1661,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[SU_ERS_Subject_Erasable_Posit] p
         ON
             p.SU_ERS_ID = i.SU_ERS_ID
@@ -1877,14 +1877,14 @@ BEGIN
         OB_ID int not null
     );
     INSERT INTO [dbo].[OB_Object] (
-        Metadata_OB 
+        Metadata_OB
     )
     OUTPUT
         inserted.OB_ID
     INTO
         @OB
     SELECT
-        Metadata_OB 
+        Metadata_OB
     FROM
         inserted
     WHERE
@@ -2012,7 +2012,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(OB_NAM_Object_Name) 
+        UPDATE(OB_NAM_Object_Name)
     )
     BEGIN
         INSERT INTO [dbo].[OB_NAM_Object_Name] (
@@ -2036,7 +2036,7 @@ BEGIN
             0
         FROM
             inserted i
-        JOIN 
+        JOIN
             [dbo].[OB_NAM_Object_Name_Posit] p
         ON
             p.OB_NAM_ID = i.OB_NAM_ID

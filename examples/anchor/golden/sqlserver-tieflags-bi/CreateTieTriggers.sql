@@ -85,8 +85,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_partner_AC_with_ONG_currently, 0),
-        CASE 
-            WHEN p.AC_partner_AC_with_ONG_currently_ID is null 
+        CASE
+            WHEN p.AC_partner_AC_with_ONG_currently_ID is null
             THEN 'P' -- new posit
             WHEN a.AC_partner_AC_with_ONG_currently_ID is null
             THEN 'A' -- new assertion
@@ -109,9 +109,9 @@ BEGIN
         p.ONG_ID_currently = i.ONG_ID_currently
     AND
         p.AC_partner_AC_with_ONG_currently_ChangedAt = i.AC_partner_AC_with_ONG_currently_ChangedAt
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[AC_partner_AC_with_ONG_currently_Annex] a
-    ON 
+    ON
         a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
     AND
         a.AC_partner_AC_with_ONG_currently_PositedAt = i.AC_partner_AC_with_ONG_currently_PositedAt
@@ -125,34 +125,57 @@ BEGIN
         i.ONG_ID_currently is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_AC_partner_AC_with_ONG_currently,
+        x.Metadata_AC_partner_AC_with_ONG_currently,
         'X', -- existing data
-        p.AC_partner_AC_with_ONG_currently_ChangedAt,
-        a.AC_partner_AC_with_ONG_currently_PositedAt,
-        a.AC_partner_AC_with_ONG_currently_Reliability,
-        p.AC_ID_partner,
-        p.AC_ID_with,
-        p.ONG_ID_currently
+        x.AC_partner_AC_with_ONG_currently_ChangedAt,
+        x.AC_partner_AC_with_ONG_currently_PositedAt,
+        x.AC_partner_AC_with_ONG_currently_Reliability,
+        x.AC_ID_partner,
+        x.AC_ID_with,
+        x.ONG_ID_currently
     FROM (
-        SELECT DISTINCT
-            AC_ID_partner,
-            AC_ID_with,
-            ONG_ID_currently
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[AC_partner_AC_with_ONG_currently_Posit] p
-    ON
-        p.AC_ID_partner = i.AC_ID_partner
-    AND
-        p.AC_ID_with = i.AC_ID_with
-    AND
-        p.ONG_ID_currently = i.ONG_ID_currently
-    JOIN 
-        [ties].[AC_partner_AC_with_ONG_currently_Annex] a
-    ON 
-        a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID;
+        SELECT
+            a.Metadata_AC_partner_AC_with_ONG_currently,
+            p.AC_partner_AC_with_ONG_currently_ChangedAt,
+            a.AC_partner_AC_with_ONG_currently_PositedAt,
+            a.AC_partner_AC_with_ONG_currently_Reliability,
+            p.AC_ID_partner,
+            p.AC_ID_with,
+            p.ONG_ID_currently,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.AC_ID_partner,
+                    p.AC_ID_with,
+                    p.ONG_ID_currently,
+                    p.AC_partner_AC_with_ONG_currently_ChangedAt,
+                    a.AC_partner_AC_with_ONG_currently_PositedAt
+                ORDER BY
+                    a.AC_partner_AC_with_ONG_currently_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                AC_ID_partner,
+                AC_ID_with,
+                ONG_ID_currently
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[AC_partner_AC_with_ONG_currently_Posit] p
+        ON
+            p.AC_ID_partner = i.AC_ID_partner
+        AND
+            p.AC_ID_with = i.AC_ID_with
+        AND
+            p.ONG_ID_currently = i.ONG_ID_currently
+        JOIN
+            [ties].[AC_partner_AC_with_ONG_currently_Annex] a
+        ON
+            a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_AC_partner_AC_with_ONG_currently int not null,
         AC_partner_AC_with_ONG_currently_StatementType char(1) not null,
@@ -184,9 +207,9 @@ BEGIN
         ONG_ID_currently
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.AC_partner_AC_with_ONG_currently_Reliability as previous_AC_partner_AC_with_ONG_currently_Reliability, 
+            pre.AC_partner_AC_with_ONG_currently_Reliability as previous_AC_partner_AC_with_ONG_currently_Reliability,
             fol.AC_partner_AC_with_ONG_currently_Reliability as following_AC_partner_AC_with_ONG_currently_Reliability
         FROM
             @inserted a
@@ -205,7 +228,7 @@ BEGIN
                 p.AC_partner_AC_with_ONG_currently_ChangedAt = a.AC_partner_AC_with_ONG_currently_ChangedAt
             AND
                 p.AC_partner_AC_with_ONG_currently_PositedAt < a.AC_partner_AC_with_ONG_currently_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_partner_AC_with_ONG_currently_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -223,11 +246,11 @@ BEGIN
                 p.AC_partner_AC_with_ONG_currently_ChangedAt = a.AC_partner_AC_with_ONG_currently_ChangedAt
             AND
                 p.AC_partner_AC_with_ONG_currently_PositedAt > a.AC_partner_AC_with_ONG_currently_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_partner_AC_with_ONG_currently_PositedAt ASC
         ) fol
         WHERE
-            (a.AC_partner_AC_with_ONG_currently_Reliability = 0 AND isnull(pre.AC_partner_AC_with_ONG_currently_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.AC_partner_AC_with_ONG_currently_Reliability = 0 AND isnull(pre.AC_partner_AC_with_ONG_currently_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.AC_partner_AC_with_ONG_currently_Reliability = 1 AND fol.AC_partner_AC_with_ONG_currently_Reliability = 0)
     ) i
@@ -239,11 +262,11 @@ BEGIN
             (i.AC_partner_AC_with_ONG_currently_Reliability = 1 AND i.following_AC_partner_AC_with_ONG_currently_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            AC_partner_AC_with_ONG_currently_StatementType 
-        FROM 
-            @inserted 
-        WHERE 
+        SELECT TOP 1
+            AC_partner_AC_with_ONG_currently_StatementType
+        FROM
+            @inserted
+        WHERE
             AC_partner_AC_with_ONG_currently_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -267,16 +290,16 @@ BEGIN
         AC_ID_with,
         ONG_ID_currently
     )
-    SELECT 
+    SELECT
         x.Metadata_AC_partner_AC_with_ONG_currently,
-        CASE 
-            WHEN x.previous_AC_partner_AC_with_ONG_currently_PositedAt < x.AC_partner_AC_with_ONG_currently_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_AC_partner_AC_with_ONG_currently_PositedAt < x.AC_partner_AC_with_ONG_currently_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END,
         x.AC_partner_AC_with_ONG_currently_ChangedAt,
-        CASE 
-            WHEN x.previous_AC_partner_AC_with_ONG_currently_PositedAt < x.AC_partner_AC_with_ONG_currently_PositedAt THEN x.AC_partner_AC_with_ONG_currently_PositedAt 
-            ELSE x.previous_AC_partner_AC_with_ONG_currently_PositedAt 
+        CASE
+            WHEN x.previous_AC_partner_AC_with_ONG_currently_PositedAt < x.AC_partner_AC_with_ONG_currently_PositedAt THEN x.AC_partner_AC_with_ONG_currently_PositedAt
+            ELSE x.previous_AC_partner_AC_with_ONG_currently_PositedAt
         END,
         0, -- quench the existing restatements
         x.AC_ID_partner,
@@ -284,15 +307,15 @@ BEGIN
         x.ONG_ID_currently
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.AC_partner_AC_with_ONG_currently_PositedAt as previous_AC_partner_AC_with_ONG_currently_PositedAt
-        FROM 
+        FROM
             @inserted a
         OUTER APPLY (
             SELECT TOP 1
                 h.*
-            FROM 
+            FROM
                 @inserted h
             WHERE
                 h.AC_ID_partner = a.AC_ID_partner
@@ -302,11 +325,11 @@ BEGIN
                 h.ONG_ID_currently = a.ONG_ID_currently
             AND
                 h.AC_partner_AC_with_ONG_currently_ChangedAt < a.AC_partner_AC_with_ONG_currently_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
                 h.AC_partner_AC_with_ONG_currently_PositedAt DESC
         ) pre
-        WHERE 
+        WHERE
             a.AC_ID_partner = pre.AC_ID_partner
         AND
             a.AC_ID_with = pre.AC_ID_with
@@ -316,17 +339,17 @@ BEGIN
     WHERE
         x.AC_partner_AC_with_ONG_currently_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @inserted 
-    SELECT 
-        * 
+    INSERT INTO @inserted
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE AC_partner_AC_with_ONG_currently_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [ties].[AC_partner_AC_with_ONG_currently_Posit] p
@@ -338,9 +361,9 @@ BEGIN
         p.ONG_ID_currently = i.ONG_ID_currently
     AND
         p.AC_partner_AC_with_ONG_currently_ChangedAt = i.AC_partner_AC_with_ONG_currently_ChangedAt
-    JOIN 
+    JOIN
         [ties].[AC_partner_AC_with_ONG_currently_Annex] a
-    ON 
+    ON
         a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
     AND
         a.AC_partner_AC_with_ONG_currently_PositedAt = i.AC_partner_AC_with_ONG_currently_PositedAt;
@@ -353,7 +376,7 @@ BEGIN
         AC_ID_with,
         ONG_ID_currently
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         AC_partner_AC_with_ONG_currently_ChangedAt,
         AC_ID_partner,
         AC_ID_with,
@@ -413,7 +436,7 @@ BEGIN
         i.AC_partner_AC_with_ONG_currently_ChangedAt,
         i.AC_ID_partner,
         i.AC_ID_with,
-        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID), 
+        ISNULL(i.ONG_ID_currently, [ONG_currently].ONG_ID),
         i.AC_partner_AC_with_ONG_currently_PositedAt,
         i.AC_partner_AC_with_ONG_currently_Reliability
     FROM
@@ -464,7 +487,7 @@ BEGIN
     OR
         i.AC_ID_with is null
     OR
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
@@ -492,13 +515,13 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END, 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
         cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
     FROM
@@ -512,7 +535,7 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null 
+        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
@@ -529,7 +552,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END 
+                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
                 AND
                     d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
             )
@@ -626,8 +649,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_subset_PN_of, 0),
-        CASE 
-            WHEN p.AC_subset_PN_of_ID is null 
+        CASE
+            WHEN p.AC_subset_PN_of_ID is null
             THEN 'P' -- new posit
             WHEN a.AC_subset_PN_of_ID is null
             THEN 'A' -- new assertion
@@ -644,9 +667,9 @@ BEGIN
         p.AC_ID_subset = i.AC_ID_subset
     AND
         p.PN_ID_of = i.PN_ID_of
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[AC_subset_PN_of_Annex] a
-    ON 
+    ON
         a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
     AND
         a.AC_subset_PN_of_PositedAt = i.AC_subset_PN_of_PositedAt
@@ -658,29 +681,48 @@ BEGIN
         i.PN_ID_of is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_AC_subset_PN_of,
+        x.Metadata_AC_subset_PN_of,
         'X', -- existing data
-        a.AC_subset_PN_of_PositedAt,
-        a.AC_subset_PN_of_Reliability,
-        p.AC_ID_subset,
-        p.PN_ID_of
+        x.AC_subset_PN_of_PositedAt,
+        x.AC_subset_PN_of_Reliability,
+        x.AC_ID_subset,
+        x.PN_ID_of
     FROM (
-        SELECT DISTINCT
-            AC_ID_subset,
-            PN_ID_of
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[AC_subset_PN_of_Posit] p
-    ON
-        p.AC_ID_subset = i.AC_ID_subset
-    AND
-        p.PN_ID_of = i.PN_ID_of
-    JOIN 
-        [ties].[AC_subset_PN_of_Annex] a
-    ON 
-        a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID;
+        SELECT
+            a.Metadata_AC_subset_PN_of,
+            a.AC_subset_PN_of_PositedAt,
+            a.AC_subset_PN_of_Reliability,
+            p.AC_ID_subset,
+            p.PN_ID_of,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.AC_ID_subset,
+                    p.PN_ID_of,
+                    a.AC_subset_PN_of_PositedAt
+                ORDER BY
+                    a.AC_subset_PN_of_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                AC_ID_subset,
+                PN_ID_of
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[AC_subset_PN_of_Posit] p
+        ON
+            p.AC_ID_subset = i.AC_ID_subset
+        AND
+            p.PN_ID_of = i.PN_ID_of
+        JOIN
+            [ties].[AC_subset_PN_of_Annex] a
+        ON
+            a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_AC_subset_PN_of int not null,
         AC_subset_PN_of_StatementType char(1) not null,
@@ -706,9 +748,9 @@ BEGIN
         PN_ID_of
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.AC_subset_PN_of_Reliability as previous_AC_subset_PN_of_Reliability, 
+            pre.AC_subset_PN_of_Reliability as previous_AC_subset_PN_of_Reliability,
             fol.AC_subset_PN_of_Reliability as following_AC_subset_PN_of_Reliability
         FROM
             @inserted a
@@ -723,7 +765,7 @@ BEGIN
                 p.PN_ID_of = a.PN_ID_of
             AND
                 p.AC_subset_PN_of_PositedAt < a.AC_subset_PN_of_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_subset_PN_of_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -737,11 +779,11 @@ BEGIN
                 p.PN_ID_of = a.PN_ID_of
             AND
                 p.AC_subset_PN_of_PositedAt > a.AC_subset_PN_of_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_subset_PN_of_PositedAt ASC
         ) fol
         WHERE
-            (a.AC_subset_PN_of_Reliability = 0 AND isnull(pre.AC_subset_PN_of_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.AC_subset_PN_of_Reliability = 0 AND isnull(pre.AC_subset_PN_of_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.AC_subset_PN_of_Reliability = 1 AND fol.AC_subset_PN_of_Reliability = 0)
     ) i
@@ -758,7 +800,7 @@ BEGIN
         AC_ID_subset,
         PN_ID_of
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         AC_ID_subset,
         PN_ID_of
     FROM
@@ -980,8 +1022,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_EV_in_AC_wasCast, 0),
-        CASE 
-            WHEN p.EV_in_AC_wasCast_ID is null 
+        CASE
+            WHEN p.EV_in_AC_wasCast_ID is null
             THEN 'P' -- new posit
             WHEN a.EV_in_AC_wasCast_ID is null
             THEN 'A' -- new assertion
@@ -998,9 +1040,9 @@ BEGIN
         p.EV_ID_in = i.EV_ID_in
     AND
         p.AC_ID_wasCast = i.AC_ID_wasCast
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[EV_in_AC_wasCast_Annex] a
-    ON 
+    ON
         a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
     AND
         a.EV_in_AC_wasCast_PositedAt = i.EV_in_AC_wasCast_PositedAt
@@ -1012,29 +1054,48 @@ BEGIN
         i.AC_ID_wasCast is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_EV_in_AC_wasCast,
+        x.Metadata_EV_in_AC_wasCast,
         'X', -- existing data
-        a.EV_in_AC_wasCast_PositedAt,
-        a.EV_in_AC_wasCast_Reliability,
-        p.EV_ID_in,
-        p.AC_ID_wasCast
+        x.EV_in_AC_wasCast_PositedAt,
+        x.EV_in_AC_wasCast_Reliability,
+        x.EV_ID_in,
+        x.AC_ID_wasCast
     FROM (
-        SELECT DISTINCT
-            EV_ID_in,
-            AC_ID_wasCast
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[EV_in_AC_wasCast_Posit] p
-    ON
-        p.EV_ID_in = i.EV_ID_in
-    AND
-        p.AC_ID_wasCast = i.AC_ID_wasCast
-    JOIN 
-        [ties].[EV_in_AC_wasCast_Annex] a
-    ON 
-        a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID;
+        SELECT
+            a.Metadata_EV_in_AC_wasCast,
+            a.EV_in_AC_wasCast_PositedAt,
+            a.EV_in_AC_wasCast_Reliability,
+            p.EV_ID_in,
+            p.AC_ID_wasCast,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.EV_ID_in,
+                    p.AC_ID_wasCast,
+                    a.EV_in_AC_wasCast_PositedAt
+                ORDER BY
+                    a.EV_in_AC_wasCast_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                EV_ID_in,
+                AC_ID_wasCast
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[EV_in_AC_wasCast_Posit] p
+        ON
+            p.EV_ID_in = i.EV_ID_in
+        AND
+            p.AC_ID_wasCast = i.AC_ID_wasCast
+        JOIN
+            [ties].[EV_in_AC_wasCast_Annex] a
+        ON
+            a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_EV_in_AC_wasCast int not null,
         EV_in_AC_wasCast_StatementType char(1) not null,
@@ -1060,9 +1121,9 @@ BEGIN
         AC_ID_wasCast
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.EV_in_AC_wasCast_Reliability as previous_EV_in_AC_wasCast_Reliability, 
+            pre.EV_in_AC_wasCast_Reliability as previous_EV_in_AC_wasCast_Reliability,
             fol.EV_in_AC_wasCast_Reliability as following_EV_in_AC_wasCast_Reliability
         FROM
             @inserted a
@@ -1077,7 +1138,7 @@ BEGIN
                 p.AC_ID_wasCast = a.AC_ID_wasCast
             AND
                 p.EV_in_AC_wasCast_PositedAt < a.EV_in_AC_wasCast_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.EV_in_AC_wasCast_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1091,11 +1152,11 @@ BEGIN
                 p.AC_ID_wasCast = a.AC_ID_wasCast
             AND
                 p.EV_in_AC_wasCast_PositedAt > a.EV_in_AC_wasCast_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.EV_in_AC_wasCast_PositedAt ASC
         ) fol
         WHERE
-            (a.EV_in_AC_wasCast_Reliability = 0 AND isnull(pre.EV_in_AC_wasCast_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.EV_in_AC_wasCast_Reliability = 0 AND isnull(pre.EV_in_AC_wasCast_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.EV_in_AC_wasCast_Reliability = 1 AND fol.EV_in_AC_wasCast_Reliability = 0)
     ) i
@@ -1112,7 +1173,7 @@ BEGIN
         EV_ID_in,
         AC_ID_wasCast
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         EV_ID_in,
         AC_ID_wasCast
     FROM
@@ -1268,8 +1329,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_part_PR_in_RAT_got, 0),
-        CASE 
-            WHEN p.AC_part_PR_in_RAT_got_ID is null 
+        CASE
+            WHEN p.AC_part_PR_in_RAT_got_ID is null
             THEN 'P' -- new posit
             WHEN a.AC_part_PR_in_RAT_got_ID is null
             THEN 'A' -- new assertion
@@ -1292,9 +1353,9 @@ BEGIN
         p.RAT_ID_got = i.RAT_ID_got
     AND
         p.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[AC_part_PR_in_RAT_got_Annex] a
-    ON 
+    ON
         a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
     AND
         a.AC_part_PR_in_RAT_got_PositedAt = i.AC_part_PR_in_RAT_got_PositedAt
@@ -1306,31 +1367,53 @@ BEGIN
         i.PR_ID_in is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_AC_part_PR_in_RAT_got,
+        x.Metadata_AC_part_PR_in_RAT_got,
         'X', -- existing data
-        p.AC_part_PR_in_RAT_got_ChangedAt,
-        a.AC_part_PR_in_RAT_got_PositedAt,
-        a.AC_part_PR_in_RAT_got_Reliability,
-        p.AC_ID_part,
-        p.PR_ID_in,
-        p.RAT_ID_got
+        x.AC_part_PR_in_RAT_got_ChangedAt,
+        x.AC_part_PR_in_RAT_got_PositedAt,
+        x.AC_part_PR_in_RAT_got_Reliability,
+        x.AC_ID_part,
+        x.PR_ID_in,
+        x.RAT_ID_got
     FROM (
-        SELECT DISTINCT
-            AC_ID_part,
-            PR_ID_in
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[AC_part_PR_in_RAT_got_Posit] p
-    ON
-        p.AC_ID_part = i.AC_ID_part
-    AND
-        p.PR_ID_in = i.PR_ID_in
-    JOIN 
-        [ties].[AC_part_PR_in_RAT_got_Annex] a
-    ON 
-        a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID;
+        SELECT
+            a.Metadata_AC_part_PR_in_RAT_got,
+            p.AC_part_PR_in_RAT_got_ChangedAt,
+            a.AC_part_PR_in_RAT_got_PositedAt,
+            a.AC_part_PR_in_RAT_got_Reliability,
+            p.AC_ID_part,
+            p.PR_ID_in,
+            p.RAT_ID_got,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.AC_ID_part,
+                    p.PR_ID_in,
+                    p.AC_part_PR_in_RAT_got_ChangedAt,
+                    a.AC_part_PR_in_RAT_got_PositedAt
+                ORDER BY
+                    a.AC_part_PR_in_RAT_got_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                AC_ID_part,
+                PR_ID_in
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[AC_part_PR_in_RAT_got_Posit] p
+        ON
+            p.AC_ID_part = i.AC_ID_part
+        AND
+            p.PR_ID_in = i.PR_ID_in
+        JOIN
+            [ties].[AC_part_PR_in_RAT_got_Annex] a
+        ON
+            a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_AC_part_PR_in_RAT_got int not null,
         AC_part_PR_in_RAT_got_StatementType char(1) not null,
@@ -1362,9 +1445,9 @@ BEGIN
         RAT_ID_got
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.AC_part_PR_in_RAT_got_Reliability as previous_AC_part_PR_in_RAT_got_Reliability, 
+            pre.AC_part_PR_in_RAT_got_Reliability as previous_AC_part_PR_in_RAT_got_Reliability,
             fol.AC_part_PR_in_RAT_got_Reliability as following_AC_part_PR_in_RAT_got_Reliability
         FROM
             @inserted a
@@ -1381,7 +1464,7 @@ BEGIN
                 p.AC_part_PR_in_RAT_got_ChangedAt = a.AC_part_PR_in_RAT_got_ChangedAt
             AND
                 p.AC_part_PR_in_RAT_got_PositedAt < a.AC_part_PR_in_RAT_got_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_part_PR_in_RAT_got_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1397,11 +1480,11 @@ BEGIN
                 p.AC_part_PR_in_RAT_got_ChangedAt = a.AC_part_PR_in_RAT_got_ChangedAt
             AND
                 p.AC_part_PR_in_RAT_got_PositedAt > a.AC_part_PR_in_RAT_got_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_part_PR_in_RAT_got_PositedAt ASC
         ) fol
         WHERE
-            (a.AC_part_PR_in_RAT_got_Reliability = 0 AND isnull(pre.AC_part_PR_in_RAT_got_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.AC_part_PR_in_RAT_got_Reliability = 0 AND isnull(pre.AC_part_PR_in_RAT_got_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.AC_part_PR_in_RAT_got_Reliability = 1 AND fol.AC_part_PR_in_RAT_got_Reliability = 0)
     ) i
@@ -1413,11 +1496,11 @@ BEGIN
             (i.AC_part_PR_in_RAT_got_Reliability = 1 AND i.following_AC_part_PR_in_RAT_got_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            AC_part_PR_in_RAT_got_StatementType 
-        FROM 
-            @inserted 
-        WHERE 
+        SELECT TOP 1
+            AC_part_PR_in_RAT_got_StatementType
+        FROM
+            @inserted
+        WHERE
             AC_part_PR_in_RAT_got_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -1441,16 +1524,16 @@ BEGIN
         PR_ID_in,
         RAT_ID_got
     )
-    SELECT 
+    SELECT
         x.Metadata_AC_part_PR_in_RAT_got,
-        CASE 
-            WHEN x.previous_AC_part_PR_in_RAT_got_PositedAt < x.AC_part_PR_in_RAT_got_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_AC_part_PR_in_RAT_got_PositedAt < x.AC_part_PR_in_RAT_got_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END,
         x.AC_part_PR_in_RAT_got_ChangedAt,
-        CASE 
-            WHEN x.previous_AC_part_PR_in_RAT_got_PositedAt < x.AC_part_PR_in_RAT_got_PositedAt THEN x.AC_part_PR_in_RAT_got_PositedAt 
-            ELSE x.previous_AC_part_PR_in_RAT_got_PositedAt 
+        CASE
+            WHEN x.previous_AC_part_PR_in_RAT_got_PositedAt < x.AC_part_PR_in_RAT_got_PositedAt THEN x.AC_part_PR_in_RAT_got_PositedAt
+            ELSE x.previous_AC_part_PR_in_RAT_got_PositedAt
         END,
         0, -- quench the existing restatements
         x.AC_ID_part,
@@ -1458,15 +1541,15 @@ BEGIN
         x.RAT_ID_got
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.AC_part_PR_in_RAT_got_PositedAt as previous_AC_part_PR_in_RAT_got_PositedAt
-        FROM 
+        FROM
             @inserted a
         OUTER APPLY (
             SELECT TOP 1
                 h.*
-            FROM 
+            FROM
                 @inserted h
             WHERE
                 h.AC_ID_part = a.AC_ID_part
@@ -1474,11 +1557,11 @@ BEGIN
                 h.PR_ID_in = a.PR_ID_in
             AND
                 h.AC_part_PR_in_RAT_got_ChangedAt < a.AC_part_PR_in_RAT_got_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.AC_part_PR_in_RAT_got_ChangedAt DESC,
                 h.AC_part_PR_in_RAT_got_PositedAt DESC
         ) pre
-        WHERE 
+        WHERE
             a.AC_ID_part = pre.AC_ID_part
         AND
             a.PR_ID_in = pre.PR_ID_in
@@ -1488,17 +1571,17 @@ BEGIN
     WHERE
         x.AC_part_PR_in_RAT_got_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @inserted 
-    SELECT 
-        * 
+    INSERT INTO @inserted
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE AC_part_PR_in_RAT_got_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [ties].[AC_part_PR_in_RAT_got_Posit] p
@@ -1510,9 +1593,9 @@ BEGIN
         p.RAT_ID_got = i.RAT_ID_got
     AND
         p.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
-    JOIN 
+    JOIN
         [ties].[AC_part_PR_in_RAT_got_Annex] a
-    ON 
+    ON
         a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
     AND
         a.AC_part_PR_in_RAT_got_PositedAt = i.AC_part_PR_in_RAT_got_PositedAt;
@@ -1525,7 +1608,7 @@ BEGIN
         PR_ID_in,
         RAT_ID_got
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         AC_part_PR_in_RAT_got_ChangedAt,
         AC_ID_part,
         PR_ID_in,
@@ -1559,6 +1642,70 @@ BEGIN
         p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
     WHERE
         v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A');
+    -- an assertion retracts, at its positing time, the posit in effect for the identifiers at the same changing time when
+    -- that has other values (a correction), so that one posit at a time is asserted
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        v.Metadata_AC_part_PR_in_RAT_got,
+        e.AC_part_PR_in_RAT_got_ID,
+        v.AC_part_PR_in_RAT_got_PositedAt,
+        0
+    FROM
+        @inserted v
+    CROSS APPLY (
+        SELECT TOP 1
+            p.AC_part_PR_in_RAT_got_ID,
+            p.RAT_ID_got
+        FROM
+            [ties].[AC_part_PR_in_RAT_got_Posit] p
+        JOIN
+            [ties].[AC_part_PR_in_RAT_got_Annex] a
+        ON
+            a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+        AND
+            a.AC_part_PR_in_RAT_got_PositedAt = (
+                SELECT
+                    max(s.AC_part_PR_in_RAT_got_PositedAt)
+                FROM
+                    [ties].[AC_part_PR_in_RAT_got_Annex] s
+                WHERE
+                    s.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                AND
+                    s.AC_part_PR_in_RAT_got_PositedAt < v.AC_part_PR_in_RAT_got_PositedAt
+            )
+        WHERE
+            p.AC_ID_part = v.AC_ID_part
+        AND
+            p.PR_ID_in = v.PR_ID_in
+        AND
+            p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+        AND
+            a.AC_part_PR_in_RAT_got_Reliability = 1
+        ORDER BY
+            a.AC_part_PR_in_RAT_got_PositedAt DESC
+    ) e
+    WHERE
+        v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
+    AND
+        v.AC_part_PR_in_RAT_got_Reliability = 1
+    AND (
+        e.RAT_ID_got <> v.RAT_ID_got
+    )
+    AND NOT EXISTS ( -- not if it has an assertion at the positing time already
+        SELECT TOP 1
+            42
+        FROM
+            [ties].[AC_part_PR_in_RAT_got_Annex] x
+        WHERE
+            x.AC_part_PR_in_RAT_got_ID = e.AC_part_PR_in_RAT_got_ID
+        AND
+            x.AC_part_PR_in_RAT_got_PositedAt = v.AC_part_PR_in_RAT_got_PositedAt
+    );
 END
 GO
 -- Insert trigger -----------------------------------------------------------------------------------------------------
@@ -1585,7 +1732,7 @@ BEGIN
         i.AC_part_PR_in_RAT_got_ChangedAt,
         i.AC_ID_part,
         i.PR_ID_in,
-        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID), 
+        ISNULL(i.RAT_ID_got, [RAT_got].RAT_ID),
         i.AC_part_PR_in_RAT_got_PositedAt,
         i.AC_part_PR_in_RAT_got_Reliability
     FROM
@@ -1636,7 +1783,7 @@ BEGIN
     WHERE
         i.AC_part_PR_in_RAT_got_ID is not null
     AND (
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
@@ -1660,13 +1807,13 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END, 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
         cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
     FROM
@@ -1676,7 +1823,7 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.got_RAT_Rating
     WHERE
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null 
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
             UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
@@ -1689,7 +1836,7 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END 
+                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
                 AND
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
@@ -1791,8 +1938,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_ST_at_PR_isPlaying, 0),
-        CASE 
-            WHEN p.ST_at_PR_isPlaying_ID is null 
+        CASE
+            WHEN p.ST_at_PR_isPlaying_ID is null
             THEN 'P' -- new posit
             WHEN a.ST_at_PR_isPlaying_ID is null
             THEN 'A' -- new assertion
@@ -1812,9 +1959,9 @@ BEGIN
         p.PR_ID_isPlaying = i.PR_ID_isPlaying
     AND
         p.ST_at_PR_isPlaying_ChangedAt = i.ST_at_PR_isPlaying_ChangedAt
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[ST_at_PR_isPlaying_Annex] a
-    ON 
+    ON
         a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
     AND
         a.ST_at_PR_isPlaying_PositedAt = i.ST_at_PR_isPlaying_PositedAt
@@ -1826,30 +1973,51 @@ BEGIN
         i.PR_ID_isPlaying is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_ST_at_PR_isPlaying,
+        x.Metadata_ST_at_PR_isPlaying,
         'X', -- existing data
-        p.ST_at_PR_isPlaying_ChangedAt,
-        a.ST_at_PR_isPlaying_PositedAt,
-        a.ST_at_PR_isPlaying_Reliability,
-        p.ST_ID_at,
-        p.PR_ID_isPlaying
+        x.ST_at_PR_isPlaying_ChangedAt,
+        x.ST_at_PR_isPlaying_PositedAt,
+        x.ST_at_PR_isPlaying_Reliability,
+        x.ST_ID_at,
+        x.PR_ID_isPlaying
     FROM (
-        SELECT DISTINCT
-            ST_ID_at,
-            PR_ID_isPlaying
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[ST_at_PR_isPlaying_Posit] p
-    ON
-        p.ST_ID_at = i.ST_ID_at
-    AND
-        p.PR_ID_isPlaying = i.PR_ID_isPlaying
-    JOIN 
-        [ties].[ST_at_PR_isPlaying_Annex] a
-    ON 
-        a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID;
+        SELECT
+            a.Metadata_ST_at_PR_isPlaying,
+            p.ST_at_PR_isPlaying_ChangedAt,
+            a.ST_at_PR_isPlaying_PositedAt,
+            a.ST_at_PR_isPlaying_Reliability,
+            p.ST_ID_at,
+            p.PR_ID_isPlaying,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.ST_ID_at,
+                    p.PR_ID_isPlaying,
+                    p.ST_at_PR_isPlaying_ChangedAt,
+                    a.ST_at_PR_isPlaying_PositedAt
+                ORDER BY
+                    a.ST_at_PR_isPlaying_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                ST_ID_at,
+                PR_ID_isPlaying
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[ST_at_PR_isPlaying_Posit] p
+        ON
+            p.ST_ID_at = i.ST_ID_at
+        AND
+            p.PR_ID_isPlaying = i.PR_ID_isPlaying
+        JOIN
+            [ties].[ST_at_PR_isPlaying_Annex] a
+        ON
+            a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_ST_at_PR_isPlaying int not null,
         ST_at_PR_isPlaying_StatementType char(1) not null,
@@ -1878,9 +2046,9 @@ BEGIN
         PR_ID_isPlaying
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.ST_at_PR_isPlaying_Reliability as previous_ST_at_PR_isPlaying_Reliability, 
+            pre.ST_at_PR_isPlaying_Reliability as previous_ST_at_PR_isPlaying_Reliability,
             fol.ST_at_PR_isPlaying_Reliability as following_ST_at_PR_isPlaying_Reliability
         FROM
             @inserted a
@@ -1897,7 +2065,7 @@ BEGIN
                 p.ST_at_PR_isPlaying_ChangedAt = a.ST_at_PR_isPlaying_ChangedAt
             AND
                 p.ST_at_PR_isPlaying_PositedAt < a.ST_at_PR_isPlaying_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.ST_at_PR_isPlaying_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -1913,11 +2081,11 @@ BEGIN
                 p.ST_at_PR_isPlaying_ChangedAt = a.ST_at_PR_isPlaying_ChangedAt
             AND
                 p.ST_at_PR_isPlaying_PositedAt > a.ST_at_PR_isPlaying_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.ST_at_PR_isPlaying_PositedAt ASC
         ) fol
         WHERE
-            (a.ST_at_PR_isPlaying_Reliability = 0 AND isnull(pre.ST_at_PR_isPlaying_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.ST_at_PR_isPlaying_Reliability = 0 AND isnull(pre.ST_at_PR_isPlaying_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.ST_at_PR_isPlaying_Reliability = 1 AND fol.ST_at_PR_isPlaying_Reliability = 0)
     ) i
@@ -1929,11 +2097,11 @@ BEGIN
             (i.ST_at_PR_isPlaying_Reliability = 1 AND i.following_ST_at_PR_isPlaying_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            ST_at_PR_isPlaying_StatementType 
-        FROM 
-            @inserted 
-        WHERE 
+        SELECT TOP 1
+            ST_at_PR_isPlaying_StatementType
+        FROM
+            @inserted
+        WHERE
             ST_at_PR_isPlaying_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -1955,31 +2123,31 @@ BEGIN
         ST_ID_at,
         PR_ID_isPlaying
     )
-    SELECT 
+    SELECT
         x.Metadata_ST_at_PR_isPlaying,
-        CASE 
-            WHEN x.previous_ST_at_PR_isPlaying_PositedAt < x.ST_at_PR_isPlaying_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_ST_at_PR_isPlaying_PositedAt < x.ST_at_PR_isPlaying_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END,
         x.ST_at_PR_isPlaying_ChangedAt,
-        CASE 
-            WHEN x.previous_ST_at_PR_isPlaying_PositedAt < x.ST_at_PR_isPlaying_PositedAt THEN x.ST_at_PR_isPlaying_PositedAt 
-            ELSE x.previous_ST_at_PR_isPlaying_PositedAt 
+        CASE
+            WHEN x.previous_ST_at_PR_isPlaying_PositedAt < x.ST_at_PR_isPlaying_PositedAt THEN x.ST_at_PR_isPlaying_PositedAt
+            ELSE x.previous_ST_at_PR_isPlaying_PositedAt
         END,
         0, -- quench the existing restatements
         x.ST_ID_at,
         x.PR_ID_isPlaying
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.ST_at_PR_isPlaying_PositedAt as previous_ST_at_PR_isPlaying_PositedAt
-        FROM 
+        FROM
             @inserted a
         OUTER APPLY (
             SELECT TOP 1
                 h.*
-            FROM 
+            FROM
                 @inserted h
             WHERE
                 h.ST_ID_at = a.ST_ID_at
@@ -1987,11 +2155,11 @@ BEGIN
                 h.PR_ID_isPlaying = a.PR_ID_isPlaying
             AND
                 h.ST_at_PR_isPlaying_ChangedAt < a.ST_at_PR_isPlaying_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.ST_at_PR_isPlaying_ChangedAt DESC,
                 h.ST_at_PR_isPlaying_PositedAt DESC
         ) pre
-        WHERE 
+        WHERE
             a.ST_ID_at = pre.ST_ID_at
         AND
             a.PR_ID_isPlaying = pre.PR_ID_isPlaying
@@ -1999,17 +2167,17 @@ BEGIN
     WHERE
         x.ST_at_PR_isPlaying_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @inserted 
-    SELECT 
-        * 
+    INSERT INTO @inserted
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE ST_at_PR_isPlaying_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [ties].[ST_at_PR_isPlaying_Posit] p
@@ -2019,9 +2187,9 @@ BEGIN
         p.PR_ID_isPlaying = i.PR_ID_isPlaying
     AND
         p.ST_at_PR_isPlaying_ChangedAt = i.ST_at_PR_isPlaying_ChangedAt
-    JOIN 
+    JOIN
         [ties].[ST_at_PR_isPlaying_Annex] a
-    ON 
+    ON
         a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
     AND
         a.ST_at_PR_isPlaying_PositedAt = i.ST_at_PR_isPlaying_PositedAt;
@@ -2033,7 +2201,7 @@ BEGIN
         ST_ID_at,
         PR_ID_isPlaying
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         ST_at_PR_isPlaying_ChangedAt,
         ST_ID_at,
         PR_ID_isPlaying
@@ -2190,8 +2358,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_AC_parent_AC_child_PAT_having, 0),
-        CASE 
-            WHEN p.AC_parent_AC_child_PAT_having_ID is null 
+        CASE
+            WHEN p.AC_parent_AC_child_PAT_having_ID is null
             THEN 'P' -- new posit
             WHEN a.AC_parent_AC_child_PAT_having_ID is null
             THEN 'A' -- new assertion
@@ -2211,9 +2379,9 @@ BEGIN
         p.AC_ID_child = i.AC_ID_child
     AND
         p.PAT_ID_having = i.PAT_ID_having
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[AC_parent_AC_child_PAT_having_Annex] a
-    ON 
+    ON
         a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
     AND
         a.AC_parent_AC_child_PAT_having_PositedAt = i.AC_parent_AC_child_PAT_having_PositedAt
@@ -2227,33 +2395,54 @@ BEGIN
         i.PAT_ID_having is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_AC_parent_AC_child_PAT_having,
+        x.Metadata_AC_parent_AC_child_PAT_having,
         'X', -- existing data
-        a.AC_parent_AC_child_PAT_having_PositedAt,
-        a.AC_parent_AC_child_PAT_having_Reliability,
-        p.AC_ID_parent,
-        p.AC_ID_child,
-        p.PAT_ID_having
+        x.AC_parent_AC_child_PAT_having_PositedAt,
+        x.AC_parent_AC_child_PAT_having_Reliability,
+        x.AC_ID_parent,
+        x.AC_ID_child,
+        x.PAT_ID_having
     FROM (
-        SELECT DISTINCT
-            AC_ID_parent,
-            AC_ID_child,
-            PAT_ID_having
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[AC_parent_AC_child_PAT_having_Posit] p
-    ON
-        p.AC_ID_parent = i.AC_ID_parent
-    AND
-        p.AC_ID_child = i.AC_ID_child
-    AND
-        p.PAT_ID_having = i.PAT_ID_having
-    JOIN 
-        [ties].[AC_parent_AC_child_PAT_having_Annex] a
-    ON 
-        a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID;
+        SELECT
+            a.Metadata_AC_parent_AC_child_PAT_having,
+            a.AC_parent_AC_child_PAT_having_PositedAt,
+            a.AC_parent_AC_child_PAT_having_Reliability,
+            p.AC_ID_parent,
+            p.AC_ID_child,
+            p.PAT_ID_having,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.AC_ID_parent,
+                    p.AC_ID_child,
+                    p.PAT_ID_having,
+                    a.AC_parent_AC_child_PAT_having_PositedAt
+                ORDER BY
+                    a.AC_parent_AC_child_PAT_having_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                AC_ID_parent,
+                AC_ID_child,
+                PAT_ID_having
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[AC_parent_AC_child_PAT_having_Posit] p
+        ON
+            p.AC_ID_parent = i.AC_ID_parent
+        AND
+            p.AC_ID_child = i.AC_ID_child
+        AND
+            p.PAT_ID_having = i.PAT_ID_having
+        JOIN
+            [ties].[AC_parent_AC_child_PAT_having_Annex] a
+        ON
+            a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_AC_parent_AC_child_PAT_having int not null,
         AC_parent_AC_child_PAT_having_StatementType char(1) not null,
@@ -2282,9 +2471,9 @@ BEGIN
         PAT_ID_having
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.AC_parent_AC_child_PAT_having_Reliability as previous_AC_parent_AC_child_PAT_having_Reliability, 
+            pre.AC_parent_AC_child_PAT_having_Reliability as previous_AC_parent_AC_child_PAT_having_Reliability,
             fol.AC_parent_AC_child_PAT_having_Reliability as following_AC_parent_AC_child_PAT_having_Reliability
         FROM
             @inserted a
@@ -2301,7 +2490,7 @@ BEGIN
                 p.PAT_ID_having = a.PAT_ID_having
             AND
                 p.AC_parent_AC_child_PAT_having_PositedAt < a.AC_parent_AC_child_PAT_having_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_parent_AC_child_PAT_having_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2317,11 +2506,11 @@ BEGIN
                 p.PAT_ID_having = a.PAT_ID_having
             AND
                 p.AC_parent_AC_child_PAT_having_PositedAt > a.AC_parent_AC_child_PAT_having_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.AC_parent_AC_child_PAT_having_PositedAt ASC
         ) fol
         WHERE
-            (a.AC_parent_AC_child_PAT_having_Reliability = 0 AND isnull(pre.AC_parent_AC_child_PAT_having_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.AC_parent_AC_child_PAT_having_Reliability = 0 AND isnull(pre.AC_parent_AC_child_PAT_having_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.AC_parent_AC_child_PAT_having_Reliability = 1 AND fol.AC_parent_AC_child_PAT_having_Reliability = 0)
     ) i
@@ -2339,7 +2528,7 @@ BEGIN
         AC_ID_child,
         PAT_ID_having
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         AC_ID_parent,
         AC_ID_child,
         PAT_ID_having
@@ -2394,7 +2583,7 @@ BEGIN
         i.Metadata_AC_parent_AC_child_PAT_having,
         i.AC_ID_parent,
         i.AC_ID_child,
-        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID), 
+        ISNULL(i.PAT_ID_having, [PAT_having].PAT_ID),
         i.AC_parent_AC_child_PAT_having_PositedAt,
         i.AC_parent_AC_child_PAT_having_Reliability
     FROM
@@ -2505,8 +2694,8 @@ BEGIN
     INSERT INTO @inserted
     SELECT
         ISNULL(i.Metadata_PR_content_ST_location_EV_of, 0),
-        CASE 
-            WHEN p.PR_content_ST_location_EV_of_ID is null 
+        CASE
+            WHEN p.PR_content_ST_location_EV_of_ID is null
             THEN 'P' -- new posit
             WHEN a.PR_content_ST_location_EV_of_ID is null
             THEN 'A' -- new assertion
@@ -2529,9 +2718,9 @@ BEGIN
         p.EV_ID_of = i.EV_ID_of
     AND
         p.PR_content_ST_location_EV_of_ChangedAt = i.PR_content_ST_location_EV_of_ChangedAt
-    LEFT JOIN 
+    LEFT JOIN
         [ties].[PR_content_ST_location_EV_of_Annex] a
-    ON 
+    ON
         a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
     AND
         a.PR_content_ST_location_EV_of_PositedAt = i.PR_content_ST_location_EV_of_PositedAt
@@ -2545,34 +2734,57 @@ BEGIN
         i.EV_ID_of is not null;
     INSERT INTO @inserted
     SELECT
-        a.Metadata_PR_content_ST_location_EV_of,
+        x.Metadata_PR_content_ST_location_EV_of,
         'X', -- existing data
-        p.PR_content_ST_location_EV_of_ChangedAt,
-        a.PR_content_ST_location_EV_of_PositedAt,
-        a.PR_content_ST_location_EV_of_Reliability,
-        p.PR_ID_content,
-        p.ST_ID_location,
-        p.EV_ID_of
+        x.PR_content_ST_location_EV_of_ChangedAt,
+        x.PR_content_ST_location_EV_of_PositedAt,
+        x.PR_content_ST_location_EV_of_Reliability,
+        x.PR_ID_content,
+        x.ST_ID_location,
+        x.EV_ID_of
     FROM (
-        SELECT DISTINCT
-            PR_ID_content,
-            ST_ID_location,
-            EV_ID_of
-        FROM 
-            @inserted 
-    ) i
-    JOIN
-        [ties].[PR_content_ST_location_EV_of_Posit] p
-    ON
-        p.PR_ID_content = i.PR_ID_content
-    AND
-        p.ST_ID_location = i.ST_ID_location
-    AND
-        p.EV_ID_of = i.EV_ID_of
-    JOIN 
-        [ties].[PR_content_ST_location_EV_of_Annex] a
-    ON 
-        a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID;
+        SELECT
+            a.Metadata_PR_content_ST_location_EV_of,
+            p.PR_content_ST_location_EV_of_ChangedAt,
+            a.PR_content_ST_location_EV_of_PositedAt,
+            a.PR_content_ST_location_EV_of_Reliability,
+            p.PR_ID_content,
+            p.ST_ID_location,
+            p.EV_ID_of,
+            -- a correction retracts what it corrects at its own positing time, where the assertion is what is shown
+            ROW_NUMBER() OVER (
+                PARTITION BY
+                    p.PR_ID_content,
+                    p.ST_ID_location,
+                    p.EV_ID_of,
+                    p.PR_content_ST_location_EV_of_ChangedAt,
+                    a.PR_content_ST_location_EV_of_PositedAt
+                ORDER BY
+                    a.PR_content_ST_location_EV_of_Reliability DESC
+            ) as shown
+        FROM (
+            SELECT DISTINCT
+                PR_ID_content,
+                ST_ID_location,
+                EV_ID_of
+            FROM
+                @inserted
+        ) i
+        JOIN
+            [ties].[PR_content_ST_location_EV_of_Posit] p
+        ON
+            p.PR_ID_content = i.PR_ID_content
+        AND
+            p.ST_ID_location = i.ST_ID_location
+        AND
+            p.EV_ID_of = i.EV_ID_of
+        JOIN
+            [ties].[PR_content_ST_location_EV_of_Annex] a
+        ON
+            a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+    ) x
+    WHERE
+        x.shown = 1;
     DECLARE @retracted TABLE (
         Metadata_PR_content_ST_location_EV_of int not null,
         PR_content_ST_location_EV_of_StatementType char(1) not null,
@@ -2604,9 +2816,9 @@ BEGIN
         EV_ID_of
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
-            pre.PR_content_ST_location_EV_of_Reliability as previous_PR_content_ST_location_EV_of_Reliability, 
+            pre.PR_content_ST_location_EV_of_Reliability as previous_PR_content_ST_location_EV_of_Reliability,
             fol.PR_content_ST_location_EV_of_Reliability as following_PR_content_ST_location_EV_of_Reliability
         FROM
             @inserted a
@@ -2625,7 +2837,7 @@ BEGIN
                 p.PR_content_ST_location_EV_of_ChangedAt = a.PR_content_ST_location_EV_of_ChangedAt
             AND
                 p.PR_content_ST_location_EV_of_PositedAt < a.PR_content_ST_location_EV_of_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.PR_content_ST_location_EV_of_PositedAt DESC
         ) pre
         OUTER APPLY (
@@ -2643,11 +2855,11 @@ BEGIN
                 p.PR_content_ST_location_EV_of_ChangedAt = a.PR_content_ST_location_EV_of_ChangedAt
             AND
                 p.PR_content_ST_location_EV_of_PositedAt > a.PR_content_ST_location_EV_of_PositedAt
-            ORDER BY 
+            ORDER BY
                 p.PR_content_ST_location_EV_of_PositedAt ASC
         ) fol
         WHERE
-            (a.PR_content_ST_location_EV_of_Reliability = 0 AND isnull(pre.PR_content_ST_location_EV_of_Reliability, 1) = 1) -- ta bort isnull för assertive
+            (a.PR_content_ST_location_EV_of_Reliability = 0 AND isnull(pre.PR_content_ST_location_EV_of_Reliability, 1) = 1) -- a retraction with nothing before it is dropped, also when assertive
         OR
             (a.PR_content_ST_location_EV_of_Reliability = 1 AND fol.PR_content_ST_location_EV_of_Reliability = 0)
     ) i
@@ -2659,11 +2871,11 @@ BEGIN
             (i.PR_content_ST_location_EV_of_Reliability = 1 AND i.following_PR_content_ST_location_EV_of_Reliability = 0)
         );
     IF EXISTS (
-        SELECT TOP 1 
-            PR_content_ST_location_EV_of_StatementType 
-        FROM 
-            @inserted 
-        WHERE 
+        SELECT TOP 1
+            PR_content_ST_location_EV_of_StatementType
+        FROM
+            @inserted
+        WHERE
             PR_content_ST_location_EV_of_StatementType IN ('P', 'A')
     )
     BEGIN --- (only run if necessary) ---
@@ -2687,16 +2899,16 @@ BEGIN
         ST_ID_location,
         EV_ID_of
     )
-    SELECT 
+    SELECT
         x.Metadata_PR_content_ST_location_EV_of,
-        CASE 
-            WHEN x.previous_PR_content_ST_location_EV_of_PositedAt < x.PR_content_ST_location_EV_of_PositedAt THEN 'D' -- physical delete 
-            ELSE 'A' -- logical delete 
+        CASE
+            WHEN x.previous_PR_content_ST_location_EV_of_PositedAt < x.PR_content_ST_location_EV_of_PositedAt THEN 'D' -- physical delete
+            ELSE 'A' -- logical delete
         END,
         x.PR_content_ST_location_EV_of_ChangedAt,
-        CASE 
-            WHEN x.previous_PR_content_ST_location_EV_of_PositedAt < x.PR_content_ST_location_EV_of_PositedAt THEN x.PR_content_ST_location_EV_of_PositedAt 
-            ELSE x.previous_PR_content_ST_location_EV_of_PositedAt 
+        CASE
+            WHEN x.previous_PR_content_ST_location_EV_of_PositedAt < x.PR_content_ST_location_EV_of_PositedAt THEN x.PR_content_ST_location_EV_of_PositedAt
+            ELSE x.previous_PR_content_ST_location_EV_of_PositedAt
         END,
         0, -- quench the existing restatements
         x.PR_ID_content,
@@ -2704,15 +2916,15 @@ BEGIN
         x.EV_ID_of
     FROM (
         DELETE a
-        OUTPUT 
+        OUTPUT
             deleted.*,
             pre.PR_content_ST_location_EV_of_PositedAt as previous_PR_content_ST_location_EV_of_PositedAt
-        FROM 
+        FROM
             @inserted a
         OUTER APPLY (
             SELECT TOP 1
                 h.*
-            FROM 
+            FROM
                 @inserted h
             WHERE
                 h.PR_ID_content = a.PR_ID_content
@@ -2722,11 +2934,11 @@ BEGIN
                 h.EV_ID_of = a.EV_ID_of
             AND
                 h.PR_content_ST_location_EV_of_ChangedAt < a.PR_content_ST_location_EV_of_ChangedAt
-            ORDER BY 
+            ORDER BY
                 h.PR_content_ST_location_EV_of_ChangedAt DESC,
                 h.PR_content_ST_location_EV_of_PositedAt DESC
         ) pre
-        WHERE 
+        WHERE
             a.PR_ID_content = pre.PR_ID_content
         AND
             a.ST_ID_location = pre.ST_ID_location
@@ -2736,17 +2948,17 @@ BEGIN
     WHERE
         x.PR_content_ST_location_EV_of_StatementType = 'X'; -- quench
     -- add the quenches
-    INSERT INTO @inserted 
-    SELECT 
-        * 
+    INSERT INTO @inserted
+    SELECT
+        *
     FROM (
         DELETE @restated
         OUTPUT deleted.*
         WHERE PR_content_ST_location_EV_of_StatementType = 'A'
     ) d;
-    -- perform any remaining physical deletes 
+    -- perform any remaining physical deletes
     DELETE a
-    FROM 
+    FROM
         @restated i
     JOIN
         [ties].[PR_content_ST_location_EV_of_Posit] p
@@ -2758,9 +2970,9 @@ BEGIN
         p.EV_ID_of = i.EV_ID_of
     AND
         p.PR_content_ST_location_EV_of_ChangedAt = i.PR_content_ST_location_EV_of_ChangedAt
-    JOIN 
+    JOIN
         [ties].[PR_content_ST_location_EV_of_Annex] a
-    ON 
+    ON
         a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
     AND
         a.PR_content_ST_location_EV_of_PositedAt = i.PR_content_ST_location_EV_of_PositedAt;
@@ -2773,7 +2985,7 @@ BEGIN
         ST_ID_location,
         EV_ID_of
     )
-    SELECT
+    SELECT DISTINCT -- a posit stated at several positing times is made once
         PR_content_ST_location_EV_of_ChangedAt,
         PR_ID_content,
         ST_ID_location,
