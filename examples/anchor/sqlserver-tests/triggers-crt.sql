@@ -557,7 +557,7 @@ INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_PLC_Event_Place, EV_PLC_Ch
 SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
 UPDATE dbo.lEV_Event SET EV_PLC_Event_Place = N'p2', EV_PLC_ChangedAt = '2021-01-01', EV_PLC_PositedAt = '2024-02-01' WHERE EV_ID = @e AND Positor = 0;
 SET @place = (SELECT EV_PLC_Event_Place FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
-SET @n = (SELECT COUNT(*) FROM dbo.dEV_Event('2019-01-01', '2022-01-01', NULL) WHERE EV_ID = @e AND Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.dEV_Event('2019-01-01', '2022-01-01', NULL) WHERE EV_ID = @e AND EV_PLC_Positor = 0);
 INSERT INTO #result SELECT N'c22 a new value of a historized nexus attribute is a new version, which the difference perspective shows', CASE WHEN @place = N'p2' AND @n = 2 THEN 1 ELSE 0 END,
     CONCAT('shown ', ISNULL(@place, 'nothing'), ', ', @n, ' differences, expected 2');
 BEGIN TRY
