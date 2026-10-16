@@ -36,7 +36,8 @@ BEGIN
         primary key(
             EV_DAT_Version,
             EV_DAT_Positor,
-            EV_DAT_EV_ID
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -213,6 +214,62 @@ BEGIN
             v.EV_DAT_Version = @currentVersion
         AND
             EV_DAT_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_DAT_EV_ID,
+                v.EV_DAT_Positor,
+                v.EV_DAT_PositedAt
+            FROM
+                @EV_DAT_Event_Date v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_DAT_Reliability > 0 THEN a.EV_DAT_Reliability
+                        ELSE 1 + a.EV_DAT_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_DAT_Event_Date_Posit] p
+                JOIN
+                    [attributes].[EV_DAT_Event_Date_Annex] a
+                ON
+                    a.EV_DAT_ID = p.EV_DAT_ID
+                AND
+                    a.EV_DAT_Positor = v.EV_DAT_Positor
+                AND
+                    a.EV_DAT_PositedAt = (
+                        SELECT
+                            max(s.EV_DAT_PositedAt)
+                        FROM
+                            [attributes].[EV_DAT_Event_Date_Annex] s
+                        WHERE
+                            s.EV_DAT_ID = p.EV_DAT_ID
+                        AND
+                            s.EV_DAT_Positor = v.EV_DAT_Positor
+                        AND
+                            s.EV_DAT_PositedAt <= v.EV_DAT_PositedAt
+                    )
+                WHERE
+                    p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+                AND
+                    a.EV_DAT_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_DAT_Version = @currentVersion
+            AND
+                v.EV_DAT_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_DAT_Event_Date for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -242,7 +299,8 @@ BEGIN
         primary key(
             EV_AUD_Version,
             EV_AUD_Positor,
-            EV_AUD_EV_ID
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -419,6 +477,62 @@ BEGIN
             v.EV_AUD_Version = @currentVersion
         AND
             EV_AUD_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_AUD_EV_ID,
+                v.EV_AUD_Positor,
+                v.EV_AUD_PositedAt
+            FROM
+                @EV_AUD_Event_Audience v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_AUD_Reliability > 0 THEN a.EV_AUD_Reliability
+                        ELSE 1 + a.EV_AUD_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_AUD_Event_Audience_Posit] p
+                JOIN
+                    [attributes].[EV_AUD_Event_Audience_Annex] a
+                ON
+                    a.EV_AUD_ID = p.EV_AUD_ID
+                AND
+                    a.EV_AUD_Positor = v.EV_AUD_Positor
+                AND
+                    a.EV_AUD_PositedAt = (
+                        SELECT
+                            max(s.EV_AUD_PositedAt)
+                        FROM
+                            [attributes].[EV_AUD_Event_Audience_Annex] s
+                        WHERE
+                            s.EV_AUD_ID = p.EV_AUD_ID
+                        AND
+                            s.EV_AUD_Positor = v.EV_AUD_Positor
+                        AND
+                            s.EV_AUD_PositedAt <= v.EV_AUD_PositedAt
+                    )
+                WHERE
+                    p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+                AND
+                    a.EV_AUD_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_AUD_Version = @currentVersion
+            AND
+                v.EV_AUD_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_AUD_Event_Audience for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -448,7 +562,8 @@ BEGIN
         primary key(
             EV_REV_Version,
             EV_REV_Positor,
-            EV_REV_EV_ID
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -625,6 +740,62 @@ BEGIN
             v.EV_REV_Version = @currentVersion
         AND
             EV_REV_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_REV_EV_ID,
+                v.EV_REV_Positor,
+                v.EV_REV_PositedAt
+            FROM
+                @EV_REV_Event_Revenue v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_REV_Reliability > 0 THEN a.EV_REV_Reliability
+                        ELSE 1 + a.EV_REV_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_REV_Event_Revenue_Posit] p
+                JOIN
+                    [attributes].[EV_REV_Event_Revenue_Annex] a
+                ON
+                    a.EV_REV_ID = p.EV_REV_ID
+                AND
+                    a.EV_REV_Positor = v.EV_REV_Positor
+                AND
+                    a.EV_REV_PositedAt = (
+                        SELECT
+                            max(s.EV_REV_PositedAt)
+                        FROM
+                            [attributes].[EV_REV_Event_Revenue_Annex] s
+                        WHERE
+                            s.EV_REV_ID = p.EV_REV_ID
+                        AND
+                            s.EV_REV_Positor = v.EV_REV_Positor
+                        AND
+                            s.EV_REV_PositedAt <= v.EV_REV_PositedAt
+                    )
+                WHERE
+                    p.EV_REV_EV_ID = v.EV_REV_EV_ID
+                AND
+                    a.EV_REV_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_REV_Version = @currentVersion
+            AND
+                v.EV_REV_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_REV_Event_Revenue for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -655,7 +826,8 @@ BEGIN
         primary key(
             EV_STA_Version,
             EV_STA_Positor,
-            EV_STA_EV_ID
+            EV_STA_EV_ID,
+            EV_STA_Event_Status -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -875,6 +1047,65 @@ BEGIN
             v.EV_STA_Version = @currentVersion
         AND
             EV_STA_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_STA_EV_ID,
+                v.EV_STA_ChangedAt,
+                v.EV_STA_Positor,
+                v.EV_STA_PositedAt
+            FROM
+                @EV_STA_Event_Status v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_STA_Reliability > 0 THEN a.EV_STA_Reliability
+                        ELSE 1 + a.EV_STA_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_STA_Event_Status_Posit] p
+                JOIN
+                    [attributes].[EV_STA_Event_Status_Annex] a
+                ON
+                    a.EV_STA_ID = p.EV_STA_ID
+                AND
+                    a.EV_STA_Positor = v.EV_STA_Positor
+                AND
+                    a.EV_STA_PositedAt = (
+                        SELECT
+                            max(s.EV_STA_PositedAt)
+                        FROM
+                            [attributes].[EV_STA_Event_Status_Annex] s
+                        WHERE
+                            s.EV_STA_ID = p.EV_STA_ID
+                        AND
+                            s.EV_STA_Positor = v.EV_STA_Positor
+                        AND
+                            s.EV_STA_PositedAt <= v.EV_STA_PositedAt
+                    )
+                WHERE
+                    p.EV_STA_EV_ID = v.EV_STA_EV_ID
+                AND
+                    p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+                AND
+                    a.EV_STA_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_STA_Version = @currentVersion
+            AND
+                v.EV_STA_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_STA_Event_Status for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -904,7 +1135,8 @@ BEGIN
         primary key(
             EV_UTL_Version,
             EV_UTL_Positor,
-            EV_UTL_EV_ID
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1081,6 +1313,62 @@ BEGIN
             v.EV_UTL_Version = @currentVersion
         AND
             EV_UTL_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_UTL_EV_ID,
+                v.EV_UTL_Positor,
+                v.EV_UTL_PositedAt
+            FROM
+                @EV_UTL_Event_Utilization v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_UTL_Reliability > 0 THEN a.EV_UTL_Reliability
+                        ELSE 1 + a.EV_UTL_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_UTL_Event_Utilization_Posit] p
+                JOIN
+                    [attributes].[EV_UTL_Event_Utilization_Annex] a
+                ON
+                    a.EV_UTL_ID = p.EV_UTL_ID
+                AND
+                    a.EV_UTL_Positor = v.EV_UTL_Positor
+                AND
+                    a.EV_UTL_PositedAt = (
+                        SELECT
+                            max(s.EV_UTL_PositedAt)
+                        FROM
+                            [attributes].[EV_UTL_Event_Utilization_Annex] s
+                        WHERE
+                            s.EV_UTL_ID = p.EV_UTL_ID
+                        AND
+                            s.EV_UTL_Positor = v.EV_UTL_Positor
+                        AND
+                            s.EV_UTL_PositedAt <= v.EV_UTL_PositedAt
+                    )
+                WHERE
+                    p.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+                AND
+                    a.EV_UTL_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_UTL_Version = @currentVersion
+            AND
+                v.EV_UTL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_UTL_Event_Utilization for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1111,7 +1399,8 @@ BEGIN
         primary key(
             EV_LVL_Version,
             EV_LVL_Positor,
-            EV_LVL_EV_ID
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1331,6 +1620,65 @@ BEGIN
             v.EV_LVL_Version = @currentVersion
         AND
             EV_LVL_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_LVL_EV_ID,
+                v.EV_LVL_ChangedAt,
+                v.EV_LVL_Positor,
+                v.EV_LVL_PositedAt
+            FROM
+                @EV_LVL_Event_Level v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_LVL_Reliability > 0 THEN a.EV_LVL_Reliability
+                        ELSE 1 + a.EV_LVL_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_LVL_Event_Level_Posit] p
+                JOIN
+                    [attributes].[EV_LVL_Event_Level_Annex] a
+                ON
+                    a.EV_LVL_ID = p.EV_LVL_ID
+                AND
+                    a.EV_LVL_Positor = v.EV_LVL_Positor
+                AND
+                    a.EV_LVL_PositedAt = (
+                        SELECT
+                            max(s.EV_LVL_PositedAt)
+                        FROM
+                            [attributes].[EV_LVL_Event_Level_Annex] s
+                        WHERE
+                            s.EV_LVL_ID = p.EV_LVL_ID
+                        AND
+                            s.EV_LVL_Positor = v.EV_LVL_Positor
+                        AND
+                            s.EV_LVL_PositedAt <= v.EV_LVL_PositedAt
+                    )
+                WHERE
+                    p.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+                AND
+                    p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+                AND
+                    a.EV_LVL_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_LVL_Version = @currentVersion
+            AND
+                v.EV_LVL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_LVL_Event_Level for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1361,7 +1709,8 @@ BEGIN
         primary key(
             ST_NAM_Version,
             ST_NAM_Positor,
-            ST_NAM_ST_ID
+            ST_NAM_ST_ID,
+            ST_NAM_Stage_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1581,6 +1930,65 @@ BEGIN
             v.ST_NAM_Version = @currentVersion
         AND
             ST_NAM_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_NAM_ST_ID,
+                v.ST_NAM_ChangedAt,
+                v.ST_NAM_Positor,
+                v.ST_NAM_PositedAt
+            FROM
+                @ST_NAM_Stage_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_NAM_Reliability > 0 THEN a.ST_NAM_Reliability
+                        ELSE 1 + a.ST_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_NAM_Stage_Name_Posit] p
+                JOIN
+                    [attributes].[ST_NAM_Stage_Name_Annex] a
+                ON
+                    a.ST_NAM_ID = p.ST_NAM_ID
+                AND
+                    a.ST_NAM_Positor = v.ST_NAM_Positor
+                AND
+                    a.ST_NAM_PositedAt = (
+                        SELECT
+                            max(s.ST_NAM_PositedAt)
+                        FROM
+                            [attributes].[ST_NAM_Stage_Name_Annex] s
+                        WHERE
+                            s.ST_NAM_ID = p.ST_NAM_ID
+                        AND
+                            s.ST_NAM_Positor = v.ST_NAM_Positor
+                        AND
+                            s.ST_NAM_PositedAt <= v.ST_NAM_PositedAt
+                    )
+                WHERE
+                    p.ST_NAM_ST_ID = v.ST_NAM_ST_ID
+                AND
+                    p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+                AND
+                    a.ST_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_NAM_Version = @currentVersion
+            AND
+                v.ST_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_NAM_Stage_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1611,7 +2019,8 @@ BEGIN
         primary key(
             ST_LOC_Version,
             ST_LOC_Positor,
-            ST_LOC_ST_ID
+            ST_LOC_ST_ID,
+            ST_LOC_Checksum -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1789,6 +2198,62 @@ BEGIN
             v.ST_LOC_Version = @currentVersion
         AND
             ST_LOC_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_LOC_ST_ID,
+                v.ST_LOC_Positor,
+                v.ST_LOC_PositedAt
+            FROM
+                @ST_LOC_Stage_Location v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_LOC_Reliability > 0 THEN a.ST_LOC_Reliability
+                        ELSE 1 + a.ST_LOC_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_LOC_Stage_Location_Posit] p
+                JOIN
+                    [attributes].[ST_LOC_Stage_Location_Annex] a
+                ON
+                    a.ST_LOC_ID = p.ST_LOC_ID
+                AND
+                    a.ST_LOC_Positor = v.ST_LOC_Positor
+                AND
+                    a.ST_LOC_PositedAt = (
+                        SELECT
+                            max(s.ST_LOC_PositedAt)
+                        FROM
+                            [attributes].[ST_LOC_Stage_Location_Annex] s
+                        WHERE
+                            s.ST_LOC_ID = p.ST_LOC_ID
+                        AND
+                            s.ST_LOC_Positor = v.ST_LOC_Positor
+                        AND
+                            s.ST_LOC_PositedAt <= v.ST_LOC_PositedAt
+                    )
+                WHERE
+                    p.ST_LOC_ST_ID = v.ST_LOC_ST_ID
+                AND
+                    a.ST_LOC_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_LOC_Version = @currentVersion
+            AND
+                v.ST_LOC_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_LOC_Stage_Location for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1819,7 +2284,8 @@ BEGIN
         primary key(
             ST_AVG_Version,
             ST_AVG_Positor,
-            ST_AVG_ST_ID
+            ST_AVG_ST_ID,
+            ST_AVG_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2083,6 +2549,65 @@ BEGIN
             v.ST_AVG_Version = @currentVersion
         AND
             ST_AVG_StatementType in ('S','N','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_AVG_ST_ID,
+                v.ST_AVG_ChangedAt,
+                v.ST_AVG_Positor,
+                v.ST_AVG_PositedAt
+            FROM
+                @ST_AVG_Stage_Average v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_AVG_Reliability > 0 THEN a.ST_AVG_Reliability
+                        ELSE 1 + a.ST_AVG_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_AVG_Stage_Average_Posit] p
+                JOIN
+                    [attributes].[ST_AVG_Stage_Average_Annex] a
+                ON
+                    a.ST_AVG_ID = p.ST_AVG_ID
+                AND
+                    a.ST_AVG_Positor = v.ST_AVG_Positor
+                AND
+                    a.ST_AVG_PositedAt = (
+                        SELECT
+                            max(s.ST_AVG_PositedAt)
+                        FROM
+                            [attributes].[ST_AVG_Stage_Average_Annex] s
+                        WHERE
+                            s.ST_AVG_ID = p.ST_AVG_ID
+                        AND
+                            s.ST_AVG_Positor = v.ST_AVG_Positor
+                        AND
+                            s.ST_AVG_PositedAt <= v.ST_AVG_PositedAt
+                    )
+                WHERE
+                    p.ST_AVG_ST_ID = v.ST_AVG_ST_ID
+                AND
+                    p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+                AND
+                    a.ST_AVG_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_AVG_Version = @currentVersion
+            AND
+                v.ST_AVG_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_AVG_Stage_Average for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2112,7 +2637,8 @@ BEGIN
         primary key(
             ST_MIN_Version,
             ST_MIN_Positor,
-            ST_MIN_ST_ID
+            ST_MIN_ST_ID,
+            ST_MIN_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2289,6 +2815,62 @@ BEGIN
             v.ST_MIN_Version = @currentVersion
         AND
             ST_MIN_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_MIN_ST_ID,
+                v.ST_MIN_Positor,
+                v.ST_MIN_PositedAt
+            FROM
+                @ST_MIN_Stage_Minimum v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_MIN_Reliability > 0 THEN a.ST_MIN_Reliability
+                        ELSE 1 + a.ST_MIN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_MIN_Stage_Minimum_Posit] p
+                JOIN
+                    [attributes].[ST_MIN_Stage_Minimum_Annex] a
+                ON
+                    a.ST_MIN_ID = p.ST_MIN_ID
+                AND
+                    a.ST_MIN_Positor = v.ST_MIN_Positor
+                AND
+                    a.ST_MIN_PositedAt = (
+                        SELECT
+                            max(s.ST_MIN_PositedAt)
+                        FROM
+                            [attributes].[ST_MIN_Stage_Minimum_Annex] s
+                        WHERE
+                            s.ST_MIN_ID = p.ST_MIN_ID
+                        AND
+                            s.ST_MIN_Positor = v.ST_MIN_Positor
+                        AND
+                            s.ST_MIN_PositedAt <= v.ST_MIN_PositedAt
+                    )
+                WHERE
+                    p.ST_MIN_ST_ID = v.ST_MIN_ST_ID
+                AND
+                    a.ST_MIN_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_MIN_Version = @currentVersion
+            AND
+                v.ST_MIN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_MIN_Stage_Minimum for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2319,7 +2901,8 @@ BEGIN
         primary key(
             AC_NAM_Version,
             AC_NAM_Positor,
-            AC_NAM_AC_ID
+            AC_NAM_AC_ID,
+            AC_NAM_Actor_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2539,6 +3122,65 @@ BEGIN
             v.AC_NAM_Version = @currentVersion
         AND
             AC_NAM_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_NAM_AC_ID,
+                v.AC_NAM_ChangedAt,
+                v.AC_NAM_Positor,
+                v.AC_NAM_PositedAt
+            FROM
+                @AC_NAM_Actor_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_NAM_Reliability > 0 THEN a.AC_NAM_Reliability
+                        ELSE 1 + a.AC_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_NAM_Actor_Name_Posit] p
+                JOIN
+                    [attributes].[AC_NAM_Actor_Name_Annex] a
+                ON
+                    a.AC_NAM_ID = p.AC_NAM_ID
+                AND
+                    a.AC_NAM_Positor = v.AC_NAM_Positor
+                AND
+                    a.AC_NAM_PositedAt = (
+                        SELECT
+                            max(s.AC_NAM_PositedAt)
+                        FROM
+                            [attributes].[AC_NAM_Actor_Name_Annex] s
+                        WHERE
+                            s.AC_NAM_ID = p.AC_NAM_ID
+                        AND
+                            s.AC_NAM_Positor = v.AC_NAM_Positor
+                        AND
+                            s.AC_NAM_PositedAt <= v.AC_NAM_PositedAt
+                    )
+                WHERE
+                    p.AC_NAM_AC_ID = v.AC_NAM_AC_ID
+                AND
+                    p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+                AND
+                    a.AC_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_NAM_Version = @currentVersion
+            AND
+                v.AC_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_NAM_Actor_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2568,7 +3210,8 @@ BEGIN
         primary key(
             AC_GEN_Version,
             AC_GEN_Positor,
-            AC_GEN_AC_ID
+            AC_GEN_AC_ID,
+            AC_GEN_GEN_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2745,6 +3388,62 @@ BEGIN
             v.AC_GEN_Version = @currentVersion
         AND
             AC_GEN_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_GEN_AC_ID,
+                v.AC_GEN_Positor,
+                v.AC_GEN_PositedAt
+            FROM
+                @AC_GEN_Actor_Gender v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_GEN_Reliability > 0 THEN a.AC_GEN_Reliability
+                        ELSE 1 + a.AC_GEN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_GEN_Actor_Gender_Posit] p
+                JOIN
+                    [attributes].[AC_GEN_Actor_Gender_Annex] a
+                ON
+                    a.AC_GEN_ID = p.AC_GEN_ID
+                AND
+                    a.AC_GEN_Positor = v.AC_GEN_Positor
+                AND
+                    a.AC_GEN_PositedAt = (
+                        SELECT
+                            max(s.AC_GEN_PositedAt)
+                        FROM
+                            [attributes].[AC_GEN_Actor_Gender_Annex] s
+                        WHERE
+                            s.AC_GEN_ID = p.AC_GEN_ID
+                        AND
+                            s.AC_GEN_Positor = v.AC_GEN_Positor
+                        AND
+                            s.AC_GEN_PositedAt <= v.AC_GEN_PositedAt
+                    )
+                WHERE
+                    p.AC_GEN_AC_ID = v.AC_GEN_AC_ID
+                AND
+                    a.AC_GEN_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_GEN_Version = @currentVersion
+            AND
+                v.AC_GEN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_GEN_Actor_Gender for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2775,7 +3474,8 @@ BEGIN
         primary key(
             AC_PLV_Version,
             AC_PLV_Positor,
-            AC_PLV_AC_ID
+            AC_PLV_AC_ID,
+            AC_PLV_PLV_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2995,6 +3695,65 @@ BEGIN
             v.AC_PLV_Version = @currentVersion
         AND
             AC_PLV_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_PLV_AC_ID,
+                v.AC_PLV_ChangedAt,
+                v.AC_PLV_Positor,
+                v.AC_PLV_PositedAt
+            FROM
+                @AC_PLV_Actor_ProfessionalLevel v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_PLV_Reliability > 0 THEN a.AC_PLV_Reliability
+                        ELSE 1 + a.AC_PLV_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+                JOIN
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+                ON
+                    a.AC_PLV_ID = p.AC_PLV_ID
+                AND
+                    a.AC_PLV_Positor = v.AC_PLV_Positor
+                AND
+                    a.AC_PLV_PositedAt = (
+                        SELECT
+                            max(s.AC_PLV_PositedAt)
+                        FROM
+                            [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] s
+                        WHERE
+                            s.AC_PLV_ID = p.AC_PLV_ID
+                        AND
+                            s.AC_PLV_Positor = v.AC_PLV_Positor
+                        AND
+                            s.AC_PLV_PositedAt <= v.AC_PLV_PositedAt
+                    )
+                WHERE
+                    p.AC_PLV_AC_ID = v.AC_PLV_AC_ID
+                AND
+                    p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+                AND
+                    a.AC_PLV_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_PLV_Version = @currentVersion
+            AND
+                v.AC_PLV_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -3024,7 +3783,8 @@ BEGIN
         primary key(
             PR_NAM_Version,
             PR_NAM_Positor,
-            PR_NAM_PR_ID
+            PR_NAM_PR_ID,
+            PR_NAM_Program_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -3201,6 +3961,62 @@ BEGIN
             v.PR_NAM_Version = @currentVersion
         AND
             PR_NAM_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.PR_NAM_PR_ID,
+                v.PR_NAM_Positor,
+                v.PR_NAM_PositedAt
+            FROM
+                @PR_NAM_Program_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.PR_NAM_Reliability > 0 THEN a.PR_NAM_Reliability
+                        ELSE 1 + a.PR_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[PR_NAM_Program_Name_Posit] p
+                JOIN
+                    [attributes].[PR_NAM_Program_Name_Annex] a
+                ON
+                    a.PR_NAM_ID = p.PR_NAM_ID
+                AND
+                    a.PR_NAM_Positor = v.PR_NAM_Positor
+                AND
+                    a.PR_NAM_PositedAt = (
+                        SELECT
+                            max(s.PR_NAM_PositedAt)
+                        FROM
+                            [attributes].[PR_NAM_Program_Name_Annex] s
+                        WHERE
+                            s.PR_NAM_ID = p.PR_NAM_ID
+                        AND
+                            s.PR_NAM_Positor = v.PR_NAM_Positor
+                        AND
+                            s.PR_NAM_PositedAt <= v.PR_NAM_PositedAt
+                    )
+                WHERE
+                    p.PR_NAM_PR_ID = v.PR_NAM_PR_ID
+                AND
+                    a.PR_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.PR_NAM_Version = @currentVersion
+            AND
+                v.PR_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in PR_NAM_Program_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -3231,7 +4047,8 @@ BEGIN
         primary key(
             PR_LEN_Version,
             PR_LEN_Positor,
-            PR_LEN_PR_ID
+            PR_LEN_PR_ID,
+            PR_LEN_Program_Length -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -3495,6 +4312,65 @@ BEGIN
             v.PR_LEN_Version = @currentVersion
         AND
             PR_LEN_StatementType in ('S','N','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.PR_LEN_PR_ID,
+                v.PR_LEN_ChangedAt,
+                v.PR_LEN_Positor,
+                v.PR_LEN_PositedAt
+            FROM
+                @PR_LEN_Program_Length v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.PR_LEN_Reliability > 0 THEN a.PR_LEN_Reliability
+                        ELSE 1 + a.PR_LEN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[PR_LEN_Program_Length_Posit] p
+                JOIN
+                    [attributes].[PR_LEN_Program_Length_Annex] a
+                ON
+                    a.PR_LEN_ID = p.PR_LEN_ID
+                AND
+                    a.PR_LEN_Positor = v.PR_LEN_Positor
+                AND
+                    a.PR_LEN_PositedAt = (
+                        SELECT
+                            max(s.PR_LEN_PositedAt)
+                        FROM
+                            [attributes].[PR_LEN_Program_Length_Annex] s
+                        WHERE
+                            s.PR_LEN_ID = p.PR_LEN_ID
+                        AND
+                            s.PR_LEN_Positor = v.PR_LEN_Positor
+                        AND
+                            s.PR_LEN_PositedAt <= v.PR_LEN_PositedAt
+                    )
+                WHERE
+                    p.PR_LEN_PR_ID = v.PR_LEN_PR_ID
+                AND
+                    p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+                AND
+                    a.PR_LEN_Reliability <> 0
+            ) held
+            WHERE
+                v.PR_LEN_Version = @currentVersion
+            AND
+                v.PR_LEN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in PR_LEN_Program_Length for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO

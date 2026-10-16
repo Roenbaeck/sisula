@@ -339,6 +339,63 @@ BEGIN
         RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_DAT_Assertion))
         RAISERROR('The computed assertion column EV_DAT_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_DAT_Event_Date)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_DAT_Event_Date] (
+            Metadata_EV_DAT,
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Positor,
+            EV_DAT_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_DAT
+            END, i.Metadata_EV),
+            p.EV_DAT_EV_ID,
+            p.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2),
+            d.EV_DAT_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_DAT_ID = d.EV_DAT_ID
+        WHERE
+            p.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        AND
+            d.EV_DAT_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_DAT_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_DAT_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_DAT_Event_Date) OR
         UPDATE(EV_DAT_Reliability) OR
@@ -396,62 +453,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_DAT_Event_Date)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_DAT_Event_Date] (
-            Metadata_EV_DAT,
-            EV_DAT_EV_ID,
-            EV_DAT_Event_Date,
-            EV_DAT_PositedAt,
-            EV_DAT_Positor,
-            EV_DAT_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_DAT
-            END, i.Metadata_EV),
-            p.EV_DAT_EV_ID,
-            p.EV_DAT_Event_Date,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
-            END, @now) as datetime2),
-            d.EV_DAT_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_DAT_Event_Date_Posit] p
-        ON
-            p.EV_DAT_ID = d.EV_DAT_ID
-        WHERE
-            p.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
-        AND
-            d.EV_DAT_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_DAT_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_DAT_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -498,6 +499,63 @@ BEGIN
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_AUD_Assertion))
         RAISERROR('The computed assertion column EV_AUD_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_AUD_Event_Audience)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
+            Metadata_EV_AUD,
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Positor,
+            EV_AUD_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_AUD
+            END, i.Metadata_EV),
+            p.EV_AUD_EV_ID,
+            p.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2),
+            d.EV_AUD_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_AUD_ID = d.EV_AUD_ID
+        WHERE
+            p.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        AND
+            d.EV_AUD_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_AUD_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_AUD_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_AUD_Event_Audience) OR
         UPDATE(EV_AUD_Reliability) OR
@@ -555,62 +613,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_AUD_Event_Audience)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
-            Metadata_EV_AUD,
-            EV_AUD_EV_ID,
-            EV_AUD_Event_Audience,
-            EV_AUD_PositedAt,
-            EV_AUD_Positor,
-            EV_AUD_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_AUD
-            END, i.Metadata_EV),
-            p.EV_AUD_EV_ID,
-            p.EV_AUD_Event_Audience,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
-            END, @now) as datetime2),
-            d.EV_AUD_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_AUD_Event_Audience_Posit] p
-        ON
-            p.EV_AUD_ID = d.EV_AUD_ID
-        WHERE
-            p.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
-        AND
-            d.EV_AUD_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_AUD_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_AUD_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -657,6 +659,63 @@ BEGIN
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_REV_Assertion))
         RAISERROR('The computed assertion column EV_REV_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_REV_Event_Revenue)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
+            Metadata_EV_REV,
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Positor,
+            EV_REV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_REV
+            END, i.Metadata_EV),
+            p.EV_REV_EV_ID,
+            p.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2),
+            d.EV_REV_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_REV_ID = d.EV_REV_ID
+        WHERE
+            p.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        AND
+            d.EV_REV_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_REV_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_REV_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_REV_Event_Revenue) OR
         UPDATE(EV_REV_Reliability) OR
@@ -714,62 +773,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_REV_Event_Revenue)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
-            Metadata_EV_REV,
-            EV_REV_EV_ID,
-            EV_REV_Event_Revenue,
-            EV_REV_PositedAt,
-            EV_REV_Positor,
-            EV_REV_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_REV
-            END, i.Metadata_EV),
-            p.EV_REV_EV_ID,
-            p.EV_REV_Event_Revenue,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
-            END, @now) as datetime2),
-            d.EV_REV_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_REV_Event_Revenue_Posit] p
-        ON
-            p.EV_REV_ID = d.EV_REV_ID
-        WHERE
-            p.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
-        AND
-            d.EV_REV_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_REV_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_REV_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -816,6 +819,69 @@ BEGIN
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_STA_Assertion))
         RAISERROR('The computed assertion column EV_STA_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(EV_STA_Event_Status)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_STA_Event_Status] (
+            Metadata_EV_STA,
+            EV_STA_EV_ID,
+            EV_STA_Event_Status,
+            EV_STA_ChangedAt,
+            EV_STA_PositedAt,
+            EV_STA_Positor,
+            EV_STA_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_STA
+            END, i.Metadata_EV),
+            p.EV_STA_EV_ID,
+            p.EV_STA_Event_Status,
+            p.EV_STA_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+            END, @now) as datetime2),
+            d.EV_STA_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_STA_Event_Status_Posit] p
+        ON
+            p.EV_STA_ID = d.EV_STA_ID
+        WHERE
+            p.EV_STA_Event_Status <> i.EV_STA_Event_Status
+        AND
+            UPDATE(EV_STA_ChangedAt)
+        AND
+            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+        AND
+            d.EV_STA_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_STA_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_STA_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_STA_Event_Status) OR
         UPDATE(EV_STA_Reliability) OR
@@ -880,68 +946,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_STA_Event_Status)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_STA_Event_Status] (
-            Metadata_EV_STA,
-            EV_STA_EV_ID,
-            EV_STA_Event_Status,
-            EV_STA_ChangedAt,
-            EV_STA_PositedAt,
-            EV_STA_Positor,
-            EV_STA_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_STA
-            END, i.Metadata_EV),
-            p.EV_STA_EV_ID,
-            p.EV_STA_Event_Status,
-            p.EV_STA_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
-            END, @now) as datetime2),
-            d.EV_STA_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_STA_Event_Status_Posit] p
-        ON
-            p.EV_STA_ID = d.EV_STA_ID
-        WHERE
-            p.EV_STA_Event_Status <> i.EV_STA_Event_Status
-        AND
-            UPDATE(EV_STA_ChangedAt)
-        AND
-            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
-        AND
-            d.EV_STA_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_STA_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_STA_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -991,6 +995,71 @@ BEGIN
         RAISERROR('The foreign key column EV_UTL_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_UTL_Assertion))
         RAISERROR('The computed assertion column EV_UTL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_UTL_UTL_ID) OR
+        UPDATE(EV_UTL_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
+            Metadata_EV_UTL,
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID,
+            EV_UTL_PositedAt,
+            EV_UTL_Positor,
+            EV_UTL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_UTL
+            END, i.Metadata_EV),
+            p.EV_UTL_EV_ID,
+            p.EV_UTL_UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2),
+            d.EV_UTL_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        ON
+            p.EV_UTL_ID = d.EV_UTL_ID
+        WHERE
+            p.EV_UTL_UTL_ID <> CASE
+                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            d.EV_UTL_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_UTL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_UTL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_UTL_UTL_ID) OR
         UPDATE(EV_UTL_UTL_Utilization) OR
@@ -1059,70 +1128,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_UTL_UTL_ID) OR
-        UPDATE(EV_UTL_UTL_Utilization)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
-            Metadata_EV_UTL,
-            EV_UTL_EV_ID,
-            EV_UTL_UTL_ID,
-            EV_UTL_PositedAt,
-            EV_UTL_Positor,
-            EV_UTL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_UTL
-            END, i.Metadata_EV),
-            p.EV_UTL_EV_ID,
-            p.EV_UTL_UTL_ID,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
-            END, @now) as datetime2),
-            d.EV_UTL_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[UTL_Utilization] [kUTL]
-        ON
-            [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_UTL_Event_Utilization_Posit] p
-        ON
-            p.EV_UTL_ID = d.EV_UTL_ID
-        WHERE
-            p.EV_UTL_UTL_ID <> CASE
-                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
-                ELSE [kUTL].UTL_ID
-            END
-        AND
-            d.EV_UTL_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_UTL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_UTL_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1172,6 +1177,77 @@ BEGIN
         RAISERROR('The foreign key column EV_LVL_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_LVL_Assertion))
         RAISERROR('The computed assertion column EV_LVL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(EV_LVL_PLV_ID) OR
+        UPDATE(EV_LVL_PLV_ProfessionalLevel)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_LVL_Event_Level] (
+            Metadata_EV_LVL,
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PositedAt,
+            EV_LVL_Positor,
+            EV_LVL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_LVL
+            END, i.Metadata_EV),
+            p.EV_LVL_EV_ID,
+            p.EV_LVL_PLV_ID,
+            p.EV_LVL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+            END, @now) as datetime2),
+            d.EV_LVL_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        ON
+            p.EV_LVL_ID = d.EV_LVL_ID
+        WHERE
+            p.EV_LVL_PLV_ID <> CASE
+                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END
+        AND
+            UPDATE(EV_LVL_ChangedAt)
+        AND
+            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+        AND
+            d.EV_LVL_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_LVL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_LVL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_LVL_PLV_ID) OR
         UPDATE(EV_LVL_PLV_ProfessionalLevel) OR
@@ -1246,76 +1322,6 @@ BEGIN
                 ELSE i.EV_LVL_Reliability
             END, 1)
         );
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_LVL_PLV_ID) OR
-        UPDATE(EV_LVL_PLV_ProfessionalLevel)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_LVL_Event_Level] (
-            Metadata_EV_LVL,
-            EV_LVL_EV_ID,
-            EV_LVL_PLV_ID,
-            EV_LVL_ChangedAt,
-            EV_LVL_PositedAt,
-            EV_LVL_Positor,
-            EV_LVL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_LVL
-            END, i.Metadata_EV),
-            p.EV_LVL_EV_ID,
-            p.EV_LVL_PLV_ID,
-            p.EV_LVL_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
-            END, @now) as datetime2),
-            d.EV_LVL_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[PLV_ProfessionalLevel] [kPLV]
-        ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_LVL_Event_Level_Posit] p
-        ON
-            p.EV_LVL_ID = d.EV_LVL_ID
-        WHERE
-            p.EV_LVL_PLV_ID <> CASE
-                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
-                ELSE [kPLV].PLV_ID
-            END
-        AND
-            UPDATE(EV_LVL_ChangedAt)
-        AND
-            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
-        AND
-            d.EV_LVL_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_LVL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_LVL_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint

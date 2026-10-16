@@ -14,7 +14,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23'), ('c24');
+INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23'), ('c24'), ('c25'), ('c26'), ('c27');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -602,6 +602,62 @@ SET @one = (SELECT COUNT(*) FROM dbo.dSU_Subject('2019-01-01', '2022-01-01', NUL
 INSERT INTO #result SELECT N'c24 the difference perspective of an anchor names the positor of each row', CASE WHEN @zero = 1 AND @one = 1 THEN 1 ELSE 0 END,
     CONCAT(@zero, ' rows by positor 0 and ', @one, ' by positor 1, expected 1 each');
 UPDATE #group SET finished = 1 WHERE name = 'c24';
+GO
+
+-- c25 decisive: another value by the same positor at a positing time that already has one is a contradiction, in
+--     another statement and within one insert (one used to be refused by an index, the other by a key)
+DECLARE @s int, @n int, @error nvarchar(2048);
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_NAM_PositedAt) VALUES (0, N'n1', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'n2', '2024-01-01', 0, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'c25 another value at a positing time that has one is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_NAM_Subject_Name%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability)
+    VALUES (0, @s, N'a', '2024-01-01', 0, 1), (0, @s, N'b', '2024-01-01', 0, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'c25 two values at one positing time in one insert are a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_NAM_Subject_Name%' AND @n = 0 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+UPDATE #group SET finished = 1 WHERE name = 'c25';
+GO
+
+-- c26 decisive, idempotent: a correction to the value of the version before retracts what it corrects, although the
+--     restatement itself is skipped (the corrected version used to stay)
+DECLARE @s int, @n int, @shown nvarchar(42), @changed datetime2;
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TAG_Subject_Tag, SU_TAG_ChangedAt, SU_TAG_PositedAt) VALUES (0, N'A', '2020-01-01', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+UPDATE dbo.lSU_Subject SET SU_TAG_Subject_Tag = N'B', SU_TAG_ChangedAt = '2021-01-01', SU_TAG_PositedAt = '2024-02-01' WHERE SU_ID = @s AND Positor = 0;
+UPDATE dbo.lSU_Subject SET SU_TAG_Subject_Tag = N'A', SU_TAG_ChangedAt = '2021-01-01', SU_TAG_PositedAt = '2024-03-01' WHERE SU_ID = @s AND Positor = 0;
+SELECT @shown = SU_TAG_Subject_Tag, @changed = SU_TAG_ChangedAt FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0;
+SET @n = (SELECT COUNT(*) FROM dbo.SU_TAG_Subject_Tag_Posit WHERE SU_TAG_SU_ID = @s);
+INSERT INTO #result SELECT N'c26 idempotent: a correction to the value of the version before retracts the corrected version', CASE WHEN @shown = N'A' AND @changed = '2020-01-01' AND @n = 2 THEN 1 ELSE 0 END,
+    CONCAT('shown ', ISNULL(@shown, 'nothing'), ' from ', @changed, ', ', @n, ' posits, expected A from 2020-01-01 and 2 posits');
+UPDATE #group SET finished = 1 WHERE name = 'c26';
+GO
+
+-- c27 decisive: a negative assertion of another value retracts what the positor held, since a decisive positor holds
+--     one assertion at a time, positive or negative
+DECLARE @s int, @n int, @shown nvarchar(42);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'a', '2024-01-01', 0, 1);
+INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'b', '2024-02-01', 0, -1);
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_Subject_Name_Posit p ON p.SU_NAM_ID = a.SU_NAM_ID
+    WHERE p.SU_NAM_SU_ID = @s AND p.SU_NAM_Subject_Name = N'a' AND a.SU_NAM_PositedAt = '2024-02-01' AND a.SU_NAM_Reliability = 0);
+SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c27 a negative assertion of another value retracts the value held', CASE WHEN @n = 1 AND @shown IS NULL THEN 1 ELSE 0 END, CONCAT(@n, ' retractions of a; shown ', ISNULL(@shown, 'nothing'));
+UPDATE #group SET finished = 1 WHERE name = 'c27';
 GO
 
 -- the result

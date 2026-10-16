@@ -1149,6 +1149,60 @@ BEGIN
             AND
                 a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [dbo].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                WHERE
+                    p.AC_ID_part = i.AC_ID_part
+                AND
+                    p.PR_ID_in = i.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        p.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    a.AC_part_PR_in_RAT_got_Positor = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID_part = i.AC_ID_part
+                AND
+                    j.PR_ID_in = i.PR_ID_in
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_ChangedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        j.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Positor, 0) = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_PositedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -1362,8 +1416,10 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [dbo].[AC_part_PR_in_RAT_got_Annex] (
             AC_part_PR_in_RAT_got_ID,
             AC_part_PR_in_RAT_got_Positor,
@@ -1409,7 +1465,7 @@ BEGIN
             AND
                 p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
             AND
-                a.AC_part_PR_in_RAT_got_Reliability > 0
+                a.AC_part_PR_in_RAT_got_Reliability <> 0
             ORDER BY
                 a.AC_part_PR_in_RAT_got_PositedAt DESC,
                 a.AC_part_PR_in_RAT_got_Reliability DESC
@@ -1419,7 +1475,7 @@ BEGIN
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R')
         AND
-            v.AC_part_PR_in_RAT_got_Reliability > 0
+            v.AC_part_PR_in_RAT_got_Reliability <> 0
         AND (
             e.RAT_ID_got <> v.RAT_ID_got
         )
@@ -2213,6 +2269,56 @@ BEGIN
             AND
                 a.PR_content_ST_location_EV_of_Reliability <> ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[PR_content_ST_location_EV_of_Posit] p
+                JOIN
+                    [dbo].[PR_content_ST_location_EV_of_Annex] a
+                ON
+                    a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+                WHERE
+                    p.EV_ID_of = i.EV_ID_of
+                AND
+                    (
+                        p.PR_ID_content <> i.PR_ID_content
+                    OR
+                        p.ST_ID_location <> i.ST_ID_location
+                    )
+                AND
+                    a.PR_content_ST_location_EV_of_Positor = ISNULL(i.PR_content_ST_location_EV_of_Positor, 0)
+                AND
+                    a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+                AND
+                    a.PR_content_ST_location_EV_of_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_ID_of = i.EV_ID_of
+                AND
+                    (
+                        j.PR_ID_content <> i.PR_ID_content
+                    OR
+                        j.ST_ID_location <> i.ST_ID_location
+                    )
+                AND
+                    ISNULL(j.PR_content_ST_location_EV_of_Positor, 0) = ISNULL(i.PR_content_ST_location_EV_of_Positor, 0)
+                AND
+                    ISNULL(j.PR_content_ST_location_EV_of_PositedAt, @now) = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+                AND
+                    ISNULL(j.PR_content_ST_location_EV_of_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -2355,8 +2461,9 @@ BEGIN
             v.PR_content_ST_location_EV_of_Version = @currentVersion
         AND
             v.PR_content_ST_location_EV_of_StatementType in ('S','N','D');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor when that has other values
+        -- (a correction)
         INSERT INTO [dbo].[PR_content_ST_location_EV_of_Annex] (
             PR_content_ST_location_EV_of_ID,
             PR_content_ST_location_EV_of_Positor,
@@ -2399,7 +2506,7 @@ BEGIN
             WHERE
                 p.EV_ID_of = v.EV_ID_of
             AND
-                a.PR_content_ST_location_EV_of_Reliability > 0
+                a.PR_content_ST_location_EV_of_Reliability <> 0
             ORDER BY
                 a.PR_content_ST_location_EV_of_PositedAt DESC,
                 a.PR_content_ST_location_EV_of_Reliability DESC
@@ -2409,7 +2516,7 @@ BEGIN
         AND
             v.PR_content_ST_location_EV_of_StatementType in ('S','N','D')
         AND
-            v.PR_content_ST_location_EV_of_Reliability > 0
+            v.PR_content_ST_location_EV_of_Reliability <> 0
         AND (
             e.PR_ID_content <> v.PR_ID_content
         OR

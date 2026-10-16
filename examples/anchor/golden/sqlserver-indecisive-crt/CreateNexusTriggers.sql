@@ -153,6 +153,63 @@ BEGIN
         RAISERROR('The foreign key column EV_QTY_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_Assertion))
         RAISERROR('The computed assertion column EV_QTY_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_QTY_Event_Quantity)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
+            Metadata_EV_QTY,
+            EV_QTY_EV_ID,
+            EV_QTY_Event_Quantity,
+            EV_QTY_PositedAt,
+            EV_QTY_Positor,
+            EV_QTY_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_QTY
+            END, i.Metadata_EV),
+            p.EV_QTY_EV_ID,
+            p.EV_QTY_Event_Quantity,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+            END, @now) as datetime2),
+            d.EV_QTY_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[EV_QTY_Event_Quantity_Posit] p
+        ON
+            p.EV_QTY_ID = d.EV_QTY_ID
+        WHERE
+            p.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
+        AND
+            d.EV_QTY_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_QTY_Positor) THEN i.EV_QTY_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_QTY_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_QTY_Reliability) THEN i.EV_QTY_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_QTY_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_QTY_Event_Quantity) OR
         UPDATE(EV_QTY_Reliability) OR
@@ -210,62 +267,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_QTY_Event_Quantity)
-    )
-    BEGIN
-        INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
-            Metadata_EV_QTY,
-            EV_QTY_EV_ID,
-            EV_QTY_Event_Quantity,
-            EV_QTY_PositedAt,
-            EV_QTY_Positor,
-            EV_QTY_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_QTY
-            END, i.Metadata_EV),
-            p.EV_QTY_EV_ID,
-            p.EV_QTY_Event_Quantity,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
-            END, @now) as datetime2),
-            d.EV_QTY_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[EV_QTY_Event_Quantity_Posit] p
-        ON
-            p.EV_QTY_ID = d.EV_QTY_ID
-        WHERE
-            p.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
-        AND
-            d.EV_QTY_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Positor) THEN i.EV_QTY_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_QTY_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Reliability) THEN i.EV_QTY_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_QTY_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -312,6 +313,69 @@ BEGIN
         RAISERROR('The foreign key column EV_PLC_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_PLC_Assertion))
         RAISERROR('The computed assertion column EV_PLC_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(EV_PLC_Event_Place)
+    )
+    BEGIN
+        INSERT INTO [dbo].[EV_PLC_Event_Place] (
+            Metadata_EV_PLC,
+            EV_PLC_EV_ID,
+            EV_PLC_Event_Place,
+            EV_PLC_ChangedAt,
+            EV_PLC_PositedAt,
+            EV_PLC_Positor,
+            EV_PLC_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_PLC
+            END, i.Metadata_EV),
+            p.EV_PLC_EV_ID,
+            p.EV_PLC_Event_Place,
+            p.EV_PLC_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
+            END, @now) as datetime2),
+            d.EV_PLC_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[EV_PLC_Event_Place_Posit] p
+        ON
+            p.EV_PLC_ID = d.EV_PLC_ID
+        WHERE
+            p.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
+        AND
+            UPDATE(EV_PLC_ChangedAt)
+        AND
+            p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+        AND
+            d.EV_PLC_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_PLC_Positor) THEN i.EV_PLC_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_PLC_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_PLC_Reliability) THEN i.EV_PLC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_PLC_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_PLC_Event_Place) OR
         UPDATE(EV_PLC_Reliability) OR
@@ -375,68 +439,6 @@ BEGIN
                 ELSE i.EV_PLC_Reliability
             END, 1)
         )
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_PLC_Event_Place)
-    )
-    BEGIN
-        INSERT INTO [dbo].[EV_PLC_Event_Place] (
-            Metadata_EV_PLC,
-            EV_PLC_EV_ID,
-            EV_PLC_Event_Place,
-            EV_PLC_ChangedAt,
-            EV_PLC_PositedAt,
-            EV_PLC_Positor,
-            EV_PLC_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_PLC
-            END, i.Metadata_EV),
-            p.EV_PLC_EV_ID,
-            p.EV_PLC_Event_Place,
-            p.EV_PLC_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
-            END, @now) as datetime2),
-            d.EV_PLC_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[EV_PLC_Event_Place_Posit] p
-        ON
-            p.EV_PLC_ID = d.EV_PLC_ID
-        WHERE
-            p.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
-        AND
-            UPDATE(EV_PLC_ChangedAt)
-        AND
-            p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
-        AND
-            d.EV_PLC_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Positor) THEN i.EV_PLC_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_PLC_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Reliability) THEN i.EV_PLC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_PLC_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint

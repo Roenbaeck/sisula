@@ -72,6 +72,56 @@ BEGIN
             AND
                 a.SU_holder_OB_item_GRD_grade_Reliability <> ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_holder_OB_item_GRD_grade_Posit] p
+                JOIN
+                    [dbo].[SU_holder_OB_item_GRD_grade_Annex] a
+                ON
+                    a.SU_holder_OB_item_GRD_grade_ID = p.SU_holder_OB_item_GRD_grade_ID
+                WHERE
+                    p.SU_ID_holder = i.SU_ID_holder
+                AND
+                    p.OB_ID_item = i.OB_ID_item
+                AND
+                    p.SU_holder_OB_item_GRD_grade_ChangedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    a.SU_holder_OB_item_GRD_grade_PositedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    a.SU_holder_OB_item_GRD_grade_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_holder = i.SU_ID_holder
+                AND
+                    j.OB_ID_item = i.OB_ID_item
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_ChangedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_PositedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -168,7 +218,21 @@ BEGIN
             a.SU_holder_OB_item_GRD_grade_ID = p.SU_holder_OB_item_GRD_grade_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.SU_ID_holder = x.SU_ID_holder
+        AND
+            n.OB_ID_item = x.OB_ID_item
+        AND
+            n.SU_holder_OB_item_GRD_grade_ChangedAt = x.SU_holder_OB_item_GRD_grade_ChangedAt
+        AND
+            n.SU_holder_OB_item_GRD_grade_PositedAt = x.SU_holder_OB_item_GRD_grade_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_SU_holder_OB_item_GRD_grade int not null,
         SU_holder_OB_item_GRD_grade_StatementType char(1) not null,
@@ -293,7 +357,8 @@ BEGIN
     WHERE
         v.SU_holder_OB_item_GRD_grade_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers at the same changing time when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade_Annex] (
         Metadata_SU_holder_OB_item_GRD_grade,
         SU_holder_OB_item_GRD_grade_ID,
@@ -305,8 +370,21 @@ BEGIN
         e.SU_holder_OB_item_GRD_grade_ID,
         v.SU_holder_OB_item_GRD_grade_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.Metadata_SU_holder_OB_item_GRD_grade,
+            n.SU_holder_OB_item_GRD_grade_ChangedAt,
+            n.SU_holder_OB_item_GRD_grade_PositedAt,
+            n.SU_ID_holder,
+            n.OB_ID_item,
+            n.GRD_ID_grade
+        FROM
+            @inserted n
+        WHERE
+            n.SU_holder_OB_item_GRD_grade_StatementType in ('P', 'A')
+        AND
+            n.SU_holder_OB_item_GRD_grade_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.SU_holder_OB_item_GRD_grade_ID,
@@ -339,11 +417,7 @@ BEGIN
         ORDER BY
             a.SU_holder_OB_item_GRD_grade_PositedAt DESC
     ) e
-    WHERE
-        v.SU_holder_OB_item_GRD_grade_StatementType in ('P', 'A')
-    AND
-        v.SU_holder_OB_item_GRD_grade_Reliability = 1
-    AND (
+    WHERE (
         e.GRD_ID_grade <> v.GRD_ID_grade
     )
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -580,6 +654,56 @@ BEGIN
             AND
                 a.SU_keeper_OB_thing_GRD_rank_Reliability <> ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] p
+                JOIN
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] a
+                ON
+                    a.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
+                WHERE
+                    p.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    p.OB_ID_thing = i.OB_ID_thing
+                AND
+                    p.SU_keeper_OB_thing_GRD_rank_ChangedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_PositedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    j.OB_ID_thing = i.OB_ID_thing
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_PositedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -676,7 +800,21 @@ BEGIN
             a.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.SU_ID_keeper = x.SU_ID_keeper
+        AND
+            n.OB_ID_thing = x.OB_ID_thing
+        AND
+            n.SU_keeper_OB_thing_GRD_rank_ChangedAt = x.SU_keeper_OB_thing_GRD_rank_ChangedAt
+        AND
+            n.SU_keeper_OB_thing_GRD_rank_PositedAt = x.SU_keeper_OB_thing_GRD_rank_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_SU_keeper_OB_thing_GRD_rank int not null,
         SU_keeper_OB_thing_GRD_rank_StatementType char(1) not null,
@@ -853,6 +991,15 @@ BEGIN
     AND
         u.previous_SU_keeper_OB_thing_GRD_rank_PositedAt = a.SU_keeper_OB_thing_GRD_rank_PositedAt;
     END --- (only run if necessary) ---
+    -- the new rows that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        Metadata_SU_keeper_OB_thing_GRD_rank int not null,
+        SU_keeper_OB_thing_GRD_rank_ChangedAt datetime2 not null,
+        SU_keeper_OB_thing_GRD_rank_PositedAt datetime2 not null,
+        SU_ID_keeper int not null,
+        OB_ID_thing int not null,
+        GRD_ID_rank tinyint not null
+    );
     IF EXISTS (
         SELECT TOP 1
             SU_keeper_OB_thing_GRD_rank_StatementType
@@ -872,6 +1019,48 @@ BEGIN
         OB_ID_thing int not null,
         GRD_ID_rank tinyint not null
     );
+    INSERT INTO @skipped (
+        Metadata_SU_keeper_OB_thing_GRD_rank,
+        SU_keeper_OB_thing_GRD_rank_ChangedAt,
+        SU_keeper_OB_thing_GRD_rank_PositedAt,
+        SU_ID_keeper,
+        OB_ID_thing,
+        GRD_ID_rank
+    )
+    SELECT
+        a.Metadata_SU_keeper_OB_thing_GRD_rank,
+        a.SU_keeper_OB_thing_GRD_rank_ChangedAt,
+        a.SU_keeper_OB_thing_GRD_rank_PositedAt,
+        a.SU_ID_keeper,
+        a.OB_ID_thing,
+        a.GRD_ID_rank
+    FROM
+        @inserted a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.*
+        FROM
+            @inserted h
+        WHERE
+            h.SU_ID_keeper = a.SU_ID_keeper
+        AND
+            h.OB_ID_thing = a.OB_ID_thing
+        AND
+            h.SU_keeper_OB_thing_GRD_rank_ChangedAt < a.SU_keeper_OB_thing_GRD_rank_ChangedAt
+        ORDER BY
+            h.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC,
+            h.SU_keeper_OB_thing_GRD_rank_PositedAt DESC
+    ) pre
+    WHERE
+        a.SU_keeper_OB_thing_GRD_rank_StatementType in ('P', 'A')
+    AND
+        a.SU_keeper_OB_thing_GRD_rank_Reliability = 1
+    AND
+        a.SU_ID_keeper = pre.SU_ID_keeper
+    AND
+        a.OB_ID_thing = pre.OB_ID_thing
+    AND
+        a.GRD_ID_rank = pre.GRD_ID_rank;
     INSERT INTO @restated (
         Metadata_SU_keeper_OB_thing_GRD_rank,
         SU_keeper_OB_thing_GRD_rank_StatementType,
@@ -1022,7 +1211,8 @@ BEGIN
     WHERE
         v.SU_keeper_OB_thing_GRD_rank_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers at the same changing time when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] (
         Metadata_SU_keeper_OB_thing_GRD_rank,
         SU_keeper_OB_thing_GRD_rank_ID,
@@ -1034,8 +1224,31 @@ BEGIN
         e.SU_keeper_OB_thing_GRD_rank_ID,
         v.SU_keeper_OB_thing_GRD_rank_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.Metadata_SU_keeper_OB_thing_GRD_rank,
+            n.SU_keeper_OB_thing_GRD_rank_ChangedAt,
+            n.SU_keeper_OB_thing_GRD_rank_PositedAt,
+            n.SU_ID_keeper,
+            n.OB_ID_thing,
+            n.GRD_ID_rank
+        FROM
+            @inserted n
+        WHERE
+            n.SU_keeper_OB_thing_GRD_rank_StatementType in ('P', 'A')
+        AND
+            n.SU_keeper_OB_thing_GRD_rank_Reliability = 1
+        UNION ALL
+        SELECT
+            k.Metadata_SU_keeper_OB_thing_GRD_rank,
+            k.SU_keeper_OB_thing_GRD_rank_ChangedAt,
+            k.SU_keeper_OB_thing_GRD_rank_PositedAt,
+            k.SU_ID_keeper,
+            k.OB_ID_thing,
+            k.GRD_ID_rank
+        FROM
+            @skipped k
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.SU_keeper_OB_thing_GRD_rank_ID,
@@ -1068,11 +1281,7 @@ BEGIN
         ORDER BY
             a.SU_keeper_OB_thing_GRD_rank_PositedAt DESC
     ) e
-    WHERE
-        v.SU_keeper_OB_thing_GRD_rank_StatementType in ('P', 'A')
-    AND
-        v.SU_keeper_OB_thing_GRD_rank_Reliability = 1
-    AND (
+    WHERE (
         e.GRD_ID_rank <> v.GRD_ID_rank
     )
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -1299,6 +1508,48 @@ BEGIN
             AND
                 a.OB_part_SU_owner_Reliability <> ISNULL(i.OB_part_SU_owner_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.OB_part_SU_owner_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[OB_part_SU_owner_Posit] p
+                JOIN
+                    [dbo].[OB_part_SU_owner_Annex] a
+                ON
+                    a.OB_part_SU_owner_ID = p.OB_part_SU_owner_ID
+                WHERE
+                    p.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        p.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    a.OB_part_SU_owner_PositedAt = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    a.OB_part_SU_owner_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        j.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    ISNULL(j.OB_part_SU_owner_PositedAt, @now) = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    ISNULL(j.OB_part_SU_owner_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -1378,7 +1629,17 @@ BEGIN
             a.OB_part_SU_owner_ID = p.OB_part_SU_owner_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.OB_ID_part = x.OB_ID_part
+        AND
+            n.OB_part_SU_owner_PositedAt = x.OB_part_SU_owner_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_OB_part_SU_owner int not null,
         OB_part_SU_owner_StatementType char(1) not null,
@@ -1481,7 +1742,8 @@ BEGIN
     WHERE
         v.OB_part_SU_owner_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [dbo].[OB_part_SU_owner_Annex] (
         Metadata_OB_part_SU_owner,
         OB_part_SU_owner_ID,
@@ -1493,8 +1755,19 @@ BEGIN
         e.OB_part_SU_owner_ID,
         v.OB_part_SU_owner_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.Metadata_OB_part_SU_owner,
+            n.OB_part_SU_owner_PositedAt,
+            n.OB_ID_part,
+            n.SU_ID_owner
+        FROM
+            @inserted n
+        WHERE
+            n.OB_part_SU_owner_StatementType in ('P', 'A')
+        AND
+            n.OB_part_SU_owner_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.OB_part_SU_owner_ID,
@@ -1523,11 +1796,7 @@ BEGIN
         ORDER BY
             a.OB_part_SU_owner_PositedAt DESC
     ) e
-    WHERE
-        v.OB_part_SU_owner_StatementType in ('P', 'A')
-    AND
-        v.OB_part_SU_owner_Reliability = 1
-    AND (
+    WHERE (
         e.SU_ID_owner <> v.SU_ID_owner
     )
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -1814,7 +2083,21 @@ BEGIN
             a.SU_partner_SU_with_ID = p.SU_partner_SU_with_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.SU_ID_partner = x.SU_ID_partner
+        AND
+            n.SU_ID_with = x.SU_ID_with
+        AND
+            n.SU_partner_SU_with_ChangedAt = x.SU_partner_SU_with_ChangedAt
+        AND
+            n.SU_partner_SU_with_PositedAt = x.SU_partner_SU_with_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_SU_partner_SU_with int not null,
         SU_partner_SU_with_StatementType char(1) not null,

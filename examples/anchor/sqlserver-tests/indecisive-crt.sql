@@ -13,7 +13,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('i01'), ('i02'), ('i03'), ('i04'), ('i05'), ('i06');
+INSERT INTO #group (name) VALUES ('i01'), ('i02'), ('i03'), ('i04'), ('i05'), ('i06'), ('i07');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -95,19 +95,19 @@ UPDATE #group SET finished = 1 WHERE name = 'i04';
 GO
 
 -- i05 a static tie: an update of its other values is a correction, which retracts the shown posit; an insert of other
---     values is an alternative
+--     values is an alternative, here at a reliability that leaves room for it
 DECLARE @s1 int, @s2 int, @s3 int, @o int, @n int, @owner int;
 INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s1 = SCOPE_IDENTITY();
 INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s2 = SCOPE_IDENTITY();
 INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s3 = SCOPE_IDENTITY();
 INSERT INTO dbo.OB_Object (Metadata_OB) VALUES (0); SET @o = SCOPE_IDENTITY();
-INSERT INTO dbo.lOB_part_SU_owner (Metadata_OB_part_SU_owner, OB_part_SU_owner_PositedAt, OB_ID_part, SU_ID_owner) VALUES (0, '2024-01-01', @o, @s1);
+INSERT INTO dbo.lOB_part_SU_owner (Metadata_OB_part_SU_owner, OB_part_SU_owner_PositedAt, OB_part_SU_owner_Reliability, OB_ID_part, SU_ID_owner) VALUES (0, '2024-01-01', 0.5, @o, @s1);
 UPDATE dbo.lOB_part_SU_owner SET SU_ID_owner = @s2, OB_part_SU_owner_PositedAt = '2024-02-01' WHERE OB_ID_part = @o AND Positor = 0;
 SET @n = (SELECT COUNT(*) FROM dbo.OB_part_SU_owner_Annex a JOIN dbo.OB_part_SU_owner_Posit p ON p.OB_part_SU_owner_ID = a.OB_part_SU_owner_ID
     WHERE p.OB_ID_part = @o AND p.SU_ID_owner = @s1 AND a.OB_part_SU_owner_PositedAt = '2024-02-01' AND a.OB_part_SU_owner_Reliability = 0);
 INSERT INTO #result SELECT N'i05 an update of a static tie retracts the shown posit', CASE WHEN @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' retractions, expected 1');
 INSERT INTO dbo.OB_part_SU_owner (Metadata_OB_part_SU_owner, OB_ID_part, SU_ID_owner, OB_part_SU_owner_PositedAt, OB_part_SU_owner_Positor, OB_part_SU_owner_Reliability)
-VALUES (0, @o, @s3, '2024-03-01', 0, 1);
+VALUES (0, @o, @s3, '2024-03-01', 0, 0.5);
 SET @n = (SELECT COUNT(*) FROM dbo.OB_part_SU_owner_Annex a JOIN dbo.OB_part_SU_owner_Posit p ON p.OB_part_SU_owner_ID = a.OB_part_SU_owner_ID
     WHERE p.OB_ID_part = @o AND a.OB_part_SU_owner_Reliability = 0);
 SET @owner = (SELECT SU_ID_owner FROM dbo.lOB_part_SU_owner WHERE OB_ID_part = @o AND Positor = 0);
@@ -132,6 +132,60 @@ SET @n = (SELECT COUNT(*) FROM dbo.EV_QTY_Event_Quantity_Annex a JOIN dbo.EV_QTY
     WHERE p.EV_QTY_EV_ID = @e AND p.EV_QTY_Event_Quantity = 5 AND a.EV_QTY_PositedAt = '2024-02-01' AND a.EV_QTY_Reliability = 0);
 INSERT INTO #result SELECT N'i06 an update of a nexus attribute is a correction', CASE WHEN @error IS NULL AND @quantity = 6 AND @n = 1 THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(CAST(@quantity AS varchar), 'nothing'), ', ', @n, ' retractions of 5', ' ' + @error);
 UPDATE #group SET finished = 1 WHERE name = 'i06';
+GO
+
+-- i07 what a positor holds may not contradict itself: positive reliabilities count as they are, negative ones as one
+--     plus them, and they may not sum up to more than one (non-contradiction in transitional modeling)
+DECLARE @s int, @n int, @error nvarchar(2048);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'a', '2024-01-01', 0, 0.6);
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'b', '2024-02-01', 0, 0.6);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'i07 0.6 for a and 0.6 for b is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_NAM_Subject_Name%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+-- 40 percent not a and 40 percent not b are 60 percent a and 60 percent b
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'a', '2024-01-01', 0, -0.4);
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'b', '2024-02-01', 0, -0.4);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'i07 -0.4 for a and -0.4 for b is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_NAM_Subject_Name%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+-- 0.5 for a, certainly not b, and 0.5 for c sum up to one, and a positor may be certain that many values are not it
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability)
+    VALUES (0, @s, N'a', '2024-01-01', 0, 0.5), (0, @s, N'b', '2024-01-01', 0, -1), (0, @s, N'c', '2024-01-01', 0, 0.5), (0, @s, N'd', '2024-01-01', 0, -1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'i07 0.5 for a, -1 for b, 0.5 for c and -1 for d is no contradiction', CASE WHEN @error IS NULL AND @n = 4 THEN 1 ELSE 0 END, CONCAT(@n, ' posits', ' ' + @error);
+-- another positor's beliefs are its own
+IF NOT EXISTS (SELECT 1 FROM dbo._Positor WHERE Positor = 1) INSERT INTO dbo._Positor (Positor) VALUES (1);
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Positor, SU_NAM_Reliability) VALUES (0, @s, N'e', '2024-01-01', 1, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+INSERT INTO #result SELECT N'i07 what another positor holds does not count', CASE WHEN @error IS NULL THEN 1 ELSE 0 END, ISNULL(@error, 'no error');
+UPDATE #group SET finished = 1 WHERE name = 'i07';
 GO
 
 -- the result

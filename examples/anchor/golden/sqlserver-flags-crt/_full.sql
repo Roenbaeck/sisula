@@ -6335,7 +6335,8 @@ BEGIN
         primary key(
             EV_DAT_Version,
             EV_DAT_Positor,
-            EV_DAT_EV_ID
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -6512,6 +6513,62 @@ BEGIN
             v.EV_DAT_Version = @currentVersion
         AND
             EV_DAT_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_DAT_EV_ID,
+                v.EV_DAT_Positor,
+                v.EV_DAT_PositedAt
+            FROM
+                @EV_DAT_Event_Date v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_DAT_Reliability > 0 THEN a.EV_DAT_Reliability
+                        ELSE 1 + a.EV_DAT_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_DAT_Event_Date_Posit] p
+                JOIN
+                    [attributes].[EV_DAT_Event_Date_Annex] a
+                ON
+                    a.EV_DAT_ID = p.EV_DAT_ID
+                AND
+                    a.EV_DAT_Positor = v.EV_DAT_Positor
+                AND
+                    a.EV_DAT_PositedAt = (
+                        SELECT
+                            max(s.EV_DAT_PositedAt)
+                        FROM
+                            [attributes].[EV_DAT_Event_Date_Annex] s
+                        WHERE
+                            s.EV_DAT_ID = p.EV_DAT_ID
+                        AND
+                            s.EV_DAT_Positor = v.EV_DAT_Positor
+                        AND
+                            s.EV_DAT_PositedAt <= v.EV_DAT_PositedAt
+                    )
+                WHERE
+                    p.EV_DAT_EV_ID = v.EV_DAT_EV_ID
+                AND
+                    a.EV_DAT_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_DAT_Version = @currentVersion
+            AND
+                v.EV_DAT_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_DAT_Event_Date for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -6541,7 +6598,8 @@ BEGIN
         primary key(
             EV_AUD_Version,
             EV_AUD_Positor,
-            EV_AUD_EV_ID
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -6718,6 +6776,62 @@ BEGIN
             v.EV_AUD_Version = @currentVersion
         AND
             EV_AUD_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_AUD_EV_ID,
+                v.EV_AUD_Positor,
+                v.EV_AUD_PositedAt
+            FROM
+                @EV_AUD_Event_Audience v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_AUD_Reliability > 0 THEN a.EV_AUD_Reliability
+                        ELSE 1 + a.EV_AUD_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_AUD_Event_Audience_Posit] p
+                JOIN
+                    [attributes].[EV_AUD_Event_Audience_Annex] a
+                ON
+                    a.EV_AUD_ID = p.EV_AUD_ID
+                AND
+                    a.EV_AUD_Positor = v.EV_AUD_Positor
+                AND
+                    a.EV_AUD_PositedAt = (
+                        SELECT
+                            max(s.EV_AUD_PositedAt)
+                        FROM
+                            [attributes].[EV_AUD_Event_Audience_Annex] s
+                        WHERE
+                            s.EV_AUD_ID = p.EV_AUD_ID
+                        AND
+                            s.EV_AUD_Positor = v.EV_AUD_Positor
+                        AND
+                            s.EV_AUD_PositedAt <= v.EV_AUD_PositedAt
+                    )
+                WHERE
+                    p.EV_AUD_EV_ID = v.EV_AUD_EV_ID
+                AND
+                    a.EV_AUD_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_AUD_Version = @currentVersion
+            AND
+                v.EV_AUD_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_AUD_Event_Audience for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -6747,7 +6861,8 @@ BEGIN
         primary key(
             EV_REV_Version,
             EV_REV_Positor,
-            EV_REV_EV_ID
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -6924,6 +7039,62 @@ BEGIN
             v.EV_REV_Version = @currentVersion
         AND
             EV_REV_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_REV_EV_ID,
+                v.EV_REV_Positor,
+                v.EV_REV_PositedAt
+            FROM
+                @EV_REV_Event_Revenue v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_REV_Reliability > 0 THEN a.EV_REV_Reliability
+                        ELSE 1 + a.EV_REV_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_REV_Event_Revenue_Posit] p
+                JOIN
+                    [attributes].[EV_REV_Event_Revenue_Annex] a
+                ON
+                    a.EV_REV_ID = p.EV_REV_ID
+                AND
+                    a.EV_REV_Positor = v.EV_REV_Positor
+                AND
+                    a.EV_REV_PositedAt = (
+                        SELECT
+                            max(s.EV_REV_PositedAt)
+                        FROM
+                            [attributes].[EV_REV_Event_Revenue_Annex] s
+                        WHERE
+                            s.EV_REV_ID = p.EV_REV_ID
+                        AND
+                            s.EV_REV_Positor = v.EV_REV_Positor
+                        AND
+                            s.EV_REV_PositedAt <= v.EV_REV_PositedAt
+                    )
+                WHERE
+                    p.EV_REV_EV_ID = v.EV_REV_EV_ID
+                AND
+                    a.EV_REV_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_REV_Version = @currentVersion
+            AND
+                v.EV_REV_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_REV_Event_Revenue for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -6954,7 +7125,8 @@ BEGIN
         primary key(
             EV_STA_Version,
             EV_STA_Positor,
-            EV_STA_EV_ID
+            EV_STA_EV_ID,
+            EV_STA_Event_Status -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -7174,6 +7346,65 @@ BEGIN
             v.EV_STA_Version = @currentVersion
         AND
             EV_STA_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_STA_EV_ID,
+                v.EV_STA_ChangedAt,
+                v.EV_STA_Positor,
+                v.EV_STA_PositedAt
+            FROM
+                @EV_STA_Event_Status v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_STA_Reliability > 0 THEN a.EV_STA_Reliability
+                        ELSE 1 + a.EV_STA_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_STA_Event_Status_Posit] p
+                JOIN
+                    [attributes].[EV_STA_Event_Status_Annex] a
+                ON
+                    a.EV_STA_ID = p.EV_STA_ID
+                AND
+                    a.EV_STA_Positor = v.EV_STA_Positor
+                AND
+                    a.EV_STA_PositedAt = (
+                        SELECT
+                            max(s.EV_STA_PositedAt)
+                        FROM
+                            [attributes].[EV_STA_Event_Status_Annex] s
+                        WHERE
+                            s.EV_STA_ID = p.EV_STA_ID
+                        AND
+                            s.EV_STA_Positor = v.EV_STA_Positor
+                        AND
+                            s.EV_STA_PositedAt <= v.EV_STA_PositedAt
+                    )
+                WHERE
+                    p.EV_STA_EV_ID = v.EV_STA_EV_ID
+                AND
+                    p.EV_STA_ChangedAt = v.EV_STA_ChangedAt
+                AND
+                    a.EV_STA_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_STA_Version = @currentVersion
+            AND
+                v.EV_STA_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_STA_Event_Status for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -7203,7 +7434,8 @@ BEGIN
         primary key(
             EV_UTL_Version,
             EV_UTL_Positor,
-            EV_UTL_EV_ID
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -7380,6 +7612,62 @@ BEGIN
             v.EV_UTL_Version = @currentVersion
         AND
             EV_UTL_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_UTL_EV_ID,
+                v.EV_UTL_Positor,
+                v.EV_UTL_PositedAt
+            FROM
+                @EV_UTL_Event_Utilization v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_UTL_Reliability > 0 THEN a.EV_UTL_Reliability
+                        ELSE 1 + a.EV_UTL_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_UTL_Event_Utilization_Posit] p
+                JOIN
+                    [attributes].[EV_UTL_Event_Utilization_Annex] a
+                ON
+                    a.EV_UTL_ID = p.EV_UTL_ID
+                AND
+                    a.EV_UTL_Positor = v.EV_UTL_Positor
+                AND
+                    a.EV_UTL_PositedAt = (
+                        SELECT
+                            max(s.EV_UTL_PositedAt)
+                        FROM
+                            [attributes].[EV_UTL_Event_Utilization_Annex] s
+                        WHERE
+                            s.EV_UTL_ID = p.EV_UTL_ID
+                        AND
+                            s.EV_UTL_Positor = v.EV_UTL_Positor
+                        AND
+                            s.EV_UTL_PositedAt <= v.EV_UTL_PositedAt
+                    )
+                WHERE
+                    p.EV_UTL_EV_ID = v.EV_UTL_EV_ID
+                AND
+                    a.EV_UTL_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_UTL_Version = @currentVersion
+            AND
+                v.EV_UTL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_UTL_Event_Utilization for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -7410,7 +7698,8 @@ BEGIN
         primary key(
             EV_LVL_Version,
             EV_LVL_Positor,
-            EV_LVL_EV_ID
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -7630,6 +7919,65 @@ BEGIN
             v.EV_LVL_Version = @currentVersion
         AND
             EV_LVL_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_LVL_EV_ID,
+                v.EV_LVL_ChangedAt,
+                v.EV_LVL_Positor,
+                v.EV_LVL_PositedAt
+            FROM
+                @EV_LVL_Event_Level v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_LVL_Reliability > 0 THEN a.EV_LVL_Reliability
+                        ELSE 1 + a.EV_LVL_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[EV_LVL_Event_Level_Posit] p
+                JOIN
+                    [attributes].[EV_LVL_Event_Level_Annex] a
+                ON
+                    a.EV_LVL_ID = p.EV_LVL_ID
+                AND
+                    a.EV_LVL_Positor = v.EV_LVL_Positor
+                AND
+                    a.EV_LVL_PositedAt = (
+                        SELECT
+                            max(s.EV_LVL_PositedAt)
+                        FROM
+                            [attributes].[EV_LVL_Event_Level_Annex] s
+                        WHERE
+                            s.EV_LVL_ID = p.EV_LVL_ID
+                        AND
+                            s.EV_LVL_Positor = v.EV_LVL_Positor
+                        AND
+                            s.EV_LVL_PositedAt <= v.EV_LVL_PositedAt
+                    )
+                WHERE
+                    p.EV_LVL_EV_ID = v.EV_LVL_EV_ID
+                AND
+                    p.EV_LVL_ChangedAt = v.EV_LVL_ChangedAt
+                AND
+                    a.EV_LVL_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_LVL_Version = @currentVersion
+            AND
+                v.EV_LVL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_LVL_Event_Level for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -7660,7 +8008,8 @@ BEGIN
         primary key(
             ST_NAM_Version,
             ST_NAM_Positor,
-            ST_NAM_ST_ID
+            ST_NAM_ST_ID,
+            ST_NAM_Stage_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -7880,6 +8229,65 @@ BEGIN
             v.ST_NAM_Version = @currentVersion
         AND
             ST_NAM_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_NAM_ST_ID,
+                v.ST_NAM_ChangedAt,
+                v.ST_NAM_Positor,
+                v.ST_NAM_PositedAt
+            FROM
+                @ST_NAM_Stage_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_NAM_Reliability > 0 THEN a.ST_NAM_Reliability
+                        ELSE 1 + a.ST_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_NAM_Stage_Name_Posit] p
+                JOIN
+                    [attributes].[ST_NAM_Stage_Name_Annex] a
+                ON
+                    a.ST_NAM_ID = p.ST_NAM_ID
+                AND
+                    a.ST_NAM_Positor = v.ST_NAM_Positor
+                AND
+                    a.ST_NAM_PositedAt = (
+                        SELECT
+                            max(s.ST_NAM_PositedAt)
+                        FROM
+                            [attributes].[ST_NAM_Stage_Name_Annex] s
+                        WHERE
+                            s.ST_NAM_ID = p.ST_NAM_ID
+                        AND
+                            s.ST_NAM_Positor = v.ST_NAM_Positor
+                        AND
+                            s.ST_NAM_PositedAt <= v.ST_NAM_PositedAt
+                    )
+                WHERE
+                    p.ST_NAM_ST_ID = v.ST_NAM_ST_ID
+                AND
+                    p.ST_NAM_ChangedAt = v.ST_NAM_ChangedAt
+                AND
+                    a.ST_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_NAM_Version = @currentVersion
+            AND
+                v.ST_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_NAM_Stage_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -7910,7 +8318,8 @@ BEGIN
         primary key(
             ST_LOC_Version,
             ST_LOC_Positor,
-            ST_LOC_ST_ID
+            ST_LOC_ST_ID,
+            ST_LOC_Checksum -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -8088,6 +8497,62 @@ BEGIN
             v.ST_LOC_Version = @currentVersion
         AND
             ST_LOC_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_LOC_ST_ID,
+                v.ST_LOC_Positor,
+                v.ST_LOC_PositedAt
+            FROM
+                @ST_LOC_Stage_Location v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_LOC_Reliability > 0 THEN a.ST_LOC_Reliability
+                        ELSE 1 + a.ST_LOC_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_LOC_Stage_Location_Posit] p
+                JOIN
+                    [attributes].[ST_LOC_Stage_Location_Annex] a
+                ON
+                    a.ST_LOC_ID = p.ST_LOC_ID
+                AND
+                    a.ST_LOC_Positor = v.ST_LOC_Positor
+                AND
+                    a.ST_LOC_PositedAt = (
+                        SELECT
+                            max(s.ST_LOC_PositedAt)
+                        FROM
+                            [attributes].[ST_LOC_Stage_Location_Annex] s
+                        WHERE
+                            s.ST_LOC_ID = p.ST_LOC_ID
+                        AND
+                            s.ST_LOC_Positor = v.ST_LOC_Positor
+                        AND
+                            s.ST_LOC_PositedAt <= v.ST_LOC_PositedAt
+                    )
+                WHERE
+                    p.ST_LOC_ST_ID = v.ST_LOC_ST_ID
+                AND
+                    a.ST_LOC_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_LOC_Version = @currentVersion
+            AND
+                v.ST_LOC_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_LOC_Stage_Location for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -8118,7 +8583,8 @@ BEGIN
         primary key(
             ST_AVG_Version,
             ST_AVG_Positor,
-            ST_AVG_ST_ID
+            ST_AVG_ST_ID,
+            ST_AVG_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -8382,6 +8848,65 @@ BEGIN
             v.ST_AVG_Version = @currentVersion
         AND
             ST_AVG_StatementType in ('S','N','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_AVG_ST_ID,
+                v.ST_AVG_ChangedAt,
+                v.ST_AVG_Positor,
+                v.ST_AVG_PositedAt
+            FROM
+                @ST_AVG_Stage_Average v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_AVG_Reliability > 0 THEN a.ST_AVG_Reliability
+                        ELSE 1 + a.ST_AVG_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_AVG_Stage_Average_Posit] p
+                JOIN
+                    [attributes].[ST_AVG_Stage_Average_Annex] a
+                ON
+                    a.ST_AVG_ID = p.ST_AVG_ID
+                AND
+                    a.ST_AVG_Positor = v.ST_AVG_Positor
+                AND
+                    a.ST_AVG_PositedAt = (
+                        SELECT
+                            max(s.ST_AVG_PositedAt)
+                        FROM
+                            [attributes].[ST_AVG_Stage_Average_Annex] s
+                        WHERE
+                            s.ST_AVG_ID = p.ST_AVG_ID
+                        AND
+                            s.ST_AVG_Positor = v.ST_AVG_Positor
+                        AND
+                            s.ST_AVG_PositedAt <= v.ST_AVG_PositedAt
+                    )
+                WHERE
+                    p.ST_AVG_ST_ID = v.ST_AVG_ST_ID
+                AND
+                    p.ST_AVG_ChangedAt = v.ST_AVG_ChangedAt
+                AND
+                    a.ST_AVG_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_AVG_Version = @currentVersion
+            AND
+                v.ST_AVG_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_AVG_Stage_Average for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -8411,7 +8936,8 @@ BEGIN
         primary key(
             ST_MIN_Version,
             ST_MIN_Positor,
-            ST_MIN_ST_ID
+            ST_MIN_ST_ID,
+            ST_MIN_UTL_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -8588,6 +9114,62 @@ BEGIN
             v.ST_MIN_Version = @currentVersion
         AND
             ST_MIN_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.ST_MIN_ST_ID,
+                v.ST_MIN_Positor,
+                v.ST_MIN_PositedAt
+            FROM
+                @ST_MIN_Stage_Minimum v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.ST_MIN_Reliability > 0 THEN a.ST_MIN_Reliability
+                        ELSE 1 + a.ST_MIN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[ST_MIN_Stage_Minimum_Posit] p
+                JOIN
+                    [attributes].[ST_MIN_Stage_Minimum_Annex] a
+                ON
+                    a.ST_MIN_ID = p.ST_MIN_ID
+                AND
+                    a.ST_MIN_Positor = v.ST_MIN_Positor
+                AND
+                    a.ST_MIN_PositedAt = (
+                        SELECT
+                            max(s.ST_MIN_PositedAt)
+                        FROM
+                            [attributes].[ST_MIN_Stage_Minimum_Annex] s
+                        WHERE
+                            s.ST_MIN_ID = p.ST_MIN_ID
+                        AND
+                            s.ST_MIN_Positor = v.ST_MIN_Positor
+                        AND
+                            s.ST_MIN_PositedAt <= v.ST_MIN_PositedAt
+                    )
+                WHERE
+                    p.ST_MIN_ST_ID = v.ST_MIN_ST_ID
+                AND
+                    a.ST_MIN_Reliability <> 0
+            ) held
+            WHERE
+                v.ST_MIN_Version = @currentVersion
+            AND
+                v.ST_MIN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in ST_MIN_Stage_Minimum for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -8618,7 +9200,8 @@ BEGIN
         primary key(
             AC_NAM_Version,
             AC_NAM_Positor,
-            AC_NAM_AC_ID
+            AC_NAM_AC_ID,
+            AC_NAM_Actor_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -8838,6 +9421,65 @@ BEGIN
             v.AC_NAM_Version = @currentVersion
         AND
             AC_NAM_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_NAM_AC_ID,
+                v.AC_NAM_ChangedAt,
+                v.AC_NAM_Positor,
+                v.AC_NAM_PositedAt
+            FROM
+                @AC_NAM_Actor_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_NAM_Reliability > 0 THEN a.AC_NAM_Reliability
+                        ELSE 1 + a.AC_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_NAM_Actor_Name_Posit] p
+                JOIN
+                    [attributes].[AC_NAM_Actor_Name_Annex] a
+                ON
+                    a.AC_NAM_ID = p.AC_NAM_ID
+                AND
+                    a.AC_NAM_Positor = v.AC_NAM_Positor
+                AND
+                    a.AC_NAM_PositedAt = (
+                        SELECT
+                            max(s.AC_NAM_PositedAt)
+                        FROM
+                            [attributes].[AC_NAM_Actor_Name_Annex] s
+                        WHERE
+                            s.AC_NAM_ID = p.AC_NAM_ID
+                        AND
+                            s.AC_NAM_Positor = v.AC_NAM_Positor
+                        AND
+                            s.AC_NAM_PositedAt <= v.AC_NAM_PositedAt
+                    )
+                WHERE
+                    p.AC_NAM_AC_ID = v.AC_NAM_AC_ID
+                AND
+                    p.AC_NAM_ChangedAt = v.AC_NAM_ChangedAt
+                AND
+                    a.AC_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_NAM_Version = @currentVersion
+            AND
+                v.AC_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_NAM_Actor_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -8867,7 +9509,8 @@ BEGIN
         primary key(
             AC_GEN_Version,
             AC_GEN_Positor,
-            AC_GEN_AC_ID
+            AC_GEN_AC_ID,
+            AC_GEN_GEN_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -9044,6 +9687,62 @@ BEGIN
             v.AC_GEN_Version = @currentVersion
         AND
             AC_GEN_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_GEN_AC_ID,
+                v.AC_GEN_Positor,
+                v.AC_GEN_PositedAt
+            FROM
+                @AC_GEN_Actor_Gender v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_GEN_Reliability > 0 THEN a.AC_GEN_Reliability
+                        ELSE 1 + a.AC_GEN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_GEN_Actor_Gender_Posit] p
+                JOIN
+                    [attributes].[AC_GEN_Actor_Gender_Annex] a
+                ON
+                    a.AC_GEN_ID = p.AC_GEN_ID
+                AND
+                    a.AC_GEN_Positor = v.AC_GEN_Positor
+                AND
+                    a.AC_GEN_PositedAt = (
+                        SELECT
+                            max(s.AC_GEN_PositedAt)
+                        FROM
+                            [attributes].[AC_GEN_Actor_Gender_Annex] s
+                        WHERE
+                            s.AC_GEN_ID = p.AC_GEN_ID
+                        AND
+                            s.AC_GEN_Positor = v.AC_GEN_Positor
+                        AND
+                            s.AC_GEN_PositedAt <= v.AC_GEN_PositedAt
+                    )
+                WHERE
+                    p.AC_GEN_AC_ID = v.AC_GEN_AC_ID
+                AND
+                    a.AC_GEN_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_GEN_Version = @currentVersion
+            AND
+                v.AC_GEN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_GEN_Actor_Gender for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -9074,7 +9773,8 @@ BEGIN
         primary key(
             AC_PLV_Version,
             AC_PLV_Positor,
-            AC_PLV_AC_ID
+            AC_PLV_AC_ID,
+            AC_PLV_PLV_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -9294,6 +9994,65 @@ BEGIN
             v.AC_PLV_Version = @currentVersion
         AND
             AC_PLV_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_PLV_AC_ID,
+                v.AC_PLV_ChangedAt,
+                v.AC_PLV_Positor,
+                v.AC_PLV_PositedAt
+            FROM
+                @AC_PLV_Actor_ProfessionalLevel v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_PLV_Reliability > 0 THEN a.AC_PLV_Reliability
+                        ELSE 1 + a.AC_PLV_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+                JOIN
+                    [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+                ON
+                    a.AC_PLV_ID = p.AC_PLV_ID
+                AND
+                    a.AC_PLV_Positor = v.AC_PLV_Positor
+                AND
+                    a.AC_PLV_PositedAt = (
+                        SELECT
+                            max(s.AC_PLV_PositedAt)
+                        FROM
+                            [attributes].[AC_PLV_Actor_ProfessionalLevel_Annex] s
+                        WHERE
+                            s.AC_PLV_ID = p.AC_PLV_ID
+                        AND
+                            s.AC_PLV_Positor = v.AC_PLV_Positor
+                        AND
+                            s.AC_PLV_PositedAt <= v.AC_PLV_PositedAt
+                    )
+                WHERE
+                    p.AC_PLV_AC_ID = v.AC_PLV_AC_ID
+                AND
+                    p.AC_PLV_ChangedAt = v.AC_PLV_ChangedAt
+                AND
+                    a.AC_PLV_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_PLV_Version = @currentVersion
+            AND
+                v.AC_PLV_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -9323,7 +10082,8 @@ BEGIN
         primary key(
             PR_NAM_Version,
             PR_NAM_Positor,
-            PR_NAM_PR_ID
+            PR_NAM_PR_ID,
+            PR_NAM_Program_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -9500,6 +10260,62 @@ BEGIN
             v.PR_NAM_Version = @currentVersion
         AND
             PR_NAM_StatementType in ('S','N');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.PR_NAM_PR_ID,
+                v.PR_NAM_Positor,
+                v.PR_NAM_PositedAt
+            FROM
+                @PR_NAM_Program_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.PR_NAM_Reliability > 0 THEN a.PR_NAM_Reliability
+                        ELSE 1 + a.PR_NAM_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[PR_NAM_Program_Name_Posit] p
+                JOIN
+                    [attributes].[PR_NAM_Program_Name_Annex] a
+                ON
+                    a.PR_NAM_ID = p.PR_NAM_ID
+                AND
+                    a.PR_NAM_Positor = v.PR_NAM_Positor
+                AND
+                    a.PR_NAM_PositedAt = (
+                        SELECT
+                            max(s.PR_NAM_PositedAt)
+                        FROM
+                            [attributes].[PR_NAM_Program_Name_Annex] s
+                        WHERE
+                            s.PR_NAM_ID = p.PR_NAM_ID
+                        AND
+                            s.PR_NAM_Positor = v.PR_NAM_Positor
+                        AND
+                            s.PR_NAM_PositedAt <= v.PR_NAM_PositedAt
+                    )
+                WHERE
+                    p.PR_NAM_PR_ID = v.PR_NAM_PR_ID
+                AND
+                    a.PR_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.PR_NAM_Version = @currentVersion
+            AND
+                v.PR_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in PR_NAM_Program_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -9530,7 +10346,8 @@ BEGIN
         primary key(
             PR_LEN_Version,
             PR_LEN_Positor,
-            PR_LEN_PR_ID
+            PR_LEN_PR_ID,
+            PR_LEN_Program_Length -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -9794,6 +10611,65 @@ BEGIN
             v.PR_LEN_Version = @currentVersion
         AND
             PR_LEN_StatementType in ('S','N','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.PR_LEN_PR_ID,
+                v.PR_LEN_ChangedAt,
+                v.PR_LEN_Positor,
+                v.PR_LEN_PositedAt
+            FROM
+                @PR_LEN_Program_Length v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.PR_LEN_Reliability > 0 THEN a.PR_LEN_Reliability
+                        ELSE 1 + a.PR_LEN_Reliability
+                    END) AS total
+                FROM
+                    [attributes].[PR_LEN_Program_Length_Posit] p
+                JOIN
+                    [attributes].[PR_LEN_Program_Length_Annex] a
+                ON
+                    a.PR_LEN_ID = p.PR_LEN_ID
+                AND
+                    a.PR_LEN_Positor = v.PR_LEN_Positor
+                AND
+                    a.PR_LEN_PositedAt = (
+                        SELECT
+                            max(s.PR_LEN_PositedAt)
+                        FROM
+                            [attributes].[PR_LEN_Program_Length_Annex] s
+                        WHERE
+                            s.PR_LEN_ID = p.PR_LEN_ID
+                        AND
+                            s.PR_LEN_Positor = v.PR_LEN_Positor
+                        AND
+                            s.PR_LEN_PositedAt <= v.PR_LEN_PositedAt
+                    )
+                WHERE
+                    p.PR_LEN_PR_ID = v.PR_LEN_PR_ID
+                AND
+                    p.PR_LEN_ChangedAt = v.PR_LEN_ChangedAt
+                AND
+                    a.PR_LEN_Reliability <> 0
+            ) held
+            WHERE
+                v.PR_LEN_Version = @currentVersion
+            AND
+                v.PR_LEN_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in PR_LEN_Program_Length for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -10056,6 +10932,69 @@ BEGIN
         RAISERROR('The foreign key column ST_NAM_ST_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_NAM_Assertion))
         RAISERROR('The computed assertion column ST_NAM_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(ST_NAM_Stage_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_NAM_Stage_Name] (
+            Metadata_ST_NAM,
+            ST_NAM_ST_ID,
+            ST_NAM_Stage_Name,
+            ST_NAM_ChangedAt,
+            ST_NAM_PositedAt,
+            ST_NAM_Positor,
+            ST_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_NAM
+            END, i.Metadata_ST),
+            p.ST_NAM_ST_ID,
+            p.ST_NAM_Stage_Name,
+            p.ST_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+            END, @now) as datetime2),
+            d.ST_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_NAM_Stage_Name_Posit] p
+        ON
+            p.ST_NAM_ID = d.ST_NAM_ID
+        WHERE
+            p.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+        AND
+            UPDATE(ST_NAM_ChangedAt)
+        AND
+            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+        AND
+            d.ST_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Positor) THEN i.ST_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_NAM_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(ST_NAM_Stage_Name) OR
         UPDATE(ST_NAM_Reliability) OR
@@ -10120,68 +11059,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(ST_NAM_Stage_Name)
-    )
-    BEGIN
-        INSERT INTO [attributes].[ST_NAM_Stage_Name] (
-            Metadata_ST_NAM,
-            ST_NAM_ST_ID,
-            ST_NAM_Stage_Name,
-            ST_NAM_ChangedAt,
-            ST_NAM_PositedAt,
-            ST_NAM_Positor,
-            ST_NAM_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
-                THEN i.Metadata_ST
-                ELSE i.Metadata_ST_NAM
-            END, i.Metadata_ST),
-            p.ST_NAM_ST_ID,
-            p.ST_NAM_Stage_Name,
-            p.ST_NAM_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
-            END, @now) as datetime2),
-            d.ST_NAM_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.ST_ID = i.ST_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[ST_NAM_Stage_Name_Posit] p
-        ON
-            p.ST_NAM_ID = d.ST_NAM_ID
-        WHERE
-            p.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
-        AND
-            UPDATE(ST_NAM_ChangedAt)
-        AND
-            p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
-        AND
-            d.ST_NAM_Positor = ISNULL(CASE
-                WHEN UPDATE(ST_NAM_Positor) THEN i.ST_NAM_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.ST_NAM_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.ST_NAM_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -10231,6 +11108,63 @@ BEGIN
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_LOC_Assertion))
         RAISERROR('The computed assertion column ST_LOC_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(ST_LOC_Stage_Location)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_LOC_Stage_Location] (
+            Metadata_ST_LOC,
+            ST_LOC_ST_ID,
+            ST_LOC_Stage_Location,
+            ST_LOC_PositedAt,
+            ST_LOC_Positor,
+            ST_LOC_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_LOC
+            END, i.Metadata_ST),
+            p.ST_LOC_ST_ID,
+            p.ST_LOC_Stage_Location,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2),
+            d.ST_LOC_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_LOC_Stage_Location_Posit] p
+        ON
+            p.ST_LOC_ID = d.ST_LOC_ID
+        WHERE
+            p.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+        AND
+            d.ST_LOC_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Positor) THEN i.ST_LOC_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_LOC_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_LOC_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(ST_LOC_Stage_Location) OR
         UPDATE(ST_LOC_Reliability) OR
@@ -10288,62 +11222,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(ST_LOC_Stage_Location)
-    )
-    BEGIN
-        INSERT INTO [attributes].[ST_LOC_Stage_Location] (
-            Metadata_ST_LOC,
-            ST_LOC_ST_ID,
-            ST_LOC_Stage_Location,
-            ST_LOC_PositedAt,
-            ST_LOC_Positor,
-            ST_LOC_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
-                THEN i.Metadata_ST
-                ELSE i.Metadata_ST_LOC
-            END, i.Metadata_ST),
-            p.ST_LOC_ST_ID,
-            p.ST_LOC_Stage_Location,
-            cast(ISNULL(CASE
-                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
-            END, @now) as datetime2),
-            d.ST_LOC_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.ST_ID = i.ST_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[ST_LOC_Stage_Location_Posit] p
-        ON
-            p.ST_LOC_ID = d.ST_LOC_ID
-        WHERE
-            p.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
-        AND
-            d.ST_LOC_Positor = ISNULL(CASE
-                WHEN UPDATE(ST_LOC_Positor) THEN i.ST_LOC_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.ST_LOC_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.ST_LOC_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -10390,6 +11268,77 @@ BEGIN
         RAISERROR('The foreign key column ST_AVG_ST_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_AVG_Assertion))
         RAISERROR('The computed assertion column ST_AVG_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(ST_AVG_UTL_ID) OR
+        UPDATE(ST_AVG_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_AVG_Stage_Average] (
+            Metadata_ST_AVG,
+            ST_AVG_ST_ID,
+            ST_AVG_UTL_ID,
+            ST_AVG_ChangedAt,
+            ST_AVG_PositedAt,
+            ST_AVG_Positor,
+            ST_AVG_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_AVG
+            END, i.Metadata_ST),
+            p.ST_AVG_ST_ID,
+            p.ST_AVG_UTL_ID,
+            p.ST_AVG_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+            END, @now) as datetime2),
+            d.ST_AVG_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_AVG_Stage_Average_Posit] p
+        ON
+            p.ST_AVG_ID = d.ST_AVG_ID
+        WHERE
+            p.ST_AVG_UTL_ID <> CASE
+                WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            UPDATE(ST_AVG_ChangedAt)
+        AND
+            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+        AND
+            d.ST_AVG_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Positor) THEN i.ST_AVG_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_AVG_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_AVG_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(ST_AVG_UTL_ID) OR
         UPDATE(ST_AVG_UTL_Utilization) OR
@@ -10465,76 +11414,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(ST_AVG_UTL_ID) OR
-        UPDATE(ST_AVG_UTL_Utilization)
-    )
-    BEGIN
-        INSERT INTO [attributes].[ST_AVG_Stage_Average] (
-            Metadata_ST_AVG,
-            ST_AVG_ST_ID,
-            ST_AVG_UTL_ID,
-            ST_AVG_ChangedAt,
-            ST_AVG_PositedAt,
-            ST_AVG_Positor,
-            ST_AVG_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
-                THEN i.Metadata_ST
-                ELSE i.Metadata_ST_AVG
-            END, i.Metadata_ST),
-            p.ST_AVG_ST_ID,
-            p.ST_AVG_UTL_ID,
-            p.ST_AVG_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
-            END, @now) as datetime2),
-            d.ST_AVG_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[UTL_Utilization] [kUTL]
-        ON
-            [kUTL].UTL_Utilization = i.ST_AVG_UTL_Utilization
-        JOIN
-            deleted d
-        ON
-            d.ST_ID = i.ST_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[ST_AVG_Stage_Average_Posit] p
-        ON
-            p.ST_AVG_ID = d.ST_AVG_ID
-        WHERE
-            p.ST_AVG_UTL_ID <> CASE
-                WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID
-                ELSE [kUTL].UTL_ID
-            END
-        AND
-            UPDATE(ST_AVG_ChangedAt)
-        AND
-            p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
-        AND
-            d.ST_AVG_Positor = ISNULL(CASE
-                WHEN UPDATE(ST_AVG_Positor) THEN i.ST_AVG_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.ST_AVG_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.ST_AVG_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -10587,6 +11466,71 @@ BEGIN
         RAISERROR('The foreign key column ST_MIN_ST_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_MIN_Assertion))
         RAISERROR('The computed assertion column ST_MIN_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(ST_MIN_UTL_ID) OR
+        UPDATE(ST_MIN_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
+            Metadata_ST_MIN,
+            ST_MIN_ST_ID,
+            ST_MIN_UTL_ID,
+            ST_MIN_PositedAt,
+            ST_MIN_Positor,
+            ST_MIN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
+                THEN i.Metadata_ST
+                ELSE i.Metadata_ST_MIN
+            END, i.Metadata_ST),
+            p.ST_MIN_ST_ID,
+            p.ST_MIN_UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2),
+            d.ST_MIN_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.ST_ID = i.ST_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[ST_MIN_Stage_Minimum_Posit] p
+        ON
+            p.ST_MIN_ID = d.ST_MIN_ID
+        WHERE
+            p.ST_MIN_UTL_ID <> CASE
+                WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            d.ST_MIN_Positor = ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Positor) THEN i.ST_MIN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.ST_MIN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.ST_MIN_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(ST_MIN_UTL_ID) OR
         UPDATE(ST_MIN_UTL_Utilization) OR
@@ -10654,70 +11598,6 @@ BEGIN
                 ELSE i.ST_MIN_Reliability
             END, 1)
         );
-    END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(ST_MIN_UTL_ID) OR
-        UPDATE(ST_MIN_UTL_Utilization)
-    )
-    BEGIN
-        INSERT INTO [attributes].[ST_MIN_Stage_Minimum] (
-            Metadata_ST_MIN,
-            ST_MIN_ST_ID,
-            ST_MIN_UTL_ID,
-            ST_MIN_PositedAt,
-            ST_MIN_Positor,
-            ST_MIN_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
-                THEN i.Metadata_ST
-                ELSE i.Metadata_ST_MIN
-            END, i.Metadata_ST),
-            p.ST_MIN_ST_ID,
-            p.ST_MIN_UTL_ID,
-            cast(ISNULL(CASE
-                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
-            END, @now) as datetime2),
-            d.ST_MIN_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[UTL_Utilization] [kUTL]
-        ON
-            [kUTL].UTL_Utilization = i.ST_MIN_UTL_Utilization
-        JOIN
-            deleted d
-        ON
-            d.ST_ID = i.ST_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[ST_MIN_Stage_Minimum_Posit] p
-        ON
-            p.ST_MIN_ID = d.ST_MIN_ID
-        WHERE
-            p.ST_MIN_UTL_ID <> CASE
-                WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID
-                ELSE [kUTL].UTL_ID
-            END
-        AND
-            d.ST_MIN_Positor = ISNULL(CASE
-                WHEN UPDATE(ST_MIN_Positor) THEN i.ST_MIN_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.ST_MIN_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.ST_MIN_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -11060,6 +11940,69 @@ BEGIN
         RAISERROR('The foreign key column AC_NAM_AC_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_NAM_Assertion))
         RAISERROR('The computed assertion column AC_NAM_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(AC_NAM_Actor_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_NAM_Actor_Name] (
+            Metadata_AC_NAM,
+            AC_NAM_AC_ID,
+            AC_NAM_Actor_Name,
+            AC_NAM_ChangedAt,
+            AC_NAM_PositedAt,
+            AC_NAM_Positor,
+            AC_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_NAM
+            END, i.Metadata_AC),
+            p.AC_NAM_AC_ID,
+            p.AC_NAM_Actor_Name,
+            p.AC_NAM_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+            END, @now) as datetime2),
+            d.AC_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_NAM_Actor_Name_Posit] p
+        ON
+            p.AC_NAM_ID = d.AC_NAM_ID
+        WHERE
+            p.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+        AND
+            UPDATE(AC_NAM_ChangedAt)
+        AND
+            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+        AND
+            d.AC_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Positor) THEN i.AC_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_NAM_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(AC_NAM_Actor_Name) OR
         UPDATE(AC_NAM_Reliability) OR
@@ -11124,68 +12067,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(AC_NAM_Actor_Name)
-    )
-    BEGIN
-        INSERT INTO [attributes].[AC_NAM_Actor_Name] (
-            Metadata_AC_NAM,
-            AC_NAM_AC_ID,
-            AC_NAM_Actor_Name,
-            AC_NAM_ChangedAt,
-            AC_NAM_PositedAt,
-            AC_NAM_Positor,
-            AC_NAM_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
-                THEN i.Metadata_AC
-                ELSE i.Metadata_AC_NAM
-            END, i.Metadata_AC),
-            p.AC_NAM_AC_ID,
-            p.AC_NAM_Actor_Name,
-            p.AC_NAM_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
-            END, @now) as datetime2),
-            d.AC_NAM_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.AC_ID = i.AC_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[AC_NAM_Actor_Name_Posit] p
-        ON
-            p.AC_NAM_ID = d.AC_NAM_ID
-        WHERE
-            p.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
-        AND
-            UPDATE(AC_NAM_ChangedAt)
-        AND
-            p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
-        AND
-            d.AC_NAM_Positor = ISNULL(CASE
-                WHEN UPDATE(AC_NAM_Positor) THEN i.AC_NAM_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.AC_NAM_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.AC_NAM_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -11235,6 +12116,71 @@ BEGIN
         RAISERROR('The foreign key column AC_GEN_AC_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_GEN_Assertion))
         RAISERROR('The computed assertion column AC_GEN_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(AC_GEN_GEN_ID) OR
+        UPDATE(AC_GEN_GEN_Gender)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
+            Metadata_AC_GEN,
+            AC_GEN_AC_ID,
+            AC_GEN_GEN_ID,
+            AC_GEN_PositedAt,
+            AC_GEN_Positor,
+            AC_GEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_GEN
+            END, i.Metadata_AC),
+            p.AC_GEN_AC_ID,
+            p.AC_GEN_GEN_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2),
+            d.AC_GEN_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[GEN_Gender] [kGEN]
+        ON
+            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_GEN_Actor_Gender_Posit] p
+        ON
+            p.AC_GEN_ID = d.AC_GEN_ID
+        WHERE
+            p.AC_GEN_GEN_ID <> CASE
+                WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
+                ELSE [kGEN].GEN_ID
+            END
+        AND
+            d.AC_GEN_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Positor) THEN i.AC_GEN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_GEN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_GEN_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(AC_GEN_GEN_ID) OR
         UPDATE(AC_GEN_GEN_Gender) OR
@@ -11303,70 +12249,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(AC_GEN_GEN_ID) OR
-        UPDATE(AC_GEN_GEN_Gender)
-    )
-    BEGIN
-        INSERT INTO [attributes].[AC_GEN_Actor_Gender] (
-            Metadata_AC_GEN,
-            AC_GEN_AC_ID,
-            AC_GEN_GEN_ID,
-            AC_GEN_PositedAt,
-            AC_GEN_Positor,
-            AC_GEN_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
-                THEN i.Metadata_AC
-                ELSE i.Metadata_AC_GEN
-            END, i.Metadata_AC),
-            p.AC_GEN_AC_ID,
-            p.AC_GEN_GEN_ID,
-            cast(ISNULL(CASE
-                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
-            END, @now) as datetime2),
-            d.AC_GEN_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[GEN_Gender] [kGEN]
-        ON
-            [kGEN].GEN_Checksum = dw.MD5(cast(i.AC_GEN_GEN_Gender as varbinary(max)))
-        JOIN
-            deleted d
-        ON
-            d.AC_ID = i.AC_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[AC_GEN_Actor_Gender_Posit] p
-        ON
-            p.AC_GEN_ID = d.AC_GEN_ID
-        WHERE
-            p.AC_GEN_GEN_ID <> CASE
-                WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID
-                ELSE [kGEN].GEN_ID
-            END
-        AND
-            d.AC_GEN_Positor = ISNULL(CASE
-                WHEN UPDATE(AC_GEN_Positor) THEN i.AC_GEN_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.AC_GEN_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.AC_GEN_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -11416,6 +12298,77 @@ BEGIN
         RAISERROR('The foreign key column AC_PLV_AC_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_PLV_Assertion))
         RAISERROR('The computed assertion column AC_PLV_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(AC_PLV_PLV_ID) OR
+        UPDATE(AC_PLV_PLV_ProfessionalLevel)
+    )
+    BEGIN
+        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
+            Metadata_AC_PLV,
+            AC_PLV_AC_ID,
+            AC_PLV_PLV_ID,
+            AC_PLV_ChangedAt,
+            AC_PLV_PositedAt,
+            AC_PLV_Positor,
+            AC_PLV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
+                THEN i.Metadata_AC
+                ELSE i.Metadata_AC_PLV
+            END, i.Metadata_AC),
+            p.AC_PLV_AC_ID,
+            p.AC_PLV_PLV_ID,
+            p.AC_PLV_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+            END, @now) as datetime2),
+            d.AC_PLV_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.AC_ID = i.AC_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+        ON
+            p.AC_PLV_ID = d.AC_PLV_ID
+        WHERE
+            p.AC_PLV_PLV_ID <> CASE
+                WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END
+        AND
+            UPDATE(AC_PLV_ChangedAt)
+        AND
+            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+        AND
+            d.AC_PLV_Positor = ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Positor) THEN i.AC_PLV_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.AC_PLV_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.AC_PLV_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(AC_PLV_PLV_ID) OR
         UPDATE(AC_PLV_PLV_ProfessionalLevel) OR
@@ -11490,76 +12443,6 @@ BEGIN
                 ELSE i.AC_PLV_Reliability
             END, 1)
         );
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(AC_PLV_PLV_ID) OR
-        UPDATE(AC_PLV_PLV_ProfessionalLevel)
-    )
-    BEGIN
-        INSERT INTO [attributes].[AC_PLV_Actor_ProfessionalLevel] (
-            Metadata_AC_PLV,
-            AC_PLV_AC_ID,
-            AC_PLV_PLV_ID,
-            AC_PLV_ChangedAt,
-            AC_PLV_PositedAt,
-            AC_PLV_Positor,
-            AC_PLV_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
-                THEN i.Metadata_AC
-                ELSE i.Metadata_AC_PLV
-            END, i.Metadata_AC),
-            p.AC_PLV_AC_ID,
-            p.AC_PLV_PLV_ID,
-            p.AC_PLV_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
-            END, @now) as datetime2),
-            d.AC_PLV_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[PLV_ProfessionalLevel] [kPLV]
-        ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
-        JOIN
-            deleted d
-        ON
-            d.AC_ID = i.AC_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[AC_PLV_Actor_ProfessionalLevel_Posit] p
-        ON
-            p.AC_PLV_ID = d.AC_PLV_ID
-        WHERE
-            p.AC_PLV_PLV_ID <> CASE
-                WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID
-                ELSE [kPLV].PLV_ID
-            END
-        AND
-            UPDATE(AC_PLV_ChangedAt)
-        AND
-            p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
-        AND
-            d.AC_PLV_Positor = ISNULL(CASE
-                WHEN UPDATE(AC_PLV_Positor) THEN i.AC_PLV_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.AC_PLV_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.AC_PLV_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -11820,6 +12703,63 @@ BEGIN
         RAISERROR('The foreign key column PR_NAM_PR_ID is not updatable.', 16, 1);
     IF(UPDATE(PR_NAM_Assertion))
         RAISERROR('The computed assertion column PR_NAM_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(PR_NAM_Program_Name)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_NAM_Program_Name] (
+            Metadata_PR_NAM,
+            PR_NAM_PR_ID,
+            PR_NAM_Program_Name,
+            PR_NAM_PositedAt,
+            PR_NAM_Positor,
+            PR_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_NAM
+            END, i.Metadata_PR),
+            p.PR_NAM_PR_ID,
+            p.PR_NAM_Program_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2),
+            d.PR_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[PR_NAM_Program_Name_Posit] p
+        ON
+            p.PR_NAM_ID = d.PR_NAM_ID
+        WHERE
+            p.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+        AND
+            d.PR_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Positor) THEN i.PR_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.PR_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_NAM_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(PR_NAM_Program_Name) OR
         UPDATE(PR_NAM_Reliability) OR
@@ -11877,62 +12817,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(PR_NAM_Program_Name)
-    )
-    BEGIN
-        INSERT INTO [attributes].[PR_NAM_Program_Name] (
-            Metadata_PR_NAM,
-            PR_NAM_PR_ID,
-            PR_NAM_Program_Name,
-            PR_NAM_PositedAt,
-            PR_NAM_Positor,
-            PR_NAM_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
-                THEN i.Metadata_PR
-                ELSE i.Metadata_PR_NAM
-            END, i.Metadata_PR),
-            p.PR_NAM_PR_ID,
-            p.PR_NAM_Program_Name,
-            cast(ISNULL(CASE
-                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
-            END, @now) as datetime2),
-            d.PR_NAM_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.PR_ID = i.PR_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[PR_NAM_Program_Name_Posit] p
-        ON
-            p.PR_NAM_ID = d.PR_NAM_ID
-        WHERE
-            p.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
-        AND
-            d.PR_NAM_Positor = ISNULL(CASE
-                WHEN UPDATE(PR_NAM_Positor) THEN i.PR_NAM_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.PR_NAM_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.PR_NAM_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -11979,6 +12863,69 @@ BEGIN
         RAISERROR('The foreign key column PR_LEN_PR_ID is not updatable.', 16, 1);
     IF(UPDATE(PR_LEN_Assertion))
         RAISERROR('The computed assertion column PR_LEN_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(PR_LEN_Program_Length)
+    )
+    BEGIN
+        INSERT INTO [attributes].[PR_LEN_Program_Length] (
+            Metadata_PR_LEN,
+            PR_LEN_PR_ID,
+            PR_LEN_Program_Length,
+            PR_LEN_ChangedAt,
+            PR_LEN_PositedAt,
+            PR_LEN_Positor,
+            PR_LEN_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
+                THEN i.Metadata_PR
+                ELSE i.Metadata_PR_LEN
+            END, i.Metadata_PR),
+            p.PR_LEN_PR_ID,
+            p.PR_LEN_Program_Length,
+            p.PR_LEN_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+            END, @now) as datetime2),
+            d.PR_LEN_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.PR_ID = i.PR_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[PR_LEN_Program_Length_Posit] p
+        ON
+            p.PR_LEN_ID = d.PR_LEN_ID
+        WHERE
+            p.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+        AND
+            UPDATE(PR_LEN_ChangedAt)
+        AND
+            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+        AND
+            d.PR_LEN_Positor = ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Positor) THEN i.PR_LEN_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.PR_LEN_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.PR_LEN_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(PR_LEN_Program_Length) OR
         UPDATE(PR_LEN_Reliability) OR
@@ -12042,68 +12989,6 @@ BEGIN
                 ELSE i.PR_LEN_Reliability
             END, 1)
         )
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(PR_LEN_Program_Length)
-    )
-    BEGIN
-        INSERT INTO [attributes].[PR_LEN_Program_Length] (
-            Metadata_PR_LEN,
-            PR_LEN_PR_ID,
-            PR_LEN_Program_Length,
-            PR_LEN_ChangedAt,
-            PR_LEN_PositedAt,
-            PR_LEN_Positor,
-            PR_LEN_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
-                THEN i.Metadata_PR
-                ELSE i.Metadata_PR_LEN
-            END, i.Metadata_PR),
-            p.PR_LEN_PR_ID,
-            p.PR_LEN_Program_Length,
-            p.PR_LEN_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
-            END, @now) as datetime2),
-            d.PR_LEN_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.PR_ID = i.PR_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[PR_LEN_Program_Length_Posit] p
-        ON
-            p.PR_LEN_ID = d.PR_LEN_ID
-        WHERE
-            p.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
-        AND
-            UPDATE(PR_LEN_ChangedAt)
-        AND
-            p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
-        AND
-            d.PR_LEN_Positor = ISNULL(CASE
-                WHEN UPDATE(PR_LEN_Positor) THEN i.PR_LEN_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.PR_LEN_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.PR_LEN_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -12537,6 +13422,63 @@ BEGIN
         RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_DAT_Assertion))
         RAISERROR('The computed assertion column EV_DAT_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_DAT_Event_Date)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_DAT_Event_Date] (
+            Metadata_EV_DAT,
+            EV_DAT_EV_ID,
+            EV_DAT_Event_Date,
+            EV_DAT_PositedAt,
+            EV_DAT_Positor,
+            EV_DAT_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_DAT
+            END, i.Metadata_EV),
+            p.EV_DAT_EV_ID,
+            p.EV_DAT_Event_Date,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2),
+            d.EV_DAT_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_DAT_Event_Date_Posit] p
+        ON
+            p.EV_DAT_ID = d.EV_DAT_ID
+        WHERE
+            p.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+        AND
+            d.EV_DAT_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_DAT_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_DAT_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_DAT_Event_Date) OR
         UPDATE(EV_DAT_Reliability) OR
@@ -12594,62 +13536,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_DAT_Event_Date)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_DAT_Event_Date] (
-            Metadata_EV_DAT,
-            EV_DAT_EV_ID,
-            EV_DAT_Event_Date,
-            EV_DAT_PositedAt,
-            EV_DAT_Positor,
-            EV_DAT_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_DAT
-            END, i.Metadata_EV),
-            p.EV_DAT_EV_ID,
-            p.EV_DAT_Event_Date,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
-            END, @now) as datetime2),
-            d.EV_DAT_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_DAT_Event_Date_Posit] p
-        ON
-            p.EV_DAT_ID = d.EV_DAT_ID
-        WHERE
-            p.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
-        AND
-            d.EV_DAT_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_DAT_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_DAT_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -12696,6 +13582,63 @@ BEGIN
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_AUD_Assertion))
         RAISERROR('The computed assertion column EV_AUD_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_AUD_Event_Audience)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
+            Metadata_EV_AUD,
+            EV_AUD_EV_ID,
+            EV_AUD_Event_Audience,
+            EV_AUD_PositedAt,
+            EV_AUD_Positor,
+            EV_AUD_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_AUD
+            END, i.Metadata_EV),
+            p.EV_AUD_EV_ID,
+            p.EV_AUD_Event_Audience,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2),
+            d.EV_AUD_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_AUD_Event_Audience_Posit] p
+        ON
+            p.EV_AUD_ID = d.EV_AUD_ID
+        WHERE
+            p.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+        AND
+            d.EV_AUD_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_AUD_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_AUD_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_AUD_Event_Audience) OR
         UPDATE(EV_AUD_Reliability) OR
@@ -12753,62 +13696,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_AUD_Event_Audience)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_AUD_Event_Audience] (
-            Metadata_EV_AUD,
-            EV_AUD_EV_ID,
-            EV_AUD_Event_Audience,
-            EV_AUD_PositedAt,
-            EV_AUD_Positor,
-            EV_AUD_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_AUD
-            END, i.Metadata_EV),
-            p.EV_AUD_EV_ID,
-            p.EV_AUD_Event_Audience,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
-            END, @now) as datetime2),
-            d.EV_AUD_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_AUD_Event_Audience_Posit] p
-        ON
-            p.EV_AUD_ID = d.EV_AUD_ID
-        WHERE
-            p.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
-        AND
-            d.EV_AUD_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_AUD_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_AUD_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -12855,6 +13742,63 @@ BEGIN
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_REV_Assertion))
         RAISERROR('The computed assertion column EV_REV_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_REV_Event_Revenue)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
+            Metadata_EV_REV,
+            EV_REV_EV_ID,
+            EV_REV_Event_Revenue,
+            EV_REV_PositedAt,
+            EV_REV_Positor,
+            EV_REV_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_REV
+            END, i.Metadata_EV),
+            p.EV_REV_EV_ID,
+            p.EV_REV_Event_Revenue,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2),
+            d.EV_REV_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_REV_Event_Revenue_Posit] p
+        ON
+            p.EV_REV_ID = d.EV_REV_ID
+        WHERE
+            p.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+        AND
+            d.EV_REV_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_REV_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_REV_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_REV_Event_Revenue) OR
         UPDATE(EV_REV_Reliability) OR
@@ -12912,62 +13856,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_REV_Event_Revenue)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_REV_Event_Revenue] (
-            Metadata_EV_REV,
-            EV_REV_EV_ID,
-            EV_REV_Event_Revenue,
-            EV_REV_PositedAt,
-            EV_REV_Positor,
-            EV_REV_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_REV
-            END, i.Metadata_EV),
-            p.EV_REV_EV_ID,
-            p.EV_REV_Event_Revenue,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
-            END, @now) as datetime2),
-            d.EV_REV_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_REV_Event_Revenue_Posit] p
-        ON
-            p.EV_REV_ID = d.EV_REV_ID
-        WHERE
-            p.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
-        AND
-            d.EV_REV_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_REV_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_REV_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -13014,6 +13902,69 @@ BEGIN
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_STA_Assertion))
         RAISERROR('The computed assertion column EV_STA_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(EV_STA_Event_Status)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_STA_Event_Status] (
+            Metadata_EV_STA,
+            EV_STA_EV_ID,
+            EV_STA_Event_Status,
+            EV_STA_ChangedAt,
+            EV_STA_PositedAt,
+            EV_STA_Positor,
+            EV_STA_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_STA
+            END, i.Metadata_EV),
+            p.EV_STA_EV_ID,
+            p.EV_STA_Event_Status,
+            p.EV_STA_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+            END, @now) as datetime2),
+            d.EV_STA_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_STA_Event_Status_Posit] p
+        ON
+            p.EV_STA_ID = d.EV_STA_ID
+        WHERE
+            p.EV_STA_Event_Status <> i.EV_STA_Event_Status
+        AND
+            UPDATE(EV_STA_ChangedAt)
+        AND
+            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
+        AND
+            d.EV_STA_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_STA_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_STA_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_STA_Event_Status) OR
         UPDATE(EV_STA_Reliability) OR
@@ -13078,68 +14029,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_STA_Event_Status)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_STA_Event_Status] (
-            Metadata_EV_STA,
-            EV_STA_EV_ID,
-            EV_STA_Event_Status,
-            EV_STA_ChangedAt,
-            EV_STA_PositedAt,
-            EV_STA_Positor,
-            EV_STA_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_STA
-            END, i.Metadata_EV),
-            p.EV_STA_EV_ID,
-            p.EV_STA_Event_Status,
-            p.EV_STA_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
-            END, @now) as datetime2),
-            d.EV_STA_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_STA_Event_Status_Posit] p
-        ON
-            p.EV_STA_ID = d.EV_STA_ID
-        WHERE
-            p.EV_STA_Event_Status <> i.EV_STA_Event_Status
-        AND
-            UPDATE(EV_STA_ChangedAt)
-        AND
-            p.EV_STA_ChangedAt = i.EV_STA_ChangedAt
-        AND
-            d.EV_STA_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_STA_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_STA_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -13189,6 +14078,71 @@ BEGIN
         RAISERROR('The foreign key column EV_UTL_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_UTL_Assertion))
         RAISERROR('The computed assertion column EV_UTL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(EV_UTL_UTL_ID) OR
+        UPDATE(EV_UTL_UTL_Utilization)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
+            Metadata_EV_UTL,
+            EV_UTL_EV_ID,
+            EV_UTL_UTL_ID,
+            EV_UTL_PositedAt,
+            EV_UTL_Positor,
+            EV_UTL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_UTL
+            END, i.Metadata_EV),
+            p.EV_UTL_EV_ID,
+            p.EV_UTL_UTL_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2),
+            d.EV_UTL_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[UTL_Utilization] [kUTL]
+        ON
+            [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_UTL_Event_Utilization_Posit] p
+        ON
+            p.EV_UTL_ID = d.EV_UTL_ID
+        WHERE
+            p.EV_UTL_UTL_ID <> CASE
+                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                ELSE [kUTL].UTL_ID
+            END
+        AND
+            d.EV_UTL_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_UTL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_UTL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_UTL_UTL_ID) OR
         UPDATE(EV_UTL_UTL_Utilization) OR
@@ -13257,70 +14211,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_UTL_UTL_ID) OR
-        UPDATE(EV_UTL_UTL_Utilization)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
-            Metadata_EV_UTL,
-            EV_UTL_EV_ID,
-            EV_UTL_UTL_ID,
-            EV_UTL_PositedAt,
-            EV_UTL_Positor,
-            EV_UTL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_UTL
-            END, i.Metadata_EV),
-            p.EV_UTL_EV_ID,
-            p.EV_UTL_UTL_ID,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
-            END, @now) as datetime2),
-            d.EV_UTL_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[UTL_Utilization] [kUTL]
-        ON
-            [kUTL].UTL_Utilization = i.EV_UTL_UTL_Utilization
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_UTL_Event_Utilization_Posit] p
-        ON
-            p.EV_UTL_ID = d.EV_UTL_ID
-        WHERE
-            p.EV_UTL_UTL_ID <> CASE
-                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
-                ELSE [kUTL].UTL_ID
-            END
-        AND
-            d.EV_UTL_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_UTL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_UTL_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -13370,6 +14260,77 @@ BEGIN
         RAISERROR('The foreign key column EV_LVL_EV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_LVL_Assertion))
         RAISERROR('The computed assertion column EV_LVL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(EV_LVL_PLV_ID) OR
+        UPDATE(EV_LVL_PLV_ProfessionalLevel)
+    )
+    BEGIN
+        INSERT INTO [attributes].[EV_LVL_Event_Level] (
+            Metadata_EV_LVL,
+            EV_LVL_EV_ID,
+            EV_LVL_PLV_ID,
+            EV_LVL_ChangedAt,
+            EV_LVL_PositedAt,
+            EV_LVL_Positor,
+            EV_LVL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                THEN i.Metadata_EV
+                ELSE i.Metadata_EV_LVL
+            END, i.Metadata_EV),
+            p.EV_LVL_EV_ID,
+            p.EV_LVL_PLV_ID,
+            p.EV_LVL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+            END, @now) as datetime2),
+            d.EV_LVL_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [knots].[PLV_ProfessionalLevel] [kPLV]
+        ON
+            [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))
+        JOIN
+            deleted d
+        ON
+            d.EV_ID = i.EV_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [attributes].[EV_LVL_Event_Level_Posit] p
+        ON
+            p.EV_LVL_ID = d.EV_LVL_ID
+        WHERE
+            p.EV_LVL_PLV_ID <> CASE
+                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                ELSE [kPLV].PLV_ID
+            END
+        AND
+            UPDATE(EV_LVL_ChangedAt)
+        AND
+            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
+        AND
+            d.EV_LVL_Positor = ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.EV_LVL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.EV_LVL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(EV_LVL_PLV_ID) OR
         UPDATE(EV_LVL_PLV_ProfessionalLevel) OR
@@ -13444,76 +14405,6 @@ BEGIN
                 ELSE i.EV_LVL_Reliability
             END, 1)
         );
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(EV_LVL_PLV_ID) OR
-        UPDATE(EV_LVL_PLV_ProfessionalLevel)
-    )
-    BEGIN
-        INSERT INTO [attributes].[EV_LVL_Event_Level] (
-            Metadata_EV_LVL,
-            EV_LVL_EV_ID,
-            EV_LVL_PLV_ID,
-            EV_LVL_ChangedAt,
-            EV_LVL_PositedAt,
-            EV_LVL_Positor,
-            EV_LVL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
-                THEN i.Metadata_EV
-                ELSE i.Metadata_EV_LVL
-            END, i.Metadata_EV),
-            p.EV_LVL_EV_ID,
-            p.EV_LVL_PLV_ID,
-            p.EV_LVL_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
-            END, @now) as datetime2),
-            d.EV_LVL_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [knots].[PLV_ProfessionalLevel] [kPLV]
-        ON
-            [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))
-        JOIN
-            deleted d
-        ON
-            d.EV_ID = i.EV_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [attributes].[EV_LVL_Event_Level_Posit] p
-        ON
-            p.EV_LVL_ID = d.EV_LVL_ID
-        WHERE
-            p.EV_LVL_PLV_ID <> CASE
-                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
-                ELSE [kPLV].PLV_ID
-            END
-        AND
-            UPDATE(EV_LVL_ChangedAt)
-        AND
-            p.EV_LVL_ChangedAt = i.EV_LVL_ChangedAt
-        AND
-            d.EV_LVL_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.EV_LVL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.EV_LVL_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -18904,6 +19795,7 @@ BEGIN
         primary key (
             EV_in_AC_wasCast_Version,
             EV_in_AC_wasCast_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             EV_ID_in,
             AC_ID_wasCast
         )
@@ -19164,8 +20056,10 @@ BEGIN
         primary key (
             AC_part_PR_in_RAT_got_Version,
             AC_part_PR_in_RAT_got_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             AC_ID_part,
-            PR_ID_in
+            PR_ID_in,
+            RAT_ID_got
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -19420,6 +20314,69 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds for the identifiers at the same changing time may not contradict itself: a
+        -- positive reliability counts as it is and a negative one as one plus it, and they may not sum up to more than one
+        -- (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_ID_part,
+                v.PR_ID_in,
+                v.AC_part_PR_in_RAT_got_ChangedAt,
+                v.AC_part_PR_in_RAT_got_Positor,
+                v.AC_part_PR_in_RAT_got_PositedAt
+            FROM
+                @inserted v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_part_PR_in_RAT_got_Reliability > 0 THEN a.AC_part_PR_in_RAT_got_Reliability
+                        ELSE 1 + a.AC_part_PR_in_RAT_got_Reliability
+                    END) AS total
+                FROM
+                    [ties].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [ties].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                AND
+                    a.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = (
+                        SELECT
+                            max(s.AC_part_PR_in_RAT_got_PositedAt)
+                        FROM
+                            [ties].[AC_part_PR_in_RAT_got_Annex] s
+                        WHERE
+                            s.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                        AND
+                            s.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                        AND
+                            s.AC_part_PR_in_RAT_got_PositedAt <= v.AC_part_PR_in_RAT_got_PositedAt
+                    )
+                WHERE
+                    p.AC_ID_part = v.AC_ID_part
+                AND
+                    p.PR_ID_in = v.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_part_PR_in_RAT_got_Version = @currentVersion
+            AND
+                v.AC_part_PR_in_RAT_got_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -19506,6 +20463,48 @@ BEGIN
     AND (
         CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
+    -- indecisive: other values at the same changing time are a correction, which retracts the shown posit first, so
+    -- that the new values are not taken for an alternative to it
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        d.AC_part_PR_in_RAT_got_ID,
+        d.AC_part_PR_in_RAT_got_Positor,
+        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    JOIN
+        deleted d
+    ON
+        d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+    AND
+        d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+    WHERE (
+        d.RAT_ID_got <> CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+    )
+    AND
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
+    AND
+        UPDATE(AC_part_PR_in_RAT_got_ChangedAt)
+    AND
+        d.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
+    AND
+        d.AC_part_PR_in_RAT_got_Positor = ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0)
+    AND
+        d.AC_part_PR_in_RAT_got_PositedAt < cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2)
+    AND
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) <> 0;
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got,
@@ -19570,47 +20569,6 @@ BEGIN
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
         );
-    -- indecisive: other values at the same changing time are a correction, which also retracts the shown posit
-    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
-        Metadata_AC_part_PR_in_RAT_got,
-        AC_part_PR_in_RAT_got_ID,
-        AC_part_PR_in_RAT_got_Positor,
-        AC_part_PR_in_RAT_got_PositedAt,
-        AC_part_PR_in_RAT_got_Reliability
-    )
-    SELECT
-        i.Metadata_AC_part_PR_in_RAT_got,
-        d.AC_part_PR_in_RAT_got_ID,
-        d.AC_part_PR_in_RAT_got_Positor,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
-        0
-    FROM
-        inserted i
-    LEFT JOIN
-        [knots].[RAT_Rating] [RAT_got]
-    ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating
-    JOIN
-        deleted d
-    ON
-        d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
-    AND
-        d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
-    WHERE (
-        d.RAT_ID_got <> CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
-    )
-    AND
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
-    AND
-        UPDATE(AC_part_PR_in_RAT_got_ChangedAt)
-    AND
-        d.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
-    AND
-        d.AC_part_PR_in_RAT_got_Positor = ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0)
-    AND
-        d.AC_part_PR_in_RAT_got_PositedAt < cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2)
-    AND
-        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) > 0;
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -19669,6 +20627,7 @@ BEGIN
         primary key (
             ST_at_PR_isPlaying_Version,
             ST_at_PR_isPlaying_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             ST_ID_at,
             PR_ID_isPlaying
         )
@@ -19945,6 +20904,7 @@ BEGIN
         primary key (
             AC_parent_AC_child_PAT_having_Version,
             AC_parent_AC_child_PAT_having_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having

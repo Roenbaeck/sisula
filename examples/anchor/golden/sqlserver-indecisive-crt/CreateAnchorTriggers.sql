@@ -583,6 +583,63 @@ BEGIN
         RAISERROR('The foreign key column SU_NAM_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_NAM_Assertion))
         RAISERROR('The computed assertion column SU_NAM_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(SU_NAM_Subject_Name)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_NAM_Subject_Name] (
+            Metadata_SU_NAM,
+            SU_NAM_SU_ID,
+            SU_NAM_Subject_Name,
+            SU_NAM_PositedAt,
+            SU_NAM_Positor,
+            SU_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NAM)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_NAM
+            END, i.Metadata_SU),
+            p.SU_NAM_SU_ID,
+            p.SU_NAM_Subject_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_NAM_PositedAt) THEN i.SU_NAM_PositedAt
+            END, @now) as datetime2),
+            d.SU_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_NAM_Subject_Name_Posit] p
+        ON
+            p.SU_NAM_ID = d.SU_NAM_ID
+        WHERE
+            p.SU_NAM_Subject_Name <> i.SU_NAM_Subject_Name
+        AND
+            d.SU_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_NAM_Positor) THEN i.SU_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_NAM_PositedAt) THEN i.SU_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_NAM_Reliability) THEN i.SU_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_NAM_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_NAM_Subject_Name) OR
         UPDATE(SU_NAM_Reliability) OR
@@ -640,62 +697,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_NAM_Subject_Name)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_NAM_Subject_Name] (
-            Metadata_SU_NAM,
-            SU_NAM_SU_ID,
-            SU_NAM_Subject_Name,
-            SU_NAM_PositedAt,
-            SU_NAM_Positor,
-            SU_NAM_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NAM)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_NAM
-            END, i.Metadata_SU),
-            p.SU_NAM_SU_ID,
-            p.SU_NAM_Subject_Name,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_NAM_PositedAt) THEN i.SU_NAM_PositedAt
-            END, @now) as datetime2),
-            d.SU_NAM_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_NAM_Subject_Name_Posit] p
-        ON
-            p.SU_NAM_ID = d.SU_NAM_ID
-        WHERE
-            p.SU_NAM_Subject_Name <> i.SU_NAM_Subject_Name
-        AND
-            d.SU_NAM_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_NAM_Positor) THEN i.SU_NAM_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_NAM_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_NAM_PositedAt) THEN i.SU_NAM_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_NAM_Reliability) THEN i.SU_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_NAM_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -742,6 +743,63 @@ BEGIN
         RAISERROR('The foreign key column SU_COD_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_COD_Assertion))
         RAISERROR('The computed assertion column SU_COD_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(SU_COD_Subject_Code)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_COD_Subject_Code] (
+            Metadata_SU_COD,
+            SU_COD_SU_ID,
+            SU_COD_Subject_Code,
+            SU_COD_PositedAt,
+            SU_COD_Positor,
+            SU_COD_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_COD)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_COD
+            END, i.Metadata_SU),
+            p.SU_COD_SU_ID,
+            p.SU_COD_Subject_Code,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_COD_PositedAt) THEN i.SU_COD_PositedAt
+            END, @now) as datetime2),
+            d.SU_COD_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_COD_Subject_Code_Posit] p
+        ON
+            p.SU_COD_ID = d.SU_COD_ID
+        WHERE
+            p.SU_COD_Subject_Code <> i.SU_COD_Subject_Code
+        AND
+            d.SU_COD_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_COD_Positor) THEN i.SU_COD_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_COD_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_COD_PositedAt) THEN i.SU_COD_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_COD_Reliability) THEN i.SU_COD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_COD_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_COD_Subject_Code) OR
         UPDATE(SU_COD_Reliability) OR
@@ -799,62 +857,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_COD_Subject_Code)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_COD_Subject_Code] (
-            Metadata_SU_COD,
-            SU_COD_SU_ID,
-            SU_COD_Subject_Code,
-            SU_COD_PositedAt,
-            SU_COD_Positor,
-            SU_COD_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_COD)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_COD
-            END, i.Metadata_SU),
-            p.SU_COD_SU_ID,
-            p.SU_COD_Subject_Code,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_COD_PositedAt) THEN i.SU_COD_PositedAt
-            END, @now) as datetime2),
-            d.SU_COD_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_COD_Subject_Code_Posit] p
-        ON
-            p.SU_COD_ID = d.SU_COD_ID
-        WHERE
-            p.SU_COD_Subject_Code <> i.SU_COD_Subject_Code
-        AND
-            d.SU_COD_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_COD_Positor) THEN i.SU_COD_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_COD_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_COD_PositedAt) THEN i.SU_COD_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_COD_Reliability) THEN i.SU_COD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_COD_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -901,6 +903,71 @@ BEGIN
         RAISERROR('The foreign key column SU_GRD_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_GRD_Assertion))
         RAISERROR('The computed assertion column SU_GRD_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(SU_GRD_GRD_ID) OR
+        UPDATE(SU_GRD_GRD_Grade)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_GRD_Subject_Grade] (
+            Metadata_SU_GRD,
+            SU_GRD_SU_ID,
+            SU_GRD_GRD_ID,
+            SU_GRD_PositedAt,
+            SU_GRD_Positor,
+            SU_GRD_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_GRD)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_GRD
+            END, i.Metadata_SU),
+            p.SU_GRD_SU_ID,
+            p.SU_GRD_GRD_ID,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_GRD_PositedAt) THEN i.SU_GRD_PositedAt
+            END, @now) as datetime2),
+            d.SU_GRD_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [dbo].[GRD_Grade] [kGRD]
+        ON
+            [kGRD].GRD_Grade = i.SU_GRD_GRD_Grade
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_GRD_Subject_Grade_Posit] p
+        ON
+            p.SU_GRD_ID = d.SU_GRD_ID
+        WHERE
+            p.SU_GRD_GRD_ID <> CASE
+                WHEN UPDATE(SU_GRD_GRD_ID) THEN i.SU_GRD_GRD_ID
+                ELSE [kGRD].GRD_ID
+            END
+        AND
+            d.SU_GRD_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_GRD_Positor) THEN i.SU_GRD_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_GRD_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_GRD_PositedAt) THEN i.SU_GRD_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_GRD_Reliability) THEN i.SU_GRD_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_GRD_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_GRD_GRD_ID) OR
         UPDATE(SU_GRD_GRD_Grade) OR
@@ -969,70 +1036,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_GRD_GRD_ID) OR
-        UPDATE(SU_GRD_GRD_Grade)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_GRD_Subject_Grade] (
-            Metadata_SU_GRD,
-            SU_GRD_SU_ID,
-            SU_GRD_GRD_ID,
-            SU_GRD_PositedAt,
-            SU_GRD_Positor,
-            SU_GRD_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_GRD)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_GRD
-            END, i.Metadata_SU),
-            p.SU_GRD_SU_ID,
-            p.SU_GRD_GRD_ID,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_GRD_PositedAt) THEN i.SU_GRD_PositedAt
-            END, @now) as datetime2),
-            d.SU_GRD_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [dbo].[GRD_Grade] [kGRD]
-        ON
-            [kGRD].GRD_Grade = i.SU_GRD_GRD_Grade
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_GRD_Subject_Grade_Posit] p
-        ON
-            p.SU_GRD_ID = d.SU_GRD_ID
-        WHERE
-            p.SU_GRD_GRD_ID <> CASE
-                WHEN UPDATE(SU_GRD_GRD_ID) THEN i.SU_GRD_GRD_ID
-                ELSE [kGRD].GRD_ID
-            END
-        AND
-            d.SU_GRD_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_GRD_Positor) THEN i.SU_GRD_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_GRD_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_GRD_PositedAt) THEN i.SU_GRD_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_GRD_Reliability) THEN i.SU_GRD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_GRD_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1082,6 +1085,63 @@ BEGIN
         RAISERROR('The foreign key column SU_NOT_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_NOT_Assertion))
         RAISERROR('The computed assertion column SU_NOT_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(SU_NOT_Subject_Note)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_NOT_Subject_Note] (
+            Metadata_SU_NOT,
+            SU_NOT_SU_ID,
+            SU_NOT_Subject_Note,
+            SU_NOT_PositedAt,
+            SU_NOT_Positor,
+            SU_NOT_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NOT)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_NOT
+            END, i.Metadata_SU),
+            p.SU_NOT_SU_ID,
+            p.SU_NOT_Subject_Note,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_NOT_PositedAt) THEN i.SU_NOT_PositedAt
+            END, @now) as datetime2),
+            d.SU_NOT_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_NOT_Subject_Note_Posit] p
+        ON
+            p.SU_NOT_ID = d.SU_NOT_ID
+        WHERE
+            p.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+        AND
+            d.SU_NOT_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_NOT_Positor) THEN i.SU_NOT_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_NOT_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_NOT_PositedAt) THEN i.SU_NOT_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_NOT_Reliability) THEN i.SU_NOT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_NOT_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_NOT_Subject_Note) OR
         UPDATE(SU_NOT_Reliability) OR
@@ -1139,62 +1199,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_NOT_Subject_Note)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_NOT_Subject_Note] (
-            Metadata_SU_NOT,
-            SU_NOT_SU_ID,
-            SU_NOT_Subject_Note,
-            SU_NOT_PositedAt,
-            SU_NOT_Positor,
-            SU_NOT_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NOT)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_NOT
-            END, i.Metadata_SU),
-            p.SU_NOT_SU_ID,
-            p.SU_NOT_Subject_Note,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_NOT_PositedAt) THEN i.SU_NOT_PositedAt
-            END, @now) as datetime2),
-            d.SU_NOT_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_NOT_Subject_Note_Posit] p
-        ON
-            p.SU_NOT_ID = d.SU_NOT_ID
-        WHERE
-            p.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
-        AND
-            d.SU_NOT_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_NOT_Positor) THEN i.SU_NOT_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_NOT_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_NOT_PositedAt) THEN i.SU_NOT_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_NOT_Reliability) THEN i.SU_NOT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_NOT_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1241,6 +1245,69 @@ BEGIN
         RAISERROR('The foreign key column SU_TTL_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_TTL_Assertion))
         RAISERROR('The computed assertion column SU_TTL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_TTL_Subject_Title)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_TTL_Subject_Title] (
+            Metadata_SU_TTL,
+            SU_TTL_SU_ID,
+            SU_TTL_Subject_Title,
+            SU_TTL_ChangedAt,
+            SU_TTL_PositedAt,
+            SU_TTL_Positor,
+            SU_TTL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TTL)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_TTL
+            END, i.Metadata_SU),
+            p.SU_TTL_SU_ID,
+            p.SU_TTL_Subject_Title,
+            p.SU_TTL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_TTL_PositedAt) THEN i.SU_TTL_PositedAt
+            END, @now) as datetime2),
+            d.SU_TTL_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_TTL_Subject_Title_Posit] p
+        ON
+            p.SU_TTL_ID = d.SU_TTL_ID
+        WHERE
+            p.SU_TTL_Subject_Title <> i.SU_TTL_Subject_Title
+        AND
+            UPDATE(SU_TTL_ChangedAt)
+        AND
+            p.SU_TTL_ChangedAt = i.SU_TTL_ChangedAt
+        AND
+            d.SU_TTL_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_TTL_Positor) THEN i.SU_TTL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_TTL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_TTL_PositedAt) THEN i.SU_TTL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_TTL_Reliability) THEN i.SU_TTL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_TTL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_TTL_Subject_Title) OR
         UPDATE(SU_TTL_Reliability) OR
@@ -1305,68 +1372,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_TTL_Subject_Title)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_TTL_Subject_Title] (
-            Metadata_SU_TTL,
-            SU_TTL_SU_ID,
-            SU_TTL_Subject_Title,
-            SU_TTL_ChangedAt,
-            SU_TTL_PositedAt,
-            SU_TTL_Positor,
-            SU_TTL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TTL)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_TTL
-            END, i.Metadata_SU),
-            p.SU_TTL_SU_ID,
-            p.SU_TTL_Subject_Title,
-            p.SU_TTL_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_TTL_PositedAt) THEN i.SU_TTL_PositedAt
-            END, @now) as datetime2),
-            d.SU_TTL_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_TTL_Subject_Title_Posit] p
-        ON
-            p.SU_TTL_ID = d.SU_TTL_ID
-        WHERE
-            p.SU_TTL_Subject_Title <> i.SU_TTL_Subject_Title
-        AND
-            UPDATE(SU_TTL_ChangedAt)
-        AND
-            p.SU_TTL_ChangedAt = i.SU_TTL_ChangedAt
-        AND
-            d.SU_TTL_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_TTL_Positor) THEN i.SU_TTL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_TTL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_TTL_PositedAt) THEN i.SU_TTL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_TTL_Reliability) THEN i.SU_TTL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_TTL_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1416,6 +1421,69 @@ BEGIN
         RAISERROR('The foreign key column SU_STA_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_STA_Assertion))
         RAISERROR('The computed assertion column SU_STA_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_STA_Subject_State)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_STA_Subject_State] (
+            Metadata_SU_STA,
+            SU_STA_SU_ID,
+            SU_STA_Subject_State,
+            SU_STA_ChangedAt,
+            SU_STA_PositedAt,
+            SU_STA_Positor,
+            SU_STA_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_STA)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_STA
+            END, i.Metadata_SU),
+            p.SU_STA_SU_ID,
+            p.SU_STA_Subject_State,
+            p.SU_STA_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_STA_PositedAt) THEN i.SU_STA_PositedAt
+            END, @now) as datetime2),
+            d.SU_STA_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_STA_Subject_State_Posit] p
+        ON
+            p.SU_STA_ID = d.SU_STA_ID
+        WHERE
+            p.SU_STA_Subject_State <> i.SU_STA_Subject_State
+        AND
+            UPDATE(SU_STA_ChangedAt)
+        AND
+            p.SU_STA_ChangedAt = i.SU_STA_ChangedAt
+        AND
+            d.SU_STA_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_STA_Positor) THEN i.SU_STA_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_STA_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_STA_PositedAt) THEN i.SU_STA_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_STA_Reliability) THEN i.SU_STA_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_STA_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_STA_Subject_State) OR
         UPDATE(SU_STA_Reliability) OR
@@ -1480,68 +1548,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_STA_Subject_State)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_STA_Subject_State] (
-            Metadata_SU_STA,
-            SU_STA_SU_ID,
-            SU_STA_Subject_State,
-            SU_STA_ChangedAt,
-            SU_STA_PositedAt,
-            SU_STA_Positor,
-            SU_STA_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_STA)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_STA
-            END, i.Metadata_SU),
-            p.SU_STA_SU_ID,
-            p.SU_STA_Subject_State,
-            p.SU_STA_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_STA_PositedAt) THEN i.SU_STA_PositedAt
-            END, @now) as datetime2),
-            d.SU_STA_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_STA_Subject_State_Posit] p
-        ON
-            p.SU_STA_ID = d.SU_STA_ID
-        WHERE
-            p.SU_STA_Subject_State <> i.SU_STA_Subject_State
-        AND
-            UPDATE(SU_STA_ChangedAt)
-        AND
-            p.SU_STA_ChangedAt = i.SU_STA_ChangedAt
-        AND
-            d.SU_STA_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_STA_Positor) THEN i.SU_STA_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_STA_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_STA_PositedAt) THEN i.SU_STA_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_STA_Reliability) THEN i.SU_STA_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_STA_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1591,6 +1597,69 @@ BEGIN
         RAISERROR('The foreign key column SU_LBL_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_LBL_Assertion))
         RAISERROR('The computed assertion column SU_LBL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_LBL_Subject_Label)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_LBL_Subject_Label] (
+            Metadata_SU_LBL,
+            SU_LBL_SU_ID,
+            SU_LBL_Subject_Label,
+            SU_LBL_ChangedAt,
+            SU_LBL_PositedAt,
+            SU_LBL_Positor,
+            SU_LBL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LBL)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_LBL
+            END, i.Metadata_SU),
+            p.SU_LBL_SU_ID,
+            p.SU_LBL_Subject_Label,
+            p.SU_LBL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_LBL_PositedAt) THEN i.SU_LBL_PositedAt
+            END, @now) as datetime2),
+            d.SU_LBL_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_LBL_Subject_Label_Posit] p
+        ON
+            p.SU_LBL_ID = d.SU_LBL_ID
+        WHERE
+            p.SU_LBL_Subject_Label <> i.SU_LBL_Subject_Label
+        AND
+            UPDATE(SU_LBL_ChangedAt)
+        AND
+            p.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
+        AND
+            d.SU_LBL_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_LBL_Positor) THEN i.SU_LBL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_LBL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_LBL_PositedAt) THEN i.SU_LBL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_LBL_Reliability) THEN i.SU_LBL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_LBL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_LBL_Subject_Label) OR
         UPDATE(SU_LBL_Reliability) OR
@@ -1655,68 +1724,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_LBL_Subject_Label)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_LBL_Subject_Label] (
-            Metadata_SU_LBL,
-            SU_LBL_SU_ID,
-            SU_LBL_Subject_Label,
-            SU_LBL_ChangedAt,
-            SU_LBL_PositedAt,
-            SU_LBL_Positor,
-            SU_LBL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LBL)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_LBL
-            END, i.Metadata_SU),
-            p.SU_LBL_SU_ID,
-            p.SU_LBL_Subject_Label,
-            p.SU_LBL_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_LBL_PositedAt) THEN i.SU_LBL_PositedAt
-            END, @now) as datetime2),
-            d.SU_LBL_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_LBL_Subject_Label_Posit] p
-        ON
-            p.SU_LBL_ID = d.SU_LBL_ID
-        WHERE
-            p.SU_LBL_Subject_Label <> i.SU_LBL_Subject_Label
-        AND
-            UPDATE(SU_LBL_ChangedAt)
-        AND
-            p.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
-        AND
-            d.SU_LBL_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_LBL_Positor) THEN i.SU_LBL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_LBL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_LBL_PositedAt) THEN i.SU_LBL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_LBL_Reliability) THEN i.SU_LBL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_LBL_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1766,6 +1773,69 @@ BEGIN
         RAISERROR('The foreign key column SU_TAG_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_TAG_Assertion))
         RAISERROR('The computed assertion column SU_TAG_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_TAG_Subject_Tag)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
+            Metadata_SU_TAG,
+            SU_TAG_SU_ID,
+            SU_TAG_Subject_Tag,
+            SU_TAG_ChangedAt,
+            SU_TAG_PositedAt,
+            SU_TAG_Positor,
+            SU_TAG_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TAG)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_TAG
+            END, i.Metadata_SU),
+            p.SU_TAG_SU_ID,
+            p.SU_TAG_Subject_Tag,
+            p.SU_TAG_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_TAG_PositedAt) THEN i.SU_TAG_PositedAt
+            END, @now) as datetime2),
+            d.SU_TAG_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_TAG_Subject_Tag_Posit] p
+        ON
+            p.SU_TAG_ID = d.SU_TAG_ID
+        WHERE
+            p.SU_TAG_Subject_Tag <> i.SU_TAG_Subject_Tag
+        AND
+            UPDATE(SU_TAG_ChangedAt)
+        AND
+            p.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
+        AND
+            d.SU_TAG_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_TAG_Positor) THEN i.SU_TAG_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_TAG_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_TAG_PositedAt) THEN i.SU_TAG_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_TAG_Reliability) THEN i.SU_TAG_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_TAG_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_TAG_Subject_Tag) OR
         UPDATE(SU_TAG_Reliability) OR
@@ -1830,68 +1900,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_TAG_Subject_Tag)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
-            Metadata_SU_TAG,
-            SU_TAG_SU_ID,
-            SU_TAG_Subject_Tag,
-            SU_TAG_ChangedAt,
-            SU_TAG_PositedAt,
-            SU_TAG_Positor,
-            SU_TAG_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TAG)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_TAG
-            END, i.Metadata_SU),
-            p.SU_TAG_SU_ID,
-            p.SU_TAG_Subject_Tag,
-            p.SU_TAG_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_TAG_PositedAt) THEN i.SU_TAG_PositedAt
-            END, @now) as datetime2),
-            d.SU_TAG_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_TAG_Subject_Tag_Posit] p
-        ON
-            p.SU_TAG_ID = d.SU_TAG_ID
-        WHERE
-            p.SU_TAG_Subject_Tag <> i.SU_TAG_Subject_Tag
-        AND
-            UPDATE(SU_TAG_ChangedAt)
-        AND
-            p.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
-        AND
-            d.SU_TAG_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_TAG_Positor) THEN i.SU_TAG_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_TAG_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_TAG_PositedAt) THEN i.SU_TAG_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_TAG_Reliability) THEN i.SU_TAG_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_TAG_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -1941,6 +1949,77 @@ BEGIN
         RAISERROR('The foreign key column SU_LVL_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_LVL_Assertion))
         RAISERROR('The computed assertion column SU_LVL_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_LVL_GRD_ID) OR
+        UPDATE(SU_LVL_GRD_Grade)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_LVL_Subject_Level] (
+            Metadata_SU_LVL,
+            SU_LVL_SU_ID,
+            SU_LVL_GRD_ID,
+            SU_LVL_ChangedAt,
+            SU_LVL_PositedAt,
+            SU_LVL_Positor,
+            SU_LVL_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LVL)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_LVL
+            END, i.Metadata_SU),
+            p.SU_LVL_SU_ID,
+            p.SU_LVL_GRD_ID,
+            p.SU_LVL_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_LVL_PositedAt) THEN i.SU_LVL_PositedAt
+            END, @now) as datetime2),
+            d.SU_LVL_Positor,
+            0
+        FROM
+            inserted i
+        LEFT JOIN
+            [dbo].[GRD_Grade] [kGRD]
+        ON
+            [kGRD].GRD_Grade = i.SU_LVL_GRD_Grade
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_LVL_Subject_Level_Posit] p
+        ON
+            p.SU_LVL_ID = d.SU_LVL_ID
+        WHERE
+            p.SU_LVL_GRD_ID <> CASE
+                WHEN UPDATE(SU_LVL_GRD_ID) THEN i.SU_LVL_GRD_ID
+                ELSE [kGRD].GRD_ID
+            END
+        AND
+            UPDATE(SU_LVL_ChangedAt)
+        AND
+            p.SU_LVL_ChangedAt = i.SU_LVL_ChangedAt
+        AND
+            d.SU_LVL_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_LVL_Positor) THEN i.SU_LVL_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_LVL_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_LVL_PositedAt) THEN i.SU_LVL_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_LVL_Reliability) THEN i.SU_LVL_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_LVL_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_LVL_GRD_ID) OR
         UPDATE(SU_LVL_GRD_Grade) OR
@@ -2016,76 +2095,6 @@ BEGIN
             END, 1)
         );
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_LVL_GRD_ID) OR
-        UPDATE(SU_LVL_GRD_Grade)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_LVL_Subject_Level] (
-            Metadata_SU_LVL,
-            SU_LVL_SU_ID,
-            SU_LVL_GRD_ID,
-            SU_LVL_ChangedAt,
-            SU_LVL_PositedAt,
-            SU_LVL_Positor,
-            SU_LVL_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LVL)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_LVL
-            END, i.Metadata_SU),
-            p.SU_LVL_SU_ID,
-            p.SU_LVL_GRD_ID,
-            p.SU_LVL_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_LVL_PositedAt) THEN i.SU_LVL_PositedAt
-            END, @now) as datetime2),
-            d.SU_LVL_Positor,
-            0
-        FROM
-            inserted i
-        LEFT JOIN
-            [dbo].[GRD_Grade] [kGRD]
-        ON
-            [kGRD].GRD_Grade = i.SU_LVL_GRD_Grade
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_LVL_Subject_Level_Posit] p
-        ON
-            p.SU_LVL_ID = d.SU_LVL_ID
-        WHERE
-            p.SU_LVL_GRD_ID <> CASE
-                WHEN UPDATE(SU_LVL_GRD_ID) THEN i.SU_LVL_GRD_ID
-                ELSE [kGRD].GRD_ID
-            END
-        AND
-            UPDATE(SU_LVL_ChangedAt)
-        AND
-            p.SU_LVL_ChangedAt = i.SU_LVL_ChangedAt
-        AND
-            d.SU_LVL_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_LVL_Positor) THEN i.SU_LVL_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_LVL_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_LVL_PositedAt) THEN i.SU_LVL_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_LVL_Reliability) THEN i.SU_LVL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_LVL_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -2138,6 +2147,69 @@ BEGIN
         RAISERROR('The foreign key column SU_TXT_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_TXT_Assertion))
         RAISERROR('The computed assertion column SU_TXT_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_TXT_Subject_Text)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_TXT_Subject_Text] (
+            Metadata_SU_TXT,
+            SU_TXT_SU_ID,
+            SU_TXT_Subject_Text,
+            SU_TXT_ChangedAt,
+            SU_TXT_PositedAt,
+            SU_TXT_Positor,
+            SU_TXT_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TXT)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_TXT
+            END, i.Metadata_SU),
+            p.SU_TXT_SU_ID,
+            p.SU_TXT_Subject_Text,
+            p.SU_TXT_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_TXT_PositedAt) THEN i.SU_TXT_PositedAt
+            END, @now) as datetime2),
+            d.SU_TXT_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_TXT_Subject_Text_Posit] p
+        ON
+            p.SU_TXT_ID = d.SU_TXT_ID
+        WHERE
+            p.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
+        AND
+            UPDATE(SU_TXT_ChangedAt)
+        AND
+            p.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
+        AND
+            d.SU_TXT_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_TXT_Positor) THEN i.SU_TXT_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_TXT_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_TXT_PositedAt) THEN i.SU_TXT_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_TXT_Reliability) THEN i.SU_TXT_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_TXT_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_TXT_Subject_Text) OR
         UPDATE(SU_TXT_Reliability) OR
@@ -2202,68 +2274,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_TXT_Subject_Text)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_TXT_Subject_Text] (
-            Metadata_SU_TXT,
-            SU_TXT_SU_ID,
-            SU_TXT_Subject_Text,
-            SU_TXT_ChangedAt,
-            SU_TXT_PositedAt,
-            SU_TXT_Positor,
-            SU_TXT_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TXT)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_TXT
-            END, i.Metadata_SU),
-            p.SU_TXT_SU_ID,
-            p.SU_TXT_Subject_Text,
-            p.SU_TXT_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_TXT_PositedAt) THEN i.SU_TXT_PositedAt
-            END, @now) as datetime2),
-            d.SU_TXT_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_TXT_Subject_Text_Posit] p
-        ON
-            p.SU_TXT_ID = d.SU_TXT_ID
-        WHERE
-            p.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
-        AND
-            UPDATE(SU_TXT_ChangedAt)
-        AND
-            p.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
-        AND
-            d.SU_TXT_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_TXT_Positor) THEN i.SU_TXT_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_TXT_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_TXT_PositedAt) THEN i.SU_TXT_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_TXT_Reliability) THEN i.SU_TXT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_TXT_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -2313,6 +2323,69 @@ BEGIN
         RAISERROR('The foreign key column SU_ASR_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ASR_Assertion))
         RAISERROR('The computed assertion column SU_ASR_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_ASR_Subject_Assessment)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_ASR_Subject_Assessment] (
+            Metadata_SU_ASR,
+            SU_ASR_SU_ID,
+            SU_ASR_Subject_Assessment,
+            SU_ASR_ChangedAt,
+            SU_ASR_PositedAt,
+            SU_ASR_Positor,
+            SU_ASR_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ASR)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_ASR
+            END, i.Metadata_SU),
+            p.SU_ASR_SU_ID,
+            p.SU_ASR_Subject_Assessment,
+            p.SU_ASR_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_ASR_PositedAt) THEN i.SU_ASR_PositedAt
+            END, @now) as datetime2),
+            d.SU_ASR_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_ASR_Subject_Assessment_Posit] p
+        ON
+            p.SU_ASR_ID = d.SU_ASR_ID
+        WHERE
+            p.SU_ASR_Subject_Assessment <> i.SU_ASR_Subject_Assessment
+        AND
+            UPDATE(SU_ASR_ChangedAt)
+        AND
+            p.SU_ASR_ChangedAt = i.SU_ASR_ChangedAt
+        AND
+            d.SU_ASR_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_ASR_Positor) THEN i.SU_ASR_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_ASR_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_ASR_PositedAt) THEN i.SU_ASR_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_ASR_Reliability) THEN i.SU_ASR_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_ASR_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_ASR_Subject_Assessment) OR
         UPDATE(SU_ASR_Reliability) OR
@@ -2377,68 +2450,6 @@ BEGIN
             END, 1)
         )
     END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_ASR_Subject_Assessment)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_ASR_Subject_Assessment] (
-            Metadata_SU_ASR,
-            SU_ASR_SU_ID,
-            SU_ASR_Subject_Assessment,
-            SU_ASR_ChangedAt,
-            SU_ASR_PositedAt,
-            SU_ASR_Positor,
-            SU_ASR_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ASR)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_ASR
-            END, i.Metadata_SU),
-            p.SU_ASR_SU_ID,
-            p.SU_ASR_Subject_Assessment,
-            p.SU_ASR_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_ASR_PositedAt) THEN i.SU_ASR_PositedAt
-            END, @now) as datetime2),
-            d.SU_ASR_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_ASR_Subject_Assessment_Posit] p
-        ON
-            p.SU_ASR_ID = d.SU_ASR_ID
-        WHERE
-            p.SU_ASR_Subject_Assessment <> i.SU_ASR_Subject_Assessment
-        AND
-            UPDATE(SU_ASR_ChangedAt)
-        AND
-            p.SU_ASR_ChangedAt = i.SU_ASR_ChangedAt
-        AND
-            d.SU_ASR_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_ASR_Positor) THEN i.SU_ASR_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_ASR_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_ASR_PositedAt) THEN i.SU_ASR_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_ASR_Reliability) THEN i.SU_ASR_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_ASR_Reliability
-            END, 1) > 0;
-    END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
@@ -2488,6 +2499,69 @@ BEGIN
         RAISERROR('The foreign key column SU_ERS_SU_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ERS_Assertion))
         RAISERROR('The computed assertion column SU_ERS_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
+    -- the new value is not taken for an alternative to it
+    IF (
+        UPDATE(SU_ERS_Subject_Erasable)
+    )
+    BEGIN
+        INSERT INTO [dbo].[SU_ERS_Subject_Erasable] (
+            Metadata_SU_ERS,
+            SU_ERS_SU_ID,
+            SU_ERS_Subject_Erasable,
+            SU_ERS_ChangedAt,
+            SU_ERS_PositedAt,
+            SU_ERS_Positor,
+            SU_ERS_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ERS)
+                THEN i.Metadata_SU
+                ELSE i.Metadata_SU_ERS
+            END, i.Metadata_SU),
+            p.SU_ERS_SU_ID,
+            p.SU_ERS_Subject_Erasable,
+            p.SU_ERS_ChangedAt,
+            cast(ISNULL(CASE
+                WHEN UPDATE(SU_ERS_PositedAt) THEN i.SU_ERS_PositedAt
+            END, @now) as datetime2),
+            d.SU_ERS_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.SU_ID = i.SU_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[SU_ERS_Subject_Erasable_Posit] p
+        ON
+            p.SU_ERS_ID = d.SU_ERS_ID
+        WHERE
+            p.SU_ERS_Subject_Erasable <> i.SU_ERS_Subject_Erasable
+        AND
+            UPDATE(SU_ERS_ChangedAt)
+        AND
+            p.SU_ERS_ChangedAt = i.SU_ERS_ChangedAt
+        AND
+            d.SU_ERS_Positor = ISNULL(CASE
+                WHEN UPDATE(SU_ERS_Positor) THEN i.SU_ERS_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.SU_ERS_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(SU_ERS_PositedAt) THEN i.SU_ERS_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(SU_ERS_Reliability) THEN i.SU_ERS_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.SU_ERS_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(SU_ERS_Subject_Erasable) OR
         UPDATE(SU_ERS_Reliability) OR
@@ -2551,68 +2625,6 @@ BEGIN
                 ELSE i.SU_ERS_Reliability
             END, 1)
         )
-    END
-    -- indecisive: another value at the same changing time is a correction, which also retracts the shown one
-    IF (
-        UPDATE(SU_ERS_Subject_Erasable)
-    )
-    BEGIN
-        INSERT INTO [dbo].[SU_ERS_Subject_Erasable] (
-            Metadata_SU_ERS,
-            SU_ERS_SU_ID,
-            SU_ERS_Subject_Erasable,
-            SU_ERS_ChangedAt,
-            SU_ERS_PositedAt,
-            SU_ERS_Positor,
-            SU_ERS_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ERS)
-                THEN i.Metadata_SU
-                ELSE i.Metadata_SU_ERS
-            END, i.Metadata_SU),
-            p.SU_ERS_SU_ID,
-            p.SU_ERS_Subject_Erasable,
-            p.SU_ERS_ChangedAt,
-            cast(ISNULL(CASE
-                WHEN UPDATE(SU_ERS_PositedAt) THEN i.SU_ERS_PositedAt
-            END, @now) as datetime2),
-            d.SU_ERS_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.SU_ID = i.SU_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[SU_ERS_Subject_Erasable_Posit] p
-        ON
-            p.SU_ERS_ID = d.SU_ERS_ID
-        WHERE
-            p.SU_ERS_Subject_Erasable <> i.SU_ERS_Subject_Erasable
-        AND
-            UPDATE(SU_ERS_ChangedAt)
-        AND
-            p.SU_ERS_ChangedAt = i.SU_ERS_ChangedAt
-        AND
-            d.SU_ERS_Positor = ISNULL(CASE
-                WHEN UPDATE(SU_ERS_Positor) THEN i.SU_ERS_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.SU_ERS_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(SU_ERS_PositedAt) THEN i.SU_ERS_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(SU_ERS_Reliability) THEN i.SU_ERS_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.SU_ERS_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
@@ -2981,6 +2993,63 @@ BEGIN
         RAISERROR('The foreign key column OB_NAM_OB_ID is not updatable.', 16, 1);
     IF(UPDATE(OB_NAM_Assertion))
         RAISERROR('The computed assertion column OB_NAM_Assertion is not updatable.', 16, 1);
+    -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
+    -- for an alternative to it
+    IF (
+        UPDATE(OB_NAM_Object_Name)
+    )
+    BEGIN
+        INSERT INTO [dbo].[OB_NAM_Object_Name] (
+            Metadata_OB_NAM,
+            OB_NAM_OB_ID,
+            OB_NAM_Object_Name,
+            OB_NAM_PositedAt,
+            OB_NAM_Positor,
+            OB_NAM_Reliability
+        )
+        SELECT
+            ISNULL(CASE
+                WHEN UPDATE(Metadata_OB) AND NOT UPDATE(Metadata_OB_NAM)
+                THEN i.Metadata_OB
+                ELSE i.Metadata_OB_NAM
+            END, i.Metadata_OB),
+            p.OB_NAM_OB_ID,
+            p.OB_NAM_Object_Name,
+            cast(ISNULL(CASE
+                WHEN UPDATE(OB_NAM_PositedAt) THEN i.OB_NAM_PositedAt
+            END, @now) as datetime2),
+            d.OB_NAM_Positor,
+            0
+        FROM
+            inserted i
+        JOIN
+            deleted d
+        ON
+            d.OB_ID = i.OB_ID
+        AND
+            d.Positor = i.Positor
+        JOIN
+            [dbo].[OB_NAM_Object_Name_Posit] p
+        ON
+            p.OB_NAM_ID = d.OB_NAM_ID
+        WHERE
+            p.OB_NAM_Object_Name <> i.OB_NAM_Object_Name
+        AND
+            d.OB_NAM_Positor = ISNULL(CASE
+                WHEN UPDATE(OB_NAM_Positor) THEN i.OB_NAM_Positor
+                ELSE i.Positor
+            END, 0)
+        AND
+            d.OB_NAM_PositedAt < cast(ISNULL(CASE
+                WHEN UPDATE(OB_NAM_PositedAt) THEN i.OB_NAM_PositedAt
+            END, @now) as datetime2)
+        AND
+            ISNULL(CASE
+                WHEN UPDATE(OB_NAM_Reliability) THEN i.OB_NAM_Reliability
+                WHEN UPDATE(Reliability) THEN i.Reliability
+                ELSE i.OB_NAM_Reliability
+            END, 1) <> 0;
+    END
     IF (
         UPDATE(OB_NAM_Object_Name) OR
         UPDATE(OB_NAM_Reliability) OR
@@ -3037,62 +3106,6 @@ BEGIN
                 ELSE i.OB_NAM_Reliability
             END, 1)
         )
-    END
-    -- indecisive: another value is a correction, which also retracts the shown one
-    IF (
-        UPDATE(OB_NAM_Object_Name)
-    )
-    BEGIN
-        INSERT INTO [dbo].[OB_NAM_Object_Name] (
-            Metadata_OB_NAM,
-            OB_NAM_OB_ID,
-            OB_NAM_Object_Name,
-            OB_NAM_PositedAt,
-            OB_NAM_Positor,
-            OB_NAM_Reliability
-        )
-        SELECT
-            ISNULL(CASE
-                WHEN UPDATE(Metadata_OB) AND NOT UPDATE(Metadata_OB_NAM)
-                THEN i.Metadata_OB
-                ELSE i.Metadata_OB_NAM
-            END, i.Metadata_OB),
-            p.OB_NAM_OB_ID,
-            p.OB_NAM_Object_Name,
-            cast(ISNULL(CASE
-                WHEN UPDATE(OB_NAM_PositedAt) THEN i.OB_NAM_PositedAt
-            END, @now) as datetime2),
-            d.OB_NAM_Positor,
-            0
-        FROM
-            inserted i
-        JOIN
-            deleted d
-        ON
-            d.OB_ID = i.OB_ID
-        AND
-            d.Positor = i.Positor
-        JOIN
-            [dbo].[OB_NAM_Object_Name_Posit] p
-        ON
-            p.OB_NAM_ID = d.OB_NAM_ID
-        WHERE
-            p.OB_NAM_Object_Name <> i.OB_NAM_Object_Name
-        AND
-            d.OB_NAM_Positor = ISNULL(CASE
-                WHEN UPDATE(OB_NAM_Positor) THEN i.OB_NAM_Positor
-                ELSE i.Positor
-            END, 0)
-        AND
-            d.OB_NAM_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(OB_NAM_PositedAt) THEN i.OB_NAM_PositedAt
-            END, @now) as datetime2)
-        AND
-            ISNULL(CASE
-                WHEN UPDATE(OB_NAM_Reliability) THEN i.OB_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
-                ELSE i.OB_NAM_Reliability
-            END, 1) > 0;
     END
     -- logical delete by setting to value to null
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint

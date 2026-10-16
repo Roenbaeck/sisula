@@ -80,6 +80,60 @@ BEGIN
             AND
                 a.SU_holder_OB_item_GRD_grade_Reliability <> ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_holder_OB_item_GRD_grade_Posit] p
+                JOIN
+                    [dbo].[SU_holder_OB_item_GRD_grade_Annex] a
+                ON
+                    a.SU_holder_OB_item_GRD_grade_ID = p.SU_holder_OB_item_GRD_grade_ID
+                WHERE
+                    p.SU_ID_holder = i.SU_ID_holder
+                AND
+                    p.OB_ID_item = i.OB_ID_item
+                AND
+                    p.SU_holder_OB_item_GRD_grade_ChangedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    a.SU_holder_OB_item_GRD_grade_Positor = ISNULL(i.SU_holder_OB_item_GRD_grade_Positor, 0)
+                AND
+                    a.SU_holder_OB_item_GRD_grade_PositedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    a.SU_holder_OB_item_GRD_grade_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_holder = i.SU_ID_holder
+                AND
+                    j.OB_ID_item = i.OB_ID_item
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_ChangedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_Positor, 0) = ISNULL(i.SU_holder_OB_item_GRD_grade_Positor, 0)
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_PositedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -296,8 +350,10 @@ BEGIN
             v.SU_holder_OB_item_GRD_grade_Version = @currentVersion
         AND
             v.SU_holder_OB_item_GRD_grade_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade_Annex] (
             Metadata_SU_holder_OB_item_GRD_grade,
             SU_holder_OB_item_GRD_grade_ID,
@@ -345,7 +401,7 @@ BEGIN
             AND
                 p.SU_holder_OB_item_GRD_grade_ChangedAt = v.SU_holder_OB_item_GRD_grade_ChangedAt
             AND
-                a.SU_holder_OB_item_GRD_grade_Reliability > 0
+                a.SU_holder_OB_item_GRD_grade_Reliability <> 0
             ORDER BY
                 a.SU_holder_OB_item_GRD_grade_PositedAt DESC,
                 a.SU_holder_OB_item_GRD_grade_Reliability DESC
@@ -355,7 +411,7 @@ BEGIN
         AND
             v.SU_holder_OB_item_GRD_grade_StatementType in ('S','N','D','R')
         AND
-            v.SU_holder_OB_item_GRD_grade_Reliability > 0
+            v.SU_holder_OB_item_GRD_grade_Reliability <> 0
         AND (
             e.GRD_ID_grade <> v.GRD_ID_grade
         )
@@ -620,6 +676,60 @@ BEGIN
             AND
                 a.SU_keeper_OB_thing_GRD_rank_Reliability <> ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] p
+                JOIN
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] a
+                ON
+                    a.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
+                WHERE
+                    p.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    p.OB_ID_thing = i.OB_ID_thing
+                AND
+                    p.SU_keeper_OB_thing_GRD_rank_ChangedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_Positor = ISNULL(i.SU_keeper_OB_thing_GRD_rank_Positor, 0)
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_PositedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    j.OB_ID_thing = i.OB_ID_thing
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_Positor, 0) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_Positor, 0)
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_PositedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -880,8 +990,10 @@ BEGIN
             v.SU_keeper_OB_thing_GRD_rank_Version = @currentVersion
         AND
             v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','F');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] (
             Metadata_SU_keeper_OB_thing_GRD_rank,
             SU_keeper_OB_thing_GRD_rank_ID,
@@ -929,7 +1041,7 @@ BEGIN
             AND
                 p.SU_keeper_OB_thing_GRD_rank_ChangedAt = v.SU_keeper_OB_thing_GRD_rank_ChangedAt
             AND
-                a.SU_keeper_OB_thing_GRD_rank_Reliability > 0
+                a.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
             ORDER BY
                 a.SU_keeper_OB_thing_GRD_rank_PositedAt DESC,
                 a.SU_keeper_OB_thing_GRD_rank_Reliability DESC
@@ -937,9 +1049,9 @@ BEGIN
         WHERE
             v.SU_keeper_OB_thing_GRD_rank_Version = @currentVersion
         AND
-            v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','F')
+            v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','R','F')
         AND
-            v.SU_keeper_OB_thing_GRD_rank_Reliability > 0
+            v.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
         AND (
             e.GRD_ID_rank <> v.GRD_ID_rank
         )
@@ -1195,6 +1307,52 @@ BEGIN
             AND
                 a.OB_part_SU_owner_Reliability <> ISNULL(i.OB_part_SU_owner_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.OB_part_SU_owner_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[OB_part_SU_owner_Posit] p
+                JOIN
+                    [dbo].[OB_part_SU_owner_Annex] a
+                ON
+                    a.OB_part_SU_owner_ID = p.OB_part_SU_owner_ID
+                WHERE
+                    p.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        p.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    a.OB_part_SU_owner_Positor = ISNULL(i.OB_part_SU_owner_Positor, 0)
+                AND
+                    a.OB_part_SU_owner_PositedAt = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    a.OB_part_SU_owner_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        j.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    ISNULL(j.OB_part_SU_owner_Positor, 0) = ISNULL(i.OB_part_SU_owner_Positor, 0)
+                AND
+                    ISNULL(j.OB_part_SU_owner_PositedAt, @now) = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    ISNULL(j.OB_part_SU_owner_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -1329,8 +1487,9 @@ BEGIN
             v.OB_part_SU_owner_Version = @currentVersion
         AND
             v.OB_part_SU_owner_StatementType in ('S','N','D');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor when that has other values
+        -- (a correction)
         INSERT INTO [dbo].[OB_part_SU_owner_Annex] (
             Metadata_OB_part_SU_owner,
             OB_part_SU_owner_ID,
@@ -1374,7 +1533,7 @@ BEGIN
             WHERE
                 p.OB_ID_part = v.OB_ID_part
             AND
-                a.OB_part_SU_owner_Reliability > 0
+                a.OB_part_SU_owner_Reliability <> 0
             ORDER BY
                 a.OB_part_SU_owner_PositedAt DESC,
                 a.OB_part_SU_owner_Reliability DESC
@@ -1384,7 +1543,7 @@ BEGIN
         AND
             v.OB_part_SU_owner_StatementType in ('S','N','D')
         AND
-            v.OB_part_SU_owner_Reliability > 0
+            v.OB_part_SU_owner_Reliability <> 0
         AND (
             e.SU_ID_owner <> v.SU_ID_owner
         )

@@ -5713,6 +5713,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -5740,6 +5741,47 @@ BEGIN
                 a.EV_QTY_PositedAt = i.EV_QTY_PositedAt
             AND
                 a.EV_QTY_Reliability <> i.EV_QTY_Reliability
+        )
+        OR (
+            i.EV_QTY_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[EV_QTY_Event_Quantity_Posit] p
+                JOIN
+                    [dbo].[EV_QTY_Event_Quantity_Annex] a
+                ON
+                    a.EV_QTY_ID = p.EV_QTY_ID
+                WHERE
+                    p.EV_QTY_EV_ID = i.EV_QTY_EV_ID
+                AND
+                    p.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
+                AND
+                    a.EV_QTY_Positor = i.EV_QTY_Positor
+                AND
+                    a.EV_QTY_PositedAt = i.EV_QTY_PositedAt
+                AND
+                    a.EV_QTY_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_QTY_EV_ID = i.EV_QTY_EV_ID
+                AND
+                    j.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
+                AND
+                    j.EV_QTY_Positor = i.EV_QTY_Positor
+                AND
+                    j.EV_QTY_PositedAt = i.EV_QTY_PositedAt
+                AND
+                    j.EV_QTY_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -5886,8 +5928,8 @@ BEGIN
             v.EV_QTY_Version = @currentVersion
         AND
             EV_QTY_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[EV_QTY_Event_Quantity_Annex] (
             Metadata_EV_QTY,
             EV_QTY_ID,
@@ -5931,7 +5973,7 @@ BEGIN
             WHERE
                 p.EV_QTY_EV_ID = v.EV_QTY_EV_ID
             AND
-                a.EV_QTY_Reliability > 0
+                a.EV_QTY_Reliability <> 0
             ORDER BY
                 a.EV_QTY_PositedAt DESC,
                 a.EV_QTY_Reliability DESC
@@ -5941,7 +5983,7 @@ BEGIN
         AND
             v.EV_QTY_StatementType in ('S','N','D')
         AND
-            v.EV_QTY_Reliability > 0
+            v.EV_QTY_Reliability <> 0
         AND
             e.EV_QTY_Event_Quantity <> v.EV_QTY_Event_Quantity
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -5990,6 +6032,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6020,6 +6063,51 @@ BEGIN
                 a.EV_PLC_PositedAt = i.EV_PLC_PositedAt
             AND
                 a.EV_PLC_Reliability <> i.EV_PLC_Reliability
+        )
+        OR (
+            i.EV_PLC_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[EV_PLC_Event_Place_Posit] p
+                JOIN
+                    [dbo].[EV_PLC_Event_Place_Annex] a
+                ON
+                    a.EV_PLC_ID = p.EV_PLC_ID
+                WHERE
+                    p.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+                AND
+                    p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+                AND
+                    p.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
+                AND
+                    a.EV_PLC_Positor = i.EV_PLC_Positor
+                AND
+                    a.EV_PLC_PositedAt = i.EV_PLC_PositedAt
+                AND
+                    a.EV_PLC_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_PLC_EV_ID = i.EV_PLC_EV_ID
+                AND
+                    j.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
+                AND
+                    j.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
+                AND
+                    j.EV_PLC_Positor = i.EV_PLC_Positor
+                AND
+                    j.EV_PLC_PositedAt = i.EV_PLC_PositedAt
+                AND
+                    j.EV_PLC_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6206,8 +6294,9 @@ BEGIN
             v.EV_PLC_Version = @currentVersion
         AND
             EV_PLC_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[EV_PLC_Event_Place_Annex] (
             Metadata_EV_PLC,
             EV_PLC_ID,
@@ -6253,7 +6342,7 @@ BEGIN
             AND
                 p.EV_PLC_ChangedAt = v.EV_PLC_ChangedAt
             AND
-                a.EV_PLC_Reliability > 0
+                a.EV_PLC_Reliability <> 0
             ORDER BY
                 a.EV_PLC_PositedAt DESC,
                 a.EV_PLC_Reliability DESC
@@ -6263,7 +6352,7 @@ BEGIN
         AND
             v.EV_PLC_StatementType in ('S','N','D','R')
         AND
-            v.EV_PLC_Reliability > 0
+            v.EV_PLC_Reliability <> 0
         AND
             e.EV_PLC_Event_Place <> v.EV_PLC_Event_Place
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -6311,6 +6400,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6338,6 +6428,47 @@ BEGIN
                 a.SU_NAM_PositedAt = i.SU_NAM_PositedAt
             AND
                 a.SU_NAM_Reliability <> i.SU_NAM_Reliability
+        )
+        OR (
+            i.SU_NAM_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_NAM_Subject_Name_Posit] p
+                JOIN
+                    [dbo].[SU_NAM_Subject_Name_Annex] a
+                ON
+                    a.SU_NAM_ID = p.SU_NAM_ID
+                WHERE
+                    p.SU_NAM_SU_ID = i.SU_NAM_SU_ID
+                AND
+                    p.SU_NAM_Subject_Name <> i.SU_NAM_Subject_Name
+                AND
+                    a.SU_NAM_Positor = i.SU_NAM_Positor
+                AND
+                    a.SU_NAM_PositedAt = i.SU_NAM_PositedAt
+                AND
+                    a.SU_NAM_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_NAM_SU_ID = i.SU_NAM_SU_ID
+                AND
+                    j.SU_NAM_Subject_Name <> i.SU_NAM_Subject_Name
+                AND
+                    j.SU_NAM_Positor = i.SU_NAM_Positor
+                AND
+                    j.SU_NAM_PositedAt = i.SU_NAM_PositedAt
+                AND
+                    j.SU_NAM_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6484,8 +6615,8 @@ BEGIN
             v.SU_NAM_Version = @currentVersion
         AND
             SU_NAM_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[SU_NAM_Subject_Name_Annex] (
             Metadata_SU_NAM,
             SU_NAM_ID,
@@ -6529,7 +6660,7 @@ BEGIN
             WHERE
                 p.SU_NAM_SU_ID = v.SU_NAM_SU_ID
             AND
-                a.SU_NAM_Reliability > 0
+                a.SU_NAM_Reliability <> 0
             ORDER BY
                 a.SU_NAM_PositedAt DESC,
                 a.SU_NAM_Reliability DESC
@@ -6539,7 +6670,7 @@ BEGIN
         AND
             v.SU_NAM_StatementType in ('S','N','D')
         AND
-            v.SU_NAM_Reliability > 0
+            v.SU_NAM_Reliability <> 0
         AND
             e.SU_NAM_Subject_Name <> v.SU_NAM_Subject_Name
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -6587,6 +6718,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6614,6 +6746,47 @@ BEGIN
                 a.SU_COD_PositedAt = i.SU_COD_PositedAt
             AND
                 a.SU_COD_Reliability <> i.SU_COD_Reliability
+        )
+        OR (
+            i.SU_COD_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_COD_Subject_Code_Posit] p
+                JOIN
+                    [dbo].[SU_COD_Subject_Code_Annex] a
+                ON
+                    a.SU_COD_ID = p.SU_COD_ID
+                WHERE
+                    p.SU_COD_SU_ID = i.SU_COD_SU_ID
+                AND
+                    p.SU_COD_Subject_Code <> i.SU_COD_Subject_Code
+                AND
+                    a.SU_COD_Positor = i.SU_COD_Positor
+                AND
+                    a.SU_COD_PositedAt = i.SU_COD_PositedAt
+                AND
+                    a.SU_COD_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_COD_SU_ID = i.SU_COD_SU_ID
+                AND
+                    j.SU_COD_Subject_Code <> i.SU_COD_Subject_Code
+                AND
+                    j.SU_COD_Positor = i.SU_COD_Positor
+                AND
+                    j.SU_COD_PositedAt = i.SU_COD_PositedAt
+                AND
+                    j.SU_COD_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6760,8 +6933,8 @@ BEGIN
             v.SU_COD_Version = @currentVersion
         AND
             SU_COD_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[SU_COD_Subject_Code_Annex] (
             Metadata_SU_COD,
             SU_COD_ID,
@@ -6805,7 +6978,7 @@ BEGIN
             WHERE
                 p.SU_COD_SU_ID = v.SU_COD_SU_ID
             AND
-                a.SU_COD_Reliability > 0
+                a.SU_COD_Reliability <> 0
             ORDER BY
                 a.SU_COD_PositedAt DESC,
                 a.SU_COD_Reliability DESC
@@ -6815,7 +6988,7 @@ BEGIN
         AND
             v.SU_COD_StatementType in ('S','N','D')
         AND
-            v.SU_COD_Reliability > 0
+            v.SU_COD_Reliability <> 0
         AND
             e.SU_COD_Subject_Code <> v.SU_COD_Subject_Code
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -6863,6 +7036,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6890,6 +7064,47 @@ BEGIN
                 a.SU_GRD_PositedAt = i.SU_GRD_PositedAt
             AND
                 a.SU_GRD_Reliability <> i.SU_GRD_Reliability
+        )
+        OR (
+            i.SU_GRD_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_GRD_Subject_Grade_Posit] p
+                JOIN
+                    [dbo].[SU_GRD_Subject_Grade_Annex] a
+                ON
+                    a.SU_GRD_ID = p.SU_GRD_ID
+                WHERE
+                    p.SU_GRD_SU_ID = i.SU_GRD_SU_ID
+                AND
+                    p.SU_GRD_GRD_ID <> i.SU_GRD_GRD_ID
+                AND
+                    a.SU_GRD_Positor = i.SU_GRD_Positor
+                AND
+                    a.SU_GRD_PositedAt = i.SU_GRD_PositedAt
+                AND
+                    a.SU_GRD_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_GRD_SU_ID = i.SU_GRD_SU_ID
+                AND
+                    j.SU_GRD_GRD_ID <> i.SU_GRD_GRD_ID
+                AND
+                    j.SU_GRD_Positor = i.SU_GRD_Positor
+                AND
+                    j.SU_GRD_PositedAt = i.SU_GRD_PositedAt
+                AND
+                    j.SU_GRD_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7036,8 +7251,8 @@ BEGIN
             v.SU_GRD_Version = @currentVersion
         AND
             SU_GRD_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[SU_GRD_Subject_Grade_Annex] (
             Metadata_SU_GRD,
             SU_GRD_ID,
@@ -7081,7 +7296,7 @@ BEGIN
             WHERE
                 p.SU_GRD_SU_ID = v.SU_GRD_SU_ID
             AND
-                a.SU_GRD_Reliability > 0
+                a.SU_GRD_Reliability <> 0
             ORDER BY
                 a.SU_GRD_PositedAt DESC,
                 a.SU_GRD_Reliability DESC
@@ -7091,7 +7306,7 @@ BEGIN
         AND
             v.SU_GRD_StatementType in ('S','N','D')
         AND
-            v.SU_GRD_Reliability > 0
+            v.SU_GRD_Reliability <> 0
         AND
             e.SU_GRD_GRD_ID <> v.SU_GRD_GRD_ID
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -7140,6 +7355,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7167,6 +7383,47 @@ BEGIN
                 a.SU_NOT_PositedAt = i.SU_NOT_PositedAt
             AND
                 a.SU_NOT_Reliability <> i.SU_NOT_Reliability
+        )
+        OR (
+            i.SU_NOT_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_NOT_Subject_Note_Posit] p
+                JOIN
+                    [dbo].[SU_NOT_Subject_Note_Annex] a
+                ON
+                    a.SU_NOT_ID = p.SU_NOT_ID
+                WHERE
+                    p.SU_NOT_SU_ID = i.SU_NOT_SU_ID
+                AND
+                    p.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+                AND
+                    a.SU_NOT_Positor = i.SU_NOT_Positor
+                AND
+                    a.SU_NOT_PositedAt = i.SU_NOT_PositedAt
+                AND
+                    a.SU_NOT_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_NOT_SU_ID = i.SU_NOT_SU_ID
+                AND
+                    dbo.MD5(cast(j.SU_NOT_Subject_Note as varbinary(max))) <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
+                AND
+                    j.SU_NOT_Positor = i.SU_NOT_Positor
+                AND
+                    j.SU_NOT_PositedAt = i.SU_NOT_PositedAt
+                AND
+                    j.SU_NOT_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7314,8 +7571,8 @@ BEGIN
             v.SU_NOT_Version = @currentVersion
         AND
             SU_NOT_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[SU_NOT_Subject_Note_Annex] (
             Metadata_SU_NOT,
             SU_NOT_ID,
@@ -7359,7 +7616,7 @@ BEGIN
             WHERE
                 p.SU_NOT_SU_ID = v.SU_NOT_SU_ID
             AND
-                a.SU_NOT_Reliability > 0
+                a.SU_NOT_Reliability <> 0
             ORDER BY
                 a.SU_NOT_PositedAt DESC,
                 a.SU_NOT_Reliability DESC
@@ -7369,7 +7626,7 @@ BEGIN
         AND
             v.SU_NOT_StatementType in ('S','N','D')
         AND
-            v.SU_NOT_Reliability > 0
+            v.SU_NOT_Reliability <> 0
         AND
             e.SU_NOT_Checksum <> v.SU_NOT_Checksum
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -7418,6 +7675,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7448,6 +7706,51 @@ BEGIN
                 a.SU_TTL_PositedAt = i.SU_TTL_PositedAt
             AND
                 a.SU_TTL_Reliability <> i.SU_TTL_Reliability
+        )
+        OR (
+            i.SU_TTL_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_TTL_Subject_Title_Posit] p
+                JOIN
+                    [dbo].[SU_TTL_Subject_Title_Annex] a
+                ON
+                    a.SU_TTL_ID = p.SU_TTL_ID
+                WHERE
+                    p.SU_TTL_SU_ID = i.SU_TTL_SU_ID
+                AND
+                    p.SU_TTL_ChangedAt = i.SU_TTL_ChangedAt
+                AND
+                    p.SU_TTL_Subject_Title <> i.SU_TTL_Subject_Title
+                AND
+                    a.SU_TTL_Positor = i.SU_TTL_Positor
+                AND
+                    a.SU_TTL_PositedAt = i.SU_TTL_PositedAt
+                AND
+                    a.SU_TTL_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_TTL_SU_ID = i.SU_TTL_SU_ID
+                AND
+                    j.SU_TTL_ChangedAt = i.SU_TTL_ChangedAt
+                AND
+                    j.SU_TTL_Subject_Title <> i.SU_TTL_Subject_Title
+                AND
+                    j.SU_TTL_Positor = i.SU_TTL_Positor
+                AND
+                    j.SU_TTL_PositedAt = i.SU_TTL_PositedAt
+                AND
+                    j.SU_TTL_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7634,8 +7937,9 @@ BEGIN
             v.SU_TTL_Version = @currentVersion
         AND
             SU_TTL_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_TTL_Subject_Title_Annex] (
             Metadata_SU_TTL,
             SU_TTL_ID,
@@ -7681,7 +7985,7 @@ BEGIN
             AND
                 p.SU_TTL_ChangedAt = v.SU_TTL_ChangedAt
             AND
-                a.SU_TTL_Reliability > 0
+                a.SU_TTL_Reliability <> 0
             ORDER BY
                 a.SU_TTL_PositedAt DESC,
                 a.SU_TTL_Reliability DESC
@@ -7691,7 +7995,7 @@ BEGIN
         AND
             v.SU_TTL_StatementType in ('S','N','D','R')
         AND
-            v.SU_TTL_Reliability > 0
+            v.SU_TTL_Reliability <> 0
         AND
             e.SU_TTL_Subject_Title <> v.SU_TTL_Subject_Title
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -7740,6 +8044,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7770,6 +8075,51 @@ BEGIN
                 a.SU_STA_PositedAt = i.SU_STA_PositedAt
             AND
                 a.SU_STA_Reliability <> i.SU_STA_Reliability
+        )
+        OR (
+            i.SU_STA_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_STA_Subject_State_Posit] p
+                JOIN
+                    [dbo].[SU_STA_Subject_State_Annex] a
+                ON
+                    a.SU_STA_ID = p.SU_STA_ID
+                WHERE
+                    p.SU_STA_SU_ID = i.SU_STA_SU_ID
+                AND
+                    p.SU_STA_ChangedAt = i.SU_STA_ChangedAt
+                AND
+                    p.SU_STA_Subject_State <> i.SU_STA_Subject_State
+                AND
+                    a.SU_STA_Positor = i.SU_STA_Positor
+                AND
+                    a.SU_STA_PositedAt = i.SU_STA_PositedAt
+                AND
+                    a.SU_STA_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_STA_SU_ID = i.SU_STA_SU_ID
+                AND
+                    j.SU_STA_ChangedAt = i.SU_STA_ChangedAt
+                AND
+                    j.SU_STA_Subject_State <> i.SU_STA_Subject_State
+                AND
+                    j.SU_STA_Positor = i.SU_STA_Positor
+                AND
+                    j.SU_STA_PositedAt = i.SU_STA_PositedAt
+                AND
+                    j.SU_STA_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7956,8 +8306,9 @@ BEGIN
             v.SU_STA_Version = @currentVersion
         AND
             SU_STA_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_STA_Subject_State_Annex] (
             Metadata_SU_STA,
             SU_STA_ID,
@@ -8003,7 +8354,7 @@ BEGIN
             AND
                 p.SU_STA_ChangedAt = v.SU_STA_ChangedAt
             AND
-                a.SU_STA_Reliability > 0
+                a.SU_STA_Reliability <> 0
             ORDER BY
                 a.SU_STA_PositedAt DESC,
                 a.SU_STA_Reliability DESC
@@ -8013,7 +8364,7 @@ BEGIN
         AND
             v.SU_STA_StatementType in ('S','N','D','R')
         AND
-            v.SU_STA_Reliability > 0
+            v.SU_STA_Reliability <> 0
         AND
             e.SU_STA_Subject_State <> v.SU_STA_Subject_State
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -8062,6 +8413,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -8092,6 +8444,51 @@ BEGIN
                 a.SU_LBL_PositedAt = i.SU_LBL_PositedAt
             AND
                 a.SU_LBL_Reliability <> i.SU_LBL_Reliability
+        )
+        OR (
+            i.SU_LBL_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_LBL_Subject_Label_Posit] p
+                JOIN
+                    [dbo].[SU_LBL_Subject_Label_Annex] a
+                ON
+                    a.SU_LBL_ID = p.SU_LBL_ID
+                WHERE
+                    p.SU_LBL_SU_ID = i.SU_LBL_SU_ID
+                AND
+                    p.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
+                AND
+                    p.SU_LBL_Subject_Label <> i.SU_LBL_Subject_Label
+                AND
+                    a.SU_LBL_Positor = i.SU_LBL_Positor
+                AND
+                    a.SU_LBL_PositedAt = i.SU_LBL_PositedAt
+                AND
+                    a.SU_LBL_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_LBL_SU_ID = i.SU_LBL_SU_ID
+                AND
+                    j.SU_LBL_ChangedAt = i.SU_LBL_ChangedAt
+                AND
+                    j.SU_LBL_Subject_Label <> i.SU_LBL_Subject_Label
+                AND
+                    j.SU_LBL_Positor = i.SU_LBL_Positor
+                AND
+                    j.SU_LBL_PositedAt = i.SU_LBL_PositedAt
+                AND
+                    j.SU_LBL_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -8322,8 +8719,9 @@ BEGIN
             v.SU_LBL_Version = @currentVersion
         AND
             SU_LBL_StatementType in ('S','N','D','F');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_LBL_Subject_Label_Annex] (
             Metadata_SU_LBL,
             SU_LBL_ID,
@@ -8369,7 +8767,7 @@ BEGIN
             AND
                 p.SU_LBL_ChangedAt = v.SU_LBL_ChangedAt
             AND
-                a.SU_LBL_Reliability > 0
+                a.SU_LBL_Reliability <> 0
             ORDER BY
                 a.SU_LBL_PositedAt DESC,
                 a.SU_LBL_Reliability DESC
@@ -8377,9 +8775,9 @@ BEGIN
         WHERE
             v.SU_LBL_Version = @currentVersion
         AND
-            v.SU_LBL_StatementType in ('S','N','D','F')
+            v.SU_LBL_StatementType in ('S','N','D','R','F')
         AND
-            v.SU_LBL_Reliability > 0
+            v.SU_LBL_Reliability <> 0
         AND
             e.SU_LBL_Subject_Label <> v.SU_LBL_Subject_Label
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -8428,6 +8826,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -8458,6 +8857,51 @@ BEGIN
                 a.SU_TAG_PositedAt = i.SU_TAG_PositedAt
             AND
                 a.SU_TAG_Reliability <> i.SU_TAG_Reliability
+        )
+        OR (
+            i.SU_TAG_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_TAG_Subject_Tag_Posit] p
+                JOIN
+                    [dbo].[SU_TAG_Subject_Tag_Annex] a
+                ON
+                    a.SU_TAG_ID = p.SU_TAG_ID
+                WHERE
+                    p.SU_TAG_SU_ID = i.SU_TAG_SU_ID
+                AND
+                    p.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
+                AND
+                    p.SU_TAG_Subject_Tag <> i.SU_TAG_Subject_Tag
+                AND
+                    a.SU_TAG_Positor = i.SU_TAG_Positor
+                AND
+                    a.SU_TAG_PositedAt = i.SU_TAG_PositedAt
+                AND
+                    a.SU_TAG_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_TAG_SU_ID = i.SU_TAG_SU_ID
+                AND
+                    j.SU_TAG_ChangedAt = i.SU_TAG_ChangedAt
+                AND
+                    j.SU_TAG_Subject_Tag <> i.SU_TAG_Subject_Tag
+                AND
+                    j.SU_TAG_Positor = i.SU_TAG_Positor
+                AND
+                    j.SU_TAG_PositedAt = i.SU_TAG_PositedAt
+                AND
+                    j.SU_TAG_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -8688,8 +9132,9 @@ BEGIN
             v.SU_TAG_Version = @currentVersion
         AND
             SU_TAG_StatementType in ('S','N','D','F');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_TAG_Subject_Tag_Annex] (
             Metadata_SU_TAG,
             SU_TAG_ID,
@@ -8735,7 +9180,7 @@ BEGIN
             AND
                 p.SU_TAG_ChangedAt = v.SU_TAG_ChangedAt
             AND
-                a.SU_TAG_Reliability > 0
+                a.SU_TAG_Reliability <> 0
             ORDER BY
                 a.SU_TAG_PositedAt DESC,
                 a.SU_TAG_Reliability DESC
@@ -8743,9 +9188,9 @@ BEGIN
         WHERE
             v.SU_TAG_Version = @currentVersion
         AND
-            v.SU_TAG_StatementType in ('S','N','D','F')
+            v.SU_TAG_StatementType in ('S','N','D','R','F')
         AND
-            v.SU_TAG_Reliability > 0
+            v.SU_TAG_Reliability <> 0
         AND
             e.SU_TAG_Subject_Tag <> v.SU_TAG_Subject_Tag
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -8794,6 +9239,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -8824,6 +9270,51 @@ BEGIN
                 a.SU_LVL_PositedAt = i.SU_LVL_PositedAt
             AND
                 a.SU_LVL_Reliability <> i.SU_LVL_Reliability
+        )
+        OR (
+            i.SU_LVL_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_LVL_Subject_Level_Posit] p
+                JOIN
+                    [dbo].[SU_LVL_Subject_Level_Annex] a
+                ON
+                    a.SU_LVL_ID = p.SU_LVL_ID
+                WHERE
+                    p.SU_LVL_SU_ID = i.SU_LVL_SU_ID
+                AND
+                    p.SU_LVL_ChangedAt = i.SU_LVL_ChangedAt
+                AND
+                    p.SU_LVL_GRD_ID <> i.SU_LVL_GRD_ID
+                AND
+                    a.SU_LVL_Positor = i.SU_LVL_Positor
+                AND
+                    a.SU_LVL_PositedAt = i.SU_LVL_PositedAt
+                AND
+                    a.SU_LVL_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_LVL_SU_ID = i.SU_LVL_SU_ID
+                AND
+                    j.SU_LVL_ChangedAt = i.SU_LVL_ChangedAt
+                AND
+                    j.SU_LVL_GRD_ID <> i.SU_LVL_GRD_ID
+                AND
+                    j.SU_LVL_Positor = i.SU_LVL_Positor
+                AND
+                    j.SU_LVL_PositedAt = i.SU_LVL_PositedAt
+                AND
+                    j.SU_LVL_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -9010,8 +9501,9 @@ BEGIN
             v.SU_LVL_Version = @currentVersion
         AND
             SU_LVL_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_LVL_Subject_Level_Annex] (
             Metadata_SU_LVL,
             SU_LVL_ID,
@@ -9057,7 +9549,7 @@ BEGIN
             AND
                 p.SU_LVL_ChangedAt = v.SU_LVL_ChangedAt
             AND
-                a.SU_LVL_Reliability > 0
+                a.SU_LVL_Reliability <> 0
             ORDER BY
                 a.SU_LVL_PositedAt DESC,
                 a.SU_LVL_Reliability DESC
@@ -9067,7 +9559,7 @@ BEGIN
         AND
             v.SU_LVL_StatementType in ('S','N','D','R')
         AND
-            v.SU_LVL_Reliability > 0
+            v.SU_LVL_Reliability <> 0
         AND
             e.SU_LVL_GRD_ID <> v.SU_LVL_GRD_ID
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -9117,6 +9609,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -9147,6 +9640,51 @@ BEGIN
                 a.SU_TXT_PositedAt = i.SU_TXT_PositedAt
             AND
                 a.SU_TXT_Reliability <> i.SU_TXT_Reliability
+        )
+        OR (
+            i.SU_TXT_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_TXT_Subject_Text_Posit] p
+                JOIN
+                    [dbo].[SU_TXT_Subject_Text_Annex] a
+                ON
+                    a.SU_TXT_ID = p.SU_TXT_ID
+                WHERE
+                    p.SU_TXT_SU_ID = i.SU_TXT_SU_ID
+                AND
+                    p.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
+                AND
+                    p.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
+                AND
+                    a.SU_TXT_Positor = i.SU_TXT_Positor
+                AND
+                    a.SU_TXT_PositedAt = i.SU_TXT_PositedAt
+                AND
+                    a.SU_TXT_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_TXT_SU_ID = i.SU_TXT_SU_ID
+                AND
+                    j.SU_TXT_ChangedAt = i.SU_TXT_ChangedAt
+                AND
+                    dbo.MD5(cast(j.SU_TXT_Subject_Text as varbinary(max))) <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
+                AND
+                    j.SU_TXT_Positor = i.SU_TXT_Positor
+                AND
+                    j.SU_TXT_PositedAt = i.SU_TXT_PositedAt
+                AND
+                    j.SU_TXT_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -9334,8 +9872,9 @@ BEGIN
             v.SU_TXT_Version = @currentVersion
         AND
             SU_TXT_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_TXT_Subject_Text_Annex] (
             Metadata_SU_TXT,
             SU_TXT_ID,
@@ -9381,7 +9920,7 @@ BEGIN
             AND
                 p.SU_TXT_ChangedAt = v.SU_TXT_ChangedAt
             AND
-                a.SU_TXT_Reliability > 0
+                a.SU_TXT_Reliability <> 0
             ORDER BY
                 a.SU_TXT_PositedAt DESC,
                 a.SU_TXT_Reliability DESC
@@ -9391,7 +9930,7 @@ BEGIN
         AND
             v.SU_TXT_StatementType in ('S','N','D','R')
         AND
-            v.SU_TXT_Reliability > 0
+            v.SU_TXT_Reliability <> 0
         AND
             e.SU_TXT_Checksum <> v.SU_TXT_Checksum
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -9440,6 +9979,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -9470,6 +10010,51 @@ BEGIN
                 a.SU_ASR_PositedAt = i.SU_ASR_PositedAt
             AND
                 a.SU_ASR_Reliability <> i.SU_ASR_Reliability
+        )
+        OR (
+            i.SU_ASR_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_ASR_Subject_Assessment_Posit] p
+                JOIN
+                    [dbo].[SU_ASR_Subject_Assessment_Annex] a
+                ON
+                    a.SU_ASR_ID = p.SU_ASR_ID
+                WHERE
+                    p.SU_ASR_SU_ID = i.SU_ASR_SU_ID
+                AND
+                    p.SU_ASR_ChangedAt = i.SU_ASR_ChangedAt
+                AND
+                    p.SU_ASR_Subject_Assessment <> i.SU_ASR_Subject_Assessment
+                AND
+                    a.SU_ASR_Positor = i.SU_ASR_Positor
+                AND
+                    a.SU_ASR_PositedAt = i.SU_ASR_PositedAt
+                AND
+                    a.SU_ASR_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ASR_SU_ID = i.SU_ASR_SU_ID
+                AND
+                    j.SU_ASR_ChangedAt = i.SU_ASR_ChangedAt
+                AND
+                    j.SU_ASR_Subject_Assessment <> i.SU_ASR_Subject_Assessment
+                AND
+                    j.SU_ASR_Positor = i.SU_ASR_Positor
+                AND
+                    j.SU_ASR_PositedAt = i.SU_ASR_PositedAt
+                AND
+                    j.SU_ASR_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -9656,8 +10241,9 @@ BEGIN
             v.SU_ASR_Version = @currentVersion
         AND
             SU_ASR_StatementType in ('S','N','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_ASR_Subject_Assessment_Annex] (
             Metadata_SU_ASR,
             SU_ASR_ID,
@@ -9703,7 +10289,7 @@ BEGIN
             AND
                 p.SU_ASR_ChangedAt = v.SU_ASR_ChangedAt
             AND
-                a.SU_ASR_Reliability > 0
+                a.SU_ASR_Reliability <> 0
             ORDER BY
                 a.SU_ASR_PositedAt DESC,
                 a.SU_ASR_Reliability DESC
@@ -9713,7 +10299,7 @@ BEGIN
         AND
             v.SU_ASR_StatementType in ('S','N','R')
         AND
-            v.SU_ASR_Reliability > 0
+            v.SU_ASR_Reliability <> 0
         AND
             e.SU_ASR_Subject_Assessment <> v.SU_ASR_Subject_Assessment
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -9762,6 +10348,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -9792,6 +10379,51 @@ BEGIN
                 a.SU_ERS_PositedAt = i.SU_ERS_PositedAt
             AND
                 a.SU_ERS_Reliability <> i.SU_ERS_Reliability
+        )
+        OR (
+            i.SU_ERS_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_ERS_Subject_Erasable_Posit] p
+                JOIN
+                    [dbo].[SU_ERS_Subject_Erasable_Annex] a
+                ON
+                    a.SU_ERS_ID = p.SU_ERS_ID
+                WHERE
+                    p.SU_ERS_SU_ID = i.SU_ERS_SU_ID
+                AND
+                    p.SU_ERS_ChangedAt = i.SU_ERS_ChangedAt
+                AND
+                    p.SU_ERS_Subject_Erasable <> i.SU_ERS_Subject_Erasable
+                AND
+                    a.SU_ERS_Positor = i.SU_ERS_Positor
+                AND
+                    a.SU_ERS_PositedAt = i.SU_ERS_PositedAt
+                AND
+                    a.SU_ERS_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ERS_SU_ID = i.SU_ERS_SU_ID
+                AND
+                    j.SU_ERS_ChangedAt = i.SU_ERS_ChangedAt
+                AND
+                    j.SU_ERS_Subject_Erasable <> i.SU_ERS_Subject_Erasable
+                AND
+                    j.SU_ERS_Positor = i.SU_ERS_Positor
+                AND
+                    j.SU_ERS_PositedAt = i.SU_ERS_PositedAt
+                AND
+                    j.SU_ERS_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -9978,8 +10610,9 @@ BEGIN
             v.SU_ERS_Version = @currentVersion
         AND
             SU_ERS_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor at the same changing time when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor at the same changing time when that has another
+        -- value (a correction); also when the assertion itself is not stored, as the restatement an idempotent attribute skips
         INSERT INTO [dbo].[SU_ERS_Subject_Erasable_Annex] (
             Metadata_SU_ERS,
             SU_ERS_ID,
@@ -10025,7 +10658,7 @@ BEGIN
             AND
                 p.SU_ERS_ChangedAt = v.SU_ERS_ChangedAt
             AND
-                a.SU_ERS_Reliability > 0
+                a.SU_ERS_Reliability <> 0
             ORDER BY
                 a.SU_ERS_PositedAt DESC,
                 a.SU_ERS_Reliability DESC
@@ -10035,7 +10668,7 @@ BEGIN
         AND
             v.SU_ERS_StatementType in ('S','N','D','R')
         AND
-            v.SU_ERS_Reliability > 0
+            v.SU_ERS_Reliability <> 0
         AND
             e.SU_ERS_Subject_Erasable <> v.SU_ERS_Subject_Erasable
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -10083,6 +10716,7 @@ BEGIN
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
+    -- and so, since a decisive positor holds one assertion at a time, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -10110,6 +10744,47 @@ BEGIN
                 a.OB_NAM_PositedAt = i.OB_NAM_PositedAt
             AND
                 a.OB_NAM_Reliability <> i.OB_NAM_Reliability
+        )
+        OR (
+            i.OB_NAM_Reliability <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[OB_NAM_Object_Name_Posit] p
+                JOIN
+                    [dbo].[OB_NAM_Object_Name_Annex] a
+                ON
+                    a.OB_NAM_ID = p.OB_NAM_ID
+                WHERE
+                    p.OB_NAM_OB_ID = i.OB_NAM_OB_ID
+                AND
+                    p.OB_NAM_Object_Name <> i.OB_NAM_Object_Name
+                AND
+                    a.OB_NAM_Positor = i.OB_NAM_Positor
+                AND
+                    a.OB_NAM_PositedAt = i.OB_NAM_PositedAt
+                AND
+                    a.OB_NAM_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.OB_NAM_OB_ID = i.OB_NAM_OB_ID
+                AND
+                    j.OB_NAM_Object_Name <> i.OB_NAM_Object_Name
+                AND
+                    j.OB_NAM_Positor = i.OB_NAM_Positor
+                AND
+                    j.OB_NAM_PositedAt = i.OB_NAM_PositedAt
+                AND
+                    j.OB_NAM_Reliability <> 0
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -10256,8 +10931,8 @@ BEGIN
             v.OB_NAM_Version = @currentVersion
         AND
             OB_NAM_StatementType in ('S','N','D');
-        -- decisive: a positor holds one value at a time, so a positive assertion retracts, at its positing time, the posit
-        -- in effect for the positor when that has another value (a correction)
+        -- decisive: a positor holds one assertion at a time, so an assertion that is not a retraction, positive or negative,
+        -- retracts at its positing time the posit in effect for the positor when that has another value (a correction)
         INSERT INTO [dbo].[OB_NAM_Object_Name_Annex] (
             Metadata_OB_NAM,
             OB_NAM_ID,
@@ -10301,7 +10976,7 @@ BEGIN
             WHERE
                 p.OB_NAM_OB_ID = v.OB_NAM_OB_ID
             AND
-                a.OB_NAM_Reliability > 0
+                a.OB_NAM_Reliability <> 0
             ORDER BY
                 a.OB_NAM_PositedAt DESC,
                 a.OB_NAM_Reliability DESC
@@ -10311,7 +10986,7 @@ BEGIN
         AND
             v.OB_NAM_StatementType in ('S','N','D')
         AND
-            v.OB_NAM_Reliability > 0
+            v.OB_NAM_Reliability <> 0
         AND
             e.OB_NAM_Object_Name <> v.OB_NAM_Object_Name
         AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -15031,6 +15706,60 @@ BEGIN
             AND
                 a.SU_holder_OB_item_GRD_grade_Reliability <> ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_holder_OB_item_GRD_grade_Posit] p
+                JOIN
+                    [dbo].[SU_holder_OB_item_GRD_grade_Annex] a
+                ON
+                    a.SU_holder_OB_item_GRD_grade_ID = p.SU_holder_OB_item_GRD_grade_ID
+                WHERE
+                    p.SU_ID_holder = i.SU_ID_holder
+                AND
+                    p.OB_ID_item = i.OB_ID_item
+                AND
+                    p.SU_holder_OB_item_GRD_grade_ChangedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    a.SU_holder_OB_item_GRD_grade_Positor = ISNULL(i.SU_holder_OB_item_GRD_grade_Positor, 0)
+                AND
+                    a.SU_holder_OB_item_GRD_grade_PositedAt = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    a.SU_holder_OB_item_GRD_grade_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_holder = i.SU_ID_holder
+                AND
+                    j.OB_ID_item = i.OB_ID_item
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_ChangedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_grade <> i.GRD_ID_grade
+                    )
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_Positor, 0) = ISNULL(i.SU_holder_OB_item_GRD_grade_Positor, 0)
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_PositedAt, @now) = ISNULL(i.SU_holder_OB_item_GRD_grade_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_holder_OB_item_GRD_grade_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -15247,8 +15976,10 @@ BEGIN
             v.SU_holder_OB_item_GRD_grade_Version = @currentVersion
         AND
             v.SU_holder_OB_item_GRD_grade_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade_Annex] (
             Metadata_SU_holder_OB_item_GRD_grade,
             SU_holder_OB_item_GRD_grade_ID,
@@ -15296,7 +16027,7 @@ BEGIN
             AND
                 p.SU_holder_OB_item_GRD_grade_ChangedAt = v.SU_holder_OB_item_GRD_grade_ChangedAt
             AND
-                a.SU_holder_OB_item_GRD_grade_Reliability > 0
+                a.SU_holder_OB_item_GRD_grade_Reliability <> 0
             ORDER BY
                 a.SU_holder_OB_item_GRD_grade_PositedAt DESC,
                 a.SU_holder_OB_item_GRD_grade_Reliability DESC
@@ -15306,7 +16037,7 @@ BEGIN
         AND
             v.SU_holder_OB_item_GRD_grade_StatementType in ('S','N','D','R')
         AND
-            v.SU_holder_OB_item_GRD_grade_Reliability > 0
+            v.SU_holder_OB_item_GRD_grade_Reliability <> 0
         AND (
             e.GRD_ID_grade <> v.GRD_ID_grade
         )
@@ -15571,6 +16302,60 @@ BEGIN
             AND
                 a.SU_keeper_OB_thing_GRD_rank_Reliability <> ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Posit] p
+                JOIN
+                    [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] a
+                ON
+                    a.SU_keeper_OB_thing_GRD_rank_ID = p.SU_keeper_OB_thing_GRD_rank_ID
+                WHERE
+                    p.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    p.OB_ID_thing = i.OB_ID_thing
+                AND
+                    p.SU_keeper_OB_thing_GRD_rank_ChangedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        p.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_Positor = ISNULL(i.SU_keeper_OB_thing_GRD_rank_Positor, 0)
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_PositedAt = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    a.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.SU_ID_keeper = i.SU_ID_keeper
+                AND
+                    j.OB_ID_thing = i.OB_ID_thing
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_ChangedAt, @now)
+                AND
+                    (
+                        j.GRD_ID_rank <> i.GRD_ID_rank
+                    )
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_Positor, 0) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_Positor, 0)
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_PositedAt, @now) = ISNULL(i.SU_keeper_OB_thing_GRD_rank_PositedAt, @now)
+                AND
+                    ISNULL(j.SU_keeper_OB_thing_GRD_rank_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -15831,8 +16616,10 @@ BEGIN
             v.SU_keeper_OB_thing_GRD_rank_Version = @currentVersion
         AND
             v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','F');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank_Annex] (
             Metadata_SU_keeper_OB_thing_GRD_rank,
             SU_keeper_OB_thing_GRD_rank_ID,
@@ -15880,7 +16667,7 @@ BEGIN
             AND
                 p.SU_keeper_OB_thing_GRD_rank_ChangedAt = v.SU_keeper_OB_thing_GRD_rank_ChangedAt
             AND
-                a.SU_keeper_OB_thing_GRD_rank_Reliability > 0
+                a.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
             ORDER BY
                 a.SU_keeper_OB_thing_GRD_rank_PositedAt DESC,
                 a.SU_keeper_OB_thing_GRD_rank_Reliability DESC
@@ -15888,9 +16675,9 @@ BEGIN
         WHERE
             v.SU_keeper_OB_thing_GRD_rank_Version = @currentVersion
         AND
-            v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','F')
+            v.SU_keeper_OB_thing_GRD_rank_StatementType in ('S','N','R','F')
         AND
-            v.SU_keeper_OB_thing_GRD_rank_Reliability > 0
+            v.SU_keeper_OB_thing_GRD_rank_Reliability <> 0
         AND (
             e.GRD_ID_rank <> v.GRD_ID_rank
         )
@@ -16146,6 +16933,52 @@ BEGIN
             AND
                 a.OB_part_SU_owner_Reliability <> ISNULL(i.OB_part_SU_owner_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.OB_part_SU_owner_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[OB_part_SU_owner_Posit] p
+                JOIN
+                    [dbo].[OB_part_SU_owner_Annex] a
+                ON
+                    a.OB_part_SU_owner_ID = p.OB_part_SU_owner_ID
+                WHERE
+                    p.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        p.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    a.OB_part_SU_owner_Positor = ISNULL(i.OB_part_SU_owner_Positor, 0)
+                AND
+                    a.OB_part_SU_owner_PositedAt = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    a.OB_part_SU_owner_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.OB_ID_part = i.OB_ID_part
+                AND
+                    (
+                        j.SU_ID_owner <> i.SU_ID_owner
+                    )
+                AND
+                    ISNULL(j.OB_part_SU_owner_Positor, 0) = ISNULL(i.OB_part_SU_owner_Positor, 0)
+                AND
+                    ISNULL(j.OB_part_SU_owner_PositedAt, @now) = ISNULL(i.OB_part_SU_owner_PositedAt, @now)
+                AND
+                    ISNULL(j.OB_part_SU_owner_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -16280,8 +17113,9 @@ BEGIN
             v.OB_part_SU_owner_Version = @currentVersion
         AND
             v.OB_part_SU_owner_StatementType in ('S','N','D');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor when that has other values
+        -- (a correction)
         INSERT INTO [dbo].[OB_part_SU_owner_Annex] (
             Metadata_OB_part_SU_owner,
             OB_part_SU_owner_ID,
@@ -16325,7 +17159,7 @@ BEGIN
             WHERE
                 p.OB_ID_part = v.OB_ID_part
             AND
-                a.OB_part_SU_owner_Reliability > 0
+                a.OB_part_SU_owner_Reliability <> 0
             ORDER BY
                 a.OB_part_SU_owner_PositedAt DESC,
                 a.OB_part_SU_owner_Reliability DESC
@@ -16335,7 +17169,7 @@ BEGIN
         AND
             v.OB_part_SU_owner_StatementType in ('S','N','D')
         AND
-            v.OB_part_SU_owner_Reliability > 0
+            v.OB_part_SU_owner_Reliability <> 0
         AND (
             e.SU_ID_owner <> v.SU_ID_owner
         )

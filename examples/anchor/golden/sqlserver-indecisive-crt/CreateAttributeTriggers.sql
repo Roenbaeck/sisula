@@ -36,7 +36,8 @@ BEGIN
         primary key(
             EV_QTY_Version,
             EV_QTY_Positor,
-            EV_QTY_EV_ID
+            EV_QTY_EV_ID,
+            EV_QTY_Event_Quantity -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -213,6 +214,62 @@ BEGIN
             v.EV_QTY_Version = @currentVersion
         AND
             EV_QTY_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_QTY_EV_ID,
+                v.EV_QTY_Positor,
+                v.EV_QTY_PositedAt
+            FROM
+                @EV_QTY_Event_Quantity v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_QTY_Reliability > 0 THEN a.EV_QTY_Reliability
+                        ELSE 1 + a.EV_QTY_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[EV_QTY_Event_Quantity_Posit] p
+                JOIN
+                    [dbo].[EV_QTY_Event_Quantity_Annex] a
+                ON
+                    a.EV_QTY_ID = p.EV_QTY_ID
+                AND
+                    a.EV_QTY_Positor = v.EV_QTY_Positor
+                AND
+                    a.EV_QTY_PositedAt = (
+                        SELECT
+                            max(s.EV_QTY_PositedAt)
+                        FROM
+                            [dbo].[EV_QTY_Event_Quantity_Annex] s
+                        WHERE
+                            s.EV_QTY_ID = p.EV_QTY_ID
+                        AND
+                            s.EV_QTY_Positor = v.EV_QTY_Positor
+                        AND
+                            s.EV_QTY_PositedAt <= v.EV_QTY_PositedAt
+                    )
+                WHERE
+                    p.EV_QTY_EV_ID = v.EV_QTY_EV_ID
+                AND
+                    a.EV_QTY_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_QTY_Version = @currentVersion
+            AND
+                v.EV_QTY_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_QTY_Event_Quantity for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -243,7 +300,8 @@ BEGIN
         primary key(
             EV_PLC_Version,
             EV_PLC_Positor,
-            EV_PLC_EV_ID
+            EV_PLC_EV_ID,
+            EV_PLC_Event_Place -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -463,6 +521,65 @@ BEGIN
             v.EV_PLC_Version = @currentVersion
         AND
             EV_PLC_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.EV_PLC_EV_ID,
+                v.EV_PLC_ChangedAt,
+                v.EV_PLC_Positor,
+                v.EV_PLC_PositedAt
+            FROM
+                @EV_PLC_Event_Place v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.EV_PLC_Reliability > 0 THEN a.EV_PLC_Reliability
+                        ELSE 1 + a.EV_PLC_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[EV_PLC_Event_Place_Posit] p
+                JOIN
+                    [dbo].[EV_PLC_Event_Place_Annex] a
+                ON
+                    a.EV_PLC_ID = p.EV_PLC_ID
+                AND
+                    a.EV_PLC_Positor = v.EV_PLC_Positor
+                AND
+                    a.EV_PLC_PositedAt = (
+                        SELECT
+                            max(s.EV_PLC_PositedAt)
+                        FROM
+                            [dbo].[EV_PLC_Event_Place_Annex] s
+                        WHERE
+                            s.EV_PLC_ID = p.EV_PLC_ID
+                        AND
+                            s.EV_PLC_Positor = v.EV_PLC_Positor
+                        AND
+                            s.EV_PLC_PositedAt <= v.EV_PLC_PositedAt
+                    )
+                WHERE
+                    p.EV_PLC_EV_ID = v.EV_PLC_EV_ID
+                AND
+                    p.EV_PLC_ChangedAt = v.EV_PLC_ChangedAt
+                AND
+                    a.EV_PLC_Reliability <> 0
+            ) held
+            WHERE
+                v.EV_PLC_Version = @currentVersion
+            AND
+                v.EV_PLC_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in EV_PLC_Event_Place for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -492,7 +609,8 @@ BEGIN
         primary key(
             SU_NAM_Version,
             SU_NAM_Positor,
-            SU_NAM_SU_ID
+            SU_NAM_SU_ID,
+            SU_NAM_Subject_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -669,6 +787,62 @@ BEGIN
             v.SU_NAM_Version = @currentVersion
         AND
             SU_NAM_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_NAM_SU_ID,
+                v.SU_NAM_Positor,
+                v.SU_NAM_PositedAt
+            FROM
+                @SU_NAM_Subject_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_NAM_Reliability > 0 THEN a.SU_NAM_Reliability
+                        ELSE 1 + a.SU_NAM_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_NAM_Subject_Name_Posit] p
+                JOIN
+                    [dbo].[SU_NAM_Subject_Name_Annex] a
+                ON
+                    a.SU_NAM_ID = p.SU_NAM_ID
+                AND
+                    a.SU_NAM_Positor = v.SU_NAM_Positor
+                AND
+                    a.SU_NAM_PositedAt = (
+                        SELECT
+                            max(s.SU_NAM_PositedAt)
+                        FROM
+                            [dbo].[SU_NAM_Subject_Name_Annex] s
+                        WHERE
+                            s.SU_NAM_ID = p.SU_NAM_ID
+                        AND
+                            s.SU_NAM_Positor = v.SU_NAM_Positor
+                        AND
+                            s.SU_NAM_PositedAt <= v.SU_NAM_PositedAt
+                    )
+                WHERE
+                    p.SU_NAM_SU_ID = v.SU_NAM_SU_ID
+                AND
+                    a.SU_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_NAM_Version = @currentVersion
+            AND
+                v.SU_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_NAM_Subject_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -698,7 +872,8 @@ BEGIN
         primary key(
             SU_COD_Version,
             SU_COD_Positor,
-            SU_COD_SU_ID
+            SU_COD_SU_ID,
+            SU_COD_Subject_Code -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -875,6 +1050,62 @@ BEGIN
             v.SU_COD_Version = @currentVersion
         AND
             SU_COD_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_COD_SU_ID,
+                v.SU_COD_Positor,
+                v.SU_COD_PositedAt
+            FROM
+                @SU_COD_Subject_Code v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_COD_Reliability > 0 THEN a.SU_COD_Reliability
+                        ELSE 1 + a.SU_COD_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_COD_Subject_Code_Posit] p
+                JOIN
+                    [dbo].[SU_COD_Subject_Code_Annex] a
+                ON
+                    a.SU_COD_ID = p.SU_COD_ID
+                AND
+                    a.SU_COD_Positor = v.SU_COD_Positor
+                AND
+                    a.SU_COD_PositedAt = (
+                        SELECT
+                            max(s.SU_COD_PositedAt)
+                        FROM
+                            [dbo].[SU_COD_Subject_Code_Annex] s
+                        WHERE
+                            s.SU_COD_ID = p.SU_COD_ID
+                        AND
+                            s.SU_COD_Positor = v.SU_COD_Positor
+                        AND
+                            s.SU_COD_PositedAt <= v.SU_COD_PositedAt
+                    )
+                WHERE
+                    p.SU_COD_SU_ID = v.SU_COD_SU_ID
+                AND
+                    a.SU_COD_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_COD_Version = @currentVersion
+            AND
+                v.SU_COD_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_COD_Subject_Code for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -904,7 +1135,8 @@ BEGIN
         primary key(
             SU_GRD_Version,
             SU_GRD_Positor,
-            SU_GRD_SU_ID
+            SU_GRD_SU_ID,
+            SU_GRD_GRD_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1081,6 +1313,62 @@ BEGIN
             v.SU_GRD_Version = @currentVersion
         AND
             SU_GRD_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_GRD_SU_ID,
+                v.SU_GRD_Positor,
+                v.SU_GRD_PositedAt
+            FROM
+                @SU_GRD_Subject_Grade v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_GRD_Reliability > 0 THEN a.SU_GRD_Reliability
+                        ELSE 1 + a.SU_GRD_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_GRD_Subject_Grade_Posit] p
+                JOIN
+                    [dbo].[SU_GRD_Subject_Grade_Annex] a
+                ON
+                    a.SU_GRD_ID = p.SU_GRD_ID
+                AND
+                    a.SU_GRD_Positor = v.SU_GRD_Positor
+                AND
+                    a.SU_GRD_PositedAt = (
+                        SELECT
+                            max(s.SU_GRD_PositedAt)
+                        FROM
+                            [dbo].[SU_GRD_Subject_Grade_Annex] s
+                        WHERE
+                            s.SU_GRD_ID = p.SU_GRD_ID
+                        AND
+                            s.SU_GRD_Positor = v.SU_GRD_Positor
+                        AND
+                            s.SU_GRD_PositedAt <= v.SU_GRD_PositedAt
+                    )
+                WHERE
+                    p.SU_GRD_SU_ID = v.SU_GRD_SU_ID
+                AND
+                    a.SU_GRD_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_GRD_Version = @currentVersion
+            AND
+                v.SU_GRD_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_GRD_Subject_Grade for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1111,7 +1399,8 @@ BEGIN
         primary key(
             SU_NOT_Version,
             SU_NOT_Positor,
-            SU_NOT_SU_ID
+            SU_NOT_SU_ID,
+            SU_NOT_Checksum -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1289,6 +1578,62 @@ BEGIN
             v.SU_NOT_Version = @currentVersion
         AND
             SU_NOT_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_NOT_SU_ID,
+                v.SU_NOT_Positor,
+                v.SU_NOT_PositedAt
+            FROM
+                @SU_NOT_Subject_Note v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_NOT_Reliability > 0 THEN a.SU_NOT_Reliability
+                        ELSE 1 + a.SU_NOT_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_NOT_Subject_Note_Posit] p
+                JOIN
+                    [dbo].[SU_NOT_Subject_Note_Annex] a
+                ON
+                    a.SU_NOT_ID = p.SU_NOT_ID
+                AND
+                    a.SU_NOT_Positor = v.SU_NOT_Positor
+                AND
+                    a.SU_NOT_PositedAt = (
+                        SELECT
+                            max(s.SU_NOT_PositedAt)
+                        FROM
+                            [dbo].[SU_NOT_Subject_Note_Annex] s
+                        WHERE
+                            s.SU_NOT_ID = p.SU_NOT_ID
+                        AND
+                            s.SU_NOT_Positor = v.SU_NOT_Positor
+                        AND
+                            s.SU_NOT_PositedAt <= v.SU_NOT_PositedAt
+                    )
+                WHERE
+                    p.SU_NOT_SU_ID = v.SU_NOT_SU_ID
+                AND
+                    a.SU_NOT_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_NOT_Version = @currentVersion
+            AND
+                v.SU_NOT_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_NOT_Subject_Note for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1319,7 +1664,8 @@ BEGIN
         primary key(
             SU_TTL_Version,
             SU_TTL_Positor,
-            SU_TTL_SU_ID
+            SU_TTL_SU_ID,
+            SU_TTL_Subject_Title -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1539,6 +1885,65 @@ BEGIN
             v.SU_TTL_Version = @currentVersion
         AND
             SU_TTL_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_TTL_SU_ID,
+                v.SU_TTL_ChangedAt,
+                v.SU_TTL_Positor,
+                v.SU_TTL_PositedAt
+            FROM
+                @SU_TTL_Subject_Title v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_TTL_Reliability > 0 THEN a.SU_TTL_Reliability
+                        ELSE 1 + a.SU_TTL_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_TTL_Subject_Title_Posit] p
+                JOIN
+                    [dbo].[SU_TTL_Subject_Title_Annex] a
+                ON
+                    a.SU_TTL_ID = p.SU_TTL_ID
+                AND
+                    a.SU_TTL_Positor = v.SU_TTL_Positor
+                AND
+                    a.SU_TTL_PositedAt = (
+                        SELECT
+                            max(s.SU_TTL_PositedAt)
+                        FROM
+                            [dbo].[SU_TTL_Subject_Title_Annex] s
+                        WHERE
+                            s.SU_TTL_ID = p.SU_TTL_ID
+                        AND
+                            s.SU_TTL_Positor = v.SU_TTL_Positor
+                        AND
+                            s.SU_TTL_PositedAt <= v.SU_TTL_PositedAt
+                    )
+                WHERE
+                    p.SU_TTL_SU_ID = v.SU_TTL_SU_ID
+                AND
+                    p.SU_TTL_ChangedAt = v.SU_TTL_ChangedAt
+                AND
+                    a.SU_TTL_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_TTL_Version = @currentVersion
+            AND
+                v.SU_TTL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_TTL_Subject_Title for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1569,7 +1974,8 @@ BEGIN
         primary key(
             SU_STA_Version,
             SU_STA_Positor,
-            SU_STA_SU_ID
+            SU_STA_SU_ID,
+            SU_STA_Subject_State -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1789,6 +2195,65 @@ BEGIN
             v.SU_STA_Version = @currentVersion
         AND
             SU_STA_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_STA_SU_ID,
+                v.SU_STA_ChangedAt,
+                v.SU_STA_Positor,
+                v.SU_STA_PositedAt
+            FROM
+                @SU_STA_Subject_State v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_STA_Reliability > 0 THEN a.SU_STA_Reliability
+                        ELSE 1 + a.SU_STA_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_STA_Subject_State_Posit] p
+                JOIN
+                    [dbo].[SU_STA_Subject_State_Annex] a
+                ON
+                    a.SU_STA_ID = p.SU_STA_ID
+                AND
+                    a.SU_STA_Positor = v.SU_STA_Positor
+                AND
+                    a.SU_STA_PositedAt = (
+                        SELECT
+                            max(s.SU_STA_PositedAt)
+                        FROM
+                            [dbo].[SU_STA_Subject_State_Annex] s
+                        WHERE
+                            s.SU_STA_ID = p.SU_STA_ID
+                        AND
+                            s.SU_STA_Positor = v.SU_STA_Positor
+                        AND
+                            s.SU_STA_PositedAt <= v.SU_STA_PositedAt
+                    )
+                WHERE
+                    p.SU_STA_SU_ID = v.SU_STA_SU_ID
+                AND
+                    p.SU_STA_ChangedAt = v.SU_STA_ChangedAt
+                AND
+                    a.SU_STA_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_STA_Version = @currentVersion
+            AND
+                v.SU_STA_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_STA_Subject_State for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1819,7 +2284,8 @@ BEGIN
         primary key(
             SU_LBL_Version,
             SU_LBL_Positor,
-            SU_LBL_SU_ID
+            SU_LBL_SU_ID,
+            SU_LBL_Subject_Label -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2083,6 +2549,65 @@ BEGIN
             v.SU_LBL_Version = @currentVersion
         AND
             SU_LBL_StatementType in ('S','N','D','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_LBL_SU_ID,
+                v.SU_LBL_ChangedAt,
+                v.SU_LBL_Positor,
+                v.SU_LBL_PositedAt
+            FROM
+                @SU_LBL_Subject_Label v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_LBL_Reliability > 0 THEN a.SU_LBL_Reliability
+                        ELSE 1 + a.SU_LBL_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_LBL_Subject_Label_Posit] p
+                JOIN
+                    [dbo].[SU_LBL_Subject_Label_Annex] a
+                ON
+                    a.SU_LBL_ID = p.SU_LBL_ID
+                AND
+                    a.SU_LBL_Positor = v.SU_LBL_Positor
+                AND
+                    a.SU_LBL_PositedAt = (
+                        SELECT
+                            max(s.SU_LBL_PositedAt)
+                        FROM
+                            [dbo].[SU_LBL_Subject_Label_Annex] s
+                        WHERE
+                            s.SU_LBL_ID = p.SU_LBL_ID
+                        AND
+                            s.SU_LBL_Positor = v.SU_LBL_Positor
+                        AND
+                            s.SU_LBL_PositedAt <= v.SU_LBL_PositedAt
+                    )
+                WHERE
+                    p.SU_LBL_SU_ID = v.SU_LBL_SU_ID
+                AND
+                    p.SU_LBL_ChangedAt = v.SU_LBL_ChangedAt
+                AND
+                    a.SU_LBL_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_LBL_Version = @currentVersion
+            AND
+                v.SU_LBL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_LBL_Subject_Label for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2113,7 +2638,8 @@ BEGIN
         primary key(
             SU_TAG_Version,
             SU_TAG_Positor,
-            SU_TAG_SU_ID
+            SU_TAG_SU_ID,
+            SU_TAG_Subject_Tag -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2377,6 +2903,65 @@ BEGIN
             v.SU_TAG_Version = @currentVersion
         AND
             SU_TAG_StatementType in ('S','N','D','F');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_TAG_SU_ID,
+                v.SU_TAG_ChangedAt,
+                v.SU_TAG_Positor,
+                v.SU_TAG_PositedAt
+            FROM
+                @SU_TAG_Subject_Tag v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_TAG_Reliability > 0 THEN a.SU_TAG_Reliability
+                        ELSE 1 + a.SU_TAG_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_TAG_Subject_Tag_Posit] p
+                JOIN
+                    [dbo].[SU_TAG_Subject_Tag_Annex] a
+                ON
+                    a.SU_TAG_ID = p.SU_TAG_ID
+                AND
+                    a.SU_TAG_Positor = v.SU_TAG_Positor
+                AND
+                    a.SU_TAG_PositedAt = (
+                        SELECT
+                            max(s.SU_TAG_PositedAt)
+                        FROM
+                            [dbo].[SU_TAG_Subject_Tag_Annex] s
+                        WHERE
+                            s.SU_TAG_ID = p.SU_TAG_ID
+                        AND
+                            s.SU_TAG_Positor = v.SU_TAG_Positor
+                        AND
+                            s.SU_TAG_PositedAt <= v.SU_TAG_PositedAt
+                    )
+                WHERE
+                    p.SU_TAG_SU_ID = v.SU_TAG_SU_ID
+                AND
+                    p.SU_TAG_ChangedAt = v.SU_TAG_ChangedAt
+                AND
+                    a.SU_TAG_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_TAG_Version = @currentVersion
+            AND
+                v.SU_TAG_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_TAG_Subject_Tag for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2407,7 +2992,8 @@ BEGIN
         primary key(
             SU_LVL_Version,
             SU_LVL_Positor,
-            SU_LVL_SU_ID
+            SU_LVL_SU_ID,
+            SU_LVL_GRD_ID -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2627,6 +3213,65 @@ BEGIN
             v.SU_LVL_Version = @currentVersion
         AND
             SU_LVL_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_LVL_SU_ID,
+                v.SU_LVL_ChangedAt,
+                v.SU_LVL_Positor,
+                v.SU_LVL_PositedAt
+            FROM
+                @SU_LVL_Subject_Level v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_LVL_Reliability > 0 THEN a.SU_LVL_Reliability
+                        ELSE 1 + a.SU_LVL_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_LVL_Subject_Level_Posit] p
+                JOIN
+                    [dbo].[SU_LVL_Subject_Level_Annex] a
+                ON
+                    a.SU_LVL_ID = p.SU_LVL_ID
+                AND
+                    a.SU_LVL_Positor = v.SU_LVL_Positor
+                AND
+                    a.SU_LVL_PositedAt = (
+                        SELECT
+                            max(s.SU_LVL_PositedAt)
+                        FROM
+                            [dbo].[SU_LVL_Subject_Level_Annex] s
+                        WHERE
+                            s.SU_LVL_ID = p.SU_LVL_ID
+                        AND
+                            s.SU_LVL_Positor = v.SU_LVL_Positor
+                        AND
+                            s.SU_LVL_PositedAt <= v.SU_LVL_PositedAt
+                    )
+                WHERE
+                    p.SU_LVL_SU_ID = v.SU_LVL_SU_ID
+                AND
+                    p.SU_LVL_ChangedAt = v.SU_LVL_ChangedAt
+                AND
+                    a.SU_LVL_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_LVL_Version = @currentVersion
+            AND
+                v.SU_LVL_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_LVL_Subject_Level for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2658,7 +3303,8 @@ BEGIN
         primary key(
             SU_TXT_Version,
             SU_TXT_Positor,
-            SU_TXT_SU_ID
+            SU_TXT_SU_ID,
+            SU_TXT_Checksum -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -2879,6 +3525,65 @@ BEGIN
             v.SU_TXT_Version = @currentVersion
         AND
             SU_TXT_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_TXT_SU_ID,
+                v.SU_TXT_ChangedAt,
+                v.SU_TXT_Positor,
+                v.SU_TXT_PositedAt
+            FROM
+                @SU_TXT_Subject_Text v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_TXT_Reliability > 0 THEN a.SU_TXT_Reliability
+                        ELSE 1 + a.SU_TXT_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_TXT_Subject_Text_Posit] p
+                JOIN
+                    [dbo].[SU_TXT_Subject_Text_Annex] a
+                ON
+                    a.SU_TXT_ID = p.SU_TXT_ID
+                AND
+                    a.SU_TXT_Positor = v.SU_TXT_Positor
+                AND
+                    a.SU_TXT_PositedAt = (
+                        SELECT
+                            max(s.SU_TXT_PositedAt)
+                        FROM
+                            [dbo].[SU_TXT_Subject_Text_Annex] s
+                        WHERE
+                            s.SU_TXT_ID = p.SU_TXT_ID
+                        AND
+                            s.SU_TXT_Positor = v.SU_TXT_Positor
+                        AND
+                            s.SU_TXT_PositedAt <= v.SU_TXT_PositedAt
+                    )
+                WHERE
+                    p.SU_TXT_SU_ID = v.SU_TXT_SU_ID
+                AND
+                    p.SU_TXT_ChangedAt = v.SU_TXT_ChangedAt
+                AND
+                    a.SU_TXT_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_TXT_Version = @currentVersion
+            AND
+                v.SU_TXT_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_TXT_Subject_Text for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -2909,7 +3614,8 @@ BEGIN
         primary key(
             SU_ASR_Version,
             SU_ASR_Positor,
-            SU_ASR_SU_ID
+            SU_ASR_SU_ID,
+            SU_ASR_Subject_Assessment -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -3129,6 +3835,65 @@ BEGIN
             v.SU_ASR_Version = @currentVersion
         AND
             SU_ASR_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_ASR_SU_ID,
+                v.SU_ASR_ChangedAt,
+                v.SU_ASR_Positor,
+                v.SU_ASR_PositedAt
+            FROM
+                @SU_ASR_Subject_Assessment v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_ASR_Reliability > 0 THEN a.SU_ASR_Reliability
+                        ELSE 1 + a.SU_ASR_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_ASR_Subject_Assessment_Posit] p
+                JOIN
+                    [dbo].[SU_ASR_Subject_Assessment_Annex] a
+                ON
+                    a.SU_ASR_ID = p.SU_ASR_ID
+                AND
+                    a.SU_ASR_Positor = v.SU_ASR_Positor
+                AND
+                    a.SU_ASR_PositedAt = (
+                        SELECT
+                            max(s.SU_ASR_PositedAt)
+                        FROM
+                            [dbo].[SU_ASR_Subject_Assessment_Annex] s
+                        WHERE
+                            s.SU_ASR_ID = p.SU_ASR_ID
+                        AND
+                            s.SU_ASR_Positor = v.SU_ASR_Positor
+                        AND
+                            s.SU_ASR_PositedAt <= v.SU_ASR_PositedAt
+                    )
+                WHERE
+                    p.SU_ASR_SU_ID = v.SU_ASR_SU_ID
+                AND
+                    p.SU_ASR_ChangedAt = v.SU_ASR_ChangedAt
+                AND
+                    a.SU_ASR_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_ASR_Version = @currentVersion
+            AND
+                v.SU_ASR_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_ASR_Subject_Assessment for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -3159,7 +3924,8 @@ BEGIN
         primary key(
             SU_ERS_Version,
             SU_ERS_Positor,
-            SU_ERS_SU_ID
+            SU_ERS_SU_ID,
+            SU_ERS_Subject_Erasable -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -3379,6 +4145,65 @@ BEGIN
             v.SU_ERS_Version = @currentVersion
         AND
             SU_ERS_StatementType in ('S','N','D','R');
+        -- indecisive: what a positor holds at the same changing time may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.SU_ERS_SU_ID,
+                v.SU_ERS_ChangedAt,
+                v.SU_ERS_Positor,
+                v.SU_ERS_PositedAt
+            FROM
+                @SU_ERS_Subject_Erasable v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.SU_ERS_Reliability > 0 THEN a.SU_ERS_Reliability
+                        ELSE 1 + a.SU_ERS_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[SU_ERS_Subject_Erasable_Posit] p
+                JOIN
+                    [dbo].[SU_ERS_Subject_Erasable_Annex] a
+                ON
+                    a.SU_ERS_ID = p.SU_ERS_ID
+                AND
+                    a.SU_ERS_Positor = v.SU_ERS_Positor
+                AND
+                    a.SU_ERS_PositedAt = (
+                        SELECT
+                            max(s.SU_ERS_PositedAt)
+                        FROM
+                            [dbo].[SU_ERS_Subject_Erasable_Annex] s
+                        WHERE
+                            s.SU_ERS_ID = p.SU_ERS_ID
+                        AND
+                            s.SU_ERS_Positor = v.SU_ERS_Positor
+                        AND
+                            s.SU_ERS_PositedAt <= v.SU_ERS_PositedAt
+                    )
+                WHERE
+                    p.SU_ERS_SU_ID = v.SU_ERS_SU_ID
+                AND
+                    p.SU_ERS_ChangedAt = v.SU_ERS_ChangedAt
+                AND
+                    a.SU_ERS_Reliability <> 0
+            ) held
+            WHERE
+                v.SU_ERS_Version = @currentVersion
+            AND
+                v.SU_ERS_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in SU_ERS_Subject_Erasable for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -3408,7 +4233,8 @@ BEGIN
         primary key(
             OB_NAM_Version,
             OB_NAM_Positor,
-            OB_NAM_OB_ID
+            OB_NAM_OB_ID,
+            OB_NAM_Object_Name -- an indecisive positor may state alternatives in one insert
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -3585,6 +4411,62 @@ BEGIN
             v.OB_NAM_Version = @currentVersion
         AND
             OB_NAM_StatementType in ('S','N','D');
+        -- indecisive: what a positor holds may not contradict itself: a positive reliability
+        -- counts as it is and a negative one as one plus it, and they may not sum up to more than one (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.OB_NAM_OB_ID,
+                v.OB_NAM_Positor,
+                v.OB_NAM_PositedAt
+            FROM
+                @OB_NAM_Object_Name v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.OB_NAM_Reliability > 0 THEN a.OB_NAM_Reliability
+                        ELSE 1 + a.OB_NAM_Reliability
+                    END) AS total
+                FROM
+                    [dbo].[OB_NAM_Object_Name_Posit] p
+                JOIN
+                    [dbo].[OB_NAM_Object_Name_Annex] a
+                ON
+                    a.OB_NAM_ID = p.OB_NAM_ID
+                AND
+                    a.OB_NAM_Positor = v.OB_NAM_Positor
+                AND
+                    a.OB_NAM_PositedAt = (
+                        SELECT
+                            max(s.OB_NAM_PositedAt)
+                        FROM
+                            [dbo].[OB_NAM_Object_Name_Annex] s
+                        WHERE
+                            s.OB_NAM_ID = p.OB_NAM_ID
+                        AND
+                            s.OB_NAM_Positor = v.OB_NAM_Positor
+                        AND
+                            s.OB_NAM_PositedAt <= v.OB_NAM_PositedAt
+                    )
+                WHERE
+                    p.OB_NAM_OB_ID = v.OB_NAM_OB_ID
+                AND
+                    a.OB_NAM_Reliability <> 0
+            ) held
+            WHERE
+                v.OB_NAM_Version = @currentVersion
+            AND
+                v.OB_NAM_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in OB_NAM_Object_Name for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO

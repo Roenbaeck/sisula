@@ -175,7 +175,23 @@ BEGIN
             a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_partner = x.AC_ID_partner
+        AND
+            n.AC_ID_with = x.AC_ID_with
+        AND
+            n.ONG_ID_currently = x.ONG_ID_currently
+        AND
+            n.AC_partner_AC_with_ONG_currently_ChangedAt = x.AC_partner_AC_with_ONG_currently_ChangedAt
+        AND
+            n.AC_partner_AC_with_ONG_currently_PositedAt = x.AC_partner_AC_with_ONG_currently_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_AC_partner_AC_with_ONG_currently int not null,
         AC_partner_AC_with_ONG_currently_StatementType char(1) not null,
@@ -261,6 +277,15 @@ BEGIN
         OR
             (i.AC_partner_AC_with_ONG_currently_Reliability = 1 AND i.following_AC_partner_AC_with_ONG_currently_Reliability = 0)
         );
+    -- the new rows that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        Metadata_AC_partner_AC_with_ONG_currently int not null,
+        AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
+        AC_partner_AC_with_ONG_currently_PositedAt datetime2 not null,
+        AC_ID_partner smallint not null,
+        AC_ID_with smallint not null,
+        ONG_ID_currently tinyint not null
+    );
     IF EXISTS (
         SELECT TOP 1
             AC_partner_AC_with_ONG_currently_StatementType
@@ -280,6 +305,50 @@ BEGIN
         AC_ID_with smallint not null,
         ONG_ID_currently tinyint not null
     );
+    INSERT INTO @skipped (
+        Metadata_AC_partner_AC_with_ONG_currently,
+        AC_partner_AC_with_ONG_currently_ChangedAt,
+        AC_partner_AC_with_ONG_currently_PositedAt,
+        AC_ID_partner,
+        AC_ID_with,
+        ONG_ID_currently
+    )
+    SELECT
+        a.Metadata_AC_partner_AC_with_ONG_currently,
+        a.AC_partner_AC_with_ONG_currently_ChangedAt,
+        a.AC_partner_AC_with_ONG_currently_PositedAt,
+        a.AC_ID_partner,
+        a.AC_ID_with,
+        a.ONG_ID_currently
+    FROM
+        @inserted a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.*
+        FROM
+            @inserted h
+        WHERE
+            h.AC_ID_partner = a.AC_ID_partner
+        AND
+            h.AC_ID_with = a.AC_ID_with
+        AND
+            h.ONG_ID_currently = a.ONG_ID_currently
+        AND
+            h.AC_partner_AC_with_ONG_currently_ChangedAt < a.AC_partner_AC_with_ONG_currently_ChangedAt
+        ORDER BY
+            h.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
+            h.AC_partner_AC_with_ONG_currently_PositedAt DESC
+    ) pre
+    WHERE
+        a.AC_partner_AC_with_ONG_currently_StatementType in ('P', 'A')
+    AND
+        a.AC_partner_AC_with_ONG_currently_Reliability = 1
+    AND
+        a.AC_ID_partner = pre.AC_ID_partner
+    AND
+        a.AC_ID_with = pre.AC_ID_with
+    AND
+        a.ONG_ID_currently = pre.ONG_ID_currently;
     INSERT INTO @restated (
         Metadata_AC_partner_AC_with_ONG_currently,
         AC_partner_AC_with_ONG_currently_StatementType,
@@ -722,7 +791,19 @@ BEGIN
             a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_subset = x.AC_ID_subset
+        AND
+            n.PN_ID_of = x.PN_ID_of
+        AND
+            n.AC_subset_PN_of_PositedAt = x.AC_subset_PN_of_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_AC_subset_PN_of int not null,
         AC_subset_PN_of_StatementType char(1) not null,
@@ -1095,7 +1176,19 @@ BEGIN
             a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.EV_ID_in = x.EV_ID_in
+        AND
+            n.AC_ID_wasCast = x.AC_ID_wasCast
+        AND
+            n.EV_in_AC_wasCast_PositedAt = x.EV_in_AC_wasCast_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_EV_in_AC_wasCast int not null,
         EV_in_AC_wasCast_StatementType char(1) not null,
@@ -1317,6 +1410,56 @@ BEGIN
             AND
                 a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [ties].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [ties].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                WHERE
+                    p.AC_ID_part = i.AC_ID_part
+                AND
+                    p.PR_ID_in = i.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        p.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID_part = i.AC_ID_part
+                AND
+                    j.PR_ID_in = i.PR_ID_in
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_ChangedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        j.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_PositedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -1413,7 +1556,21 @@ BEGIN
             a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_part = x.AC_ID_part
+        AND
+            n.PR_ID_in = x.PR_ID_in
+        AND
+            n.AC_part_PR_in_RAT_got_ChangedAt = x.AC_part_PR_in_RAT_got_ChangedAt
+        AND
+            n.AC_part_PR_in_RAT_got_PositedAt = x.AC_part_PR_in_RAT_got_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_AC_part_PR_in_RAT_got int not null,
         AC_part_PR_in_RAT_got_StatementType char(1) not null,
@@ -1495,6 +1652,15 @@ BEGIN
         OR
             (i.AC_part_PR_in_RAT_got_Reliability = 1 AND i.following_AC_part_PR_in_RAT_got_Reliability = 0)
         );
+    -- the new rows that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        Metadata_AC_part_PR_in_RAT_got int not null,
+        AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
+        AC_part_PR_in_RAT_got_PositedAt datetime2 not null,
+        AC_ID_part smallint not null,
+        PR_ID_in bigint not null,
+        RAT_ID_got tinyint not null
+    );
     IF EXISTS (
         SELECT TOP 1
             AC_part_PR_in_RAT_got_StatementType
@@ -1514,6 +1680,48 @@ BEGIN
         PR_ID_in bigint not null,
         RAT_ID_got tinyint not null
     );
+    INSERT INTO @skipped (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ChangedAt,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_ID_part,
+        PR_ID_in,
+        RAT_ID_got
+    )
+    SELECT
+        a.Metadata_AC_part_PR_in_RAT_got,
+        a.AC_part_PR_in_RAT_got_ChangedAt,
+        a.AC_part_PR_in_RAT_got_PositedAt,
+        a.AC_ID_part,
+        a.PR_ID_in,
+        a.RAT_ID_got
+    FROM
+        @inserted a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.*
+        FROM
+            @inserted h
+        WHERE
+            h.AC_ID_part = a.AC_ID_part
+        AND
+            h.PR_ID_in = a.PR_ID_in
+        AND
+            h.AC_part_PR_in_RAT_got_ChangedAt < a.AC_part_PR_in_RAT_got_ChangedAt
+        ORDER BY
+            h.AC_part_PR_in_RAT_got_ChangedAt DESC,
+            h.AC_part_PR_in_RAT_got_PositedAt DESC
+    ) pre
+    WHERE
+        a.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
+    AND
+        a.AC_part_PR_in_RAT_got_Reliability = 1
+    AND
+        a.AC_ID_part = pre.AC_ID_part
+    AND
+        a.PR_ID_in = pre.PR_ID_in
+    AND
+        a.RAT_ID_got = pre.RAT_ID_got;
     INSERT INTO @restated (
         Metadata_AC_part_PR_in_RAT_got,
         AC_part_PR_in_RAT_got_StatementType,
@@ -1643,7 +1851,8 @@ BEGIN
     WHERE
         v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers at the same changing time when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
         Metadata_AC_part_PR_in_RAT_got,
         AC_part_PR_in_RAT_got_ID,
@@ -1655,8 +1864,31 @@ BEGIN
         e.AC_part_PR_in_RAT_got_ID,
         v.AC_part_PR_in_RAT_got_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.Metadata_AC_part_PR_in_RAT_got,
+            n.AC_part_PR_in_RAT_got_ChangedAt,
+            n.AC_part_PR_in_RAT_got_PositedAt,
+            n.AC_ID_part,
+            n.PR_ID_in,
+            n.RAT_ID_got
+        FROM
+            @inserted n
+        WHERE
+            n.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
+        AND
+            n.AC_part_PR_in_RAT_got_Reliability = 1
+        UNION ALL
+        SELECT
+            k.Metadata_AC_part_PR_in_RAT_got,
+            k.AC_part_PR_in_RAT_got_ChangedAt,
+            k.AC_part_PR_in_RAT_got_PositedAt,
+            k.AC_ID_part,
+            k.PR_ID_in,
+            k.RAT_ID_got
+        FROM
+            @skipped k
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.AC_part_PR_in_RAT_got_ID,
@@ -1689,11 +1921,7 @@ BEGIN
         ORDER BY
             a.AC_part_PR_in_RAT_got_PositedAt DESC
     ) e
-    WHERE
-        v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
-    AND
-        v.AC_part_PR_in_RAT_got_Reliability = 1
-    AND (
+    WHERE (
         e.RAT_ID_got <> v.RAT_ID_got
     )
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -2017,7 +2245,21 @@ BEGIN
             a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.ST_ID_at = x.ST_ID_at
+        AND
+            n.PR_ID_isPlaying = x.PR_ID_isPlaying
+        AND
+            n.ST_at_PR_isPlaying_ChangedAt = x.ST_at_PR_isPlaying_ChangedAt
+        AND
+            n.ST_at_PR_isPlaying_PositedAt = x.ST_at_PR_isPlaying_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_ST_at_PR_isPlaying int not null,
         ST_at_PR_isPlaying_StatementType char(1) not null,
@@ -2096,6 +2338,14 @@ BEGIN
         OR
             (i.ST_at_PR_isPlaying_Reliability = 1 AND i.following_ST_at_PR_isPlaying_Reliability = 0)
         );
+    -- the new rows that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        Metadata_ST_at_PR_isPlaying int not null,
+        ST_at_PR_isPlaying_ChangedAt datetime2 not null,
+        ST_at_PR_isPlaying_PositedAt datetime2 not null,
+        ST_ID_at int not null,
+        PR_ID_isPlaying bigint not null
+    );
     IF EXISTS (
         SELECT TOP 1
             ST_at_PR_isPlaying_StatementType
@@ -2114,6 +2364,44 @@ BEGIN
         ST_ID_at int not null,
         PR_ID_isPlaying bigint not null
     );
+    INSERT INTO @skipped (
+        Metadata_ST_at_PR_isPlaying,
+        ST_at_PR_isPlaying_ChangedAt,
+        ST_at_PR_isPlaying_PositedAt,
+        ST_ID_at,
+        PR_ID_isPlaying
+    )
+    SELECT
+        a.Metadata_ST_at_PR_isPlaying,
+        a.ST_at_PR_isPlaying_ChangedAt,
+        a.ST_at_PR_isPlaying_PositedAt,
+        a.ST_ID_at,
+        a.PR_ID_isPlaying
+    FROM
+        @inserted a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.*
+        FROM
+            @inserted h
+        WHERE
+            h.ST_ID_at = a.ST_ID_at
+        AND
+            h.PR_ID_isPlaying = a.PR_ID_isPlaying
+        AND
+            h.ST_at_PR_isPlaying_ChangedAt < a.ST_at_PR_isPlaying_ChangedAt
+        ORDER BY
+            h.ST_at_PR_isPlaying_ChangedAt DESC,
+            h.ST_at_PR_isPlaying_PositedAt DESC
+    ) pre
+    WHERE
+        a.ST_at_PR_isPlaying_StatementType in ('P', 'A')
+    AND
+        a.ST_at_PR_isPlaying_Reliability = 1
+    AND
+        a.ST_ID_at = pre.ST_ID_at
+    AND
+        a.PR_ID_isPlaying = pre.PR_ID_isPlaying;
     INSERT INTO @restated (
         Metadata_ST_at_PR_isPlaying,
         ST_at_PR_isPlaying_StatementType,
@@ -2442,7 +2730,21 @@ BEGIN
             a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_parent = x.AC_ID_parent
+        AND
+            n.AC_ID_child = x.AC_ID_child
+        AND
+            n.PAT_ID_having = x.PAT_ID_having
+        AND
+            n.AC_parent_AC_child_PAT_having_PositedAt = x.AC_parent_AC_child_PAT_having_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_AC_parent_AC_child_PAT_having int not null,
         AC_parent_AC_child_PAT_having_StatementType char(1) not null,
@@ -2784,7 +3086,23 @@ BEGIN
             a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.PR_ID_content = x.PR_ID_content
+        AND
+            n.ST_ID_location = x.ST_ID_location
+        AND
+            n.EV_ID_of = x.EV_ID_of
+        AND
+            n.PR_content_ST_location_EV_of_ChangedAt = x.PR_content_ST_location_EV_of_ChangedAt
+        AND
+            n.PR_content_ST_location_EV_of_PositedAt = x.PR_content_ST_location_EV_of_PositedAt
+    );
     DECLARE @retracted TABLE (
         Metadata_PR_content_ST_location_EV_of int not null,
         PR_content_ST_location_EV_of_StatementType char(1) not null,
@@ -2870,6 +3188,15 @@ BEGIN
         OR
             (i.PR_content_ST_location_EV_of_Reliability = 1 AND i.following_PR_content_ST_location_EV_of_Reliability = 0)
         );
+    -- the new rows that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        Metadata_PR_content_ST_location_EV_of int not null,
+        PR_content_ST_location_EV_of_ChangedAt datetime2 not null,
+        PR_content_ST_location_EV_of_PositedAt datetime2 not null,
+        PR_ID_content bigint not null,
+        ST_ID_location int not null,
+        EV_ID_of numeric(12,0) not null
+    );
     IF EXISTS (
         SELECT TOP 1
             PR_content_ST_location_EV_of_StatementType
@@ -2889,6 +3216,50 @@ BEGIN
         ST_ID_location int not null,
         EV_ID_of numeric(12,0) not null
     );
+    INSERT INTO @skipped (
+        Metadata_PR_content_ST_location_EV_of,
+        PR_content_ST_location_EV_of_ChangedAt,
+        PR_content_ST_location_EV_of_PositedAt,
+        PR_ID_content,
+        ST_ID_location,
+        EV_ID_of
+    )
+    SELECT
+        a.Metadata_PR_content_ST_location_EV_of,
+        a.PR_content_ST_location_EV_of_ChangedAt,
+        a.PR_content_ST_location_EV_of_PositedAt,
+        a.PR_ID_content,
+        a.ST_ID_location,
+        a.EV_ID_of
+    FROM
+        @inserted a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.*
+        FROM
+            @inserted h
+        WHERE
+            h.PR_ID_content = a.PR_ID_content
+        AND
+            h.ST_ID_location = a.ST_ID_location
+        AND
+            h.EV_ID_of = a.EV_ID_of
+        AND
+            h.PR_content_ST_location_EV_of_ChangedAt < a.PR_content_ST_location_EV_of_ChangedAt
+        ORDER BY
+            h.PR_content_ST_location_EV_of_ChangedAt DESC,
+            h.PR_content_ST_location_EV_of_PositedAt DESC
+    ) pre
+    WHERE
+        a.PR_content_ST_location_EV_of_StatementType in ('P', 'A')
+    AND
+        a.PR_content_ST_location_EV_of_Reliability = 1
+    AND
+        a.PR_ID_content = pre.PR_ID_content
+    AND
+        a.ST_ID_location = pre.ST_ID_location
+    AND
+        a.EV_ID_of = pre.EV_ID_of;
     INSERT INTO @restated (
         Metadata_PR_content_ST_location_EV_of,
         PR_content_ST_location_EV_of_StatementType,

@@ -882,6 +882,7 @@ BEGIN
         primary key (
             EV_in_AC_wasCast_Version,
             EV_in_AC_wasCast_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             EV_ID_in,
             AC_ID_wasCast
         )
@@ -1142,8 +1143,10 @@ BEGIN
         primary key (
             AC_part_PR_in_RAT_got_Version,
             AC_part_PR_in_RAT_got_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             AC_ID_part,
-            PR_ID_in
+            PR_ID_in,
+            RAT_ID_got
         )
     );
     -- another reliability at a positing time that already has an assertion of the posit by the positor is a contradiction
@@ -1398,6 +1401,69 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','R');
+        -- indecisive: what a positor holds for the identifiers at the same changing time may not contradict itself: a
+        -- positive reliability counts as it is and a negative one as one plus it, and they may not sum up to more than one
+        -- (non-contradiction)
+        SET @message = (
+            SELECT TOP 1
+                v.AC_ID_part,
+                v.PR_ID_in,
+                v.AC_part_PR_in_RAT_got_ChangedAt,
+                v.AC_part_PR_in_RAT_got_Positor,
+                v.AC_part_PR_in_RAT_got_PositedAt
+            FROM
+                @inserted v
+            CROSS APPLY (
+                SELECT
+                    sum(CASE
+                        WHEN a.AC_part_PR_in_RAT_got_Reliability > 0 THEN a.AC_part_PR_in_RAT_got_Reliability
+                        ELSE 1 + a.AC_part_PR_in_RAT_got_Reliability
+                    END) AS total
+                FROM
+                    [ties].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [ties].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                AND
+                    a.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = (
+                        SELECT
+                            max(s.AC_part_PR_in_RAT_got_PositedAt)
+                        FROM
+                            [ties].[AC_part_PR_in_RAT_got_Annex] s
+                        WHERE
+                            s.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                        AND
+                            s.AC_part_PR_in_RAT_got_Positor = v.AC_part_PR_in_RAT_got_Positor
+                        AND
+                            s.AC_part_PR_in_RAT_got_PositedAt <= v.AC_part_PR_in_RAT_got_PositedAt
+                    )
+                WHERE
+                    p.AC_ID_part = v.AC_ID_part
+                AND
+                    p.PR_ID_in = v.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability <> 0
+            ) held
+            WHERE
+                v.AC_part_PR_in_RAT_got_Version = @currentVersion
+            AND
+                v.AC_part_PR_in_RAT_got_Reliability <> 0
+            AND
+                held.total > 1
+            FOR XML PATH('')
+        );
+        IF @message is not null
+        BEGIN
+            SET @message = 'Contradiction in AC_part_PR_in_RAT_got for: ' + @message;
+            RAISERROR(@message, 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
     END
 END
 GO
@@ -1484,6 +1550,48 @@ BEGIN
     AND (
         CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
+    -- indecisive: other values at the same changing time are a correction, which retracts the shown posit first, so
+    -- that the new values are not taken for an alternative to it
+    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
+        Metadata_AC_part_PR_in_RAT_got,
+        AC_part_PR_in_RAT_got_ID,
+        AC_part_PR_in_RAT_got_Positor,
+        AC_part_PR_in_RAT_got_PositedAt,
+        AC_part_PR_in_RAT_got_Reliability
+    )
+    SELECT
+        i.Metadata_AC_part_PR_in_RAT_got,
+        d.AC_part_PR_in_RAT_got_ID,
+        d.AC_part_PR_in_RAT_got_Positor,
+        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
+        0
+    FROM
+        inserted i
+    LEFT JOIN
+        [knots].[RAT_Rating] [RAT_got]
+    ON
+        [RAT_got].RAT_Rating = i.got_RAT_Rating
+    JOIN
+        deleted d
+    ON
+        d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
+    AND
+        d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
+    WHERE (
+        d.RAT_ID_got <> CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+    )
+    AND
+        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
+    AND
+        UPDATE(AC_part_PR_in_RAT_got_ChangedAt)
+    AND
+        d.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
+    AND
+        d.AC_part_PR_in_RAT_got_Positor = ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0)
+    AND
+        d.AC_part_PR_in_RAT_got_PositedAt < cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2)
+    AND
+        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) <> 0;
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [ties].[AC_part_PR_in_RAT_got] (
         Metadata_AC_part_PR_in_RAT_got,
@@ -1548,47 +1656,6 @@ BEGIN
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
         );
-    -- indecisive: other values at the same changing time are a correction, which also retracts the shown posit
-    INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
-        Metadata_AC_part_PR_in_RAT_got,
-        AC_part_PR_in_RAT_got_ID,
-        AC_part_PR_in_RAT_got_Positor,
-        AC_part_PR_in_RAT_got_PositedAt,
-        AC_part_PR_in_RAT_got_Reliability
-    )
-    SELECT
-        i.Metadata_AC_part_PR_in_RAT_got,
-        d.AC_part_PR_in_RAT_got_ID,
-        d.AC_part_PR_in_RAT_got_Positor,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
-        0
-    FROM
-        inserted i
-    LEFT JOIN
-        [knots].[RAT_Rating] [RAT_got]
-    ON
-        [RAT_got].RAT_Rating = i.got_RAT_Rating
-    JOIN
-        deleted d
-    ON
-        d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
-    AND
-        d.AC_part_PR_in_RAT_got_Positor = i.AC_part_PR_in_RAT_got_Positor
-    WHERE (
-        d.RAT_ID_got <> CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
-    )
-    AND
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
-    AND
-        UPDATE(AC_part_PR_in_RAT_got_ChangedAt)
-    AND
-        d.AC_part_PR_in_RAT_got_ChangedAt = i.AC_part_PR_in_RAT_got_ChangedAt
-    AND
-        d.AC_part_PR_in_RAT_got_Positor = ISNULL(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_Positor) THEN i.AC_part_PR_in_RAT_got_Positor ELSE i.Positor END, 0)
-    AND
-        d.AC_part_PR_in_RAT_got_PositedAt < cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2)
-    AND
-        ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) > 0;
 END
 GO
 -- DELETE trigger -----------------------------------------------------------------------------------------------------
@@ -1647,6 +1714,7 @@ BEGIN
         primary key (
             ST_at_PR_isPlaying_Version,
             ST_at_PR_isPlaying_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             ST_ID_at,
             PR_ID_isPlaying
         )
@@ -1923,6 +1991,7 @@ BEGIN
         primary key (
             AC_parent_AC_child_PAT_having_Version,
             AC_parent_AC_child_PAT_having_Positor,
+            -- all roles: without decisiveness a positor may state alternatives for the identifiers in one insert
             AC_ID_parent,
             AC_ID_child,
             PAT_ID_having
