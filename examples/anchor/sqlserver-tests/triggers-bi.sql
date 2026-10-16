@@ -13,7 +13,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('b01'), ('b02'), ('b03'), ('b04'), ('b05'), ('b06'), ('b07'), ('b08'), ('b09'), ('b10'), ('b11'), ('b12'), ('b13'), ('b14'), ('b15'), ('b16'), ('b17'), ('b18'), ('b19'), ('b20');
+INSERT INTO #group (name) VALUES ('b01'), ('b02'), ('b03'), ('b04'), ('b05'), ('b06'), ('b07'), ('b08'), ('b09'), ('b10'), ('b11'), ('b12'), ('b13'), ('b14'), ('b15'), ('b16'), ('b17'), ('b18'), ('b19'), ('b20'), ('b21');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -482,6 +482,48 @@ END CATCH
 SET @n = (SELECT COUNT(*) FROM dbo.EV_PLC_Event_Place_Posit WHERE EV_PLC_EV_ID = @e);
 INSERT INTO #result SELECT N'b20 a restatement of a nexus attribute that is not restatable is an error', CASE WHEN @error LIKE N'Restatement in EV_PLC_Event_Place%' AND @n = 2 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
 UPDATE #group SET finished = 1 WHERE name = 'b20';
+GO
+
+-- b21 another value at a positing time that already has one is a contradiction (it was stored, or refused by a key);
+--     a correction to the value of the version before retracts what it corrects, although an idempotent attribute
+--     skips the restatement (the corrected version used to stay); and a retraction followed by an assertion at the
+--     same positing time is a correction written in two statements
+DECLARE @s int, @n int, @shown nvarchar(42), @changed datetime2, @error nvarchar(2048);
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_NAM_PositedAt) VALUES (0, N'n1', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Reliability) VALUES (0, @s, N'n2', '2024-01-01', 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Posit WHERE SU_NAM_SU_ID = @s);
+INSERT INTO #result SELECT N'b21 another value at a positing time that has one is a contradiction', CASE WHEN @error LIKE N'Contradiction in SU_NAM_Subject_Name%' AND @n = 1 THEN 1 ELSE 0 END, CONCAT(@n, ' posits; ', ISNULL(@error, 'no error'));
+-- idempotent: A, then B at a changing time of its own, then A at that time
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_TAG_Subject_Tag, SU_TAG_ChangedAt, SU_TAG_PositedAt) VALUES (0, N'A', '2020-01-01', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+UPDATE dbo.lSU_Subject SET SU_TAG_Subject_Tag = N'B', SU_TAG_ChangedAt = '2021-01-01', SU_TAG_PositedAt = '2024-02-01' WHERE SU_ID = @s;
+UPDATE dbo.lSU_Subject SET SU_TAG_Subject_Tag = N'A', SU_TAG_ChangedAt = '2021-01-01', SU_TAG_PositedAt = '2024-03-01' WHERE SU_ID = @s;
+SELECT @shown = SU_TAG_Subject_Tag, @changed = SU_TAG_ChangedAt FROM dbo.lSU_Subject WHERE SU_ID = @s;
+SET @n = (SELECT COUNT(*) FROM dbo.SU_TAG_Subject_Tag_Posit WHERE SU_TAG_SU_ID = @s);
+INSERT INTO #result SELECT N'b21 idempotent: a correction to the value of the version before retracts the corrected version', CASE WHEN @shown = N'A' AND @changed = '2020-01-01' AND @n = 2 THEN 1 ELSE 0 END,
+    CONCAT('shown ', ISNULL(@shown, 'nothing'), ' from ', @changed, ', ', @n, ' posits, expected A from 2020-01-01 and 2 posits');
+-- a retraction and then an assertion at the same positing time
+INSERT INTO dbo.lSU_Subject (Metadata_SU, SU_NAM_Subject_Name, SU_NAM_PositedAt) VALUES (0, N'm1', '2024-01-01');
+SET @s = (SELECT MAX(SU_ID) FROM dbo.SU_Subject);
+SET @error = NULL;
+BEGIN TRY
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Reliability) VALUES (0, @s, N'm1', '2024-02-01', 0);
+    INSERT INTO dbo.SU_NAM_Subject_Name (Metadata_SU_NAM, SU_NAM_SU_ID, SU_NAM_Subject_Name, SU_NAM_PositedAt, SU_NAM_Reliability) VALUES (0, @s, N'm2', '2024-02-01', 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s);
+INSERT INTO #result SELECT N'b21 a retraction and an assertion at one positing time make a correction (the second used to break a key)', CASE WHEN @error IS NULL AND @shown = N'm2' THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'), ' ' + @error);
+UPDATE #group SET finished = 1 WHERE name = 'b21';
 GO
 
 -- the result
