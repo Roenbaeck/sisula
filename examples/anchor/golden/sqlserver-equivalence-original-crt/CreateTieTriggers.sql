@@ -1182,6 +1182,60 @@ BEGIN
             AND
                 a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
         )
+        -- and so, since a decisive positor holds one assertion at a time, is an assertion of other values at that time
+        OR (
+            ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) <> 0
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [ties].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [ties].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                WHERE
+                    p.AC_ID_part = i.AC_ID_part
+                AND
+                    p.PR_ID_in = i.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        p.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    a.AC_part_PR_in_RAT_got_Positor = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability <> 0
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID_part = i.AC_ID_part
+                AND
+                    j.PR_ID_in = i.PR_ID_in
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_ChangedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        j.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Positor, 0) = ISNULL(i.AC_part_PR_in_RAT_got_Positor, 0)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_PositedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Reliability, 1) <> 0
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -1398,8 +1452,10 @@ BEGIN
             v.AC_part_PR_in_RAT_got_Version = @currentVersion
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R');
-        -- decisive: a positor holds one posit at a time for the identifiers, so a positive assertion retracts, at its
-        -- positing time, the posit in effect for the positor at the same changing time when that has other values (a correction)
+        -- decisive: a positor holds one assertion at a time for the identifiers, so an assertion that is not a retraction,
+        -- positive or negative, retracts at its positing time the posit in effect for the positor at the same changing time
+        -- when that has other values (a correction); also when the assertion is not stored, as the restatement an idempotent
+        -- tie skips
         INSERT INTO [ties].[AC_part_PR_in_RAT_got_Annex] (
             Metadata_AC_part_PR_in_RAT_got,
             AC_part_PR_in_RAT_got_ID,
@@ -1447,7 +1503,7 @@ BEGIN
             AND
                 p.AC_part_PR_in_RAT_got_ChangedAt = v.AC_part_PR_in_RAT_got_ChangedAt
             AND
-                a.AC_part_PR_in_RAT_got_Reliability > 0
+                a.AC_part_PR_in_RAT_got_Reliability <> 0
             ORDER BY
                 a.AC_part_PR_in_RAT_got_PositedAt DESC,
                 a.AC_part_PR_in_RAT_got_Reliability DESC
@@ -1457,7 +1513,7 @@ BEGIN
         AND
             v.AC_part_PR_in_RAT_got_StatementType in ('S','N','D','R')
         AND
-            v.AC_part_PR_in_RAT_got_Reliability > 0
+            v.AC_part_PR_in_RAT_got_Reliability <> 0
         AND (
             e.RAT_ID_got <> v.RAT_ID_got
         )

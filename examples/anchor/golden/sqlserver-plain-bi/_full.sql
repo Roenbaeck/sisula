@@ -4740,7 +4740,8 @@ BEGIN
             EV_DAT_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -4765,6 +4766,43 @@ BEGIN
                 a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
             AND
                 a.EV_DAT_Reliability <> i.EV_DAT_Reliability
+        )
+        OR (
+            i.EV_DAT_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[EV_DAT_Event_Date_Posit] p
+                JOIN
+                    [dbo].[EV_DAT_Event_Date_Annex] a
+                ON
+                    a.EV_DAT_ID = p.EV_DAT_ID
+                WHERE
+                    p.EV_ID = i.EV_ID
+                AND
+                    p.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+                AND
+                    a.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+                AND
+                    a.EV_DAT_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_ID = i.EV_ID
+                AND
+                    j.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
+                AND
+                    j.EV_DAT_PositedAt = i.EV_DAT_PositedAt
+                AND
+                    j.EV_DAT_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -4842,7 +4880,17 @@ BEGIN
             a.EV_DAT_ID = p.EV_DAT_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @EV_DAT_Event_Date n
+        WHERE
+            n.EV_ID = x.EV_ID
+        AND
+            n.EV_DAT_PositedAt = x.EV_DAT_PositedAt
+    );
     DECLARE @retracted TABLE (
         EV_ID int not null,
         EV_DAT_PositedAt datetime2 not null,
@@ -4954,7 +5002,8 @@ BEGIN
     WHERE
         EV_DAT_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[EV_DAT_Event_Date_Annex] (
         EV_DAT_ID,
         EV_DAT_PositedAt,
@@ -4964,8 +5013,18 @@ BEGIN
         e.EV_DAT_ID,
         v.EV_DAT_PositedAt,
         0
-    FROM
-        @EV_DAT_Event_Date v
+    FROM (
+        SELECT
+            n.EV_ID,
+            n.EV_DAT_PositedAt,
+            n.EV_DAT_Event_Date
+        FROM
+            @EV_DAT_Event_Date n
+        WHERE
+            n.EV_DAT_StatementType in ('P', 'A')
+        AND
+            n.EV_DAT_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.EV_DAT_ID,
@@ -4995,10 +5054,6 @@ BEGIN
             a.EV_DAT_PositedAt DESC
     ) e
     WHERE
-        v.EV_DAT_StatementType in ('P', 'A')
-    AND
-        v.EV_DAT_Reliability = 1
-    AND
         e.EV_DAT_Event_Date <> v.EV_DAT_Event_Date
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -5034,7 +5089,8 @@ BEGIN
             EV_AUD_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -5059,6 +5115,43 @@ BEGIN
                 a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
             AND
                 a.EV_AUD_Reliability <> i.EV_AUD_Reliability
+        )
+        OR (
+            i.EV_AUD_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[EV_AUD_Event_Audience_Posit] p
+                JOIN
+                    [dbo].[EV_AUD_Event_Audience_Annex] a
+                ON
+                    a.EV_AUD_ID = p.EV_AUD_ID
+                WHERE
+                    p.EV_ID = i.EV_ID
+                AND
+                    p.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+                AND
+                    a.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+                AND
+                    a.EV_AUD_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_ID = i.EV_ID
+                AND
+                    j.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
+                AND
+                    j.EV_AUD_PositedAt = i.EV_AUD_PositedAt
+                AND
+                    j.EV_AUD_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -5136,7 +5229,17 @@ BEGIN
             a.EV_AUD_ID = p.EV_AUD_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @EV_AUD_Event_Audience n
+        WHERE
+            n.EV_ID = x.EV_ID
+        AND
+            n.EV_AUD_PositedAt = x.EV_AUD_PositedAt
+    );
     DECLARE @retracted TABLE (
         EV_ID int not null,
         EV_AUD_PositedAt datetime2 not null,
@@ -5248,7 +5351,8 @@ BEGIN
     WHERE
         EV_AUD_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[EV_AUD_Event_Audience_Annex] (
         EV_AUD_ID,
         EV_AUD_PositedAt,
@@ -5258,8 +5362,18 @@ BEGIN
         e.EV_AUD_ID,
         v.EV_AUD_PositedAt,
         0
-    FROM
-        @EV_AUD_Event_Audience v
+    FROM (
+        SELECT
+            n.EV_ID,
+            n.EV_AUD_PositedAt,
+            n.EV_AUD_Event_Audience
+        FROM
+            @EV_AUD_Event_Audience n
+        WHERE
+            n.EV_AUD_StatementType in ('P', 'A')
+        AND
+            n.EV_AUD_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.EV_AUD_ID,
@@ -5289,10 +5403,6 @@ BEGIN
             a.EV_AUD_PositedAt DESC
     ) e
     WHERE
-        v.EV_AUD_StatementType in ('P', 'A')
-    AND
-        v.EV_AUD_Reliability = 1
-    AND
         e.EV_AUD_Event_Audience <> v.EV_AUD_Event_Audience
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -5328,7 +5438,8 @@ BEGIN
             EV_REV_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -5353,6 +5464,43 @@ BEGIN
                 a.EV_REV_PositedAt = i.EV_REV_PositedAt
             AND
                 a.EV_REV_Reliability <> i.EV_REV_Reliability
+        )
+        OR (
+            i.EV_REV_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[EV_REV_Event_Revenue_Posit] p
+                JOIN
+                    [dbo].[EV_REV_Event_Revenue_Annex] a
+                ON
+                    a.EV_REV_ID = p.EV_REV_ID
+                WHERE
+                    p.EV_ID = i.EV_ID
+                AND
+                    p.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+                AND
+                    a.EV_REV_PositedAt = i.EV_REV_PositedAt
+                AND
+                    a.EV_REV_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_ID = i.EV_ID
+                AND
+                    j.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
+                AND
+                    j.EV_REV_PositedAt = i.EV_REV_PositedAt
+                AND
+                    j.EV_REV_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -5430,7 +5578,17 @@ BEGIN
             a.EV_REV_ID = p.EV_REV_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @EV_REV_Event_Revenue n
+        WHERE
+            n.EV_ID = x.EV_ID
+        AND
+            n.EV_REV_PositedAt = x.EV_REV_PositedAt
+    );
     DECLARE @retracted TABLE (
         EV_ID int not null,
         EV_REV_PositedAt datetime2 not null,
@@ -5542,7 +5700,8 @@ BEGIN
     WHERE
         EV_REV_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[EV_REV_Event_Revenue_Annex] (
         EV_REV_ID,
         EV_REV_PositedAt,
@@ -5552,8 +5711,18 @@ BEGIN
         e.EV_REV_ID,
         v.EV_REV_PositedAt,
         0
-    FROM
-        @EV_REV_Event_Revenue v
+    FROM (
+        SELECT
+            n.EV_ID,
+            n.EV_REV_PositedAt,
+            n.EV_REV_Event_Revenue
+        FROM
+            @EV_REV_Event_Revenue n
+        WHERE
+            n.EV_REV_StatementType in ('P', 'A')
+        AND
+            n.EV_REV_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.EV_REV_ID,
@@ -5583,10 +5752,6 @@ BEGIN
             a.EV_REV_PositedAt DESC
     ) e
     WHERE
-        v.EV_REV_StatementType in ('P', 'A')
-    AND
-        v.EV_REV_Reliability = 1
-    AND
         e.EV_REV_Event_Revenue <> v.EV_REV_Event_Revenue
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -5624,7 +5789,8 @@ BEGIN
             ST_NAM_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -5652,6 +5818,47 @@ BEGIN
                 a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
             AND
                 a.ST_NAM_Reliability <> i.ST_NAM_Reliability
+        )
+        OR (
+            i.ST_NAM_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[ST_NAM_Stage_Name_Posit] p
+                JOIN
+                    [dbo].[ST_NAM_Stage_Name_Annex] a
+                ON
+                    a.ST_NAM_ID = p.ST_NAM_ID
+                WHERE
+                    p.ST_ID = i.ST_ID
+                AND
+                    p.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+                AND
+                    p.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+                AND
+                    a.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+                AND
+                    a.ST_NAM_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.ST_ID = i.ST_ID
+                AND
+                    j.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
+                AND
+                    j.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
+                AND
+                    j.ST_NAM_PositedAt = i.ST_NAM_PositedAt
+                AND
+                    j.ST_NAM_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -5736,7 +5943,19 @@ BEGIN
             a.ST_NAM_ID = p.ST_NAM_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @ST_NAM_Stage_Name n
+        WHERE
+            n.ST_ID = x.ST_ID
+        AND
+            n.ST_NAM_ChangedAt = x.ST_NAM_ChangedAt
+        AND
+            n.ST_NAM_PositedAt = x.ST_NAM_PositedAt
+    );
     DECLARE @retracted TABLE (
         ST_ID int not null,
         ST_NAM_ChangedAt datetime2 not null,
@@ -5861,7 +6080,8 @@ BEGIN
     WHERE
         ST_NAM_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[ST_NAM_Stage_Name_Annex] (
         ST_NAM_ID,
         ST_NAM_PositedAt,
@@ -5871,8 +6091,19 @@ BEGIN
         e.ST_NAM_ID,
         v.ST_NAM_PositedAt,
         0
-    FROM
-        @ST_NAM_Stage_Name v
+    FROM (
+        SELECT
+            n.ST_ID,
+            n.ST_NAM_ChangedAt,
+            n.ST_NAM_PositedAt,
+            n.ST_NAM_Stage_Name
+        FROM
+            @ST_NAM_Stage_Name n
+        WHERE
+            n.ST_NAM_StatementType in ('P', 'A')
+        AND
+            n.ST_NAM_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.ST_NAM_ID,
@@ -5904,10 +6135,6 @@ BEGIN
             a.ST_NAM_PositedAt DESC
     ) e
     WHERE
-        v.ST_NAM_StatementType in ('P', 'A')
-    AND
-        v.ST_NAM_Reliability = 1
-    AND
         e.ST_NAM_Stage_Name <> v.ST_NAM_Stage_Name
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -5944,7 +6171,8 @@ BEGIN
             ST_LOC_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -5969,6 +6197,43 @@ BEGIN
                 a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
             AND
                 a.ST_LOC_Reliability <> i.ST_LOC_Reliability
+        )
+        OR (
+            i.ST_LOC_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[ST_LOC_Stage_Location_Posit] p
+                JOIN
+                    [dbo].[ST_LOC_Stage_Location_Annex] a
+                ON
+                    a.ST_LOC_ID = p.ST_LOC_ID
+                WHERE
+                    p.ST_ID = i.ST_ID
+                AND
+                    p.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+                AND
+                    a.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+                AND
+                    a.ST_LOC_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.ST_ID = i.ST_ID
+                AND
+                    dbo.MD5(cast(j.ST_LOC_Stage_Location as varbinary(max))) <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
+                AND
+                    j.ST_LOC_PositedAt = i.ST_LOC_PositedAt
+                AND
+                    j.ST_LOC_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6050,7 +6315,17 @@ BEGIN
             a.ST_LOC_ID = p.ST_LOC_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @ST_LOC_Stage_Location n
+        WHERE
+            n.ST_ID = x.ST_ID
+        AND
+            n.ST_LOC_PositedAt = x.ST_LOC_PositedAt
+    );
     DECLARE @retracted TABLE (
         ST_ID int not null,
         ST_LOC_PositedAt datetime2 not null,
@@ -6165,7 +6440,8 @@ BEGIN
     WHERE
         ST_LOC_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[ST_LOC_Stage_Location_Annex] (
         ST_LOC_ID,
         ST_LOC_PositedAt,
@@ -6175,8 +6451,18 @@ BEGIN
         e.ST_LOC_ID,
         v.ST_LOC_PositedAt,
         0
-    FROM
-        @ST_LOC_Stage_Location v
+    FROM (
+        SELECT
+            n.ST_ID,
+            n.ST_LOC_PositedAt,
+            n.ST_LOC_Checksum
+        FROM
+            @ST_LOC_Stage_Location n
+        WHERE
+            n.ST_LOC_StatementType in ('P', 'A')
+        AND
+            n.ST_LOC_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.ST_LOC_ID,
@@ -6206,10 +6492,6 @@ BEGIN
             a.ST_LOC_PositedAt DESC
     ) e
     WHERE
-        v.ST_LOC_StatementType in ('P', 'A')
-    AND
-        v.ST_LOC_Reliability = 1
-    AND
         e.ST_LOC_Checksum <> v.ST_LOC_Checksum
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -6247,7 +6529,8 @@ BEGIN
             ST_AVG_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6275,6 +6558,47 @@ BEGIN
                 a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
             AND
                 a.ST_AVG_Reliability <> i.ST_AVG_Reliability
+        )
+        OR (
+            i.ST_AVG_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[ST_AVG_Stage_Average_Posit] p
+                JOIN
+                    [dbo].[ST_AVG_Stage_Average_Annex] a
+                ON
+                    a.ST_AVG_ID = p.ST_AVG_ID
+                WHERE
+                    p.ST_ID = i.ST_ID
+                AND
+                    p.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+                AND
+                    p.UTL_ID <> i.UTL_ID
+                AND
+                    a.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+                AND
+                    a.ST_AVG_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.ST_ID = i.ST_ID
+                AND
+                    j.ST_AVG_ChangedAt = i.ST_AVG_ChangedAt
+                AND
+                    j.UTL_ID <> i.UTL_ID
+                AND
+                    j.ST_AVG_PositedAt = i.ST_AVG_PositedAt
+                AND
+                    j.ST_AVG_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6359,7 +6683,19 @@ BEGIN
             a.ST_AVG_ID = p.ST_AVG_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @ST_AVG_Stage_Average n
+        WHERE
+            n.ST_ID = x.ST_ID
+        AND
+            n.ST_AVG_ChangedAt = x.ST_AVG_ChangedAt
+        AND
+            n.ST_AVG_PositedAt = x.ST_AVG_PositedAt
+    );
     DECLARE @retracted TABLE (
         ST_ID int not null,
         ST_AVG_ChangedAt datetime2 not null,
@@ -6431,6 +6767,13 @@ BEGIN
         OR
             (i.ST_AVG_Reliability = 1 AND i.following_ST_AVG_Reliability = 0)
         );
+    -- the new values that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        ST_ID int not null,
+        ST_AVG_ChangedAt datetime2 not null,
+        ST_AVG_PositedAt datetime2 not null,
+        UTL_ID tinyint not null
+    );
     IF EXISTS (
         SELECT TOP 1
             ST_AVG_StatementType
@@ -6448,6 +6791,38 @@ BEGIN
         UTL_ID tinyint not null,
         ST_AVG_StatementType char(1) not null
     );
+    INSERT INTO @skipped (
+        ST_ID,
+        ST_AVG_ChangedAt,
+        ST_AVG_PositedAt,
+        UTL_ID
+    )
+    SELECT
+        a.ST_ID,
+        a.ST_AVG_ChangedAt,
+        a.ST_AVG_PositedAt,
+        a.UTL_ID
+    FROM
+        @ST_AVG_Stage_Average a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.UTL_ID
+        FROM
+            @ST_AVG_Stage_Average h
+        WHERE
+            h.ST_ID = a.ST_ID
+        AND
+            h.ST_AVG_ChangedAt < a.ST_AVG_ChangedAt
+        ORDER BY
+            h.ST_AVG_ChangedAt DESC,
+            h.ST_AVG_PositedAt DESC
+    ) pre
+    WHERE
+        a.ST_AVG_StatementType in ('P', 'A')
+    AND
+        a.ST_AVG_Reliability = 1
+    AND
+        a.UTL_ID = pre.UTL_ID;
     INSERT INTO @restated (
         ST_ID,
         ST_AVG_ChangedAt,
@@ -6575,7 +6950,8 @@ BEGIN
     WHERE
         ST_AVG_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[ST_AVG_Stage_Average_Annex] (
         ST_AVG_ID,
         ST_AVG_PositedAt,
@@ -6585,8 +6961,27 @@ BEGIN
         e.ST_AVG_ID,
         v.ST_AVG_PositedAt,
         0
-    FROM
-        @ST_AVG_Stage_Average v
+    FROM (
+        SELECT
+            n.ST_ID,
+            n.ST_AVG_ChangedAt,
+            n.ST_AVG_PositedAt,
+            n.UTL_ID
+        FROM
+            @ST_AVG_Stage_Average n
+        WHERE
+            n.ST_AVG_StatementType in ('P', 'A')
+        AND
+            n.ST_AVG_Reliability = 1
+        UNION ALL
+        SELECT
+            k.ST_ID,
+            k.ST_AVG_ChangedAt,
+            k.ST_AVG_PositedAt,
+            k.UTL_ID
+        FROM
+            @skipped k
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.ST_AVG_ID,
@@ -6618,10 +7013,6 @@ BEGIN
             a.ST_AVG_PositedAt DESC
     ) e
     WHERE
-        v.ST_AVG_StatementType in ('P', 'A')
-    AND
-        v.ST_AVG_Reliability = 1
-    AND
         e.UTL_ID <> v.UTL_ID
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -6657,7 +7048,8 @@ BEGIN
             ST_MIN_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6682,6 +7074,43 @@ BEGIN
                 a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
             AND
                 a.ST_MIN_Reliability <> i.ST_MIN_Reliability
+        )
+        OR (
+            i.ST_MIN_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[ST_MIN_Stage_Minimum_Posit] p
+                JOIN
+                    [dbo].[ST_MIN_Stage_Minimum_Annex] a
+                ON
+                    a.ST_MIN_ID = p.ST_MIN_ID
+                WHERE
+                    p.ST_ID = i.ST_ID
+                AND
+                    p.UTL_ID <> i.UTL_ID
+                AND
+                    a.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+                AND
+                    a.ST_MIN_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.ST_ID = i.ST_ID
+                AND
+                    j.UTL_ID <> i.UTL_ID
+                AND
+                    j.ST_MIN_PositedAt = i.ST_MIN_PositedAt
+                AND
+                    j.ST_MIN_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -6759,7 +7188,17 @@ BEGIN
             a.ST_MIN_ID = p.ST_MIN_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @ST_MIN_Stage_Minimum n
+        WHERE
+            n.ST_ID = x.ST_ID
+        AND
+            n.ST_MIN_PositedAt = x.ST_MIN_PositedAt
+    );
     DECLARE @retracted TABLE (
         ST_ID int not null,
         ST_MIN_PositedAt datetime2 not null,
@@ -6871,7 +7310,8 @@ BEGIN
     WHERE
         ST_MIN_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[ST_MIN_Stage_Minimum_Annex] (
         ST_MIN_ID,
         ST_MIN_PositedAt,
@@ -6881,8 +7321,18 @@ BEGIN
         e.ST_MIN_ID,
         v.ST_MIN_PositedAt,
         0
-    FROM
-        @ST_MIN_Stage_Minimum v
+    FROM (
+        SELECT
+            n.ST_ID,
+            n.ST_MIN_PositedAt,
+            n.UTL_ID
+        FROM
+            @ST_MIN_Stage_Minimum n
+        WHERE
+            n.ST_MIN_StatementType in ('P', 'A')
+        AND
+            n.ST_MIN_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.ST_MIN_ID,
@@ -6912,10 +7362,6 @@ BEGIN
             a.ST_MIN_PositedAt DESC
     ) e
     WHERE
-        v.ST_MIN_StatementType in ('P', 'A')
-    AND
-        v.ST_MIN_Reliability = 1
-    AND
         e.UTL_ID <> v.UTL_ID
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -6953,7 +7399,8 @@ BEGIN
             AC_NAM_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -6981,6 +7428,47 @@ BEGIN
                 a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
             AND
                 a.AC_NAM_Reliability <> i.AC_NAM_Reliability
+        )
+        OR (
+            i.AC_NAM_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[AC_NAM_Actor_Name_Posit] p
+                JOIN
+                    [dbo].[AC_NAM_Actor_Name_Annex] a
+                ON
+                    a.AC_NAM_ID = p.AC_NAM_ID
+                WHERE
+                    p.AC_ID = i.AC_ID
+                AND
+                    p.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+                AND
+                    p.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+                AND
+                    a.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+                AND
+                    a.AC_NAM_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID = i.AC_ID
+                AND
+                    j.AC_NAM_ChangedAt = i.AC_NAM_ChangedAt
+                AND
+                    j.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name
+                AND
+                    j.AC_NAM_PositedAt = i.AC_NAM_PositedAt
+                AND
+                    j.AC_NAM_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7065,7 +7553,19 @@ BEGIN
             a.AC_NAM_ID = p.AC_NAM_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @AC_NAM_Actor_Name n
+        WHERE
+            n.AC_ID = x.AC_ID
+        AND
+            n.AC_NAM_ChangedAt = x.AC_NAM_ChangedAt
+        AND
+            n.AC_NAM_PositedAt = x.AC_NAM_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_ID int not null,
         AC_NAM_ChangedAt datetime2 not null,
@@ -7190,7 +7690,8 @@ BEGIN
     WHERE
         AC_NAM_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[AC_NAM_Actor_Name_Annex] (
         AC_NAM_ID,
         AC_NAM_PositedAt,
@@ -7200,8 +7701,19 @@ BEGIN
         e.AC_NAM_ID,
         v.AC_NAM_PositedAt,
         0
-    FROM
-        @AC_NAM_Actor_Name v
+    FROM (
+        SELECT
+            n.AC_ID,
+            n.AC_NAM_ChangedAt,
+            n.AC_NAM_PositedAt,
+            n.AC_NAM_Actor_Name
+        FROM
+            @AC_NAM_Actor_Name n
+        WHERE
+            n.AC_NAM_StatementType in ('P', 'A')
+        AND
+            n.AC_NAM_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.AC_NAM_ID,
@@ -7233,10 +7745,6 @@ BEGIN
             a.AC_NAM_PositedAt DESC
     ) e
     WHERE
-        v.AC_NAM_StatementType in ('P', 'A')
-    AND
-        v.AC_NAM_Reliability = 1
-    AND
         e.AC_NAM_Actor_Name <> v.AC_NAM_Actor_Name
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -7272,7 +7780,8 @@ BEGIN
             AC_GEN_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7297,6 +7806,43 @@ BEGIN
                 a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
             AND
                 a.AC_GEN_Reliability <> i.AC_GEN_Reliability
+        )
+        OR (
+            i.AC_GEN_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[AC_GEN_Actor_Gender_Posit] p
+                JOIN
+                    [dbo].[AC_GEN_Actor_Gender_Annex] a
+                ON
+                    a.AC_GEN_ID = p.AC_GEN_ID
+                WHERE
+                    p.AC_ID = i.AC_ID
+                AND
+                    p.GEN_ID <> i.GEN_ID
+                AND
+                    a.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+                AND
+                    a.AC_GEN_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID = i.AC_ID
+                AND
+                    j.GEN_ID <> i.GEN_ID
+                AND
+                    j.AC_GEN_PositedAt = i.AC_GEN_PositedAt
+                AND
+                    j.AC_GEN_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7374,7 +7920,17 @@ BEGIN
             a.AC_GEN_ID = p.AC_GEN_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @AC_GEN_Actor_Gender n
+        WHERE
+            n.AC_ID = x.AC_ID
+        AND
+            n.AC_GEN_PositedAt = x.AC_GEN_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_ID int not null,
         AC_GEN_PositedAt datetime2 not null,
@@ -7486,7 +8042,8 @@ BEGIN
     WHERE
         AC_GEN_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[AC_GEN_Actor_Gender_Annex] (
         AC_GEN_ID,
         AC_GEN_PositedAt,
@@ -7496,8 +8053,18 @@ BEGIN
         e.AC_GEN_ID,
         v.AC_GEN_PositedAt,
         0
-    FROM
-        @AC_GEN_Actor_Gender v
+    FROM (
+        SELECT
+            n.AC_ID,
+            n.AC_GEN_PositedAt,
+            n.GEN_ID
+        FROM
+            @AC_GEN_Actor_Gender n
+        WHERE
+            n.AC_GEN_StatementType in ('P', 'A')
+        AND
+            n.AC_GEN_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.AC_GEN_ID,
@@ -7527,10 +8094,6 @@ BEGIN
             a.AC_GEN_PositedAt DESC
     ) e
     WHERE
-        v.AC_GEN_StatementType in ('P', 'A')
-    AND
-        v.AC_GEN_Reliability = 1
-    AND
         e.GEN_ID <> v.GEN_ID
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -7568,7 +8131,8 @@ BEGIN
             AC_PLV_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7596,6 +8160,47 @@ BEGIN
                 a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
             AND
                 a.AC_PLV_Reliability <> i.AC_PLV_Reliability
+        )
+        OR (
+            i.AC_PLV_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[AC_PLV_Actor_ProfessionalLevel_Posit] p
+                JOIN
+                    [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] a
+                ON
+                    a.AC_PLV_ID = p.AC_PLV_ID
+                WHERE
+                    p.AC_ID = i.AC_ID
+                AND
+                    p.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+                AND
+                    p.PLV_ID <> i.PLV_ID
+                AND
+                    a.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+                AND
+                    a.AC_PLV_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID = i.AC_ID
+                AND
+                    j.AC_PLV_ChangedAt = i.AC_PLV_ChangedAt
+                AND
+                    j.PLV_ID <> i.PLV_ID
+                AND
+                    j.AC_PLV_PositedAt = i.AC_PLV_PositedAt
+                AND
+                    j.AC_PLV_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7680,7 +8285,19 @@ BEGIN
             a.AC_PLV_ID = p.AC_PLV_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel n
+        WHERE
+            n.AC_ID = x.AC_ID
+        AND
+            n.AC_PLV_ChangedAt = x.AC_PLV_ChangedAt
+        AND
+            n.AC_PLV_PositedAt = x.AC_PLV_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_ID int not null,
         AC_PLV_ChangedAt datetime2 not null,
@@ -7805,7 +8422,8 @@ BEGIN
     WHERE
         AC_PLV_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel_Annex] (
         AC_PLV_ID,
         AC_PLV_PositedAt,
@@ -7815,8 +8433,19 @@ BEGIN
         e.AC_PLV_ID,
         v.AC_PLV_PositedAt,
         0
-    FROM
-        @AC_PLV_Actor_ProfessionalLevel v
+    FROM (
+        SELECT
+            n.AC_ID,
+            n.AC_PLV_ChangedAt,
+            n.AC_PLV_PositedAt,
+            n.PLV_ID
+        FROM
+            @AC_PLV_Actor_ProfessionalLevel n
+        WHERE
+            n.AC_PLV_StatementType in ('P', 'A')
+        AND
+            n.AC_PLV_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.AC_PLV_ID,
@@ -7848,10 +8477,6 @@ BEGIN
             a.AC_PLV_PositedAt DESC
     ) e
     WHERE
-        v.AC_PLV_StatementType in ('P', 'A')
-    AND
-        v.AC_PLV_Reliability = 1
-    AND
         e.PLV_ID <> v.PLV_ID
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -7887,7 +8512,8 @@ BEGIN
             PR_NAM_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -7912,6 +8538,43 @@ BEGIN
                 a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
             AND
                 a.PR_NAM_Reliability <> i.PR_NAM_Reliability
+        )
+        OR (
+            i.PR_NAM_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[PR_NAM_Program_Name_Posit] p
+                JOIN
+                    [dbo].[PR_NAM_Program_Name_Annex] a
+                ON
+                    a.PR_NAM_ID = p.PR_NAM_ID
+                WHERE
+                    p.PR_ID = i.PR_ID
+                AND
+                    p.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+                AND
+                    a.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+                AND
+                    a.PR_NAM_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.PR_ID = i.PR_ID
+                AND
+                    j.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
+                AND
+                    j.PR_NAM_PositedAt = i.PR_NAM_PositedAt
+                AND
+                    j.PR_NAM_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -7989,7 +8652,17 @@ BEGIN
             a.PR_NAM_ID = p.PR_NAM_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @PR_NAM_Program_Name n
+        WHERE
+            n.PR_ID = x.PR_ID
+        AND
+            n.PR_NAM_PositedAt = x.PR_NAM_PositedAt
+    );
     DECLARE @retracted TABLE (
         PR_ID int not null,
         PR_NAM_PositedAt datetime2 not null,
@@ -8101,7 +8774,8 @@ BEGIN
     WHERE
         PR_NAM_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[PR_NAM_Program_Name_Annex] (
         PR_NAM_ID,
         PR_NAM_PositedAt,
@@ -8111,8 +8785,18 @@ BEGIN
         e.PR_NAM_ID,
         v.PR_NAM_PositedAt,
         0
-    FROM
-        @PR_NAM_Program_Name v
+    FROM (
+        SELECT
+            n.PR_ID,
+            n.PR_NAM_PositedAt,
+            n.PR_NAM_Program_Name
+        FROM
+            @PR_NAM_Program_Name n
+        WHERE
+            n.PR_NAM_StatementType in ('P', 'A')
+        AND
+            n.PR_NAM_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.PR_NAM_ID,
@@ -8142,10 +8826,6 @@ BEGIN
             a.PR_NAM_PositedAt DESC
     ) e
     WHERE
-        v.PR_NAM_StatementType in ('P', 'A')
-    AND
-        v.PR_NAM_Reliability = 1
-    AND
         e.PR_NAM_Program_Name <> v.PR_NAM_Program_Name
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -8183,7 +8863,8 @@ BEGIN
             PR_LEN_PositedAt desc
         )
     );
-    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
@@ -8211,6 +8892,47 @@ BEGIN
                 a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
             AND
                 a.PR_LEN_Reliability <> i.PR_LEN_Reliability
+        )
+        OR (
+            i.PR_LEN_Reliability = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[PR_LEN_Program_Length_Posit] p
+                JOIN
+                    [dbo].[PR_LEN_Program_Length_Annex] a
+                ON
+                    a.PR_LEN_ID = p.PR_LEN_ID
+                WHERE
+                    p.PR_ID = i.PR_ID
+                AND
+                    p.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+                AND
+                    p.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+                AND
+                    a.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+                AND
+                    a.PR_LEN_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.PR_ID = i.PR_ID
+                AND
+                    j.PR_LEN_ChangedAt = i.PR_LEN_ChangedAt
+                AND
+                    j.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
+                AND
+                    j.PR_LEN_PositedAt = i.PR_LEN_PositedAt
+                AND
+                    j.PR_LEN_Reliability = 1
+            )
+        )
         )
         FOR XML PATH('')
     );
@@ -8295,7 +9017,19 @@ BEGIN
             a.PR_LEN_ID = p.PR_LEN_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @PR_LEN_Program_Length n
+        WHERE
+            n.PR_ID = x.PR_ID
+        AND
+            n.PR_LEN_ChangedAt = x.PR_LEN_ChangedAt
+        AND
+            n.PR_LEN_PositedAt = x.PR_LEN_PositedAt
+    );
     DECLARE @retracted TABLE (
         PR_ID int not null,
         PR_LEN_ChangedAt date not null,
@@ -8367,6 +9101,13 @@ BEGIN
         OR
             (i.PR_LEN_Reliability = 1 AND i.following_PR_LEN_Reliability = 0)
         );
+    -- the new values that only restate the previous version, which are skipped, though what they correct is retracted
+    DECLARE @skipped TABLE (
+        PR_ID int not null,
+        PR_LEN_ChangedAt date not null,
+        PR_LEN_PositedAt datetime2 not null,
+        PR_LEN_Program_Length time not null
+    );
     IF EXISTS (
         SELECT TOP 1
             PR_LEN_StatementType
@@ -8384,6 +9125,38 @@ BEGIN
         PR_LEN_Program_Length time not null,
         PR_LEN_StatementType char(1) not null
     );
+    INSERT INTO @skipped (
+        PR_ID,
+        PR_LEN_ChangedAt,
+        PR_LEN_PositedAt,
+        PR_LEN_Program_Length
+    )
+    SELECT
+        a.PR_ID,
+        a.PR_LEN_ChangedAt,
+        a.PR_LEN_PositedAt,
+        a.PR_LEN_Program_Length
+    FROM
+        @PR_LEN_Program_Length a
+    CROSS APPLY (
+        SELECT TOP 1
+            h.PR_LEN_Program_Length
+        FROM
+            @PR_LEN_Program_Length h
+        WHERE
+            h.PR_ID = a.PR_ID
+        AND
+            h.PR_LEN_ChangedAt < a.PR_LEN_ChangedAt
+        ORDER BY
+            h.PR_LEN_ChangedAt DESC,
+            h.PR_LEN_PositedAt DESC
+    ) pre
+    WHERE
+        a.PR_LEN_StatementType in ('P', 'A')
+    AND
+        a.PR_LEN_Reliability = 1
+    AND
+        a.PR_LEN_Program_Length = pre.PR_LEN_Program_Length;
     INSERT INTO @restated (
         PR_ID,
         PR_LEN_ChangedAt,
@@ -8511,7 +9284,8 @@ BEGIN
     WHERE
         PR_LEN_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect at the same changing time when that has another
-    -- value (a correction), so that one posit at a time is asserted
+    -- value (a correction), so that one posit at a time is asserted; also when the assertion is a restatement that an
+    -- idempotent attribute skips
     INSERT INTO [dbo].[PR_LEN_Program_Length_Annex] (
         PR_LEN_ID,
         PR_LEN_PositedAt,
@@ -8521,8 +9295,27 @@ BEGIN
         e.PR_LEN_ID,
         v.PR_LEN_PositedAt,
         0
-    FROM
-        @PR_LEN_Program_Length v
+    FROM (
+        SELECT
+            n.PR_ID,
+            n.PR_LEN_ChangedAt,
+            n.PR_LEN_PositedAt,
+            n.PR_LEN_Program_Length
+        FROM
+            @PR_LEN_Program_Length n
+        WHERE
+            n.PR_LEN_StatementType in ('P', 'A')
+        AND
+            n.PR_LEN_Reliability = 1
+        UNION ALL
+        SELECT
+            k.PR_ID,
+            k.PR_LEN_ChangedAt,
+            k.PR_LEN_PositedAt,
+            k.PR_LEN_Program_Length
+        FROM
+            @skipped k
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.PR_LEN_ID,
@@ -8554,10 +9347,6 @@ BEGIN
             a.PR_LEN_PositedAt DESC
     ) e
     WHERE
-        v.PR_LEN_StatementType in ('P', 'A')
-    AND
-        v.PR_LEN_Reliability = 1
-    AND
         e.PR_LEN_Program_Length <> v.PR_LEN_Program_Length
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
         SELECT TOP 1
@@ -13758,7 +14547,23 @@ BEGIN
             a.AC_partner_AC_with_ONG_currently_ID = p.AC_partner_AC_with_ONG_currently_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_partner = x.AC_ID_partner
+        AND
+            n.AC_ID_with = x.AC_ID_with
+        AND
+            n.ONG_ID_currently = x.ONG_ID_currently
+        AND
+            n.AC_partner_AC_with_ONG_currently_ChangedAt = x.AC_partner_AC_with_ONG_currently_ChangedAt
+        AND
+            n.AC_partner_AC_with_ONG_currently_PositedAt = x.AC_partner_AC_with_ONG_currently_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_partner_AC_with_ONG_currently_StatementType char(1) not null,
         AC_partner_AC_with_ONG_currently_ChangedAt datetime2 not null,
@@ -14181,7 +14986,19 @@ BEGIN
             a.AC_subset_PN_of_ID = p.AC_subset_PN_of_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_subset = x.AC_ID_subset
+        AND
+            n.PN_ID_of = x.PN_ID_of
+        AND
+            n.AC_subset_PN_of_PositedAt = x.AC_subset_PN_of_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_subset_PN_of_StatementType char(1) not null,
         AC_subset_PN_of_PositedAt datetime2 not null,
@@ -14537,7 +15354,19 @@ BEGIN
             a.EV_in_AC_wasCast_ID = p.EV_in_AC_wasCast_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.EV_ID_in = x.EV_ID_in
+        AND
+            n.AC_ID_wasCast = x.AC_ID_wasCast
+        AND
+            n.EV_in_AC_wasCast_PositedAt = x.EV_in_AC_wasCast_PositedAt
+    );
     DECLARE @retracted TABLE (
         EV_in_AC_wasCast_StatementType char(1) not null,
         EV_in_AC_wasCast_PositedAt datetime2 not null,
@@ -14749,6 +15578,56 @@ BEGIN
             AND
                 a.AC_part_PR_in_RAT_got_Reliability <> ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[AC_part_PR_in_RAT_got_Posit] p
+                JOIN
+                    [dbo].[AC_part_PR_in_RAT_got_Annex] a
+                ON
+                    a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
+                WHERE
+                    p.AC_ID_part = i.AC_ID_part
+                AND
+                    p.PR_ID_in = i.PR_ID_in
+                AND
+                    p.AC_part_PR_in_RAT_got_ChangedAt = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        p.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    a.AC_part_PR_in_RAT_got_PositedAt = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    a.AC_part_PR_in_RAT_got_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.AC_ID_part = i.AC_ID_part
+                AND
+                    j.PR_ID_in = i.PR_ID_in
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_ChangedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_ChangedAt, @now)
+                AND
+                    (
+                        j.RAT_ID_got <> i.RAT_ID_got
+                    )
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_PositedAt, @now) = ISNULL(i.AC_part_PR_in_RAT_got_PositedAt, @now)
+                AND
+                    ISNULL(j.AC_part_PR_in_RAT_got_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -14842,7 +15721,21 @@ BEGIN
             a.AC_part_PR_in_RAT_got_ID = p.AC_part_PR_in_RAT_got_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_part = x.AC_ID_part
+        AND
+            n.PR_ID_in = x.PR_ID_in
+        AND
+            n.AC_part_PR_in_RAT_got_ChangedAt = x.AC_part_PR_in_RAT_got_ChangedAt
+        AND
+            n.AC_part_PR_in_RAT_got_PositedAt = x.AC_part_PR_in_RAT_got_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_part_PR_in_RAT_got_StatementType char(1) not null,
         AC_part_PR_in_RAT_got_ChangedAt datetime2 not null,
@@ -14962,7 +15855,8 @@ BEGIN
     WHERE
         v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers at the same changing time when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got_Annex] (
         AC_part_PR_in_RAT_got_ID,
         AC_part_PR_in_RAT_got_PositedAt,
@@ -14972,8 +15866,20 @@ BEGIN
         e.AC_part_PR_in_RAT_got_ID,
         v.AC_part_PR_in_RAT_got_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.AC_part_PR_in_RAT_got_ChangedAt,
+            n.AC_part_PR_in_RAT_got_PositedAt,
+            n.AC_ID_part,
+            n.PR_ID_in,
+            n.RAT_ID_got
+        FROM
+            @inserted n
+        WHERE
+            n.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
+        AND
+            n.AC_part_PR_in_RAT_got_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.AC_part_PR_in_RAT_got_ID,
@@ -15006,11 +15912,7 @@ BEGIN
         ORDER BY
             a.AC_part_PR_in_RAT_got_PositedAt DESC
     ) e
-    WHERE
-        v.AC_part_PR_in_RAT_got_StatementType in ('P', 'A')
-    AND
-        v.AC_part_PR_in_RAT_got_Reliability = 1
-    AND (
+    WHERE (
         e.RAT_ID_got <> v.RAT_ID_got
     )
     AND NOT EXISTS ( -- not if it has an assertion at the positing time already
@@ -15322,7 +16224,21 @@ BEGIN
             a.ST_at_PR_isPlaying_ID = p.ST_at_PR_isPlaying_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.ST_ID_at = x.ST_ID_at
+        AND
+            n.PR_ID_isPlaying = x.PR_ID_isPlaying
+        AND
+            n.ST_at_PR_isPlaying_ChangedAt = x.ST_at_PR_isPlaying_ChangedAt
+        AND
+            n.ST_at_PR_isPlaying_PositedAt = x.ST_at_PR_isPlaying_PositedAt
+    );
     DECLARE @retracted TABLE (
         ST_at_PR_isPlaying_StatementType char(1) not null,
         ST_at_PR_isPlaying_ChangedAt datetime2 not null,
@@ -15636,7 +16552,21 @@ BEGIN
             a.AC_parent_AC_child_PAT_having_ID = p.AC_parent_AC_child_PAT_having_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.AC_ID_parent = x.AC_ID_parent
+        AND
+            n.AC_ID_child = x.AC_ID_child
+        AND
+            n.PAT_ID_having = x.PAT_ID_having
+        AND
+            n.AC_parent_AC_child_PAT_having_PositedAt = x.AC_parent_AC_child_PAT_having_PositedAt
+    );
     DECLARE @retracted TABLE (
         AC_parent_AC_child_PAT_having_StatementType char(1) not null,
         AC_parent_AC_child_PAT_having_PositedAt datetime2 not null,
@@ -15859,6 +16789,52 @@ BEGIN
             AND
                 a.PR_content_ST_location_EV_of_Reliability <> ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
         )
+        -- and so, since one posit at a time is asserted for the identifiers, is an assertion of other values at that time
+        OR (
+            ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1) = 1
+        AND (
+            EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    [dbo].[PR_content_ST_location_EV_of_Posit] p
+                JOIN
+                    [dbo].[PR_content_ST_location_EV_of_Annex] a
+                ON
+                    a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
+                WHERE
+                    p.EV_ID_of = i.EV_ID_of
+                AND
+                    (
+                        p.PR_ID_content <> i.PR_ID_content
+                    OR
+                        p.ST_ID_location <> i.ST_ID_location
+                    )
+                AND
+                    a.PR_content_ST_location_EV_of_PositedAt = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+                AND
+                    a.PR_content_ST_location_EV_of_Reliability = 1
+            )
+            OR EXISTS (
+                SELECT TOP 1
+                    42
+                FROM
+                    inserted j
+                WHERE
+                    j.EV_ID_of = i.EV_ID_of
+                AND
+                    (
+                        j.PR_ID_content <> i.PR_ID_content
+                    OR
+                        j.ST_ID_location <> i.ST_ID_location
+                    )
+                AND
+                    ISNULL(j.PR_content_ST_location_EV_of_PositedAt, @now) = ISNULL(i.PR_content_ST_location_EV_of_PositedAt, @now)
+                AND
+                    ISNULL(j.PR_content_ST_location_EV_of_Reliability, 1) = 1
+            )
+        )
+        )
         FOR XML PATH('')
     );
     IF @message is not null
@@ -15940,7 +16916,17 @@ BEGIN
             a.PR_content_ST_location_EV_of_ID = p.PR_content_ST_location_EV_of_ID
     ) x
     WHERE
-        x.shown = 1;
+        x.shown = 1
+    AND NOT EXISTS ( -- at a positing time that a new row has, the new row is what counts
+        SELECT TOP 1
+            42
+        FROM
+            @inserted n
+        WHERE
+            n.EV_ID_of = x.EV_ID_of
+        AND
+            n.PR_content_ST_location_EV_of_PositedAt = x.PR_content_ST_location_EV_of_PositedAt
+    );
     DECLARE @retracted TABLE (
         PR_content_ST_location_EV_of_StatementType char(1) not null,
         PR_content_ST_location_EV_of_PositedAt datetime2 not null,
@@ -16045,7 +17031,8 @@ BEGIN
     WHERE
         v.PR_content_ST_location_EV_of_StatementType in ('P', 'A');
     -- an assertion retracts, at its positing time, the posit in effect for the identifiers when
-    -- that has other values (a correction), so that one posit at a time is asserted
+    -- that has other values (a correction), so that one posit at a time is asserted; also when the assertion is a
+    -- restatement that an idempotent tie skips
     INSERT INTO [dbo].[PR_content_ST_location_EV_of_Annex] (
         PR_content_ST_location_EV_of_ID,
         PR_content_ST_location_EV_of_PositedAt,
@@ -16055,8 +17042,19 @@ BEGIN
         e.PR_content_ST_location_EV_of_ID,
         v.PR_content_ST_location_EV_of_PositedAt,
         0
-    FROM
-        @inserted v
+    FROM (
+        SELECT
+            n.PR_content_ST_location_EV_of_PositedAt,
+            n.PR_ID_content,
+            n.ST_ID_location,
+            n.EV_ID_of
+        FROM
+            @inserted n
+        WHERE
+            n.PR_content_ST_location_EV_of_StatementType in ('P', 'A')
+        AND
+            n.PR_content_ST_location_EV_of_Reliability = 1
+    ) v
     CROSS APPLY (
         SELECT TOP 1
             p.PR_content_ST_location_EV_of_ID,
@@ -16086,11 +17084,7 @@ BEGIN
         ORDER BY
             a.PR_content_ST_location_EV_of_PositedAt DESC
     ) e
-    WHERE
-        v.PR_content_ST_location_EV_of_StatementType in ('P', 'A')
-    AND
-        v.PR_content_ST_location_EV_of_Reliability = 1
-    AND (
+    WHERE (
         e.PR_ID_content <> v.PR_ID_content
     OR
         e.ST_ID_location <> v.ST_ID_location
