@@ -355,6 +355,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_partner_AC_with_ONG_currently_PositedAt bit = CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_partner_AC_with_ONG_currently_ChangedAt bit = CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_currently_ONG_Ongoing bit = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
         RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
     -- a value set to null retracts the shown posit
@@ -366,8 +371,8 @@ BEGIN
     SELECT
         i.AC_partner_AC_with_ONG_currently_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -383,7 +388,7 @@ BEGIN
     OR
         i.AC_ID_with is null
     OR
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
+        CASE WHEN @updated_currently_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_partner_AC_with_ONG_currently] (
@@ -396,7 +401,7 @@ BEGIN
     )
     SELECT
         cast(CASE
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -409,14 +414,14 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+                    d.ONG_ID_currently = CASE WHEN @updated_currently_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_currently_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
+        cast(CASE WHEN @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
     FROM
         inserted i
@@ -429,11 +434,11 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
+        CASE WHEN @updated_currently_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
-            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 OR
+            @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -446,7 +451,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(currently_ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+                    d.ONG_ID_currently = CASE WHEN @updated_currently_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
                 AND
                     d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
             )
@@ -760,6 +765,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_subset_PN_of_PositedAt bit = CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_subset_PN_of_ID))
         RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
     -- a value set to null retracts the shown posit
@@ -771,7 +779,7 @@ BEGIN
     SELECT
         i.AC_subset_PN_of_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+            WHEN @updated_AC_subset_PN_of_PositedAt = 1 THEN i.AC_subset_PN_of_PositedAt
         END, @now) as datetime2),
         0
     FROM
@@ -793,7 +801,7 @@ BEGIN
     SELECT
         i.AC_ID_subset,
         i.PN_ID_of,
-        cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_AC_subset_PN_of_PositedAt = 1 THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_subset_PN_of_Reliability, 1)
     FROM
         inserted i
@@ -803,7 +811,7 @@ BEGIN
         i.PN_ID_of is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_subset_PN_of_PositedAt) OR
+            @updated_AC_subset_PN_of_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -1594,6 +1602,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_part_PR_in_RAT_got_PositedAt bit = CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_part_PR_in_RAT_got_ChangedAt bit = CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_got_RAT_Rating bit = CASE WHEN UPDATE(got_RAT_Rating) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_part_PR_in_RAT_got_ID))
         RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID_part))
@@ -1609,8 +1622,8 @@ BEGIN
     SELECT
         i.AC_part_PR_in_RAT_got_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
-            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_PositedAt = 1 THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 THEN i.AC_part_PR_in_RAT_got_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -1622,7 +1635,7 @@ BEGIN
     WHERE
         i.AC_part_PR_in_RAT_got_ID is not null
     AND (
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
+        CASE WHEN @updated_got_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
@@ -1635,7 +1648,7 @@ BEGIN
     )
     SELECT
         cast(CASE
-            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 THEN i.AC_part_PR_in_RAT_got_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -1644,14 +1657,14 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+                    d.RAT_ID_got = CASE WHEN @updated_got_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_got_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
+        cast(CASE WHEN @updated_AC_part_PR_in_RAT_got_PositedAt = 1 THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
     FROM
         inserted i
@@ -1660,11 +1673,11 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.got_RAT_Rating
     WHERE
-        CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
+        CASE WHEN @updated_got_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
-            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 OR
+            @updated_AC_part_PR_in_RAT_got_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -1673,7 +1686,7 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(got_RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+                    d.RAT_ID_got = CASE WHEN @updated_got_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
                 AND
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
@@ -2762,6 +2775,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_PR_content_ST_location_EV_of_PositedAt bit = CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_content_ST_location_EV_of_ID))
         RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID_of))
@@ -2775,7 +2791,7 @@ BEGIN
     SELECT
         i.PR_content_ST_location_EV_of_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+            WHEN @updated_PR_content_ST_location_EV_of_PositedAt = 1 THEN i.PR_content_ST_location_EV_of_PositedAt
         END, @now) as datetime2),
         0
     FROM
@@ -2799,7 +2815,7 @@ BEGIN
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_PR_content_ST_location_EV_of_PositedAt = 1 THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
         ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
     FROM
         inserted i
@@ -2809,7 +2825,7 @@ BEGIN
         i.ST_ID_location is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            @updated_PR_content_ST_location_EV_of_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42

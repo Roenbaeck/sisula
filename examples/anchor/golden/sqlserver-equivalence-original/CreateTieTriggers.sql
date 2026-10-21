@@ -121,6 +121,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_partner_AC_with_ONG_currently_ChangedAt bit = CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ONG_Ongoing bit = CASE WHEN UPDATE(ONG_Ongoing) THEN 1 ELSE 0 END;
     INSERT INTO [ties].[AC_partner_AC_with_ONG_currently] (
         Metadata_AC_partner_AC_with_ONG_currently,
         AC_partner_AC_with_ONG_currently_ChangedAt,
@@ -130,10 +134,10 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_partner_AC_with_ONG_currently,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_ChangedAt ELSE @now END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+        CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
     FROM
         inserted i
     LEFT JOIN
@@ -145,10 +149,10 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
+        CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
+            @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -159,7 +163,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+                    d.ONG_ID_currently = CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             )
         );
 END
@@ -256,6 +260,8 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
     INSERT INTO [ties].[AC_subset_PN_of] (
         Metadata_AC_subset_PN_of,
         AC_ID_subset,
@@ -519,6 +525,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_part_PR_in_RAT_got_ChangedAt bit = CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_RAT_Rating bit = CASE WHEN UPDATE(RAT_Rating) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_ID_part))
         RAISERROR('The identity column AC_ID_part is not updatable.', 16, 1);
     IF(UPDATE(PR_ID_in))
@@ -532,10 +542,10 @@ BEGIN
     )
     SELECT
         i.Metadata_AC_part_PR_in_RAT_got,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 THEN i.AC_part_PR_in_RAT_got_ChangedAt ELSE @now END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+        CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
     FROM
         inserted i
     LEFT JOIN
@@ -543,10 +553,10 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.RAT_Rating
     WHERE
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
+        CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
+            @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -557,7 +567,7 @@ BEGIN
                 AND
                     d.PR_ID_in = i.PR_ID_in
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+                    d.RAT_ID_got = CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             )
         );
 END
@@ -887,6 +897,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_PR_content_ST_location_EV_of_ChangedAt bit = CASE WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN 1 ELSE 0 END;
     INSERT INTO [ties].[PR_content_ST_location_EV_of] (
         Metadata_PR_content_ST_location_EV_of,
         PR_content_ST_location_EV_of_ChangedAt,
@@ -896,7 +909,7 @@ BEGIN
     )
     SELECT
         i.Metadata_PR_content_ST_location_EV_of,
-        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_ChangedAt) THEN i.PR_content_ST_location_EV_of_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_PR_content_ST_location_EV_of_ChangedAt = 1 THEN i.PR_content_ST_location_EV_of_ChangedAt ELSE @now END as datetime2),
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of
@@ -910,7 +923,7 @@ BEGIN
         i.EV_ID_of is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(PR_content_ST_location_EV_of_ChangedAt) OR
+            @updated_PR_content_ST_location_EV_of_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42

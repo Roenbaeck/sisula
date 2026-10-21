@@ -125,6 +125,8 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID_wasHeldAt))
@@ -135,9 +137,11 @@ BEGIN
         RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
     IF(UPDATE(of_ETY_EventType))
         RAISERROR('The role column of_ETY_EventType is not updatable.', 16, 1);
+    DECLARE @updated_EV_DAT_Event_Date bit = CASE WHEN UPDATE(EV_DAT_Event_Date) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_EQ bit = CASE WHEN UPDATE(EV_DAT_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_DAT_EV_ID))
         RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_DAT_Event_Date))
+    IF(@updated_EV_DAT_Event_Date = 1)
     BEGIN
         INSERT INTO [dbo].[EV_DAT_Event_Date] (
             EV_DAT_EV_ID,
@@ -157,14 +161,15 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_DAT_EQ) OR
+            @updated_EV_DAT_EQ = 1 OR
             d.EV_DAT_Event_Date is null OR
             d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
         );
     END
+    DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_AUD_Event_Audience))
+    IF(@updated_EV_AUD_Event_Audience = 1)
     BEGIN
         INSERT INTO [dbo].[EV_AUD_Event_Audience] (
             EV_AUD_EV_ID,
@@ -186,9 +191,11 @@ BEGIN
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
         );
     END
+    DECLARE @updated_EV_REV_Event_Revenue bit = CASE WHEN UPDATE(EV_REV_Event_Revenue) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_EQ bit = CASE WHEN UPDATE(EV_REV_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_REV_Event_Revenue))
+    IF(@updated_EV_REV_Event_Revenue = 1)
     BEGIN
         INSERT INTO [dbo].[EV_REV_Event_Revenue] (
             EV_REV_EV_ID,
@@ -208,7 +215,7 @@ BEGIN
         WHERE
             i.EV_REV_Event_Revenue is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_REV_EQ) OR
+            @updated_EV_REV_EQ = 1 OR
             d.EV_REV_Event_Revenue is null OR
             d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
         );

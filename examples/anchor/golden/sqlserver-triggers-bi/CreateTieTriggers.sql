@@ -477,6 +477,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_holder_OB_item_GRD_grade_PositedAt bit = CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_holder_OB_item_GRD_grade_ChangedAt bit = CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_grade_GRD_Grade bit = CASE WHEN UPDATE(grade_GRD_Grade) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_holder_OB_item_GRD_grade_ID))
         RAISERROR('The identity column SU_holder_OB_item_GRD_grade_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ID_holder))
@@ -494,8 +499,8 @@ BEGIN
         i.Metadata_SU_holder_OB_item_GRD_grade,
         i.SU_holder_OB_item_GRD_grade_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(SU_holder_OB_item_GRD_grade_PositedAt) THEN i.SU_holder_OB_item_GRD_grade_PositedAt
-            WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt
+            WHEN @updated_SU_holder_OB_item_GRD_grade_PositedAt = 1 THEN i.SU_holder_OB_item_GRD_grade_PositedAt
+            WHEN @updated_SU_holder_OB_item_GRD_grade_ChangedAt = 1 THEN i.SU_holder_OB_item_GRD_grade_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -507,7 +512,7 @@ BEGIN
     WHERE
         i.SU_holder_OB_item_GRD_grade_ID is not null
     AND (
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is null
+        CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[SU_holder_OB_item_GRD_grade] (
@@ -522,7 +527,7 @@ BEGIN
     SELECT
         i.Metadata_SU_holder_OB_item_GRD_grade,
         cast(CASE
-            WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt
+            WHEN @updated_SU_holder_OB_item_GRD_grade_ChangedAt = 1 THEN i.SU_holder_OB_item_GRD_grade_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -531,14 +536,14 @@ BEGIN
                 WHERE
                     d.SU_holder_OB_item_GRD_grade_ID = i.SU_holder_OB_item_GRD_grade_ID
                 AND
-                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
+                    d.GRD_ID_grade = CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
             ) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.SU_ID_holder,
         i.OB_ID_item,
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END,
-        cast(CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_PositedAt) THEN i.SU_holder_OB_item_GRD_grade_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END,
+        cast(CASE WHEN @updated_SU_holder_OB_item_GRD_grade_PositedAt = 1 THEN i.SU_holder_OB_item_GRD_grade_PositedAt ELSE @now END as datetime2),
         ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
     FROM
         inserted i
@@ -547,11 +552,11 @@ BEGIN
     ON
         [GRD_grade].GRD_Grade = i.grade_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
+        CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) OR
-            UPDATE(SU_holder_OB_item_GRD_grade_PositedAt) OR
+            @updated_SU_holder_OB_item_GRD_grade_ChangedAt = 1 OR
+            @updated_SU_holder_OB_item_GRD_grade_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -560,7 +565,7 @@ BEGIN
                 WHERE
                     d.SU_holder_OB_item_GRD_grade_ID = i.SU_holder_OB_item_GRD_grade_ID
                 AND
-                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
+                    d.GRD_ID_grade = CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
                 AND
                     d.SU_holder_OB_item_GRD_grade_Reliability = ISNULL(i.SU_holder_OB_item_GRD_grade_Reliability, 1)
             )
@@ -1341,6 +1346,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_keeper_OB_thing_GRD_rank_PositedAt bit = CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt bit = CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_rank_GRD_Grade bit = CASE WHEN UPDATE(rank_GRD_Grade) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_keeper_OB_thing_GRD_rank_ID))
         RAISERROR('The identity column SU_keeper_OB_thing_GRD_rank_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ID_keeper))
@@ -1358,8 +1368,8 @@ BEGIN
         i.Metadata_SU_keeper_OB_thing_GRD_rank,
         i.SU_keeper_OB_thing_GRD_rank_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_PositedAt) THEN i.SU_keeper_OB_thing_GRD_rank_PositedAt
-            WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt
+            WHEN @updated_SU_keeper_OB_thing_GRD_rank_PositedAt = 1 THEN i.SU_keeper_OB_thing_GRD_rank_PositedAt
+            WHEN @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt = 1 THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -1371,7 +1381,7 @@ BEGIN
     WHERE
         i.SU_keeper_OB_thing_GRD_rank_ID is not null
     AND (
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is null
+        CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[SU_keeper_OB_thing_GRD_rank] (
@@ -1386,7 +1396,7 @@ BEGIN
     SELECT
         i.Metadata_SU_keeper_OB_thing_GRD_rank,
         cast(CASE
-            WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt
+            WHEN @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt = 1 THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -1395,14 +1405,14 @@ BEGIN
                 WHERE
                     d.SU_keeper_OB_thing_GRD_rank_ID = i.SU_keeper_OB_thing_GRD_rank_ID
                 AND
-                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
+                    d.GRD_ID_rank = CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
             ) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END,
-        cast(CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_PositedAt) THEN i.SU_keeper_OB_thing_GRD_rank_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END,
+        cast(CASE WHEN @updated_SU_keeper_OB_thing_GRD_rank_PositedAt = 1 THEN i.SU_keeper_OB_thing_GRD_rank_PositedAt ELSE @now END as datetime2),
         ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
     FROM
         inserted i
@@ -1411,11 +1421,11 @@ BEGIN
     ON
         [GRD_rank].GRD_Grade = i.rank_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
+        CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) OR
-            UPDATE(SU_keeper_OB_thing_GRD_rank_PositedAt) OR
+            @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt = 1 OR
+            @updated_SU_keeper_OB_thing_GRD_rank_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -1424,7 +1434,7 @@ BEGIN
                 WHERE
                     d.SU_keeper_OB_thing_GRD_rank_ID = i.SU_keeper_OB_thing_GRD_rank_ID
                 AND
-                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
+                    d.GRD_ID_rank = CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
                 AND
                     d.SU_keeper_OB_thing_GRD_rank_Reliability = ISNULL(i.SU_keeper_OB_thing_GRD_rank_Reliability, 1)
             )
@@ -1848,6 +1858,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_OB_part_SU_owner_PositedAt bit = CASE WHEN UPDATE(OB_part_SU_owner_PositedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(OB_part_SU_owner_ID))
         RAISERROR('The identity column OB_part_SU_owner_ID is not updatable.', 16, 1);
     IF(UPDATE(OB_ID_part))
@@ -1863,7 +1876,7 @@ BEGIN
         i.Metadata_OB_part_SU_owner,
         i.OB_part_SU_owner_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(OB_part_SU_owner_PositedAt) THEN i.OB_part_SU_owner_PositedAt
+            WHEN @updated_OB_part_SU_owner_PositedAt = 1 THEN i.OB_part_SU_owner_PositedAt
         END, @now) as datetime2),
         0
     FROM
@@ -1885,7 +1898,7 @@ BEGIN
         i.Metadata_OB_part_SU_owner,
         i.OB_ID_part,
         i.SU_ID_owner,
-        cast(CASE WHEN UPDATE(OB_part_SU_owner_PositedAt) THEN i.OB_part_SU_owner_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_OB_part_SU_owner_PositedAt = 1 THEN i.OB_part_SU_owner_PositedAt ELSE @now END as datetime2),
         ISNULL(i.OB_part_SU_owner_Reliability, 1)
     FROM
         inserted i
@@ -1893,7 +1906,7 @@ BEGIN
         i.SU_ID_owner is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(OB_part_SU_owner_PositedAt) OR
+            @updated_OB_part_SU_owner_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -2255,6 +2268,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_partner_SU_with_PositedAt bit = CASE WHEN UPDATE(SU_partner_SU_with_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_partner_SU_with_ChangedAt bit = CASE WHEN UPDATE(SU_partner_SU_with_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_partner_SU_with_ID))
         RAISERROR('The identity column SU_partner_SU_with_ID is not updatable.', 16, 1);
     -- a value set to null retracts the shown posit
@@ -2268,8 +2285,8 @@ BEGIN
         i.Metadata_SU_partner_SU_with,
         i.SU_partner_SU_with_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(SU_partner_SU_with_PositedAt) THEN i.SU_partner_SU_with_PositedAt
-            WHEN UPDATE(SU_partner_SU_with_ChangedAt) THEN i.SU_partner_SU_with_ChangedAt
+            WHEN @updated_SU_partner_SU_with_PositedAt = 1 THEN i.SU_partner_SU_with_PositedAt
+            WHEN @updated_SU_partner_SU_with_ChangedAt = 1 THEN i.SU_partner_SU_with_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -2293,7 +2310,7 @@ BEGIN
     SELECT
         i.Metadata_SU_partner_SU_with,
         cast(CASE
-            WHEN UPDATE(SU_partner_SU_with_ChangedAt) THEN i.SU_partner_SU_with_ChangedAt
+            WHEN @updated_SU_partner_SU_with_ChangedAt = 1 THEN i.SU_partner_SU_with_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -2310,7 +2327,7 @@ BEGIN
         END as datetime2),
         i.SU_ID_partner,
         i.SU_ID_with,
-        cast(CASE WHEN UPDATE(SU_partner_SU_with_PositedAt) THEN i.SU_partner_SU_with_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_SU_partner_SU_with_PositedAt = 1 THEN i.SU_partner_SU_with_PositedAt ELSE @now END as datetime2),
         ISNULL(i.SU_partner_SU_with_Reliability, 1)
     FROM
         inserted i
@@ -2320,8 +2337,8 @@ BEGIN
         i.SU_ID_with is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(SU_partner_SU_with_ChangedAt) OR
-            UPDATE(SU_partner_SU_with_PositedAt) OR
+            @updated_SU_partner_SU_with_ChangedAt = 1 OR
+            @updated_SU_partner_SU_with_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42

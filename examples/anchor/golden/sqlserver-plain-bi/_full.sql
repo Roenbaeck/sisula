@@ -9549,16 +9549,23 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_ID))
         RAISERROR('The identity column ST_ID is not updatable.', 16, 1);
+    DECLARE @updated_ST_NAM_Stage_Name bit = CASE WHEN UPDATE(ST_NAM_Stage_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_NAM_ChangedAt bit = CASE WHEN UPDATE(ST_NAM_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_NAM_PositedAt bit = CASE WHEN UPDATE(ST_NAM_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_NAM_Reliability bit = CASE WHEN UPDATE(ST_NAM_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_NAM_ID))
         RAISERROR('The identity column ST_NAM_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(ST_NAM_Stage_Name) OR
-        UPDATE(ST_NAM_Reliability) OR
-        UPDATE(Reliability)
+        @updated_ST_NAM_Stage_Name = 1 OR
+        @updated_ST_NAM_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_NAM_Stage_Name] (
@@ -9572,16 +9579,16 @@ BEGIN
             ISNULL(i.ST_ID, i.ST_ID),
             i.ST_NAM_Stage_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN @updated_ST_NAM_ChangedAt = 1 THEN i.ST_NAM_ChangedAt
                 WHEN d.ST_NAM_Stage_Name = i.ST_NAM_Stage_Name
                 THEN i.ST_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
+                WHEN @updated_ST_NAM_PositedAt = 1 THEN i.ST_NAM_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_NAM_Reliability = 1 THEN i.ST_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_NAM_Reliability
             END, 1)
         FROM
@@ -9593,13 +9600,13 @@ BEGIN
         WHERE
             i.ST_NAM_Stage_Name is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(ST_NAM_ChangedAt) OR
-            UPDATE(ST_NAM_PositedAt) OR
+            @updated_ST_NAM_ChangedAt = 1 OR
+            @updated_ST_NAM_PositedAt = 1 OR
             d.ST_NAM_Stage_Name is null OR
             d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name OR
             d.ST_NAM_Reliability <> ISNULL(CASE
-                WHEN UPDATE(ST_NAM_Reliability) THEN i.ST_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_NAM_Reliability = 1 THEN i.ST_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_NAM_Reliability
             END, 1)
         )
@@ -9608,7 +9615,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_NAM_Stage_Name)
+        @updated_ST_NAM_Stage_Name = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_NAM_Stage_Name] (
@@ -9623,8 +9630,8 @@ BEGIN
             p.ST_NAM_Stage_Name,
             p.ST_NAM_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_NAM_PositedAt) THEN i.ST_NAM_PositedAt
-                WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN @updated_ST_NAM_PositedAt = 1 THEN i.ST_NAM_PositedAt
+                WHEN @updated_ST_NAM_ChangedAt = 1 THEN i.ST_NAM_ChangedAt
             END, @now) as datetime2),
             0
         FROM
@@ -9636,14 +9643,17 @@ BEGIN
         WHERE
             i.ST_NAM_Stage_Name is null
     END
+    DECLARE @updated_ST_LOC_Stage_Location bit = CASE WHEN UPDATE(ST_LOC_Stage_Location) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_LOC_PositedAt bit = CASE WHEN UPDATE(ST_LOC_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_LOC_Reliability bit = CASE WHEN UPDATE(ST_LOC_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_LOC_ID))
         RAISERROR('The identity column ST_LOC_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(ST_LOC_Stage_Location) OR
-        UPDATE(ST_LOC_Reliability) OR
-        UPDATE(Reliability)
+        @updated_ST_LOC_Stage_Location = 1 OR
+        @updated_ST_LOC_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_LOC_Stage_Location] (
@@ -9656,11 +9666,11 @@ BEGIN
             ISNULL(i.ST_ID, i.ST_ID),
             i.ST_LOC_Stage_Location,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+                WHEN @updated_ST_LOC_PositedAt = 1 THEN i.ST_LOC_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_LOC_Reliability = 1 THEN i.ST_LOC_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_LOC_Reliability
             END, 1)
         FROM
@@ -9672,12 +9682,12 @@ BEGIN
         WHERE
             i.ST_LOC_Stage_Location is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(ST_LOC_PositedAt) OR
+            @updated_ST_LOC_PositedAt = 1 OR
             d.ST_LOC_Stage_Location is null OR
             d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max))) OR
             d.ST_LOC_Reliability <> ISNULL(CASE
-                WHEN UPDATE(ST_LOC_Reliability) THEN i.ST_LOC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_LOC_Reliability = 1 THEN i.ST_LOC_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_LOC_Reliability
             END, 1)
         )
@@ -9686,7 +9696,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(ST_LOC_Stage_Location)
+        @updated_ST_LOC_Stage_Location = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_LOC_Stage_Location] (
@@ -9699,7 +9709,7 @@ BEGIN
             p.ST_ID,
             p.ST_LOC_Stage_Location,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_LOC_PositedAt) THEN i.ST_LOC_PositedAt
+                WHEN @updated_ST_LOC_PositedAt = 1 THEN i.ST_LOC_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -9711,15 +9721,20 @@ BEGIN
         WHERE
             i.ST_LOC_Stage_Location is null
     END
+    DECLARE @updated_UTL_ID bit = CASE WHEN UPDATE(UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_UTL_Utilization bit = CASE WHEN UPDATE(UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_AVG_ChangedAt bit = CASE WHEN UPDATE(ST_AVG_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_AVG_PositedAt bit = CASE WHEN UPDATE(ST_AVG_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_AVG_Reliability bit = CASE WHEN UPDATE(ST_AVG_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_AVG_ID))
         RAISERROR('The identity column ST_AVG_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) OR
-        UPDATE(ST_AVG_Reliability) OR
-        UPDATE(Reliability)
+        @updated_UTL_ID = 1 OR
+        @updated_UTL_Utilization = 1 OR
+        @updated_ST_AVG_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_AVG_Stage_Average] (
@@ -9732,20 +9747,20 @@ BEGIN
         SELECT
             ISNULL(i.ST_ID, i.ST_ID),
             CASE
-                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                WHEN @updated_UTL_ID = 1 THEN i.UTL_ID
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
-                WHEN d.UTL_ID = CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END
+                WHEN @updated_ST_AVG_ChangedAt = 1 THEN i.ST_AVG_ChangedAt
+                WHEN d.UTL_ID = CASE WHEN @updated_UTL_ID = 1 THEN i.UTL_ID ELSE [kUTL].UTL_ID END
                 THEN i.ST_AVG_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
+                WHEN @updated_ST_AVG_PositedAt = 1 THEN i.ST_AVG_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_AVG_Reliability = 1 THEN i.ST_AVG_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_AVG_Reliability
             END, 1)
         FROM
@@ -9760,17 +9775,17 @@ BEGIN
             d.ST_ID = i.ST_ID
         WHERE
             CASE
-                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                WHEN @updated_UTL_ID = 1 THEN i.UTL_ID
                 ELSE [kUTL].UTL_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(ST_AVG_ChangedAt) OR
-            UPDATE(ST_AVG_PositedAt) OR
+            @updated_ST_AVG_ChangedAt = 1 OR
+            @updated_ST_AVG_PositedAt = 1 OR
             d.UTL_ID is null OR
-            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.UTL_ID <> CASE WHEN @updated_UTL_ID = 1 THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
             d.ST_AVG_Reliability <> ISNULL(CASE
-                WHEN UPDATE(ST_AVG_Reliability) THEN i.ST_AVG_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_AVG_Reliability = 1 THEN i.ST_AVG_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_AVG_Reliability
             END, 1)
         );
@@ -9779,8 +9794,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization)
+        @updated_UTL_ID = 1 OR
+        @updated_UTL_Utilization = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_AVG_Stage_Average] (
@@ -9795,8 +9810,8 @@ BEGIN
             p.UTL_ID,
             p.ST_AVG_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_AVG_PositedAt) THEN i.ST_AVG_PositedAt
-                WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN @updated_ST_AVG_PositedAt = 1 THEN i.ST_AVG_PositedAt
+                WHEN @updated_ST_AVG_ChangedAt = 1 THEN i.ST_AVG_ChangedAt
             END, @now) as datetime2),
             0
         FROM
@@ -9806,19 +9821,23 @@ BEGIN
         ON
             p.ST_AVG_ID = i.ST_AVG_ID
         WHERE
-            (UPDATE(UTL_ID) AND i.UTL_ID is null)
+            (@updated_UTL_ID = 1 AND i.UTL_ID is null)
         OR
-            (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
+            (@updated_UTL_Utilization = 1 AND i.UTL_Utilization is null);
     END
+    DECLARE @updated_UTL_ID bit = CASE WHEN UPDATE(UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_UTL_Utilization bit = CASE WHEN UPDATE(UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_MIN_PositedAt bit = CASE WHEN UPDATE(ST_MIN_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_MIN_Reliability bit = CASE WHEN UPDATE(ST_MIN_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_MIN_ID))
         RAISERROR('The identity column ST_MIN_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID))
         RAISERROR('The foreign key column ST_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization) OR
-        UPDATE(ST_MIN_Reliability) OR
-        UPDATE(Reliability)
+        @updated_UTL_ID = 1 OR
+        @updated_UTL_Utilization = 1 OR
+        @updated_ST_MIN_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum] (
@@ -9830,15 +9849,15 @@ BEGIN
         SELECT
             ISNULL(i.ST_ID, i.ST_ID),
             CASE
-                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                WHEN @updated_UTL_ID = 1 THEN i.UTL_ID
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+                WHEN @updated_ST_MIN_PositedAt = 1 THEN i.ST_MIN_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_MIN_Reliability = 1 THEN i.ST_MIN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_MIN_Reliability
             END, 1)
         FROM
@@ -9853,16 +9872,16 @@ BEGIN
             d.ST_ID = i.ST_ID
         WHERE
             CASE
-                WHEN UPDATE(UTL_ID) THEN i.UTL_ID
+                WHEN @updated_UTL_ID = 1 THEN i.UTL_ID
                 ELSE [kUTL].UTL_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(ST_MIN_PositedAt) OR
+            @updated_ST_MIN_PositedAt = 1 OR
             d.UTL_ID is null OR
-            d.UTL_ID <> CASE WHEN UPDATE(UTL_ID) THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.UTL_ID <> CASE WHEN @updated_UTL_ID = 1 THEN i.UTL_ID ELSE [kUTL].UTL_ID END OR
             d.ST_MIN_Reliability <> ISNULL(CASE
-                WHEN UPDATE(ST_MIN_Reliability) THEN i.ST_MIN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_ST_MIN_Reliability = 1 THEN i.ST_MIN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.ST_MIN_Reliability
             END, 1)
         );
@@ -9871,8 +9890,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(UTL_ID) OR
-        UPDATE(UTL_Utilization)
+        @updated_UTL_ID = 1 OR
+        @updated_UTL_Utilization = 1
     )
     BEGIN
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum] (
@@ -9885,7 +9904,7 @@ BEGIN
             p.ST_ID,
             p.UTL_ID,
             cast(ISNULL(CASE
-                WHEN UPDATE(ST_MIN_PositedAt) THEN i.ST_MIN_PositedAt
+                WHEN @updated_ST_MIN_PositedAt = 1 THEN i.ST_MIN_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -9895,9 +9914,9 @@ BEGIN
         ON
             p.ST_MIN_ID = i.ST_MIN_ID
         WHERE
-            (UPDATE(UTL_ID) AND i.UTL_ID is null)
+            (@updated_UTL_ID = 1 AND i.UTL_ID is null)
         OR
-            (UPDATE(UTL_Utilization) AND i.UTL_Utilization is null);
+            (@updated_UTL_Utilization = 1 AND i.UTL_Utilization is null);
     END
 END
 GO
@@ -10121,16 +10140,23 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_ID))
         RAISERROR('The identity column AC_ID is not updatable.', 16, 1);
+    DECLARE @updated_AC_NAM_Actor_Name bit = CASE WHEN UPDATE(AC_NAM_Actor_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_NAM_ChangedAt bit = CASE WHEN UPDATE(AC_NAM_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_NAM_PositedAt bit = CASE WHEN UPDATE(AC_NAM_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_NAM_Reliability bit = CASE WHEN UPDATE(AC_NAM_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_NAM_ID))
         RAISERROR('The identity column AC_NAM_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID))
         RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(AC_NAM_Actor_Name) OR
-        UPDATE(AC_NAM_Reliability) OR
-        UPDATE(Reliability)
+        @updated_AC_NAM_Actor_Name = 1 OR
+        @updated_AC_NAM_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_NAM_Actor_Name] (
@@ -10144,16 +10170,16 @@ BEGIN
             ISNULL(i.AC_ID, i.AC_ID),
             i.AC_NAM_Actor_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN @updated_AC_NAM_ChangedAt = 1 THEN i.AC_NAM_ChangedAt
                 WHEN d.AC_NAM_Actor_Name = i.AC_NAM_Actor_Name
                 THEN i.AC_NAM_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
+                WHEN @updated_AC_NAM_PositedAt = 1 THEN i.AC_NAM_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_NAM_Reliability = 1 THEN i.AC_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_NAM_Reliability
             END, 1)
         FROM
@@ -10165,13 +10191,13 @@ BEGIN
         WHERE
             i.AC_NAM_Actor_Name is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_NAM_ChangedAt) OR
-            UPDATE(AC_NAM_PositedAt) OR
+            @updated_AC_NAM_ChangedAt = 1 OR
+            @updated_AC_NAM_PositedAt = 1 OR
             d.AC_NAM_Actor_Name is null OR
             d.AC_NAM_Actor_Name <> i.AC_NAM_Actor_Name OR
             d.AC_NAM_Reliability <> ISNULL(CASE
-                WHEN UPDATE(AC_NAM_Reliability) THEN i.AC_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_NAM_Reliability = 1 THEN i.AC_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_NAM_Reliability
             END, 1)
         )
@@ -10180,7 +10206,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(AC_NAM_Actor_Name)
+        @updated_AC_NAM_Actor_Name = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_NAM_Actor_Name] (
@@ -10195,8 +10221,8 @@ BEGIN
             p.AC_NAM_Actor_Name,
             p.AC_NAM_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_NAM_PositedAt) THEN i.AC_NAM_PositedAt
-                WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN @updated_AC_NAM_PositedAt = 1 THEN i.AC_NAM_PositedAt
+                WHEN @updated_AC_NAM_ChangedAt = 1 THEN i.AC_NAM_ChangedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10208,15 +10234,19 @@ BEGIN
         WHERE
             i.AC_NAM_Actor_Name is null
     END
+    DECLARE @updated_GEN_ID bit = CASE WHEN UPDATE(GEN_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_GEN_Gender bit = CASE WHEN UPDATE(GEN_Gender) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_GEN_PositedAt bit = CASE WHEN UPDATE(AC_GEN_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_GEN_Reliability bit = CASE WHEN UPDATE(AC_GEN_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_GEN_ID))
         RAISERROR('The identity column AC_GEN_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID))
         RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(GEN_ID) OR
-        UPDATE(GEN_Gender) OR
-        UPDATE(AC_GEN_Reliability) OR
-        UPDATE(Reliability)
+        @updated_GEN_ID = 1 OR
+        @updated_GEN_Gender = 1 OR
+        @updated_AC_GEN_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_GEN_Actor_Gender] (
@@ -10228,15 +10258,15 @@ BEGIN
         SELECT
             ISNULL(i.AC_ID, i.AC_ID),
             CASE
-                WHEN UPDATE(GEN_ID) THEN i.GEN_ID
+                WHEN @updated_GEN_ID = 1 THEN i.GEN_ID
                 ELSE [kGEN].GEN_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+                WHEN @updated_AC_GEN_PositedAt = 1 THEN i.AC_GEN_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_GEN_Reliability = 1 THEN i.AC_GEN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_GEN_Reliability
             END, 1)
         FROM
@@ -10251,16 +10281,16 @@ BEGIN
             d.AC_ID = i.AC_ID
         WHERE
             CASE
-                WHEN UPDATE(GEN_ID) THEN i.GEN_ID
+                WHEN @updated_GEN_ID = 1 THEN i.GEN_ID
                 ELSE [kGEN].GEN_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_GEN_PositedAt) OR
+            @updated_AC_GEN_PositedAt = 1 OR
             d.GEN_ID is null OR
-            d.GEN_ID <> CASE WHEN UPDATE(GEN_ID) THEN i.GEN_ID ELSE [kGEN].GEN_ID END OR
+            d.GEN_ID <> CASE WHEN @updated_GEN_ID = 1 THEN i.GEN_ID ELSE [kGEN].GEN_ID END OR
             d.AC_GEN_Reliability <> ISNULL(CASE
-                WHEN UPDATE(AC_GEN_Reliability) THEN i.AC_GEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_GEN_Reliability = 1 THEN i.AC_GEN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_GEN_Reliability
             END, 1)
         );
@@ -10269,8 +10299,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(GEN_ID) OR
-        UPDATE(GEN_Gender)
+        @updated_GEN_ID = 1 OR
+        @updated_GEN_Gender = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_GEN_Actor_Gender] (
@@ -10283,7 +10313,7 @@ BEGIN
             p.AC_ID,
             p.GEN_ID,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_GEN_PositedAt) THEN i.AC_GEN_PositedAt
+                WHEN @updated_AC_GEN_PositedAt = 1 THEN i.AC_GEN_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10293,19 +10323,24 @@ BEGIN
         ON
             p.AC_GEN_ID = i.AC_GEN_ID
         WHERE
-            (UPDATE(GEN_ID) AND i.GEN_ID is null)
+            (@updated_GEN_ID = 1 AND i.GEN_ID is null)
         OR
-            (UPDATE(GEN_Gender) AND i.GEN_Gender is null);
+            (@updated_GEN_Gender = 1 AND i.GEN_Gender is null);
     END
+    DECLARE @updated_PLV_ID bit = CASE WHEN UPDATE(PLV_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_PLV_ProfessionalLevel bit = CASE WHEN UPDATE(PLV_ProfessionalLevel) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_PLV_ChangedAt bit = CASE WHEN UPDATE(AC_PLV_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_PLV_PositedAt bit = CASE WHEN UPDATE(AC_PLV_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_PLV_Reliability bit = CASE WHEN UPDATE(AC_PLV_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_PLV_ID))
         RAISERROR('The identity column AC_PLV_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID))
         RAISERROR('The foreign key column AC_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(PLV_ID) OR
-        UPDATE(PLV_ProfessionalLevel) OR
-        UPDATE(AC_PLV_Reliability) OR
-        UPDATE(Reliability)
+        @updated_PLV_ID = 1 OR
+        @updated_PLV_ProfessionalLevel = 1 OR
+        @updated_AC_PLV_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel] (
@@ -10318,20 +10353,20 @@ BEGIN
         SELECT
             ISNULL(i.AC_ID, i.AC_ID),
             CASE
-                WHEN UPDATE(PLV_ID) THEN i.PLV_ID
+                WHEN @updated_PLV_ID = 1 THEN i.PLV_ID
                 ELSE [kPLV].PLV_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
-                WHEN d.PLV_ID = CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END
+                WHEN @updated_AC_PLV_ChangedAt = 1 THEN i.AC_PLV_ChangedAt
+                WHEN d.PLV_ID = CASE WHEN @updated_PLV_ID = 1 THEN i.PLV_ID ELSE [kPLV].PLV_ID END
                 THEN i.AC_PLV_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
+                WHEN @updated_AC_PLV_PositedAt = 1 THEN i.AC_PLV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_PLV_Reliability = 1 THEN i.AC_PLV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_PLV_Reliability
             END, 1)
         FROM
@@ -10346,17 +10381,17 @@ BEGIN
             d.AC_ID = i.AC_ID
         WHERE
             CASE
-                WHEN UPDATE(PLV_ID) THEN i.PLV_ID
+                WHEN @updated_PLV_ID = 1 THEN i.PLV_ID
                 ELSE [kPLV].PLV_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_PLV_ChangedAt) OR
-            UPDATE(AC_PLV_PositedAt) OR
+            @updated_AC_PLV_ChangedAt = 1 OR
+            @updated_AC_PLV_PositedAt = 1 OR
             d.PLV_ID is null OR
-            d.PLV_ID <> CASE WHEN UPDATE(PLV_ID) THEN i.PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.PLV_ID <> CASE WHEN @updated_PLV_ID = 1 THEN i.PLV_ID ELSE [kPLV].PLV_ID END OR
             d.AC_PLV_Reliability <> ISNULL(CASE
-                WHEN UPDATE(AC_PLV_Reliability) THEN i.AC_PLV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_AC_PLV_Reliability = 1 THEN i.AC_PLV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.AC_PLV_Reliability
             END, 1)
         );
@@ -10365,8 +10400,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PLV_ID) OR
-        UPDATE(PLV_ProfessionalLevel)
+        @updated_PLV_ID = 1 OR
+        @updated_PLV_ProfessionalLevel = 1
     )
     BEGIN
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel] (
@@ -10381,8 +10416,8 @@ BEGIN
             p.PLV_ID,
             p.AC_PLV_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(AC_PLV_PositedAt) THEN i.AC_PLV_PositedAt
-                WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN @updated_AC_PLV_PositedAt = 1 THEN i.AC_PLV_PositedAt
+                WHEN @updated_AC_PLV_ChangedAt = 1 THEN i.AC_PLV_ChangedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10392,9 +10427,9 @@ BEGIN
         ON
             p.AC_PLV_ID = i.AC_PLV_ID
         WHERE
-            (UPDATE(PLV_ID) AND i.PLV_ID is null)
+            (@updated_PLV_ID = 1 AND i.PLV_ID is null)
         OR
-            (UPDATE(PLV_ProfessionalLevel) AND i.PLV_ProfessionalLevel is null);
+            (@updated_PLV_ProfessionalLevel = 1 AND i.PLV_ProfessionalLevel is null);
     END
 END
 GO
@@ -10559,16 +10594,22 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_ID))
         RAISERROR('The identity column PR_ID is not updatable.', 16, 1);
+    DECLARE @updated_PR_NAM_Program_Name bit = CASE WHEN UPDATE(PR_NAM_Program_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_NAM_PositedAt bit = CASE WHEN UPDATE(PR_NAM_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_NAM_Reliability bit = CASE WHEN UPDATE(PR_NAM_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_NAM_ID))
         RAISERROR('The identity column PR_NAM_ID is not updatable.', 16, 1);
     IF(UPDATE(PR_ID))
         RAISERROR('The foreign key column PR_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(PR_NAM_Program_Name) OR
-        UPDATE(PR_NAM_Reliability) OR
-        UPDATE(Reliability)
+        @updated_PR_NAM_Program_Name = 1 OR
+        @updated_PR_NAM_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[PR_NAM_Program_Name] (
@@ -10581,11 +10622,11 @@ BEGIN
             ISNULL(i.PR_ID, i.PR_ID),
             i.PR_NAM_Program_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+                WHEN @updated_PR_NAM_PositedAt = 1 THEN i.PR_NAM_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_PR_NAM_Reliability = 1 THEN i.PR_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.PR_NAM_Reliability
             END, 1)
         FROM
@@ -10597,12 +10638,12 @@ BEGIN
         WHERE
             i.PR_NAM_Program_Name is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(PR_NAM_PositedAt) OR
+            @updated_PR_NAM_PositedAt = 1 OR
             d.PR_NAM_Program_Name is null OR
             d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name OR
             d.PR_NAM_Reliability <> ISNULL(CASE
-                WHEN UPDATE(PR_NAM_Reliability) THEN i.PR_NAM_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_PR_NAM_Reliability = 1 THEN i.PR_NAM_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.PR_NAM_Reliability
             END, 1)
         )
@@ -10611,7 +10652,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_NAM_Program_Name)
+        @updated_PR_NAM_Program_Name = 1
     )
     BEGIN
         INSERT INTO [dbo].[PR_NAM_Program_Name] (
@@ -10624,7 +10665,7 @@ BEGIN
             p.PR_ID,
             p.PR_NAM_Program_Name,
             cast(ISNULL(CASE
-                WHEN UPDATE(PR_NAM_PositedAt) THEN i.PR_NAM_PositedAt
+                WHEN @updated_PR_NAM_PositedAt = 1 THEN i.PR_NAM_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10636,14 +10677,18 @@ BEGIN
         WHERE
             i.PR_NAM_Program_Name is null
     END
+    DECLARE @updated_PR_LEN_Program_Length bit = CASE WHEN UPDATE(PR_LEN_Program_Length) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_LEN_ChangedAt bit = CASE WHEN UPDATE(PR_LEN_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_LEN_PositedAt bit = CASE WHEN UPDATE(PR_LEN_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_LEN_Reliability bit = CASE WHEN UPDATE(PR_LEN_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_LEN_ID))
         RAISERROR('The identity column PR_LEN_ID is not updatable.', 16, 1);
     IF(UPDATE(PR_ID))
         RAISERROR('The foreign key column PR_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(PR_LEN_Program_Length) OR
-        UPDATE(PR_LEN_Reliability) OR
-        UPDATE(Reliability)
+        @updated_PR_LEN_Program_Length = 1 OR
+        @updated_PR_LEN_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[PR_LEN_Program_Length] (
@@ -10657,16 +10702,16 @@ BEGIN
             ISNULL(i.PR_ID, i.PR_ID),
             i.PR_LEN_Program_Length,
             cast(ISNULL(CASE
-                WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN @updated_PR_LEN_ChangedAt = 1 THEN i.PR_LEN_ChangedAt
                 WHEN d.PR_LEN_Program_Length = i.PR_LEN_Program_Length
                 THEN i.PR_LEN_ChangedAt -- the shown version is asserted again
             END, @now) as date),
             cast(ISNULL(CASE
-                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
+                WHEN @updated_PR_LEN_PositedAt = 1 THEN i.PR_LEN_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_PR_LEN_Reliability = 1 THEN i.PR_LEN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.PR_LEN_Reliability
             END, 1)
         FROM
@@ -10678,13 +10723,13 @@ BEGIN
         WHERE
             i.PR_LEN_Program_Length is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(PR_LEN_ChangedAt) OR
-            UPDATE(PR_LEN_PositedAt) OR
+            @updated_PR_LEN_ChangedAt = 1 OR
+            @updated_PR_LEN_PositedAt = 1 OR
             d.PR_LEN_Program_Length is null OR
             d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length OR
             d.PR_LEN_Reliability <> ISNULL(CASE
-                WHEN UPDATE(PR_LEN_Reliability) THEN i.PR_LEN_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_PR_LEN_Reliability = 1 THEN i.PR_LEN_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.PR_LEN_Reliability
             END, 1)
         )
@@ -10693,7 +10738,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(PR_LEN_Program_Length)
+        @updated_PR_LEN_Program_Length = 1
     )
     BEGIN
         INSERT INTO [dbo].[PR_LEN_Program_Length] (
@@ -10708,8 +10753,8 @@ BEGIN
             p.PR_LEN_Program_Length,
             p.PR_LEN_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(PR_LEN_PositedAt) THEN i.PR_LEN_PositedAt
-                WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN @updated_PR_LEN_PositedAt = 1 THEN i.PR_LEN_PositedAt
+                WHEN @updated_PR_LEN_ChangedAt = 1 THEN i.PR_LEN_ChangedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10900,6 +10945,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID_wasHeldAt))
@@ -10910,14 +10958,17 @@ BEGIN
         RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
     IF(UPDATE(ETY_EventType))
         RAISERROR('The role column ETY_EventType is not updatable.', 16, 1);
+    DECLARE @updated_EV_DAT_Event_Date bit = CASE WHEN UPDATE(EV_DAT_Event_Date) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_PositedAt bit = CASE WHEN UPDATE(EV_DAT_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_Reliability bit = CASE WHEN UPDATE(EV_DAT_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_DAT_ID))
         RAISERROR('The identity column EV_DAT_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_DAT_Event_Date) OR
-        UPDATE(EV_DAT_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_DAT_Event_Date = 1 OR
+        @updated_EV_DAT_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_DAT_Event_Date] (
@@ -10930,11 +10981,11 @@ BEGIN
             ISNULL(i.EV_ID, i.EV_ID),
             i.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         FROM
@@ -10946,12 +10997,12 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_DAT_PositedAt) OR
+            @updated_EV_DAT_PositedAt = 1 OR
             d.EV_DAT_Event_Date is null OR
             d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date OR
             d.EV_DAT_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         )
@@ -10960,7 +11011,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_DAT_Event_Date)
+        @updated_EV_DAT_Event_Date = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_DAT_Event_Date] (
@@ -10973,7 +11024,7 @@ BEGIN
             p.EV_ID,
             p.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -10985,14 +11036,17 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is null
     END
+    DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_PositedAt bit = CASE WHEN UPDATE(EV_AUD_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_Reliability bit = CASE WHEN UPDATE(EV_AUD_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_ID))
         RAISERROR('The identity column EV_AUD_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_AUD_Event_Audience) OR
-        UPDATE(EV_AUD_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_AUD_Event_Audience = 1 OR
+        @updated_EV_AUD_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_AUD_Event_Audience] (
@@ -11005,11 +11059,11 @@ BEGIN
             ISNULL(i.EV_ID, i.EV_ID),
             i.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         FROM
@@ -11021,12 +11075,12 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_AUD_PositedAt) OR
+            @updated_EV_AUD_PositedAt = 1 OR
             d.EV_AUD_Event_Audience is null OR
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience OR
             d.EV_AUD_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         )
@@ -11035,7 +11089,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_AUD_Event_Audience)
+        @updated_EV_AUD_Event_Audience = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_AUD_Event_Audience] (
@@ -11048,7 +11102,7 @@ BEGIN
             p.EV_ID,
             p.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -11060,14 +11114,17 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is null
     END
+    DECLARE @updated_EV_REV_Event_Revenue bit = CASE WHEN UPDATE(EV_REV_Event_Revenue) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_PositedAt bit = CASE WHEN UPDATE(EV_REV_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_Reliability bit = CASE WHEN UPDATE(EV_REV_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_REV_ID))
         RAISERROR('The identity column EV_REV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID))
         RAISERROR('The foreign key column EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_REV_Event_Revenue) OR
-        UPDATE(EV_REV_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_REV_Event_Revenue = 1 OR
+        @updated_EV_REV_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_REV_Event_Revenue] (
@@ -11080,11 +11137,11 @@ BEGIN
             ISNULL(i.EV_ID, i.EV_ID),
             i.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         FROM
@@ -11096,12 +11153,12 @@ BEGIN
         WHERE
             i.EV_REV_Event_Revenue is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_REV_PositedAt) OR
+            @updated_EV_REV_PositedAt = 1 OR
             d.EV_REV_Event_Revenue is null OR
             d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue OR
             d.EV_REV_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         )
@@ -11110,7 +11167,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_REV_Event_Revenue)
+        @updated_EV_REV_Event_Revenue = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_REV_Event_Revenue] (
@@ -11123,7 +11180,7 @@ BEGIN
             p.EV_ID,
             p.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -14731,6 +14788,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_partner_AC_with_ONG_currently_PositedAt bit = CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_partner_AC_with_ONG_currently_ChangedAt bit = CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ONG_Ongoing bit = CASE WHEN UPDATE(ONG_Ongoing) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_partner_AC_with_ONG_currently_ID))
         RAISERROR('The identity column AC_partner_AC_with_ONG_currently_ID is not updatable.', 16, 1);
     -- a value set to null retracts the shown posit
@@ -14742,8 +14804,8 @@ BEGIN
     SELECT
         i.AC_partner_AC_with_ONG_currently_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_PositedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -14759,7 +14821,7 @@ BEGIN
     OR
         i.AC_ID_with is null
     OR
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
+        CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_partner_AC_with_ONG_currently] (
@@ -14772,7 +14834,7 @@ BEGIN
     )
     SELECT
         cast(CASE
-            WHEN UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
+            WHEN @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -14785,14 +14847,14 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+                    d.ONG_ID_currently = CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
             ) THEN i.AC_partner_AC_with_ONG_currently_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_partner,
         i.AC_ID_with,
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
-        cast(CASE WHEN UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END,
+        cast(CASE WHEN @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 THEN i.AC_partner_AC_with_ONG_currently_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
     FROM
         inserted i
@@ -14805,11 +14867,11 @@ BEGIN
     AND
         i.AC_ID_with is not null
     AND
-        CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
+        CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_partner_AC_with_ONG_currently_ChangedAt) OR
-            UPDATE(AC_partner_AC_with_ONG_currently_PositedAt) OR
+            @updated_AC_partner_AC_with_ONG_currently_ChangedAt = 1 OR
+            @updated_AC_partner_AC_with_ONG_currently_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -14822,7 +14884,7 @@ BEGIN
                 AND
                     d.AC_ID_with = i.AC_ID_with
                 AND
-                    d.ONG_ID_currently = CASE WHEN UPDATE(ONG_Ongoing) THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
+                    d.ONG_ID_currently = CASE WHEN @updated_ONG_Ongoing = 1 THEN [ONG_currently].ONG_ID ELSE i.ONG_ID_currently END
                 AND
                     d.AC_partner_AC_with_ONG_currently_Reliability = ISNULL(i.AC_partner_AC_with_ONG_currently_Reliability, 1)
             )
@@ -15136,6 +15198,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_subset_PN_of_PositedAt bit = CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_subset_PN_of_ID))
         RAISERROR('The identity column AC_subset_PN_of_ID is not updatable.', 16, 1);
     -- a value set to null retracts the shown posit
@@ -15147,7 +15212,7 @@ BEGIN
     SELECT
         i.AC_subset_PN_of_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt
+            WHEN @updated_AC_subset_PN_of_PositedAt = 1 THEN i.AC_subset_PN_of_PositedAt
         END, @now) as datetime2),
         0
     FROM
@@ -15169,7 +15234,7 @@ BEGIN
     SELECT
         i.AC_ID_subset,
         i.PN_ID_of,
-        cast(CASE WHEN UPDATE(AC_subset_PN_of_PositedAt) THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_AC_subset_PN_of_PositedAt = 1 THEN i.AC_subset_PN_of_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_subset_PN_of_Reliability, 1)
     FROM
         inserted i
@@ -15179,7 +15244,7 @@ BEGIN
         i.PN_ID_of is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_subset_PN_of_PositedAt) OR
+            @updated_AC_subset_PN_of_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -15970,6 +16035,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_AC_part_PR_in_RAT_got_PositedAt bit = CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_part_PR_in_RAT_got_ChangedAt bit = CASE WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_RAT_Rating bit = CASE WHEN UPDATE(RAT_Rating) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_part_PR_in_RAT_got_ID))
         RAISERROR('The identity column AC_part_PR_in_RAT_got_ID is not updatable.', 16, 1);
     IF(UPDATE(AC_ID_part))
@@ -15985,8 +16055,8 @@ BEGIN
     SELECT
         i.AC_part_PR_in_RAT_got_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt
-            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_PositedAt = 1 THEN i.AC_part_PR_in_RAT_got_PositedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 THEN i.AC_part_PR_in_RAT_got_ChangedAt
         END, @now) as datetime2),
         0
     FROM
@@ -15998,7 +16068,7 @@ BEGIN
     WHERE
         i.AC_part_PR_in_RAT_got_ID is not null
     AND (
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
+        CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is null
     );
     -- the other rows are statements, unless they leave everything as it is
     INSERT INTO [dbo].[AC_part_PR_in_RAT_got] (
@@ -16011,7 +16081,7 @@ BEGIN
     )
     SELECT
         cast(CASE
-            WHEN UPDATE(AC_part_PR_in_RAT_got_ChangedAt) THEN i.AC_part_PR_in_RAT_got_ChangedAt
+            WHEN @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 THEN i.AC_part_PR_in_RAT_got_ChangedAt
             WHEN EXISTS (
                 SELECT TOP 1
                     42
@@ -16020,14 +16090,14 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+                    d.RAT_ID_got = CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
             ) THEN i.AC_part_PR_in_RAT_got_ChangedAt -- the shown version is asserted again
             ELSE @now
         END as datetime2),
         i.AC_ID_part,
         i.PR_ID_in,
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
-        cast(CASE WHEN UPDATE(AC_part_PR_in_RAT_got_PositedAt) THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
+        CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END,
+        cast(CASE WHEN @updated_AC_part_PR_in_RAT_got_PositedAt = 1 THEN i.AC_part_PR_in_RAT_got_PositedAt ELSE @now END as datetime2),
         ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
     FROM
         inserted i
@@ -16036,11 +16106,11 @@ BEGIN
     ON
         [RAT_got].RAT_Rating = i.RAT_Rating
     WHERE
-        CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
+        CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(AC_part_PR_in_RAT_got_ChangedAt) OR
-            UPDATE(AC_part_PR_in_RAT_got_PositedAt) OR
+            @updated_AC_part_PR_in_RAT_got_ChangedAt = 1 OR
+            @updated_AC_part_PR_in_RAT_got_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -16049,7 +16119,7 @@ BEGIN
                 WHERE
                     d.AC_part_PR_in_RAT_got_ID = i.AC_part_PR_in_RAT_got_ID
                 AND
-                    d.RAT_ID_got = CASE WHEN UPDATE(RAT_Rating) THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
+                    d.RAT_ID_got = CASE WHEN @updated_RAT_Rating = 1 THEN [RAT_got].RAT_ID ELSE i.RAT_ID_got END
                 AND
                     d.AC_part_PR_in_RAT_got_Reliability = ISNULL(i.AC_part_PR_in_RAT_got_Reliability, 1)
             )
@@ -17138,6 +17208,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_PR_content_ST_location_EV_of_PositedAt bit = CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_content_ST_location_EV_of_ID))
         RAISERROR('The identity column PR_content_ST_location_EV_of_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_ID_of))
@@ -17151,7 +17224,7 @@ BEGIN
     SELECT
         i.PR_content_ST_location_EV_of_ID,
         cast(ISNULL(CASE
-            WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt
+            WHEN @updated_PR_content_ST_location_EV_of_PositedAt = 1 THEN i.PR_content_ST_location_EV_of_PositedAt
         END, @now) as datetime2),
         0
     FROM
@@ -17175,7 +17248,7 @@ BEGIN
         i.PR_ID_content,
         i.ST_ID_location,
         i.EV_ID_of,
-        cast(CASE WHEN UPDATE(PR_content_ST_location_EV_of_PositedAt) THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_PR_content_ST_location_EV_of_PositedAt = 1 THEN i.PR_content_ST_location_EV_of_PositedAt ELSE @now END as datetime2),
         ISNULL(i.PR_content_ST_location_EV_of_Reliability, 1)
     FROM
         inserted i
@@ -17185,7 +17258,7 @@ BEGIN
         i.ST_ID_location is not null
     AND
         ( -- a statement that leaves everything as it is states nothing
-            UPDATE(PR_content_ST_location_EV_of_PositedAt) OR
+            @updated_PR_content_ST_location_EV_of_PositedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42

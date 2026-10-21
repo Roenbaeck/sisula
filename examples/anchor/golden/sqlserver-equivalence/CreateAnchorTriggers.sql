@@ -193,11 +193,18 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_ST bit = CASE WHEN UPDATE(Metadata_ST) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_ID))
         RAISERROR('The identity column ST_ID is not updatable.', 16, 1);
+    DECLARE @updated_ST_NAM_Stage_Name bit = CASE WHEN UPDATE(ST_NAM_Stage_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_ST_NAM bit = CASE WHEN UPDATE(Metadata_ST_NAM) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_NAM_ChangedAt bit = CASE WHEN UPDATE(ST_NAM_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_NAM_EQ bit = CASE WHEN UPDATE(ST_NAM_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_NAM_ST_ID))
         RAISERROR('The foreign key column ST_NAM_ST_ID is not updatable.', 16, 1);
-    IF(UPDATE(ST_NAM_Stage_Name))
+    IF(@updated_ST_NAM_Stage_Name = 1)
     BEGIN
         INSERT INTO [dbo].[ST_NAM_Stage_Name] (
             Metadata_ST_NAM,
@@ -208,7 +215,7 @@ BEGIN
         )
         SELECT 
             ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_NAM)
+                WHEN @updated_Metadata_ST = 1 AND @updated_Metadata_ST_NAM = 0
                 THEN i.Metadata_ST
                 ELSE i.Metadata_ST_NAM
             END, i.Metadata_ST),
@@ -216,7 +223,7 @@ BEGIN
             ISNULL(i.ST_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.ST_NAM_Stage_Name is null THEN i.ST_NAM_ChangedAt
-                WHEN UPDATE(ST_NAM_ChangedAt) THEN i.ST_NAM_ChangedAt
+                WHEN @updated_ST_NAM_ChangedAt = 1 THEN i.ST_NAM_ChangedAt
             END, @now) as datetime2),
             i.ST_NAM_Stage_Name
         FROM
@@ -228,15 +235,18 @@ BEGIN
         WHERE
             i.ST_NAM_Stage_Name is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(ST_NAM_ChangedAt) OR
-            UPDATE(ST_NAM_EQ) OR
+            @updated_ST_NAM_ChangedAt = 1 OR
+            @updated_ST_NAM_EQ = 1 OR
             d.ST_NAM_Stage_Name is null OR
             d.ST_NAM_Checksum <> dbo.MD5(cast(i.ST_NAM_Stage_Name as varbinary(max)))
         );
     END
+    DECLARE @updated_ST_LOC_Stage_Location bit = CASE WHEN UPDATE(ST_LOC_Stage_Location) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_ST_LOC bit = CASE WHEN UPDATE(Metadata_ST_LOC) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_LOC_EQ bit = CASE WHEN UPDATE(ST_LOC_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_LOC_ST_ID))
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
-    IF(UPDATE(ST_LOC_Stage_Location))
+    IF(@updated_ST_LOC_Stage_Location = 1)
     BEGIN
         INSERT INTO [dbo].[ST_LOC_Stage_Location] (
             Metadata_ST_LOC,
@@ -246,7 +256,7 @@ BEGIN
         )
         SELECT 
             ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_LOC)
+                WHEN @updated_Metadata_ST = 1 AND @updated_Metadata_ST_LOC = 0
                 THEN i.Metadata_ST
                 ELSE i.Metadata_ST_LOC
             END, i.Metadata_ST),
@@ -262,14 +272,18 @@ BEGIN
         WHERE
             i.ST_LOC_Stage_Location is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(ST_LOC_EQ) OR
+            @updated_ST_LOC_EQ = 1 OR
             d.ST_LOC_Stage_Location is null OR
             d.ST_LOC_Checksum <> dbo.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         );
     END
+    DECLARE @updated_ST_AVG_UTL_ID bit = CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_AVG_UTL_Utilization bit = CASE WHEN UPDATE(ST_AVG_UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_ST_AVG bit = CASE WHEN UPDATE(Metadata_ST_AVG) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_AVG_ChangedAt bit = CASE WHEN UPDATE(ST_AVG_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_AVG_ST_ID))
         RAISERROR('The foreign key column ST_AVG_ST_ID is not updatable.', 16, 1);
-    IF(UPDATE(ST_AVG_UTL_ID) OR UPDATE(ST_AVG_UTL_Utilization))
+    IF(@updated_ST_AVG_UTL_ID = 1 OR @updated_ST_AVG_UTL_Utilization = 1)
     BEGIN
         INSERT INTO [dbo].[ST_AVG_Stage_Average] (
             Metadata_ST_AVG,
@@ -279,16 +293,16 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_AVG)
+                WHEN @updated_Metadata_ST = 1 AND @updated_Metadata_ST_AVG = 0
                 THEN i.Metadata_ST
                 ELSE i.Metadata_ST_AVG
             END, i.Metadata_ST),
             ISNULL(i.ST_AVG_ST_ID, i.ST_ID),
             cast(ISNULL(CASE
                 WHEN i.ST_AVG_UTL_ID is null AND [kUTL].UTL_ID is null THEN i.ST_AVG_ChangedAt
-                WHEN UPDATE(ST_AVG_ChangedAt) THEN i.ST_AVG_ChangedAt
+                WHEN @updated_ST_AVG_ChangedAt = 1 THEN i.ST_AVG_ChangedAt
             END, @now) as datetime2),
-            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+            CASE WHEN @updated_ST_AVG_UTL_ID = 1 THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -300,16 +314,19 @@ BEGIN
         ON
             d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null
+            CASE WHEN @updated_ST_AVG_UTL_ID = 1 THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(ST_AVG_ChangedAt) OR
+            @updated_ST_AVG_ChangedAt = 1 OR
             d.ST_AVG_UTL_ID is null OR
-            d.ST_AVG_UTL_ID <> CASE WHEN UPDATE(ST_AVG_UTL_ID) THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
+            d.ST_AVG_UTL_ID <> CASE WHEN @updated_ST_AVG_UTL_ID = 1 THEN i.ST_AVG_UTL_ID ELSE [kUTL].UTL_ID END
         );
     END
+    DECLARE @updated_ST_MIN_UTL_ID bit = CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_ST_MIN_UTL_Utilization bit = CASE WHEN UPDATE(ST_MIN_UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_ST_MIN bit = CASE WHEN UPDATE(Metadata_ST_MIN) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_MIN_ST_ID))
         RAISERROR('The foreign key column ST_MIN_ST_ID is not updatable.', 16, 1);
-    IF(UPDATE(ST_MIN_UTL_ID) OR UPDATE(ST_MIN_UTL_Utilization))
+    IF(@updated_ST_MIN_UTL_ID = 1 OR @updated_ST_MIN_UTL_Utilization = 1)
     BEGIN
         INSERT INTO [dbo].[ST_MIN_Stage_Minimum] (
             Metadata_ST_MIN,
@@ -318,12 +335,12 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_ST) AND NOT UPDATE(Metadata_ST_MIN)
+                WHEN @updated_Metadata_ST = 1 AND @updated_Metadata_ST_MIN = 0
                 THEN i.Metadata_ST
                 ELSE i.Metadata_ST_MIN
             END, i.Metadata_ST),
             ISNULL(i.ST_MIN_ST_ID, i.ST_ID),
-            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
+            CASE WHEN @updated_ST_MIN_UTL_ID = 1 THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -335,10 +352,10 @@ BEGIN
         ON
             d.ST_ID = i.ST_ID
         WHERE
-            CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null
+            CASE WHEN @updated_ST_MIN_UTL_ID = 1 THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END is not null
         AND ( -- a value that is left as it is states nothing
             d.ST_MIN_UTL_ID is null OR
-            d.ST_MIN_UTL_ID <> CASE WHEN UPDATE(ST_MIN_UTL_ID) THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
+            d.ST_MIN_UTL_ID <> CASE WHEN @updated_ST_MIN_UTL_ID = 1 THEN i.ST_MIN_UTL_ID ELSE [kUTL].UTL_ID END
         );
         SELECT
             i.ST_MIN_ST_ID
@@ -353,7 +370,7 @@ BEGIN
         AND
             d.ST_MIN_UTL_ID is not null
         WHERE
-            ((UPDATE(ST_MIN_UTL_ID) AND i.ST_MIN_UTL_ID is null) OR (UPDATE(ST_MIN_UTL_Utilization) AND i.ST_MIN_UTL_Utilization is null))
+            ((@updated_ST_MIN_UTL_ID = 1 AND i.ST_MIN_UTL_ID is null) OR (@updated_ST_MIN_UTL_Utilization = 1 AND i.ST_MIN_UTL_Utilization is null))
         AND
             i.Deletable_ST_MIN = 1;
         IF(@@ROWCOUNT > 0)
@@ -633,11 +650,18 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_AC bit = CASE WHEN UPDATE(Metadata_AC) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_ID))
         RAISERROR('The identity column AC_ID is not updatable.', 16, 1);
+    DECLARE @updated_AC_NAM_Actor_Name bit = CASE WHEN UPDATE(AC_NAM_Actor_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_AC_NAM bit = CASE WHEN UPDATE(Metadata_AC_NAM) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_NAM_ChangedAt bit = CASE WHEN UPDATE(AC_NAM_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_NAM_EQ bit = CASE WHEN UPDATE(AC_NAM_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_NAM_AC_ID))
         RAISERROR('The foreign key column AC_NAM_AC_ID is not updatable.', 16, 1);
-    IF(UPDATE(AC_NAM_Actor_Name))
+    IF(@updated_AC_NAM_Actor_Name = 1)
     BEGIN
         INSERT INTO [dbo].[AC_NAM_Actor_Name] (
             Metadata_AC_NAM,
@@ -648,7 +672,7 @@ BEGIN
         )
         SELECT 
             ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_NAM)
+                WHEN @updated_Metadata_AC = 1 AND @updated_Metadata_AC_NAM = 0
                 THEN i.Metadata_AC
                 ELSE i.Metadata_AC_NAM
             END, i.Metadata_AC),
@@ -656,7 +680,7 @@ BEGIN
             ISNULL(i.AC_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.AC_NAM_Actor_Name is null THEN i.AC_NAM_ChangedAt
-                WHEN UPDATE(AC_NAM_ChangedAt) THEN i.AC_NAM_ChangedAt
+                WHEN @updated_AC_NAM_ChangedAt = 1 THEN i.AC_NAM_ChangedAt
             END, @now) as datetime2),
             i.AC_NAM_Actor_Name
         FROM
@@ -668,15 +692,18 @@ BEGIN
         WHERE
             i.AC_NAM_Actor_Name is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(AC_NAM_ChangedAt) OR
-            UPDATE(AC_NAM_EQ) OR
+            @updated_AC_NAM_ChangedAt = 1 OR
+            @updated_AC_NAM_EQ = 1 OR
             d.AC_NAM_Actor_Name is null OR
             d.AC_NAM_Checksum <> dbo.MD5(cast(i.AC_NAM_Actor_Name as varbinary(max)))
         );
     END
+    DECLARE @updated_AC_GEN_GEN_ID bit = CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_GEN_GEN_Gender bit = CASE WHEN UPDATE(AC_GEN_GEN_Gender) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_AC_GEN bit = CASE WHEN UPDATE(Metadata_AC_GEN) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_GEN_AC_ID))
         RAISERROR('The foreign key column AC_GEN_AC_ID is not updatable.', 16, 1);
-    IF(UPDATE(AC_GEN_GEN_ID) OR UPDATE(AC_GEN_GEN_Gender))
+    IF(@updated_AC_GEN_GEN_ID = 1 OR @updated_AC_GEN_GEN_Gender = 1)
     BEGIN
         INSERT INTO [dbo].[AC_GEN_Actor_Gender] (
             Metadata_AC_GEN,
@@ -685,12 +712,12 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_GEN)
+                WHEN @updated_Metadata_AC = 1 AND @updated_Metadata_AC_GEN = 0
                 THEN i.Metadata_AC
                 ELSE i.Metadata_AC_GEN
             END, i.Metadata_AC),
             ISNULL(i.AC_GEN_AC_ID, i.AC_ID),
-            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
+            CASE WHEN @updated_AC_GEN_GEN_ID = 1 THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -704,15 +731,19 @@ BEGIN
         ON
             d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null
+            CASE WHEN @updated_AC_GEN_GEN_ID = 1 THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END is not null
         AND ( -- a value that is left as it is states nothing
             d.AC_GEN_GEN_ID is null OR
-            d.AC_GEN_GEN_ID <> CASE WHEN UPDATE(AC_GEN_GEN_ID) THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
+            d.AC_GEN_GEN_ID <> CASE WHEN @updated_AC_GEN_GEN_ID = 1 THEN i.AC_GEN_GEN_ID ELSE [kGEN].GEN_ID END
         );
     END
+    DECLARE @updated_AC_PLV_PLV_ID bit = CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_PLV_PLV_ProfessionalLevel bit = CASE WHEN UPDATE(AC_PLV_PLV_ProfessionalLevel) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_AC_PLV bit = CASE WHEN UPDATE(Metadata_AC_PLV) THEN 1 ELSE 0 END;
+    DECLARE @updated_AC_PLV_ChangedAt bit = CASE WHEN UPDATE(AC_PLV_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(AC_PLV_AC_ID))
         RAISERROR('The foreign key column AC_PLV_AC_ID is not updatable.', 16, 1);
-    IF(UPDATE(AC_PLV_PLV_ID) OR UPDATE(AC_PLV_PLV_ProfessionalLevel))
+    IF(@updated_AC_PLV_PLV_ID = 1 OR @updated_AC_PLV_PLV_ProfessionalLevel = 1)
     BEGIN
         INSERT INTO [dbo].[AC_PLV_Actor_ProfessionalLevel] (
             Metadata_AC_PLV,
@@ -722,16 +753,16 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_AC) AND NOT UPDATE(Metadata_AC_PLV)
+                WHEN @updated_Metadata_AC = 1 AND @updated_Metadata_AC_PLV = 0
                 THEN i.Metadata_AC
                 ELSE i.Metadata_AC_PLV
             END, i.Metadata_AC),
             ISNULL(i.AC_PLV_AC_ID, i.AC_ID),
             cast(ISNULL(CASE
                 WHEN i.AC_PLV_PLV_ID is null AND [kPLV].PLV_ID is null THEN i.AC_PLV_ChangedAt
-                WHEN UPDATE(AC_PLV_ChangedAt) THEN i.AC_PLV_ChangedAt
+                WHEN @updated_AC_PLV_ChangedAt = 1 THEN i.AC_PLV_ChangedAt
             END, @now) as datetime2),
-            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+            CASE WHEN @updated_AC_PLV_PLV_ID = 1 THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -743,11 +774,11 @@ BEGIN
         ON
             d.AC_ID = i.AC_ID
         WHERE
-            CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null
+            CASE WHEN @updated_AC_PLV_PLV_ID = 1 THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(AC_PLV_ChangedAt) OR
+            @updated_AC_PLV_ChangedAt = 1 OR
             d.AC_PLV_PLV_ID is null OR
-            d.AC_PLV_PLV_ID <> CASE WHEN UPDATE(AC_PLV_PLV_ID) THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
+            d.AC_PLV_PLV_ID <> CASE WHEN @updated_AC_PLV_PLV_ID = 1 THEN i.AC_PLV_PLV_ID ELSE [kPLV].PLV_ID END
         );
     END
 END
@@ -930,11 +961,16 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_PR bit = CASE WHEN UPDATE(Metadata_PR) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_ID))
         RAISERROR('The identity column PR_ID is not updatable.', 16, 1);
+    DECLARE @updated_PR_NAM_Program_Name bit = CASE WHEN UPDATE(PR_NAM_Program_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_PR_NAM bit = CASE WHEN UPDATE(Metadata_PR_NAM) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_NAM_PR_ID))
         RAISERROR('The foreign key column PR_NAM_PR_ID is not updatable.', 16, 1);
-    IF(UPDATE(PR_NAM_Program_Name))
+    IF(@updated_PR_NAM_Program_Name = 1)
     BEGIN
         INSERT INTO [dbo].[PR_NAM_Program_Name] (
             Metadata_PR_NAM,
@@ -943,7 +979,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_NAM)
+                WHEN @updated_Metadata_PR = 1 AND @updated_Metadata_PR_NAM = 0
                 THEN i.Metadata_PR
                 ELSE i.Metadata_PR_NAM
             END, i.Metadata_PR),
@@ -962,9 +998,12 @@ BEGIN
             d.PR_NAM_Program_Name <> i.PR_NAM_Program_Name
         );
     END
+    DECLARE @updated_PR_LEN_Program_Length bit = CASE WHEN UPDATE(PR_LEN_Program_Length) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_PR_LEN bit = CASE WHEN UPDATE(Metadata_PR_LEN) THEN 1 ELSE 0 END;
+    DECLARE @updated_PR_LEN_ChangedAt bit = CASE WHEN UPDATE(PR_LEN_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(PR_LEN_PR_ID))
         RAISERROR('The foreign key column PR_LEN_PR_ID is not updatable.', 16, 1);
-    IF(UPDATE(PR_LEN_Program_Length))
+    IF(@updated_PR_LEN_Program_Length = 1)
     BEGIN
         INSERT INTO [dbo].[PR_LEN_Program_Length] (
             Metadata_PR_LEN,
@@ -974,14 +1013,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_PR) AND NOT UPDATE(Metadata_PR_LEN)
+                WHEN @updated_Metadata_PR = 1 AND @updated_Metadata_PR_LEN = 0
                 THEN i.Metadata_PR
                 ELSE i.Metadata_PR_LEN
             END, i.Metadata_PR),
             ISNULL(i.PR_LEN_PR_ID, i.PR_ID),
             cast(ISNULL(CASE
                 WHEN i.PR_LEN_Program_Length is null THEN i.PR_LEN_ChangedAt
-                WHEN UPDATE(PR_LEN_ChangedAt) THEN i.PR_LEN_ChangedAt
+                WHEN @updated_PR_LEN_ChangedAt = 1 THEN i.PR_LEN_ChangedAt
             END, @now) as date),
             i.PR_LEN_Program_Length
         FROM
@@ -993,7 +1032,7 @@ BEGIN
         WHERE
             i.PR_LEN_Program_Length is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(PR_LEN_ChangedAt) OR
+            @updated_PR_LEN_ChangedAt = 1 OR
             d.PR_LEN_Program_Length is null OR
             d.PR_LEN_Program_Length <> i.PR_LEN_Program_Length
         );

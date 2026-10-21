@@ -236,6 +236,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID_wasHeldAt))
@@ -246,9 +249,11 @@ BEGIN
         RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
     IF(UPDATE(of_ETY_EventType))
         RAISERROR('The role column of_ETY_EventType is not updatable.', 16, 1);
+    DECLARE @updated_EV_DAT_Event_Date bit = CASE WHEN UPDATE(EV_DAT_Event_Date) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_DAT bit = CASE WHEN UPDATE(Metadata_EV_DAT) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_DAT_EV_ID))
         RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_DAT_Event_Date))
+    IF(@updated_EV_DAT_Event_Date = 1)
     BEGIN
         INSERT INTO [attributes].[EV_DAT_Event_Date] (
             Metadata_EV_DAT,
@@ -257,7 +262,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_DAT = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_DAT
             END, i.Metadata_EV),
@@ -276,9 +281,11 @@ BEGIN
             d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date
         );
     END
+    DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_AUD bit = CASE WHEN UPDATE(Metadata_EV_AUD) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_AUD_Event_Audience))
+    IF(@updated_EV_AUD_Event_Audience = 1)
     BEGIN
         INSERT INTO [attributes].[EV_AUD_Event_Audience] (
             Metadata_EV_AUD,
@@ -287,7 +294,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_AUD = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
@@ -306,9 +313,11 @@ BEGIN
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
         );
     END
+    DECLARE @updated_EV_REV_Event_Revenue bit = CASE WHEN UPDATE(EV_REV_Event_Revenue) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_REV bit = CASE WHEN UPDATE(Metadata_EV_REV) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_REV_Event_Revenue))
+    IF(@updated_EV_REV_Event_Revenue = 1)
     BEGIN
         INSERT INTO [attributes].[EV_REV_Event_Revenue] (
             Metadata_EV_REV,
@@ -317,7 +326,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_REV = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
@@ -336,9 +345,12 @@ BEGIN
             d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue
         );
     END
+    DECLARE @updated_EV_STA_Event_Status bit = CASE WHEN UPDATE(EV_STA_Event_Status) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_STA bit = CASE WHEN UPDATE(Metadata_EV_STA) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_STA_ChangedAt bit = CASE WHEN UPDATE(EV_STA_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_STA_EV_ID))
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_STA_Event_Status))
+    IF(@updated_EV_STA_Event_Status = 1)
     BEGIN
         INSERT INTO [attributes].[EV_STA_Event_Status] (
             Metadata_EV_STA,
@@ -348,14 +360,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_STA = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_STA_EV_ID, i.EV_ID),
             cast(ISNULL(CASE
                 WHEN i.EV_STA_Event_Status is null THEN i.EV_STA_ChangedAt
-                WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
+                WHEN @updated_EV_STA_ChangedAt = 1 THEN i.EV_STA_ChangedAt
             END, @now) as datetime2),
             i.EV_STA_Event_Status
         FROM
@@ -367,14 +379,17 @@ BEGIN
         WHERE
             i.EV_STA_Event_Status is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_STA_ChangedAt) OR
+            @updated_EV_STA_ChangedAt = 1 OR
             d.EV_STA_Event_Status is null OR
             d.EV_STA_Event_Status <> i.EV_STA_Event_Status
         );
     END
+    DECLARE @updated_EV_UTL_UTL_ID bit = CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_UTL_UTL_Utilization bit = CASE WHEN UPDATE(EV_UTL_UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_UTL bit = CASE WHEN UPDATE(Metadata_EV_UTL) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_UTL_EV_ID))
         RAISERROR('The foreign key column EV_UTL_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_UTL_UTL_ID) OR UPDATE(EV_UTL_UTL_Utilization))
+    IF(@updated_EV_UTL_UTL_ID = 1 OR @updated_EV_UTL_UTL_Utilization = 1)
     BEGIN
         INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
             Metadata_EV_UTL,
@@ -383,12 +398,12 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_UTL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_UTL
             END, i.Metadata_EV),
             ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
-            CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END
+            CASE WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -400,15 +415,19 @@ BEGIN
         ON
             d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END is not null
+            CASE WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END is not null
         AND ( -- a value that is left as it is states nothing
             d.EV_UTL_UTL_ID is null OR
-            d.EV_UTL_UTL_ID <> CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END
+            d.EV_UTL_UTL_ID <> CASE WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END
         );
     END
+    DECLARE @updated_EV_LVL_PLV_ID bit = CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_PLV_ProfessionalLevel bit = CASE WHEN UPDATE(EV_LVL_PLV_ProfessionalLevel) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_LVL bit = CASE WHEN UPDATE(Metadata_EV_LVL) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_ChangedAt bit = CASE WHEN UPDATE(EV_LVL_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_LVL_EV_ID))
         RAISERROR('The foreign key column EV_LVL_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_LVL_PLV_ID) OR UPDATE(EV_LVL_PLV_ProfessionalLevel))
+    IF(@updated_EV_LVL_PLV_ID = 1 OR @updated_EV_LVL_PLV_ProfessionalLevel = 1)
     BEGIN
         INSERT INTO [attributes].[EV_LVL_Event_Level] (
             Metadata_EV_LVL,
@@ -418,16 +437,16 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_LVL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_LVL
             END, i.Metadata_EV),
             ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
             cast(ISNULL(CASE
                 WHEN i.EV_LVL_PLV_ID is null AND [kPLV].PLV_ID is null THEN i.EV_LVL_ChangedAt
-                WHEN UPDATE(EV_LVL_ChangedAt) THEN i.EV_LVL_ChangedAt
+                WHEN @updated_EV_LVL_ChangedAt = 1 THEN i.EV_LVL_ChangedAt
             END, @now) as date),
-            CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
+            CASE WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -439,11 +458,11 @@ BEGIN
         ON
             d.EV_ID = i.EV_ID
         WHERE
-            CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END is not null
+            CASE WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_LVL_ChangedAt) OR
+            @updated_EV_LVL_ChangedAt = 1 OR
             d.EV_LVL_PLV_ID is null OR
-            d.EV_LVL_PLV_ID <> CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
+            d.EV_LVL_PLV_ID <> CASE WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
         );
     END
 END

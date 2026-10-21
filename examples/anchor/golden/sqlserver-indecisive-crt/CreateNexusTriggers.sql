@@ -143,10 +143,20 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_Positor bit = CASE WHEN UPDATE(Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ID_for))
         RAISERROR('The role column SU_ID_for is not updatable.', 16, 1);
+    DECLARE @updated_EV_QTY_Event_Quantity bit = CASE WHEN UPDATE(EV_QTY_Event_Quantity) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_QTY bit = CASE WHEN UPDATE(Metadata_EV_QTY) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_QTY_PositedAt bit = CASE WHEN UPDATE(EV_QTY_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_QTY_Reliability bit = CASE WHEN UPDATE(EV_QTY_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_QTY_Positor bit = CASE WHEN UPDATE(EV_QTY_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_QTY_ID))
         RAISERROR('The identity column EV_QTY_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_QTY_EV_ID))
@@ -156,7 +166,7 @@ BEGIN
     -- indecisive: another value is a correction, which retracts the shown one first, so that the new value is not taken
     -- for an alternative to it
     IF (
-        UPDATE(EV_QTY_Event_Quantity)
+        @updated_EV_QTY_Event_Quantity = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
@@ -169,14 +179,14 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_QTY = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_QTY
             END, i.Metadata_EV),
             p.EV_QTY_EV_ID,
             p.EV_QTY_Event_Quantity,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+                WHEN @updated_EV_QTY_PositedAt = 1 THEN i.EV_QTY_PositedAt
             END, @now) as datetime2),
             d.EV_QTY_Positor,
             0
@@ -196,24 +206,24 @@ BEGIN
             p.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
         AND
             d.EV_QTY_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Positor) THEN i.EV_QTY_Positor
+                WHEN @updated_EV_QTY_Positor = 1 THEN i.EV_QTY_Positor
                 ELSE i.Positor
             END, 0)
         AND
             d.EV_QTY_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+                WHEN @updated_EV_QTY_PositedAt = 1 THEN i.EV_QTY_PositedAt
             END, @now) as datetime2)
         AND
             ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Reliability) THEN i.EV_QTY_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_QTY_Reliability = 1 THEN i.EV_QTY_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_QTY_Reliability
             END, 1) <> 0;
     END
     IF (
-        UPDATE(EV_QTY_Event_Quantity) OR
-        UPDATE(EV_QTY_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_QTY_Event_Quantity = 1 OR
+        @updated_EV_QTY_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
@@ -226,22 +236,22 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_QTY = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_QTY
             END, i.Metadata_EV),
             ISNULL(i.EV_QTY_EV_ID, i.EV_ID),
             i.EV_QTY_Event_Quantity,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+                WHEN @updated_EV_QTY_PositedAt = 1 THEN i.EV_QTY_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Positor) THEN i.EV_QTY_Positor
+                WHEN @updated_EV_QTY_Positor = 1 THEN i.EV_QTY_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Reliability) THEN i.EV_QTY_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_QTY_Reliability = 1 THEN i.EV_QTY_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_QTY_Reliability
             END, 1)
         FROM
@@ -255,14 +265,14 @@ BEGIN
         WHERE
             i.EV_QTY_Event_Quantity is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_QTY_PositedAt) OR
-            UPDATE(EV_QTY_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_QTY_PositedAt = 1 OR
+            @updated_EV_QTY_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_QTY_Event_Quantity is null OR
             d.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity OR
             d.EV_QTY_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Reliability) THEN i.EV_QTY_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_QTY_Reliability = 1 THEN i.EV_QTY_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_QTY_Reliability
             END, 1)
         )
@@ -271,7 +281,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_QTY_Event_Quantity)
+        @updated_EV_QTY_Event_Quantity = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
@@ -284,17 +294,17 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_QTY = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_QTY
             END, i.Metadata_EV),
             p.EV_QTY_EV_ID,
             p.EV_QTY_Event_Quantity,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_QTY_PositedAt) THEN i.EV_QTY_PositedAt
+                WHEN @updated_EV_QTY_PositedAt = 1 THEN i.EV_QTY_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_QTY_Positor) THEN i.EV_QTY_Positor
+                WHEN @updated_EV_QTY_Positor = 1 THEN i.EV_QTY_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -307,6 +317,12 @@ BEGIN
         WHERE
             i.EV_QTY_Event_Quantity is null
     END
+    DECLARE @updated_EV_PLC_Event_Place bit = CASE WHEN UPDATE(EV_PLC_Event_Place) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_PLC bit = CASE WHEN UPDATE(Metadata_EV_PLC) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_ChangedAt bit = CASE WHEN UPDATE(EV_PLC_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_PositedAt bit = CASE WHEN UPDATE(EV_PLC_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_Reliability bit = CASE WHEN UPDATE(EV_PLC_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_Positor bit = CASE WHEN UPDATE(EV_PLC_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_PLC_ID))
         RAISERROR('The identity column EV_PLC_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_PLC_EV_ID))
@@ -316,7 +332,7 @@ BEGIN
     -- indecisive: another value at the same changing time is a correction, which retracts the shown one first, so that
     -- the new value is not taken for an alternative to it
     IF (
-        UPDATE(EV_PLC_Event_Place)
+        @updated_EV_PLC_Event_Place = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_PLC_Event_Place] (
@@ -330,7 +346,7 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_PLC = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_PLC
             END, i.Metadata_EV),
@@ -338,7 +354,7 @@ BEGIN
             p.EV_PLC_Event_Place,
             p.EV_PLC_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
+                WHEN @updated_EV_PLC_PositedAt = 1 THEN i.EV_PLC_PositedAt
             END, @now) as datetime2),
             d.EV_PLC_Positor,
             0
@@ -357,29 +373,29 @@ BEGIN
         WHERE
             p.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
         AND
-            UPDATE(EV_PLC_ChangedAt)
+            @updated_EV_PLC_ChangedAt = 1
         AND
             p.EV_PLC_ChangedAt = i.EV_PLC_ChangedAt
         AND
             d.EV_PLC_Positor = ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Positor) THEN i.EV_PLC_Positor
+                WHEN @updated_EV_PLC_Positor = 1 THEN i.EV_PLC_Positor
                 ELSE i.Positor
             END, 0)
         AND
             d.EV_PLC_PositedAt < cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
+                WHEN @updated_EV_PLC_PositedAt = 1 THEN i.EV_PLC_PositedAt
             END, @now) as datetime2)
         AND
             ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Reliability) THEN i.EV_PLC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_PLC_Reliability = 1 THEN i.EV_PLC_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_PLC_Reliability
             END, 1) <> 0;
     END
     IF (
-        UPDATE(EV_PLC_Event_Place) OR
-        UPDATE(EV_PLC_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_PLC_Event_Place = 1 OR
+        @updated_EV_PLC_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_PLC_Event_Place] (
@@ -393,27 +409,27 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_PLC = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_PLC
             END, i.Metadata_EV),
             ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
             i.EV_PLC_Event_Place,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+                WHEN @updated_EV_PLC_ChangedAt = 1 THEN i.EV_PLC_ChangedAt
                 WHEN d.EV_PLC_Event_Place = i.EV_PLC_Event_Place
                 THEN i.EV_PLC_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
+                WHEN @updated_EV_PLC_PositedAt = 1 THEN i.EV_PLC_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Positor) THEN i.EV_PLC_Positor
+                WHEN @updated_EV_PLC_Positor = 1 THEN i.EV_PLC_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Reliability) THEN i.EV_PLC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_PLC_Reliability = 1 THEN i.EV_PLC_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_PLC_Reliability
             END, 1)
         FROM
@@ -427,15 +443,15 @@ BEGIN
         WHERE
             i.EV_PLC_Event_Place is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_PLC_ChangedAt) OR
-            UPDATE(EV_PLC_PositedAt) OR
-            UPDATE(EV_PLC_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_PLC_ChangedAt = 1 OR
+            @updated_EV_PLC_PositedAt = 1 OR
+            @updated_EV_PLC_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_PLC_Event_Place is null OR
             d.EV_PLC_Event_Place <> i.EV_PLC_Event_Place OR
             d.EV_PLC_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Reliability) THEN i.EV_PLC_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_PLC_Reliability = 1 THEN i.EV_PLC_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_PLC_Reliability
             END, 1)
         )
@@ -444,7 +460,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_PLC_Event_Place)
+        @updated_EV_PLC_Event_Place = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_PLC_Event_Place] (
@@ -458,7 +474,7 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_PLC = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_PLC
             END, i.Metadata_EV),
@@ -466,11 +482,11 @@ BEGIN
             p.EV_PLC_Event_Place,
             p.EV_PLC_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_PLC_PositedAt) THEN i.EV_PLC_PositedAt
-                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+                WHEN @updated_EV_PLC_PositedAt = 1 THEN i.EV_PLC_PositedAt
+                WHEN @updated_EV_PLC_ChangedAt = 1 THEN i.EV_PLC_ChangedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_PLC_Positor) THEN i.EV_PLC_Positor
+                WHEN @updated_EV_PLC_Positor = 1 THEN i.EV_PLC_Positor
                 ELSE i.Positor
             END, 0),
             0
