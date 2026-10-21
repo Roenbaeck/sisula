@@ -114,6 +114,25 @@ ON
             sub.EV_PLC_EV_ID = [EV].EV_ID
         AND
             sub.EV_PLC_Assertion = isnull(@assertion, sub.EV_PLC_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.EV_PLC_ChangedAt = (
+                SELECT
+                    max(e.EV_PLC_ChangedAt)
+                FROM
+                    [dbo].[rEV_PLC_Event_Place](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.EV_PLC_EV_ID = sub.EV_PLC_EV_ID
+                AND
+                    e.EV_PLC_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.EV_PLC_ChangedAt DESC,
             sub.EV_PLC_PositedAt DESC,

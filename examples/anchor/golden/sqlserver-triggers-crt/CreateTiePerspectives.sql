@@ -84,6 +84,27 @@ WHERE
             sub.OB_ID_item = tie.OB_ID_item
         AND
             sub.SU_holder_OB_item_GRD_grade_Assertion = isnull(@assertion, sub.SU_holder_OB_item_GRD_grade_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_holder_OB_item_GRD_grade_ChangedAt = (
+                SELECT
+                    max(e.SU_holder_OB_item_GRD_grade_ChangedAt)
+                FROM
+                    [dbo].[rSU_holder_OB_item_GRD_grade](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_ID_holder = sub.SU_ID_holder
+                AND
+                    e.OB_ID_item = sub.OB_ID_item
+                AND
+                    e.SU_holder_OB_item_GRD_grade_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_holder_OB_item_GRD_grade_ChangedAt DESC,
             sub.SU_holder_OB_item_GRD_grade_PositedAt DESC,
@@ -224,6 +245,27 @@ WHERE
             sub.OB_ID_thing = tie.OB_ID_thing
         AND
             sub.SU_keeper_OB_thing_GRD_rank_Assertion = isnull(@assertion, sub.SU_keeper_OB_thing_GRD_rank_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_keeper_OB_thing_GRD_rank_ChangedAt = (
+                SELECT
+                    max(e.SU_keeper_OB_thing_GRD_rank_ChangedAt)
+                FROM
+                    [dbo].[rSU_keeper_OB_thing_GRD_rank](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_ID_keeper = sub.SU_ID_keeper
+                AND
+                    e.OB_ID_thing = sub.OB_ID_thing
+                AND
+                    e.SU_keeper_OB_thing_GRD_rank_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_keeper_OB_thing_GRD_rank_ChangedAt DESC,
             sub.SU_keeper_OB_thing_GRD_rank_PositedAt DESC,
@@ -465,6 +507,27 @@ WHERE
         )
         AND
             sub.SU_partner_SU_with_Assertion = isnull(@assertion, sub.SU_partner_SU_with_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_partner_SU_with_ChangedAt = (
+                SELECT
+                    max(e.SU_partner_SU_with_ChangedAt)
+                FROM
+                    [dbo].[rSU_partner_SU_with](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_ID_partner = sub.SU_ID_partner
+                AND
+                    e.SU_ID_with = sub.SU_ID_with
+                AND
+                    e.SU_partner_SU_with_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_partner_SU_with_ChangedAt DESC,
             sub.SU_partner_SU_with_PositedAt DESC,
