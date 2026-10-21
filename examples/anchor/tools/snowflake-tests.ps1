@@ -76,6 +76,15 @@ $headers = @{
 }
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+# Windows PowerShell reads a response without a charset as ISO-8859-1, and Snowflake's says none, so the bytes are
+# decoded here.
+function Invoke-Api([string] $method, [string] $uri, [byte[]] $body) {
+    $arguments = @{ UseBasicParsing = $true; Method = $method; Uri = $uri; Headers = $headers }
+    if ($body) { $arguments.ContentType = 'application/json; charset=utf-8'; $arguments.Body = $body }
+    $response = Invoke-WebRequest @arguments
+    [Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray()) | ConvertFrom-Json
+}
+
 function Get-Property($object, [string] $name) {
     $property = $object.PSObject.Properties[$name]
     if ($property) { $property.Value }
@@ -98,21 +107,21 @@ function Invoke-Snowflake([string] $sql, [string] $database) {
     if ($database) { $body.database = $database; $body.schema = 'PUBLIC' }
     $json = $body | ConvertTo-Json -Depth 5
     try {
-        $r = Invoke-RestMethod -Method Post -Uri "$base/api/v2/statements" -Headers $headers -ContentType 'application/json' -Body ([Text.Encoding]::UTF8.GetBytes($json))
+        $r = Invoke-Api 'Post' "$base/api/v2/statements" ([Text.Encoding]::UTF8.GetBytes($json))
         # a request that runs longer than a while is answered with a handle to ask again with
         while ((Get-Property $r 'statementStatusUrl') -and -not (Get-Property $r 'resultSetMetaData')) {
             Start-Sleep -Seconds 2
-            $r = Invoke-RestMethod -Method Get -Uri "$base$($r.statementStatusUrl)" -Headers $headers
+            $r = Invoke-Api 'Get' "$base$($r.statementStatusUrl)"
         }
         $handles = Get-Property $r 'statementHandles'
         if ($handles) {
-            $r = Invoke-RestMethod -Method Get -Uri "$base/api/v2/statements/$(@($handles)[-1])" -Headers $headers
+            $r = Invoke-Api 'Get' "$base/api/v2/statements/$(@($handles)[-1])"
         }
         $rows = New-Object System.Collections.Generic.List[object]
         foreach ($row in (Get-Rows $r)) { $rows.Add($row) }
         $partitions = @(Get-Property (Get-Property $r 'resultSetMetaData') 'partitionInfo')
         for ($i = 1; $i -lt $partitions.Count; $i++) {
-            $p = Invoke-RestMethod -Method Get -Uri "$base/api/v2/statements/$($r.statementHandle)?partition=$i" -Headers $headers
+            $p = Invoke-Api 'Get' "$base/api/v2/statements/$($r.statementHandle)?partition=$i"
             foreach ($row in (Get-Rows $p)) { $rows.Add($row) }
         }
         @{ rows = $rows.ToArray(); error = $null }
