@@ -33,7 +33,7 @@ these ways:
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
 | `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, and `sqlserver-keys`, `-bi` and `-crt` from `sqlserver-base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
 | `tools\snowflake-tests.ps1` | what the Snowflake perspectives show: the golden output of `distinct`, `-bi`, `-crt` and `distinct-equivalence` run in a new database, the scripts in `snowflake-tests/`, which put rows into the tables and check what the perspectives show, and a query of every view and a call of every function (see below) | a Snowflake account and a programmatic access token |
-| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers`, `sqlserver-keys` and `sqlserver-indecisive-crt` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
+| `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers`, `sqlserver-keys` and `sqlserver-indecisive-crt` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2014 or later; sqlcmd, or the .NET Framework's SqlClient without it |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
 The golden files are committed, so the everyday check, `run-all.ps1`, needs only PowerShell and
@@ -76,8 +76,10 @@ decisiveness off, and `sqlserver-tests/indecisive-crt.sql` checks that an insert
 an update is a correction that retracts the shown value. Where there is a `sqlserver-tests/<suite>-<t>-upgrade.sql`,
 as for the bitemporal triggers, the tests are followed by an upgrade: that script makes the database look like one
 that older generated SQL made, the generated SQL runs on it again, and `<suite>-<t>-upgraded.sql` checks the result.
-The tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that run here; run them after
-the golden files of the test models have been regenerated.
+The tests need a SQL Server 2014 or later (they are run on 2014), so they are not among the checks that need nothing
+but this repository; run them after the golden files of the test models have been regenerated. They use sqlcmd when
+there is one, and otherwise the SqlClient of the .NET Framework, which Windows PowerShell has, so nothing has to be
+installed; a server with an expired certificate needs `-TrustServerCertificate`.
 
 What the Snowflake perspectives show is tested by `tools/snowflake-tests.ps1`, through Snowflake's SQL API with a
 programmatic access token. For each temporalization it makes a database, runs the golden output of `distinct` (or
