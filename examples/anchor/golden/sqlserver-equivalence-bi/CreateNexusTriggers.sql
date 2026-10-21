@@ -164,6 +164,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID_wasHeldAt))
@@ -174,14 +178,18 @@ BEGIN
         RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
     IF(UPDATE(of_ETY_EventType))
         RAISERROR('The role column of_ETY_EventType is not updatable.', 16, 1);
+    DECLARE @updated_EV_DAT_Event_Date bit = CASE WHEN UPDATE(EV_DAT_Event_Date) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_DAT bit = CASE WHEN UPDATE(Metadata_EV_DAT) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_PositedAt bit = CASE WHEN UPDATE(EV_DAT_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_Reliability bit = CASE WHEN UPDATE(EV_DAT_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_DAT_ID))
         RAISERROR('The identity column EV_DAT_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_DAT_EV_ID))
         RAISERROR('The foreign key column EV_DAT_EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_DAT_Event_Date) OR
-        UPDATE(EV_DAT_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_DAT_Event_Date = 1 OR
+        @updated_EV_DAT_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_DAT_Event_Date] (
@@ -193,18 +201,18 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_DAT = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_DAT
             END, i.Metadata_EV),
             ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
             i.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         FROM
@@ -216,12 +224,12 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_DAT_PositedAt) OR
+            @updated_EV_DAT_PositedAt = 1 OR
             d.EV_DAT_Event_Date is null OR
             d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date OR
             d.EV_DAT_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         )
@@ -230,7 +238,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_DAT_Event_Date)
+        @updated_EV_DAT_Event_Date = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_DAT_Event_Date] (
@@ -242,14 +250,14 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_DAT = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_DAT
             END, i.Metadata_EV),
             p.EV_DAT_EV_ID,
             p.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -261,14 +269,18 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is null
     END
+    DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_AUD bit = CASE WHEN UPDATE(Metadata_EV_AUD) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_PositedAt bit = CASE WHEN UPDATE(EV_AUD_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_Reliability bit = CASE WHEN UPDATE(EV_AUD_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_ID))
         RAISERROR('The identity column EV_AUD_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_AUD_Event_Audience) OR
-        UPDATE(EV_AUD_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_AUD_Event_Audience = 1 OR
+        @updated_EV_AUD_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_AUD_Event_Audience] (
@@ -280,18 +292,18 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_AUD = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
             i.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         FROM
@@ -303,12 +315,12 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_AUD_PositedAt) OR
+            @updated_EV_AUD_PositedAt = 1 OR
             d.EV_AUD_Event_Audience is null OR
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience OR
             d.EV_AUD_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         )
@@ -317,7 +329,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_AUD_Event_Audience)
+        @updated_EV_AUD_Event_Audience = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_AUD_Event_Audience] (
@@ -329,14 +341,14 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_AUD = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             p.EV_AUD_EV_ID,
             p.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             0
         FROM
@@ -348,14 +360,18 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is null
     END
+    DECLARE @updated_EV_REV_Event_Revenue bit = CASE WHEN UPDATE(EV_REV_Event_Revenue) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_REV bit = CASE WHEN UPDATE(Metadata_EV_REV) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_PositedAt bit = CASE WHEN UPDATE(EV_REV_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_Reliability bit = CASE WHEN UPDATE(EV_REV_Reliability) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_REV_ID))
         RAISERROR('The identity column EV_REV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_REV_EV_ID))
         RAISERROR('The foreign key column EV_REV_EV_ID is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_REV_Event_Revenue) OR
-        UPDATE(EV_REV_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_REV_Event_Revenue = 1 OR
+        @updated_EV_REV_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_REV_Event_Revenue] (
@@ -367,18 +383,18 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_REV = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             ISNULL(i.EV_REV_EV_ID, i.EV_ID),
             i.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         FROM
@@ -390,12 +406,12 @@ BEGIN
         WHERE
             i.EV_REV_Event_Revenue is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_REV_PositedAt) OR
+            @updated_EV_REV_PositedAt = 1 OR
             d.EV_REV_Event_Revenue is null OR
             d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue OR
             d.EV_REV_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         )
@@ -404,7 +420,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_REV_Event_Revenue)
+        @updated_EV_REV_Event_Revenue = 1
     )
     BEGIN
         INSERT INTO [dbo].[EV_REV_Event_Revenue] (
@@ -416,14 +432,14 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_REV = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             p.EV_REV_EV_ID,
             p.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             0
         FROM

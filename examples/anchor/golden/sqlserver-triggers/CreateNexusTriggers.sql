@@ -116,13 +116,18 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ID_for))
         RAISERROR('The role column SU_ID_for is not updatable.', 16, 1);
+    DECLARE @updated_EV_QTY_Event_Quantity bit = CASE WHEN UPDATE(EV_QTY_Event_Quantity) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_QTY bit = CASE WHEN UPDATE(Metadata_EV_QTY) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_QTY_EV_ID))
         RAISERROR('The foreign key column EV_QTY_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_QTY_Event_Quantity))
+    IF(@updated_EV_QTY_Event_Quantity = 1)
     BEGIN
         INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
             Metadata_EV_QTY,
@@ -131,7 +136,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_QTY = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_QTY
             END, i.Metadata_EV),
@@ -150,9 +155,12 @@ BEGIN
             d.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
         );
     END
+    DECLARE @updated_EV_PLC_Event_Place bit = CASE WHEN UPDATE(EV_PLC_Event_Place) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_PLC bit = CASE WHEN UPDATE(Metadata_EV_PLC) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_ChangedAt bit = CASE WHEN UPDATE(EV_PLC_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_PLC_EV_ID))
         RAISERROR('The foreign key column EV_PLC_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_PLC_Event_Place))
+    IF(@updated_EV_PLC_Event_Place = 1)
     BEGIN
         INSERT INTO [dbo].[EV_PLC_Event_Place] (
             Metadata_EV_PLC,
@@ -162,14 +170,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_PLC = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_PLC
             END, i.Metadata_EV),
             ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
             cast(ISNULL(CASE
                 WHEN i.EV_PLC_Event_Place is null THEN i.EV_PLC_ChangedAt
-                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+                WHEN @updated_EV_PLC_ChangedAt = 1 THEN i.EV_PLC_ChangedAt
             END, @now) as datetime2),
             i.EV_PLC_Event_Place
         FROM
@@ -181,7 +189,7 @@ BEGIN
         WHERE
             i.EV_PLC_Event_Place is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_PLC_ChangedAt) OR
+            @updated_EV_PLC_ChangedAt = 1 OR
             d.EV_PLC_Event_Place is null OR
             d.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
         );

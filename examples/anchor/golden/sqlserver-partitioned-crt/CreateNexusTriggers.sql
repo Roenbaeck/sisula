@@ -323,6 +323,11 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
+    DECLARE @updated_Reliability bit = CASE WHEN UPDATE(Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_Positor bit = CASE WHEN UPDATE(Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(ST_ID_wasHeldAt))
@@ -333,6 +338,11 @@ BEGIN
         RAISERROR('The role column ETY_ID_of is not updatable.', 16, 1);
     IF(UPDATE(of_ETY_EventType))
         RAISERROR('The role column of_ETY_EventType is not updatable.', 16, 1);
+    DECLARE @updated_EV_DAT_Event_Date bit = CASE WHEN UPDATE(EV_DAT_Event_Date) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_DAT bit = CASE WHEN UPDATE(Metadata_EV_DAT) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_PositedAt bit = CASE WHEN UPDATE(EV_DAT_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_Reliability bit = CASE WHEN UPDATE(EV_DAT_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_DAT_Positor bit = CASE WHEN UPDATE(EV_DAT_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_DAT_ID))
         RAISERROR('The identity column EV_DAT_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_DAT_EV_ID))
@@ -340,9 +350,9 @@ BEGIN
     IF(UPDATE(EV_DAT_Assertion))
         RAISERROR('The computed assertion column EV_DAT_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_DAT_Event_Date) OR
-        UPDATE(EV_DAT_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_DAT_Event_Date = 1 OR
+        @updated_EV_DAT_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_DAT_Event_Date] (
@@ -355,22 +365,22 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_DAT = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_DAT
             END, i.Metadata_EV),
             ISNULL(i.EV_DAT_EV_ID, i.EV_ID),
             i.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                WHEN @updated_EV_DAT_Positor = 1 THEN i.EV_DAT_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         FROM
@@ -384,14 +394,14 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_DAT_PositedAt) OR
-            UPDATE(EV_DAT_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_DAT_PositedAt = 1 OR
+            @updated_EV_DAT_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_DAT_Event_Date is null OR
             d.EV_DAT_Event_Date <> i.EV_DAT_Event_Date OR
             d.EV_DAT_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Reliability) THEN i.EV_DAT_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_DAT_Reliability = 1 THEN i.EV_DAT_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_DAT_Reliability
             END, 1)
         )
@@ -400,7 +410,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_DAT_Event_Date)
+        @updated_EV_DAT_Event_Date = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_DAT_Event_Date] (
@@ -413,17 +423,17 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_DAT)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_DAT = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_DAT
             END, i.Metadata_EV),
             p.EV_DAT_EV_ID,
             p.EV_DAT_Event_Date,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_DAT_PositedAt) THEN i.EV_DAT_PositedAt
+                WHEN @updated_EV_DAT_PositedAt = 1 THEN i.EV_DAT_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_DAT_Positor) THEN i.EV_DAT_Positor
+                WHEN @updated_EV_DAT_Positor = 1 THEN i.EV_DAT_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -436,6 +446,11 @@ BEGIN
         WHERE
             i.EV_DAT_Event_Date is null
     END
+    DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_AUD bit = CASE WHEN UPDATE(Metadata_EV_AUD) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_PositedAt bit = CASE WHEN UPDATE(EV_AUD_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_Reliability bit = CASE WHEN UPDATE(EV_AUD_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_AUD_Positor bit = CASE WHEN UPDATE(EV_AUD_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_ID))
         RAISERROR('The identity column EV_AUD_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_AUD_EV_ID))
@@ -443,9 +458,9 @@ BEGIN
     IF(UPDATE(EV_AUD_Assertion))
         RAISERROR('The computed assertion column EV_AUD_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_AUD_Event_Audience) OR
-        UPDATE(EV_AUD_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_AUD_Event_Audience = 1 OR
+        @updated_EV_AUD_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_AUD_Event_Audience] (
@@ -458,22 +473,22 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_AUD = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
             i.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                WHEN @updated_EV_AUD_Positor = 1 THEN i.EV_AUD_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         FROM
@@ -487,14 +502,14 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_AUD_PositedAt) OR
-            UPDATE(EV_AUD_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_AUD_PositedAt = 1 OR
+            @updated_EV_AUD_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_AUD_Event_Audience is null OR
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience OR
             d.EV_AUD_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Reliability) THEN i.EV_AUD_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_AUD_Reliability = 1 THEN i.EV_AUD_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_AUD_Reliability
             END, 1)
         )
@@ -503,7 +518,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_AUD_Event_Audience)
+        @updated_EV_AUD_Event_Audience = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_AUD_Event_Audience] (
@@ -516,17 +531,17 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_AUD)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_AUD = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             p.EV_AUD_EV_ID,
             p.EV_AUD_Event_Audience,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_AUD_PositedAt) THEN i.EV_AUD_PositedAt
+                WHEN @updated_EV_AUD_PositedAt = 1 THEN i.EV_AUD_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_AUD_Positor) THEN i.EV_AUD_Positor
+                WHEN @updated_EV_AUD_Positor = 1 THEN i.EV_AUD_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -539,6 +554,11 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is null
     END
+    DECLARE @updated_EV_REV_Event_Revenue bit = CASE WHEN UPDATE(EV_REV_Event_Revenue) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_REV bit = CASE WHEN UPDATE(Metadata_EV_REV) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_PositedAt bit = CASE WHEN UPDATE(EV_REV_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_Reliability bit = CASE WHEN UPDATE(EV_REV_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_REV_Positor bit = CASE WHEN UPDATE(EV_REV_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_REV_ID))
         RAISERROR('The identity column EV_REV_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_REV_EV_ID))
@@ -546,9 +566,9 @@ BEGIN
     IF(UPDATE(EV_REV_Assertion))
         RAISERROR('The computed assertion column EV_REV_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_REV_Event_Revenue) OR
-        UPDATE(EV_REV_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_REV_Event_Revenue = 1 OR
+        @updated_EV_REV_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_REV_Event_Revenue] (
@@ -561,22 +581,22 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_REV = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             ISNULL(i.EV_REV_EV_ID, i.EV_ID),
             i.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                WHEN @updated_EV_REV_Positor = 1 THEN i.EV_REV_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         FROM
@@ -590,14 +610,14 @@ BEGIN
         WHERE
             i.EV_REV_Event_Revenue is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_REV_PositedAt) OR
-            UPDATE(EV_REV_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_REV_PositedAt = 1 OR
+            @updated_EV_REV_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_REV_Event_Revenue is null OR
             d.EV_REV_Event_Revenue <> i.EV_REV_Event_Revenue OR
             d.EV_REV_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_REV_Reliability) THEN i.EV_REV_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_REV_Reliability = 1 THEN i.EV_REV_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_REV_Reliability
             END, 1)
         )
@@ -606,7 +626,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_REV_Event_Revenue)
+        @updated_EV_REV_Event_Revenue = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_REV_Event_Revenue] (
@@ -619,17 +639,17 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_REV)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_REV = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_REV
             END, i.Metadata_EV),
             p.EV_REV_EV_ID,
             p.EV_REV_Event_Revenue,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_REV_PositedAt) THEN i.EV_REV_PositedAt
+                WHEN @updated_EV_REV_PositedAt = 1 THEN i.EV_REV_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_REV_Positor) THEN i.EV_REV_Positor
+                WHEN @updated_EV_REV_Positor = 1 THEN i.EV_REV_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -642,6 +662,12 @@ BEGIN
         WHERE
             i.EV_REV_Event_Revenue is null
     END
+    DECLARE @updated_EV_STA_Event_Status bit = CASE WHEN UPDATE(EV_STA_Event_Status) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_STA bit = CASE WHEN UPDATE(Metadata_EV_STA) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_STA_ChangedAt bit = CASE WHEN UPDATE(EV_STA_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_STA_PositedAt bit = CASE WHEN UPDATE(EV_STA_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_STA_Reliability bit = CASE WHEN UPDATE(EV_STA_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_STA_Positor bit = CASE WHEN UPDATE(EV_STA_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_STA_ID))
         RAISERROR('The identity column EV_STA_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_STA_EV_ID))
@@ -649,9 +675,9 @@ BEGIN
     IF(UPDATE(EV_STA_Assertion))
         RAISERROR('The computed assertion column EV_STA_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_STA_Event_Status) OR
-        UPDATE(EV_STA_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_STA_Event_Status = 1 OR
+        @updated_EV_STA_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_STA_Event_Status] (
@@ -665,27 +691,27 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_STA = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_STA_EV_ID, i.EV_ID),
             i.EV_STA_Event_Status,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
+                WHEN @updated_EV_STA_ChangedAt = 1 THEN i.EV_STA_ChangedAt
                 WHEN d.EV_STA_Event_Status = i.EV_STA_Event_Status
                 THEN i.EV_STA_ChangedAt -- the shown version is asserted again
             END, @now) as datetime2),
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
+                WHEN @updated_EV_STA_PositedAt = 1 THEN i.EV_STA_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
+                WHEN @updated_EV_STA_Positor = 1 THEN i.EV_STA_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_STA_Reliability = 1 THEN i.EV_STA_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_STA_Reliability
             END, 1)
         FROM
@@ -699,15 +725,15 @@ BEGIN
         WHERE
             i.EV_STA_Event_Status is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_STA_ChangedAt) OR
-            UPDATE(EV_STA_PositedAt) OR
-            UPDATE(EV_STA_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_STA_ChangedAt = 1 OR
+            @updated_EV_STA_PositedAt = 1 OR
+            @updated_EV_STA_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_STA_Event_Status is null OR
             d.EV_STA_Event_Status <> i.EV_STA_Event_Status OR
             d.EV_STA_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_STA_Reliability) THEN i.EV_STA_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_STA_Reliability = 1 THEN i.EV_STA_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_STA_Reliability
             END, 1)
         )
@@ -716,7 +742,7 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_STA_Event_Status)
+        @updated_EV_STA_Event_Status = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_STA_Event_Status] (
@@ -730,7 +756,7 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_STA)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_STA = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
@@ -738,11 +764,11 @@ BEGIN
             p.EV_STA_Event_Status,
             p.EV_STA_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_STA_PositedAt) THEN i.EV_STA_PositedAt
-                WHEN UPDATE(EV_STA_ChangedAt) THEN i.EV_STA_ChangedAt
+                WHEN @updated_EV_STA_PositedAt = 1 THEN i.EV_STA_PositedAt
+                WHEN @updated_EV_STA_ChangedAt = 1 THEN i.EV_STA_ChangedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_STA_Positor) THEN i.EV_STA_Positor
+                WHEN @updated_EV_STA_Positor = 1 THEN i.EV_STA_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -755,6 +781,12 @@ BEGIN
         WHERE
             i.EV_STA_Event_Status is null
     END
+    DECLARE @updated_EV_UTL_UTL_ID bit = CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_UTL_UTL_Utilization bit = CASE WHEN UPDATE(EV_UTL_UTL_Utilization) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_UTL bit = CASE WHEN UPDATE(Metadata_EV_UTL) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_UTL_PositedAt bit = CASE WHEN UPDATE(EV_UTL_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_UTL_Reliability bit = CASE WHEN UPDATE(EV_UTL_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_UTL_Positor bit = CASE WHEN UPDATE(EV_UTL_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_UTL_ID))
         RAISERROR('The identity column EV_UTL_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_UTL_EV_ID))
@@ -762,10 +794,10 @@ BEGIN
     IF(UPDATE(EV_UTL_Assertion))
         RAISERROR('The computed assertion column EV_UTL_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_UTL_UTL_ID) OR
-        UPDATE(EV_UTL_UTL_Utilization) OR
-        UPDATE(EV_UTL_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_UTL_UTL_ID = 1 OR
+        @updated_EV_UTL_UTL_Utilization = 1 OR
+        @updated_EV_UTL_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
@@ -778,25 +810,25 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_UTL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_UTL
             END, i.Metadata_EV),
             ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
             CASE
-                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID
                 ELSE [kUTL].UTL_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+                WHEN @updated_EV_UTL_PositedAt = 1 THEN i.EV_UTL_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
+                WHEN @updated_EV_UTL_Positor = 1 THEN i.EV_UTL_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_UTL_Reliability = 1 THEN i.EV_UTL_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_UTL_Reliability
             END, 1)
         FROM
@@ -813,18 +845,18 @@ BEGIN
             d.Positor = i.Positor
         WHERE
             CASE
-                WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID
+                WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID
                 ELSE [kUTL].UTL_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_UTL_PositedAt) OR
-            UPDATE(EV_UTL_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_UTL_PositedAt = 1 OR
+            @updated_EV_UTL_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_UTL_UTL_ID is null OR
-            d.EV_UTL_UTL_ID <> CASE WHEN UPDATE(EV_UTL_UTL_ID) THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END OR
+            d.EV_UTL_UTL_ID <> CASE WHEN @updated_EV_UTL_UTL_ID = 1 THEN i.EV_UTL_UTL_ID ELSE [kUTL].UTL_ID END OR
             d.EV_UTL_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Reliability) THEN i.EV_UTL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_UTL_Reliability = 1 THEN i.EV_UTL_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_UTL_Reliability
             END, 1)
         );
@@ -833,8 +865,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_UTL_UTL_ID) OR
-        UPDATE(EV_UTL_UTL_Utilization)
+        @updated_EV_UTL_UTL_ID = 1 OR
+        @updated_EV_UTL_UTL_Utilization = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_UTL_Event_Utilization] (
@@ -847,17 +879,17 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_UTL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_UTL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_UTL
             END, i.Metadata_EV),
             p.EV_UTL_EV_ID,
             p.EV_UTL_UTL_ID,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_UTL_PositedAt) THEN i.EV_UTL_PositedAt
+                WHEN @updated_EV_UTL_PositedAt = 1 THEN i.EV_UTL_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_UTL_Positor) THEN i.EV_UTL_Positor
+                WHEN @updated_EV_UTL_Positor = 1 THEN i.EV_UTL_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -868,10 +900,17 @@ BEGIN
         ON
             p.EV_UTL_ID = i.EV_UTL_ID
         WHERE
-            (UPDATE(EV_UTL_UTL_ID) AND i.EV_UTL_UTL_ID is null)
+            (@updated_EV_UTL_UTL_ID = 1 AND i.EV_UTL_UTL_ID is null)
         OR
-            (UPDATE(EV_UTL_UTL_Utilization) AND i.EV_UTL_UTL_Utilization is null);
+            (@updated_EV_UTL_UTL_Utilization = 1 AND i.EV_UTL_UTL_Utilization is null);
     END
+    DECLARE @updated_EV_LVL_PLV_ID bit = CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_PLV_ProfessionalLevel bit = CASE WHEN UPDATE(EV_LVL_PLV_ProfessionalLevel) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_LVL bit = CASE WHEN UPDATE(Metadata_EV_LVL) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_ChangedAt bit = CASE WHEN UPDATE(EV_LVL_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_PositedAt bit = CASE WHEN UPDATE(EV_LVL_PositedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_Reliability bit = CASE WHEN UPDATE(EV_LVL_Reliability) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_LVL_Positor bit = CASE WHEN UPDATE(EV_LVL_Positor) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_LVL_ID))
         RAISERROR('The identity column EV_LVL_ID is not updatable.', 16, 1);
     IF(UPDATE(EV_LVL_EV_ID))
@@ -879,10 +918,10 @@ BEGIN
     IF(UPDATE(EV_LVL_Assertion))
         RAISERROR('The computed assertion column EV_LVL_Assertion is not updatable.', 16, 1);
     IF (
-        UPDATE(EV_LVL_PLV_ID) OR
-        UPDATE(EV_LVL_PLV_ProfessionalLevel) OR
-        UPDATE(EV_LVL_Reliability) OR
-        UPDATE(Reliability)
+        @updated_EV_LVL_PLV_ID = 1 OR
+        @updated_EV_LVL_PLV_ProfessionalLevel = 1 OR
+        @updated_EV_LVL_Reliability = 1 OR
+        @updated_Reliability = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_LVL_Event_Level] (
@@ -896,30 +935,30 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_LVL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_LVL
             END, i.Metadata_EV),
             ISNULL(i.EV_LVL_EV_ID, i.EV_ID),
             CASE
-                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID
                 ELSE [kPLV].PLV_ID
             END,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_ChangedAt) THEN i.EV_LVL_ChangedAt
-                WHEN d.EV_LVL_PLV_ID = CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
+                WHEN @updated_EV_LVL_ChangedAt = 1 THEN i.EV_LVL_ChangedAt
+                WHEN d.EV_LVL_PLV_ID = CASE WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END
                 THEN i.EV_LVL_ChangedAt -- the shown version is asserted again
             END, @now) as date),
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
+                WHEN @updated_EV_LVL_PositedAt = 1 THEN i.EV_LVL_PositedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
+                WHEN @updated_EV_LVL_Positor = 1 THEN i.EV_LVL_Positor
                 ELSE i.Positor
             END, 0),
             ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_LVL_Reliability = 1 THEN i.EV_LVL_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_LVL_Reliability
             END, 1)
         FROM
@@ -936,19 +975,19 @@ BEGIN
             d.Positor = i.Positor
         WHERE
             CASE
-                WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID
+                WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID
                 ELSE [kPLV].PLV_ID
             END is not null
         AND ( -- a statement that leaves everything as it is states nothing
-            UPDATE(EV_LVL_ChangedAt) OR
-            UPDATE(EV_LVL_PositedAt) OR
-            UPDATE(EV_LVL_Positor) OR
-            UPDATE(Positor) OR
+            @updated_EV_LVL_ChangedAt = 1 OR
+            @updated_EV_LVL_PositedAt = 1 OR
+            @updated_EV_LVL_Positor = 1 OR
+            @updated_Positor = 1 OR
             d.EV_LVL_PLV_ID is null OR
-            d.EV_LVL_PLV_ID <> CASE WHEN UPDATE(EV_LVL_PLV_ID) THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END OR
+            d.EV_LVL_PLV_ID <> CASE WHEN @updated_EV_LVL_PLV_ID = 1 THEN i.EV_LVL_PLV_ID ELSE [kPLV].PLV_ID END OR
             d.EV_LVL_Reliability <> ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Reliability) THEN i.EV_LVL_Reliability
-                WHEN UPDATE(Reliability) THEN i.Reliability
+                WHEN @updated_EV_LVL_Reliability = 1 THEN i.EV_LVL_Reliability
+                WHEN @updated_Reliability = 1 THEN i.Reliability
                 ELSE i.EV_LVL_Reliability
             END, 1)
         );
@@ -957,8 +996,8 @@ BEGIN
     -- note that an UPDATE SET AN_ATT_Anchor_Attribute = NULL, AN_ATT_ChangedAt = @timepoint
     -- will use @timepoint as a proxy for positing time
     IF (
-        UPDATE(EV_LVL_PLV_ID) OR
-        UPDATE(EV_LVL_PLV_ProfessionalLevel)
+        @updated_EV_LVL_PLV_ID = 1 OR
+        @updated_EV_LVL_PLV_ProfessionalLevel = 1
     )
     BEGIN
         INSERT INTO [attributes].[EV_LVL_Event_Level] (
@@ -972,7 +1011,7 @@ BEGIN
         )
         SELECT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_LVL)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_LVL = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_LVL
             END, i.Metadata_EV),
@@ -980,11 +1019,11 @@ BEGIN
             p.EV_LVL_PLV_ID,
             p.EV_LVL_ChangedAt,
             cast(ISNULL(CASE
-                WHEN UPDATE(EV_LVL_PositedAt) THEN i.EV_LVL_PositedAt
-                WHEN UPDATE(EV_LVL_ChangedAt) THEN i.EV_LVL_ChangedAt
+                WHEN @updated_EV_LVL_PositedAt = 1 THEN i.EV_LVL_PositedAt
+                WHEN @updated_EV_LVL_ChangedAt = 1 THEN i.EV_LVL_ChangedAt
             END, @now) as datetime2),
             ISNULL(CASE
-                WHEN UPDATE(EV_LVL_Positor) THEN i.EV_LVL_Positor
+                WHEN @updated_EV_LVL_Positor = 1 THEN i.EV_LVL_Positor
                 ELSE i.Positor
             END, 0),
             0
@@ -995,9 +1034,9 @@ BEGIN
         ON
             p.EV_LVL_ID = i.EV_LVL_ID
         WHERE
-            (UPDATE(EV_LVL_PLV_ID) AND i.EV_LVL_PLV_ID is null)
+            (@updated_EV_LVL_PLV_ID = 1 AND i.EV_LVL_PLV_ID is null)
         OR
-            (UPDATE(EV_LVL_PLV_ProfessionalLevel) AND i.EV_LVL_PLV_ProfessionalLevel is null);
+            (@updated_EV_LVL_PLV_ProfessionalLevel = 1 AND i.EV_LVL_PLV_ProfessionalLevel is null);
     END
 END
 GO

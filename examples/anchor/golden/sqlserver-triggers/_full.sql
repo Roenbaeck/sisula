@@ -3523,11 +3523,16 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_SU bit = CASE WHEN UPDATE(Metadata_SU) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_ID))
         RAISERROR('The identity column SU_ID is not updatable.', 16, 1);
+    DECLARE @updated_SU_NAM_Subject_Name bit = CASE WHEN UPDATE(SU_NAM_Subject_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_NAM bit = CASE WHEN UPDATE(Metadata_SU_NAM) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_NAM_SU_ID))
         RAISERROR('The foreign key column SU_NAM_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_NAM_Subject_Name))
+    IF(@updated_SU_NAM_Subject_Name = 1)
     BEGIN
         INSERT INTO [dbo].[SU_NAM_Subject_Name] (
             Metadata_SU_NAM,
@@ -3536,7 +3541,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NAM)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_NAM = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_NAM
             END, i.Metadata_SU),
@@ -3555,9 +3560,11 @@ BEGIN
             d.SU_NAM_Subject_Name <> i.SU_NAM_Subject_Name
         );
     END
+    DECLARE @updated_SU_COD_Subject_Code bit = CASE WHEN UPDATE(SU_COD_Subject_Code) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_COD bit = CASE WHEN UPDATE(Metadata_SU_COD) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_COD_SU_ID))
         RAISERROR('The foreign key column SU_COD_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_COD_Subject_Code))
+    IF(@updated_SU_COD_Subject_Code = 1)
     BEGIN
         INSERT INTO [dbo].[SU_COD_Subject_Code] (
             Metadata_SU_COD,
@@ -3566,7 +3573,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_COD)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_COD = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_COD
             END, i.Metadata_SU),
@@ -3585,9 +3592,12 @@ BEGIN
             d.SU_COD_Subject_Code <> i.SU_COD_Subject_Code
         );
     END
+    DECLARE @updated_SU_GRD_GRD_ID bit = CASE WHEN UPDATE(SU_GRD_GRD_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_GRD_GRD_Grade bit = CASE WHEN UPDATE(SU_GRD_GRD_Grade) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_GRD bit = CASE WHEN UPDATE(Metadata_SU_GRD) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_GRD_SU_ID))
         RAISERROR('The foreign key column SU_GRD_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_GRD_GRD_ID) OR UPDATE(SU_GRD_GRD_Grade))
+    IF(@updated_SU_GRD_GRD_ID = 1 OR @updated_SU_GRD_GRD_Grade = 1)
     BEGIN
         INSERT INTO [dbo].[SU_GRD_Subject_Grade] (
             Metadata_SU_GRD,
@@ -3596,12 +3606,12 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_GRD)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_GRD = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_GRD
             END, i.Metadata_SU),
             ISNULL(i.SU_GRD_SU_ID, i.SU_ID),
-            CASE WHEN UPDATE(SU_GRD_GRD_ID) THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END
+            CASE WHEN @updated_SU_GRD_GRD_ID = 1 THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -3613,15 +3623,17 @@ BEGIN
         ON
             d.SU_ID = i.SU_ID
         WHERE
-            CASE WHEN UPDATE(SU_GRD_GRD_ID) THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END is not null
+            CASE WHEN @updated_SU_GRD_GRD_ID = 1 THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END is not null
         AND ( -- a value that is left as it is states nothing
             d.SU_GRD_GRD_ID is null OR
-            d.SU_GRD_GRD_ID <> CASE WHEN UPDATE(SU_GRD_GRD_ID) THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END
+            d.SU_GRD_GRD_ID <> CASE WHEN @updated_SU_GRD_GRD_ID = 1 THEN i.SU_GRD_GRD_ID ELSE [kGRD].GRD_ID END
         );
     END
+    DECLARE @updated_SU_NOT_Subject_Note bit = CASE WHEN UPDATE(SU_NOT_Subject_Note) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_NOT bit = CASE WHEN UPDATE(Metadata_SU_NOT) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_NOT_SU_ID))
         RAISERROR('The foreign key column SU_NOT_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_NOT_Subject_Note))
+    IF(@updated_SU_NOT_Subject_Note = 1)
     BEGIN
         INSERT INTO [dbo].[SU_NOT_Subject_Note] (
             Metadata_SU_NOT,
@@ -3630,7 +3642,7 @@ BEGIN
         )
         SELECT 
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_NOT)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_NOT = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_NOT
             END, i.Metadata_SU),
@@ -3649,9 +3661,12 @@ BEGIN
             d.SU_NOT_Checksum <> dbo.MD5(cast(i.SU_NOT_Subject_Note as varbinary(max)))
         );
     END
+    DECLARE @updated_SU_TTL_Subject_Title bit = CASE WHEN UPDATE(SU_TTL_Subject_Title) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_TTL bit = CASE WHEN UPDATE(Metadata_SU_TTL) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_TTL_ChangedAt bit = CASE WHEN UPDATE(SU_TTL_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_TTL_SU_ID))
         RAISERROR('The foreign key column SU_TTL_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_TTL_Subject_Title))
+    IF(@updated_SU_TTL_Subject_Title = 1)
     BEGIN
         INSERT INTO [dbo].[SU_TTL_Subject_Title] (
             Metadata_SU_TTL,
@@ -3661,14 +3676,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TTL)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_TTL = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_TTL
             END, i.Metadata_SU),
             ISNULL(i.SU_TTL_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_TTL_Subject_Title is null THEN i.SU_TTL_ChangedAt
-                WHEN UPDATE(SU_TTL_ChangedAt) THEN i.SU_TTL_ChangedAt
+                WHEN @updated_SU_TTL_ChangedAt = 1 THEN i.SU_TTL_ChangedAt
             END, @now) as datetime2),
             i.SU_TTL_Subject_Title
         FROM
@@ -3680,14 +3695,17 @@ BEGIN
         WHERE
             i.SU_TTL_Subject_Title is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_TTL_ChangedAt) OR
+            @updated_SU_TTL_ChangedAt = 1 OR
             d.SU_TTL_Subject_Title is null OR
             d.SU_TTL_Subject_Title <> i.SU_TTL_Subject_Title
         );
     END
+    DECLARE @updated_SU_STA_Subject_State bit = CASE WHEN UPDATE(SU_STA_Subject_State) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_STA bit = CASE WHEN UPDATE(Metadata_SU_STA) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_STA_ChangedAt bit = CASE WHEN UPDATE(SU_STA_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_STA_SU_ID))
         RAISERROR('The foreign key column SU_STA_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_STA_Subject_State))
+    IF(@updated_SU_STA_Subject_State = 1)
     BEGIN
         INSERT INTO [dbo].[SU_STA_Subject_State] (
             Metadata_SU_STA,
@@ -3697,14 +3715,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_STA)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_STA = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_STA
             END, i.Metadata_SU),
             ISNULL(i.SU_STA_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_STA_Subject_State is null THEN i.SU_STA_ChangedAt
-                WHEN UPDATE(SU_STA_ChangedAt) THEN i.SU_STA_ChangedAt
+                WHEN @updated_SU_STA_ChangedAt = 1 THEN i.SU_STA_ChangedAt
             END, @now) as datetime2),
             i.SU_STA_Subject_State
         FROM
@@ -3716,14 +3734,17 @@ BEGIN
         WHERE
             i.SU_STA_Subject_State is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_STA_ChangedAt) OR
+            @updated_SU_STA_ChangedAt = 1 OR
             d.SU_STA_Subject_State is null OR
             d.SU_STA_Subject_State <> i.SU_STA_Subject_State
         );
     END
+    DECLARE @updated_SU_LBL_Subject_Label bit = CASE WHEN UPDATE(SU_LBL_Subject_Label) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_LBL bit = CASE WHEN UPDATE(Metadata_SU_LBL) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_LBL_ChangedAt bit = CASE WHEN UPDATE(SU_LBL_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_LBL_SU_ID))
         RAISERROR('The foreign key column SU_LBL_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_LBL_Subject_Label))
+    IF(@updated_SU_LBL_Subject_Label = 1)
     BEGIN
         INSERT INTO [dbo].[SU_LBL_Subject_Label] (
             Metadata_SU_LBL,
@@ -3733,14 +3754,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LBL)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_LBL = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_LBL
             END, i.Metadata_SU),
             ISNULL(i.SU_LBL_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_LBL_Subject_Label is null THEN i.SU_LBL_ChangedAt
-                WHEN UPDATE(SU_LBL_ChangedAt) THEN i.SU_LBL_ChangedAt
+                WHEN @updated_SU_LBL_ChangedAt = 1 THEN i.SU_LBL_ChangedAt
             END, @now) as datetime2),
             i.SU_LBL_Subject_Label
         FROM
@@ -3752,14 +3773,17 @@ BEGIN
         WHERE
             i.SU_LBL_Subject_Label is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_LBL_ChangedAt) OR
+            @updated_SU_LBL_ChangedAt = 1 OR
             d.SU_LBL_Subject_Label is null OR
             d.SU_LBL_Subject_Label <> i.SU_LBL_Subject_Label
         );
     END
+    DECLARE @updated_SU_TAG_Subject_Tag bit = CASE WHEN UPDATE(SU_TAG_Subject_Tag) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_TAG bit = CASE WHEN UPDATE(Metadata_SU_TAG) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_TAG_ChangedAt bit = CASE WHEN UPDATE(SU_TAG_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_TAG_SU_ID))
         RAISERROR('The foreign key column SU_TAG_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_TAG_Subject_Tag))
+    IF(@updated_SU_TAG_Subject_Tag = 1)
     BEGIN
         INSERT INTO [dbo].[SU_TAG_Subject_Tag] (
             Metadata_SU_TAG,
@@ -3769,14 +3793,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TAG)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_TAG = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_TAG
             END, i.Metadata_SU),
             ISNULL(i.SU_TAG_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_TAG_Subject_Tag is null THEN i.SU_TAG_ChangedAt
-                WHEN UPDATE(SU_TAG_ChangedAt) THEN i.SU_TAG_ChangedAt
+                WHEN @updated_SU_TAG_ChangedAt = 1 THEN i.SU_TAG_ChangedAt
             END, @now) as datetime2),
             i.SU_TAG_Subject_Tag
         FROM
@@ -3788,14 +3812,18 @@ BEGIN
         WHERE
             i.SU_TAG_Subject_Tag is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_TAG_ChangedAt) OR
+            @updated_SU_TAG_ChangedAt = 1 OR
             d.SU_TAG_Subject_Tag is null OR
             d.SU_TAG_Subject_Tag <> i.SU_TAG_Subject_Tag
         );
     END
+    DECLARE @updated_SU_LVL_GRD_ID bit = CASE WHEN UPDATE(SU_LVL_GRD_ID) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_LVL_GRD_Grade bit = CASE WHEN UPDATE(SU_LVL_GRD_Grade) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_LVL bit = CASE WHEN UPDATE(Metadata_SU_LVL) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_LVL_ChangedAt bit = CASE WHEN UPDATE(SU_LVL_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_LVL_SU_ID))
         RAISERROR('The foreign key column SU_LVL_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_LVL_GRD_ID) OR UPDATE(SU_LVL_GRD_Grade))
+    IF(@updated_SU_LVL_GRD_ID = 1 OR @updated_SU_LVL_GRD_Grade = 1)
     BEGIN
         INSERT INTO [dbo].[SU_LVL_Subject_Level] (
             Metadata_SU_LVL,
@@ -3805,16 +3833,16 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_LVL)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_LVL = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_LVL
             END, i.Metadata_SU),
             ISNULL(i.SU_LVL_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_LVL_GRD_ID is null AND [kGRD].GRD_ID is null THEN i.SU_LVL_ChangedAt
-                WHEN UPDATE(SU_LVL_ChangedAt) THEN i.SU_LVL_ChangedAt
+                WHEN @updated_SU_LVL_ChangedAt = 1 THEN i.SU_LVL_ChangedAt
             END, @now) as datetime2),
-            CASE WHEN UPDATE(SU_LVL_GRD_ID) THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END
+            CASE WHEN @updated_SU_LVL_GRD_ID = 1 THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END
         FROM
             inserted i
         LEFT JOIN
@@ -3826,16 +3854,19 @@ BEGIN
         ON
             d.SU_ID = i.SU_ID
         WHERE
-            CASE WHEN UPDATE(SU_LVL_GRD_ID) THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END is not null
+            CASE WHEN @updated_SU_LVL_GRD_ID = 1 THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_LVL_ChangedAt) OR
+            @updated_SU_LVL_ChangedAt = 1 OR
             d.SU_LVL_GRD_ID is null OR
-            d.SU_LVL_GRD_ID <> CASE WHEN UPDATE(SU_LVL_GRD_ID) THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END
+            d.SU_LVL_GRD_ID <> CASE WHEN @updated_SU_LVL_GRD_ID = 1 THEN i.SU_LVL_GRD_ID ELSE [kGRD].GRD_ID END
         );
     END
+    DECLARE @updated_SU_TXT_Subject_Text bit = CASE WHEN UPDATE(SU_TXT_Subject_Text) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_TXT bit = CASE WHEN UPDATE(Metadata_SU_TXT) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_TXT_ChangedAt bit = CASE WHEN UPDATE(SU_TXT_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_TXT_SU_ID))
         RAISERROR('The foreign key column SU_TXT_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_TXT_Subject_Text))
+    IF(@updated_SU_TXT_Subject_Text = 1)
     BEGIN
         INSERT INTO [dbo].[SU_TXT_Subject_Text] (
             Metadata_SU_TXT,
@@ -3845,14 +3876,14 @@ BEGIN
         )
         SELECT 
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_TXT)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_TXT = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_TXT
             END, i.Metadata_SU),
             ISNULL(i.SU_TXT_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_TXT_Subject_Text is null THEN i.SU_TXT_ChangedAt
-                WHEN UPDATE(SU_TXT_ChangedAt) THEN i.SU_TXT_ChangedAt
+                WHEN @updated_SU_TXT_ChangedAt = 1 THEN i.SU_TXT_ChangedAt
             END, @now) as datetime2),
             i.SU_TXT_Subject_Text
         FROM
@@ -3864,14 +3895,17 @@ BEGIN
         WHERE
             i.SU_TXT_Subject_Text is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_TXT_ChangedAt) OR
+            @updated_SU_TXT_ChangedAt = 1 OR
             d.SU_TXT_Subject_Text is null OR
             d.SU_TXT_Checksum <> dbo.MD5(cast(i.SU_TXT_Subject_Text as varbinary(max)))
         );
     END
+    DECLARE @updated_SU_ASR_Subject_Assessment bit = CASE WHEN UPDATE(SU_ASR_Subject_Assessment) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_ASR bit = CASE WHEN UPDATE(Metadata_SU_ASR) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_ASR_ChangedAt bit = CASE WHEN UPDATE(SU_ASR_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_ASR_SU_ID))
         RAISERROR('The foreign key column SU_ASR_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_ASR_Subject_Assessment))
+    IF(@updated_SU_ASR_Subject_Assessment = 1)
     BEGIN
         INSERT INTO [dbo].[SU_ASR_Subject_Assessment] (
             Metadata_SU_ASR,
@@ -3881,14 +3915,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ASR)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_ASR = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_ASR
             END, i.Metadata_SU),
             ISNULL(i.SU_ASR_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_ASR_Subject_Assessment is null THEN i.SU_ASR_ChangedAt
-                WHEN UPDATE(SU_ASR_ChangedAt) THEN i.SU_ASR_ChangedAt
+                WHEN @updated_SU_ASR_ChangedAt = 1 THEN i.SU_ASR_ChangedAt
             END, @now) as datetime2),
             i.SU_ASR_Subject_Assessment
         FROM
@@ -3900,14 +3934,17 @@ BEGIN
         WHERE
             i.SU_ASR_Subject_Assessment is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_ASR_ChangedAt) OR
+            @updated_SU_ASR_ChangedAt = 1 OR
             d.SU_ASR_Subject_Assessment is null OR
             d.SU_ASR_Subject_Assessment <> i.SU_ASR_Subject_Assessment
         );
     END
+    DECLARE @updated_SU_ERS_Subject_Erasable bit = CASE WHEN UPDATE(SU_ERS_Subject_Erasable) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_SU_ERS bit = CASE WHEN UPDATE(Metadata_SU_ERS) THEN 1 ELSE 0 END;
+    DECLARE @updated_SU_ERS_ChangedAt bit = CASE WHEN UPDATE(SU_ERS_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_ERS_SU_ID))
         RAISERROR('The foreign key column SU_ERS_SU_ID is not updatable.', 16, 1);
-    IF(UPDATE(SU_ERS_Subject_Erasable))
+    IF(@updated_SU_ERS_Subject_Erasable = 1)
     BEGIN
         INSERT INTO [dbo].[SU_ERS_Subject_Erasable] (
             Metadata_SU_ERS,
@@ -3917,14 +3954,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_SU) AND NOT UPDATE(Metadata_SU_ERS)
+                WHEN @updated_Metadata_SU = 1 AND @updated_Metadata_SU_ERS = 0
                 THEN i.Metadata_SU
                 ELSE i.Metadata_SU_ERS
             END, i.Metadata_SU),
             ISNULL(i.SU_ERS_SU_ID, i.SU_ID),
             cast(ISNULL(CASE
                 WHEN i.SU_ERS_Subject_Erasable is null THEN i.SU_ERS_ChangedAt
-                WHEN UPDATE(SU_ERS_ChangedAt) THEN i.SU_ERS_ChangedAt
+                WHEN @updated_SU_ERS_ChangedAt = 1 THEN i.SU_ERS_ChangedAt
             END, @now) as datetime2),
             i.SU_ERS_Subject_Erasable
         FROM
@@ -3936,12 +3973,12 @@ BEGIN
         WHERE
             i.SU_ERS_Subject_Erasable is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(SU_ERS_ChangedAt) OR
+            @updated_SU_ERS_ChangedAt = 1 OR
             d.SU_ERS_Subject_Erasable is null OR
             d.SU_ERS_Subject_Erasable <> i.SU_ERS_Subject_Erasable
         );
         SELECT
-            cast(CASE WHEN UPDATE(SU_ERS_ChangedAt) THEN i.SU_ERS_ChangedAt ELSE @now END as datetime2) as SU_ERS_Deleted,
+            cast(CASE WHEN @updated_SU_ERS_ChangedAt = 1 THEN i.SU_ERS_ChangedAt ELSE @now END as datetime2) as SU_ERS_Deleted,
             i.SU_ERS_SU_ID
         INTO
             #SU_ERS
@@ -4261,11 +4298,16 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_OB bit = CASE WHEN UPDATE(Metadata_OB) THEN 1 ELSE 0 END;
     IF(UPDATE(OB_ID))
         RAISERROR('The identity column OB_ID is not updatable.', 16, 1);
+    DECLARE @updated_OB_NAM_Object_Name bit = CASE WHEN UPDATE(OB_NAM_Object_Name) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_OB_NAM bit = CASE WHEN UPDATE(Metadata_OB_NAM) THEN 1 ELSE 0 END;
     IF(UPDATE(OB_NAM_OB_ID))
         RAISERROR('The foreign key column OB_NAM_OB_ID is not updatable.', 16, 1);
-    IF(UPDATE(OB_NAM_Object_Name))
+    IF(@updated_OB_NAM_Object_Name = 1)
     BEGIN
         INSERT INTO [dbo].[OB_NAM_Object_Name] (
             Metadata_OB_NAM,
@@ -4274,7 +4316,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_OB) AND NOT UPDATE(Metadata_OB_NAM)
+                WHEN @updated_Metadata_OB = 1 AND @updated_Metadata_OB_NAM = 0
                 THEN i.Metadata_OB
                 ELSE i.Metadata_OB_NAM
             END, i.Metadata_OB),
@@ -4451,13 +4493,18 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_Metadata_EV bit = CASE WHEN UPDATE(Metadata_EV) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_ID))
         RAISERROR('The identity column EV_ID is not updatable.', 16, 1);
     IF(UPDATE(SU_ID_for))
         RAISERROR('The role column SU_ID_for is not updatable.', 16, 1);
+    DECLARE @updated_EV_QTY_Event_Quantity bit = CASE WHEN UPDATE(EV_QTY_Event_Quantity) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_QTY bit = CASE WHEN UPDATE(Metadata_EV_QTY) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_QTY_EV_ID))
         RAISERROR('The foreign key column EV_QTY_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_QTY_Event_Quantity))
+    IF(@updated_EV_QTY_Event_Quantity = 1)
     BEGIN
         INSERT INTO [dbo].[EV_QTY_Event_Quantity] (
             Metadata_EV_QTY,
@@ -4466,7 +4513,7 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_QTY)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_QTY = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_QTY
             END, i.Metadata_EV),
@@ -4485,9 +4532,12 @@ BEGIN
             d.EV_QTY_Event_Quantity <> i.EV_QTY_Event_Quantity
         );
     END
+    DECLARE @updated_EV_PLC_Event_Place bit = CASE WHEN UPDATE(EV_PLC_Event_Place) THEN 1 ELSE 0 END;
+    DECLARE @updated_Metadata_EV_PLC bit = CASE WHEN UPDATE(Metadata_EV_PLC) THEN 1 ELSE 0 END;
+    DECLARE @updated_EV_PLC_ChangedAt bit = CASE WHEN UPDATE(EV_PLC_ChangedAt) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_PLC_EV_ID))
         RAISERROR('The foreign key column EV_PLC_EV_ID is not updatable.', 16, 1);
-    IF(UPDATE(EV_PLC_Event_Place))
+    IF(@updated_EV_PLC_Event_Place = 1)
     BEGIN
         INSERT INTO [dbo].[EV_PLC_Event_Place] (
             Metadata_EV_PLC,
@@ -4497,14 +4547,14 @@ BEGIN
         )
         SELECT DISTINCT
             ISNULL(CASE
-                WHEN UPDATE(Metadata_EV) AND NOT UPDATE(Metadata_EV_PLC)
+                WHEN @updated_Metadata_EV = 1 AND @updated_Metadata_EV_PLC = 0
                 THEN i.Metadata_EV
                 ELSE i.Metadata_EV_PLC
             END, i.Metadata_EV),
             ISNULL(i.EV_PLC_EV_ID, i.EV_ID),
             cast(ISNULL(CASE
                 WHEN i.EV_PLC_Event_Place is null THEN i.EV_PLC_ChangedAt
-                WHEN UPDATE(EV_PLC_ChangedAt) THEN i.EV_PLC_ChangedAt
+                WHEN @updated_EV_PLC_ChangedAt = 1 THEN i.EV_PLC_ChangedAt
             END, @now) as datetime2),
             i.EV_PLC_Event_Place
         FROM
@@ -4516,7 +4566,7 @@ BEGIN
         WHERE
             i.EV_PLC_Event_Place is not null
         AND ( -- a value that is left as it is states nothing
-            UPDATE(EV_PLC_ChangedAt) OR
+            @updated_EV_PLC_ChangedAt = 1 OR
             d.EV_PLC_Event_Place is null OR
             d.EV_PLC_Event_Place <> i.EV_PLC_Event_Place
         );
@@ -5228,6 +5278,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_holder_OB_item_GRD_grade_ChangedAt bit = CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_grade_GRD_Grade bit = CASE WHEN UPDATE(grade_GRD_Grade) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_ID_holder))
         RAISERROR('The identity column SU_ID_holder is not updatable.', 16, 1);
     IF(UPDATE(OB_ID_item))
@@ -5241,10 +5295,10 @@ BEGIN
     )
     SELECT
         i.Metadata_SU_holder_OB_item_GRD_grade,
-        cast(CASE WHEN UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) THEN i.SU_holder_OB_item_GRD_grade_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_SU_holder_OB_item_GRD_grade_ChangedAt = 1 THEN i.SU_holder_OB_item_GRD_grade_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_holder,
         i.OB_ID_item,
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
+        CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
     FROM
         inserted i
     LEFT JOIN
@@ -5252,10 +5306,10 @@ BEGIN
     ON
         [GRD_grade].GRD_Grade = i.grade_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
+        CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(SU_holder_OB_item_GRD_grade_ChangedAt) OR
+            @updated_SU_holder_OB_item_GRD_grade_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -5266,7 +5320,7 @@ BEGIN
                 AND
                     d.OB_ID_item = i.OB_ID_item
                 AND
-                    d.GRD_ID_grade = CASE WHEN UPDATE(grade_GRD_Grade) THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
+                    d.GRD_ID_grade = CASE WHEN @updated_grade_GRD_Grade = 1 THEN [GRD_grade].GRD_ID ELSE i.GRD_ID_grade END
             )
         );
 END
@@ -5506,6 +5560,10 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt bit = CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN 1 ELSE 0 END;
+    DECLARE @updated_rank_GRD_Grade bit = CASE WHEN UPDATE(rank_GRD_Grade) THEN 1 ELSE 0 END;
     IF(UPDATE(SU_ID_keeper))
         RAISERROR('The identity column SU_ID_keeper is not updatable.', 16, 1);
     IF(UPDATE(OB_ID_thing))
@@ -5519,10 +5577,10 @@ BEGIN
     )
     SELECT
         i.Metadata_SU_keeper_OB_thing_GRD_rank,
-        cast(CASE WHEN UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt = 1 THEN i.SU_keeper_OB_thing_GRD_rank_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_keeper,
         i.OB_ID_thing,
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
+        CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
     FROM
         inserted i
     LEFT JOIN
@@ -5530,10 +5588,10 @@ BEGIN
     ON
         [GRD_rank].GRD_Grade = i.rank_GRD_Grade
     WHERE
-        CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
+        CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(SU_keeper_OB_thing_GRD_rank_ChangedAt) OR
+            @updated_SU_keeper_OB_thing_GRD_rank_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42
@@ -5544,7 +5602,7 @@ BEGIN
                 AND
                     d.OB_ID_thing = i.OB_ID_thing
                 AND
-                    d.GRD_ID_rank = CASE WHEN UPDATE(rank_GRD_Grade) THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
+                    d.GRD_ID_rank = CASE WHEN @updated_rank_GRD_Grade = 1 THEN [GRD_rank].GRD_ID ELSE i.GRD_ID_rank END
             )
         );
 END
@@ -5660,6 +5718,8 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
     IF(UPDATE(OB_ID_part))
         RAISERROR('The identity column OB_ID_part is not updatable.', 16, 1);
     INSERT INTO [dbo].[OB_part_SU_owner] (
@@ -5805,6 +5865,9 @@ BEGIN
     SET NOCOUNT ON;
     DECLARE @now datetime2;
     SET @now = sysdatetime();
+    -- whether a column is set is asked once, here: with UPDATE() in the statements below, which read inserted and
+    -- deleted, SQL Server 2014 used gigabytes of memory to create a trigger like this one, and could run out
+    DECLARE @updated_SU_partner_SU_with_ChangedAt bit = CASE WHEN UPDATE(SU_partner_SU_with_ChangedAt) THEN 1 ELSE 0 END;
     INSERT INTO [dbo].[SU_partner_SU_with] (
         Metadata_SU_partner_SU_with,
         SU_partner_SU_with_ChangedAt,
@@ -5813,7 +5876,7 @@ BEGIN
     )
     SELECT
         i.Metadata_SU_partner_SU_with,
-        cast(CASE WHEN UPDATE(SU_partner_SU_with_ChangedAt) THEN i.SU_partner_SU_with_ChangedAt ELSE @now END as datetime2),
+        cast(CASE WHEN @updated_SU_partner_SU_with_ChangedAt = 1 THEN i.SU_partner_SU_with_ChangedAt ELSE @now END as datetime2),
         i.SU_ID_partner,
         i.SU_ID_with
     FROM
@@ -5824,7 +5887,7 @@ BEGIN
         i.SU_ID_with is not null
     AND
         ( -- values that are left as they are state nothing
-            UPDATE(SU_partner_SU_with_ChangedAt) OR
+            @updated_SU_partner_SU_with_ChangedAt = 1 OR
             NOT EXISTS (
                 SELECT TOP 1
                     42

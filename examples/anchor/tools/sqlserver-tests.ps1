@@ -4,20 +4,22 @@
     (golden/sqlserver-triggers/_full.sql or golden/sqlserver-keys/_full.sql, or the -bi or -crt one, and
     golden/sqlserver-indecisive-crt/_full.sql), runs the tests (sqlserver-tests/<suite>-<t>.sql) and drops the database
     again. The indecisive suite is crt only: its model is the crt trigger model with decisiveness off. It prints what
-    sqlcmd prints, the result of every check among it, and exits 1 if a check failed or a script did not run through.
+    the scripts print, the result of every check among it, and exits 1 if a check failed or a script did not run through.
 
     The SQL that is run is the golden output, so regenerate it first when Anchor's templates have changed
     (regenerate-golden.ps1 -Variant sqlserver-triggers,sqlserver-triggers-bi,sqlserver-triggers-crt, the same for
-    sqlserver-keys, and sqlserver-indecisive-crt). The tests need SQL Server 2016 or later, sqlcmd (the ODBC one or the
-    newer go-sqlcmd), and a login that may create databases.
+    sqlserver-keys, and sqlserver-indecisive-crt). The tests need SQL Server 2014 or later and a login that may create
+    databases. They run the scripts with sqlcmd (the ODBC one or the newer go-sqlcmd) when there is one, and otherwise,
+    or with -SqlClient, with the SqlClient of the .NET Framework, which Windows PowerShell has: one connection for each
+    script, the batches split at the lines that say GO, and rows, messages and errors printed as sqlcmd prints them.
 
     Usage:
       sqlserver-tests.ps1 [-Server <name>] [-Suite triggers,keys,indecisive] [-Temporalization uni,bi,crt]
                           [-Username <login> -Password <password>] [-TrustServerCertificate] [-Keep] [-Prefix <name>]
-                          [-Sqlcmd <path>]
+                          [-Sqlcmd <path> | -SqlClient]
 
     Without -Username it signs in with Windows authentication. -TrustServerCertificate is for a server with a
-    self-signed certificate, such as a local one. The databases are called <prefix><suite>_<temporalization>,
+    self-signed or expired certificate, such as a local one. The databases are called <prefix><suite>_<temporalization>,
     sisula_triggers_uni, sisula_keys_uni and so on; -Keep leaves them for a closer look, and a database left like that
     is dropped and made again by the next run.
 #>
@@ -31,7 +33,8 @@ param(
     [switch] $TrustServerCertificate,
     [switch] $Keep,
     [string] $Prefix = 'sisula_',
-    [string] $Sqlcmd = 'sqlcmd'
+    [string] $Sqlcmd = 'sqlcmd',
+    [switch] $SqlClient
 )
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
@@ -49,7 +52,11 @@ foreach ($t in $Temporalization) {
     if (@('uni', 'bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use uni, bi or crt." }
 }
 if ($Prefix -notmatch '^[A-Za-z_][A-Za-z0-9_]*$') { throw "The prefix '$Prefix' has to be a plain name." }
-if (-not (Get-Command $Sqlcmd -ErrorAction SilentlyContinue)) { throw "$Sqlcmd was not found: install sqlcmd, or give its path with -Sqlcmd." }
+if (-not $SqlClient -and -not (Get-Command $Sqlcmd -ErrorAction SilentlyContinue)) {
+    if ($PSBoundParameters.ContainsKey('Sqlcmd')) { throw "$Sqlcmd was not found: give the path of sqlcmd, or use -SqlClient." }
+    Write-Host 'There is no sqlcmd here, so the scripts are run with the SqlClient of the .NET Framework.'
+    $SqlClient = [switch] $true
+}
 
 $connection = @('-S', $Server)
 if ($Username) { $connection += @('-U', $Username, '-P', $Password) } else { $connection += '-E' }
@@ -63,6 +70,86 @@ function Invoke-SqlcmdLines([string[]] $arguments) {
     finally { $ErrorActionPreference = $saved }
 }
 
+# Runs SQL with the SqlClient of the .NET Framework, as sqlcmd runs a script: in one session, batch by batch, with a
+# row as its values separated by spaces, a message as it is, and an error as sqlcmd shows it. An error does not end its
+# batch, as in sqlcmd; with $stopOnError (sqlcmd -b) no batch after it is run.
+function Invoke-SqlClientLines([string] $database, [string] $sql, [bool] $stopOnError) {
+    $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
+    $builder['Data Source'] = $Server
+    $builder['Initial Catalog'] = $(if ($database) { $database } else { 'master' })
+    if ($Username) { $builder['User ID'] = $Username; $builder['Password'] = $Password } else { $builder['Integrated Security'] = $true }
+    if ($TrustServerCertificate) { $builder['Encrypt'] = $true; $builder['TrustServerCertificate'] = $true }
+    # a pooled connection would keep a test database in use after the script
+    $builder['Pooling'] = $false
+    $builder['Application Name'] = 'sisula sqlserver-tests'
+    $lines = New-Object System.Collections.Generic.List[string]
+    $state = @{ failed = $false; batchFailed = $false }
+    $add = {
+        param($sqlError)
+        if ($sqlError.Class -gt 10) {
+            $lines.Add("Msg $($sqlError.Number), Level $($sqlError.Class), State $($sqlError.State), Server $($sqlError.Server), Line $($sqlError.LineNumber)")
+            $state.failed = $true; $state.batchFailed = $true
+        }
+        $lines.Add($sqlError.Message)
+    }.GetNewClosure()
+    $connectionObject = New-Object System.Data.SqlClient.SqlConnection $builder.ConnectionString
+    # errors up to severity 16 arrive as messages, so that the batch goes on, as it does in sqlcmd
+    $connectionObject.FireInfoMessageEventOnUserErrors = $true
+    $connectionObject.add_InfoMessage({ param($sender, $e) foreach ($sqlError in $e.Errors) { & $add $sqlError } }.GetNewClosure())
+    try {
+        $connectionObject.Open()
+        foreach ($batch in [regex]::Split($sql, '(?im)^[ \t]*GO[ \t]*(?:--[^\r\n]*)?\r?$')) {
+            if (-not $batch.Trim()) { continue }
+            $state.batchFailed = $false
+            $command = $connectionObject.CreateCommand()
+            # without the line end of the GO before it, so that the lines of an error count from the batch's first
+            $command.CommandText = $batch -replace '^\r?\n', ''
+            $command.CommandTimeout = 0
+            try {
+                $reader = $command.ExecuteReader()
+                try {
+                    do {
+                        while ($reader.Read()) {
+                            $values = New-Object object[] $reader.FieldCount
+                            [void] $reader.GetValues($values)
+                            $lines.Add((($values | ForEach-Object { if ($_ -is [DBNull]) { 'NULL' } else { "$_" } }) -join ' '))
+                        }
+                    } while ($reader.NextResult())
+                }
+                finally { $reader.Close() }
+            }
+            catch [System.Data.SqlClient.SqlException] {
+                foreach ($sqlError in $_.Exception.Errors) { & $add $sqlError }
+                $state.failed = $true; $state.batchFailed = $true
+            }
+            if ($state.batchFailed -and $stopOnError) { break }
+        }
+    }
+    catch {
+        $lines.Add("$($_.Exception.Message)")
+        $state.failed = $true
+    }
+    finally { $connectionObject.Dispose() }
+    @{ lines = $lines.ToArray(); failed = $state.failed }
+}
+
+# Runs a script file, or SQL given as text, and returns @{ lines; failed }: what was printed, and whether it failed
+# (with $stopOnError: an error stopped it, as sqlcmd -b does). $plain prints rows without headers or padding (-h -1 -W).
+function Invoke-Sql([string] $database, [string] $file, [string] $query, [bool] $stopOnError, [bool] $plain) {
+    if ($SqlClient) {
+        $sql = if ($file) { [IO.File]::ReadAllText($file, [Text.Encoding]::UTF8) } else { $query }
+        return Invoke-SqlClientLines $database $sql $stopOnError
+    }
+    $arguments = @()
+    if ($database) { $arguments += @('-d', $database) }
+    if ($stopOnError) { $arguments += '-b' }
+    if ($file) { $arguments += @('-I', '-f', '65001') }
+    if ($plain) { $arguments += @('-h', '-1', '-W') }
+    if ($file) { $arguments += @('-i', $file) } else { $arguments += @('-Q', $query) }
+    $lines = Invoke-SqlcmdLines $arguments
+    @{ lines = $lines; failed = ($LASTEXITCODE -ne 0) }
+}
+
 function Write-Lines($lines) {
     foreach ($line in $lines) {
         if ($line -match '^FAIL ') { Write-Host "  $line" -ForegroundColor Red }
@@ -72,8 +159,8 @@ function Write-Lines($lines) {
 
 # Runs a script of checks and returns why it failed, or nothing if every check passed.
 function Invoke-Checks([string] $database, [string] $checksFile) {
-    # without -b, so that every group of checks runs even if one of them stops on an error
-    $out = Invoke-SqlcmdLines @('-d', $database, '-I', '-f', '65001', '-h', '-1', '-W', '-i', $checksFile)
+    # not stopped by an error, so that every group of checks runs even if one of them stops on an error
+    $out = (Invoke-Sql $database $checksFile $null $false $true).lines
     Write-Lines $out
     $checks = @($out | Where-Object { $_ -match '^(PASS|FAIL) ' })
     $failures = @($checks | Where-Object { $_ -match '^FAIL ' })
@@ -95,15 +182,15 @@ foreach ($s in $Suite) {
         Write-Host "$s $t`: $database on $Server"
 
         $drop = "IF DB_ID(N'$database') IS NOT NULL BEGIN ALTER DATABASE [$database] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$database]; END;"
-        $out = Invoke-SqlcmdLines @('-b', '-Q', "$drop CREATE DATABASE [$database];")
-        if ($LASTEXITCODE -ne 0) {
-            Write-Lines $out
+        $r = Invoke-Sql $null $null "$drop CREATE DATABASE [$database];" $true $false
+        if ($r.failed) {
+            Write-Lines $r.lines
             $failed += "$s $t (the database could not be made)"
             continue
         }
-        $out = Invoke-SqlcmdLines @('-d', $database, '-b', '-I', '-f', '65001', '-i', $generated)
-        if ($LASTEXITCODE -ne 0) {
-            Write-Lines ($out | Select-Object -Last 20)
+        $r = Invoke-Sql $database $generated $null $true $false
+        if ($r.failed) {
+            Write-Lines ($r.lines | Select-Object -Last 20)
             $failed += "$s $t (the generated SQL did not run)"
         }
         else {
@@ -115,15 +202,15 @@ foreach ($s in $Suite) {
             $upgrade = Join-Path $root "sqlserver-tests\$s-$t-upgrade.sql"
             if (Test-Path $upgrade) {
                 Write-Host "$s $t`: upgrade"
-                $out = Invoke-SqlcmdLines @('-d', $database, '-b', '-I', '-f', '65001', '-i', $upgrade)
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Lines ($out | Select-Object -Last 20)
+                $r = Invoke-Sql $database $upgrade $null $true $false
+                if ($r.failed) {
+                    Write-Lines ($r.lines | Select-Object -Last 20)
                     $failed += "$s $t (the upgrade script did not run)"
                 }
                 else {
-                    $out = Invoke-SqlcmdLines @('-d', $database, '-b', '-I', '-f', '65001', '-i', $generated)
-                    if ($LASTEXITCODE -ne 0) {
-                        Write-Lines ($out | Select-Object -Last 20)
+                    $r = Invoke-Sql $database $generated $null $true $false
+                    if ($r.failed) {
+                        Write-Lines ($r.lines | Select-Object -Last 20)
                         $failed += "$s $t (the generated SQL did not run again)"
                     }
                     else {
@@ -134,9 +221,9 @@ foreach ($s in $Suite) {
             }
         }
         if (-not $Keep) {
-            $out = Invoke-SqlcmdLines @('-b', '-Q', $drop)
-            if ($LASTEXITCODE -ne 0) {
-                Write-Lines $out
+            $r = Invoke-Sql $null $null $drop $true $false
+            if ($r.failed) {
+                Write-Lines $r.lines
                 Write-Warning "The database $database was not dropped."
             }
         }
