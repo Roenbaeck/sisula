@@ -346,107 +346,143 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_hölls",
-    "pEV"."PR_ID_spelades",
-    "pEV"."of_ETY_Checksum",
-    "pEV"."of_ETY_Händelsetyp",
-    "pEV"."of_ETY_EQ",
-    "pEV"."of_Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."EV_DAT_EV_ID",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Händelse_Datum",
-    "pEV"."EV_AUD_EV_ID",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Händelse_Publik",
-    "pEV"."EV_REV_EV_ID",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Händelse_Intäkt",
-    "pEV"."EV_STA_EV_ID",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Händelse_Status",
-    "pEV"."EV_UTL_EV_ID",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."EV_UTL_UTL_Utnyttjande",
-    "pEV"."EV_UTL_Metadata_UTL",
-    "pEV"."EV_UTL_UTL_ID",
-    "pEV"."EV_LVL_EV_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."EV_LVL_PLV_Checksum",
-    "pEV"."EV_LVL_PLV_EQ",
-    "pEV"."EV_LVL_PLV_Yrkesnivå",
-    "pEV"."EV_LVL_Metadata_PLV",
-    "pEV"."EV_LVL_PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Händelse_Status"(0)) "hSTA", 
-    TABLE(nexuses."pEV_Händelse"("hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_hölls",
+    "EV"."PR_ID_spelades",
+    "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
+    "ETY_of"."ETY_Händelsetyp" AS "of_ETY_Händelsetyp",
+    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."EV_DAT_EV_ID",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Händelse_Datum",
+    "AUD"."EV_AUD_EV_ID",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Händelse_Publik",
+    "REV"."EV_REV_EV_ID",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Händelse_Intäkt",
+    "STA"."EV_STA_EV_ID",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Händelse_Status",
+    "UTL"."EV_UTL_EV_ID",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utnyttjande" AS "EV_UTL_UTL_Utnyttjande",
+    "kUTL"."Metadata_UTL" AS "EV_UTL_Metadata_UTL",
+    "UTL"."EV_UTL_UTL_ID",
+    "LVL"."EV_LVL_EV_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
+    "kLVL"."PLV_Yrkesnivå" AS "EV_LVL_PLV_Yrkesnivå",
+    "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
+    "LVL"."EV_LVL_PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_STA_EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Händelse_Status"(0)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_LVL_EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Händelse_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Händelse" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_Händelsetyp"(0)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Händelse_Datum" "DAT"
+ON
+    "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Händelse_Publik"(0)) "AUD"
+ON
+    "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Händelse_Intäkt"(0)) "REV"
+ON
+    "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_STA_EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Händelse_Status"(0)) h
+) "STA"
+ON
+    "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Händelse_Utnyttjande" "UTL"
+ON
+    "UTL"."EV_UTL_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utnyttjande" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."EV_UTL_UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_LVL_EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Händelse_Level" h
+) "LVL"
+ON
+    "LVL"."EV_LVL_EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_STA_EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_hölls",
-    "pEV"."PR_ID_spelades",
-    "pEV"."of_ETY_Checksum",
-    "pEV"."of_ETY_Händelsetyp",
-    "pEV"."of_ETY_EQ",
-    "pEV"."of_Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."EV_DAT_EV_ID",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Händelse_Datum",
-    "pEV"."EV_AUD_EV_ID",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Händelse_Publik",
-    "pEV"."EV_REV_EV_ID",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Händelse_Intäkt",
-    "pEV"."EV_STA_EV_ID",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Händelse_Status",
-    "pEV"."EV_UTL_EV_ID",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."EV_UTL_UTL_Utnyttjande",
-    "pEV"."EV_UTL_Metadata_UTL",
-    "pEV"."EV_UTL_UTL_ID",
-    "pEV"."EV_LVL_EV_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."EV_LVL_PLV_Checksum",
-    "pEV"."EV_LVL_PLV_EQ",
-    "pEV"."EV_LVL_PLV_Yrkesnivå",
-    "pEV"."EV_LVL_Metadata_PLV",
-    "pEV"."EV_LVL_PLV_ID"
-FROM
-    attributes."EV_LVL_Händelse_Level" "hLVL",
-    TABLE(nexuses."pEV_Händelse"("hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_LVL_EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_Yrkesnivå"(0)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -847,106 +883,140 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_hölls",
-    "pEV"."PR_ID_spelades",
-    "pEV"."of_ETY_Checksum",
-    "pEV"."of_ETY_Händelsetyp",
-    "pEV"."of_ETY_EQ",
-    "pEV"."of_Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."EV_DAT_EV_ID",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Händelse_Datum",
-    "pEV"."EV_AUD_EV_ID",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Händelse_Publik",
-    "pEV"."EV_REV_EV_ID",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Händelse_Intäkt",
-    "pEV"."EV_STA_EV_ID",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Händelse_Status",
-    "pEV"."EV_UTL_EV_ID",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."EV_UTL_UTL_Utnyttjande",
-    "pEV"."EV_UTL_Metadata_UTL",
-    "pEV"."EV_UTL_UTL_ID",
-    "pEV"."EV_LVL_EV_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."EV_LVL_PLV_Checksum",
-    "pEV"."EV_LVL_PLV_EQ",
-    "pEV"."EV_LVL_PLV_Yrkesnivå",
-    "pEV"."EV_LVL_Metadata_PLV",
-    "pEV"."EV_LVL_PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Händelse_Status"(equivalent)) "hSTA", 
-    TABLE(nexuses."epEV_Händelse"(equivalent, "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_hölls",
+    "EV"."PR_ID_spelades",
+    "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
+    "ETY_of"."ETY_Händelsetyp" AS "of_ETY_Händelsetyp",
+    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."EV_DAT_EV_ID",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Händelse_Datum",
+    "AUD"."EV_AUD_EV_ID",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Händelse_Publik",
+    "REV"."EV_REV_EV_ID",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Händelse_Intäkt",
+    "STA"."EV_STA_EV_ID",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Händelse_Status",
+    "UTL"."EV_UTL_EV_ID",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utnyttjande" AS "EV_UTL_UTL_Utnyttjande",
+    "kUTL"."Metadata_UTL" AS "EV_UTL_Metadata_UTL",
+    "UTL"."EV_UTL_UTL_ID",
+    "LVL"."EV_LVL_EV_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
+    "kLVL"."PLV_Yrkesnivå" AS "EV_LVL_PLV_Yrkesnivå",
+    "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
+    "LVL"."EV_LVL_PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_STA_EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Händelse_Status"(equivalent)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_LVL_EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Händelse_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Händelse" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_Händelsetyp"(equivalent)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Händelse_Datum" "DAT"
+ON
+    "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Händelse_Publik"(equivalent)) "AUD"
+ON
+    "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Händelse_Intäkt"(equivalent)) "REV"
+ON
+    "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_STA_EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Händelse_Status"(equivalent)) h
+) "STA"
+ON
+    "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Händelse_Utnyttjande" "UTL"
+ON
+    "UTL"."EV_UTL_EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utnyttjande" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."EV_UTL_UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_LVL_EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Händelse_Level" h
+) "LVL"
+ON
+    "LVL"."EV_LVL_EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_STA_EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_hölls",
-    "pEV"."PR_ID_spelades",
-    "pEV"."of_ETY_Checksum",
-    "pEV"."of_ETY_Händelsetyp",
-    "pEV"."of_ETY_EQ",
-    "pEV"."of_Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."EV_DAT_EV_ID",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Händelse_Datum",
-    "pEV"."EV_AUD_EV_ID",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Händelse_Publik",
-    "pEV"."EV_REV_EV_ID",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Händelse_Intäkt",
-    "pEV"."EV_STA_EV_ID",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Händelse_Status",
-    "pEV"."EV_UTL_EV_ID",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."EV_UTL_UTL_Utnyttjande",
-    "pEV"."EV_UTL_Metadata_UTL",
-    "pEV"."EV_UTL_UTL_ID",
-    "pEV"."EV_LVL_EV_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."EV_LVL_PLV_Checksum",
-    "pEV"."EV_LVL_PLV_EQ",
-    "pEV"."EV_LVL_PLV_Yrkesnivå",
-    "pEV"."EV_LVL_Metadata_PLV",
-    "pEV"."EV_LVL_PLV_ID"
-FROM
-    attributes."EV_LVL_Händelse_Level" "hLVL",
-    TABLE(nexuses."epEV_Händelse"(equivalent, "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_LVL_EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_Yrkesnivå"(equivalent)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
 ;

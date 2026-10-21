@@ -1,6 +1,7 @@
 -- TIE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------------
 --
--- CRT rewinders over changing and positing time with positor-aware annex selection.
+-- CRT rewinders over changing and positing time with positor-aware annex selection: the view of the positor given,
+-- or of all of them for null.
 --
 CREATE OR REPLACE FUNCTION ties."rAC_partner_AC_with_ONG_currently_Posit" (
     changingTimepoint datetime
@@ -117,10 +118,10 @@ JOIN
 ON
     a."AC_partner_AC_with_ONG_currently_ID" = p."AC_partner_AC_with_ONG_currently_ID"
 AND
-    a."AC_partner_AC_with_ONG_currently_Positor" = positor
+    a."AC_partner_AC_with_ONG_currently_Positor" = coalesce(positor, a."AC_partner_AC_with_ONG_currently_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID"
+        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID", a."AC_partner_AC_with_ONG_currently_Positor"
         ORDER BY a."AC_partner_AC_with_ONG_currently_PositedAt" DESC
     ) = 1
 $$
@@ -163,10 +164,10 @@ JOIN
 ON
     a."AC_partner_AC_with_ONG_currently_ID" = p."AC_partner_AC_with_ONG_currently_ID"
 AND
-    a."AC_partner_AC_with_ONG_currently_Positor" = positor
+    a."AC_partner_AC_with_ONG_currently_Positor" = coalesce(positor, a."AC_partner_AC_with_ONG_currently_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID"
+        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID", a."AC_partner_AC_with_ONG_currently_Positor"
         ORDER BY a."AC_partner_AC_with_ONG_currently_PositedAt" DESC
     ) = 1
 $$
@@ -231,10 +232,10 @@ JOIN
 ON
     a."AC_subset_PN_of_ID" = p."AC_subset_PN_of_ID"
 AND
-    a."AC_subset_PN_of_Positor" = positor
+    a."AC_subset_PN_of_Positor" = coalesce(positor, a."AC_subset_PN_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_subset_PN_of_ID"
+        PARTITION BY p."AC_subset_PN_of_ID", a."AC_subset_PN_of_Positor"
         ORDER BY a."AC_subset_PN_of_PositedAt" DESC
     ) = 1
 $$
@@ -272,10 +273,10 @@ JOIN
 ON
     a."AC_subset_PN_of_ID" = p."AC_subset_PN_of_ID"
 AND
-    a."AC_subset_PN_of_Positor" = positor
+    a."AC_subset_PN_of_Positor" = coalesce(positor, a."AC_subset_PN_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_subset_PN_of_ID"
+        PARTITION BY p."AC_subset_PN_of_ID", a."AC_subset_PN_of_Positor"
         ORDER BY a."AC_subset_PN_of_PositedAt" DESC
     ) = 1
 $$
@@ -340,10 +341,10 @@ JOIN
 ON
     a."EV_in_AC_wasCast_ID" = p."EV_in_AC_wasCast_ID"
 AND
-    a."EV_in_AC_wasCast_Positor" = positor
+    a."EV_in_AC_wasCast_Positor" = coalesce(positor, a."EV_in_AC_wasCast_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_in_AC_wasCast_ID"
+        PARTITION BY p."EV_in_AC_wasCast_ID", a."EV_in_AC_wasCast_Positor"
         ORDER BY a."EV_in_AC_wasCast_PositedAt" DESC
     ) = 1
 $$
@@ -381,10 +382,10 @@ JOIN
 ON
     a."EV_in_AC_wasCast_ID" = p."EV_in_AC_wasCast_ID"
 AND
-    a."EV_in_AC_wasCast_Positor" = positor
+    a."EV_in_AC_wasCast_Positor" = coalesce(positor, a."EV_in_AC_wasCast_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_in_AC_wasCast_ID"
+        PARTITION BY p."EV_in_AC_wasCast_ID", a."EV_in_AC_wasCast_Positor"
         ORDER BY a."EV_in_AC_wasCast_PositedAt" DESC
     ) = 1
 $$
@@ -504,10 +505,10 @@ JOIN
 ON
     a."AC_part_PR_in_RAT_got_ID" = p."AC_part_PR_in_RAT_got_ID"
 AND
-    a."AC_part_PR_in_RAT_got_Positor" = positor
+    a."AC_part_PR_in_RAT_got_Positor" = coalesce(positor, a."AC_part_PR_in_RAT_got_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_part_PR_in_RAT_got_ID"
+        PARTITION BY p."AC_part_PR_in_RAT_got_ID", a."AC_part_PR_in_RAT_got_Positor"
         ORDER BY a."AC_part_PR_in_RAT_got_PositedAt" DESC
     ) = 1
 $$
@@ -550,10 +551,10 @@ JOIN
 ON
     a."AC_part_PR_in_RAT_got_ID" = p."AC_part_PR_in_RAT_got_ID"
 AND
-    a."AC_part_PR_in_RAT_got_Positor" = positor
+    a."AC_part_PR_in_RAT_got_Positor" = coalesce(positor, a."AC_part_PR_in_RAT_got_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_part_PR_in_RAT_got_ID"
+        PARTITION BY p."AC_part_PR_in_RAT_got_ID", a."AC_part_PR_in_RAT_got_Positor"
         ORDER BY a."AC_part_PR_in_RAT_got_PositedAt" DESC
     ) = 1
 $$
@@ -667,10 +668,10 @@ JOIN
 ON
     a."ST_at_PR_isPlaying_ID" = p."ST_at_PR_isPlaying_ID"
 AND
-    a."ST_at_PR_isPlaying_Positor" = positor
+    a."ST_at_PR_isPlaying_Positor" = coalesce(positor, a."ST_at_PR_isPlaying_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_at_PR_isPlaying_ID"
+        PARTITION BY p."ST_at_PR_isPlaying_ID", a."ST_at_PR_isPlaying_Positor"
         ORDER BY a."ST_at_PR_isPlaying_PositedAt" DESC
     ) = 1
 $$
@@ -711,10 +712,10 @@ JOIN
 ON
     a."ST_at_PR_isPlaying_ID" = p."ST_at_PR_isPlaying_ID"
 AND
-    a."ST_at_PR_isPlaying_Positor" = positor
+    a."ST_at_PR_isPlaying_Positor" = coalesce(positor, a."ST_at_PR_isPlaying_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_at_PR_isPlaying_ID"
+        PARTITION BY p."ST_at_PR_isPlaying_ID", a."ST_at_PR_isPlaying_Positor"
         ORDER BY a."ST_at_PR_isPlaying_PositedAt" DESC
     ) = 1
 $$
@@ -781,10 +782,10 @@ JOIN
 ON
     a."AC_parent_AC_child_PAT_having_ID" = p."AC_parent_AC_child_PAT_having_ID"
 AND
-    a."AC_parent_AC_child_PAT_having_Positor" = positor
+    a."AC_parent_AC_child_PAT_having_Positor" = coalesce(positor, a."AC_parent_AC_child_PAT_having_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_parent_AC_child_PAT_having_ID"
+        PARTITION BY p."AC_parent_AC_child_PAT_having_ID", a."AC_parent_AC_child_PAT_having_Positor"
         ORDER BY a."AC_parent_AC_child_PAT_having_PositedAt" DESC
     ) = 1
 $$
@@ -824,10 +825,10 @@ JOIN
 ON
     a."AC_parent_AC_child_PAT_having_ID" = p."AC_parent_AC_child_PAT_having_ID"
 AND
-    a."AC_parent_AC_child_PAT_having_Positor" = positor
+    a."AC_parent_AC_child_PAT_having_Positor" = coalesce(positor, a."AC_parent_AC_child_PAT_having_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_parent_AC_child_PAT_having_ID"
+        PARTITION BY p."AC_parent_AC_child_PAT_having_ID", a."AC_parent_AC_child_PAT_having_Positor"
         ORDER BY a."AC_parent_AC_child_PAT_having_PositedAt" DESC
     ) = 1
 $$
@@ -947,10 +948,10 @@ JOIN
 ON
     a."PR_content_ST_location_EV_of_ID" = p."PR_content_ST_location_EV_of_ID"
 AND
-    a."PR_content_ST_location_EV_of_Positor" = positor
+    a."PR_content_ST_location_EV_of_Positor" = coalesce(positor, a."PR_content_ST_location_EV_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_content_ST_location_EV_of_ID"
+        PARTITION BY p."PR_content_ST_location_EV_of_ID", a."PR_content_ST_location_EV_of_Positor"
         ORDER BY a."PR_content_ST_location_EV_of_PositedAt" DESC
     ) = 1
 $$
@@ -993,10 +994,10 @@ JOIN
 ON
     a."PR_content_ST_location_EV_of_ID" = p."PR_content_ST_location_EV_of_ID"
 AND
-    a."PR_content_ST_location_EV_of_Positor" = positor
+    a."PR_content_ST_location_EV_of_Positor" = coalesce(positor, a."PR_content_ST_location_EV_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_content_ST_location_EV_of_ID"
+        PARTITION BY p."PR_content_ST_location_EV_of_ID", a."PR_content_ST_location_EV_of_Positor"
         ORDER BY a."PR_content_ST_location_EV_of_PositedAt" DESC
     ) = 1
 $$

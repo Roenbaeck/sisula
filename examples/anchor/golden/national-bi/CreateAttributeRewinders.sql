@@ -1125,7 +1125,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" int,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1148,7 +1148,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" int,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1198,7 +1198,7 @@ RETURNS TABLE (
     "AC_NAM_PositedAt" datetime,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1235,7 +1235,7 @@ RETURNS TABLE (
     "AC_NAM_PositedAt" datetime,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1267,7 +1267,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Skådespelare_Namn" (
     positingTimepoint datetime
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT
@@ -1292,7 +1292,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Skådespelare_Namn" (
     positingTimepoint datetime
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT

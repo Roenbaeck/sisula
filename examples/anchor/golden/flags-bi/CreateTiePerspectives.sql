@@ -44,26 +44,24 @@ ON
     "kONG_currently"."ONG_ID" = t."ONG_ID_currently"
 WHERE
     t."AC_partner_AC_with_ONG_currently_Reliability" = 1
-AND
-    t."AC_partner_AC_with_ONG_currently_ID" = (
-        SELECT
-            sub."AC_partner_AC_with_ONG_currently_ID"
-        FROM
-            TABLE(ties."rAC_partner_AC_with_ONG_currently"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            (
-                sub."AC_ID_partner" = t."AC_ID_partner"
-            OR
-                sub."AC_ID_with" = t."AC_ID_with"
-            )
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- a tie without identifiers is one to one: the latest posit for each of its anchors
+    row_number() OVER (
+        PARTITION BY t."AC_ID_partner"
         ORDER BY
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
-            sub."AC_partner_AC_with_ONG_currently_PositedAt" DESC
-        LIMIT 1
-    )
+            t."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_ID" DESC
+    ) = 1
+AND
+    row_number() OVER (
+        PARTITION BY t."AC_ID_with"
+        ORDER BY
+            t."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lAC_partner_AC_with_ONG_currently" COPY GRANTS AS
@@ -187,24 +185,22 @@ FROM
     )) t
 WHERE
     t."AC_subset_PN_of_Reliability" = 1
-AND
-    t."AC_subset_PN_of_ID" = (
-        SELECT
-            sub."AC_subset_PN_of_ID"
-        FROM
-            TABLE(ties."rAC_subset_PN_of"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            (
-                sub."AC_ID_subset" = t."AC_ID_subset"
-            OR
-                sub."PN_ID_of" = t."PN_ID_of"
-            )
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- a tie without identifiers is one to one: the latest posit for each of its anchors
+    row_number() OVER (
+        PARTITION BY t."AC_ID_subset"
         ORDER BY
-            sub."AC_subset_PN_of_PositedAt" DESC
-        LIMIT 1
-    )
+            t."AC_subset_PN_of_PositedAt" DESC,
+            t."AC_subset_PN_of_ID" DESC
+    ) = 1
+AND
+    row_number() OVER (
+        PARTITION BY t."PN_ID_of"
+        ORDER BY
+            t."AC_subset_PN_of_PositedAt" DESC,
+            t."AC_subset_PN_of_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lAC_subset_PN_of" COPY GRANTS AS
@@ -281,22 +277,17 @@ FROM
     )) t
 WHERE
     t."EV_in_AC_wasCast_Reliability" = 1
-AND
-    t."EV_in_AC_wasCast_ID" = (
-        SELECT
-            sub."EV_in_AC_wasCast_ID"
-        FROM
-            TABLE(ties."rEV_in_AC_wasCast"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_ID_in" = t."EV_ID_in"
-        AND
-            sub."AC_ID_wasCast" = t."AC_ID_wasCast"
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- the latest posit for the identifiers
+    row_number() OVER (
+        PARTITION BY
+            t."EV_ID_in",
+            t."AC_ID_wasCast"
         ORDER BY
-            sub."EV_in_AC_wasCast_PositedAt" DESC
-        LIMIT 1
-    )
+            t."EV_in_AC_wasCast_PositedAt" DESC,
+            t."EV_in_AC_wasCast_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lEV_in_AC_wasCast" COPY GRANTS AS
@@ -386,24 +377,18 @@ ON
     "kRAT_got"."RAT_ID" = t."RAT_ID_got"
 WHERE
     t."AC_part_PR_in_RAT_got_Reliability" = 1
-AND
-    t."AC_part_PR_in_RAT_got_ID" = (
-        SELECT
-            sub."AC_part_PR_in_RAT_got_ID"
-        FROM
-            TABLE(ties."rAC_part_PR_in_RAT_got"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_ID_part" = t."AC_ID_part"
-        AND
-            sub."PR_ID_in" = t."PR_ID_in"
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- the latest posit for the identifiers
+    row_number() OVER (
+        PARTITION BY
+            t."AC_ID_part",
+            t."PR_ID_in"
         ORDER BY
-            sub."AC_part_PR_in_RAT_got_ChangedAt" DESC,
-            sub."AC_part_PR_in_RAT_got_PositedAt" DESC
-        LIMIT 1
-    )
+            t."AC_part_PR_in_RAT_got_ChangedAt" DESC,
+            t."AC_part_PR_in_RAT_got_PositedAt" DESC,
+            t."AC_part_PR_in_RAT_got_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lAC_part_PR_in_RAT_got" COPY GRANTS AS
@@ -530,24 +515,18 @@ FROM
     )) t
 WHERE
     t."ST_at_PR_isPlaying_Reliability" = 1
-AND
-    t."ST_at_PR_isPlaying_ID" = (
-        SELECT
-            sub."ST_at_PR_isPlaying_ID"
-        FROM
-            TABLE(ties."rST_at_PR_isPlaying"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_ID_at" = t."ST_ID_at"
-        AND
-            sub."PR_ID_isPlaying" = t."PR_ID_isPlaying"
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- the latest posit for the identifiers
+    row_number() OVER (
+        PARTITION BY
+            t."ST_ID_at",
+            t."PR_ID_isPlaying"
         ORDER BY
-            sub."ST_at_PR_isPlaying_ChangedAt" DESC,
-            sub."ST_at_PR_isPlaying_PositedAt" DESC
-        LIMIT 1
-    )
+            t."ST_at_PR_isPlaying_ChangedAt" DESC,
+            t."ST_at_PR_isPlaying_PositedAt" DESC,
+            t."ST_at_PR_isPlaying_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lST_at_PR_isPlaying" COPY GRANTS AS
@@ -669,24 +648,18 @@ ON
     "kPAT_having"."PAT_ID" = t."PAT_ID_having"
 WHERE
     t."AC_parent_AC_child_PAT_having_Reliability" = 1
-AND
-    t."AC_parent_AC_child_PAT_having_ID" = (
-        SELECT
-            sub."AC_parent_AC_child_PAT_having_ID"
-        FROM
-            TABLE(ties."rAC_parent_AC_child_PAT_having"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_ID_parent" = t."AC_ID_parent"
-        AND
-            sub."AC_ID_child" = t."AC_ID_child"
-        AND
-            sub."PAT_ID_having" = t."PAT_ID_having"
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- the latest posit for the identifiers
+    row_number() OVER (
+        PARTITION BY
+            t."AC_ID_parent",
+            t."AC_ID_child",
+            t."PAT_ID_having"
         ORDER BY
-            sub."AC_parent_AC_child_PAT_having_PositedAt" DESC
-        LIMIT 1
-    )
+            t."AC_parent_AC_child_PAT_having_PositedAt" DESC,
+            t."AC_parent_AC_child_PAT_having_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lAC_parent_AC_child_PAT_having" COPY GRANTS AS
@@ -774,26 +747,24 @@ FROM
     )) t
 WHERE
     t."PR_content_ST_location_EV_of_Reliability" = 1
-AND
-    t."PR_content_ST_location_EV_of_ID" = (
-        SELECT
-            sub."PR_content_ST_location_EV_of_ID"
-        FROM
-            TABLE(ties."rPR_content_ST_location_EV_of"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            (
-                sub."PR_ID_content" = t."PR_ID_content"
-            OR
-                sub."ST_ID_location" = t."ST_ID_location"
-            )
+QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first row
+        -- of an ordering
+    -- a tie without identifiers is one to one: the latest posit for each of its anchors
+    row_number() OVER (
+        PARTITION BY t."PR_ID_content"
         ORDER BY
-            sub."PR_content_ST_location_EV_of_ChangedAt" DESC,
-            sub."PR_content_ST_location_EV_of_PositedAt" DESC
-        LIMIT 1
-    )
+            t."PR_content_ST_location_EV_of_ChangedAt" DESC,
+            t."PR_content_ST_location_EV_of_PositedAt" DESC,
+            t."PR_content_ST_location_EV_of_ID" DESC
+    ) = 1
+AND
+    row_number() OVER (
+        PARTITION BY t."ST_ID_location"
+        ORDER BY
+            t."PR_content_ST_location_EV_of_ChangedAt" DESC,
+            t."PR_content_ST_location_EV_of_PositedAt" DESC,
+            t."PR_content_ST_location_EV_of_ID" DESC
+    ) = 1
 $$
 ;
 CREATE OR REPLACE VIEW ties."lPR_content_ST_location_EV_of" COPY GRANTS AS

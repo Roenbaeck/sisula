@@ -317,7 +317,7 @@ CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit" (
     "AC_NAM_ID" int default attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ".nextval not null, 
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Skådespelare_Namn" varbinary(max) not null,
+    "AC_NAM_Skådespelare_Namn" binary not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Skådespelare_Namn_Posit" foreign key (
         "AC_NAM_AC_ID"

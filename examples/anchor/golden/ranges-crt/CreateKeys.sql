@@ -186,7 +186,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Who" smallint,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max)
+    "AC_NAM_Actor_Name" binary
 )
 AS
 $$

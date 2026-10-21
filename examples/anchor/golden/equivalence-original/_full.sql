@@ -469,7 +469,7 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name" (
     "AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" varbinary(max) not null,
+    "AC_NAM_Actor_Name" binary not null,
     "AC_NAM_ChangedAt" datetime not null,
     "Metadata_AC_NAM" int not null,
     constraint "fkAC_NAM_Actor_Name" foreign key (
@@ -1295,7 +1295,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Metadata_AC_NAM" int,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1596,69 +1596,112 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."Metadata_ST",
-    "pST"."Metadata_ST_NAM",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_EQ",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."Metadata_ST_LOC",
-    "pST"."ST_LOC_EQ",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."Metadata_ST_AVG",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID",
-    "pST"."Metadata_ST_MIN",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID"
-FROM
-    TABLE(attributes."eST_NAM_Stage_Name"(0)) "hNAM", 
-    TABLE(anchors."pST_Stage"("hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "ST"."ST_ID",
+    "ST"."Metadata_ST",
+    "NAM"."Metadata_ST_NAM",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_EQ",
+    "NAM"."ST_NAM_Stage_Name",
+    "LOC"."Metadata_ST_LOC",
+    "LOC"."ST_LOC_EQ",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Stage_Location",
+    "AVG"."Metadata_ST_AVG",
+    "AVG"."ST_AVG_ChangedAt",
+    "kAVG"."UTL_Utilization" AS "UTL_Utilization",
+    "kAVG"."Metadata_UTL" AS "Metadata_UTL",
+    "AVG"."UTL_ID",
+    "MIN"."Metadata_ST_MIN",
+    "kMIN"."UTL_Utilization" AS "UTL_Utilization",
+    "kMIN"."Metadata_UTL" AS "Metadata_UTL",
+    "MIN"."UTL_ID"
+FROM (
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'AVG' AS mnemonic
+    FROM
+        attributes."ST_AVG_Stage_Average" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%AVG%')
+    AND
+        h."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."ST_Stage" "ST"
+ON
+    "ST"."ST_ID" = timepoints."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_NAM_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+) "NAM"
+ON
+    "NAM"."ST_ID" = "ST"."ST_ID"
 AND
-    "hNAM"."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."ST_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+ON
+    "LOC"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_AVG_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_AVG_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."ST_AVG_Stage_Average" h
+) "AVG"
+ON
+    "AVG"."ST_ID" = "ST"."ST_ID"
 AND
-    "pST"."ST_ID" = "hNAM"."ST_ID"
-UNION
-SELECT DISTINCT
-    "hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'AVG' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."Metadata_ST",
-    "pST"."Metadata_ST_NAM",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_EQ",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."Metadata_ST_LOC",
-    "pST"."ST_LOC_EQ",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."Metadata_ST_AVG",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID",
-    "pST"."Metadata_ST_MIN",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID"
-FROM
-    attributes."ST_AVG_Stage_Average" "hAVG",
-    TABLE(anchors."pST_Stage"("hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%AVG%')
-AND
-    "hAVG"."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pST"."ST_ID" = "hAVG"."ST_ID"
+    "AVG"."ST_AVG_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "AVG"."until" IS NULL
+OR
+    "AVG"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."UTL_Utilization" "kAVG"
+ON
+    "kAVG"."UTL_ID" = "AVG"."UTL_ID"
+LEFT JOIN
+    attributes."ST_MIN_Stage_Minimum" "MIN"
+ON
+    "MIN"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kMIN"
+ON
+    "kMIN"."UTL_ID" = "MIN"."UTL_ID"
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -1861,69 +1904,110 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."Metadata_ST",
-    "pST"."Metadata_ST_NAM",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_EQ",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."Metadata_ST_LOC",
-    "pST"."ST_LOC_EQ",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."Metadata_ST_AVG",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID",
-    "pST"."Metadata_ST_MIN",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID"
-FROM
-    TABLE(attributes."eST_NAM_Stage_Name"(equivalent)) "hNAM", 
-    TABLE(anchors."epST_Stage"(equivalent, "hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "ST"."ST_ID",
+    "ST"."Metadata_ST",
+    "NAM"."Metadata_ST_NAM",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_EQ",
+    "NAM"."ST_NAM_Stage_Name",
+    "LOC"."Metadata_ST_LOC",
+    "LOC"."ST_LOC_EQ",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Stage_Location",
+    "AVG"."Metadata_ST_AVG",
+    "AVG"."ST_AVG_ChangedAt",
+    "kAVG"."UTL_Utilization" AS "UTL_Utilization",
+    "kAVG"."Metadata_UTL" AS "Metadata_UTL",
+    "AVG"."UTL_ID",
+    "MIN"."Metadata_ST_MIN",
+    "kMIN"."UTL_Utilization" AS "UTL_Utilization",
+    "kMIN"."Metadata_UTL" AS "Metadata_UTL",
+    "MIN"."UTL_ID"
+FROM (
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        TABLE(attributes."eST_NAM_Stage_Name"(equivalent)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'AVG' AS mnemonic
+    FROM
+        attributes."ST_AVG_Stage_Average" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%AVG%')
+    AND
+        h."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."ST_Stage" "ST"
+ON
+    "ST"."ST_ID" = timepoints."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_NAM_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eST_NAM_Stage_Name"(equivalent)) h
+) "NAM"
+ON
+    "NAM"."ST_ID" = "ST"."ST_ID"
 AND
-    "hNAM"."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."ST_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    TABLE(attributes."eST_LOC_Stage_Location"(equivalent)) "LOC"
+ON
+    "LOC"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_AVG_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_AVG_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."ST_AVG_Stage_Average" h
+) "AVG"
+ON
+    "AVG"."ST_ID" = "ST"."ST_ID"
 AND
-    "pST"."ST_ID" = "hNAM"."ST_ID"
-UNION
-SELECT DISTINCT
-    "hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'AVG' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."Metadata_ST",
-    "pST"."Metadata_ST_NAM",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_EQ",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."Metadata_ST_LOC",
-    "pST"."ST_LOC_EQ",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."Metadata_ST_AVG",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID",
-    "pST"."Metadata_ST_MIN",
-    "pST"."UTL_Utilization",
-    "pST"."Metadata_UTL",
-    "pST"."UTL_ID"
-FROM
-    attributes."ST_AVG_Stage_Average" "hAVG",
-    TABLE(anchors."epST_Stage"(equivalent, "hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%AVG%')
-AND
-    "hAVG"."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pST"."ST_ID" = "hAVG"."ST_ID"
+    "AVG"."ST_AVG_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "AVG"."until" IS NULL
+OR
+    "AVG"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."UTL_Utilization" "kAVG"
+ON
+    "kAVG"."UTL_ID" = "AVG"."UTL_ID"
+LEFT JOIN
+    attributes."ST_MIN_Stage_Minimum" "MIN"
+ON
+    "MIN"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kMIN"
+ON
+    "kMIN"."UTL_ID" = "MIN"."UTL_ID"
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -2017,7 +2101,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2117,7 +2201,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2133,65 +2217,106 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."Metadata_AC",
-    "pAC"."Metadata_AC_NAM",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."Metadata_AC_GEN",
-    "pAC"."GEN_Checksum",
-    "pAC"."GEN_Gender",
-    "pAC"."Metadata_GEN",
-    "pAC"."GEN_ID",
-    "pAC"."Metadata_AC_PLV",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_EQ",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."Metadata_PLV",
-    "pAC"."PLV_ID"
-FROM
-    attributes."AC_NAM_Actor_Name" "hNAM",
-    TABLE(anchors."pAC_Actor"("hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "AC"."AC_ID",
+    "AC"."Metadata_AC",
+    "NAM"."Metadata_AC_NAM",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_Actor_Name",
+    "GEN"."Metadata_AC_GEN",
+    "kGEN"."GEN_Checksum" AS "GEN_Checksum",
+    "kGEN"."GEN_Gender" AS "GEN_Gender",
+    "kGEN"."Metadata_GEN" AS "Metadata_GEN",
+    "GEN"."GEN_ID",
+    "PLV"."Metadata_AC_PLV",
+    "PLV"."AC_PLV_ChangedAt",
+    "kPLV"."PLV_Checksum" AS "PLV_Checksum",
+    "kPLV"."PLV_EQ" AS "PLV_EQ",
+    "kPLV"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kPLV"."Metadata_PLV" AS "Metadata_PLV",
+    "PLV"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        attributes."AC_NAM_Actor_Name" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'PLV' AS mnemonic
+    FROM
+        attributes."AC_PLV_Actor_ProfessionalLevel" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%PLV%')
+    AND
+        h."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."AC_Actor" "AC"
+ON
+    "AC"."AC_ID" = timepoints."AC_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_NAM_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."AC_NAM_Actor_Name" h
+) "NAM"
+ON
+    "NAM"."AC_ID" = "AC"."AC_ID"
 AND
-    "hNAM"."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."AC_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."AC_GEN_Actor_Gender" "GEN"
+ON
+    "GEN"."AC_ID" = "AC"."AC_ID"
+LEFT JOIN
+    knots."GEN_Gender" "kGEN"
+ON
+    "kGEN"."GEN_ID" = "GEN"."GEN_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_PLV_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_PLV_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."AC_PLV_Actor_ProfessionalLevel" h
+) "PLV"
+ON
+    "PLV"."AC_ID" = "AC"."AC_ID"
 AND
-    "pAC"."AC_ID" = "hNAM"."AC_ID"
-UNION
-SELECT DISTINCT
-    "hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'PLV' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."Metadata_AC",
-    "pAC"."Metadata_AC_NAM",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."Metadata_AC_GEN",
-    "pAC"."GEN_Checksum",
-    "pAC"."GEN_Gender",
-    "pAC"."Metadata_GEN",
-    "pAC"."GEN_ID",
-    "pAC"."Metadata_AC_PLV",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_EQ",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."Metadata_PLV",
-    "pAC"."PLV_ID"
-FROM
-    attributes."AC_PLV_Actor_ProfessionalLevel" "hPLV",
-    TABLE(anchors."pAC_Actor"("hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%PLV%')
-AND
-    "hPLV"."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pAC"."AC_ID" = "hPLV"."AC_ID"
+    "PLV"."AC_PLV_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "PLV"."until" IS NULL
+OR
+    "PLV"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+ON
+    "kPLV"."PLV_ID" = "PLV"."PLV_ID"
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -2206,7 +2331,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2293,7 +2418,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2326,7 +2451,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2364,7 +2489,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2380,65 +2505,104 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."Metadata_AC",
-    "pAC"."Metadata_AC_NAM",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."Metadata_AC_GEN",
-    "pAC"."GEN_Checksum",
-    "pAC"."GEN_Gender",
-    "pAC"."Metadata_GEN",
-    "pAC"."GEN_ID",
-    "pAC"."Metadata_AC_PLV",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_EQ",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."Metadata_PLV",
-    "pAC"."PLV_ID"
-FROM
-    attributes."AC_NAM_Actor_Name" "hNAM",
-    TABLE(anchors."epAC_Actor"(equivalent, "hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "AC"."AC_ID",
+    "AC"."Metadata_AC",
+    "NAM"."Metadata_AC_NAM",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_Actor_Name",
+    "GEN"."Metadata_AC_GEN",
+    "kGEN"."GEN_Checksum" AS "GEN_Checksum",
+    "kGEN"."GEN_Gender" AS "GEN_Gender",
+    "kGEN"."Metadata_GEN" AS "Metadata_GEN",
+    "GEN"."GEN_ID",
+    "PLV"."Metadata_AC_PLV",
+    "PLV"."AC_PLV_ChangedAt",
+    "kPLV"."PLV_Checksum" AS "PLV_Checksum",
+    "kPLV"."PLV_EQ" AS "PLV_EQ",
+    "kPLV"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kPLV"."Metadata_PLV" AS "Metadata_PLV",
+    "PLV"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        attributes."AC_NAM_Actor_Name" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'PLV' AS mnemonic
+    FROM
+        attributes."AC_PLV_Actor_ProfessionalLevel" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%PLV%')
+    AND
+        h."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."AC_Actor" "AC"
+ON
+    "AC"."AC_ID" = timepoints."AC_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_NAM_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."AC_NAM_Actor_Name" h
+) "NAM"
+ON
+    "NAM"."AC_ID" = "AC"."AC_ID"
 AND
-    "hNAM"."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."AC_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."AC_GEN_Actor_Gender" "GEN"
+ON
+    "GEN"."AC_ID" = "AC"."AC_ID"
+LEFT JOIN
+    knots."GEN_Gender" "kGEN"
+ON
+    "kGEN"."GEN_ID" = "GEN"."GEN_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_PLV_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_PLV_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."AC_PLV_Actor_ProfessionalLevel" h
+) "PLV"
+ON
+    "PLV"."AC_ID" = "AC"."AC_ID"
 AND
-    "pAC"."AC_ID" = "hNAM"."AC_ID"
-UNION
-SELECT DISTINCT
-    "hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'PLV' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."Metadata_AC",
-    "pAC"."Metadata_AC_NAM",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."Metadata_AC_GEN",
-    "pAC"."GEN_Checksum",
-    "pAC"."GEN_Gender",
-    "pAC"."Metadata_GEN",
-    "pAC"."GEN_ID",
-    "pAC"."Metadata_AC_PLV",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_EQ",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."Metadata_PLV",
-    "pAC"."PLV_ID"
-FROM
-    attributes."AC_PLV_Actor_ProfessionalLevel" "hPLV",
-    TABLE(anchors."epAC_Actor"(equivalent, "hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%PLV%')
-AND
-    "hPLV"."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pAC"."AC_ID" = "hPLV"."AC_ID"
+    "PLV"."AC_PLV_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "PLV"."until" IS NULL
+OR
+    "PLV"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(equivalent)) "kPLV"
+ON
+    "kPLV"."PLV_ID" = "PLV"."PLV_ID"
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -2561,26 +2725,59 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LEN' AS mnemonic,
-    "pPR"."PR_ID",
-    "pPR"."Metadata_PR",
-    "pPR"."Metadata_PR_NAM",
-    "pPR"."PR_NAM_Program_Name",
-    "pPR"."Metadata_PR_LEN",
-    "pPR"."PR_LEN_ChangedAt",
-    "pPR"."PR_LEN_EQ",
-    "pPR"."PR_LEN_Program_Length"
-FROM
-    TABLE(attributes."ePR_LEN_Program_Length"(0)) "hLEN", 
-    TABLE(anchors."pPR_Program"("hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9))) "pPR"
-WHERE
-    (selection IS NULL OR selection LIKE '%LEN%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "PR"."PR_ID",
+    "PR"."Metadata_PR",
+    "NAM"."Metadata_PR_NAM",
+    "NAM"."PR_NAM_Program_Name",
+    "LEN"."Metadata_PR_LEN",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_EQ",
+    "LEN"."PR_LEN_Program_Length"
+FROM (
+    SELECT DISTINCT
+        h."PR_ID" AS "PR_ID",
+        h."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LEN' AS mnemonic
+    FROM
+        TABLE(attributes."ePR_LEN_Program_Length"(0)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LEN%')
+    AND
+        h."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."PR_Program" "PR"
+ON
+    "PR"."PR_ID" = timepoints."PR_ID"
+LEFT JOIN
+    attributes."PR_NAM_Program_Name" "NAM"
+ON
+    "NAM"."PR_ID" = "PR"."PR_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."PR_LEN_ChangedAt") OVER (
+            PARTITION BY h."PR_ID"
+            ORDER BY h."PR_LEN_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."ePR_LEN_Program_Length"(0)) h
+) "LEN"
+ON
+    "LEN"."PR_ID" = "PR"."PR_ID"
 AND
-    "hLEN"."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pPR"."PR_ID" = "hLEN"."PR_ID"
+    "LEN"."PR_LEN_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LEN"."until" IS NULL
+OR
+    "LEN"."until" > timepoints.inspectedTimepoint::date
+)
 $$
 ;
 -- Point-in-time equivalence perspective ------------------------------------------------------------------------------
@@ -2703,26 +2900,57 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LEN' AS mnemonic,
-    "pPR"."PR_ID",
-    "pPR"."Metadata_PR",
-    "pPR"."Metadata_PR_NAM",
-    "pPR"."PR_NAM_Program_Name",
-    "pPR"."Metadata_PR_LEN",
-    "pPR"."PR_LEN_ChangedAt",
-    "pPR"."PR_LEN_EQ",
-    "pPR"."PR_LEN_Program_Length"
-FROM
-    TABLE(attributes."ePR_LEN_Program_Length"(equivalent)) "hLEN", 
-    TABLE(anchors."epPR_Program"(equivalent, "hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9))) "pPR"
-WHERE
-    (selection IS NULL OR selection LIKE '%LEN%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "PR"."PR_ID",
+    "PR"."Metadata_PR",
+    "NAM"."Metadata_PR_NAM",
+    "NAM"."PR_NAM_Program_Name",
+    "LEN"."Metadata_PR_LEN",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_EQ",
+    "LEN"."PR_LEN_Program_Length"
+FROM (
+    SELECT DISTINCT
+        h."PR_ID" AS "PR_ID",
+        h."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LEN' AS mnemonic
+    FROM
+        TABLE(attributes."ePR_LEN_Program_Length"(equivalent)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LEN%')
+    AND
+        h."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    anchors."PR_Program" "PR"
+ON
+    "PR"."PR_ID" = timepoints."PR_ID"
+LEFT JOIN
+    attributes."PR_NAM_Program_Name" "NAM"
+ON
+    "NAM"."PR_ID" = "PR"."PR_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."PR_LEN_ChangedAt") OVER (
+            PARTITION BY h."PR_ID"
+            ORDER BY h."PR_LEN_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."ePR_LEN_Program_Length"(equivalent)) h
+) "LEN"
+ON
+    "LEN"."PR_ID" = "PR"."PR_ID"
 AND
-    "hLEN"."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pPR"."PR_ID" = "hLEN"."PR_ID"
+    "LEN"."PR_LEN_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LEN"."until" IS NULL
+OR
+    "LEN"."until" > timepoints.inspectedTimepoint::date
+)
 $$
 ;
 -- NEXUS TEMPORAL PERSPECTIVES ----------------------------------------------------------------------------------------
@@ -3043,95 +3271,137 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Event_Status"(0)) "hSTA", 
-    TABLE(nexuses."pEV_Event"("hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "ETY_of"."ETY_Checksum" AS "ETY_Checksum",
+    "ETY_of"."ETY_EventType" AS "ETY_EventType",
+    "ETY_of"."ETY_EQ" AS "ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Event_Revenue",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Event_Status",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utilization" AS "UTL_Utilization",
+    "kUTL"."Metadata_UTL" AS "Metadata_UTL",
+    "UTL"."UTL_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "PLV_EQ",
+    "kLVL"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kLVL"."Metadata_PLV" AS "Metadata_PLV",
+    "LVL"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Event_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Event" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Event_Date" "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Event_Revenue"(0)) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+) "STA"
+ON
+    "STA"."EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Event_Utilization" "UTL"
+ON
+    "UTL"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Event_Level" h
+) "LVL"
+ON
+    "LVL"."EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    attributes."EV_LVL_Event_Level" "hLVL",
-    TABLE(nexuses."pEV_Event"("hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."PLV_ID"
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -3496,95 +3766,135 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Event_Status"(equivalent)) "hSTA", 
-    TABLE(nexuses."epEV_Event"(equivalent, "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "ETY_of"."ETY_Checksum" AS "ETY_Checksum",
+    "ETY_of"."ETY_EventType" AS "ETY_EventType",
+    "ETY_of"."ETY_EQ" AS "ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Event_Revenue",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Event_Status",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utilization" AS "UTL_Utilization",
+    "kUTL"."Metadata_UTL" AS "Metadata_UTL",
+    "UTL"."UTL_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "PLV_EQ",
+    "kLVL"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kLVL"."Metadata_PLV" AS "Metadata_PLV",
+    "LVL"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Event_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Event" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_EventType"(equivalent)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Event_Date" "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Event_Audience"(equivalent)) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Event_Revenue"(equivalent)) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) h
+) "STA"
+ON
+    "STA"."EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Event_Utilization" "UTL"
+ON
+    "UTL"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Event_Level" h
+) "LVL"
+ON
+    "LVL"."EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    attributes."EV_LVL_Event_Level" "hLVL",
-    TABLE(nexuses."epEV_Event"(equivalent, "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(equivalent)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."PLV_ID"
 $$
 ;
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
@@ -3620,17 +3930,12 @@ LEFT JOIN
     TABLE(knots."eONG_Ongoing"(0)) "ONG_currently"
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
-WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -3666,20 +3971,13 @@ LEFT JOIN
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
 WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-        (
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-        )
-        AND
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -3763,20 +4061,13 @@ LEFT JOIN
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
 WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-        (
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-        )
-        AND
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -4104,17 +4395,14 @@ LEFT JOIN
     TABLE(knots."eRAT_Rating"(0)) "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
-WHERE
-    tie."AC_part_PR_in_RAT_got_ChangedAt" = (
-        SELECT
-            max(sub."AC_part_PR_in_RAT_got_ChangedAt")
-        FROM
-            ties."AC_part_PR_in_RAT_got" sub
-        WHERE
-            sub."AC_ID_part" = tie."AC_ID_part"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_part_PR_in_RAT_got_ChangedAt" = max(tie."AC_part_PR_in_RAT_got_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_part",
+            tie."PR_ID_in"
+    )
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -4152,18 +4440,15 @@ LEFT JOIN
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
-    tie."AC_part_PR_in_RAT_got_ChangedAt" = (
-        SELECT
-            max(sub."AC_part_PR_in_RAT_got_ChangedAt")
-        FROM
-            ties."AC_part_PR_in_RAT_got" sub
-        WHERE
-            sub."AC_ID_part" = tie."AC_ID_part"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-        AND
-            sub."AC_part_PR_in_RAT_got_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_part_PR_in_RAT_got_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_part_PR_in_RAT_got_ChangedAt" = max(tie."AC_part_PR_in_RAT_got_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_part",
+            tie."PR_ID_in"
+    )
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -4251,18 +4536,15 @@ LEFT JOIN
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
-    tie."AC_part_PR_in_RAT_got_ChangedAt" = (
-        SELECT
-            max(sub."AC_part_PR_in_RAT_got_ChangedAt")
-        FROM
-            ties."AC_part_PR_in_RAT_got" sub
-        WHERE
-            sub."AC_ID_part" = tie."AC_ID_part"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-        AND
-            sub."AC_part_PR_in_RAT_got_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_part_PR_in_RAT_got_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_part_PR_in_RAT_got_ChangedAt" = max(tie."AC_part_PR_in_RAT_got_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_part",
+            tie."PR_ID_in"
+    )
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -4372,17 +4654,14 @@ SELECT
     tie."PR_ID_isPlaying"
 FROM
     ties."ST_at_PR_isPlaying" tie
-WHERE
-    tie."ST_at_PR_isPlaying_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_isPlaying_ChangedAt")
-        FROM
-            ties."ST_at_PR_isPlaying" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_isPlaying" = tie."PR_ID_isPlaying"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_isPlaying_ChangedAt" = max(tie."ST_at_PR_isPlaying_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_isPlaying"
+    )
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -4406,18 +4685,15 @@ SELECT
 FROM
     ties."ST_at_PR_isPlaying" tie
 WHERE
-    tie."ST_at_PR_isPlaying_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_isPlaying_ChangedAt")
-        FROM
-            ties."ST_at_PR_isPlaying" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_isPlaying" = tie."PR_ID_isPlaying"
-        AND
-            sub."ST_at_PR_isPlaying_ChangedAt" <= changingTimepoint
-   )
+    tie."ST_at_PR_isPlaying_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_isPlaying_ChangedAt" = max(tie."ST_at_PR_isPlaying_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_isPlaying"
+    )
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -4477,18 +4753,15 @@ SELECT
 FROM
     ties."ST_at_PR_isPlaying" tie
 WHERE
-    tie."ST_at_PR_isPlaying_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_isPlaying_ChangedAt")
-        FROM
-            ties."ST_at_PR_isPlaying" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_isPlaying" = tie."PR_ID_isPlaying"
-        AND
-            sub."ST_at_PR_isPlaying_ChangedAt" <= changingTimepoint
-   )
+    tie."ST_at_PR_isPlaying_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_isPlaying_ChangedAt" = max(tie."ST_at_PR_isPlaying_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_isPlaying"
+    )
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -4724,17 +4997,12 @@ SELECT
     tie."EV_ID_of"
 FROM
     ties."PR_content_ST_location_EV_of" tie
-WHERE
-    tie."PR_content_ST_location_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_content_ST_location_EV_of_ChangedAt")
-        FROM
-            ties."PR_content_ST_location_EV_of" sub
-        WHERE
-            sub."PR_ID_content" = tie."PR_ID_content"
-        OR
-            sub."ST_ID_location" = tie."ST_ID_location"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_content")
+AND
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_location")
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -4760,20 +5028,13 @@ SELECT
 FROM
     ties."PR_content_ST_location_EV_of" tie
 WHERE
-    tie."PR_content_ST_location_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_content_ST_location_EV_of_ChangedAt")
-        FROM
-            ties."PR_content_ST_location_EV_of" sub
-        WHERE
-        (
-            sub."PR_ID_content" = tie."PR_ID_content"
-        OR
-            sub."ST_ID_location" = tie."ST_ID_location"
-        )
-        AND
-            sub."PR_content_ST_location_EV_of_ChangedAt" <= changingTimepoint
-   )
+    tie."PR_content_ST_location_EV_of_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_content")
+AND
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_location")
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -4837,20 +5098,13 @@ SELECT
 FROM
     ties."PR_content_ST_location_EV_of" tie
 WHERE
-    tie."PR_content_ST_location_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_content_ST_location_EV_of_ChangedAt")
-        FROM
-            ties."PR_content_ST_location_EV_of" sub
-        WHERE
-        (
-            sub."PR_ID_content" = tie."PR_ID_content"
-        OR
-            sub."ST_ID_location" = tie."ST_ID_location"
-        )
-        AND
-            sub."PR_content_ST_location_EV_of_ChangedAt" <= changingTimepoint
-   )
+    tie."PR_content_ST_location_EV_of_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_content")
+AND
+    tie."PR_content_ST_location_EV_of_ChangedAt" = max(tie."PR_content_ST_location_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_location")
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -5094,7 +5348,7 @@ CREATE OR REPLACE FUNCTION anchors."pkey_AC_Actor_1st" (
 COPY GRANTS
 RETURNS TABLE (
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max)
+    "AC_NAM_Actor_Name" binary
 )
 AS
 $$

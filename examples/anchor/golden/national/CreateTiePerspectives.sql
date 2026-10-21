@@ -31,17 +31,12 @@ LEFT JOIN
     TABLE(knots."eONG_Pågående"(0)) "ONG_currently"
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
-WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -77,20 +72,13 @@ LEFT JOIN
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
 WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-        (
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-        )
-        AND
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -174,20 +162,13 @@ LEFT JOIN
 ON
     "ONG_currently"."ONG_ID" = tie."ONG_ID_currently"
 WHERE
-    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = (
-        SELECT
-            max(sub."AC_partner_AC_with_ONG_currently_ChangedAt")
-        FROM
-            ties."AC_partner_AC_with_ONG_currently" sub
-        WHERE
-        (
-            sub."AC_ID_partner" = tie."AC_ID_partner"
-        OR
-            sub."AC_ID_with" = tie."AC_ID_with"
-        )
-        AND
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_partner")
+AND
+    tie."AC_partner_AC_with_ONG_currently_ChangedAt" = max(tie."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (PARTITION BY tie."AC_ID_with")
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -515,17 +496,14 @@ LEFT JOIN
     TABLE(knots."eRAT_Betyg"(0)) "RAT_fick"
 ON
     "RAT_fick"."RAT_ID" = tie."RAT_ID_fick"
-WHERE
-    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = (
-        SELECT
-            max(sub."AC_deltar_PR_in_RAT_fick_ChangedAt")
-        FROM
-            ties."AC_deltar_PR_in_RAT_fick" sub
-        WHERE
-            sub."AC_ID_deltar" = tie."AC_ID_deltar"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = max(tie."AC_deltar_PR_in_RAT_fick_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_deltar",
+            tie."PR_ID_in"
+    )
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -563,18 +541,15 @@ LEFT JOIN
 ON
     "RAT_fick"."RAT_ID" = tie."RAT_ID_fick"
 WHERE
-    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = (
-        SELECT
-            max(sub."AC_deltar_PR_in_RAT_fick_ChangedAt")
-        FROM
-            ties."AC_deltar_PR_in_RAT_fick" sub
-        WHERE
-            sub."AC_ID_deltar" = tie."AC_ID_deltar"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-        AND
-            sub."AC_deltar_PR_in_RAT_fick_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = max(tie."AC_deltar_PR_in_RAT_fick_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_deltar",
+            tie."PR_ID_in"
+    )
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -662,18 +637,15 @@ LEFT JOIN
 ON
     "RAT_fick"."RAT_ID" = tie."RAT_ID_fick"
 WHERE
-    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = (
-        SELECT
-            max(sub."AC_deltar_PR_in_RAT_fick_ChangedAt")
-        FROM
-            ties."AC_deltar_PR_in_RAT_fick" sub
-        WHERE
-            sub."AC_ID_deltar" = tie."AC_ID_deltar"
-        AND
-            sub."PR_ID_in" = tie."PR_ID_in"
-        AND
-            sub."AC_deltar_PR_in_RAT_fick_ChangedAt" <= changingTimepoint
-   )
+    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."AC_deltar_PR_in_RAT_fick_ChangedAt" = max(tie."AC_deltar_PR_in_RAT_fick_ChangedAt") OVER (
+        PARTITION BY
+            tie."AC_ID_deltar",
+            tie."PR_ID_in"
+    )
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -783,17 +755,14 @@ SELECT
     tie."PR_ID_spelas"
 FROM
     ties."ST_at_PR_spelas" tie
-WHERE
-    tie."ST_at_PR_spelas_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_spelas_ChangedAt")
-        FROM
-            ties."ST_at_PR_spelas" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_spelas" = tie."PR_ID_spelas"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_spelas_ChangedAt" = max(tie."ST_at_PR_spelas_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_spelas"
+    )
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -817,18 +786,15 @@ SELECT
 FROM
     ties."ST_at_PR_spelas" tie
 WHERE
-    tie."ST_at_PR_spelas_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_spelas_ChangedAt")
-        FROM
-            ties."ST_at_PR_spelas" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_spelas" = tie."PR_ID_spelas"
-        AND
-            sub."ST_at_PR_spelas_ChangedAt" <= changingTimepoint
-   )
+    tie."ST_at_PR_spelas_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_spelas_ChangedAt" = max(tie."ST_at_PR_spelas_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_spelas"
+    )
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -888,18 +854,15 @@ SELECT
 FROM
     ties."ST_at_PR_spelas" tie
 WHERE
-    tie."ST_at_PR_spelas_ChangedAt" = (
-        SELECT
-            max(sub."ST_at_PR_spelas_ChangedAt")
-        FROM
-            ties."ST_at_PR_spelas" sub
-        WHERE
-            sub."ST_ID_at" = tie."ST_ID_at"
-        AND
-            sub."PR_ID_spelas" = tie."PR_ID_spelas"
-        AND
-            sub."ST_at_PR_spelas_ChangedAt" <= changingTimepoint
-   )
+    tie."ST_at_PR_spelas_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- the latest value for the identifiers
+    tie."ST_at_PR_spelas_ChangedAt" = max(tie."ST_at_PR_spelas_ChangedAt") OVER (
+        PARTITION BY
+            tie."ST_ID_at",
+            tie."PR_ID_spelas"
+    )
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -1135,17 +1098,12 @@ SELECT
     tie."EV_ID_of"
 FROM
     ties."PR_innehåll_ST_plats_EV_of" tie
-WHERE
-    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_innehåll_ST_plats_EV_of_ChangedAt")
-        FROM
-            ties."PR_innehåll_ST_plats_EV_of" sub
-        WHERE
-            sub."PR_ID_innehåll" = tie."PR_ID_innehåll"
-        OR
-            sub."ST_ID_plats" = tie."ST_ID_plats"
-   )
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_innehåll")
+AND
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_plats")
 ;
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------------
@@ -1171,20 +1129,13 @@ SELECT
 FROM
     ties."PR_innehåll_ST_plats_EV_of" tie
 WHERE
-    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_innehåll_ST_plats_EV_of_ChangedAt")
-        FROM
-            ties."PR_innehåll_ST_plats_EV_of" sub
-        WHERE
-        (
-            sub."PR_ID_innehåll" = tie."PR_ID_innehåll"
-        OR
-            sub."ST_ID_plats" = tie."ST_ID_plats"
-        )
-        AND
-            sub."PR_innehåll_ST_plats_EV_of_ChangedAt" <= changingTimepoint
-   )
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_innehåll")
+AND
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_plats")
 $$
 ;
 -- Now perspective ----------------------------------------------------------------------------------------------------
@@ -1248,20 +1199,13 @@ SELECT
 FROM
     ties."PR_innehåll_ST_plats_EV_of" tie
 WHERE
-    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = (
-        SELECT
-            max(sub."PR_innehåll_ST_plats_EV_of_ChangedAt")
-        FROM
-            ties."PR_innehåll_ST_plats_EV_of" sub
-        WHERE
-        (
-            sub."PR_ID_innehåll" = tie."PR_ID_innehåll"
-        OR
-            sub."ST_ID_plats" = tie."ST_ID_plats"
-        )
-        AND
-            sub."PR_innehåll_ST_plats_EV_of_ChangedAt" <= changingTimepoint
-   )
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" <= changingTimepoint
+QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
+        -- subquery compares with OR, and then Snowflake keeps rows that it should not
+    -- a tie without identifiers is one to one: the latest value for each of its anchors
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."PR_ID_innehåll")
+AND
+    tie."PR_innehåll_ST_plats_EV_of_ChangedAt" = max(tie."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (PARTITION BY tie."ST_ID_plats")
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------

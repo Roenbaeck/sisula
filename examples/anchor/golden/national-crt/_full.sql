@@ -680,7 +680,7 @@ CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit" (
     "AC_NAM_ID" int default attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ".nextval not null, 
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Skådespelare_Namn" varbinary(max) not null,
+    "AC_NAM_Skådespelare_Namn" binary not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Skådespelare_Namn_Posit" foreign key (
         "AC_NAM_AC_ID"
@@ -1182,7 +1182,7 @@ ON
 -- in time. The forwarder is the opposite of the rewinder, such that the 
 -- union of the two will produce all rows in a posit table.
 --
--- @positor the view of which positor to adopt (defaults to 0)
+-- @positor the view of which positor to adopt, or null for the views of all of them
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
 -- @positingTimepoint the point in positing time to rewind to (defaults to End of Time, no rewind)
 --
@@ -1250,10 +1250,10 @@ JOIN
 ON
     a."EV_DAT_ID" = p."EV_DAT_ID"
 AND
-    a."EV_DAT_Positor" = positor
+    a."EV_DAT_Positor" = coalesce(positor, a."EV_DAT_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_DAT_ID"
+        PARTITION BY p."EV_DAT_ID", a."EV_DAT_Positor"
         ORDER BY a."EV_DAT_PositedAt" DESC
     ) = 1
 $$
@@ -1322,10 +1322,10 @@ JOIN
 ON
     a."EV_AUD_ID" = p."EV_AUD_ID"
 AND
-    a."EV_AUD_Positor" = positor
+    a."EV_AUD_Positor" = coalesce(positor, a."EV_AUD_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_AUD_ID"
+        PARTITION BY p."EV_AUD_ID", a."EV_AUD_Positor"
         ORDER BY a."EV_AUD_PositedAt" DESC
     ) = 1
 $$
@@ -1394,10 +1394,10 @@ JOIN
 ON
     a."EV_REV_ID" = p."EV_REV_ID"
 AND
-    a."EV_REV_Positor" = positor
+    a."EV_REV_Positor" = coalesce(positor, a."EV_REV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_REV_ID"
+        PARTITION BY p."EV_REV_ID", a."EV_REV_Positor"
         ORDER BY a."EV_REV_PositedAt" DESC
     ) = 1
 $$
@@ -1519,10 +1519,10 @@ JOIN
 ON
     a."EV_STA_ID" = p."EV_STA_ID"
 AND
-    a."EV_STA_Positor" = positor
+    a."EV_STA_Positor" = coalesce(positor, a."EV_STA_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_STA_ID"
+        PARTITION BY p."EV_STA_ID", a."EV_STA_Positor"
         ORDER BY a."EV_STA_PositedAt" DESC
     ) = 1
 $$
@@ -1565,10 +1565,10 @@ JOIN
 ON
     a."EV_STA_ID" = p."EV_STA_ID"
 AND
-    a."EV_STA_Positor" = positor
+    a."EV_STA_Positor" = coalesce(positor, a."EV_STA_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_STA_ID"
+        PARTITION BY p."EV_STA_ID", a."EV_STA_Positor"
         ORDER BY a."EV_STA_PositedAt" DESC
     ) = 1
 $$
@@ -1695,10 +1695,10 @@ JOIN
 ON
     a."EV_UTL_ID" = p."EV_UTL_ID"
 AND
-    a."EV_UTL_Positor" = positor
+    a."EV_UTL_Positor" = coalesce(positor, a."EV_UTL_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_UTL_ID"
+        PARTITION BY p."EV_UTL_ID", a."EV_UTL_Positor"
         ORDER BY a."EV_UTL_PositedAt" DESC
     ) = 1
 $$
@@ -1820,10 +1820,10 @@ JOIN
 ON
     a."EV_LVL_ID" = p."EV_LVL_ID"
 AND
-    a."EV_LVL_Positor" = positor
+    a."EV_LVL_Positor" = coalesce(positor, a."EV_LVL_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_LVL_ID"
+        PARTITION BY p."EV_LVL_ID", a."EV_LVL_Positor"
         ORDER BY a."EV_LVL_PositedAt" DESC
     ) = 1
 $$
@@ -1866,10 +1866,10 @@ JOIN
 ON
     a."EV_LVL_ID" = p."EV_LVL_ID"
 AND
-    a."EV_LVL_Positor" = positor
+    a."EV_LVL_Positor" = coalesce(positor, a."EV_LVL_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_LVL_ID"
+        PARTITION BY p."EV_LVL_ID", a."EV_LVL_Positor"
         ORDER BY a."EV_LVL_PositedAt" DESC
     ) = 1
 $$
@@ -2049,10 +2049,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Positor" = positor
+    a."ST_NAM_Positor" = coalesce(positor, a."ST_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Positor"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -2095,10 +2095,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Positor" = positor
+    a."ST_NAM_Positor" = coalesce(positor, a."ST_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Positor"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -2227,10 +2227,10 @@ JOIN
 ON
     a."ST_LOC_ID" = p."ST_LOC_ID"
 AND
-    a."ST_LOC_Positor" = positor
+    a."ST_LOC_Positor" = coalesce(positor, a."ST_LOC_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_LOC_ID"
+        PARTITION BY p."ST_LOC_ID", a."ST_LOC_Positor"
         ORDER BY a."ST_LOC_PositedAt" DESC
     ) = 1
 $$
@@ -2352,10 +2352,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Positor" = positor
+    a."ST_AVG_Positor" = coalesce(positor, a."ST_AVG_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Positor"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -2398,10 +2398,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Positor" = positor
+    a."ST_AVG_Positor" = coalesce(positor, a."ST_AVG_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Positor"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -2528,10 +2528,10 @@ JOIN
 ON
     a."ST_MIN_ID" = p."ST_MIN_ID"
 AND
-    a."ST_MIN_Positor" = positor
+    a."ST_MIN_Positor" = coalesce(positor, a."ST_MIN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_MIN_ID"
+        PARTITION BY p."ST_MIN_ID", a."ST_MIN_Positor"
         ORDER BY a."ST_MIN_PositedAt" DESC
     ) = 1
 $$
@@ -2545,7 +2545,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" int,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2570,7 +2570,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" int,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2631,7 +2631,7 @@ RETURNS TABLE (
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2653,10 +2653,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Positor" = positor
+    a."AC_NAM_Positor" = coalesce(positor, a."AC_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Positor"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -2677,7 +2677,7 @@ RETURNS TABLE (
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2699,10 +2699,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Positor" = positor
+    a."AC_NAM_Positor" = coalesce(positor, a."AC_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Positor"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -2717,7 +2717,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Skådespelare_Namn" (
     assertion string
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT
@@ -2746,7 +2746,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Skådespelare_Namn" (
     assertion string
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT
@@ -2829,10 +2829,10 @@ JOIN
 ON
     a."AC_GEN_ID" = p."AC_GEN_ID"
 AND
-    a."AC_GEN_Positor" = positor
+    a."AC_GEN_Positor" = coalesce(positor, a."AC_GEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_GEN_ID"
+        PARTITION BY p."AC_GEN_ID", a."AC_GEN_Positor"
         ORDER BY a."AC_GEN_PositedAt" DESC
     ) = 1
 $$
@@ -2954,10 +2954,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Positor" = positor
+    a."AC_PLV_Positor" = coalesce(positor, a."AC_PLV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Positor"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -3000,10 +3000,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Positor" = positor
+    a."AC_PLV_Positor" = coalesce(positor, a."AC_PLV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Positor"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -3130,10 +3130,10 @@ JOIN
 ON
     a."PR_NAM_ID" = p."PR_NAM_ID"
 AND
-    a."PR_NAM_Positor" = positor
+    a."PR_NAM_Positor" = coalesce(positor, a."PR_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_NAM_ID"
+        PARTITION BY p."PR_NAM_ID", a."PR_NAM_Positor"
         ORDER BY a."PR_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -3255,10 +3255,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Positor" = positor
+    a."PR_LEN_Positor" = coalesce(positor, a."PR_LEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Positor"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$
@@ -3301,10 +3301,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Positor" = positor
+    a."PR_LEN_Positor" = coalesce(positor, a."PR_LEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Positor"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$
@@ -3870,7 +3870,8 @@ ON
 ;
 -- TIE REWINDERS AND FORWARDERS ---------------------------------------------------------------------------------------
 --
--- CRT rewinders over changing and positing time with positor-aware annex selection.
+-- CRT rewinders over changing and positing time with positor-aware annex selection: the view of the positor given,
+-- or of all of them for null.
 --
 CREATE OR REPLACE FUNCTION ties."rAC_partner_AC_with_ONG_currently_Posit" (
     changingTimepoint datetime
@@ -3987,10 +3988,10 @@ JOIN
 ON
     a."AC_partner_AC_with_ONG_currently_ID" = p."AC_partner_AC_with_ONG_currently_ID"
 AND
-    a."AC_partner_AC_with_ONG_currently_Positor" = positor
+    a."AC_partner_AC_with_ONG_currently_Positor" = coalesce(positor, a."AC_partner_AC_with_ONG_currently_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID"
+        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID", a."AC_partner_AC_with_ONG_currently_Positor"
         ORDER BY a."AC_partner_AC_with_ONG_currently_PositedAt" DESC
     ) = 1
 $$
@@ -4033,10 +4034,10 @@ JOIN
 ON
     a."AC_partner_AC_with_ONG_currently_ID" = p."AC_partner_AC_with_ONG_currently_ID"
 AND
-    a."AC_partner_AC_with_ONG_currently_Positor" = positor
+    a."AC_partner_AC_with_ONG_currently_Positor" = coalesce(positor, a."AC_partner_AC_with_ONG_currently_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID"
+        PARTITION BY p."AC_partner_AC_with_ONG_currently_ID", a."AC_partner_AC_with_ONG_currently_Positor"
         ORDER BY a."AC_partner_AC_with_ONG_currently_PositedAt" DESC
     ) = 1
 $$
@@ -4101,10 +4102,10 @@ JOIN
 ON
     a."AC_subset_PN_of_ID" = p."AC_subset_PN_of_ID"
 AND
-    a."AC_subset_PN_of_Positor" = positor
+    a."AC_subset_PN_of_Positor" = coalesce(positor, a."AC_subset_PN_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_subset_PN_of_ID"
+        PARTITION BY p."AC_subset_PN_of_ID", a."AC_subset_PN_of_Positor"
         ORDER BY a."AC_subset_PN_of_PositedAt" DESC
     ) = 1
 $$
@@ -4142,10 +4143,10 @@ JOIN
 ON
     a."AC_subset_PN_of_ID" = p."AC_subset_PN_of_ID"
 AND
-    a."AC_subset_PN_of_Positor" = positor
+    a."AC_subset_PN_of_Positor" = coalesce(positor, a."AC_subset_PN_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_subset_PN_of_ID"
+        PARTITION BY p."AC_subset_PN_of_ID", a."AC_subset_PN_of_Positor"
         ORDER BY a."AC_subset_PN_of_PositedAt" DESC
     ) = 1
 $$
@@ -4210,10 +4211,10 @@ JOIN
 ON
     a."EV_in_AC_rollsattes_ID" = p."EV_in_AC_rollsattes_ID"
 AND
-    a."EV_in_AC_rollsattes_Positor" = positor
+    a."EV_in_AC_rollsattes_Positor" = coalesce(positor, a."EV_in_AC_rollsattes_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_in_AC_rollsattes_ID"
+        PARTITION BY p."EV_in_AC_rollsattes_ID", a."EV_in_AC_rollsattes_Positor"
         ORDER BY a."EV_in_AC_rollsattes_PositedAt" DESC
     ) = 1
 $$
@@ -4251,10 +4252,10 @@ JOIN
 ON
     a."EV_in_AC_rollsattes_ID" = p."EV_in_AC_rollsattes_ID"
 AND
-    a."EV_in_AC_rollsattes_Positor" = positor
+    a."EV_in_AC_rollsattes_Positor" = coalesce(positor, a."EV_in_AC_rollsattes_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_in_AC_rollsattes_ID"
+        PARTITION BY p."EV_in_AC_rollsattes_ID", a."EV_in_AC_rollsattes_Positor"
         ORDER BY a."EV_in_AC_rollsattes_PositedAt" DESC
     ) = 1
 $$
@@ -4374,10 +4375,10 @@ JOIN
 ON
     a."AC_deltar_PR_in_RAT_fick_ID" = p."AC_deltar_PR_in_RAT_fick_ID"
 AND
-    a."AC_deltar_PR_in_RAT_fick_Positor" = positor
+    a."AC_deltar_PR_in_RAT_fick_Positor" = coalesce(positor, a."AC_deltar_PR_in_RAT_fick_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_deltar_PR_in_RAT_fick_ID"
+        PARTITION BY p."AC_deltar_PR_in_RAT_fick_ID", a."AC_deltar_PR_in_RAT_fick_Positor"
         ORDER BY a."AC_deltar_PR_in_RAT_fick_PositedAt" DESC
     ) = 1
 $$
@@ -4420,10 +4421,10 @@ JOIN
 ON
     a."AC_deltar_PR_in_RAT_fick_ID" = p."AC_deltar_PR_in_RAT_fick_ID"
 AND
-    a."AC_deltar_PR_in_RAT_fick_Positor" = positor
+    a."AC_deltar_PR_in_RAT_fick_Positor" = coalesce(positor, a."AC_deltar_PR_in_RAT_fick_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_deltar_PR_in_RAT_fick_ID"
+        PARTITION BY p."AC_deltar_PR_in_RAT_fick_ID", a."AC_deltar_PR_in_RAT_fick_Positor"
         ORDER BY a."AC_deltar_PR_in_RAT_fick_PositedAt" DESC
     ) = 1
 $$
@@ -4537,10 +4538,10 @@ JOIN
 ON
     a."ST_at_PR_spelas_ID" = p."ST_at_PR_spelas_ID"
 AND
-    a."ST_at_PR_spelas_Positor" = positor
+    a."ST_at_PR_spelas_Positor" = coalesce(positor, a."ST_at_PR_spelas_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_at_PR_spelas_ID"
+        PARTITION BY p."ST_at_PR_spelas_ID", a."ST_at_PR_spelas_Positor"
         ORDER BY a."ST_at_PR_spelas_PositedAt" DESC
     ) = 1
 $$
@@ -4581,10 +4582,10 @@ JOIN
 ON
     a."ST_at_PR_spelas_ID" = p."ST_at_PR_spelas_ID"
 AND
-    a."ST_at_PR_spelas_Positor" = positor
+    a."ST_at_PR_spelas_Positor" = coalesce(positor, a."ST_at_PR_spelas_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_at_PR_spelas_ID"
+        PARTITION BY p."ST_at_PR_spelas_ID", a."ST_at_PR_spelas_Positor"
         ORDER BY a."ST_at_PR_spelas_PositedAt" DESC
     ) = 1
 $$
@@ -4651,10 +4652,10 @@ JOIN
 ON
     a."AC_förälder_AC_barn_PAT_har_ID" = p."AC_förälder_AC_barn_PAT_har_ID"
 AND
-    a."AC_förälder_AC_barn_PAT_har_Positor" = positor
+    a."AC_förälder_AC_barn_PAT_har_Positor" = coalesce(positor, a."AC_förälder_AC_barn_PAT_har_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_förälder_AC_barn_PAT_har_ID"
+        PARTITION BY p."AC_förälder_AC_barn_PAT_har_ID", a."AC_förälder_AC_barn_PAT_har_Positor"
         ORDER BY a."AC_förälder_AC_barn_PAT_har_PositedAt" DESC
     ) = 1
 $$
@@ -4694,10 +4695,10 @@ JOIN
 ON
     a."AC_förälder_AC_barn_PAT_har_ID" = p."AC_förälder_AC_barn_PAT_har_ID"
 AND
-    a."AC_förälder_AC_barn_PAT_har_Positor" = positor
+    a."AC_förälder_AC_barn_PAT_har_Positor" = coalesce(positor, a."AC_förälder_AC_barn_PAT_har_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_förälder_AC_barn_PAT_har_ID"
+        PARTITION BY p."AC_förälder_AC_barn_PAT_har_ID", a."AC_förälder_AC_barn_PAT_har_Positor"
         ORDER BY a."AC_förälder_AC_barn_PAT_har_PositedAt" DESC
     ) = 1
 $$
@@ -4817,10 +4818,10 @@ JOIN
 ON
     a."PR_innehåll_ST_plats_EV_of_ID" = p."PR_innehåll_ST_plats_EV_of_ID"
 AND
-    a."PR_innehåll_ST_plats_EV_of_Positor" = positor
+    a."PR_innehåll_ST_plats_EV_of_Positor" = coalesce(positor, a."PR_innehåll_ST_plats_EV_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_innehåll_ST_plats_EV_of_ID"
+        PARTITION BY p."PR_innehåll_ST_plats_EV_of_ID", a."PR_innehåll_ST_plats_EV_of_Positor"
         ORDER BY a."PR_innehåll_ST_plats_EV_of_PositedAt" DESC
     ) = 1
 $$
@@ -4863,10 +4864,10 @@ JOIN
 ON
     a."PR_innehåll_ST_plats_EV_of_ID" = p."PR_innehåll_ST_plats_EV_of_ID"
 AND
-    a."PR_innehåll_ST_plats_EV_of_Positor" = positor
+    a."PR_innehåll_ST_plats_EV_of_Positor" = coalesce(positor, a."PR_innehåll_ST_plats_EV_of_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_innehåll_ST_plats_EV_of_ID"
+        PARTITION BY p."PR_innehåll_ST_plats_EV_of_ID", a."PR_innehåll_ST_plats_EV_of_Positor"
         ORDER BY a."PR_innehåll_ST_plats_EV_of_PositedAt" DESC
     ) = 1
 $$
@@ -4958,8 +4959,8 @@ SELECT
     "AVG"."ST_AVG_Positor",
     "AVG"."ST_AVG_Reliability",
     "AVG"."ST_AVG_Assertion",
-    "kAVG"."UTL_Utnyttjande" AS "ST_AVG_UTL_Utnyttjande",
-    "kAVG"."Metadata_UTL" AS "ST_AVG_Metadata_UTL",
+    "AVG"."ST_AVG_UTL_Utnyttjande",
+    "AVG"."ST_AVG_Metadata_UTL",
     "AVG"."ST_AVG_UTL_ID",
     "MIN"."ST_MIN_ST_ID",
     "MIN"."Metadata_ST_MIN",
@@ -4968,143 +4969,176 @@ SELECT
     "MIN"."ST_MIN_Positor",
     "MIN"."ST_MIN_Reliability",
     "MIN"."ST_MIN_Assertion",
-    "kMIN"."UTL_Utnyttjande" AS "ST_MIN_UTL_Utnyttjande",
-    "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
+    "MIN"."ST_MIN_UTL_Utnyttjande",
+    "MIN"."ST_MIN_Metadata_UTL",
     "MIN"."ST_MIN_UTL_ID"
 FROM
     anchors."ST_Scen" "ST"
-LEFT JOIN
-    TABLE(attributes."rST_NAM_Scen_Namn"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "NAM"
-ON
-    "NAM"."ST_NAM_ID" = (
+-- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+-- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a window
+-- or in an outer join (so a positor has to be in the table of positors to be shown)
+CROSS JOIN
+    dw."_Positor" p
+LEFT JOIN (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."ST_NAM_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."ST_NAM_Assertion" <> '?', r."ST_NAM_ChangedAt", null)) OVER (
+                PARTITION BY r."ST_NAM_Positor", r."ST_NAM_ST_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."ST_NAM_Assertion" <> '?', r."ST_NAM_ChangedAt", null)) OVER (
-                        PARTITION BY r."ST_NAM_ST_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rST_NAM_Scen_Namn"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."ST_NAM_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_NAM_Assertion" = coalesce(assertion, sub."ST_NAM_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."ST_NAM_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."ST_NAM_ChangedAt" DESC,
-            sub."ST_NAM_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rST_NAM_Scen_Namn"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."ST_NAM_Assertion" = coalesce(assertion, x."ST_NAM_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."ST_NAM_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    TABLE(attributes."rST_LOC_Scen_Plats"(
-        positor,
-        positingTimepoint::datetime
-    )) "LOC"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."ST_NAM_Positor", x."ST_NAM_ST_ID"
+            ORDER BY
+                x."ST_NAM_ChangedAt" DESC,
+                x."ST_NAM_PositedAt" DESC,
+                x."ST_NAM_Reliability" DESC
+        ) = 1
+) "NAM"
 ON
-    "LOC"."ST_LOC_ID" = (
+    "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
+AND
+    "NAM"."ST_NAM_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."ST_LOC_ID"
+            r.*
         FROM
             TABLE(attributes."rST_LOC_Scen_Plats"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_LOC_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_LOC_Assertion" = coalesce(assertion, sub."ST_LOC_Assertion")
-        ORDER BY
-            sub."ST_LOC_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(attributes."rST_AVG_Scen_Medel"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "AVG"
+            )) r
+    ) x
+    WHERE
+        x."ST_LOC_Assertion" = coalesce(assertion, x."ST_LOC_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."ST_LOC_Positor", x."ST_LOC_ST_ID"
+            ORDER BY
+                x."ST_LOC_PositedAt" DESC,
+                x."ST_LOC_Reliability" DESC
+        ) = 1
+) "LOC"
 ON
-    "AVG"."ST_AVG_ID" = (
+    "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
+AND
+    "LOC"."ST_LOC_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."Metadata_UTL" AS "ST_AVG_Metadata_UTL",
+        k."UTL_Utnyttjande" AS "ST_AVG_UTL_Utnyttjande"
+    FROM (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."ST_AVG_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."ST_AVG_Assertion" <> '?', r."ST_AVG_ChangedAt", null)) OVER (
+                PARTITION BY r."ST_AVG_Positor", r."ST_AVG_ST_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."ST_AVG_Assertion" <> '?', r."ST_AVG_ChangedAt", null)) OVER (
-                        PARTITION BY r."ST_AVG_ST_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rST_AVG_Scen_Medel"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."ST_AVG_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_AVG_Assertion" = coalesce(assertion, sub."ST_AVG_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."ST_AVG_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."ST_AVG_ChangedAt" DESC,
-            sub."ST_AVG_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rST_AVG_Scen_Medel"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."ST_AVG_Assertion" = coalesce(assertion, x."ST_AVG_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."ST_AVG_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    knots."UTL_Utnyttjande" "kAVG"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."ST_AVG_Positor", x."ST_AVG_ST_ID"
+            ORDER BY
+                x."ST_AVG_ChangedAt" DESC,
+                x."ST_AVG_PositedAt" DESC,
+                x."ST_AVG_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."UTL_Utnyttjande" k
+    ON
+        k."UTL_ID" = y."ST_AVG_UTL_ID"
+) "AVG"
 ON
-    "kAVG"."UTL_ID" = "AVG"."ST_AVG_UTL_ID"
-LEFT JOIN
-    TABLE(attributes."rST_MIN_Scen_Minimum"(
-        positor,
-        positingTimepoint::datetime
-    )) "MIN"
-ON
-    "MIN"."ST_MIN_ID" = (
+    "AVG"."ST_AVG_ST_ID" = "ST"."ST_ID"
+AND
+    "AVG"."ST_AVG_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
+        k."UTL_Utnyttjande" AS "ST_MIN_UTL_Utnyttjande"
+    FROM (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."ST_MIN_ID"
+            r.*
         FROM
             TABLE(attributes."rST_MIN_Scen_Minimum"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_MIN_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_MIN_Assertion" = coalesce(assertion, sub."ST_MIN_Assertion")
-        ORDER BY
-            sub."ST_MIN_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    knots."UTL_Utnyttjande" "kMIN"
+            )) r
+    ) x
+    WHERE
+        x."ST_MIN_Assertion" = coalesce(assertion, x."ST_MIN_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."ST_MIN_Positor", x."ST_MIN_ST_ID"
+            ORDER BY
+                x."ST_MIN_PositedAt" DESC,
+                x."ST_MIN_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."UTL_Utnyttjande" k
+    ON
+        k."UTL_ID" = y."ST_MIN_UTL_ID"
+) "MIN"
 ON
-    "kMIN"."UTL_ID" = "MIN"."ST_MIN_UTL_ID"
+    "MIN"."ST_MIN_ST_ID" = "ST"."ST_ID"
+AND
+    "MIN"."ST_MIN_Positor" = p."Positor"
+WHERE
+    p."Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -5301,50 +5335,55 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with an outer join on its argument for each row of another
+-- table.
 SELECT
     p."Positor",
     timepoints.inspectedTimepoint,
     "ST"."ST_ID",
     "ST"."Metadata_ST",
-    "ST"."ST_NAM_ST_ID",
-    "ST"."Metadata_ST_NAM",
-    "ST"."ST_NAM_ID",
-    "ST"."ST_NAM_ChangedAt",
-    "ST"."ST_NAM_PositedAt",
-    "ST"."ST_NAM_Positor",
-    "ST"."ST_NAM_Reliability",
-    "ST"."ST_NAM_Assertion",
-    "ST"."ST_NAM_Scen_Namn",
-    "ST"."ST_LOC_ST_ID",
-    "ST"."Metadata_ST_LOC",
-    "ST"."ST_LOC_ID",
-    "ST"."ST_LOC_PositedAt",
-    "ST"."ST_LOC_Positor",
-    "ST"."ST_LOC_Reliability",
-    "ST"."ST_LOC_Assertion",
-    "ST"."ST_LOC_Checksum",
-    "ST"."ST_LOC_Scen_Plats",
-    "ST"."ST_AVG_ST_ID",
-    "ST"."Metadata_ST_AVG",
-    "ST"."ST_AVG_ID",
-    "ST"."ST_AVG_ChangedAt",
-    "ST"."ST_AVG_PositedAt",
-    "ST"."ST_AVG_Positor",
-    "ST"."ST_AVG_Reliability",
-    "ST"."ST_AVG_Assertion",
-    "ST"."ST_AVG_UTL_Utnyttjande",
-    "ST"."ST_AVG_Metadata_UTL",
-    "ST"."ST_AVG_UTL_ID",
-    "ST"."ST_MIN_ST_ID",
-    "ST"."Metadata_ST_MIN",
-    "ST"."ST_MIN_ID",
-    "ST"."ST_MIN_PositedAt",
-    "ST"."ST_MIN_Positor",
-    "ST"."ST_MIN_Reliability",
-    "ST"."ST_MIN_Assertion",
-    "ST"."ST_MIN_UTL_Utnyttjande",
-    "ST"."ST_MIN_Metadata_UTL",
-    "ST"."ST_MIN_UTL_ID"
+    "NAM"."ST_NAM_ST_ID",
+    "NAM"."Metadata_ST_NAM",
+    "NAM"."ST_NAM_ID",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_PositedAt",
+    "NAM"."ST_NAM_Positor",
+    "NAM"."ST_NAM_Reliability",
+    "NAM"."ST_NAM_Assertion",
+    "NAM"."ST_NAM_Scen_Namn",
+    "LOC"."ST_LOC_ST_ID",
+    "LOC"."Metadata_ST_LOC",
+    "LOC"."ST_LOC_ID",
+    "LOC"."ST_LOC_PositedAt",
+    "LOC"."ST_LOC_Positor",
+    "LOC"."ST_LOC_Reliability",
+    "LOC"."ST_LOC_Assertion",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Scen_Plats",
+    "AVG"."ST_AVG_ST_ID",
+    "AVG"."Metadata_ST_AVG",
+    "AVG"."ST_AVG_ID",
+    "AVG"."ST_AVG_ChangedAt",
+    "AVG"."ST_AVG_PositedAt",
+    "AVG"."ST_AVG_Positor",
+    "AVG"."ST_AVG_Reliability",
+    "AVG"."ST_AVG_Assertion",
+    "kAVG"."UTL_Utnyttjande" AS "ST_AVG_UTL_Utnyttjande",
+    "kAVG"."Metadata_UTL" AS "ST_AVG_Metadata_UTL",
+    "AVG"."ST_AVG_UTL_ID",
+    "MIN"."ST_MIN_ST_ID",
+    "MIN"."Metadata_ST_MIN",
+    "MIN"."ST_MIN_ID",
+    "MIN"."ST_MIN_PositedAt",
+    "MIN"."ST_MIN_Positor",
+    "MIN"."ST_MIN_Reliability",
+    "MIN"."ST_MIN_Assertion",
+    "kMIN"."UTL_Utnyttjande" AS "ST_MIN_UTL_Utnyttjande",
+    "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
+    "MIN"."ST_MIN_UTL_ID"
 FROM
     dw."_Positor" p
 JOIN
@@ -5374,15 +5413,149 @@ JOIN
         "ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p."Positor",
-    TABLE(anchors."tST_Scen"(
-        timepoints.positor,
-        timepoints.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) "ST"
-WHERE
+    timepoints.positor = p."Positor"
+JOIN
+    anchors."ST_Scen" "ST"
+ON
     "ST"."ST_ID" = timepoints."ST_ID"
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."ST_NAM_ChangedAt") OVER (
+            PARTITION BY y."ST_NAM_Positor", y."ST_NAM_ST_ID"
+            ORDER BY y."ST_NAM_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rST_NAM_Scen_Namn"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."ST_NAM_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."ST_NAM_Positor", r."ST_NAM_ST_ID", r."ST_NAM_ChangedAt"
+                ORDER BY
+                    iff(r."ST_NAM_Assertion" = '+', 0, 1),
+                    r."ST_NAM_PositedAt" DESC,
+                    r."ST_NAM_Reliability" DESC
+            ) = 1
+    ) y
+) "NAM"
+ON
+    "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
+AND
+    "NAM"."ST_NAM_Positor" = timepoints.positor
+AND
+    "NAM"."ST_NAM_Assertion" = '+'
+AND
+    "NAM"."ST_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rST_LOC_Scen_Plats"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."ST_LOC_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_LOC_Positor", r."ST_LOC_ST_ID"
+            ORDER BY
+                r."ST_LOC_PositedAt" DESC,
+                r."ST_LOC_Reliability" DESC
+        ) = 1
+) "LOC"
+ON
+    "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
+AND
+    "LOC"."ST_LOC_Positor" = timepoints.positor
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."ST_AVG_ChangedAt") OVER (
+            PARTITION BY y."ST_AVG_Positor", y."ST_AVG_ST_ID"
+            ORDER BY y."ST_AVG_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rST_AVG_Scen_Medel"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."ST_AVG_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."ST_AVG_Positor", r."ST_AVG_ST_ID", r."ST_AVG_ChangedAt"
+                ORDER BY
+                    iff(r."ST_AVG_Assertion" = '+', 0, 1),
+                    r."ST_AVG_PositedAt" DESC,
+                    r."ST_AVG_Reliability" DESC
+            ) = 1
+    ) y
+) "AVG"
+ON
+    "AVG"."ST_AVG_ST_ID" = "ST"."ST_ID"
+AND
+    "AVG"."ST_AVG_Positor" = timepoints.positor
+AND
+    "AVG"."ST_AVG_Assertion" = '+'
+AND
+    "AVG"."ST_AVG_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "AVG"."until" IS NULL
+OR
+    "AVG"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."UTL_Utnyttjande" "kAVG"
+ON
+    "kAVG"."UTL_ID" = "AVG"."ST_AVG_UTL_ID"
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rST_MIN_Scen_Minimum"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."ST_MIN_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_MIN_Positor", r."ST_MIN_ST_ID"
+            ORDER BY
+                r."ST_MIN_PositedAt" DESC,
+                r."ST_MIN_Reliability" DESC
+        ) = 1
+) "MIN"
+ON
+    "MIN"."ST_MIN_ST_ID" = "ST"."ST_ID"
+AND
+    "MIN"."ST_MIN_Positor" = timepoints.positor
+LEFT JOIN
+    knots."UTL_Utnyttjande" "kMIN"
+ON
+    "kMIN"."UTL_ID" = "MIN"."ST_MIN_UTL_ID"
 $$
 ;
 -- Time traveling perspective -----------------------------------------------------------------------------------------
@@ -5405,7 +5578,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" int,
@@ -5451,9 +5624,9 @@ SELECT
     "GEN"."AC_GEN_Positor",
     "GEN"."AC_GEN_Reliability",
     "GEN"."AC_GEN_Assertion",
-    "kGEN"."GEN_Checksum" AS "AC_GEN_GEN_Checksum",
-    "kGEN"."GEN_Kön" AS "AC_GEN_GEN_Kön",
-    "kGEN"."Metadata_GEN" AS "AC_GEN_Metadata_GEN",
+    "GEN"."AC_GEN_GEN_Checksum",
+    "GEN"."AC_GEN_GEN_Kön",
+    "GEN"."AC_GEN_Metadata_GEN",
     "GEN"."AC_GEN_GEN_ID",
     "PLV"."AC_PLV_AC_ID",
     "PLV"."Metadata_AC_PLV",
@@ -5463,122 +5636,151 @@ SELECT
     "PLV"."AC_PLV_Positor",
     "PLV"."AC_PLV_Reliability",
     "PLV"."AC_PLV_Assertion",
-    "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_Yrkesnivå" AS "AC_PLV_PLV_Yrkesnivå",
-    "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
+    "PLV"."AC_PLV_PLV_Checksum",
+    "PLV"."AC_PLV_PLV_Yrkesnivå",
+    "PLV"."AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
 FROM
     anchors."AC_Skådespelare" "AC"
-LEFT JOIN
-    TABLE(attributes."rAC_NAM_Skådespelare_Namn"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "NAM"
-ON
-    "NAM"."AC_NAM_ID" = (
+-- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+-- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a window
+-- or in an outer join (so a positor has to be in the table of positors to be shown)
+CROSS JOIN
+    dw."_Positor" p
+LEFT JOIN (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."AC_NAM_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."AC_NAM_Assertion" <> '?', r."AC_NAM_ChangedAt", null)) OVER (
+                PARTITION BY r."AC_NAM_Positor", r."AC_NAM_AC_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."AC_NAM_Assertion" <> '?', r."AC_NAM_ChangedAt", null)) OVER (
-                        PARTITION BY r."AC_NAM_AC_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rAC_NAM_Skådespelare_Namn"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."AC_NAM_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_NAM_Assertion" = coalesce(assertion, sub."AC_NAM_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."AC_NAM_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."AC_NAM_ChangedAt" DESC,
-            sub."AC_NAM_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rAC_NAM_Skådespelare_Namn"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."AC_NAM_Assertion" = coalesce(assertion, x."AC_NAM_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."AC_NAM_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    TABLE(attributes."rAC_GEN_Skådespelare_Kön"(
-        positor,
-        positingTimepoint::datetime
-    )) "GEN"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."AC_NAM_Positor", x."AC_NAM_AC_ID"
+            ORDER BY
+                x."AC_NAM_ChangedAt" DESC,
+                x."AC_NAM_PositedAt" DESC,
+                x."AC_NAM_Reliability" DESC
+        ) = 1
+) "NAM"
 ON
-    "GEN"."AC_GEN_ID" = (
+    "NAM"."AC_NAM_AC_ID" = "AC"."AC_ID"
+AND
+    "NAM"."AC_NAM_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."GEN_Checksum" AS "AC_GEN_GEN_Checksum",
+        k."Metadata_GEN" AS "AC_GEN_Metadata_GEN",
+        k."GEN_Kön" AS "AC_GEN_GEN_Kön"
+    FROM (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."AC_GEN_ID"
+            r.*
         FROM
             TABLE(attributes."rAC_GEN_Skådespelare_Kön"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_GEN_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_GEN_Assertion" = coalesce(assertion, sub."AC_GEN_Assertion")
-        ORDER BY
-            sub."AC_GEN_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    knots."GEN_Kön" "kGEN"
+            )) r
+    ) x
+    WHERE
+        x."AC_GEN_Assertion" = coalesce(assertion, x."AC_GEN_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."AC_GEN_Positor", x."AC_GEN_AC_ID"
+            ORDER BY
+                x."AC_GEN_PositedAt" DESC,
+                x."AC_GEN_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."GEN_Kön" k
+    ON
+        k."GEN_ID" = y."AC_GEN_GEN_ID"
+) "GEN"
 ON
-    "kGEN"."GEN_ID" = "GEN"."AC_GEN_GEN_ID"
-LEFT JOIN
-    TABLE(attributes."rAC_PLV_Skådespelare_Yrkesnivå"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "PLV"
-ON
-    "PLV"."AC_PLV_ID" = (
+    "GEN"."AC_GEN_AC_ID" = "AC"."AC_ID"
+AND
+    "GEN"."AC_GEN_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
+        k."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
+        k."PLV_Yrkesnivå" AS "AC_PLV_PLV_Yrkesnivå"
+    FROM (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."AC_PLV_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."AC_PLV_Assertion" <> '?', r."AC_PLV_ChangedAt", null)) OVER (
+                PARTITION BY r."AC_PLV_Positor", r."AC_PLV_AC_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."AC_PLV_Assertion" <> '?', r."AC_PLV_ChangedAt", null)) OVER (
-                        PARTITION BY r."AC_PLV_AC_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rAC_PLV_Skådespelare_Yrkesnivå"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."AC_PLV_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_PLV_Assertion" = coalesce(assertion, sub."AC_PLV_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."AC_PLV_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."AC_PLV_ChangedAt" DESC,
-            sub."AC_PLV_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rAC_PLV_Skådespelare_Yrkesnivå"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."AC_PLV_Assertion" = coalesce(assertion, x."AC_PLV_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."AC_PLV_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    knots."PLV_Yrkesnivå" "kPLV"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."AC_PLV_Positor", x."AC_PLV_AC_ID"
+            ORDER BY
+                x."AC_PLV_ChangedAt" DESC,
+                x."AC_PLV_PositedAt" DESC,
+                x."AC_PLV_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."PLV_Yrkesnivå" k
+    ON
+        k."PLV_ID" = y."AC_PLV_PLV_ID"
+) "PLV"
 ON
-    "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
+    "PLV"."AC_PLV_AC_ID" = "AC"."AC_ID"
+AND
+    "PLV"."AC_PLV_Positor" = p."Positor"
+WHERE
+    p."Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -5616,7 +5818,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" int,
@@ -5727,7 +5929,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Skådespelare_Namn" varbinary(max),
+    "AC_NAM_Skådespelare_Namn" binary,
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" int,
@@ -5754,43 +5956,48 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with an outer join on its argument for each row of another
+-- table.
 SELECT
     p."Positor",
     timepoints.inspectedTimepoint,
     "AC"."AC_ID",
     "AC"."Metadata_AC",
-    "AC"."AC_NAM_AC_ID",
-    "AC"."Metadata_AC_NAM",
-    "AC"."AC_NAM_ID",
-    "AC"."AC_NAM_ChangedAt",
-    "AC"."AC_NAM_PositedAt",
-    "AC"."AC_NAM_Positor",
-    "AC"."AC_NAM_Reliability",
-    "AC"."AC_NAM_Assertion",
-    "AC"."AC_NAM_Skådespelare_Namn",
-    "AC"."AC_GEN_AC_ID",
-    "AC"."Metadata_AC_GEN",
-    "AC"."AC_GEN_ID",
-    "AC"."AC_GEN_PositedAt",
-    "AC"."AC_GEN_Positor",
-    "AC"."AC_GEN_Reliability",
-    "AC"."AC_GEN_Assertion",
-    "AC"."AC_GEN_GEN_Checksum",
-    "AC"."AC_GEN_GEN_Kön",
-    "AC"."AC_GEN_Metadata_GEN",
-    "AC"."AC_GEN_GEN_ID",
-    "AC"."AC_PLV_AC_ID",
-    "AC"."Metadata_AC_PLV",
-    "AC"."AC_PLV_ID",
-    "AC"."AC_PLV_ChangedAt",
-    "AC"."AC_PLV_PositedAt",
-    "AC"."AC_PLV_Positor",
-    "AC"."AC_PLV_Reliability",
-    "AC"."AC_PLV_Assertion",
-    "AC"."AC_PLV_PLV_Checksum",
-    "AC"."AC_PLV_PLV_Yrkesnivå",
-    "AC"."AC_PLV_Metadata_PLV",
-    "AC"."AC_PLV_PLV_ID"
+    "NAM"."AC_NAM_AC_ID",
+    "NAM"."Metadata_AC_NAM",
+    "NAM"."AC_NAM_ID",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_PositedAt",
+    "NAM"."AC_NAM_Positor",
+    "NAM"."AC_NAM_Reliability",
+    "NAM"."AC_NAM_Assertion",
+    "NAM"."AC_NAM_Skådespelare_Namn",
+    "GEN"."AC_GEN_AC_ID",
+    "GEN"."Metadata_AC_GEN",
+    "GEN"."AC_GEN_ID",
+    "GEN"."AC_GEN_PositedAt",
+    "GEN"."AC_GEN_Positor",
+    "GEN"."AC_GEN_Reliability",
+    "GEN"."AC_GEN_Assertion",
+    "kGEN"."GEN_Checksum" AS "AC_GEN_GEN_Checksum",
+    "kGEN"."GEN_Kön" AS "AC_GEN_GEN_Kön",
+    "kGEN"."Metadata_GEN" AS "AC_GEN_Metadata_GEN",
+    "GEN"."AC_GEN_GEN_ID",
+    "PLV"."AC_PLV_AC_ID",
+    "PLV"."Metadata_AC_PLV",
+    "PLV"."AC_PLV_ID",
+    "PLV"."AC_PLV_ChangedAt",
+    "PLV"."AC_PLV_PositedAt",
+    "PLV"."AC_PLV_Positor",
+    "PLV"."AC_PLV_Reliability",
+    "PLV"."AC_PLV_Assertion",
+    "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
+    "kPLV"."PLV_Yrkesnivå" AS "AC_PLV_PLV_Yrkesnivå",
+    "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
+    "PLV"."AC_PLV_PLV_ID"
 FROM
     dw."_Positor" p
 JOIN
@@ -5820,15 +6027,127 @@ JOIN
         "AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p."Positor",
-    TABLE(anchors."tAC_Skådespelare"(
-        timepoints.positor,
-        timepoints.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) "AC"
-WHERE
+    timepoints.positor = p."Positor"
+JOIN
+    anchors."AC_Skådespelare" "AC"
+ON
     "AC"."AC_ID" = timepoints."AC_ID"
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."AC_NAM_ChangedAt") OVER (
+            PARTITION BY y."AC_NAM_Positor", y."AC_NAM_AC_ID"
+            ORDER BY y."AC_NAM_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rAC_NAM_Skådespelare_Namn"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_NAM_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."AC_NAM_Positor", r."AC_NAM_AC_ID", r."AC_NAM_ChangedAt"
+                ORDER BY
+                    iff(r."AC_NAM_Assertion" = '+', 0, 1),
+                    r."AC_NAM_PositedAt" DESC,
+                    r."AC_NAM_Reliability" DESC
+            ) = 1
+    ) y
+) "NAM"
+ON
+    "NAM"."AC_NAM_AC_ID" = "AC"."AC_ID"
+AND
+    "NAM"."AC_NAM_Positor" = timepoints.positor
+AND
+    "NAM"."AC_NAM_Assertion" = '+'
+AND
+    "NAM"."AC_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rAC_GEN_Skådespelare_Kön"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."AC_GEN_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."AC_GEN_Positor", r."AC_GEN_AC_ID"
+            ORDER BY
+                r."AC_GEN_PositedAt" DESC,
+                r."AC_GEN_Reliability" DESC
+        ) = 1
+) "GEN"
+ON
+    "GEN"."AC_GEN_AC_ID" = "AC"."AC_ID"
+AND
+    "GEN"."AC_GEN_Positor" = timepoints.positor
+LEFT JOIN
+    knots."GEN_Kön" "kGEN"
+ON
+    "kGEN"."GEN_ID" = "GEN"."AC_GEN_GEN_ID"
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."AC_PLV_ChangedAt") OVER (
+            PARTITION BY y."AC_PLV_Positor", y."AC_PLV_AC_ID"
+            ORDER BY y."AC_PLV_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rAC_PLV_Skådespelare_Yrkesnivå"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_PLV_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."AC_PLV_Positor", r."AC_PLV_AC_ID", r."AC_PLV_ChangedAt"
+                ORDER BY
+                    iff(r."AC_PLV_Assertion" = '+', 0, 1),
+                    r."AC_PLV_PositedAt" DESC,
+                    r."AC_PLV_Reliability" DESC
+            ) = 1
+    ) y
+) "PLV"
+ON
+    "PLV"."AC_PLV_AC_ID" = "AC"."AC_ID"
+AND
+    "PLV"."AC_PLV_Positor" = timepoints.positor
+AND
+    "PLV"."AC_PLV_Assertion" = '+'
+AND
+    "PLV"."AC_PLV_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "PLV"."until" IS NULL
+OR
+    "PLV"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."PLV_Yrkesnivå" "kPLV"
+ON
+    "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
 ;
 -- Time traveling perspective -----------------------------------------------------------------------------------------
@@ -5885,68 +6204,81 @@ SELECT
     "LEN"."PR_LEN_Föreställning_Längd"
 FROM
     anchors."PR_Föreställning" "PR"
-LEFT JOIN
-    TABLE(attributes."rPR_NAM_Föreställning_Namn"(
-        positor,
-        positingTimepoint::datetime
-    )) "NAM"
-ON
-    "NAM"."PR_NAM_ID" = (
+-- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+-- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a window
+-- or in an outer join (so a positor has to be in the table of positors to be shown)
+CROSS JOIN
+    dw."_Positor" p
+LEFT JOIN (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."PR_NAM_ID"
+            r.*
         FROM
             TABLE(attributes."rPR_NAM_Föreställning_Namn"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."PR_NAM_PR_ID" = "PR"."PR_ID"
-        AND
-            sub."PR_NAM_Assertion" = coalesce(assertion, sub."PR_NAM_Assertion")
-        ORDER BY
-            sub."PR_NAM_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(attributes."rPR_LEN_Föreställning_Längd"(
-        positor,
-        changingTimepoint::date,
-        positingTimepoint::datetime
-    )) "LEN"
+            )) r
+    ) x
+    WHERE
+        x."PR_NAM_Assertion" = coalesce(assertion, x."PR_NAM_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."PR_NAM_Positor", x."PR_NAM_PR_ID"
+            ORDER BY
+                x."PR_NAM_PositedAt" DESC,
+                x."PR_NAM_Reliability" DESC
+        ) = 1
+) "NAM"
 ON
-    "LEN"."PR_LEN_ID" = (
+    "NAM"."PR_NAM_PR_ID" = "PR"."PR_ID"
+AND
+    "NAM"."PR_NAM_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each anchor and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."PR_LEN_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."PR_LEN_Assertion" <> '?', r."PR_LEN_ChangedAt", null)) OVER (
+                PARTITION BY r."PR_LEN_Positor", r."PR_LEN_PR_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."PR_LEN_Assertion" <> '?', r."PR_LEN_ChangedAt", null)) OVER (
-                        PARTITION BY r."PR_LEN_PR_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rPR_LEN_Föreställning_Längd"(
-                        positor,
-                        changingTimepoint::date,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."PR_LEN_PR_ID" = "PR"."PR_ID"
-        AND
-            sub."PR_LEN_Assertion" = coalesce(assertion, sub."PR_LEN_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."PR_LEN_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."PR_LEN_ChangedAt" DESC,
-            sub."PR_LEN_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rPR_LEN_Föreställning_Längd"(
+                null::tinyint,
+                changingTimepoint::date,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."PR_LEN_Assertion" = coalesce(assertion, x."PR_LEN_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."PR_LEN_ChangedAt" = x."inEffect"
     )
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."PR_LEN_Positor", x."PR_LEN_PR_ID"
+            ORDER BY
+                x."PR_LEN_ChangedAt" DESC,
+                x."PR_LEN_PositedAt" DESC,
+                x."PR_LEN_Reliability" DESC
+        ) = 1
+) "LEN"
+ON
+    "LEN"."PR_LEN_PR_ID" = "PR"."PR_ID"
+AND
+    "LEN"."PR_LEN_Positor" = p."Positor"
+WHERE
+    p."Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -6077,28 +6409,33 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with an outer join on its argument for each row of another
+-- table.
 SELECT
     p."Positor",
     timepoints.inspectedTimepoint,
     "PR"."PR_ID",
     "PR"."Metadata_PR",
-    "PR"."PR_NAM_PR_ID",
-    "PR"."Metadata_PR_NAM",
-    "PR"."PR_NAM_ID",
-    "PR"."PR_NAM_PositedAt",
-    "PR"."PR_NAM_Positor",
-    "PR"."PR_NAM_Reliability",
-    "PR"."PR_NAM_Assertion",
-    "PR"."PR_NAM_Föreställning_Namn",
-    "PR"."PR_LEN_PR_ID",
-    "PR"."Metadata_PR_LEN",
-    "PR"."PR_LEN_ID",
-    "PR"."PR_LEN_ChangedAt",
-    "PR"."PR_LEN_PositedAt",
-    "PR"."PR_LEN_Positor",
-    "PR"."PR_LEN_Reliability",
-    "PR"."PR_LEN_Assertion",
-    "PR"."PR_LEN_Föreställning_Längd"
+    "NAM"."PR_NAM_PR_ID",
+    "NAM"."Metadata_PR_NAM",
+    "NAM"."PR_NAM_ID",
+    "NAM"."PR_NAM_PositedAt",
+    "NAM"."PR_NAM_Positor",
+    "NAM"."PR_NAM_Reliability",
+    "NAM"."PR_NAM_Assertion",
+    "NAM"."PR_NAM_Föreställning_Namn",
+    "LEN"."PR_LEN_PR_ID",
+    "LEN"."Metadata_PR_LEN",
+    "LEN"."PR_LEN_ID",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_PositedAt",
+    "LEN"."PR_LEN_Positor",
+    "LEN"."PR_LEN_Reliability",
+    "LEN"."PR_LEN_Assertion",
+    "LEN"."PR_LEN_Föreställning_Längd"
 FROM
     dw."_Positor" p
 JOIN
@@ -6116,15 +6453,76 @@ JOIN
         "PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) timepoints
 ON
-    timepoints.positor = p."Positor",
-    TABLE(anchors."tPR_Föreställning"(
-        timepoints.positor,
-        timepoints.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) "PR"
-WHERE
+    timepoints.positor = p."Positor"
+JOIN
+    anchors."PR_Föreställning" "PR"
+ON
     "PR"."PR_ID" = timepoints."PR_ID"
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rPR_NAM_Föreställning_Namn"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."PR_NAM_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."PR_NAM_Positor", r."PR_NAM_PR_ID"
+            ORDER BY
+                r."PR_NAM_PositedAt" DESC,
+                r."PR_NAM_Reliability" DESC
+        ) = 1
+) "NAM"
+ON
+    "NAM"."PR_NAM_PR_ID" = "PR"."PR_ID"
+AND
+    "NAM"."PR_NAM_Positor" = timepoints.positor
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."PR_LEN_ChangedAt") OVER (
+            PARTITION BY y."PR_LEN_Positor", y."PR_LEN_PR_ID"
+            ORDER BY y."PR_LEN_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rPR_LEN_Föreställning_Längd"(
+                null::tinyint,
+                '9999-12-31'::date,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."PR_LEN_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."PR_LEN_Positor", r."PR_LEN_PR_ID", r."PR_LEN_ChangedAt"
+                ORDER BY
+                    iff(r."PR_LEN_Assertion" = '+', 0, 1),
+                    r."PR_LEN_PositedAt" DESC,
+                    r."PR_LEN_Reliability" DESC
+            ) = 1
+    ) y
+) "LEN"
+ON
+    "LEN"."PR_LEN_PR_ID" = "PR"."PR_ID"
+AND
+    "LEN"."PR_LEN_Positor" = timepoints.positor
+AND
+    "LEN"."PR_LEN_Assertion" = '+'
+AND
+    "LEN"."PR_LEN_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LEN"."until" IS NULL
+OR
+    "LEN"."until" > timepoints.inspectedTimepoint::date
+)
 $$
 ;
 -- NEXUS TEMPORAL PERSPECTIVES ----------------------------------------------------------------------------------------
@@ -6257,8 +6655,8 @@ SELECT
     "UTL"."EV_UTL_Positor",
     "UTL"."EV_UTL_Reliability",
     "UTL"."EV_UTL_Assertion",
-    "kUTL"."UTL_Utnyttjande" AS "EV_UTL_UTL_Utnyttjande",
-    "kUTL"."Metadata_UTL" AS "EV_UTL_Metadata_UTL",
+    "UTL"."EV_UTL_UTL_Utnyttjande",
+    "UTL"."EV_UTL_Metadata_UTL",
     "UTL"."EV_UTL_UTL_ID",
     "LVL"."EV_LVL_EV_ID",
     "LVL"."Metadata_EV_LVL",
@@ -6268,192 +6666,238 @@ SELECT
     "LVL"."EV_LVL_Positor",
     "LVL"."EV_LVL_Reliability",
     "LVL"."EV_LVL_Assertion",
-    "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_Yrkesnivå" AS "EV_LVL_PLV_Yrkesnivå",
-    "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
+    "LVL"."EV_LVL_PLV_Checksum",
+    "LVL"."EV_LVL_PLV_Yrkesnivå",
+    "LVL"."EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
 FROM
     nexuses."EV_Händelse" "EV"
+-- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+-- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a window
+-- or in an outer join (so a positor has to be in the table of positors to be shown)
+CROSS JOIN
+    dw."_Positor" p
 LEFT JOIN
     knots."ETY_Händelsetyp" "kETY_of"
 ON
     "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
-LEFT JOIN
-    TABLE(attributes."rEV_DAT_Händelse_Datum"(
-        positor,
-        positingTimepoint::datetime
-    )) "DAT"
-ON
-    "DAT"."EV_DAT_ID" = (
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_DAT_ID"
+            r.*
         FROM
             TABLE(attributes."rEV_DAT_Händelse_Datum"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_DAT_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_DAT_Assertion" = coalesce(assertion, sub."EV_DAT_Assertion")
-        ORDER BY
-            sub."EV_DAT_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(attributes."rEV_AUD_Händelse_Publik"(
-        positor,
-        positingTimepoint::datetime
-    )) "AUD"
+            )) r
+    ) x
+    WHERE
+        x."EV_DAT_Assertion" = coalesce(assertion, x."EV_DAT_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_DAT_Positor", x."EV_DAT_EV_ID"
+            ORDER BY
+                x."EV_DAT_PositedAt" DESC,
+                x."EV_DAT_Reliability" DESC
+        ) = 1
+) "DAT"
 ON
-    "AUD"."EV_AUD_ID" = (
+    "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
+AND
+    "DAT"."EV_DAT_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_AUD_ID"
+            r.*
         FROM
             TABLE(attributes."rEV_AUD_Händelse_Publik"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_AUD_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_AUD_Assertion" = coalesce(assertion, sub."EV_AUD_Assertion")
-        ORDER BY
-            sub."EV_AUD_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(attributes."rEV_REV_Händelse_Intäkt"(
-        positor,
-        positingTimepoint::datetime
-    )) "REV"
+            )) r
+    ) x
+    WHERE
+        x."EV_AUD_Assertion" = coalesce(assertion, x."EV_AUD_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_AUD_Positor", x."EV_AUD_EV_ID"
+            ORDER BY
+                x."EV_AUD_PositedAt" DESC,
+                x."EV_AUD_Reliability" DESC
+        ) = 1
+) "AUD"
 ON
-    "REV"."EV_REV_ID" = (
+    "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
+AND
+    "AUD"."EV_AUD_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_REV_ID"
+            r.*
         FROM
             TABLE(attributes."rEV_REV_Händelse_Intäkt"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_REV_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_REV_Assertion" = coalesce(assertion, sub."EV_REV_Assertion")
-        ORDER BY
-            sub."EV_REV_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(attributes."rEV_STA_Händelse_Status"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "STA"
+            )) r
+    ) x
+    WHERE
+        x."EV_REV_Assertion" = coalesce(assertion, x."EV_REV_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_REV_Positor", x."EV_REV_EV_ID"
+            ORDER BY
+                x."EV_REV_PositedAt" DESC,
+                x."EV_REV_Reliability" DESC
+        ) = 1
+) "REV"
 ON
-    "STA"."EV_STA_ID" = (
+    "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
+AND
+    "REV"."EV_REV_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_STA_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."EV_STA_Assertion" <> '?', r."EV_STA_ChangedAt", null)) OVER (
+                PARTITION BY r."EV_STA_Positor", r."EV_STA_EV_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."EV_STA_Assertion" <> '?', r."EV_STA_ChangedAt", null)) OVER (
-                        PARTITION BY r."EV_STA_EV_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rEV_STA_Händelse_Status"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."EV_STA_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_STA_Assertion" = coalesce(assertion, sub."EV_STA_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."EV_STA_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."EV_STA_ChangedAt" DESC,
-            sub."EV_STA_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rEV_STA_Händelse_Status"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."EV_STA_Assertion" = coalesce(assertion, x."EV_STA_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."EV_STA_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    TABLE(attributes."rEV_UTL_Händelse_Utnyttjande"(
-        positor,
-        positingTimepoint::datetime
-    )) "UTL"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_STA_Positor", x."EV_STA_EV_ID"
+            ORDER BY
+                x."EV_STA_ChangedAt" DESC,
+                x."EV_STA_PositedAt" DESC,
+                x."EV_STA_Reliability" DESC
+        ) = 1
+) "STA"
 ON
-    "UTL"."EV_UTL_ID" = (
+    "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
+AND
+    "STA"."EV_STA_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."Metadata_UTL" AS "EV_UTL_Metadata_UTL",
+        k."UTL_Utnyttjande" AS "EV_UTL_UTL_Utnyttjande"
+    FROM (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_UTL_ID"
+            r.*
         FROM
             TABLE(attributes."rEV_UTL_Händelse_Utnyttjande"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_UTL_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_UTL_Assertion" = coalesce(assertion, sub."EV_UTL_Assertion")
-        ORDER BY
-            sub."EV_UTL_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    knots."UTL_Utnyttjande" "kUTL"
+            )) r
+    ) x
+    WHERE
+        x."EV_UTL_Assertion" = coalesce(assertion, x."EV_UTL_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_UTL_Positor", x."EV_UTL_EV_ID"
+            ORDER BY
+                x."EV_UTL_PositedAt" DESC,
+                x."EV_UTL_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."UTL_Utnyttjande" k
+    ON
+        k."UTL_ID" = y."EV_UTL_UTL_ID"
+) "UTL"
 ON
-    "kUTL"."UTL_ID" = "UTL"."EV_UTL_UTL_ID"
-LEFT JOIN
-    TABLE(attributes."rEV_LVL_Händelse_Level"(
-        positor,
-        changingTimepoint::date,
-        positingTimepoint::datetime
-    )) "LVL"
-ON
-    "LVL"."EV_LVL_ID" = (
+    "UTL"."EV_UTL_EV_ID" = "EV"."EV_ID"
+AND
+    "UTL"."EV_UTL_Positor" = p."Positor"
+LEFT JOIN (
+    -- the knot joined in here, since Snowflake cannot call this function for each positor with it joined outside
+    SELECT
+        y.*,
+        k."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
+        k."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
+        k."PLV_Yrkesnivå" AS "EV_LVL_PLV_Yrkesnivå"
+    FROM (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_LVL_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."EV_LVL_Assertion" <> '?', r."EV_LVL_ChangedAt", null)) OVER (
+                PARTITION BY r."EV_LVL_Positor", r."EV_LVL_EV_ID"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."EV_LVL_Assertion" <> '?', r."EV_LVL_ChangedAt", null)) OVER (
-                        PARTITION BY r."EV_LVL_EV_ID"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(attributes."rEV_LVL_Händelse_Level"(
-                        positor,
-                        changingTimepoint::date,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."EV_LVL_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_LVL_Assertion" = coalesce(assertion, sub."EV_LVL_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."EV_LVL_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."EV_LVL_ChangedAt" DESC,
-            sub."EV_LVL_PositedAt" DESC
-        LIMIT 1
+            TABLE(attributes."rEV_LVL_Händelse_Level"(
+                null::tinyint,
+                changingTimepoint::date,
+                positingTimepoint::datetime
+            )) r
+    ) x
+    WHERE
+        x."EV_LVL_Assertion" = coalesce(assertion, x."EV_LVL_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        x."EV_LVL_ChangedAt" = x."inEffect"
     )
-LEFT JOIN
-    knots."PLV_Yrkesnivå" "kLVL"
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_LVL_Positor", x."EV_LVL_EV_ID"
+            ORDER BY
+                x."EV_LVL_ChangedAt" DESC,
+                x."EV_LVL_PositedAt" DESC,
+                x."EV_LVL_Reliability" DESC
+        ) = 1
+    ) y
+    LEFT JOIN
+        knots."PLV_Yrkesnivå" k
+    ON
+        k."PLV_ID" = y."EV_LVL_PLV_ID"
+) "LVL"
 ON
-    "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
+    "LVL"."EV_LVL_EV_ID" = "EV"."EV_ID"
+AND
+    "LVL"."EV_LVL_Positor" = p."Positor"
+WHERE
+    p."Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -6716,6 +7160,11 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with an outer join on its argument for each row of another
+-- table.
 SELECT
     p."Positor",
     tp.inspectedTimepoint,
@@ -6723,65 +7172,65 @@ SELECT
     "EV"."Metadata_EV",
     "EV"."ST_ID_hölls",
     "EV"."PR_ID_spelades",
-    "EV"."of_ETY_Checksum",
-    "EV"."of_ETY_Händelsetyp",
-    "EV"."of_Metadata_ETY",
+    "kETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
+    "kETY_of"."ETY_Händelsetyp" AS "of_ETY_Händelsetyp",
+    "kETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
-    "EV"."EV_DAT_EV_ID",
-    "EV"."Metadata_EV_DAT",
-    "EV"."EV_DAT_ID",
-    "EV"."EV_DAT_PositedAt",
-    "EV"."EV_DAT_Positor",
-    "EV"."EV_DAT_Reliability",
-    "EV"."EV_DAT_Assertion",
-    "EV"."EV_DAT_Händelse_Datum",
-    "EV"."EV_AUD_EV_ID",
-    "EV"."Metadata_EV_AUD",
-    "EV"."EV_AUD_ID",
-    "EV"."EV_AUD_PositedAt",
-    "EV"."EV_AUD_Positor",
-    "EV"."EV_AUD_Reliability",
-    "EV"."EV_AUD_Assertion",
-    "EV"."EV_AUD_Händelse_Publik",
-    "EV"."EV_REV_EV_ID",
-    "EV"."Metadata_EV_REV",
-    "EV"."EV_REV_ID",
-    "EV"."EV_REV_PositedAt",
-    "EV"."EV_REV_Positor",
-    "EV"."EV_REV_Reliability",
-    "EV"."EV_REV_Assertion",
-    "EV"."EV_REV_Händelse_Intäkt",
-    "EV"."EV_STA_EV_ID",
-    "EV"."Metadata_EV_STA",
-    "EV"."EV_STA_ID",
-    "EV"."EV_STA_ChangedAt",
-    "EV"."EV_STA_PositedAt",
-    "EV"."EV_STA_Positor",
-    "EV"."EV_STA_Reliability",
-    "EV"."EV_STA_Assertion",
-    "EV"."EV_STA_Händelse_Status",
-    "EV"."EV_UTL_EV_ID",
-    "EV"."Metadata_EV_UTL",
-    "EV"."EV_UTL_ID",
-    "EV"."EV_UTL_PositedAt",
-    "EV"."EV_UTL_Positor",
-    "EV"."EV_UTL_Reliability",
-    "EV"."EV_UTL_Assertion",
-    "EV"."EV_UTL_UTL_Utnyttjande",
-    "EV"."EV_UTL_Metadata_UTL",
-    "EV"."EV_UTL_UTL_ID",
-    "EV"."EV_LVL_EV_ID",
-    "EV"."Metadata_EV_LVL",
-    "EV"."EV_LVL_ID",
-    "EV"."EV_LVL_ChangedAt",
-    "EV"."EV_LVL_PositedAt",
-    "EV"."EV_LVL_Positor",
-    "EV"."EV_LVL_Reliability",
-    "EV"."EV_LVL_Assertion",
-    "EV"."EV_LVL_PLV_Checksum",
-    "EV"."EV_LVL_PLV_Yrkesnivå",
-    "EV"."EV_LVL_Metadata_PLV",
-    "EV"."EV_LVL_PLV_ID"
+    "DAT"."EV_DAT_EV_ID",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_ID",
+    "DAT"."EV_DAT_PositedAt",
+    "DAT"."EV_DAT_Positor",
+    "DAT"."EV_DAT_Reliability",
+    "DAT"."EV_DAT_Assertion",
+    "DAT"."EV_DAT_Händelse_Datum",
+    "AUD"."EV_AUD_EV_ID",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_ID",
+    "AUD"."EV_AUD_PositedAt",
+    "AUD"."EV_AUD_Positor",
+    "AUD"."EV_AUD_Reliability",
+    "AUD"."EV_AUD_Assertion",
+    "AUD"."EV_AUD_Händelse_Publik",
+    "REV"."EV_REV_EV_ID",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_ID",
+    "REV"."EV_REV_PositedAt",
+    "REV"."EV_REV_Positor",
+    "REV"."EV_REV_Reliability",
+    "REV"."EV_REV_Assertion",
+    "REV"."EV_REV_Händelse_Intäkt",
+    "STA"."EV_STA_EV_ID",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ID",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_PositedAt",
+    "STA"."EV_STA_Positor",
+    "STA"."EV_STA_Reliability",
+    "STA"."EV_STA_Assertion",
+    "STA"."EV_STA_Händelse_Status",
+    "UTL"."EV_UTL_EV_ID",
+    "UTL"."Metadata_EV_UTL",
+    "UTL"."EV_UTL_ID",
+    "UTL"."EV_UTL_PositedAt",
+    "UTL"."EV_UTL_Positor",
+    "UTL"."EV_UTL_Reliability",
+    "UTL"."EV_UTL_Assertion",
+    "kUTL"."UTL_Utnyttjande" AS "EV_UTL_UTL_Utnyttjande",
+    "kUTL"."Metadata_UTL" AS "EV_UTL_Metadata_UTL",
+    "UTL"."EV_UTL_UTL_ID",
+    "LVL"."EV_LVL_EV_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ID",
+    "LVL"."EV_LVL_ChangedAt",
+    "LVL"."EV_LVL_PositedAt",
+    "LVL"."EV_LVL_Positor",
+    "LVL"."EV_LVL_Reliability",
+    "LVL"."EV_LVL_Assertion",
+    "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
+    "kLVL"."PLV_Yrkesnivå" AS "EV_LVL_PLV_Yrkesnivå",
+    "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
+    "LVL"."EV_LVL_PLV_ID"
 FROM
     dw."_Positor" p
 JOIN (
@@ -6810,15 +7259,197 @@ JOIN (
         "EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p."Positor",
-    TABLE(nexuses."tEV_Händelse"(
-        tp.positor,
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) "EV"
-WHERE
+    tp.positor = p."Positor"
+JOIN
+    nexuses."EV_Händelse" "EV"
+ON
     "EV"."EV_ID" = tp."EV_ID"
+LEFT JOIN
+    knots."ETY_Händelsetyp" "kETY_of"
+ON
+    "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rEV_DAT_Händelse_Datum"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."EV_DAT_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_DAT_Positor", r."EV_DAT_EV_ID"
+            ORDER BY
+                r."EV_DAT_PositedAt" DESC,
+                r."EV_DAT_Reliability" DESC
+        ) = 1
+) "DAT"
+ON
+    "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
+AND
+    "DAT"."EV_DAT_Positor" = tp.positor
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rEV_AUD_Händelse_Publik"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."EV_AUD_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_AUD_Positor", r."EV_AUD_EV_ID"
+            ORDER BY
+                r."EV_AUD_PositedAt" DESC,
+                r."EV_AUD_Reliability" DESC
+        ) = 1
+) "AUD"
+ON
+    "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
+AND
+    "AUD"."EV_AUD_Positor" = tp.positor
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rEV_REV_Händelse_Intäkt"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."EV_REV_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_REV_Positor", r."EV_REV_EV_ID"
+            ORDER BY
+                r."EV_REV_PositedAt" DESC,
+                r."EV_REV_Reliability" DESC
+        ) = 1
+) "REV"
+ON
+    "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
+AND
+    "REV"."EV_REV_Positor" = tp.positor
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."EV_STA_ChangedAt") OVER (
+            PARTITION BY y."EV_STA_Positor", y."EV_STA_EV_ID"
+            ORDER BY y."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rEV_STA_Händelse_Status"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."EV_STA_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."EV_STA_Positor", r."EV_STA_EV_ID", r."EV_STA_ChangedAt"
+                ORDER BY
+                    iff(r."EV_STA_Assertion" = '+', 0, 1),
+                    r."EV_STA_PositedAt" DESC,
+                    r."EV_STA_Reliability" DESC
+            ) = 1
+    ) y
+) "STA"
+ON
+    "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
+AND
+    "STA"."EV_STA_Positor" = tp.positor
+AND
+    "STA"."EV_STA_Assertion" = '+'
+AND
+    "STA"."EV_STA_ChangedAt" <= tp.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > tp.inspectedTimepoint::datetime
+)
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(attributes."rEV_UTL_Händelse_Utnyttjande"(
+            null::tinyint,
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."EV_UTL_Assertion" = '+'
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_UTL_Positor", r."EV_UTL_EV_ID"
+            ORDER BY
+                r."EV_UTL_PositedAt" DESC,
+                r."EV_UTL_Reliability" DESC
+        ) = 1
+) "UTL"
+ON
+    "UTL"."EV_UTL_EV_ID" = "EV"."EV_ID"
+AND
+    "UTL"."EV_UTL_Positor" = tp.positor
+LEFT JOIN
+    knots."UTL_Utnyttjande" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."EV_UTL_UTL_ID"
+LEFT JOIN (
+    SELECT
+        y.*,
+        lead(y."EV_LVL_ChangedAt") OVER (
+            PARTITION BY y."EV_LVL_Positor", y."EV_LVL_EV_ID"
+            ORDER BY y."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(attributes."rEV_LVL_Händelse_Level"(
+                null::tinyint,
+                '9999-12-31'::date,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."EV_LVL_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."EV_LVL_Positor", r."EV_LVL_EV_ID", r."EV_LVL_ChangedAt"
+                ORDER BY
+                    iff(r."EV_LVL_Assertion" = '+', 0, 1),
+                    r."EV_LVL_PositedAt" DESC,
+                    r."EV_LVL_Reliability" DESC
+            ) = 1
+    ) y
+) "LVL"
+ON
+    "LVL"."EV_LVL_EV_ID" = "EV"."EV_ID"
+AND
+    "LVL"."EV_LVL_Positor" = tp.positor
+AND
+    "LVL"."EV_LVL_Assertion" = '+'
+AND
+    "LVL"."EV_LVL_ChangedAt" <= tp.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > tp.inspectedTimepoint::date
+)
+LEFT JOIN
+    knots."PLV_Yrkesnivå" "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
 ;
 -- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
@@ -6862,59 +7493,65 @@ SELECT
     t."AC_partner_AC_with_ONG_currently_Positor",
     t."AC_partner_AC_with_ONG_currently_Reliability",
     t."AC_partner_AC_with_ONG_currently_Assertion"
-FROM
-    TABLE(ties."rAC_partner_AC_with_ONG_currently"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) t
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
+        SELECT
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."AC_partner_AC_with_ONG_currently_Assertion" <> '?', r."AC_partner_AC_with_ONG_currently_ChangedAt", null)) OVER (
+                PARTITION BY
+                    r."AC_partner_AC_with_ONG_currently_Positor",
+                    r."AC_ID_partner",
+                    r."AC_ID_with",
+                    r."ONG_ID_currently"
+            ) AS "inEffect"
+        FROM
+            TABLE(ties."rAC_partner_AC_with_ONG_currently"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) s
+    WHERE
+        s."AC_partner_AC_with_ONG_currently_Assertion" = coalesce(assertion, s."AC_partner_AC_with_ONG_currently_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        s."AC_partner_AC_with_ONG_currently_ChangedAt" = s."inEffect"
+    )
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- a tie without identifiers is one to one: the latest posit for each of its anchors
+        row_number() OVER (
+            PARTITION BY s."AC_partner_AC_with_ONG_currently_Positor", s."AC_ID_partner"
+            ORDER BY
+                s."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+                s."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+                s."AC_partner_AC_with_ONG_currently_Reliability" DESC,
+                s."AC_partner_AC_with_ONG_currently_ID" DESC
+        ) = 1
+    AND
+        row_number() OVER (
+            PARTITION BY s."AC_partner_AC_with_ONG_currently_Positor", s."AC_ID_with"
+            ORDER BY
+                s."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+                s."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+                s."AC_partner_AC_with_ONG_currently_Reliability" DESC,
+                s."AC_partner_AC_with_ONG_currently_ID" DESC
+        ) = 1
+) t
 LEFT JOIN
     knots."ONG_Pågående" "kONG_currently"
 ON
     "kONG_currently"."ONG_ID" = t."ONG_ID_currently"
 WHERE
-    t."AC_partner_AC_with_ONG_currently_Assertion" = coalesce(assertion, t."AC_partner_AC_with_ONG_currently_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."AC_partner_AC_with_ONG_currently_ID" = (
-        SELECT
-            sub."AC_partner_AC_with_ONG_currently_ID"
-        FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."AC_partner_AC_with_ONG_currently_Assertion" <> '?', r."AC_partner_AC_with_ONG_currently_ChangedAt", null)) OVER (
-                        PARTITION BY
-                            r."AC_ID_partner",
-                            r."AC_ID_with",
-                            r."ONG_ID_currently"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(ties."rAC_partner_AC_with_ONG_currently"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            (
-                sub."AC_ID_partner" = t."AC_ID_partner"
-            OR
-                sub."AC_ID_with" = t."AC_ID_with"
-            )
-        AND
-            sub."AC_partner_AC_with_ONG_currently_Assertion" = coalesce(assertion, sub."AC_partner_AC_with_ONG_currently_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
-            sub."AC_partner_AC_with_ONG_currently_PositedAt" DESC
-        LIMIT 1
-    )
+    t."AC_partner_AC_with_ONG_currently_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7020,14 +7657,18 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with a window over its argument for each row of another table.
 SELECT
     p."Positor",
     tp.inspectedTimepoint,
     t."Metadata_AC_partner_AC_with_ONG_currently",
     t."AC_ID_partner",
     t."AC_ID_with",
-    t."currently_ONG_Pågående",
-    t."currently_Metadata_ONG",
+    "kONG_currently"."ONG_Pågående" AS "currently_ONG_Pågående",
+    "kONG_currently"."Metadata_ONG" AS "currently_Metadata_ONG",
     t."ONG_ID_currently",
     t."AC_partner_AC_with_ONG_currently_ChangedAt",
     t."AC_partner_AC_with_ONG_currently_PositedAt",
@@ -7046,13 +7687,80 @@ JOIN (
         "AC_partner_AC_with_ONG_currently_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p."Positor",
-    TABLE(ties."tAC_partner_AC_with_ONG_currently"(
-        tp.positor,
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) t
+    tp.positor = p."Positor"
+JOIN (
+    SELECT
+        y.*,
+        lead(y."AC_partner_AC_with_ONG_currently_ChangedAt") OVER (
+            PARTITION BY
+                y."AC_partner_AC_with_ONG_currently_Positor",
+                y."AC_ID_partner",
+                y."AC_ID_with",
+                y."ONG_ID_currently"
+            ORDER BY y."AC_partner_AC_with_ONG_currently_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(ties."rAC_partner_AC_with_ONG_currently"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_partner_AC_with_ONG_currently_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY
+                    r."AC_partner_AC_with_ONG_currently_Positor",
+                    r."AC_ID_partner",
+                    r."AC_ID_with",
+                    r."ONG_ID_currently",
+                    r."AC_partner_AC_with_ONG_currently_ChangedAt"
+                ORDER BY
+                    iff(r."AC_partner_AC_with_ONG_currently_Assertion" = '+', 0, 1),
+                    r."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+                    r."AC_partner_AC_with_ONG_currently_Reliability" DESC,
+                    r."AC_partner_AC_with_ONG_currently_ID" DESC
+            ) = 1
+    ) y
+) t
+ON
+    t."AC_partner_AC_with_ONG_currently_Positor" = tp.positor
+AND
+    t."AC_partner_AC_with_ONG_currently_Assertion" = '+'
+AND
+    t."AC_partner_AC_with_ONG_currently_ChangedAt" <= tp.inspectedTimepoint::datetime
+AND (
+    t."until" IS NULL
+OR
+    t."until" > tp.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."ONG_Pågående" "kONG_currently"
+ON
+    "kONG_currently"."ONG_ID" = t."ONG_ID_currently"
+QUALIFY -- a tie without identifiers is one to one: of the posits shown at the time, the latest for each of its anchors
+    row_number() OVER (
+        PARTITION BY tp.positor, tp.inspectedTimepoint, t."AC_ID_partner"
+        ORDER BY
+            t."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_Reliability" DESC,
+            t."AC_partner_AC_with_ONG_currently_ID" DESC
+    ) = 1
+AND
+    row_number() OVER (
+        PARTITION BY tp.positor, tp.inspectedTimepoint, t."AC_ID_with"
+        ORDER BY
+            t."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_PositedAt" DESC,
+            t."AC_partner_AC_with_ONG_currently_Reliability" DESC,
+            t."AC_partner_AC_with_ONG_currently_ID" DESC
+    ) = 1
 $$
 ;
 -- Time traveling perspective -----------------------------------------------------------------------------------------
@@ -7083,34 +7791,44 @@ SELECT
     t."AC_subset_PN_of_Positor",
     t."AC_subset_PN_of_Reliability",
     t."AC_subset_PN_of_Assertion"
-FROM
-    TABLE(ties."rAC_subset_PN_of"(
-        positor,
-        positingTimepoint::datetime
-    )) t
-WHERE
-    t."AC_subset_PN_of_Assertion" = coalesce(assertion, t."AC_subset_PN_of_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."AC_subset_PN_of_ID" = (
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
         SELECT
-            sub."AC_subset_PN_of_ID"
+            r.*
         FROM
             TABLE(ties."rAC_subset_PN_of"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            (
-                sub."AC_ID_subset" = t."AC_ID_subset"
-            OR
-                sub."PN_ID_of" = t."PN_ID_of"
-            )
-        AND
-            sub."AC_subset_PN_of_Assertion" = coalesce(assertion, sub."AC_subset_PN_of_Assertion")
-        ORDER BY
-            sub."AC_subset_PN_of_PositedAt" DESC
-        LIMIT 1
-    )
+            )) r
+    ) s
+    WHERE
+        s."AC_subset_PN_of_Assertion" = coalesce(assertion, s."AC_subset_PN_of_Assertion")
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- a tie without identifiers is one to one: the latest posit for each of its anchors
+        row_number() OVER (
+            PARTITION BY s."AC_subset_PN_of_Positor", s."AC_ID_subset"
+            ORDER BY
+                s."AC_subset_PN_of_PositedAt" DESC,
+                s."AC_subset_PN_of_Reliability" DESC,
+                s."AC_subset_PN_of_ID" DESC
+        ) = 1
+    AND
+        row_number() OVER (
+            PARTITION BY s."AC_subset_PN_of_Positor", s."PN_ID_of"
+            ORDER BY
+                s."AC_subset_PN_of_PositedAt" DESC,
+                s."AC_subset_PN_of_Reliability" DESC,
+                s."AC_subset_PN_of_ID" DESC
+        ) = 1
+) t
+WHERE
+    t."AC_subset_PN_of_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7212,32 +7930,39 @@ SELECT
     t."EV_in_AC_rollsattes_Positor",
     t."EV_in_AC_rollsattes_Reliability",
     t."EV_in_AC_rollsattes_Assertion"
-FROM
-    TABLE(ties."rEV_in_AC_rollsattes"(
-        positor,
-        positingTimepoint::datetime
-    )) t
-WHERE
-    t."EV_in_AC_rollsattes_Assertion" = coalesce(assertion, t."EV_in_AC_rollsattes_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."EV_in_AC_rollsattes_ID" = (
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
         SELECT
-            sub."EV_in_AC_rollsattes_ID"
+            r.*
         FROM
             TABLE(ties."rEV_in_AC_rollsattes"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_ID_in" = t."EV_ID_in"
-        AND
-            sub."AC_ID_rollsattes" = t."AC_ID_rollsattes"
-        AND
-            sub."EV_in_AC_rollsattes_Assertion" = coalesce(assertion, sub."EV_in_AC_rollsattes_Assertion")
-        ORDER BY
-            sub."EV_in_AC_rollsattes_PositedAt" DESC
-        LIMIT 1
-    )
+            )) r
+    ) s
+    WHERE
+        s."EV_in_AC_rollsattes_Assertion" = coalesce(assertion, s."EV_in_AC_rollsattes_Assertion")
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- the latest posit for the identifiers
+        row_number() OVER (
+            PARTITION BY
+                s."EV_in_AC_rollsattes_Positor",
+                s."EV_ID_in",
+                s."AC_ID_rollsattes"
+            ORDER BY
+                s."EV_in_AC_rollsattes_PositedAt" DESC,
+                s."EV_in_AC_rollsattes_Reliability" DESC,
+                s."EV_in_AC_rollsattes_ID" DESC
+        ) = 1
+) t
+WHERE
+    t."EV_in_AC_rollsattes_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7349,56 +8074,58 @@ SELECT
     t."AC_deltar_PR_in_RAT_fick_Positor",
     t."AC_deltar_PR_in_RAT_fick_Reliability",
     t."AC_deltar_PR_in_RAT_fick_Assertion"
-FROM
-    TABLE(ties."rAC_deltar_PR_in_RAT_fick"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) t
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
+        SELECT
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."AC_deltar_PR_in_RAT_fick_Assertion" <> '?', r."AC_deltar_PR_in_RAT_fick_ChangedAt", null)) OVER (
+                PARTITION BY
+                    r."AC_deltar_PR_in_RAT_fick_Positor",
+                    r."AC_ID_deltar",
+                    r."PR_ID_in"
+            ) AS "inEffect"
+        FROM
+            TABLE(ties."rAC_deltar_PR_in_RAT_fick"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) s
+    WHERE
+        s."AC_deltar_PR_in_RAT_fick_Assertion" = coalesce(assertion, s."AC_deltar_PR_in_RAT_fick_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        s."AC_deltar_PR_in_RAT_fick_ChangedAt" = s."inEffect"
+    )
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- the latest posit for the identifiers
+        row_number() OVER (
+            PARTITION BY
+                s."AC_deltar_PR_in_RAT_fick_Positor",
+                s."AC_ID_deltar",
+                s."PR_ID_in"
+            ORDER BY
+                s."AC_deltar_PR_in_RAT_fick_ChangedAt" DESC,
+                s."AC_deltar_PR_in_RAT_fick_PositedAt" DESC,
+                s."AC_deltar_PR_in_RAT_fick_Reliability" DESC,
+                s."AC_deltar_PR_in_RAT_fick_ID" DESC
+        ) = 1
+) t
 LEFT JOIN
     knots."RAT_Betyg" "kRAT_fick"
 ON
     "kRAT_fick"."RAT_ID" = t."RAT_ID_fick"
 WHERE
-    t."AC_deltar_PR_in_RAT_fick_Assertion" = coalesce(assertion, t."AC_deltar_PR_in_RAT_fick_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."AC_deltar_PR_in_RAT_fick_ID" = (
-        SELECT
-            sub."AC_deltar_PR_in_RAT_fick_ID"
-        FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."AC_deltar_PR_in_RAT_fick_Assertion" <> '?', r."AC_deltar_PR_in_RAT_fick_ChangedAt", null)) OVER (
-                        PARTITION BY
-                            r."AC_ID_deltar",
-                            r."PR_ID_in"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(ties."rAC_deltar_PR_in_RAT_fick"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."AC_ID_deltar" = t."AC_ID_deltar"
-        AND
-            sub."PR_ID_in" = t."PR_ID_in"
-        AND
-            sub."AC_deltar_PR_in_RAT_fick_Assertion" = coalesce(assertion, sub."AC_deltar_PR_in_RAT_fick_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."AC_deltar_PR_in_RAT_fick_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."AC_deltar_PR_in_RAT_fick_ChangedAt" DESC,
-            sub."AC_deltar_PR_in_RAT_fick_PositedAt" DESC
-        LIMIT 1
-    )
+    t."AC_deltar_PR_in_RAT_fick_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7507,15 +8234,19 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with a window over its argument for each row of another table.
 SELECT
     p."Positor",
     tp.inspectedTimepoint,
     t."Metadata_AC_deltar_PR_in_RAT_fick",
     t."AC_ID_deltar",
     t."PR_ID_in",
-    t."fick_RAT_Checksum",
-    t."fick_RAT_Betyg",
-    t."fick_Metadata_RAT",
+    "kRAT_fick"."RAT_Checksum" AS "fick_RAT_Checksum",
+    "kRAT_fick"."RAT_Betyg" AS "fick_RAT_Betyg",
+    "kRAT_fick"."Metadata_RAT" AS "fick_Metadata_RAT",
     t."RAT_ID_fick",
     t."AC_deltar_PR_in_RAT_fick_ChangedAt",
     t."AC_deltar_PR_in_RAT_fick_PositedAt",
@@ -7534,13 +8265,60 @@ JOIN (
         "AC_deltar_PR_in_RAT_fick_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p."Positor",
-    TABLE(ties."tAC_deltar_PR_in_RAT_fick"(
-        tp.positor,
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) t
+    tp.positor = p."Positor"
+JOIN (
+    SELECT
+        y.*,
+        lead(y."AC_deltar_PR_in_RAT_fick_ChangedAt") OVER (
+            PARTITION BY
+                y."AC_deltar_PR_in_RAT_fick_Positor",
+                y."AC_ID_deltar",
+                y."PR_ID_in"
+            ORDER BY y."AC_deltar_PR_in_RAT_fick_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(ties."rAC_deltar_PR_in_RAT_fick"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_deltar_PR_in_RAT_fick_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY
+                    r."AC_deltar_PR_in_RAT_fick_Positor",
+                    r."AC_ID_deltar",
+                    r."PR_ID_in",
+                    r."AC_deltar_PR_in_RAT_fick_ChangedAt"
+                ORDER BY
+                    iff(r."AC_deltar_PR_in_RAT_fick_Assertion" = '+', 0, 1),
+                    r."AC_deltar_PR_in_RAT_fick_PositedAt" DESC,
+                    r."AC_deltar_PR_in_RAT_fick_Reliability" DESC,
+                    r."AC_deltar_PR_in_RAT_fick_ID" DESC
+            ) = 1
+    ) y
+) t
+ON
+    t."AC_deltar_PR_in_RAT_fick_Positor" = tp.positor
+AND
+    t."AC_deltar_PR_in_RAT_fick_Assertion" = '+'
+AND
+    t."AC_deltar_PR_in_RAT_fick_ChangedAt" <= tp.inspectedTimepoint::datetime
+AND (
+    t."until" IS NULL
+OR
+    t."until" > tp.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    knots."RAT_Betyg" "kRAT_fick"
+ON
+    "kRAT_fick"."RAT_ID" = t."RAT_ID_fick"
 $$
 ;
 -- Time traveling perspective -----------------------------------------------------------------------------------------
@@ -7573,52 +8351,54 @@ SELECT
     t."ST_at_PR_spelas_Positor",
     t."ST_at_PR_spelas_Reliability",
     t."ST_at_PR_spelas_Assertion"
-FROM
-    TABLE(ties."rST_at_PR_spelas"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) t
-WHERE
-    t."ST_at_PR_spelas_Assertion" = coalesce(assertion, t."ST_at_PR_spelas_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."ST_at_PR_spelas_ID" = (
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
         SELECT
-            sub."ST_at_PR_spelas_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."ST_at_PR_spelas_Assertion" <> '?', r."ST_at_PR_spelas_ChangedAt", null)) OVER (
+                PARTITION BY
+                    r."ST_at_PR_spelas_Positor",
+                    r."ST_ID_at",
+                    r."PR_ID_spelas"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."ST_at_PR_spelas_Assertion" <> '?', r."ST_at_PR_spelas_ChangedAt", null)) OVER (
-                        PARTITION BY
-                            r."ST_ID_at",
-                            r."PR_ID_spelas"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(ties."rST_at_PR_spelas"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            sub."ST_ID_at" = t."ST_ID_at"
-        AND
-            sub."PR_ID_spelas" = t."PR_ID_spelas"
-        AND
-            sub."ST_at_PR_spelas_Assertion" = coalesce(assertion, sub."ST_at_PR_spelas_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."ST_at_PR_spelas_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."ST_at_PR_spelas_ChangedAt" DESC,
-            sub."ST_at_PR_spelas_PositedAt" DESC
-        LIMIT 1
+            TABLE(ties."rST_at_PR_spelas"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) s
+    WHERE
+        s."ST_at_PR_spelas_Assertion" = coalesce(assertion, s."ST_at_PR_spelas_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        s."ST_at_PR_spelas_ChangedAt" = s."inEffect"
     )
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- the latest posit for the identifiers
+        row_number() OVER (
+            PARTITION BY
+                s."ST_at_PR_spelas_Positor",
+                s."ST_ID_at",
+                s."PR_ID_spelas"
+            ORDER BY
+                s."ST_at_PR_spelas_ChangedAt" DESC,
+                s."ST_at_PR_spelas_PositedAt" DESC,
+                s."ST_at_PR_spelas_Reliability" DESC,
+                s."ST_at_PR_spelas_ID" DESC
+        ) = 1
+) t
+WHERE
+    t."ST_at_PR_spelas_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7715,6 +8495,10 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with a window over its argument for each row of another table.
 SELECT
     p."Positor",
     tp.inspectedTimepoint,
@@ -7738,13 +8522,56 @@ JOIN (
         "ST_at_PR_spelas_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p."Positor",
-    TABLE(ties."tST_at_PR_spelas"(
-        tp.positor,
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) t
+    tp.positor = p."Positor"
+JOIN (
+    SELECT
+        y.*,
+        lead(y."ST_at_PR_spelas_ChangedAt") OVER (
+            PARTITION BY
+                y."ST_at_PR_spelas_Positor",
+                y."ST_ID_at",
+                y."PR_ID_spelas"
+            ORDER BY y."ST_at_PR_spelas_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(ties."rST_at_PR_spelas"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."ST_at_PR_spelas_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY
+                    r."ST_at_PR_spelas_Positor",
+                    r."ST_ID_at",
+                    r."PR_ID_spelas",
+                    r."ST_at_PR_spelas_ChangedAt"
+                ORDER BY
+                    iff(r."ST_at_PR_spelas_Assertion" = '+', 0, 1),
+                    r."ST_at_PR_spelas_PositedAt" DESC,
+                    r."ST_at_PR_spelas_Reliability" DESC,
+                    r."ST_at_PR_spelas_ID" DESC
+            ) = 1
+    ) y
+) t
+ON
+    t."ST_at_PR_spelas_Positor" = tp.positor
+AND
+    t."ST_at_PR_spelas_Assertion" = '+'
+AND
+    t."ST_at_PR_spelas_ChangedAt" <= tp.inspectedTimepoint::datetime
+AND (
+    t."until" IS NULL
+OR
+    t."until" > tp.inspectedTimepoint::datetime
+)
 $$
 ;
 -- Time traveling perspective -----------------------------------------------------------------------------------------
@@ -7781,38 +8608,44 @@ SELECT
     t."AC_förälder_AC_barn_PAT_har_Positor",
     t."AC_förälder_AC_barn_PAT_har_Reliability",
     t."AC_förälder_AC_barn_PAT_har_Assertion"
-FROM
-    TABLE(ties."rAC_förälder_AC_barn_PAT_har"(
-        positor,
-        positingTimepoint::datetime
-    )) t
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            TABLE(ties."rAC_förälder_AC_barn_PAT_har"(
+                null::tinyint,
+                positingTimepoint::datetime
+            )) r
+    ) s
+    WHERE
+        s."AC_förälder_AC_barn_PAT_har_Assertion" = coalesce(assertion, s."AC_förälder_AC_barn_PAT_har_Assertion")
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- the latest posit for the identifiers
+        row_number() OVER (
+            PARTITION BY
+                s."AC_förälder_AC_barn_PAT_har_Positor",
+                s."AC_ID_förälder",
+                s."AC_ID_barn",
+                s."PAT_ID_har"
+            ORDER BY
+                s."AC_förälder_AC_barn_PAT_har_PositedAt" DESC,
+                s."AC_förälder_AC_barn_PAT_har_Reliability" DESC,
+                s."AC_förälder_AC_barn_PAT_har_ID" DESC
+        ) = 1
+) t
 LEFT JOIN
     knots."PAT_Föräldratyp" "kPAT_har"
 ON
     "kPAT_har"."PAT_ID" = t."PAT_ID_har"
 WHERE
-    t."AC_förälder_AC_barn_PAT_har_Assertion" = coalesce(assertion, t."AC_förälder_AC_barn_PAT_har_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."AC_förälder_AC_barn_PAT_har_ID" = (
-        SELECT
-            sub."AC_förälder_AC_barn_PAT_har_ID"
-        FROM
-            TABLE(ties."rAC_förälder_AC_barn_PAT_har"(
-                positor,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_ID_förälder" = t."AC_ID_förälder"
-        AND
-            sub."AC_ID_barn" = t."AC_ID_barn"
-        AND
-            sub."PAT_ID_har" = t."PAT_ID_har"
-        AND
-            sub."AC_förälder_AC_barn_PAT_har_Assertion" = coalesce(assertion, sub."AC_förälder_AC_barn_PAT_har_Assertion")
-        ORDER BY
-            sub."AC_förälder_AC_barn_PAT_har_PositedAt" DESC
-        LIMIT 1
-    )
+    t."AC_förälder_AC_barn_PAT_har_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -7924,55 +8757,61 @@ SELECT
     t."PR_innehåll_ST_plats_EV_of_Positor",
     t."PR_innehåll_ST_plats_EV_of_Reliability",
     t."PR_innehåll_ST_plats_EV_of_Assertion"
-FROM
-    TABLE(ties."rPR_innehåll_ST_plats_EV_of"(
-        positor,
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) t
-WHERE
-    t."PR_innehåll_ST_plats_EV_of_Assertion" = coalesce(assertion, t."PR_innehåll_ST_plats_EV_of_Assertion")
-AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
-    t."PR_innehåll_ST_plats_EV_of_ID" = (
+FROM (
+    -- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+    -- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a
+    -- window
+    SELECT
+        s.*
+    FROM (
         SELECT
-            sub."PR_innehåll_ST_plats_EV_of_ID"
+            r.*,
+            -- the latest changing time with an assertion that is not a retraction, which supersedes those before it
+            -- whatever its sign
+            max(iff(r."PR_innehåll_ST_plats_EV_of_Assertion" <> '?', r."PR_innehåll_ST_plats_EV_of_ChangedAt", null)) OVER (
+                PARTITION BY
+                    r."PR_innehåll_ST_plats_EV_of_Positor",
+                    r."PR_ID_innehåll",
+                    r."ST_ID_plats",
+                    r."EV_ID_of"
+            ) AS "inEffect"
         FROM
-            (
-                SELECT
-                    r.*,
-                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
-                    -- it whatever its sign
-                    max(iff(r."PR_innehåll_ST_plats_EV_of_Assertion" <> '?', r."PR_innehåll_ST_plats_EV_of_ChangedAt", null)) OVER (
-                        PARTITION BY
-                            r."PR_ID_innehåll",
-                            r."ST_ID_plats",
-                            r."EV_ID_of"
-                    ) AS "inEffect"
-                FROM
-                    TABLE(ties."rPR_innehåll_ST_plats_EV_of"(
-                        positor,
-                        changingTimepoint::datetime,
-                        positingTimepoint::datetime
-                    )) r
-            ) sub
-        WHERE
-            (
-                sub."PR_ID_innehåll" = t."PR_ID_innehåll"
-            OR
-                sub."ST_ID_plats" = t."ST_ID_plats"
-            )
-        AND
-            sub."PR_innehåll_ST_plats_EV_of_Assertion" = coalesce(assertion, sub."PR_innehåll_ST_plats_EV_of_Assertion")
-        AND ( -- asked for positive or negative assertions, only those at that changing time
-            coalesce(assertion, '?') = '?'
-        OR
-            sub."PR_innehåll_ST_plats_EV_of_ChangedAt" = sub."inEffect"
-        )
-        ORDER BY
-            sub."PR_innehåll_ST_plats_EV_of_ChangedAt" DESC,
-            sub."PR_innehåll_ST_plats_EV_of_PositedAt" DESC
-        LIMIT 1
+            TABLE(ties."rPR_innehåll_ST_plats_EV_of"(
+                null::tinyint,
+                changingTimepoint::datetime,
+                positingTimepoint::datetime
+            )) r
+    ) s
+    WHERE
+        s."PR_innehåll_ST_plats_EV_of_Assertion" = coalesce(assertion, s."PR_innehåll_ST_plats_EV_of_Assertion")
+    AND ( -- asked for positive or negative assertions, only those at that changing time
+        coalesce(assertion, '?') = '?'
+    OR
+        s."PR_innehåll_ST_plats_EV_of_ChangedAt" = s."inEffect"
     )
+    QUALIFY -- picked by a window: Snowflake cannot evaluate a subquery that refers to the outer row and takes the first
+            -- row of an ordering
+        -- a tie without identifiers is one to one: the latest posit for each of its anchors
+        row_number() OVER (
+            PARTITION BY s."PR_innehåll_ST_plats_EV_of_Positor", s."PR_ID_innehåll"
+            ORDER BY
+                s."PR_innehåll_ST_plats_EV_of_ChangedAt" DESC,
+                s."PR_innehåll_ST_plats_EV_of_PositedAt" DESC,
+                s."PR_innehåll_ST_plats_EV_of_Reliability" DESC,
+                s."PR_innehåll_ST_plats_EV_of_ID" DESC
+        ) = 1
+    AND
+        row_number() OVER (
+            PARTITION BY s."PR_innehåll_ST_plats_EV_of_Positor", s."ST_ID_plats"
+            ORDER BY
+                s."PR_innehåll_ST_plats_EV_of_ChangedAt" DESC,
+                s."PR_innehåll_ST_plats_EV_of_PositedAt" DESC,
+                s."PR_innehåll_ST_plats_EV_of_Reliability" DESC,
+                s."PR_innehåll_ST_plats_EV_of_ID" DESC
+        ) = 1
+) t
+WHERE
+    t."PR_innehåll_ST_plats_EV_of_Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -8072,6 +8911,10 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now, for each
+-- positor: the posit shown at each changing time is joined with the changing time until which it holds, when the next
+-- changing time with an assertion that is not a retraction is. Snowflake cannot call the time-traveling perspective
+-- for each change, since it cannot evaluate a function with a window over its argument for each row of another table.
 SELECT
     p."Positor",
     tp.inspectedTimepoint,
@@ -8096,13 +8939,76 @@ JOIN (
         "PR_innehåll_ST_plats_EV_of_ChangedAt" BETWEEN intervalStart AND intervalEnd
 ) tp
 ON
-    tp.positor = p."Positor",
-    TABLE(ties."tPR_innehåll_ST_plats_EV_of"(
-        tp.positor,
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime,
-        '+'
-    )) t
+    tp.positor = p."Positor"
+JOIN (
+    SELECT
+        y.*,
+        lead(y."PR_innehåll_ST_plats_EV_of_ChangedAt") OVER (
+            PARTITION BY
+                y."PR_innehåll_ST_plats_EV_of_Positor",
+                y."PR_ID_innehåll",
+                y."ST_ID_plats",
+                y."EV_ID_of"
+            ORDER BY y."PR_innehåll_ST_plats_EV_of_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- one posit for each changing time with an assertion that is not a retraction: the positive one that is shown
+        -- if there is one, and otherwise a negative one, which means that nothing is shown from that time on
+        SELECT
+            r.*
+        FROM
+            TABLE(ties."rPR_innehåll_ST_plats_EV_of"(
+                null::tinyint,
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."PR_innehåll_ST_plats_EV_of_Assertion" <> '?'
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY
+                    r."PR_innehåll_ST_plats_EV_of_Positor",
+                    r."PR_ID_innehåll",
+                    r."ST_ID_plats",
+                    r."EV_ID_of",
+                    r."PR_innehåll_ST_plats_EV_of_ChangedAt"
+                ORDER BY
+                    iff(r."PR_innehåll_ST_plats_EV_of_Assertion" = '+', 0, 1),
+                    r."PR_innehåll_ST_plats_EV_of_PositedAt" DESC,
+                    r."PR_innehåll_ST_plats_EV_of_Reliability" DESC,
+                    r."PR_innehåll_ST_plats_EV_of_ID" DESC
+            ) = 1
+    ) y
+) t
+ON
+    t."PR_innehåll_ST_plats_EV_of_Positor" = tp.positor
+AND
+    t."PR_innehåll_ST_plats_EV_of_Assertion" = '+'
+AND
+    t."PR_innehåll_ST_plats_EV_of_ChangedAt" <= tp.inspectedTimepoint::datetime
+AND (
+    t."until" IS NULL
+OR
+    t."until" > tp.inspectedTimepoint::datetime
+)
+QUALIFY -- a tie without identifiers is one to one: of the posits shown at the time, the latest for each of its anchors
+    row_number() OVER (
+        PARTITION BY tp.positor, tp.inspectedTimepoint, t."PR_ID_innehåll"
+        ORDER BY
+            t."PR_innehåll_ST_plats_EV_of_ChangedAt" DESC,
+            t."PR_innehåll_ST_plats_EV_of_PositedAt" DESC,
+            t."PR_innehåll_ST_plats_EV_of_Reliability" DESC,
+            t."PR_innehåll_ST_plats_EV_of_ID" DESC
+    ) = 1
+AND
+    row_number() OVER (
+        PARTITION BY tp.positor, tp.inspectedTimepoint, t."ST_ID_plats"
+        ORDER BY
+            t."PR_innehåll_ST_plats_EV_of_ChangedAt" DESC,
+            t."PR_innehåll_ST_plats_EV_of_PositedAt" DESC,
+            t."PR_innehåll_ST_plats_EV_of_Reliability" DESC,
+            t."PR_innehåll_ST_plats_EV_of_ID" DESC
+    ) = 1
 $$
 ;
 -- NATURAL KEYS -------------------------------------------------------------------------------------------------------
@@ -8293,7 +9199,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Positor" tinyint,
     "AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" varbinary(max)
+    "AC_NAM_Skådespelare_Namn" binary
 )
 AS
 $$

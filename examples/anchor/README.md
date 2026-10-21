@@ -32,6 +32,7 @@ these ways:
 | `tools\make-sqlserver-bi-crt-models.ps1` | copies each uni SQL Server model to a `-bi` and a `-crt` model (only `metadata/@temporalization` differs); they must then be saved through the modeler | PowerShell |
 | `tools\make-sqlserver-tieflags-models.ps1` | makes `sqlserver-tieflags-bi` and `-crt` from the flags models: every tie idempotent and assertive, the only models that reach the code that handles an idempotent tie; they must be saved through the modeler | PowerShell |
 | `tools\make-keys-models.ps1` | makes `keys`, `keys-bi` and `keys-crt` from `base`, and `sqlserver-keys`, `-bi` and `-crt` from `sqlserver-base`, with a natural key for every rule a route follows and for every way to break one (see the models below); they must then be saved through the modeler | PowerShell |
+| `tools\snowflake-tests.ps1` | what the Snowflake perspectives show: the golden output of `distinct`, `-bi`, `-crt` and `distinct-equivalence` run in a new database, the scripts in `snowflake-tests/`, which put rows into the tables and check what the perspectives show, and a query of every view and a call of every function (see below) | a Snowflake account and a programmatic access token |
 | `tools\sqlserver-tests.ps1` | what the SQL Server triggers store and what the natural keys give, with what the rules say: the golden output of the `sqlserver-triggers`, `sqlserver-keys` and `sqlserver-indecisive-crt` models run in an empty database, then the scripts in `sqlserver-tests/`, which load through the latest views and print PASS or FAIL for each rule (see "SQL Server too") | SQL Server 2016 or later, sqlcmd |
 | `tools\xmltree-check.ps1` | Anchor's XML reader (`modules\XmlTree.js`, used by the hosted generator because a JavaScript function in Snowflake has no `DOMParser`) against `xml-to-tree.ps1` on every model, plus entities, CDATA, line ends and malformed input | an Anchor checkout |
 
@@ -77,6 +78,16 @@ as for the bitemporal triggers, the tests are followed by an upgrade: that scrip
 that older generated SQL made, the generated SQL runs on it again, and `<suite>-<t>-upgraded.sql` checks the result.
 The tests need a SQL Server 2016 or later and sqlcmd, so they are not among the checks that run here; run them after
 the golden files of the test models have been regenerated.
+
+What the Snowflake perspectives show is tested by `tools/snowflake-tests.ps1`, through Snowflake's SQL API with a
+programmatic access token. For each temporalization it makes a database, runs the golden output of `distinct` (or
+`-bi`, `-crt`) in it, then `snowflake-tests/perspectives-<t>.sql`, and drops the database again; `-Suite equivalence`
+does the same with `distinct-equivalence` and `snowflake-tests/equivalence-uni.sql`. Snowflake has no triggers, so the
+scripts put rows straight into the tables, and each check writes what a perspective shows next to what was expected.
+Last, `snowflake-tests/compile.sql` queries every view and calls every function once: Snowflake compiles the body of
+a view or a function only when it is used, so SQL that it cannot evaluate shows only then, and some of it only over
+rows. The distinct models are the ones used because they have a historized and knotted attribute on the nexus, a tie
+with a nexus role and no identifiers, an encrypted attribute and capsules of their own.
 
 ## How it works
 

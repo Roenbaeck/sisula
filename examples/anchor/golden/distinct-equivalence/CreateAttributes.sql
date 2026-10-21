@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name" (
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" varbinary(max) not null,
+    "AC_NAM_Actor_Name" binary not null,
     "AC_NAM_ChangedAt" datetime not null,
     "Metadata_AC_NAM" int not null,
     constraint "fkAC_NAM_Actor_Name" foreign key (
