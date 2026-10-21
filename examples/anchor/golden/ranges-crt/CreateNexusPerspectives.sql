@@ -226,15 +226,30 @@ ON
         SELECT
             sub."EV_STA_ID"
         FROM
-            TABLE(attributes."rEV_STA_Event_Status"(
-                positor,
-                changingTimepoint::datetime,
-                positingTimepoint::timestamp_ntz(3)
-            )) sub
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."EV_STA_Stance" <> '?', r."EV_STA_ChangedAt", null)) OVER (
+                        PARTITION BY r."EV_STA_EV_ID"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(attributes."rEV_STA_Event_Status"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
         AND
             sub."EV_STA_Stance" = coalesce(assertion, sub."EV_STA_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."EV_STA_ChangedAt" = sub."inEffect"
+        )
         ORDER BY
             sub."EV_STA_ChangedAt" DESC,
             sub."EV_STA_PositedAt" DESC
@@ -277,15 +292,30 @@ ON
         SELECT
             sub."EV_LVL_ID"
         FROM
-            TABLE(attributes."rEV_LVL_Event_Level"(
-                positor,
-                changingTimepoint::date,
-                positingTimepoint::timestamp_ntz(3)
-            )) sub
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."EV_LVL_Stance" <> '?', r."EV_LVL_ChangedAt", null)) OVER (
+                        PARTITION BY r."EV_LVL_EV_ID"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(attributes."rEV_LVL_Event_Level"(
+                        positor,
+                        changingTimepoint::date,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
         WHERE
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
         AND
             sub."EV_LVL_Stance" = coalesce(assertion, sub."EV_LVL_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."EV_LVL_ChangedAt" = sub."inEffect"
+        )
         ORDER BY
             sub."EV_LVL_ChangedAt" DESC,
             sub."EV_LVL_PositedAt" DESC

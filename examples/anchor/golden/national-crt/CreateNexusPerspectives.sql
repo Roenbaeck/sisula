@@ -226,15 +226,30 @@ ON
         SELECT
             sub."EV_STA_ID"
         FROM
-            TABLE(attributes."rEV_STA_Händelse_Status"(
-                positor,
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."EV_STA_Assertion" <> '?', r."EV_STA_ChangedAt", null)) OVER (
+                        PARTITION BY r."EV_STA_EV_ID"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(attributes."rEV_STA_Händelse_Status"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::datetime
+                    )) r
+            ) sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
         AND
             sub."EV_STA_Assertion" = coalesce(assertion, sub."EV_STA_Assertion")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."EV_STA_ChangedAt" = sub."inEffect"
+        )
         ORDER BY
             sub."EV_STA_ChangedAt" DESC,
             sub."EV_STA_PositedAt" DESC
@@ -277,15 +292,30 @@ ON
         SELECT
             sub."EV_LVL_ID"
         FROM
-            TABLE(attributes."rEV_LVL_Händelse_Level"(
-                positor,
-                changingTimepoint::date,
-                positingTimepoint::datetime
-            )) sub
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."EV_LVL_Assertion" <> '?', r."EV_LVL_ChangedAt", null)) OVER (
+                        PARTITION BY r."EV_LVL_EV_ID"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(attributes."rEV_LVL_Händelse_Level"(
+                        positor,
+                        changingTimepoint::date,
+                        positingTimepoint::datetime
+                    )) r
+            ) sub
         WHERE
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
         AND
             sub."EV_LVL_Assertion" = coalesce(assertion, sub."EV_LVL_Assertion")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."EV_LVL_ChangedAt" = sub."inEffect"
+        )
         ORDER BY
             sub."EV_LVL_ChangedAt" DESC,
             sub."EV_LVL_PositedAt" DESC

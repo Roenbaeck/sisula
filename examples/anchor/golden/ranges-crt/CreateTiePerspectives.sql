@@ -51,6 +51,47 @@ ON
     "kONG_currently"."ONG_ID" = t."ONG_ID_currently"
 WHERE
     t."AC_partner_AC_with_ONG_currently_Stance" = coalesce(assertion, t."AC_partner_AC_with_ONG_currently_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."AC_partner_AC_with_ONG_currently_ID" = (
+        SELECT
+            sub."AC_partner_AC_with_ONG_currently_ID"
+        FROM
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."AC_partner_AC_with_ONG_currently_Stance" <> '?', r."AC_partner_AC_with_ONG_currently_ChangedAt", null)) OVER (
+                        PARTITION BY
+                            r."AC_ID_partner",
+                            r."AC_ID_with",
+                            r."ONG_ID_currently"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(ties."rAC_partner_AC_with_ONG_currently"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
+        WHERE
+            (
+                sub."AC_ID_partner" = t."AC_ID_partner"
+            OR
+                sub."AC_ID_with" = t."AC_ID_with"
+            )
+        AND
+            sub."AC_partner_AC_with_ONG_currently_Stance" = coalesce(assertion, sub."AC_partner_AC_with_ONG_currently_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."AC_partner_AC_with_ONG_currently_ChangedAt" = sub."inEffect"
+        )
+        ORDER BY
+            sub."AC_partner_AC_with_ONG_currently_ChangedAt" DESC,
+            sub."AC_partner_AC_with_ONG_currently_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -226,6 +267,27 @@ FROM
     )) t
 WHERE
     t."AC_subset_PN_of_Stance" = coalesce(assertion, t."AC_subset_PN_of_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."AC_subset_PN_of_ID" = (
+        SELECT
+            sub."AC_subset_PN_of_ID"
+        FROM
+            TABLE(ties."rAC_subset_PN_of"(
+                positor,
+                positingTimepoint::timestamp_ntz(3)
+            )) sub
+        WHERE
+            (
+                sub."AC_ID_subset" = t."AC_ID_subset"
+            OR
+                sub."PN_ID_of" = t."PN_ID_of"
+            )
+        AND
+            sub."AC_subset_PN_of_Stance" = coalesce(assertion, sub."AC_subset_PN_of_Stance")
+        ORDER BY
+            sub."AC_subset_PN_of_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -334,6 +396,25 @@ FROM
     )) t
 WHERE
     t."EV_in_AC_wasCast_Stance" = coalesce(assertion, t."EV_in_AC_wasCast_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."EV_in_AC_wasCast_ID" = (
+        SELECT
+            sub."EV_in_AC_wasCast_ID"
+        FROM
+            TABLE(ties."rEV_in_AC_wasCast"(
+                positor,
+                positingTimepoint::timestamp_ntz(3)
+            )) sub
+        WHERE
+            sub."EV_ID_in" = t."EV_ID_in"
+        AND
+            sub."AC_ID_wasCast" = t."AC_ID_wasCast"
+        AND
+            sub."EV_in_AC_wasCast_Stance" = coalesce(assertion, sub."EV_in_AC_wasCast_Stance")
+        ORDER BY
+            sub."EV_in_AC_wasCast_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -457,6 +538,44 @@ ON
     "kRAT_got"."RAT_ID" = t."RAT_ID_got"
 WHERE
     t."AC_part_PR_in_RAT_got_Stance" = coalesce(assertion, t."AC_part_PR_in_RAT_got_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."AC_part_PR_in_RAT_got_ID" = (
+        SELECT
+            sub."AC_part_PR_in_RAT_got_ID"
+        FROM
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."AC_part_PR_in_RAT_got_Stance" <> '?', r."AC_part_PR_in_RAT_got_ChangedAt", null)) OVER (
+                        PARTITION BY
+                            r."AC_ID_part",
+                            r."PR_ID_in"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(ties."rAC_part_PR_in_RAT_got"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
+        WHERE
+            sub."AC_ID_part" = t."AC_ID_part"
+        AND
+            sub."PR_ID_in" = t."PR_ID_in"
+        AND
+            sub."AC_part_PR_in_RAT_got_Stance" = coalesce(assertion, sub."AC_part_PR_in_RAT_got_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."AC_part_PR_in_RAT_got_ChangedAt" = sub."inEffect"
+        )
+        ORDER BY
+            sub."AC_part_PR_in_RAT_got_ChangedAt" DESC,
+            sub."AC_part_PR_in_RAT_got_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -639,6 +758,44 @@ FROM
     )) t
 WHERE
     t."ST_at_PR_isPlaying_Stance" = coalesce(assertion, t."ST_at_PR_isPlaying_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."ST_at_PR_isPlaying_ID" = (
+        SELECT
+            sub."ST_at_PR_isPlaying_ID"
+        FROM
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."ST_at_PR_isPlaying_Stance" <> '?', r."ST_at_PR_isPlaying_ChangedAt", null)) OVER (
+                        PARTITION BY
+                            r."ST_ID_at",
+                            r."PR_ID_isPlaying"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(ties."rST_at_PR_isPlaying"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
+        WHERE
+            sub."ST_ID_at" = t."ST_ID_at"
+        AND
+            sub."PR_ID_isPlaying" = t."PR_ID_isPlaying"
+        AND
+            sub."ST_at_PR_isPlaying_Stance" = coalesce(assertion, sub."ST_at_PR_isPlaying_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."ST_at_PR_isPlaying_ChangedAt" = sub."inEffect"
+        )
+        ORDER BY
+            sub."ST_at_PR_isPlaying_ChangedAt" DESC,
+            sub."ST_at_PR_isPlaying_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -812,6 +969,27 @@ ON
     "kPAT_having"."PAT_ID" = t."PAT_ID_having"
 WHERE
     t."AC_parent_AC_child_PAT_having_Stance" = coalesce(assertion, t."AC_parent_AC_child_PAT_having_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."AC_parent_AC_child_PAT_having_ID" = (
+        SELECT
+            sub."AC_parent_AC_child_PAT_having_ID"
+        FROM
+            TABLE(ties."rAC_parent_AC_child_PAT_having"(
+                positor,
+                positingTimepoint::timestamp_ntz(3)
+            )) sub
+        WHERE
+            sub."AC_ID_parent" = t."AC_ID_parent"
+        AND
+            sub."AC_ID_child" = t."AC_ID_child"
+        AND
+            sub."PAT_ID_having" = t."PAT_ID_having"
+        AND
+            sub."AC_parent_AC_child_PAT_having_Stance" = coalesce(assertion, sub."AC_parent_AC_child_PAT_having_Stance")
+        ORDER BY
+            sub."AC_parent_AC_child_PAT_having_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -931,6 +1109,47 @@ FROM
     )) t
 WHERE
     t."PR_content_ST_location_EV_of_Stance" = coalesce(assertion, t."PR_content_ST_location_EV_of_Stance")
+AND -- the posit in effect for the identifiers, as in uni and bi (all of them used to be shown)
+    t."PR_content_ST_location_EV_of_ID" = (
+        SELECT
+            sub."PR_content_ST_location_EV_of_ID"
+        FROM
+            (
+                SELECT
+                    r.*,
+                    -- the latest changing time with an assertion that is not a retraction, which supersedes those before
+                    -- it whatever its sign
+                    max(iff(r."PR_content_ST_location_EV_of_Stance" <> '?', r."PR_content_ST_location_EV_of_ChangedAt", null)) OVER (
+                        PARTITION BY
+                            r."PR_ID_content",
+                            r."ST_ID_location",
+                            r."EV_ID_of"
+                    ) AS "inEffect"
+                FROM
+                    TABLE(ties."rPR_content_ST_location_EV_of"(
+                        positor,
+                        changingTimepoint::datetime,
+                        positingTimepoint::timestamp_ntz(3)
+                    )) r
+            ) sub
+        WHERE
+            (
+                sub."PR_ID_content" = t."PR_ID_content"
+            OR
+                sub."ST_ID_location" = t."ST_ID_location"
+            )
+        AND
+            sub."PR_content_ST_location_EV_of_Stance" = coalesce(assertion, sub."PR_content_ST_location_EV_of_Stance")
+        AND ( -- asked for positive or negative assertions, only those at that changing time
+            coalesce(assertion, '?') = '?'
+        OR
+            sub."PR_content_ST_location_EV_of_ChangedAt" = sub."inEffect"
+        )
+        ORDER BY
+            sub."PR_content_ST_location_EV_of_ChangedAt" DESC,
+            sub."PR_content_ST_location_EV_of_PositedAt" DESC
+        LIMIT 1
+    )
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------

@@ -199,6 +199,25 @@ ON
             sub.EV_ID = [EV].EV_ID
         AND
             sub.EV_STA_Assertion = isnull(@assertion, sub.EV_STA_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.EV_STA_ChangedAt = (
+                SELECT
+                    max(e.EV_STA_ChangedAt)
+                FROM
+                    [attributes].[rEV_STA_Event_Status](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.EV_ID = sub.EV_ID
+                AND
+                    e.EV_STA_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.EV_STA_ChangedAt DESC,
             sub.EV_STA_PositedAt DESC,
@@ -250,6 +269,25 @@ ON
             sub.EV_ID = [EV].EV_ID
         AND
             sub.EV_LVL_Assertion = isnull(@assertion, sub.EV_LVL_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.EV_LVL_ChangedAt = (
+                SELECT
+                    max(e.EV_LVL_ChangedAt)
+                FROM
+                    [attributes].[rEV_LVL_Event_Level](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.EV_ID = sub.EV_ID
+                AND
+                    e.EV_LVL_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.EV_LVL_ChangedAt DESC,
             sub.EV_LVL_PositedAt DESC,

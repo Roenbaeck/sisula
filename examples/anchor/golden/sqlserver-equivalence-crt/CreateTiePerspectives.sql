@@ -86,6 +86,29 @@ WHERE
         )
         AND
             sub.AC_partner_AC_with_ONG_currently_Assertion = isnull(@assertion, sub.AC_partner_AC_with_ONG_currently_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.AC_partner_AC_with_ONG_currently_ChangedAt = (
+                SELECT
+                    max(e.AC_partner_AC_with_ONG_currently_ChangedAt)
+                FROM
+                    [dbo].[rAC_partner_AC_with_ONG_currently](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.AC_ID_partner = sub.AC_ID_partner
+                AND
+                    e.AC_ID_with = sub.AC_ID_with
+                AND
+                    e.ONG_ID_currently = sub.ONG_ID_currently
+                AND
+                    e.AC_partner_AC_with_ONG_currently_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.AC_partner_AC_with_ONG_currently_ChangedAt DESC,
             sub.AC_partner_AC_with_ONG_currently_PositedAt DESC,
@@ -444,6 +467,27 @@ WHERE
             sub.PR_ID_in = tie.PR_ID_in
         AND
             sub.AC_part_PR_in_RAT_got_Assertion = isnull(@assertion, sub.AC_part_PR_in_RAT_got_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.AC_part_PR_in_RAT_got_ChangedAt = (
+                SELECT
+                    max(e.AC_part_PR_in_RAT_got_ChangedAt)
+                FROM
+                    [dbo].[rAC_part_PR_in_RAT_got](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.AC_ID_part = sub.AC_ID_part
+                AND
+                    e.PR_ID_in = sub.PR_ID_in
+                AND
+                    e.AC_part_PR_in_RAT_got_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.AC_part_PR_in_RAT_got_ChangedAt DESC,
             sub.AC_part_PR_in_RAT_got_PositedAt DESC,
@@ -577,6 +621,27 @@ WHERE
             sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
         AND
             sub.ST_at_PR_isPlaying_Assertion = isnull(@assertion, sub.ST_at_PR_isPlaying_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.ST_at_PR_isPlaying_ChangedAt = (
+                SELECT
+                    max(e.ST_at_PR_isPlaying_ChangedAt)
+                FROM
+                    [dbo].[rST_at_PR_isPlaying](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.ST_ID_at = sub.ST_ID_at
+                AND
+                    e.PR_ID_isPlaying = sub.PR_ID_isPlaying
+                AND
+                    e.ST_at_PR_isPlaying_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.ST_at_PR_isPlaying_ChangedAt DESC,
             sub.ST_at_PR_isPlaying_PositedAt DESC,

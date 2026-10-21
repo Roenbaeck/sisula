@@ -276,6 +276,25 @@ ON
             sub.SU_TTL_SU_ID = [SU].SU_ID
         AND
             sub.SU_TTL_Assertion = isnull(@assertion, sub.SU_TTL_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_TTL_ChangedAt = (
+                SELECT
+                    max(e.SU_TTL_ChangedAt)
+                FROM
+                    [dbo].[rSU_TTL_Subject_Title](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_TTL_SU_ID = sub.SU_TTL_SU_ID
+                AND
+                    e.SU_TTL_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_TTL_ChangedAt DESC,
             sub.SU_TTL_PositedAt DESC,
@@ -301,6 +320,25 @@ ON
             sub.SU_STA_SU_ID = [SU].SU_ID
         AND
             sub.SU_STA_Assertion = isnull(@assertion, sub.SU_STA_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_STA_ChangedAt = (
+                SELECT
+                    max(e.SU_STA_ChangedAt)
+                FROM
+                    [dbo].[rSU_STA_Subject_State](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_STA_SU_ID = sub.SU_STA_SU_ID
+                AND
+                    e.SU_STA_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_STA_ChangedAt DESC,
             sub.SU_STA_PositedAt DESC,
@@ -326,6 +364,25 @@ ON
             sub.SU_LBL_SU_ID = [SU].SU_ID
         AND
             sub.SU_LBL_Assertion = isnull(@assertion, sub.SU_LBL_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_LBL_ChangedAt = (
+                SELECT
+                    max(e.SU_LBL_ChangedAt)
+                FROM
+                    [dbo].[rSU_LBL_Subject_Label](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_LBL_SU_ID = sub.SU_LBL_SU_ID
+                AND
+                    e.SU_LBL_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_LBL_ChangedAt DESC,
             sub.SU_LBL_PositedAt DESC,
@@ -351,6 +408,25 @@ ON
             sub.SU_TAG_SU_ID = [SU].SU_ID
         AND
             sub.SU_TAG_Assertion = isnull(@assertion, sub.SU_TAG_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_TAG_ChangedAt = (
+                SELECT
+                    max(e.SU_TAG_ChangedAt)
+                FROM
+                    [dbo].[rSU_TAG_Subject_Tag](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_TAG_SU_ID = sub.SU_TAG_SU_ID
+                AND
+                    e.SU_TAG_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_TAG_ChangedAt DESC,
             sub.SU_TAG_PositedAt DESC,
@@ -376,6 +452,25 @@ ON
             sub.SU_LVL_SU_ID = [SU].SU_ID
         AND
             sub.SU_LVL_Assertion = isnull(@assertion, sub.SU_LVL_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_LVL_ChangedAt = (
+                SELECT
+                    max(e.SU_LVL_ChangedAt)
+                FROM
+                    [dbo].[rSU_LVL_Subject_Level](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_LVL_SU_ID = sub.SU_LVL_SU_ID
+                AND
+                    e.SU_LVL_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_LVL_ChangedAt DESC,
             sub.SU_LVL_PositedAt DESC,
@@ -405,6 +500,25 @@ ON
             sub.SU_TXT_SU_ID = [SU].SU_ID
         AND
             sub.SU_TXT_Assertion = isnull(@assertion, sub.SU_TXT_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_TXT_ChangedAt = (
+                SELECT
+                    max(e.SU_TXT_ChangedAt)
+                FROM
+                    [dbo].[rSU_TXT_Subject_Text](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_TXT_SU_ID = sub.SU_TXT_SU_ID
+                AND
+                    e.SU_TXT_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_TXT_ChangedAt DESC,
             sub.SU_TXT_PositedAt DESC,
@@ -430,6 +544,25 @@ ON
             sub.SU_ASR_SU_ID = [SU].SU_ID
         AND
             sub.SU_ASR_Assertion = isnull(@assertion, sub.SU_ASR_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_ASR_ChangedAt = (
+                SELECT
+                    max(e.SU_ASR_ChangedAt)
+                FROM
+                    [dbo].[rSU_ASR_Subject_Assessment](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_ASR_SU_ID = sub.SU_ASR_SU_ID
+                AND
+                    e.SU_ASR_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_ASR_ChangedAt DESC,
             sub.SU_ASR_PositedAt DESC,
@@ -455,6 +588,25 @@ ON
             sub.SU_ERS_SU_ID = [SU].SU_ID
         AND
             sub.SU_ERS_Assertion = isnull(@assertion, sub.SU_ERS_Assertion)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.SU_ERS_ChangedAt = (
+                SELECT
+                    max(e.SU_ERS_ChangedAt)
+                FROM
+                    [dbo].[rSU_ERS_Subject_Erasable](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.SU_ERS_SU_ID = sub.SU_ERS_SU_ID
+                AND
+                    e.SU_ERS_Assertion <> '?'
+            )
+        )
         ORDER BY
             sub.SU_ERS_ChangedAt DESC,
             sub.SU_ERS_PositedAt DESC,

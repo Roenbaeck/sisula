@@ -125,6 +125,25 @@ ON
             sub.ST_NAM_ST_ID = [ST].ST_ID
         AND
             sub.ST_NAM_Stance = isnull(@assertion, sub.ST_NAM_Stance)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.ST_NAM_ChangedAt = (
+                SELECT
+                    max(e.ST_NAM_ChangedAt)
+                FROM
+                    [attributes].[rST_NAM_Stage_Name](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.ST_NAM_ST_ID = sub.ST_NAM_ST_ID
+                AND
+                    e.ST_NAM_Stance <> '?'
+            )
+        )
         ORDER BY
             sub.ST_NAM_ChangedAt DESC,
             sub.ST_NAM_PositedAt DESC,
@@ -172,6 +191,25 @@ ON
             sub.ST_AVG_ST_ID = [ST].ST_ID
         AND
             sub.ST_AVG_Stance = isnull(@assertion, sub.ST_AVG_Stance)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.ST_AVG_ChangedAt = (
+                SELECT
+                    max(e.ST_AVG_ChangedAt)
+                FROM
+                    [attributes].[rST_AVG_Stage_Average](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.ST_AVG_ST_ID = sub.ST_AVG_ST_ID
+                AND
+                    e.ST_AVG_Stance <> '?'
+            )
+        )
         ORDER BY
             sub.ST_AVG_ChangedAt DESC,
             sub.ST_AVG_PositedAt DESC,
@@ -398,6 +436,25 @@ ON
             sub.AC_NAM_AC_ID = [AC].AC_ID
         AND
             sub.AC_NAM_Stance = isnull(@assertion, sub.AC_NAM_Stance)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.AC_NAM_ChangedAt = (
+                SELECT
+                    max(e.AC_NAM_ChangedAt)
+                FROM
+                    [attributes].[rAC_NAM_Actor_Name](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.AC_NAM_AC_ID = sub.AC_NAM_AC_ID
+                AND
+                    e.AC_NAM_Stance <> '?'
+            )
+        )
         ORDER BY
             sub.AC_NAM_ChangedAt DESC,
             sub.AC_NAM_PositedAt DESC,
@@ -449,6 +506,25 @@ ON
             sub.AC_PLV_AC_ID = [AC].AC_ID
         AND
             sub.AC_PLV_Stance = isnull(@assertion, sub.AC_PLV_Stance)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.AC_PLV_ChangedAt = (
+                SELECT
+                    max(e.AC_PLV_ChangedAt)
+                FROM
+                    [attributes].[rAC_PLV_Actor_ProfessionalLevel](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.AC_PLV_AC_ID = sub.AC_PLV_AC_ID
+                AND
+                    e.AC_PLV_Stance <> '?'
+            )
+        )
         ORDER BY
             sub.AC_PLV_ChangedAt DESC,
             sub.AC_PLV_PositedAt DESC,
@@ -656,6 +732,25 @@ ON
             sub.PR_LEN_PR_ID = [PR].PR_ID
         AND
             sub.PR_LEN_Stance = isnull(@assertion, sub.PR_LEN_Stance)
+        AND ( -- asked for positive or negative assertions: those at the latest changing time with an assertion that is
+              -- not a retraction, which supersedes those at earlier changing times whatever its sign
+            isnull(@assertion, '?') = '?'
+        OR
+            sub.PR_LEN_ChangedAt = (
+                SELECT
+                    max(e.PR_LEN_ChangedAt)
+                FROM
+                    [attributes].[rPR_LEN_Program_Length](
+                        @positor,
+                        @changingTimepoint,
+                        @positingTimepoint
+                    ) e
+                WHERE
+                    e.PR_LEN_PR_ID = sub.PR_LEN_PR_ID
+                AND
+                    e.PR_LEN_Stance <> '?'
+            )
+        )
         ORDER BY
             sub.PR_LEN_ChangedAt DESC,
             sub.PR_LEN_PositedAt DESC,
