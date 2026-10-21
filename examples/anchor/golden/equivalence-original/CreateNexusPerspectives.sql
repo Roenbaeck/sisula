@@ -316,95 +316,137 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Event_Status"(0)) "hSTA", 
-    TABLE(nexuses."pEV_Event"("hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "ETY_of"."ETY_Checksum" AS "ETY_Checksum",
+    "ETY_of"."ETY_EventType" AS "ETY_EventType",
+    "ETY_of"."ETY_EQ" AS "ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Event_Revenue",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Event_Status",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utilization" AS "UTL_Utilization",
+    "kUTL"."Metadata_UTL" AS "Metadata_UTL",
+    "UTL"."UTL_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "PLV_EQ",
+    "kLVL"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kLVL"."Metadata_PLV" AS "Metadata_PLV",
+    "LVL"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Event_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Event" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Event_Date" "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Event_Revenue"(0)) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+) "STA"
+ON
+    "STA"."EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Event_Utilization" "UTL"
+ON
+    "UTL"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Event_Level" h
+) "LVL"
+ON
+    "LVL"."EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    attributes."EV_LVL_Event_Level" "hLVL",
-    TABLE(nexuses."pEV_Event"("hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."PLV_ID"
 $$
 ;
 -- Latest equivalence perspective -------------------------------------------------------------------------------------
@@ -769,94 +811,134 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'STA' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    TABLE(attributes."eEV_STA_Event_Status"(equivalent)) "hSTA", 
-    TABLE(nexuses."epEV_Event"(equivalent, "hSTA"."EV_STA_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%STA%')
+-- built as the difference perspective is, from the values of the equivalent
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "EV"."EV_ID",
+    "EV"."Metadata_EV",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "ETY_of"."ETY_Checksum" AS "ETY_Checksum",
+    "ETY_of"."ETY_EventType" AS "ETY_EventType",
+    "ETY_of"."ETY_EQ" AS "ETY_EQ",
+    "ETY_of"."Metadata_ETY" AS "Metadata_ETY",
+    "EV"."ETY_ID_of",
+    "DAT"."Metadata_EV_DAT",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."Metadata_EV_AUD",
+    "AUD"."EV_AUD_EQ",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."Metadata_EV_REV",
+    "REV"."EV_REV_EQ",
+    "REV"."EV_REV_Event_Revenue",
+    "STA"."Metadata_EV_STA",
+    "STA"."EV_STA_ChangedAt",
+    "STA"."EV_STA_EQ",
+    "STA"."EV_STA_Event_Status",
+    "UTL"."Metadata_EV_UTL",
+    "kUTL"."UTL_Utilization" AS "UTL_Utilization",
+    "kUTL"."Metadata_UTL" AS "Metadata_UTL",
+    "UTL"."UTL_ID",
+    "LVL"."Metadata_EV_LVL",
+    "LVL"."EV_LVL_ChangedAt",
+    "kLVL"."PLV_Checksum" AS "PLV_Checksum",
+    "kLVL"."PLV_EQ" AS "PLV_EQ",
+    "kLVL"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "kLVL"."Metadata_PLV" AS "Metadata_PLV",
+    "LVL"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'STA' AS mnemonic
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) h
+    WHERE
+        (selection IS NULL OR selection LIKE '%STA%')
+    AND
+        h."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."EV_ID" AS "EV_ID",
+        h."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LVL' AS mnemonic
+    FROM
+        attributes."EV_LVL_Event_Level" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LVL%')
+    AND
+        h."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    nexuses."EV_Event" "EV"
+ON
+    "EV"."EV_ID" = timepoints."EV_ID"
+LEFT JOIN
+    TABLE(knots."eETY_EventType"(equivalent)) "ETY_of"
+ON
+    "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN
+    attributes."EV_DAT_Event_Date" "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_AUD_Event_Audience"(equivalent)) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    TABLE(attributes."eEV_REV_Event_Revenue"(equivalent)) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_STA_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_STA_ChangedAt"
+        ) AS "until"
+    FROM
+        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) h
+) "STA"
+ON
+    "STA"."EV_ID" = "EV"."EV_ID"
 AND
-    "hSTA"."EV_STA_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "STA"."EV_STA_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "STA"."until" IS NULL
+OR
+    "STA"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    attributes."EV_UTL_Event_Utilization" "UTL"
+ON
+    "UTL"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN
+    knots."UTL_Utilization" "kUTL"
+ON
+    "kUTL"."UTL_ID" = "UTL"."UTL_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."EV_LVL_ChangedAt") OVER (
+            PARTITION BY h."EV_ID"
+            ORDER BY h."EV_LVL_ChangedAt"
+        ) AS "until"
+    FROM
+        attributes."EV_LVL_Event_Level" h
+) "LVL"
+ON
+    "LVL"."EV_ID" = "EV"."EV_ID"
 AND
-    "pEV"."EV_ID" = "hSTA"."EV_ID"
-UNION
-SELECT DISTINCT
-    "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LVL' AS mnemonic,
-    "pEV"."EV_ID",
-    "pEV"."Metadata_EV",
-    "pEV"."ST_ID_wasHeldAt",
-    "pEV"."PR_ID_wasPlayed",
-    "pEV"."ETY_Checksum",
-    "pEV"."ETY_EventType",
-    "pEV"."ETY_EQ",
-    "pEV"."Metadata_ETY",
-    "pEV"."ETY_ID_of",
-    "pEV"."Metadata_EV_DAT",
-    "pEV"."EV_DAT_Event_Date",
-    "pEV"."Metadata_EV_AUD",
-    "pEV"."EV_AUD_EQ",
-    "pEV"."EV_AUD_Event_Audience",
-    "pEV"."Metadata_EV_REV",
-    "pEV"."EV_REV_EQ",
-    "pEV"."EV_REV_Event_Revenue",
-    "pEV"."Metadata_EV_STA",
-    "pEV"."EV_STA_ChangedAt",
-    "pEV"."EV_STA_EQ",
-    "pEV"."EV_STA_Event_Status",
-    "pEV"."Metadata_EV_UTL",
-    "pEV"."UTL_Utilization",
-    "pEV"."Metadata_UTL",
-    "pEV"."UTL_ID",
-    "pEV"."Metadata_EV_LVL",
-    "pEV"."EV_LVL_ChangedAt",
-    "pEV"."PLV_Checksum",
-    "pEV"."PLV_EQ",
-    "pEV"."PLV_ProfessionalLevel",
-    "pEV"."Metadata_PLV",
-    "pEV"."PLV_ID"
-FROM
-    attributes."EV_LVL_Event_Level" "hLVL",
-    TABLE(nexuses."epEV_Event"(equivalent, "hLVL"."EV_LVL_ChangedAt"::timestamp_ntz(9))) "pEV"
-WHERE
-    (selection IS NULL OR selection LIKE '%LVL%')
-AND
-    "hLVL"."EV_LVL_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pEV"."EV_ID" = "hLVL"."EV_ID"
+    "LVL"."EV_LVL_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LVL"."until" IS NULL
+OR
+    "LVL"."until" > timepoints.inspectedTimepoint::date
+)
+LEFT JOIN
+    TABLE(knots."ePLV_ProfessionalLevel"(equivalent)) "kLVL"
+ON
+    "kLVL"."PLV_ID" = "LVL"."PLV_ID"
 $$
 ;

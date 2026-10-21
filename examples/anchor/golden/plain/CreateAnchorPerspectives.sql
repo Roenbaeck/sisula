@@ -183,51 +183,103 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."UTL_ID",
-    "pST"."UTL_Utilization",
-    "pST"."UTL_ID"
-FROM
-    public."ST_NAM_Stage_Name" "hNAM",
-    TABLE(public."pST_Stage"("hNAM"."ST_NAM_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "ST"."ST_ID",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_Stage_Name",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Stage_Location",
+    "AVG"."ST_AVG_ChangedAt",
+    "kAVG"."UTL_Utilization" AS "UTL_Utilization",
+    "AVG"."UTL_ID",
+    "kMIN"."UTL_Utilization" AS "UTL_Utilization",
+    "MIN"."UTL_ID"
+FROM (
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        public."ST_NAM_Stage_Name" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."ST_ID" AS "ST_ID",
+        h."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'AVG' AS mnemonic
+    FROM
+        public."ST_AVG_Stage_Average" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%AVG%')
+    AND
+        h."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    public."ST_Stage" "ST"
+ON
+    "ST"."ST_ID" = timepoints."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_NAM_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        public."ST_NAM_Stage_Name" h
+) "NAM"
+ON
+    "NAM"."ST_ID" = "ST"."ST_ID"
 AND
-    "hNAM"."ST_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."ST_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."ST_LOC_Stage_Location" "LOC"
+ON
+    "LOC"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."ST_AVG_ChangedAt") OVER (
+            PARTITION BY h."ST_ID"
+            ORDER BY h."ST_AVG_ChangedAt"
+        ) AS "until"
+    FROM
+        public."ST_AVG_Stage_Average" h
+) "AVG"
+ON
+    "AVG"."ST_ID" = "ST"."ST_ID"
 AND
-    "pST"."ST_ID" = "hNAM"."ST_ID"
-UNION
-SELECT DISTINCT
-    "hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'AVG' AS mnemonic,
-    "pST"."ST_ID",
-    "pST"."ST_NAM_ChangedAt",
-    "pST"."ST_NAM_Stage_Name",
-    "pST"."ST_LOC_Checksum",
-    "pST"."ST_LOC_Stage_Location",
-    "pST"."ST_AVG_ChangedAt",
-    "pST"."UTL_Utilization",
-    "pST"."UTL_ID",
-    "pST"."UTL_Utilization",
-    "pST"."UTL_ID"
-FROM
-    public."ST_AVG_Stage_Average" "hAVG",
-    TABLE(public."pST_Stage"("hAVG"."ST_AVG_ChangedAt"::timestamp_ntz(9))) "pST"
-WHERE
-    (selection IS NULL OR selection LIKE '%AVG%')
-AND
-    "hAVG"."ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pST"."ST_ID" = "hAVG"."ST_ID"
+    "AVG"."ST_AVG_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "AVG"."until" IS NULL
+OR
+    "AVG"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."UTL_Utilization" "kAVG"
+ON
+    "kAVG"."UTL_ID" = "AVG"."UTL_ID"
+LEFT JOIN
+    public."ST_MIN_Stage_Minimum" "MIN"
+ON
+    "MIN"."ST_ID" = "ST"."ST_ID"
+LEFT JOIN
+    public."UTL_Utilization" "kMIN"
+ON
+    "kMIN"."UTL_ID" = "MIN"."UTL_ID"
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -397,49 +449,98 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'NAM' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."GEN_Gender",
-    "pAC"."GEN_ID",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."PLV_ID"
-FROM
-    public."AC_NAM_Actor_Name" "hNAM",
-    TABLE(public."pAC_Actor"("hNAM"."AC_NAM_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%NAM%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "AC"."AC_ID",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_Actor_Name",
+    "kGEN"."GEN_Gender" AS "GEN_Gender",
+    "GEN"."GEN_ID",
+    "PLV"."AC_PLV_ChangedAt",
+    "kPLV"."PLV_Checksum" AS "PLV_Checksum",
+    "kPLV"."PLV_ProfessionalLevel" AS "PLV_ProfessionalLevel",
+    "PLV"."PLV_ID"
+FROM (
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'NAM' AS mnemonic
+    FROM
+        public."AC_NAM_Actor_Name" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%NAM%')
+    AND
+        h."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    UNION
+    SELECT DISTINCT
+        h."AC_ID" AS "AC_ID",
+        h."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'PLV' AS mnemonic
+    FROM
+        public."AC_PLV_Actor_ProfessionalLevel" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%PLV%')
+    AND
+        h."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    public."AC_Actor" "AC"
+ON
+    "AC"."AC_ID" = timepoints."AC_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_NAM_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_NAM_ChangedAt"
+        ) AS "until"
+    FROM
+        public."AC_NAM_Actor_Name" h
+) "NAM"
+ON
+    "NAM"."AC_ID" = "AC"."AC_ID"
 AND
-    "hNAM"."AC_NAM_ChangedAt" BETWEEN intervalStart AND intervalEnd
+    "NAM"."AC_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."AC_GEN_Actor_Gender" "GEN"
+ON
+    "GEN"."AC_ID" = "AC"."AC_ID"
+LEFT JOIN
+    public."GEN_Gender" "kGEN"
+ON
+    "kGEN"."GEN_ID" = "GEN"."GEN_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."AC_PLV_ChangedAt") OVER (
+            PARTITION BY h."AC_ID"
+            ORDER BY h."AC_PLV_ChangedAt"
+        ) AS "until"
+    FROM
+        public."AC_PLV_Actor_ProfessionalLevel" h
+) "PLV"
+ON
+    "PLV"."AC_ID" = "AC"."AC_ID"
 AND
-    "pAC"."AC_ID" = "hNAM"."AC_ID"
-UNION
-SELECT DISTINCT
-    "hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'PLV' AS mnemonic,
-    "pAC"."AC_ID",
-    "pAC"."AC_NAM_ChangedAt",
-    "pAC"."AC_NAM_Actor_Name",
-    "pAC"."GEN_Gender",
-    "pAC"."GEN_ID",
-    "pAC"."AC_PLV_ChangedAt",
-    "pAC"."PLV_Checksum",
-    "pAC"."PLV_ProfessionalLevel",
-    "pAC"."PLV_ID"
-FROM
-    public."AC_PLV_Actor_ProfessionalLevel" "hPLV",
-    TABLE(public."pAC_Actor"("hPLV"."AC_PLV_ChangedAt"::timestamp_ntz(9))) "pAC"
-WHERE
-    (selection IS NULL OR selection LIKE '%PLV%')
-AND
-    "hPLV"."AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pAC"."AC_ID" = "hPLV"."AC_ID"
+    "PLV"."AC_PLV_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "PLV"."until" IS NULL
+OR
+    "PLV"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."PLV_ProfessionalLevel" "kPLV"
+ON
+    "kPLV"."PLV_ID" = "PLV"."PLV_ID"
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------
@@ -542,21 +643,54 @@ RETURNS TABLE (
 )
 AS
 $$
-SELECT DISTINCT
-    "hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
-    'LEN' AS mnemonic,
-    "pPR"."PR_ID",
-    "pPR"."PR_NAM_Program_Name",
-    "pPR"."PR_LEN_ChangedAt",
-    "pPR"."PR_LEN_Program_Length"
-FROM
-    public."PR_LEN_Program_Length" "hLEN",
-    TABLE(public."pPR_Program"("hLEN"."PR_LEN_ChangedAt"::timestamp_ntz(9))) "pPR"
-WHERE
-    (selection IS NULL OR selection LIKE '%LEN%')
+-- each change in the interval, with the values in effect then: every value is joined with the time until which it
+-- holds, when the next one does. Snowflake cannot call the point-in-time perspective for each change, since it cannot
+-- evaluate a function with an outer join on its argument for each row of another table.
+SELECT
+    timepoints.inspectedTimepoint,
+    timepoints.mnemonic,
+    "PR"."PR_ID",
+    "NAM"."PR_NAM_Program_Name",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_Program_Length"
+FROM (
+    SELECT DISTINCT
+        h."PR_ID" AS "PR_ID",
+        h."PR_LEN_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
+        'LEN' AS mnemonic
+    FROM
+        public."PR_LEN_Program_Length" h
+    WHERE
+        (selection IS NULL OR selection LIKE '%LEN%')
+    AND
+        h."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
+) timepoints
+JOIN
+    public."PR_Program" "PR"
+ON
+    "PR"."PR_ID" = timepoints."PR_ID"
+LEFT JOIN
+    public."PR_NAM_Program_Name" "NAM"
+ON
+    "NAM"."PR_ID" = "PR"."PR_ID"
+LEFT JOIN (
+    SELECT
+        h.*,
+        lead(h."PR_LEN_ChangedAt") OVER (
+            PARTITION BY h."PR_ID"
+            ORDER BY h."PR_LEN_ChangedAt"
+        ) AS "until"
+    FROM
+        public."PR_LEN_Program_Length" h
+) "LEN"
+ON
+    "LEN"."PR_ID" = "PR"."PR_ID"
 AND
-    "hLEN"."PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
-AND
-    "pPR"."PR_ID" = "hLEN"."PR_ID"
+    "LEN"."PR_LEN_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LEN"."until" IS NULL
+OR
+    "LEN"."until" > timepoints.inspectedTimepoint::date
+)
 $$
 ;

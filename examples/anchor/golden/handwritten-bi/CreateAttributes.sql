@@ -306,7 +306,7 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Annex" (
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Posit" (
     "AC_NAM_ID" not null,
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" varbinary(max) not null,
+    "AC_NAM_Actor_Name" binary not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Actor_Name_Posit" foreign key (
         "AC_NAM_AC_ID"

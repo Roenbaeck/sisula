@@ -71,76 +71,101 @@ SELECT
     "REV"."EV_REV_Event_Revenue"
 FROM
     public."EV_Event" "EV"
+-- the views of all positors are worked out, and the one asked for is picked last: the latest, point-in-time and now
+-- perspectives call this one for each positor, and Snowflake cannot do that when the positor is used before a window
+-- or in an outer join (so a positor has to be in the table of positors to be shown)
+CROSS JOIN
+    public."_Positor" p
 LEFT JOIN
     public."ETY_EventType" "kETY_of"
 ON
     "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
-LEFT JOIN
-    TABLE(public."rEV_DAT_Event_Date"(
-        positor,
-        positingTimepoint::datetime
-    )) "DAT"
-ON
-    "DAT"."EV_DAT_ID" = (
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_DAT_ID"
+            r.*
         FROM
             TABLE(public."rEV_DAT_Event_Date"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_DAT_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_DAT_Assertion" = coalesce(assertion, sub."EV_DAT_Assertion")
-        ORDER BY
-            sub."EV_DAT_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rEV_AUD_Event_Audience"(
-        positor,
-        positingTimepoint::datetime
-    )) "AUD"
+            )) r
+    ) x
+    WHERE
+        x."EV_DAT_Assertion" = coalesce(assertion, x."EV_DAT_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_DAT_Positor", x."EV_DAT_EV_ID"
+            ORDER BY
+                x."EV_DAT_PositedAt" DESC,
+                x."EV_DAT_Reliability" DESC
+        ) = 1
+) "DAT"
 ON
-    "AUD"."EV_AUD_ID" = (
+    "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
+AND
+    "DAT"."EV_DAT_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_AUD_ID"
+            r.*
         FROM
             TABLE(public."rEV_AUD_Event_Audience"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_AUD_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_AUD_Assertion" = coalesce(assertion, sub."EV_AUD_Assertion")
-        ORDER BY
-            sub."EV_AUD_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rEV_REV_Event_Revenue"(
-        positor,
-        positingTimepoint::datetime
-    )) "REV"
+            )) r
+    ) x
+    WHERE
+        x."EV_AUD_Assertion" = coalesce(assertion, x."EV_AUD_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_AUD_Positor", x."EV_AUD_EV_ID"
+            ORDER BY
+                x."EV_AUD_PositedAt" DESC,
+                x."EV_AUD_Reliability" DESC
+        ) = 1
+) "AUD"
 ON
-    "REV"."EV_REV_ID" = (
+    "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
+AND
+    "AUD"."EV_AUD_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor, picked by a window: Snowflake cannot evaluate a subquery that
+    -- refers to the outer row and takes the first row of an ordering
+    SELECT
+        x.*
+    FROM (
         SELECT
-            sub."EV_REV_ID"
+            r.*
         FROM
             TABLE(public."rEV_REV_Event_Revenue"(
-                positor,
+                null::tinyint,
                 positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_REV_EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_REV_Assertion" = coalesce(assertion, sub."EV_REV_Assertion")
-        ORDER BY
-            sub."EV_REV_PositedAt" DESC
-        LIMIT 1
-    )
+            )) r
+    ) x
+    WHERE
+        x."EV_REV_Assertion" = coalesce(assertion, x."EV_REV_Assertion")
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY x."EV_REV_Positor", x."EV_REV_EV_ID"
+            ORDER BY
+                x."EV_REV_PositedAt" DESC,
+                x."EV_REV_Reliability" DESC
+        ) = 1
+) "REV"
+ON
+    "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
+AND
+    "REV"."EV_REV_Positor" = p."Positor"
+WHERE
+    p."Positor" = positor
 $$
 ;
 -- Latest perspective -------------------------------------------------------------------------------------------------

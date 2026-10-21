@@ -81,96 +81,94 @@ SELECT
     "MIN"."ST_MIN_UTL_ID"
 FROM
     public."ST_Stage" "ST"
-LEFT JOIN
-    TABLE(public."rST_NAM_Stage_Name"(
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "NAM"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_NAM_Stage_Name"(
+            changingTimepoint::datetime,
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."ST_NAM_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_NAM_ST_ID"
+            ORDER BY
+                r."ST_NAM_ChangedAt" DESC,
+                r."ST_NAM_PositedAt" DESC
+        ) = 1
+) "NAM"
 ON
-    "NAM"."ST_NAM_ID" = (
-        SELECT
-            sub."ST_NAM_ID"
-        FROM
-            TABLE(public."rST_NAM_Stage_Name"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_NAM_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_NAM_Reliability" = 1
-        ORDER BY
-            sub."ST_NAM_ChangedAt" DESC,
-            sub."ST_NAM_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rST_LOC_Stage_Location"(
-        positingTimepoint::datetime
-    )) "LOC"
+    "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_LOC_Stage_Location"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."ST_LOC_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_LOC_ST_ID"
+            ORDER BY
+                r."ST_LOC_PositedAt" DESC
+        ) = 1
+) "LOC"
 ON
-    "LOC"."ST_LOC_ID" = (
-        SELECT
-            sub."ST_LOC_ID"
-        FROM
-            TABLE(public."rST_LOC_Stage_Location"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_LOC_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_LOC_Reliability" = 1
-        ORDER BY
-            sub."ST_LOC_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rST_AVG_Stage_Average"(
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "AVG"
+    "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_AVG_Stage_Average"(
+            changingTimepoint::datetime,
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."ST_AVG_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_AVG_ST_ID"
+            ORDER BY
+                r."ST_AVG_ChangedAt" DESC,
+                r."ST_AVG_PositedAt" DESC
+        ) = 1
+) "AVG"
 ON
-    "AVG"."ST_AVG_ID" = (
-        SELECT
-            sub."ST_AVG_ID"
-        FROM
-            TABLE(public."rST_AVG_Stage_Average"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_AVG_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_AVG_Reliability" = 1
-        ORDER BY
-            sub."ST_AVG_ChangedAt" DESC,
-            sub."ST_AVG_PositedAt" DESC
-        LIMIT 1
-    )
+    "AVG"."ST_AVG_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
     public."UTL_Utilization" "kAVG"
 ON
     "kAVG"."UTL_ID" = "AVG"."ST_AVG_UTL_ID"
-LEFT JOIN
-    TABLE(public."rST_MIN_Stage_Minimum"(
-        positingTimepoint::datetime
-    )) "MIN"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_MIN_Stage_Minimum"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."ST_MIN_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_MIN_ST_ID"
+            ORDER BY
+                r."ST_MIN_PositedAt" DESC
+        ) = 1
+) "MIN"
 ON
-    "MIN"."ST_MIN_ID" = (
-        SELECT
-            sub."ST_MIN_ID"
-        FROM
-            TABLE(public."rST_MIN_Stage_Minimum"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."ST_MIN_ST_ID" = "ST"."ST_ID"
-        AND
-            sub."ST_MIN_Reliability" = 1
-        ORDER BY
-            sub."ST_MIN_PositedAt" DESC
-        LIMIT 1
-    )
+    "MIN"."ST_MIN_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
     public."UTL_Utilization" "kMIN"
 ON
@@ -325,41 +323,45 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now: every latest
+-- asserted posit is joined with the changing time until which it holds, when the next one does. Snowflake cannot call
+-- the time-traveling perspective for each change, since it cannot evaluate a function with an outer join on its
+-- argument for each row of another table.
 SELECT
-    tp.inspectedTimepoint,
+    timepoints.inspectedTimepoint,
     "ST"."ST_ID",
     "ST"."Metadata_ST",
-    "ST"."ST_NAM_ST_ID",
-    "ST"."Metadata_ST_NAM",
-    "ST"."ST_NAM_ID",
-    "ST"."ST_NAM_ChangedAt",
-    "ST"."ST_NAM_PositedAt",
-    "ST"."ST_NAM_Reliability",
-    "ST"."ST_NAM_Stage_Name",
-    "ST"."ST_LOC_ST_ID",
-    "ST"."Metadata_ST_LOC",
-    "ST"."ST_LOC_ID",
-    "ST"."ST_LOC_PositedAt",
-    "ST"."ST_LOC_Reliability",
-    "ST"."ST_LOC_Checksum",
-    "ST"."ST_LOC_Stage_Location",
-    "ST"."ST_AVG_ST_ID",
-    "ST"."Metadata_ST_AVG",
-    "ST"."ST_AVG_ID",
-    "ST"."ST_AVG_ChangedAt",
-    "ST"."ST_AVG_PositedAt",
-    "ST"."ST_AVG_Reliability",
-    "ST"."ST_AVG_UTL_Utilization",
-    "ST"."ST_AVG_Metadata_UTL",
-    "ST"."ST_AVG_UTL_ID",
-    "ST"."ST_MIN_ST_ID",
-    "ST"."Metadata_ST_MIN",
-    "ST"."ST_MIN_ID",
-    "ST"."ST_MIN_PositedAt",
-    "ST"."ST_MIN_Reliability",
-    "ST"."ST_MIN_UTL_Utilization",
-    "ST"."ST_MIN_Metadata_UTL",
-    "ST"."ST_MIN_UTL_ID"
+    "NAM"."ST_NAM_ST_ID",
+    "NAM"."Metadata_ST_NAM",
+    "NAM"."ST_NAM_ID",
+    "NAM"."ST_NAM_ChangedAt",
+    "NAM"."ST_NAM_PositedAt",
+    "NAM"."ST_NAM_Reliability",
+    "NAM"."ST_NAM_Stage_Name",
+    "LOC"."ST_LOC_ST_ID",
+    "LOC"."Metadata_ST_LOC",
+    "LOC"."ST_LOC_ID",
+    "LOC"."ST_LOC_PositedAt",
+    "LOC"."ST_LOC_Reliability",
+    "LOC"."ST_LOC_Checksum",
+    "LOC"."ST_LOC_Stage_Location",
+    "AVG"."ST_AVG_ST_ID",
+    "AVG"."Metadata_ST_AVG",
+    "AVG"."ST_AVG_ID",
+    "AVG"."ST_AVG_ChangedAt",
+    "AVG"."ST_AVG_PositedAt",
+    "AVG"."ST_AVG_Reliability",
+    "kAVG"."UTL_Utilization" AS "ST_AVG_UTL_Utilization",
+    "kAVG"."Metadata_UTL" AS "ST_AVG_Metadata_UTL",
+    "AVG"."ST_AVG_UTL_ID",
+    "MIN"."ST_MIN_ST_ID",
+    "MIN"."Metadata_ST_MIN",
+    "MIN"."ST_MIN_ID",
+    "MIN"."ST_MIN_PositedAt",
+    "MIN"."ST_MIN_Reliability",
+    "kMIN"."UTL_Utilization" AS "ST_MIN_UTL_Utilization",
+    "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
+    "MIN"."ST_MIN_UTL_ID"
 FROM (
     SELECT DISTINCT
         "ST_NAM_ST_ID" AS "ST_ID",
@@ -382,13 +384,121 @@ FROM (
         (selection IS NULL OR selection LIKE '%AVG%')
     AND
         "ST_AVG_ChangedAt" BETWEEN intervalStart AND intervalEnd
-) tp,
-    TABLE(public."tST_Stage"(
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime
-    )) "ST"
-WHERE
-    "ST"."ST_ID" = tp."ST_ID"
+) timepoints
+JOIN
+    public."ST_Stage" "ST"
+ON
+    "ST"."ST_ID" = timepoints."ST_ID"
+LEFT JOIN (
+    SELECT
+        x.*,
+        lead(x."ST_NAM_ChangedAt") OVER (
+            PARTITION BY x."ST_NAM_ST_ID"
+            ORDER BY x."ST_NAM_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- the latest asserted posit at each changing time
+        SELECT
+            r.*
+        FROM
+            TABLE(public."rST_NAM_Stage_Name"(
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."ST_NAM_Reliability" = 1
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."ST_NAM_ST_ID", r."ST_NAM_ChangedAt"
+                ORDER BY r."ST_NAM_PositedAt" DESC
+            ) = 1
+    ) x
+) "NAM"
+ON
+    "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
+AND
+    "NAM"."ST_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_LOC_Stage_Location"(
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."ST_LOC_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_LOC_ST_ID"
+            ORDER BY r."ST_LOC_PositedAt" DESC
+        ) = 1
+) "LOC"
+ON
+    "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
+LEFT JOIN (
+    SELECT
+        x.*,
+        lead(x."ST_AVG_ChangedAt") OVER (
+            PARTITION BY x."ST_AVG_ST_ID"
+            ORDER BY x."ST_AVG_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- the latest asserted posit at each changing time
+        SELECT
+            r.*
+        FROM
+            TABLE(public."rST_AVG_Stage_Average"(
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."ST_AVG_Reliability" = 1
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."ST_AVG_ST_ID", r."ST_AVG_ChangedAt"
+                ORDER BY r."ST_AVG_PositedAt" DESC
+            ) = 1
+    ) x
+) "AVG"
+ON
+    "AVG"."ST_AVG_ST_ID" = "ST"."ST_ID"
+AND
+    "AVG"."ST_AVG_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "AVG"."until" IS NULL
+OR
+    "AVG"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."UTL_Utilization" "kAVG"
+ON
+    "kAVG"."UTL_ID" = "AVG"."ST_AVG_UTL_ID"
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rST_MIN_Stage_Minimum"(
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."ST_MIN_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."ST_MIN_ST_ID"
+            ORDER BY r."ST_MIN_PositedAt" DESC
+        ) = 1
+) "MIN"
+ON
+    "MIN"."ST_MIN_ST_ID" = "ST"."ST_ID"
+LEFT JOIN
+    public."UTL_Utilization" "kMIN"
+ON
+    "kMIN"."UTL_ID" = "MIN"."ST_MIN_UTL_ID"
 $$
 ;
 CREATE OR REPLACE FUNCTION public."tAC_Actor" (
@@ -457,76 +567,74 @@ SELECT
     "PLV"."AC_PLV_PLV_ID"
 FROM
     public."AC_Actor" "AC"
-LEFT JOIN
-    TABLE(public."rAC_NAM_Actor_Name"(
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "NAM"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rAC_NAM_Actor_Name"(
+            changingTimepoint::datetime,
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."AC_NAM_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."AC_NAM_AC_ID"
+            ORDER BY
+                r."AC_NAM_ChangedAt" DESC,
+                r."AC_NAM_PositedAt" DESC
+        ) = 1
+) "NAM"
 ON
-    "NAM"."AC_NAM_ID" = (
-        SELECT
-            sub."AC_NAM_ID"
-        FROM
-            TABLE(public."rAC_NAM_Actor_Name"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_NAM_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_NAM_Reliability" = 1
-        ORDER BY
-            sub."AC_NAM_ChangedAt" DESC,
-            sub."AC_NAM_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rAC_GEN_Actor_Gender"(
-        positingTimepoint::datetime
-    )) "GEN"
+    "NAM"."AC_NAM_AC_ID" = "AC"."AC_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rAC_GEN_Actor_Gender"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."AC_GEN_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."AC_GEN_AC_ID"
+            ORDER BY
+                r."AC_GEN_PositedAt" DESC
+        ) = 1
+) "GEN"
 ON
-    "GEN"."AC_GEN_ID" = (
-        SELECT
-            sub."AC_GEN_ID"
-        FROM
-            TABLE(public."rAC_GEN_Actor_Gender"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_GEN_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_GEN_Reliability" = 1
-        ORDER BY
-            sub."AC_GEN_PositedAt" DESC
-        LIMIT 1
-    )
+    "GEN"."AC_GEN_AC_ID" = "AC"."AC_ID"
 LEFT JOIN
     public."GEN_Gender" "kGEN"
 ON
     "kGEN"."GEN_ID" = "GEN"."AC_GEN_GEN_ID"
-LEFT JOIN
-    TABLE(public."rAC_PLV_Actor_ProfessionalLevel"(
-        changingTimepoint::datetime,
-        positingTimepoint::datetime
-    )) "PLV"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rAC_PLV_Actor_ProfessionalLevel"(
+            changingTimepoint::datetime,
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."AC_PLV_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."AC_PLV_AC_ID"
+            ORDER BY
+                r."AC_PLV_ChangedAt" DESC,
+                r."AC_PLV_PositedAt" DESC
+        ) = 1
+) "PLV"
 ON
-    "PLV"."AC_PLV_ID" = (
-        SELECT
-            sub."AC_PLV_ID"
-        FROM
-            TABLE(public."rAC_PLV_Actor_ProfessionalLevel"(
-                changingTimepoint::datetime,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."AC_PLV_AC_ID" = "AC"."AC_ID"
-        AND
-            sub."AC_PLV_Reliability" = 1
-        ORDER BY
-            sub."AC_PLV_ChangedAt" DESC,
-            sub."AC_PLV_PositedAt" DESC
-        LIMIT 1
-    )
+    "PLV"."AC_PLV_AC_ID" = "AC"."AC_ID"
 LEFT JOIN
     public."PLV_ProfessionalLevel" "kPLV"
 ON
@@ -663,35 +771,39 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now: every latest
+-- asserted posit is joined with the changing time until which it holds, when the next one does. Snowflake cannot call
+-- the time-traveling perspective for each change, since it cannot evaluate a function with an outer join on its
+-- argument for each row of another table.
 SELECT
-    tp.inspectedTimepoint,
+    timepoints.inspectedTimepoint,
     "AC"."AC_ID",
     "AC"."Metadata_AC",
-    "AC"."AC_NAM_AC_ID",
-    "AC"."Metadata_AC_NAM",
-    "AC"."AC_NAM_ID",
-    "AC"."AC_NAM_ChangedAt",
-    "AC"."AC_NAM_PositedAt",
-    "AC"."AC_NAM_Reliability",
-    "AC"."AC_NAM_Actor_Name",
-    "AC"."AC_GEN_AC_ID",
-    "AC"."Metadata_AC_GEN",
-    "AC"."AC_GEN_ID",
-    "AC"."AC_GEN_PositedAt",
-    "AC"."AC_GEN_Reliability",
-    "AC"."AC_GEN_GEN_Gender",
-    "AC"."AC_GEN_Metadata_GEN",
-    "AC"."AC_GEN_GEN_ID",
-    "AC"."AC_PLV_AC_ID",
-    "AC"."Metadata_AC_PLV",
-    "AC"."AC_PLV_ID",
-    "AC"."AC_PLV_ChangedAt",
-    "AC"."AC_PLV_PositedAt",
-    "AC"."AC_PLV_Reliability",
-    "AC"."AC_PLV_PLV_Checksum",
-    "AC"."AC_PLV_PLV_ProfessionalLevel",
-    "AC"."AC_PLV_Metadata_PLV",
-    "AC"."AC_PLV_PLV_ID"
+    "NAM"."AC_NAM_AC_ID",
+    "NAM"."Metadata_AC_NAM",
+    "NAM"."AC_NAM_ID",
+    "NAM"."AC_NAM_ChangedAt",
+    "NAM"."AC_NAM_PositedAt",
+    "NAM"."AC_NAM_Reliability",
+    "NAM"."AC_NAM_Actor_Name",
+    "GEN"."AC_GEN_AC_ID",
+    "GEN"."Metadata_AC_GEN",
+    "GEN"."AC_GEN_ID",
+    "GEN"."AC_GEN_PositedAt",
+    "GEN"."AC_GEN_Reliability",
+    "kGEN"."GEN_Gender" AS "AC_GEN_GEN_Gender",
+    "kGEN"."Metadata_GEN" AS "AC_GEN_Metadata_GEN",
+    "GEN"."AC_GEN_GEN_ID",
+    "PLV"."AC_PLV_AC_ID",
+    "PLV"."Metadata_AC_PLV",
+    "PLV"."AC_PLV_ID",
+    "PLV"."AC_PLV_ChangedAt",
+    "PLV"."AC_PLV_PositedAt",
+    "PLV"."AC_PLV_Reliability",
+    "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
+    "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
+    "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
+    "PLV"."AC_PLV_PLV_ID"
 FROM (
     SELECT DISTINCT
         "AC_NAM_AC_ID" AS "AC_ID",
@@ -714,13 +826,104 @@ FROM (
         (selection IS NULL OR selection LIKE '%PLV%')
     AND
         "AC_PLV_ChangedAt" BETWEEN intervalStart AND intervalEnd
-) tp,
-    TABLE(public."tAC_Actor"(
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime
-    )) "AC"
-WHERE
-    "AC"."AC_ID" = tp."AC_ID"
+) timepoints
+JOIN
+    public."AC_Actor" "AC"
+ON
+    "AC"."AC_ID" = timepoints."AC_ID"
+LEFT JOIN (
+    SELECT
+        x.*,
+        lead(x."AC_NAM_ChangedAt") OVER (
+            PARTITION BY x."AC_NAM_AC_ID"
+            ORDER BY x."AC_NAM_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- the latest asserted posit at each changing time
+        SELECT
+            r.*
+        FROM
+            TABLE(public."rAC_NAM_Actor_Name"(
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_NAM_Reliability" = 1
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."AC_NAM_AC_ID", r."AC_NAM_ChangedAt"
+                ORDER BY r."AC_NAM_PositedAt" DESC
+            ) = 1
+    ) x
+) "NAM"
+ON
+    "NAM"."AC_NAM_AC_ID" = "AC"."AC_ID"
+AND
+    "NAM"."AC_NAM_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "NAM"."until" IS NULL
+OR
+    "NAM"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rAC_GEN_Actor_Gender"(
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."AC_GEN_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."AC_GEN_AC_ID"
+            ORDER BY r."AC_GEN_PositedAt" DESC
+        ) = 1
+) "GEN"
+ON
+    "GEN"."AC_GEN_AC_ID" = "AC"."AC_ID"
+LEFT JOIN
+    public."GEN_Gender" "kGEN"
+ON
+    "kGEN"."GEN_ID" = "GEN"."AC_GEN_GEN_ID"
+LEFT JOIN (
+    SELECT
+        x.*,
+        lead(x."AC_PLV_ChangedAt") OVER (
+            PARTITION BY x."AC_PLV_AC_ID"
+            ORDER BY x."AC_PLV_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- the latest asserted posit at each changing time
+        SELECT
+            r.*
+        FROM
+            TABLE(public."rAC_PLV_Actor_ProfessionalLevel"(
+                '9999-12-31'::datetime,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."AC_PLV_Reliability" = 1
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."AC_PLV_AC_ID", r."AC_PLV_ChangedAt"
+                ORDER BY r."AC_PLV_PositedAt" DESC
+            ) = 1
+    ) x
+) "PLV"
+ON
+    "PLV"."AC_PLV_AC_ID" = "AC"."AC_ID"
+AND
+    "PLV"."AC_PLV_ChangedAt" <= timepoints.inspectedTimepoint::datetime
+AND (
+    "PLV"."until" IS NULL
+OR
+    "PLV"."until" > timepoints.inspectedTimepoint::datetime
+)
+LEFT JOIN
+    public."PLV_ProfessionalLevel" "kPLV"
+ON
+    "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
 ;
 CREATE OR REPLACE FUNCTION public."tPR_Program" (
@@ -765,49 +968,48 @@ SELECT
     "LEN"."PR_LEN_Program_Length"
 FROM
     public."PR_Program" "PR"
-LEFT JOIN
-    TABLE(public."rPR_NAM_Program_Name"(
-        positingTimepoint::datetime
-    )) "NAM"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rPR_NAM_Program_Name"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."PR_NAM_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."PR_NAM_PR_ID"
+            ORDER BY
+                r."PR_NAM_PositedAt" DESC
+        ) = 1
+) "NAM"
 ON
-    "NAM"."PR_NAM_ID" = (
-        SELECT
-            sub."PR_NAM_ID"
-        FROM
-            TABLE(public."rPR_NAM_Program_Name"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."PR_NAM_PR_ID" = "PR"."PR_ID"
-        AND
-            sub."PR_NAM_Reliability" = 1
-        ORDER BY
-            sub."PR_NAM_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rPR_LEN_Program_Length"(
-        changingTimepoint::date,
-        positingTimepoint::datetime
-    )) "LEN"
+    "NAM"."PR_NAM_PR_ID" = "PR"."PR_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each anchor, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rPR_LEN_Program_Length"(
+            changingTimepoint::date,
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."PR_LEN_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."PR_LEN_PR_ID"
+            ORDER BY
+                r."PR_LEN_ChangedAt" DESC,
+                r."PR_LEN_PositedAt" DESC
+        ) = 1
+) "LEN"
 ON
-    "LEN"."PR_LEN_ID" = (
-        SELECT
-            sub."PR_LEN_ID"
-        FROM
-            TABLE(public."rPR_LEN_Program_Length"(
-                changingTimepoint::date,
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."PR_LEN_PR_ID" = "PR"."PR_ID"
-        AND
-            sub."PR_LEN_Reliability" = 1
-        ORDER BY
-            sub."PR_LEN_ChangedAt" DESC,
-            sub."PR_LEN_PositedAt" DESC
-        LIMIT 1
-    )
+    "LEN"."PR_LEN_PR_ID" = "PR"."PR_ID"
 $$
 ;
 CREATE OR REPLACE VIEW public."lPR_Program" COPY GRANTS AS
@@ -904,23 +1106,27 @@ RETURNS TABLE (
 )
 AS
 $$
+-- each change in the interval, with what the time-traveling perspective shows then as it is known now: every latest
+-- asserted posit is joined with the changing time until which it holds, when the next one does. Snowflake cannot call
+-- the time-traveling perspective for each change, since it cannot evaluate a function with an outer join on its
+-- argument for each row of another table.
 SELECT
-    tp.inspectedTimepoint,
+    timepoints.inspectedTimepoint,
     "PR"."PR_ID",
     "PR"."Metadata_PR",
-    "PR"."PR_NAM_PR_ID",
-    "PR"."Metadata_PR_NAM",
-    "PR"."PR_NAM_ID",
-    "PR"."PR_NAM_PositedAt",
-    "PR"."PR_NAM_Reliability",
-    "PR"."PR_NAM_Program_Name",
-    "PR"."PR_LEN_PR_ID",
-    "PR"."Metadata_PR_LEN",
-    "PR"."PR_LEN_ID",
-    "PR"."PR_LEN_ChangedAt",
-    "PR"."PR_LEN_PositedAt",
-    "PR"."PR_LEN_Reliability",
-    "PR"."PR_LEN_Program_Length"
+    "NAM"."PR_NAM_PR_ID",
+    "NAM"."Metadata_PR_NAM",
+    "NAM"."PR_NAM_ID",
+    "NAM"."PR_NAM_PositedAt",
+    "NAM"."PR_NAM_Reliability",
+    "NAM"."PR_NAM_Program_Name",
+    "LEN"."PR_LEN_PR_ID",
+    "LEN"."Metadata_PR_LEN",
+    "LEN"."PR_LEN_ID",
+    "LEN"."PR_LEN_ChangedAt",
+    "LEN"."PR_LEN_PositedAt",
+    "LEN"."PR_LEN_Reliability",
+    "LEN"."PR_LEN_Program_Length"
 FROM (
     SELECT DISTINCT
         "PR_LEN_PR_ID" AS "PR_ID",
@@ -932,12 +1138,61 @@ FROM (
         (selection IS NULL OR selection LIKE '%LEN%')
     AND
         "PR_LEN_ChangedAt" BETWEEN intervalStart AND intervalEnd
-) tp,
-    TABLE(public."tPR_Program"(
-        tp.inspectedTimepoint::timestamp_ntz(9),
-        '9999-12-31'::datetime
-    )) "PR"
-WHERE
-    "PR"."PR_ID" = tp."PR_ID"
+) timepoints
+JOIN
+    public."PR_Program" "PR"
+ON
+    "PR"."PR_ID" = timepoints."PR_ID"
+LEFT JOIN (
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rPR_NAM_Program_Name"(
+            '9999-12-31'::datetime
+        )) r
+    WHERE
+        r."PR_NAM_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."PR_NAM_PR_ID"
+            ORDER BY r."PR_NAM_PositedAt" DESC
+        ) = 1
+) "NAM"
+ON
+    "NAM"."PR_NAM_PR_ID" = "PR"."PR_ID"
+LEFT JOIN (
+    SELECT
+        x.*,
+        lead(x."PR_LEN_ChangedAt") OVER (
+            PARTITION BY x."PR_LEN_PR_ID"
+            ORDER BY x."PR_LEN_ChangedAt"
+        ) AS "until"
+    FROM (
+        -- the latest asserted posit at each changing time
+        SELECT
+            r.*
+        FROM
+            TABLE(public."rPR_LEN_Program_Length"(
+                '9999-12-31'::date,
+                '9999-12-31'::datetime
+            )) r
+        WHERE
+            r."PR_LEN_Reliability" = 1
+        QUALIFY
+            row_number() OVER (
+                PARTITION BY r."PR_LEN_PR_ID", r."PR_LEN_ChangedAt"
+                ORDER BY r."PR_LEN_PositedAt" DESC
+            ) = 1
+    ) x
+) "LEN"
+ON
+    "LEN"."PR_LEN_PR_ID" = "PR"."PR_ID"
+AND
+    "LEN"."PR_LEN_ChangedAt" <= timepoints.inspectedTimepoint::date
+AND (
+    "LEN"."until" IS NULL
+OR
+    "LEN"."until" > timepoints.inspectedTimepoint::date
+)
 $$
 ;

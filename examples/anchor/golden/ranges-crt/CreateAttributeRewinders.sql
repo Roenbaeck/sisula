@@ -7,7 +7,7 @@
 -- in time. The forwarder is the opposite of the rewinder, such that the 
 -- union of the two will produce all rows in a posit table.
 --
--- @positor the view of which positor to adopt (defaults to 0)
+-- @positor the view of which positor to adopt, or null for the views of all of them
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
 -- @positingTimepoint the point in positing time to rewind to (defaults to End of Time, no rewind)
 --
@@ -75,10 +75,10 @@ JOIN
 ON
     a."EV_DAT_ID" = p."EV_DAT_ID"
 AND
-    a."EV_DAT_Who" = positor
+    a."EV_DAT_Who" = coalesce(positor, a."EV_DAT_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_DAT_ID"
+        PARTITION BY p."EV_DAT_ID", a."EV_DAT_Who"
         ORDER BY a."EV_DAT_PositedAt" DESC
     ) = 1
 $$
@@ -147,10 +147,10 @@ JOIN
 ON
     a."EV_AUD_ID" = p."EV_AUD_ID"
 AND
-    a."EV_AUD_Who" = positor
+    a."EV_AUD_Who" = coalesce(positor, a."EV_AUD_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_AUD_ID"
+        PARTITION BY p."EV_AUD_ID", a."EV_AUD_Who"
         ORDER BY a."EV_AUD_PositedAt" DESC
     ) = 1
 $$
@@ -219,10 +219,10 @@ JOIN
 ON
     a."EV_REV_ID" = p."EV_REV_ID"
 AND
-    a."EV_REV_Who" = positor
+    a."EV_REV_Who" = coalesce(positor, a."EV_REV_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_REV_ID"
+        PARTITION BY p."EV_REV_ID", a."EV_REV_Who"
         ORDER BY a."EV_REV_PositedAt" DESC
     ) = 1
 $$
@@ -344,10 +344,10 @@ JOIN
 ON
     a."EV_STA_ID" = p."EV_STA_ID"
 AND
-    a."EV_STA_Who" = positor
+    a."EV_STA_Who" = coalesce(positor, a."EV_STA_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_STA_ID"
+        PARTITION BY p."EV_STA_ID", a."EV_STA_Who"
         ORDER BY a."EV_STA_PositedAt" DESC
     ) = 1
 $$
@@ -390,10 +390,10 @@ JOIN
 ON
     a."EV_STA_ID" = p."EV_STA_ID"
 AND
-    a."EV_STA_Who" = positor
+    a."EV_STA_Who" = coalesce(positor, a."EV_STA_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_STA_ID"
+        PARTITION BY p."EV_STA_ID", a."EV_STA_Who"
         ORDER BY a."EV_STA_PositedAt" DESC
     ) = 1
 $$
@@ -520,10 +520,10 @@ JOIN
 ON
     a."EV_UTL_ID" = p."EV_UTL_ID"
 AND
-    a."EV_UTL_Who" = positor
+    a."EV_UTL_Who" = coalesce(positor, a."EV_UTL_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_UTL_ID"
+        PARTITION BY p."EV_UTL_ID", a."EV_UTL_Who"
         ORDER BY a."EV_UTL_PositedAt" DESC
     ) = 1
 $$
@@ -645,10 +645,10 @@ JOIN
 ON
     a."EV_LVL_ID" = p."EV_LVL_ID"
 AND
-    a."EV_LVL_Who" = positor
+    a."EV_LVL_Who" = coalesce(positor, a."EV_LVL_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_LVL_ID"
+        PARTITION BY p."EV_LVL_ID", a."EV_LVL_Who"
         ORDER BY a."EV_LVL_PositedAt" DESC
     ) = 1
 $$
@@ -691,10 +691,10 @@ JOIN
 ON
     a."EV_LVL_ID" = p."EV_LVL_ID"
 AND
-    a."EV_LVL_Who" = positor
+    a."EV_LVL_Who" = coalesce(positor, a."EV_LVL_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_LVL_ID"
+        PARTITION BY p."EV_LVL_ID", a."EV_LVL_Who"
         ORDER BY a."EV_LVL_PositedAt" DESC
     ) = 1
 $$
@@ -874,10 +874,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Who" = positor
+    a."ST_NAM_Who" = coalesce(positor, a."ST_NAM_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Who"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -920,10 +920,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Who" = positor
+    a."ST_NAM_Who" = coalesce(positor, a."ST_NAM_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Who"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -1052,10 +1052,10 @@ JOIN
 ON
     a."ST_LOC_ID" = p."ST_LOC_ID"
 AND
-    a."ST_LOC_Who" = positor
+    a."ST_LOC_Who" = coalesce(positor, a."ST_LOC_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_LOC_ID"
+        PARTITION BY p."ST_LOC_ID", a."ST_LOC_Who"
         ORDER BY a."ST_LOC_PositedAt" DESC
     ) = 1
 $$
@@ -1177,10 +1177,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Who" = positor
+    a."ST_AVG_Who" = coalesce(positor, a."ST_AVG_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Who"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -1223,10 +1223,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Who" = positor
+    a."ST_AVG_Who" = coalesce(positor, a."ST_AVG_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Who"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -1353,10 +1353,10 @@ JOIN
 ON
     a."ST_MIN_ID" = p."ST_MIN_ID"
 AND
-    a."ST_MIN_Who" = positor
+    a."ST_MIN_Who" = coalesce(positor, a."ST_MIN_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_MIN_ID"
+        PARTITION BY p."ST_MIN_ID", a."ST_MIN_Who"
         ORDER BY a."ST_MIN_PositedAt" DESC
     ) = 1
 $$
@@ -1370,7 +1370,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1395,7 +1395,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1456,7 +1456,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1478,10 +1478,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Who" = positor
+    a."AC_NAM_Who" = coalesce(positor, a."AC_NAM_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Who"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -1502,7 +1502,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1524,10 +1524,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Who" = positor
+    a."AC_NAM_Who" = coalesce(positor, a."AC_NAM_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Who"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -1542,7 +1542,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT
@@ -1571,7 +1571,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS varbinary(max)
+RETURNS binary
 AS
 $$
 SELECT
@@ -1654,10 +1654,10 @@ JOIN
 ON
     a."AC_GEN_ID" = p."AC_GEN_ID"
 AND
-    a."AC_GEN_Who" = positor
+    a."AC_GEN_Who" = coalesce(positor, a."AC_GEN_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_GEN_ID"
+        PARTITION BY p."AC_GEN_ID", a."AC_GEN_Who"
         ORDER BY a."AC_GEN_PositedAt" DESC
     ) = 1
 $$
@@ -1779,10 +1779,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Who" = positor
+    a."AC_PLV_Who" = coalesce(positor, a."AC_PLV_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Who"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -1825,10 +1825,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Who" = positor
+    a."AC_PLV_Who" = coalesce(positor, a."AC_PLV_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Who"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -1955,10 +1955,10 @@ JOIN
 ON
     a."PR_NAM_ID" = p."PR_NAM_ID"
 AND
-    a."PR_NAM_Who" = positor
+    a."PR_NAM_Who" = coalesce(positor, a."PR_NAM_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_NAM_ID"
+        PARTITION BY p."PR_NAM_ID", a."PR_NAM_Who"
         ORDER BY a."PR_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -2080,10 +2080,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Who" = positor
+    a."PR_LEN_Who" = coalesce(positor, a."PR_LEN_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Who"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$
@@ -2126,10 +2126,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Who" = positor
+    a."PR_LEN_Who" = coalesce(positor, a."PR_LEN_Who")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Who"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$

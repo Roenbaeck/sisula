@@ -121,7 +121,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Metadata_AC_NAM" int,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" varbinary(max),
+    "AC_NAM_Actor_Name" binary,
     "AC_NAM_ChangedAt" datetime
 )
 AS

@@ -7,7 +7,7 @@
 -- in time. The forwarder is the opposite of the rewinder, such that the 
 -- union of the two will produce all rows in a posit table.
 --
--- @positor the view of which positor to adopt (defaults to 0)
+-- @positor the view of which positor to adopt, or null for the views of all of them
 -- @changingTimepoint the point in changing time to rewind to (defaults to End of Time, no rewind)
 -- @positingTimepoint the point in positing time to rewind to (defaults to End of Time, no rewind)
 --
@@ -71,10 +71,10 @@ JOIN
 ON
     a."EV_DAT_ID" = p."EV_DAT_ID"
 AND
-    a."EV_DAT_Positor" = positor
+    a."EV_DAT_Positor" = coalesce(positor, a."EV_DAT_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_DAT_ID"
+        PARTITION BY p."EV_DAT_ID", a."EV_DAT_Positor"
         ORDER BY a."EV_DAT_PositedAt" DESC
     ) = 1
 $$
@@ -139,10 +139,10 @@ JOIN
 ON
     a."EV_AUD_ID" = p."EV_AUD_ID"
 AND
-    a."EV_AUD_Positor" = positor
+    a."EV_AUD_Positor" = coalesce(positor, a."EV_AUD_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_AUD_ID"
+        PARTITION BY p."EV_AUD_ID", a."EV_AUD_Positor"
         ORDER BY a."EV_AUD_PositedAt" DESC
     ) = 1
 $$
@@ -207,10 +207,10 @@ JOIN
 ON
     a."EV_REV_ID" = p."EV_REV_ID"
 AND
-    a."EV_REV_Positor" = positor
+    a."EV_REV_Positor" = coalesce(positor, a."EV_REV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."EV_REV_ID"
+        PARTITION BY p."EV_REV_ID", a."EV_REV_Positor"
         ORDER BY a."EV_REV_PositedAt" DESC
     ) = 1
 $$
@@ -334,10 +334,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Positor" = positor
+    a."ST_NAM_Positor" = coalesce(positor, a."ST_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Positor"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -380,10 +380,10 @@ JOIN
 ON
     a."ST_NAM_ID" = p."ST_NAM_ID"
 AND
-    a."ST_NAM_Positor" = positor
+    a."ST_NAM_Positor" = coalesce(positor, a."ST_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_NAM_ID"
+        PARTITION BY p."ST_NAM_ID", a."ST_NAM_Positor"
         ORDER BY a."ST_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -508,10 +508,10 @@ JOIN
 ON
     a."ST_LOC_ID" = p."ST_LOC_ID"
 AND
-    a."ST_LOC_Positor" = positor
+    a."ST_LOC_Positor" = coalesce(positor, a."ST_LOC_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_LOC_ID"
+        PARTITION BY p."ST_LOC_ID", a."ST_LOC_Positor"
         ORDER BY a."ST_LOC_PositedAt" DESC
     ) = 1
 $$
@@ -629,10 +629,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Positor" = positor
+    a."ST_AVG_Positor" = coalesce(positor, a."ST_AVG_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Positor"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -673,10 +673,10 @@ JOIN
 ON
     a."ST_AVG_ID" = p."ST_AVG_ID"
 AND
-    a."ST_AVG_Positor" = positor
+    a."ST_AVG_Positor" = coalesce(positor, a."ST_AVG_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_AVG_ID"
+        PARTITION BY p."ST_AVG_ID", a."ST_AVG_Positor"
         ORDER BY a."ST_AVG_PositedAt" DESC
     ) = 1
 $$
@@ -799,10 +799,10 @@ JOIN
 ON
     a."ST_MIN_ID" = p."ST_MIN_ID"
 AND
-    a."ST_MIN_Positor" = positor
+    a."ST_MIN_Positor" = coalesce(positor, a."ST_MIN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."ST_MIN_ID"
+        PARTITION BY p."ST_MIN_ID", a."ST_MIN_Positor"
         ORDER BY a."ST_MIN_PositedAt" DESC
     ) = 1
 $$
@@ -926,10 +926,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Positor" = positor
+    a."AC_NAM_Positor" = coalesce(positor, a."AC_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Positor"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -972,10 +972,10 @@ JOIN
 ON
     a."AC_NAM_ID" = p."AC_NAM_ID"
 AND
-    a."AC_NAM_Positor" = positor
+    a."AC_NAM_Positor" = coalesce(positor, a."AC_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_NAM_ID"
+        PARTITION BY p."AC_NAM_ID", a."AC_NAM_Positor"
         ORDER BY a."AC_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -1098,10 +1098,10 @@ JOIN
 ON
     a."AC_GEN_ID" = p."AC_GEN_ID"
 AND
-    a."AC_GEN_Positor" = positor
+    a."AC_GEN_Positor" = coalesce(positor, a."AC_GEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_GEN_ID"
+        PARTITION BY p."AC_GEN_ID", a."AC_GEN_Positor"
         ORDER BY a."AC_GEN_PositedAt" DESC
     ) = 1
 $$
@@ -1219,10 +1219,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Positor" = positor
+    a."AC_PLV_Positor" = coalesce(positor, a."AC_PLV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Positor"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -1263,10 +1263,10 @@ JOIN
 ON
     a."AC_PLV_ID" = p."AC_PLV_ID"
 AND
-    a."AC_PLV_Positor" = positor
+    a."AC_PLV_Positor" = coalesce(positor, a."AC_PLV_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."AC_PLV_ID"
+        PARTITION BY p."AC_PLV_ID", a."AC_PLV_Positor"
         ORDER BY a."AC_PLV_PositedAt" DESC
     ) = 1
 $$
@@ -1389,10 +1389,10 @@ JOIN
 ON
     a."PR_NAM_ID" = p."PR_NAM_ID"
 AND
-    a."PR_NAM_Positor" = positor
+    a."PR_NAM_Positor" = coalesce(positor, a."PR_NAM_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_NAM_ID"
+        PARTITION BY p."PR_NAM_ID", a."PR_NAM_Positor"
         ORDER BY a."PR_NAM_PositedAt" DESC
     ) = 1
 $$
@@ -1510,10 +1510,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Positor" = positor
+    a."PR_LEN_Positor" = coalesce(positor, a."PR_LEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Positor"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$
@@ -1554,10 +1554,10 @@ JOIN
 ON
     a."PR_LEN_ID" = p."PR_LEN_ID"
 AND
-    a."PR_LEN_Positor" = positor
+    a."PR_LEN_Positor" = coalesce(positor, a."PR_LEN_Positor")
 QUALIFY
     row_number() OVER (
-        PARTITION BY p."PR_LEN_ID"
+        PARTITION BY p."PR_LEN_ID", a."PR_LEN_Positor"
         ORDER BY a."PR_LEN_PositedAt" DESC
     ) = 1
 $$

@@ -53,66 +53,66 @@ LEFT JOIN
     public."ETY_EventType" "kETY_of"
 ON
     "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
-LEFT JOIN
-    TABLE(public."rEV_DAT_Event_Date"(
-        positingTimepoint::datetime
-    )) "DAT"
+LEFT JOIN (
+    -- the latest asserted posit for each nexus, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rEV_DAT_Event_Date"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."EV_DAT_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_ID"
+            ORDER BY
+                r."EV_DAT_PositedAt" DESC
+        ) = 1
+) "DAT"
 ON
-    "DAT"."EV_DAT_ID" = (
-        SELECT
-            sub."EV_DAT_ID"
-        FROM
-            TABLE(public."rEV_DAT_Event_Date"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_DAT_Reliability" = 1
-        ORDER BY
-            sub."EV_DAT_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rEV_AUD_Event_Audience"(
-        positingTimepoint::datetime
-    )) "AUD"
+    "DAT"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each nexus, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rEV_AUD_Event_Audience"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."EV_AUD_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_ID"
+            ORDER BY
+                r."EV_AUD_PositedAt" DESC
+        ) = 1
+) "AUD"
 ON
-    "AUD"."EV_AUD_ID" = (
-        SELECT
-            sub."EV_AUD_ID"
-        FROM
-            TABLE(public."rEV_AUD_Event_Audience"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_AUD_Reliability" = 1
-        ORDER BY
-            sub."EV_AUD_PositedAt" DESC
-        LIMIT 1
-    )
-LEFT JOIN
-    TABLE(public."rEV_REV_Event_Revenue"(
-        positingTimepoint::datetime
-    )) "REV"
+    "AUD"."EV_ID" = "EV"."EV_ID"
+LEFT JOIN (
+    -- the latest asserted posit for each nexus, picked by a window: Snowflake cannot evaluate a subquery that refers to
+    -- the outer row and takes the first row of an ordering
+    SELECT
+        r.*
+    FROM
+        TABLE(public."rEV_REV_Event_Revenue"(
+            positingTimepoint::datetime
+        )) r
+    WHERE
+        r."EV_REV_Reliability" = 1
+    QUALIFY
+        row_number() OVER (
+            PARTITION BY r."EV_ID"
+            ORDER BY
+                r."EV_REV_PositedAt" DESC
+        ) = 1
+) "REV"
 ON
-    "REV"."EV_REV_ID" = (
-        SELECT
-            sub."EV_REV_ID"
-        FROM
-            TABLE(public."rEV_REV_Event_Revenue"(
-                positingTimepoint::datetime
-            )) sub
-        WHERE
-            sub."EV_ID" = "EV"."EV_ID"
-        AND
-            sub."EV_REV_Reliability" = 1
-        ORDER BY
-            sub."EV_REV_PositedAt" DESC
-        LIMIT 1
-    )
+    "REV"."EV_ID" = "EV"."EV_ID"
 $$
 ;
 CREATE OR REPLACE VIEW public."lEV_Event" COPY GRANTS AS
