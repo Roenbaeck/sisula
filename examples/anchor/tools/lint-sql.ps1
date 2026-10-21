@@ -6,7 +6,8 @@
 
     It is not a SQL parser and cannot say that SQL is valid; it says that none of these defects is
     there. The uni output, which has been run on Snowflake, is the control: it must come out clean.
-    There is no Snowflake on the development machine, so this is the stand-in.
+    snowflake-tests.ps1 runs the SQL of some of the models on Snowflake; this is the check that needs
+    no account, and it covers every model.
 
     Usage:
       lint-sql.ps1 [-Variant <name>,...] [-Show <n>]      lints golden/<name>/_full.sql, every model but handwritten* by default
@@ -50,6 +51,8 @@ function Test-Sql([string] $text) {
         if ($l -match '^\s+as\s+\w+\s*,?\s*$') { $found.Add("line ${n}: an alias with no expression: [$($lines[$i])]") }
         # found by running the generated SQL on Snowflake: a SQL function body does not accept it; a comma join does the same
         if ($l -match '\bCROSS JOIN LATERAL\b') { $found.Add("line ${n}: CROSS JOIN LATERAL, which Snowflake rejects in a SQL function body (use a comma join): [$($lines[$i])]") }
+        # found the same way: SQL Server's length for the largest values, which Snowflake does not have (varbinary(max))
+        if ($l -match '\b[A-Za-z]+\(\s*max\s*\)') { $found.Add("line ${n}: a (max) length, which Snowflake does not have: [$($lines[$i])]") }
         # the next line that is code
         $j = $i + 1; while ($j -lt $code.Count -and $code[$j] -notmatch '\S') { $j++ }
         if ($j -lt $code.Count) {
