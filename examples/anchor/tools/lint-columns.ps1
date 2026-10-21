@@ -8,7 +8,8 @@
 # What it checks, in each function and view:
 #   alias.column     the alias stands for a table, view or TABLE(function(...)) in the FROM clause; the
 #                    column has to exist there (if an alias means different objects in different
-#                    subqueries, any of them will do)
+#                    subqueries, any of them will do; if one of them is a derived table, whose columns
+#                    are not read off the text, the alias is not checked)
 #   a bare column    in a SELECT from a single table with no alias, the names in the select list and the
 #                    WHERE clause have to be columns of that table (or aliases, parameters, keywords)
 # It is a heuristic over generated text, not a SQL parser.
@@ -93,6 +94,17 @@ function Test-Columns([System.Collections.Generic.List[string]] $code, [string[]
             $a = $after.Groups[1].Value.ToLower()
             if (-not $aliases.ContainsKey($a)) { $aliases[$a] = @() }
             $aliases[$a] += ($m.Groups[1].Value + '.' + $m.Groups[2].Value).ToLower()
+        }
+        # a derived table, ( SELECT ... ) alias: its columns are not read off the text, so an alias that may stand
+        # for one is not checked, as one for an object that this script does not define
+        foreach ($m in [regex]::Matches($text, '(?i)\(\s*SELECT\b')) {
+            $close = Get-Balanced $text $m.Index
+            if ($close -lt 0) { continue }
+            $after = [regex]::Match($text.Substring($close), '^\s*(?:AS\s+)?(\w+)')
+            if (-not $after.Success -or $script:KeywordsForAlias -contains $after.Groups[1].Value.ToUpper()) { continue }
+            $a = $after.Groups[1].Value.ToLower()
+            if (-not $aliases.ContainsKey($a)) { $aliases[$a] = @() }
+            $aliases[$a] += '(a derived table)'
         }
         # alias.column
         foreach ($m in [regex]::Matches($text, '\b(\w+)\.(\w+)\b')) {

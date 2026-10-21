@@ -13,7 +13,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('i01'), ('i02'), ('i03'), ('i04'), ('i05'), ('i06'), ('i07');
+INSERT INTO #group (name) VALUES ('i01'), ('i02'), ('i03'), ('i04'), ('i05'), ('i06'), ('i07'), ('i08');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -186,6 +186,32 @@ BEGIN CATCH
 END CATCH
 INSERT INTO #result SELECT N'i07 what another positor holds does not count', CASE WHEN @error IS NULL THEN 1 ELSE 0 END, ISNULL(@error, 'no error');
 UPDATE #group SET finished = 1 WHERE name = 'i07';
+GO
+
+-- i08 Red from 2000, then certainly not Green from 2001: nothing is shown from 2001, since the later changing time
+--     supersedes the earlier one; Red asserted at 2001 as well is held concurrently with not Green and shown
+DECLARE @s int, @n int, @shown nvarchar(42), @error nvarchar(2048);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'Red', '2000-01-01', '2012-12-12', 0, 1);
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'Green', '2001-01-01', '2012-12-13', 0, -1);
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'i08 certainly not Green from 2001 supersedes Red from 2000', CASE WHEN @shown IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
+BEGIN TRY
+    INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+    VALUES (0, @s, N'Red', '2001-01-01', '2012-12-14', 0, 1);
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0 ROLLBACK;
+    SET @error = ERROR_MESSAGE();
+END CATCH
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+SET @n = (SELECT COUNT(*) FROM dbo.SU_TTL_Subject_Title_Annex a JOIN dbo.SU_TTL_Subject_Title_Posit p ON p.SU_TTL_ID = a.SU_TTL_ID
+    WHERE p.SU_TTL_SU_ID = @s AND p.SU_TTL_ChangedAt = '2001-01-01' AND a.SU_TTL_Reliability <> 0);
+INSERT INTO #result SELECT N'i08 Red asserted at 2001 is held with not Green, and shown', CASE WHEN @error IS NULL AND @shown = N'Red' AND @n = 2 THEN 1 ELSE 0 END,
+    CONCAT('shown ', ISNULL(@shown, 'nothing'), ', ', @n, ' assertions held at 2001', ' ' + @error);
+UPDATE #group SET finished = 1 WHERE name = 'i08';
 GO
 
 -- the result

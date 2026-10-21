@@ -14,7 +14,7 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result;
 IF OBJECT_ID('tempdb..#group') IS NOT NULL DROP TABLE #group;
 CREATE TABLE #result (id int IDENTITY(1,1) PRIMARY KEY, test nvarchar(400) NOT NULL, passed bit NOT NULL, detail nvarchar(2048) NULL);
 CREATE TABLE #group (name char(3) PRIMARY KEY, finished bit NOT NULL DEFAULT 0);
-INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23'), ('c24'), ('c25'), ('c26'), ('c27');
+INSERT INTO #group (name) VALUES ('c01'), ('c02'), ('c03'), ('c04'), ('c05'), ('c06'), ('c07'), ('c08'), ('c09'), ('c10'), ('c11'), ('c12'), ('c13'), ('c14'), ('c15'), ('c16'), ('c17'), ('c18'), ('c19'), ('c20'), ('c21'), ('c22'), ('c23'), ('c24'), ('c25'), ('c26'), ('c27'), ('c28');
 INSERT INTO dbo.GRD_Grade (GRD_ID, GRD_Grade, Metadata_GRD) VALUES (1, N'A', 0), (2, N'B', 0), (3, N'C', 0);
 GO
 
@@ -658,6 +658,52 @@ SET @n = (SELECT COUNT(*) FROM dbo.SU_NAM_Subject_Name_Annex a JOIN dbo.SU_NAM_S
 SET @shown = (SELECT SU_NAM_Subject_Name FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
 INSERT INTO #result SELECT N'c27 a negative assertion of another value retracts the value held', CASE WHEN @n = 1 AND @shown IS NULL THEN 1 ELSE 0 END, CONCAT(@n, ' retractions of a; shown ', ISNULL(@shown, 'nothing'));
 UPDATE #group SET finished = 1 WHERE name = 'c27';
+GO
+
+-- c28 an assertion that is not a retraction supersedes those at earlier changing times, whatever its sign: the latest
+--     view shows nothing where the latest changing time has only a negative assertion (it used to show the version
+--     before), the point-in-time view before that time still shows the version before, and so does the latest view once
+--     the negative assertion is retracted; asserting the earlier value at the later changing time shows it again
+DECLARE @s int, @t int, @o int, @e int, @n int, @shown nvarchar(42), @before nvarchar(42), @place nvarchar(42);
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @s = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'Red', '2000-01-01', '2012-12-12', 0, 1);
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'Green', '2001-01-01', '2012-12-13', 0, -1);
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+SET @before = (SELECT SU_TTL_Subject_Title FROM dbo.pSU_Subject('2000-06-01') WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c28 certainly not Green from 2001 supersedes Red from 2000', CASE WHEN @shown IS NULL AND @before = N'Red' THEN 1 ELSE 0 END,
+    CONCAT('shown ', ISNULL(@shown, 'nothing'), ', and ', ISNULL(@before, 'nothing'), ' in 2000');
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @s, N'Red', '2001-01-01', '2012-12-14', 0, 1);
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @s AND Positor = 0);
+INSERT INTO #result SELECT N'c28 Red asserted at 2001 is shown', CASE WHEN @shown = N'Red' THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
+INSERT INTO dbo.SU_Subject (Metadata_SU) VALUES (0); SET @t = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @t, N'Red', '2000-01-01', '2012-12-12', 0, 1);
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @t, N'Green', '2001-01-01', '2012-12-13', 0, -1);
+INSERT INTO dbo.SU_TTL_Subject_Title (Metadata_SU_TTL, SU_TTL_SU_ID, SU_TTL_Subject_Title, SU_TTL_ChangedAt, SU_TTL_PositedAt, SU_TTL_Positor, SU_TTL_Reliability)
+VALUES (0, @t, N'Green', '2001-01-01', '2012-12-14', 0, 0);
+SET @shown = (SELECT SU_TTL_Subject_Title FROM dbo.lSU_Subject WHERE SU_ID = @t AND Positor = 0);
+INSERT INTO #result SELECT N'c28 retracting not Green shows Red from 2000 again', CASE WHEN @shown = N'Red' THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@shown, 'nothing'));
+-- a historized tie with identifiers, and a historized attribute of a nexus
+INSERT INTO dbo.OB_Object (Metadata_OB) VALUES (0); SET @o = SCOPE_IDENTITY();
+INSERT INTO dbo.SU_holder_OB_item_GRD_grade (Metadata_SU_holder_OB_item_GRD_grade, SU_ID_holder, OB_ID_item, GRD_ID_grade,
+    SU_holder_OB_item_GRD_grade_ChangedAt, SU_holder_OB_item_GRD_grade_PositedAt, SU_holder_OB_item_GRD_grade_Positor, SU_holder_OB_item_GRD_grade_Reliability)
+VALUES (0, @s, @o, 1, '2020-01-01', '2012-12-12', 0, 1);
+INSERT INTO dbo.SU_holder_OB_item_GRD_grade (Metadata_SU_holder_OB_item_GRD_grade, SU_ID_holder, OB_ID_item, GRD_ID_grade,
+    SU_holder_OB_item_GRD_grade_ChangedAt, SU_holder_OB_item_GRD_grade_PositedAt, SU_holder_OB_item_GRD_grade_Positor, SU_holder_OB_item_GRD_grade_Reliability)
+VALUES (0, @s, @o, 2, '2021-01-01', '2012-12-13', 0, -1);
+SET @n = (SELECT COUNT(*) FROM dbo.lSU_holder_OB_item_GRD_grade WHERE SU_ID_holder = @s AND OB_ID_item = @o AND Positor = 0);
+INSERT INTO #result SELECT N'c28 a tie: a negative assertion at a later changing time supersedes the version before', CASE WHEN @n = 0 THEN 1 ELSE 0 END, CONCAT(@n, ' shown, expected 0');
+INSERT INTO dbo.lEV_Event (Metadata_EV, SU_ID_for, EV_PLC_Event_Place, EV_PLC_ChangedAt, EV_PLC_PositedAt) VALUES (0, @s, N'p1', '2020-01-01', '2012-12-12');
+SET @e = (SELECT MAX(EV_ID) FROM dbo.EV_Event WHERE SU_ID_for = @s);
+INSERT INTO dbo.EV_PLC_Event_Place (Metadata_EV_PLC, EV_PLC_EV_ID, EV_PLC_Event_Place, EV_PLC_ChangedAt, EV_PLC_PositedAt, EV_PLC_Positor, EV_PLC_Reliability)
+VALUES (0, @e, N'p2', '2021-01-01', '2012-12-13', 0, -1);
+SET @place = (SELECT EV_PLC_Event_Place FROM dbo.lEV_Event WHERE EV_ID = @e AND Positor = 0);
+INSERT INTO #result SELECT N'c28 a nexus: a negative assertion at a later changing time supersedes the version before', CASE WHEN @place IS NULL THEN 1 ELSE 0 END, CONCAT('shown ', ISNULL(@place, 'nothing'));
+UPDATE #group SET finished = 1 WHERE name = 'c28';
 GO
 
 -- the result
