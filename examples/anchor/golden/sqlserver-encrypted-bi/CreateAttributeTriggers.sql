@@ -2267,7 +2267,7 @@ BEGIN
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_PositedAt datetime2 not null,
         ST_NAM_Reliability decimal(5,2) not null,
-        ST_NAM_Stage_Name varbinary(max) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null,
         primary key (
             ST_NAM_ST_ID asc,
@@ -2452,7 +2452,7 @@ BEGIN
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_PositedAt datetime2 not null,
         ST_NAM_Reliability decimal(5,2) not null,
-        ST_NAM_Stage_Name varbinary(max) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -3936,7 +3936,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null,
         primary key (
             AC_NAM_AC_ID asc,
@@ -4121,7 +4121,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (

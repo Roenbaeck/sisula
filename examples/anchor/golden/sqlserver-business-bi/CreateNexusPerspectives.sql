@@ -192,7 +192,6 @@ OUTER APPLY (
         [rUTL].EV_UTL_PositedAt,
         [rUTL].EV_UTL_Reliability,
         [kUTL].UTL_Utilization,
-        [kUTL].UTL_Utilization,
         [kUTL].Metadata_UTL,
         [rUTL].EV_UTL_UTL_ID
     FROM
@@ -219,7 +218,6 @@ OUTER APPLY (
         [rLVL].EV_LVL_PositedAt,
         [rLVL].EV_LVL_Reliability,
         [kLVL].PLV_Checksum,
-        [kLVL].PLV_ProfessionalLevel,
         [kLVL].PLV_ProfessionalLevel,
         [kLVL].Metadata_PLV,
         [rLVL].EV_LVL_PLV_ID

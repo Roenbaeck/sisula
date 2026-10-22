@@ -168,7 +168,7 @@ CREATE OR REPLACE FUNCTION anchors."pkey_AC_Skådespelare_1st" (
 COPY GRANTS
 RETURNS TABLE (
     "AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" binary
+    "AC_NAM_Skådespelare_Namn" varchar(42)
 )
 AS
 $$

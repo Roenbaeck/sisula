@@ -773,6 +773,8 @@ CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Meta] (
     )
 );
 GO
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Fact table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -780,7 +782,7 @@ IF Object_ID('attributes.AC_NAM_Actor_Name_Fact', 'U') IS NULL
 CREATE TABLE [attributes].[AC_NAM_Actor_Name_Fact] (
     AC_NAM_ID bigint IDENTITY(1,1) not null,
     AC_NAM_AC_ID smallint not null,
-    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
     AC_NAM_ChangedAt datetime2 not null,
     constraint fkAC_NAM_Actor_Name_Fact foreign key (
         AC_NAM_AC_ID
@@ -3135,7 +3137,7 @@ BEGIN
         @positingTimepoint datetime2(3) = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -3173,7 +3175,7 @@ BEGIN
         @positingTimepoint datetime2(3) = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -4089,7 +4091,7 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @id smallint;
-    DECLARE @value varbinary(max);
+    DECLARE @value nvarchar(42);
     DECLARE @changed datetime2;
     SELECT
         @id = AC_NAM_AC_ID,
@@ -5195,7 +5197,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Stage] AS
 SELECT
-    [ST].Positor,
+    [ST].Who,
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
@@ -5212,7 +5214,7 @@ CREATE FUNCTION [anchors].[Point_Stage] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [ST].Positor,
+    [ST].Who,
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
@@ -5277,7 +5279,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Actor] AS
 SELECT
-    [AC].Positor,
+    [AC].Who,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
     [AC].AC_GEN_GEN_Gender as [Gender_Gender],
@@ -5293,7 +5295,7 @@ CREATE FUNCTION [anchors].[Point_Actor] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [AC].Positor,
+    [AC].Who,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
     [AC].AC_GEN_GEN_Gender as [Gender_Gender],
@@ -5357,7 +5359,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Program] AS
 SELECT
-    [PR].Positor,
+    [PR].Who,
     [PR].PR_ID as [Program_Id],
     [PR].PR_NAM_Program_Name as [Name],
     [PR].PR_LEN_Program_Length as [Length]
@@ -5372,7 +5374,7 @@ CREATE FUNCTION [anchors].[Point_Program] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [PR].Positor,
+    [PR].Who,
     [PR].PR_ID as [Program_Id],
     [PR].PR_NAM_Program_Name as [Name],
     [PR].PR_LEN_Program_Length as [Length]
@@ -5873,7 +5875,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [nexuses].[Latest_Event] AS
 SELECT
-    [EV].Positor,
+    [EV].Who,
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
@@ -5895,7 +5897,7 @@ CREATE FUNCTION [nexuses].[Point_Event] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [EV].Positor,
+    [EV].Who,
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
@@ -9508,7 +9510,7 @@ BEGIN
         AC_NAM_PositedAt datetime2(3) not null,
         AC_NAM_Confidence decimal(7,3) not null,
         AC_NAM_Stance char(1) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_Version bigint not null,
         AC_NAM_StatementType char(1) not null,
         primary key(
@@ -12134,7 +12136,7 @@ BEGIN
         AC_NAM_Who smallint null,
         AC_NAM_PositedAt datetime2(3) null,
         AC_NAM_Confidence decimal(7,3) null,
-        AC_NAM_Actor_Name varbinary(max) null,
+        AC_NAM_Actor_Name nvarchar(42) null,
         AC_GEN_AC_ID smallint null,
         Metadata_AC_GEN bigint null,
         AC_GEN_Who smallint null,
@@ -17404,7 +17406,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_partner_Actor_with_currently_Ongoing] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
     tie.currently_ONG_Ongoing AS [currently_Ongoing]
@@ -17419,7 +17421,7 @@ CREATE FUNCTION [ties].[Point_Actor_partner_Actor_with_currently_Ongoing] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
     tie.currently_ONG_Ongoing AS [currently_Ongoing]
@@ -17445,7 +17447,7 @@ CREATE FUNCTION [ties].[Difference_Actor_partner_Actor_with_currently_Ongoing] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.AC_partner_AC_with_ONG_currently_Who as [Positor],
+    tie.AC_partner_AC_with_ONG_currently_Who as [Who],
     tie.AC_partner_AC_with_ONG_currently_ChangedAt as [Time_of_Change],
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
@@ -17458,7 +17460,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_subset_Person_of] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_subset as [Actor_subset_Id],
     tie.PN_ID_of as [Person_of_Id]
 FROM
@@ -17472,7 +17474,7 @@ CREATE FUNCTION [ties].[Point_Actor_subset_Person_of] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_subset as [Actor_subset_Id],
     tie.PN_ID_of as [Person_of_Id]
 FROM
@@ -17493,7 +17495,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_in_Unknown_Actor_wasCast] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.EV_ID_in as [in_Unknown_Id],
     tie.AC_ID_wasCast as [Actor_wasCast_Id]
 FROM
@@ -17507,7 +17509,7 @@ CREATE FUNCTION [ties].[Point_in_Unknown_Actor_wasCast] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.EV_ID_in as [in_Unknown_Id],
     tie.AC_ID_wasCast as [Actor_wasCast_Id]
 FROM
@@ -17528,7 +17530,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_part_Program_in_got_Rating] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
     tie.got_RAT_Rating AS [got_Rating]
@@ -17543,7 +17545,7 @@ CREATE FUNCTION [ties].[Point_Actor_part_Program_in_got_Rating] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
     tie.got_RAT_Rating AS [got_Rating]
@@ -17569,7 +17571,7 @@ CREATE FUNCTION [ties].[Difference_Actor_part_Program_in_got_Rating] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.AC_part_PR_in_RAT_got_Who as [Positor],
+    tie.AC_part_PR_in_RAT_got_Who as [Who],
     tie.AC_part_PR_in_RAT_got_ChangedAt as [Time_of_Change],
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
@@ -17582,7 +17584,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Stage_at_Program_isPlaying] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
 FROM
@@ -17596,7 +17598,7 @@ CREATE FUNCTION [ties].[Point_Stage_at_Program_isPlaying] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
 FROM
@@ -17621,7 +17623,7 @@ CREATE FUNCTION [ties].[Difference_Stage_at_Program_isPlaying] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.ST_at_PR_isPlaying_Who as [Positor],
+    tie.ST_at_PR_isPlaying_Who as [Who],
     tie.ST_at_PR_isPlaying_ChangedAt as [Time_of_Change],
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
@@ -17633,7 +17635,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_parent_Actor_child_having_ParentalType] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_parent as [Actor_parent_Id],
     tie.AC_ID_child as [Actor_child_Id],
     tie.having_PAT_ParentalType AS [having_ParentalType]
@@ -17648,7 +17650,7 @@ CREATE FUNCTION [ties].[Point_Actor_parent_Actor_child_having_ParentalType] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_parent as [Actor_parent_Id],
     tie.AC_ID_child as [Actor_child_Id],
     tie.having_PAT_ParentalType AS [having_ParentalType]
@@ -17670,7 +17672,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Program_content_Stage_location_of_Unknown] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],
     tie.EV_ID_of as [of_Unknown_Id]
@@ -17685,7 +17687,7 @@ CREATE FUNCTION [ties].[Point_Program_content_Stage_location_of_Unknown] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],
     tie.EV_ID_of as [of_Unknown_Id]
@@ -17711,7 +17713,7 @@ CREATE FUNCTION [ties].[Difference_Program_content_Stage_location_of_Unknown] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.PR_content_ST_location_EV_of_Who as [Positor],
+    tie.PR_content_ST_location_EV_of_Who as [Who],
     tie.PR_content_ST_location_EV_of_ChangedAt as [Time_of_Change],
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],
@@ -18074,8 +18076,52 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor, filled by refresh_AC_Actor_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[AC_Actor_1st];
+GO
+CREATE TABLE [anchors].[AC_Actor_1st] (
+    Who smallint not null,
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
+    constraint pkAC_Actor_1st primary key (
+        Who,
+        AC_ID
+    ),
+    constraint uqAC_Actor_1st unique (
+        Who,
+        AC_NAM_Actor_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_AC_Actor_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_AC_Actor_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_AC_Actor_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[AC_Actor_1st];
+    INSERT INTO [anchors].[AC_Actor_1st] (
+        Who,
+        AC_ID,
+        AC_NAM_Actor_Name
+    )
+    SELECT
+        Who,
+        AC_ID,
+        AC_NAM_Actor_Name
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of PR_Program
 -----------------------------------------------------------------------------------------------------------------------

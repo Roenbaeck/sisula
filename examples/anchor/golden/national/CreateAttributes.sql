@@ -174,12 +174,14 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Scen_Minimum" (
         "ST_MIN_ST_ID"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ST_ID");
+-- AC_NAM_Skådespelare_Namn is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- AC_NAM_Skådespelare_Namn table (on AC_Skådespelare)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn" (
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Skådespelare_Namn" binary not null,
+    "AC_NAM_Skådespelare_Namn" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     "Metadata_AC_NAM" int not null,
     constraint "fkAC_NAM_Skådespelare_Namn" foreign key (

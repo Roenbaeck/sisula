@@ -661,6 +661,8 @@ CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Annex] (
     )
 );
 GO
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Posit table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -668,7 +670,7 @@ IF Object_ID('attributes.AC_NAM_Actor_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[AC_NAM_Actor_Name_Posit] (
     AC_NAM_ID int IDENTITY(1,1) not null,
     AC_NAM_AC_ID smallint not null,
-    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
     AC_NAM_ChangedAt datetime2 not null,
     constraint fkAC_NAM_Actor_Name_Posit foreign key (
         AC_NAM_AC_ID
@@ -3409,7 +3411,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -3444,7 +3446,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -4196,7 +4198,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         primary key (
             AC_NAM_AC_ID asc,
             AC_NAM_ChangedAt desc,
@@ -4520,7 +4522,6 @@ OUTER APPLY (
         [rAVG].ST_AVG_PositedAt,
         [rAVG].ST_AVG_Reliability,
         [kAVG].UTL_Utilization,
-        [kAVG].UTL_Utilization,
         [kAVG].Metadata_UTL,
         [rAVG].ST_AVG_UTL_ID
     FROM
@@ -4547,7 +4548,6 @@ OUTER APPLY (
         [rMIN].ST_MIN_ID,
         [rMIN].ST_MIN_PositedAt,
         [rMIN].ST_MIN_Reliability,
-        [kMIN].UTL_Utilization,
         [kMIN].UTL_Utilization,
         [kMIN].Metadata_UTL,
         [rMIN].ST_MIN_UTL_ID
@@ -4738,7 +4738,6 @@ OUTER APPLY (
         [rGEN].AC_GEN_Reliability,
         [kGEN].GEN_Checksum,
         [kGEN].GEN_Gender,
-        [kGEN].GEN_Gender,
         [kGEN].Metadata_GEN,
         [rGEN].AC_GEN_GEN_ID
     FROM
@@ -4765,7 +4764,6 @@ OUTER APPLY (
         [rPLV].AC_PLV_PositedAt,
         [rPLV].AC_PLV_Reliability,
         [kPLV].PLV_Checksum,
-        [kPLV].PLV_ProfessionalLevel,
         [kPLV].PLV_ProfessionalLevel,
         [kPLV].Metadata_PLV,
         [rPLV].AC_PLV_PLV_ID
@@ -5488,7 +5486,6 @@ OUTER APPLY (
         [rUTL].EV_UTL_PositedAt,
         [rUTL].EV_UTL_Reliability,
         [kUTL].UTL_Utilization,
-        [kUTL].UTL_Utilization,
         [kUTL].Metadata_UTL,
         [rUTL].EV_UTL_UTL_ID
     FROM
@@ -5515,7 +5512,6 @@ OUTER APPLY (
         [rLVL].EV_LVL_PositedAt,
         [rLVL].EV_LVL_Reliability,
         [kLVL].PLV_Checksum,
-        [kLVL].PLV_ProfessionalLevel,
         [kLVL].PLV_ProfessionalLevel,
         [kLVL].Metadata_PLV,
         [rLVL].EV_LVL_PLV_ID
@@ -9759,7 +9755,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null,
         primary key (
             AC_NAM_AC_ID asc,
@@ -9944,7 +9940,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -12560,7 +12556,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 null,
         AC_NAM_PositedAt datetime2 null,
         AC_NAM_Reliability decimal(5,2) null,
-        AC_NAM_Actor_Name varbinary(max) null,
+        AC_NAM_Actor_Name nvarchar(42) null,
         AC_GEN_AC_ID smallint null,
         Metadata_AC_GEN int null,
         AC_GEN_PositedAt datetime2 null,
@@ -17502,8 +17498,47 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor, filled by refresh_AC_Actor_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[AC_Actor_1st];
+GO
+CREATE TABLE [anchors].[AC_Actor_1st] (
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
+    constraint pkAC_Actor_1st primary key (
+        AC_ID
+    ),
+    constraint uqAC_Actor_1st unique (
+        AC_NAM_Actor_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_AC_Actor_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_AC_Actor_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_AC_Actor_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[AC_Actor_1st];
+    INSERT INTO [anchors].[AC_Actor_1st] (
+        AC_ID,
+        AC_NAM_Actor_Name
+    )
+    SELECT
+        AC_ID,
+        AC_NAM_Actor_Name
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of PR_Program
 -----------------------------------------------------------------------------------------------------------------------

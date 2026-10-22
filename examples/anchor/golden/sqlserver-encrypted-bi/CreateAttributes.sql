@@ -242,6 +242,8 @@ CREATE TABLE [attributes].[EV_LVL_Event_Level_Annex] (
     )
 );
 GO
+-- ST_NAM_Stage_Name is in the encryption group Places, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name_Posit table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -249,7 +251,7 @@ IF Object_ID('attributes.ST_NAM_Stage_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[ST_NAM_Stage_Name_Posit] (
     ST_NAM_ID int IDENTITY(1,1) not null,
     ST_NAM_ST_ID int not null,
-    ST_NAM_Stage_Name varbinary(max) not null,
+    ST_NAM_Stage_Name nvarchar(42) not null,
     ST_NAM_ChangedAt datetime2 not null,
     constraint fkST_NAM_Stage_Name_Posit foreign key (
         ST_NAM_ST_ID
@@ -405,6 +407,8 @@ CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Annex] (
     )
 );
 GO
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Posit table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -412,7 +416,7 @@ IF Object_ID('attributes.AC_NAM_Actor_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[AC_NAM_Actor_Name_Posit] (
     AC_NAM_ID int IDENTITY(1,1) not null,
     AC_NAM_AC_ID smallint not null,
-    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
     AC_NAM_ChangedAt datetime2 not null,
     constraint fkAC_NAM_Actor_Name_Posit foreign key (
         AC_NAM_AC_ID

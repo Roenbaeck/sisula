@@ -186,7 +186,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Positor" tinyint,
     "AC_ID" smallint,
-    "AC_NAM_Skådespelare_Namn" binary
+    "AC_NAM_Skådespelare_Namn" varchar(42)
 )
 AS
 $$

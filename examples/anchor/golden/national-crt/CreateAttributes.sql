@@ -464,6 +464,8 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Scen_Minimum_Annex" (
         "ST_MIN_PositedAt"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ID", "ST_MIN_Positor", "ST_MIN_PositedAt");
+-- AC_NAM_Skådespelare_Namn is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Skådespelare_Namn_Posit table (on AC_Skådespelare)
 -----------------------------------------------------------------------------------------------------------------------
@@ -471,7 +473,7 @@ CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Skådespelare_Namn_Posit" (
     "AC_NAM_ID" int default attributes."AC_NAM_Skådespelare_Namn_Posit_ID_SEQ".nextval not null, 
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Skådespelare_Namn" binary not null,
+    "AC_NAM_Skådespelare_Namn" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Skådespelare_Namn_Posit" foreign key (
         "AC_NAM_AC_ID"

@@ -1,10 +1,11 @@
 <#
     Runs the Snowflake tests: what the perspectives show for rows put straight into the tables, since Snowflake has no
     triggers. For each suite and temporalization it creates a database, runs the SQL generated for the suite's test
-    model in it (golden/distinct/_full.sql, or the -bi or -crt one, and golden/distinct-equivalence/_full.sql), queries
-    every view and calls every function in it once (snowflake-tests/compile.sql), runs the tests
-    (snowflake-tests/<suite>-<t>.sql) and drops the database again. It prints the result of every check and exits 1 if a
-    check failed or something did not run through.
+    model in it (golden/distinct/_full.sql, or the -bi or -crt one, for the perspectives,
+    golden/distinct-equivalence/_full.sql for equivalence, and golden/keys/_full.sql, or the -bi or -crt one, for the
+    natural keys), runs the tests (snowflake-tests/<suite>-<t>.sql), queries every view and calls every function in it
+    once (snowflake-tests/compile.sql), and drops the database again. It prints the result of every check and exits 1
+    if a check failed or something did not run through.
 
     Snowflake compiles the body of a view or a function only when it is used, so running the generated SQL shows little
     more than its syntax; SQL that Snowflake cannot evaluate, such as a subquery of a kind it does not support, shows
@@ -16,14 +17,14 @@
     failure, and the rest of it is not run.
 
     The SQL that is run is the golden output, so regenerate it first when Anchor's templates have changed
-    (regenerate-golden.ps1 -Variant distinct,distinct-bi,distinct-crt,distinct-equivalence). The tests talk to Snowflake
+    (regenerate-golden.ps1 -Variant distinct,distinct-bi,distinct-crt,distinct-equivalence,keys,keys-bi,keys-crt). The tests talk to Snowflake
     through its SQL API with a programmatic access token, made in Snowsight or with ALTER USER ... ADD PROGRAMMATIC
     ACCESS TOKEN, for a role that may create databases. A token needs a network policy, or an authentication policy that
     does not require one (PAT_POLICY = (NETWORK_POLICY_EVALUATION = ENFORCED_NOT_REQUIRED)).
 
     Usage:
       snowflake-tests.ps1 -Account <identifier> (-Token <token> | -TokenFile <path>) [-Warehouse <name>] [-Role <name>]
-                          [-Suite perspectives,equivalence] [-Temporalization uni,bi,crt] [-Keep] [-Prefix <name>]
+                          [-Suite perspectives,equivalence,keys] [-Temporalization uni,bi,crt] [-Keep] [-Prefix <name>]
 
     The account is its identifier, such as myorg-myaccount, or the host name that Snowsight shows for it; without
     -Account, -Token and -TokenFile the environment variables SNOWFLAKE_ACCOUNT, SNOWFLAKE_TOKEN and
@@ -38,7 +39,7 @@ param(
     [string] $TokenFile = $env:SNOWFLAKE_TOKEN_FILE,
     [string] $Warehouse = $env:SNOWFLAKE_WAREHOUSE,
     [string] $Role = $env:SNOWFLAKE_ROLE,
-    [string[]] $Suite = @('perspectives', 'equivalence'),
+    [string[]] $Suite = @('perspectives', 'equivalence', 'keys'),
     [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [switch] $Keep,
     [string] $Prefix = 'SISULA_',
@@ -52,10 +53,10 @@ $root = Split-Path -Parent $PSScriptRoot
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 # the test model of each suite, and the temporalizations that the suite has tests for (equivalence is uni only in
 # Anchor's Snowflake templates)
-$modelOf = @{ perspectives = 'distinct'; equivalence = 'distinct-equivalence' }
-$temporalizationsOf = @{ perspectives = @('uni', 'bi', 'crt'); equivalence = @('uni') }
+$modelOf = @{ perspectives = 'distinct'; equivalence = 'distinct-equivalence'; keys = 'keys' }
+$temporalizationsOf = @{ perspectives = @('uni', 'bi', 'crt'); equivalence = @('uni'); keys = @('uni', 'bi', 'crt') }
 foreach ($s in $Suite) {
-    if (-not $modelOf.ContainsKey($s)) { throw "Unknown suite '$s': use perspectives or equivalence." }
+    if (-not $modelOf.ContainsKey($s)) { throw "Unknown suite '$s': use perspectives, equivalence or keys." }
 }
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($t in $Temporalization) {

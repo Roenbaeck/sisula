@@ -25,7 +25,7 @@
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_partner_Actor_with_currently_Ongoing] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
     tie.currently_ONG_Ongoing AS [currently_Ongoing]
@@ -40,7 +40,7 @@ CREATE FUNCTION [ties].[Point_Actor_partner_Actor_with_currently_Ongoing] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
     tie.currently_ONG_Ongoing AS [currently_Ongoing]
@@ -66,7 +66,7 @@ CREATE FUNCTION [ties].[Difference_Actor_partner_Actor_with_currently_Ongoing] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.AC_partner_AC_with_ONG_currently_Who as [Positor],
+    tie.AC_partner_AC_with_ONG_currently_Who as [Who],
     tie.AC_partner_AC_with_ONG_currently_ChangedAt as [Time_of_Change],
     tie.AC_ID_partner as [Actor_partner_Id],
     tie.AC_ID_with as [Actor_with_Id],
@@ -79,7 +79,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_subset_Person_of] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_subset as [Actor_subset_Id],
     tie.PN_ID_of as [Person_of_Id]
 FROM
@@ -93,7 +93,7 @@ CREATE FUNCTION [ties].[Point_Actor_subset_Person_of] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_subset as [Actor_subset_Id],
     tie.PN_ID_of as [Person_of_Id]
 FROM
@@ -114,7 +114,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_in_Unknown_Actor_wasCast] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.EV_ID_in as [in_Unknown_Id],
     tie.AC_ID_wasCast as [Actor_wasCast_Id]
 FROM
@@ -128,7 +128,7 @@ CREATE FUNCTION [ties].[Point_in_Unknown_Actor_wasCast] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.EV_ID_in as [in_Unknown_Id],
     tie.AC_ID_wasCast as [Actor_wasCast_Id]
 FROM
@@ -149,7 +149,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_part_Program_in_got_Rating] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
     tie.got_RAT_Rating AS [got_Rating]
@@ -164,7 +164,7 @@ CREATE FUNCTION [ties].[Point_Actor_part_Program_in_got_Rating] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
     tie.got_RAT_Rating AS [got_Rating]
@@ -190,7 +190,7 @@ CREATE FUNCTION [ties].[Difference_Actor_part_Program_in_got_Rating] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.AC_part_PR_in_RAT_got_Who as [Positor],
+    tie.AC_part_PR_in_RAT_got_Who as [Who],
     tie.AC_part_PR_in_RAT_got_ChangedAt as [Time_of_Change],
     tie.AC_ID_part as [Actor_part_Id],
     tie.PR_ID_in as [Program_in_Id],
@@ -203,7 +203,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Stage_at_Program_isPlaying] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
 FROM
@@ -217,7 +217,7 @@ CREATE FUNCTION [ties].[Point_Stage_at_Program_isPlaying] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
 FROM
@@ -242,7 +242,7 @@ CREATE FUNCTION [ties].[Difference_Stage_at_Program_isPlaying] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.ST_at_PR_isPlaying_Who as [Positor],
+    tie.ST_at_PR_isPlaying_Who as [Who],
     tie.ST_at_PR_isPlaying_ChangedAt as [Time_of_Change],
     tie.ST_ID_at as [Stage_at_Id],
     tie.PR_ID_isPlaying as [Program_isPlaying_Id]
@@ -254,7 +254,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Actor_parent_Actor_child_having_ParentalType] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_parent as [Actor_parent_Id],
     tie.AC_ID_child as [Actor_child_Id],
     tie.having_PAT_ParentalType AS [having_ParentalType]
@@ -269,7 +269,7 @@ CREATE FUNCTION [ties].[Point_Actor_parent_Actor_child_having_ParentalType] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.AC_ID_parent as [Actor_parent_Id],
     tie.AC_ID_child as [Actor_child_Id],
     tie.having_PAT_ParentalType AS [having_ParentalType]
@@ -291,7 +291,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [ties].[Latest_Program_content_Stage_location_of_Unknown] AS
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],
     tie.EV_ID_of as [of_Unknown_Id]
@@ -306,7 +306,7 @@ CREATE FUNCTION [ties].[Point_Program_content_Stage_location_of_Unknown] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.Positor,
+    tie.Who,
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],
     tie.EV_ID_of as [of_Unknown_Id]
@@ -332,7 +332,7 @@ CREATE FUNCTION [ties].[Difference_Program_content_Stage_location_of_Unknown] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    tie.PR_content_ST_location_EV_of_Who as [Positor],
+    tie.PR_content_ST_location_EV_of_Who as [Who],
     tie.PR_content_ST_location_EV_of_ChangedAt as [Time_of_Change],
     tie.PR_ID_content as [Program_content_Id],
     tie.ST_ID_location as [Stage_location_Id],

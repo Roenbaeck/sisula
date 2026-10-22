@@ -829,7 +829,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -864,7 +864,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -1376,7 +1376,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -1411,7 +1411,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1

@@ -673,6 +673,8 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Meta" (
         "ST_MIN_PositedAt"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ID", "ST_MIN_Who", "ST_MIN_PositedAt");
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Fact table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -680,7 +682,7 @@ CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact_ID_SEQ" START 1
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact" (
     "AC_NAM_ID" bigint default attributes."AC_NAM_Actor_Name_Fact_ID_SEQ".nextval not null, 
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" binary not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Actor_Name_Fact" foreign key (
         "AC_NAM_AC_ID"
@@ -2545,7 +2547,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2570,7 +2572,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2631,7 +2633,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2677,7 +2679,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2717,7 +2719,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT
@@ -2746,7 +2748,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT
@@ -5578,7 +5580,7 @@ RETURNS TABLE (
     "AC_NAM_Who" smallint,
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" bigint,
     "AC_GEN_ID" bigint,
@@ -5818,7 +5820,7 @@ RETURNS TABLE (
     "AC_NAM_Who" smallint,
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" bigint,
     "AC_GEN_ID" bigint,
@@ -5929,7 +5931,7 @@ RETURNS TABLE (
     "AC_NAM_Who" smallint,
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" bigint,
     "AC_GEN_ID" bigint,
@@ -9199,7 +9201,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Who" smallint,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary
+    "AC_NAM_Actor_Name" varchar(42)
 )
 AS
 $$

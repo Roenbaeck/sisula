@@ -773,6 +773,8 @@ CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Annex] (
     )
 );
 GO
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Posit table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -780,7 +782,7 @@ IF Object_ID('attributes.AC_NAM_Actor_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[AC_NAM_Actor_Name_Posit] (
     AC_NAM_ID int IDENTITY(1,1) not null,
     AC_NAM_AC_ID smallint not null,
-    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
     AC_NAM_ChangedAt datetime2 not null,
     constraint fkAC_NAM_Actor_Name_Posit foreign key (
         AC_NAM_AC_ID
@@ -3113,7 +3115,7 @@ BEGIN
         @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -3151,7 +3153,7 @@ BEGIN
         @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -4085,7 +4087,7 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @id smallint;
-    DECLARE @value varbinary(max);
+    DECLARE @value nvarchar(42);
     DECLARE @changed datetime2;
     SELECT
         @id = AC_NAM_AC_ID,
@@ -4264,14 +4266,6 @@ GO
 -- ANCHOR TEMPORAL BUSINESS PERSPECTIVES ------------------------------------------------------------------------------
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.EQ_Difference_Person', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Difference_Person];
-IF Object_ID('anchors.EQ_Current_Person', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Current_Person];
-IF Object_ID('anchors.EQ_Point_Person', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Point_Person];
-IF Object_ID('anchors.EQ_Latest_Person', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Latest_Person];
 IF Object_ID('anchors.Difference_Person', 'IF') IS NOT NULL
 DROP FUNCTION [anchors].[Difference_Person];
 IF Object_ID('anchors.Current_Person', 'V') IS NOT NULL
@@ -4282,14 +4276,6 @@ IF Object_ID('anchors.Latest_Person', 'V') IS NOT NULL
 DROP VIEW [anchors].[Latest_Person];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.EQ_Difference_Stage', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Difference_Stage];
-IF Object_ID('anchors.EQ_Current_Stage', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Current_Stage];
-IF Object_ID('anchors.EQ_Point_Stage', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Point_Stage];
-IF Object_ID('anchors.EQ_Latest_Stage', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Latest_Stage];
 IF Object_ID('anchors.Difference_Stage', 'IF') IS NOT NULL
 DROP FUNCTION [anchors].[Difference_Stage];
 IF Object_ID('anchors.Current_Stage', 'V') IS NOT NULL
@@ -4300,14 +4286,6 @@ IF Object_ID('anchors.Latest_Stage', 'V') IS NOT NULL
 DROP VIEW [anchors].[Latest_Stage];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.EQ_Difference_Actor', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Difference_Actor];
-IF Object_ID('anchors.EQ_Current_Actor', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Current_Actor];
-IF Object_ID('anchors.EQ_Point_Actor', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Point_Actor];
-IF Object_ID('anchors.EQ_Latest_Actor', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Latest_Actor];
 IF Object_ID('anchors.Difference_Actor', 'IF') IS NOT NULL
 DROP FUNCTION [anchors].[Difference_Actor];
 IF Object_ID('anchors.Current_Actor', 'V') IS NOT NULL
@@ -4318,14 +4296,6 @@ IF Object_ID('anchors.Latest_Actor', 'V') IS NOT NULL
 DROP VIEW [anchors].[Latest_Actor];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('anchors.EQ_Difference_Program', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Difference_Program];
-IF Object_ID('anchors.EQ_Current_Program', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Current_Program];
-IF Object_ID('anchors.EQ_Point_Program', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Point_Program];
-IF Object_ID('anchors.EQ_Latest_Program', 'IF') IS NOT NULL
-DROP FUNCTION [anchors].[EQ_Latest_Program];
 IF Object_ID('anchors.Difference_Program', 'IF') IS NOT NULL
 DROP FUNCTION [anchors].[Difference_Program];
 IF Object_ID('anchors.Current_Program', 'V') IS NOT NULL
@@ -5278,7 +5248,7 @@ FROM (
         ST_NAM_ChangedAt AS [Time_of_Change],
         'Name' AS [Subject_of_Change]
     FROM
-        [attributes].[eST_NAM_Stage_Name](0) 
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         (@selection is null OR @selection like '%NAM%')
     AND
@@ -5297,95 +5267,6 @@ FROM (
 ) timepoints
 CROSS APPLY
     [anchors].[Point_Stage](timepoints.[Time_of_Change]) [pST]
-WHERE
-    [pST].Stage_Id = timepoints.ST_ID;
-GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Stage viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Latest_Stage] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [ST].Positor,
-    [ST].ST_ID as [Stage_Id],
-    [ST].ST_NAM_Stage_Name as [Name],
-    [ST].ST_LOC_Stage_Location as [Location],
-    [ST].ST_AVG_UTL_Utilization as [Average_Utilization],
-    [ST].ST_MIN_UTL_Utilization as [Minimum_Utilization]
-FROM
-    [anchors].[elST_Stage](@equivalent) [ST];
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Stage viewed as it was on the given timepoint
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Point_Stage] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [ST].Positor,
-    [ST].ST_ID as [Stage_Id],
-    [ST].ST_NAM_Stage_Name as [Name],
-    [ST].ST_LOC_Stage_Location as [Location],
-    [ST].ST_AVG_UTL_Utilization as [Average_Utilization],
-    [ST].ST_MIN_UTL_Utilization as [Minimum_Utilization]
-FROM
-    [anchors].[epST_Stage](@equivalent, @changingTimepoint) [ST]
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Stage viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Current_Stage] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [anchors].[EQ_Point_Stage](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Stage showing all differences between the given timepoints and optionally for a subset of attributes
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Difference_Stage] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2,
-    @selection varchar(max) = null
-)
-RETURNS TABLE AS RETURN
-SELECT
-    timepoints.[Time_of_Change],
-    timepoints.[Subject_of_Change],
-    [pST].*
-FROM (
-    SELECT DISTINCT
-        ST_NAM_ST_ID AS ST_ID,
-        ST_NAM_ChangedAt AS [Time_of_Change],
-        'Name' AS [Subject_of_Change]
-    FROM
-        [attributes].[eST_NAM_Stage_Name](@equivalent) 
-    WHERE
-        (@selection is null OR @selection like '%NAM%')
-    AND
-        ST_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-    UNION
-    SELECT DISTINCT
-        ST_AVG_ST_ID AS ST_ID,
-        ST_AVG_ChangedAt AS [Time_of_Change],
-        'Average' AS [Subject_of_Change]
-    FROM
-        [attributes].[ST_AVG_Stage_Average]
-    WHERE
-        (@selection is null OR @selection like '%AVG%')
-    AND
-        ST_AVG_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-) timepoints
-CROSS APPLY
-    [anchors].[EQ_Point_Stage](@equivalent, timepoints.[Time_of_Change]) [pST]
 WHERE
     [pST].Stage_Id = timepoints.ST_ID;
 GO
@@ -5469,93 +5350,6 @@ CROSS APPLY
 WHERE
     [pAC].Actor_Id = timepoints.AC_ID;
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Actor viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Latest_Actor] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [AC].Positor,
-    [AC].AC_ID as [Actor_Id],
-    [AC].AC_NAM_Actor_Name as [Name],
-    [AC].AC_GEN_GEN_Gender as [Gender_Gender],
-    [AC].AC_PLV_PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
-FROM
-    [anchors].[elAC_Actor](@equivalent) [AC];
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Actor viewed as it was on the given timepoint
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Point_Actor] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [AC].Positor,
-    [AC].AC_ID as [Actor_Id],
-    [AC].AC_NAM_Actor_Name as [Name],
-    [AC].AC_GEN_GEN_Gender as [Gender_Gender],
-    [AC].AC_PLV_PLV_ProfessionalLevel as [ProfessionalLevel_ProfessionalLevel]
-FROM
-    [anchors].[epAC_Actor](@equivalent, @changingTimepoint) [AC]
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Actor viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Current_Actor] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [anchors].[EQ_Point_Actor](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Actor showing all differences between the given timepoints and optionally for a subset of attributes
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Difference_Actor] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2,
-    @selection varchar(max) = null
-)
-RETURNS TABLE AS RETURN
-SELECT
-    timepoints.[Time_of_Change],
-    timepoints.[Subject_of_Change],
-    [pAC].*
-FROM (
-    SELECT DISTINCT
-        AC_NAM_AC_ID AS AC_ID,
-        AC_NAM_ChangedAt AS [Time_of_Change],
-        'Name' AS [Subject_of_Change]
-    FROM
-        [attributes].[AC_NAM_Actor_Name]
-    WHERE
-        (@selection is null OR @selection like '%NAM%')
-    AND
-        AC_NAM_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-    UNION
-    SELECT DISTINCT
-        AC_PLV_AC_ID AS AC_ID,
-        AC_PLV_ChangedAt AS [Time_of_Change],
-        'ProfessionalLevel' AS [Subject_of_Change]
-    FROM
-        [attributes].[AC_PLV_Actor_ProfessionalLevel]
-    WHERE
-        (@selection is null OR @selection like '%PLV%')
-    AND
-        AC_PLV_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-) timepoints
-CROSS APPLY
-    [anchors].[EQ_Point_Actor](@equivalent, timepoints.[Time_of_Change]) [pAC]
-WHERE
-    [pAC].Actor_Id = timepoints.AC_ID;
-GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Program viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
@@ -5612,7 +5406,7 @@ FROM (
         PR_LEN_ChangedAt AS [Time_of_Change],
         'Length' AS [Subject_of_Change]
     FROM
-        [attributes].[ePR_LEN_Program_Length](0) 
+        [attributes].[PR_LEN_Program_Length]
     WHERE
         (@selection is null OR @selection like '%LEN%')
     AND
@@ -5623,91 +5417,9 @@ CROSS APPLY
 WHERE
     [pPR].Program_Id = timepoints.PR_ID;
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Program viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Latest_Program] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [PR].Positor,
-    [PR].PR_ID as [Program_Id],
-    [PR].PR_NAM_Program_Name as [Name],
-    [PR].PR_LEN_Program_Length as [Length]
-FROM
-    [anchors].[elPR_Program](@equivalent) [PR];
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Program viewed as it was on the given timepoint
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Point_Program] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [PR].Positor,
-    [PR].PR_ID as [Program_Id],
-    [PR].PR_NAM_Program_Name as [Name],
-    [PR].PR_LEN_Program_Length as [Length]
-FROM
-    [anchors].[epPR_Program](@equivalent, @changingTimepoint) [PR]
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Program viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Current_Program] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [anchors].[EQ_Point_Program](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Program showing all differences between the given timepoints and optionally for a subset of attributes
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [anchors].[EQ_Difference_Program] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2,
-    @selection varchar(max) = null
-)
-RETURNS TABLE AS RETURN
-SELECT
-    timepoints.[Time_of_Change],
-    timepoints.[Subject_of_Change],
-    [pPR].*
-FROM (
-    SELECT DISTINCT
-        PR_LEN_PR_ID AS PR_ID,
-        PR_LEN_ChangedAt AS [Time_of_Change],
-        'Length' AS [Subject_of_Change]
-    FROM
-        [attributes].[ePR_LEN_Program_Length](@equivalent) 
-    WHERE
-        (@selection is null OR @selection like '%LEN%')
-    AND
-        PR_LEN_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-) timepoints
-CROSS APPLY
-    [anchors].[EQ_Point_Program](@equivalent, timepoints.[Time_of_Change]) [pPR]
-WHERE
-    [pPR].Program_Id = timepoints.PR_ID;
-GO
 -- NEXUS TEMPORAL BUSINESS PERSPECTIVES -----------------------------------------------------------------------------
 --
 -- Drop perspectives -------------------------------------------------------------------------------------------------
-IF Object_ID('nexuses.EQ_Difference_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Difference_Event];
-IF Object_ID('nexuses.EQ_Current_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Current_Event];
-IF Object_ID('nexuses.EQ_Point_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Point_Event];
-IF Object_ID('nexuses.EQ_Latest_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Latest_Event];
 IF Object_ID('nexuses.Difference_Event', 'IF') IS NOT NULL
 DROP FUNCTION [nexuses].[Difference_Event];
 IF Object_ID('nexuses.Current_Event', 'V') IS NOT NULL
@@ -6224,7 +5936,7 @@ FROM (
         EV_STA_ChangedAt AS [Time_of_Change],
         'Status' AS [Subject_of_Change]
     FROM
-        [attributes].[eEV_STA_Event_Status](0) 
+        [attributes].[EV_STA_Event_Status]
     WHERE
         (@selection is null OR @selection like '%STA%')
     AND
@@ -6243,105 +5955,6 @@ FROM (
 ) timepoints
 CROSS APPLY
     [nexuses].[Point_Event](timepoints.[Time_of_Change]) [pEV]
-WHERE
-    [pEV].Event_Id = timepoints.EV_ID;
-GO
--- Latest equivalence perspective ------------------------------------------------------------------------------------
--- EQ_Latest_Event viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].[EQ_Latest_Event] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [EV].Positor,
-    [EV].EV_ID as [Event_Id],
-    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
-    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].of_ETY_EventType AS [of_EventType],
-    [EV].EV_DAT_Event_Date as [Date],
-    [EV].EV_AUD_Event_Audience as [Audience],
-    [EV].EV_REV_Event_Revenue as [Revenue],
-    [EV].EV_STA_Event_Status as [Status],
-    [EV].EV_UTL_UTL_Utilization as [Utilization_Utilization],
-    [EV].EV_LVL_PLV_ProfessionalLevel as [Level_ProfessionalLevel]
-FROM
-    [nexuses].[elEV_Event](@equivalent) [EV];
-GO
--- Point-in-time equivalence perspective -----------------------------------------------------------------------------
--- EQ_Point_Event viewed as it was on the given timepoint
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].[EQ_Point_Event] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    [EV].Positor,
-    [EV].EV_ID as [Event_Id],
-    [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
-    [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
-    [EV].of_ETY_EventType AS [of_EventType],
-    [EV].EV_DAT_Event_Date as [Date],
-    [EV].EV_AUD_Event_Audience as [Audience],
-    [EV].EV_REV_Event_Revenue as [Revenue],
-    [EV].EV_STA_Event_Status as [Status],
-    [EV].EV_UTL_UTL_Utilization as [Utilization_Utilization],
-    [EV].EV_LVL_PLV_ProfessionalLevel as [Level_ProfessionalLevel]
-FROM
-    [nexuses].[epEV_Event](@equivalent, @changingTimepoint) [EV]
-GO
--- Now equivalence perspective ---------------------------------------------------------------------------------------
--- EQ_Current_Event viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].[EQ_Current_Event] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [nexuses].[EQ_Point_Event](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective -------------------------------------------------------------------------------
--- EQ_Difference_Event showing differences between the given timepoints
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [nexuses].[EQ_Difference_Event] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2,
-    @selection varchar(max) = null
-)
-RETURNS TABLE AS RETURN
-SELECT
-    timepoints.[Time_of_Change],
-    timepoints.[Subject_of_Change],
-    [pEV].*
-FROM (
-    SELECT DISTINCT
-        EV_STA_EV_ID AS EV_ID,
-        EV_STA_ChangedAt AS [Time_of_Change],
-        'Status' AS [Subject_of_Change]
-    FROM
-        [attributes].[eEV_STA_Event_Status](@equivalent) 
-    WHERE
-        (@selection is null OR @selection like '%STA%')
-    AND
-        EV_STA_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-    UNION
-    SELECT DISTINCT
-        EV_LVL_EV_ID AS EV_ID,
-        EV_LVL_ChangedAt AS [Time_of_Change],
-        'Level' AS [Subject_of_Change]
-    FROM
-        [attributes].[EV_LVL_Event_Level]
-    WHERE
-        (@selection is null OR @selection like '%LVL%')
-    AND
-        EV_LVL_ChangedAt BETWEEN @intervalStart AND @intervalEnd
-) timepoints
-CROSS APPLY
-    [nexuses].[EQ_Point_Event](@equivalent, timepoints.[Time_of_Change]) [pEV]
 WHERE
     [pEV].Event_Id = timepoints.EV_ID;
 GO
@@ -9327,7 +8940,7 @@ BEGIN
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
         AC_NAM_Assertion char(1) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_Version bigint not null,
         AC_NAM_StatementType char(1) not null,
         primary key(
@@ -11922,7 +11535,7 @@ BEGIN
         AC_NAM_Positor tinyint null,
         AC_NAM_PositedAt datetime2 null,
         AC_NAM_Reliability decimal(5,2) null,
-        AC_NAM_Actor_Name varbinary(max) null,
+        AC_NAM_Actor_Name nvarchar(42) null,
         AC_GEN_AC_ID smallint null,
         Metadata_AC_GEN int null,
         AC_GEN_Positor tinyint null,
@@ -16804,14 +16417,6 @@ GO
 -- TIE TEMPORAL BUSINESS PERSPECTIVES ---------------------------------------------------------------------------------
 --
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Actor_partner_Actor_with_currently_Ongoing];
-IF Object_ID('ties.EQ_Current_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Actor_partner_Actor_with_currently_Ongoing];
-IF Object_ID('ties.EQ_Point_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing];
-IF Object_ID('ties.EQ_Latest_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Actor_partner_Actor_with_currently_Ongoing];
 IF Object_ID('ties.Difference_Actor_partner_Actor_with_currently_Ongoing', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Actor_partner_Actor_with_currently_Ongoing];
 IF Object_ID('ties.Current_Actor_partner_Actor_with_currently_Ongoing', 'V') IS NOT NULL
@@ -16822,14 +16427,6 @@ IF Object_ID('ties.Latest_Actor_partner_Actor_with_currently_Ongoing', 'V') IS N
 DROP VIEW [ties].[Latest_Actor_partner_Actor_with_currently_Ongoing];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Actor_subset_Person_of', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Actor_subset_Person_of];
-IF Object_ID('ties.EQ_Current_Actor_subset_Person_of', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Actor_subset_Person_of];
-IF Object_ID('ties.EQ_Point_Actor_subset_Person_of', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Actor_subset_Person_of];
-IF Object_ID('ties.EQ_Latest_Actor_subset_Person_of', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Actor_subset_Person_of];
 IF Object_ID('ties.Difference_Actor_subset_Person_of', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Actor_subset_Person_of];
 IF Object_ID('ties.Current_Actor_subset_Person_of', 'V') IS NOT NULL
@@ -16840,14 +16437,6 @@ IF Object_ID('ties.Latest_Actor_subset_Person_of', 'V') IS NOT NULL
 DROP VIEW [ties].[Latest_Actor_subset_Person_of];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_in_Unknown_Actor_wasCast];
-IF Object_ID('ties.EQ_Current_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_in_Unknown_Actor_wasCast];
-IF Object_ID('ties.EQ_Point_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_in_Unknown_Actor_wasCast];
-IF Object_ID('ties.EQ_Latest_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_in_Unknown_Actor_wasCast];
 IF Object_ID('ties.Difference_in_Unknown_Actor_wasCast', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_in_Unknown_Actor_wasCast];
 IF Object_ID('ties.Current_in_Unknown_Actor_wasCast', 'V') IS NOT NULL
@@ -16858,14 +16447,6 @@ IF Object_ID('ties.Latest_in_Unknown_Actor_wasCast', 'V') IS NOT NULL
 DROP VIEW [ties].[Latest_in_Unknown_Actor_wasCast];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Actor_part_Program_in_got_Rating];
-IF Object_ID('ties.EQ_Current_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Actor_part_Program_in_got_Rating];
-IF Object_ID('ties.EQ_Point_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Actor_part_Program_in_got_Rating];
-IF Object_ID('ties.EQ_Latest_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Actor_part_Program_in_got_Rating];
 IF Object_ID('ties.Difference_Actor_part_Program_in_got_Rating', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Actor_part_Program_in_got_Rating];
 IF Object_ID('ties.Current_Actor_part_Program_in_got_Rating', 'V') IS NOT NULL
@@ -16876,14 +16457,6 @@ IF Object_ID('ties.Latest_Actor_part_Program_in_got_Rating', 'V') IS NOT NULL
 DROP VIEW [ties].[Latest_Actor_part_Program_in_got_Rating];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Stage_at_Program_isPlaying];
-IF Object_ID('ties.EQ_Current_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Stage_at_Program_isPlaying];
-IF Object_ID('ties.EQ_Point_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Stage_at_Program_isPlaying];
-IF Object_ID('ties.EQ_Latest_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Stage_at_Program_isPlaying];
 IF Object_ID('ties.Difference_Stage_at_Program_isPlaying', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Stage_at_Program_isPlaying];
 IF Object_ID('ties.Current_Stage_at_Program_isPlaying', 'V') IS NOT NULL
@@ -16894,14 +16467,6 @@ IF Object_ID('ties.Latest_Stage_at_Program_isPlaying', 'V') IS NOT NULL
 DROP VIEW [ties].[Latest_Stage_at_Program_isPlaying];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Actor_parent_Actor_child_having_ParentalType];
-IF Object_ID('ties.EQ_Current_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Actor_parent_Actor_child_having_ParentalType];
-IF Object_ID('ties.EQ_Point_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType];
-IF Object_ID('ties.EQ_Latest_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Actor_parent_Actor_child_having_ParentalType];
 IF Object_ID('ties.Difference_Actor_parent_Actor_child_having_ParentalType', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Actor_parent_Actor_child_having_ParentalType];
 IF Object_ID('ties.Current_Actor_parent_Actor_child_having_ParentalType', 'V') IS NOT NULL
@@ -16912,14 +16477,6 @@ IF Object_ID('ties.Latest_Actor_parent_Actor_child_having_ParentalType', 'V') IS
 DROP VIEW [ties].[Latest_Actor_parent_Actor_child_having_ParentalType];
 GO
 -- Drop perspectives --------------------------------------------------------------------------------------------------
-IF Object_ID('ties.EQ_Difference_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Difference_Program_content_Stage_location_of_Unknown];
-IF Object_ID('ties.EQ_Current_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Current_Program_content_Stage_location_of_Unknown];
-IF Object_ID('ties.EQ_Point_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Point_Program_content_Stage_location_of_Unknown];
-IF Object_ID('ties.EQ_Latest_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
-DROP FUNCTION [ties].[EQ_Latest_Program_content_Stage_location_of_Unknown];
 IF Object_ID('ties.Difference_Program_content_Stage_location_of_Unknown', 'IF') IS NOT NULL
 DROP FUNCTION [ties].[Difference_Program_content_Stage_location_of_Unknown];
 IF Object_ID('ties.Current_Program_content_Stage_location_of_Unknown', 'V') IS NOT NULL
@@ -17992,67 +17549,6 @@ SELECT
 FROM
     [ties].[dAC_partner_AC_with_ONG_currently](@intervalStart, @intervalEnd) tie;
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Actor_partner_Actor_with_currently_Ongoing] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_partner as [Actor_partner_Id],
-    tie.AC_ID_with as [Actor_with_Id],
-    tie.currently_ONG_Ongoing AS [currently_Ongoing]
-FROM
-    [ties].[elAC_partner_AC_with_ONG_currently](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Actor_partner_Actor_with_currently_Ongoing viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_partner as [Actor_partner_Id],
-    tie.AC_ID_with as [Actor_with_Id],
-    tie.currently_ONG_Ongoing AS [currently_Ongoing]
-FROM
-    [ties].[epAC_partner_AC_with_ONG_currently](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Actor_partner_Actor_with_currently_Ongoing viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Actor_partner_Actor_with_currently_Ongoing] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Actor_partner_Actor_with_currently_Ongoing](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Actor_partner_Actor_with_currently_Ongoing showing all differences between the given timepoints
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Difference_Actor_partner_Actor_with_currently_Ongoing] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.AC_partner_AC_with_ONG_currently_Positor as [Positor],
-    tie.AC_partner_AC_with_ONG_currently_ChangedAt as [Time_of_Change],
-    tie.AC_ID_partner as [Actor_partner_Id],
-    tie.AC_ID_with as [Actor_with_Id],
-    tie.currently_ONG_Ongoing AS [currently_Ongoing]
-FROM
-    [ties].[edAC_partner_AC_with_ONG_currently](@equivalent, @intervalStart, @intervalEnd) tie;
-GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Actor_subset_Person_of viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
@@ -18088,47 +17584,6 @@ SELECT
 FROM
     [ties].[Point_Actor_subset_Person_of](sysdatetime());
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Actor_subset_Person_of viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Actor_subset_Person_of] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_subset as [Actor_subset_Id],
-    tie.PN_ID_of as [Person_of_Id]
-FROM
-    [ties].[elAC_subset_PN_of](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Actor_subset_Person_of viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Actor_subset_Person_of] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_subset as [Actor_subset_Id],
-    tie.PN_ID_of as [Person_of_Id]
-FROM
-    [ties].[epAC_subset_PN_of](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Actor_subset_Person_of viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Actor_subset_Person_of] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Actor_subset_Person_of](@equivalent, sysdatetime());
-GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
@@ -18163,47 +17618,6 @@ SELECT
     *
 FROM
     [ties].[Point_in_Unknown_Actor_wasCast](sysdatetime());
-GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_in_Unknown_Actor_wasCast] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.EV_ID_in as [in_Unknown_Id],
-    tie.AC_ID_wasCast as [Actor_wasCast_Id]
-FROM
-    [ties].[elEV_in_AC_wasCast](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_in_Unknown_Actor_wasCast viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_in_Unknown_Actor_wasCast] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.EV_ID_in as [in_Unknown_Id],
-    tie.AC_ID_wasCast as [Actor_wasCast_Id]
-FROM
-    [ties].[epEV_in_AC_wasCast](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_in_Unknown_Actor_wasCast viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_in_Unknown_Actor_wasCast] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_in_Unknown_Actor_wasCast](@equivalent, sysdatetime());
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
@@ -18259,67 +17673,6 @@ SELECT
 FROM
     [ties].[dAC_part_PR_in_RAT_got](@intervalStart, @intervalEnd) tie;
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Actor_part_Program_in_got_Rating] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_part as [Actor_part_Id],
-    tie.PR_ID_in as [Program_in_Id],
-    tie.got_RAT_Rating AS [got_Rating]
-FROM
-    [ties].[elAC_part_PR_in_RAT_got](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Actor_part_Program_in_got_Rating viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Actor_part_Program_in_got_Rating] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_part as [Actor_part_Id],
-    tie.PR_ID_in as [Program_in_Id],
-    tie.got_RAT_Rating AS [got_Rating]
-FROM
-    [ties].[epAC_part_PR_in_RAT_got](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Actor_part_Program_in_got_Rating viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Actor_part_Program_in_got_Rating] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Actor_part_Program_in_got_Rating](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Actor_part_Program_in_got_Rating showing all differences between the given timepoints
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Difference_Actor_part_Program_in_got_Rating] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.AC_part_PR_in_RAT_got_Positor as [Positor],
-    tie.AC_part_PR_in_RAT_got_ChangedAt as [Time_of_Change],
-    tie.AC_ID_part as [Actor_part_Id],
-    tie.PR_ID_in as [Program_in_Id],
-    tie.got_RAT_Rating AS [got_Rating]
-FROM
-    [ties].[edAC_part_PR_in_RAT_got](@equivalent, @intervalStart, @intervalEnd) tie;
-GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
@@ -18371,64 +17724,6 @@ SELECT
 FROM
     [ties].[dST_at_PR_isPlaying](@intervalStart, @intervalEnd) tie;
 GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Stage_at_Program_isPlaying] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.ST_ID_at as [Stage_at_Id],
-    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
-FROM
-    [ties].[elST_at_PR_isPlaying](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Stage_at_Program_isPlaying viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Stage_at_Program_isPlaying] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.ST_ID_at as [Stage_at_Id],
-    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
-FROM
-    [ties].[epST_at_PR_isPlaying](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Stage_at_Program_isPlaying viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Stage_at_Program_isPlaying] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Stage_at_Program_isPlaying](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Stage_at_Program_isPlaying showing all differences between the given timepoints
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Difference_Stage_at_Program_isPlaying] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.ST_at_PR_isPlaying_Positor as [Positor],
-    tie.ST_at_PR_isPlaying_ChangedAt as [Time_of_Change],
-    tie.ST_ID_at as [Stage_at_Id],
-    tie.PR_ID_isPlaying as [Program_isPlaying_Id]
-FROM
-    [ties].[edST_at_PR_isPlaying](@equivalent, @intervalStart, @intervalEnd) tie;
-GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
 -----------------------------------------------------------------------------------------------------------------------
@@ -18465,49 +17760,6 @@ SELECT
     *
 FROM
     [ties].[Point_Actor_parent_Actor_child_having_ParentalType](sysdatetime());
-GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Actor_parent_Actor_child_having_ParentalType] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_parent as [Actor_parent_Id],
-    tie.AC_ID_child as [Actor_child_Id],
-    tie.having_PAT_ParentalType AS [having_ParentalType]
-FROM
-    [ties].[elAC_parent_AC_child_PAT_having](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Actor_parent_Actor_child_having_ParentalType viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.AC_ID_parent as [Actor_parent_Id],
-    tie.AC_ID_child as [Actor_child_Id],
-    tie.having_PAT_ParentalType AS [having_ParentalType]
-FROM
-    [ties].[epAC_parent_AC_child_PAT_having](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Actor_parent_Actor_child_having_ParentalType viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Actor_parent_Actor_child_having_ParentalType] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Actor_parent_Actor_child_having_ParentalType](@equivalent, sysdatetime());
 GO
 -- Latest perspective -------------------------------------------------------------------------------------------------
 -- Latest_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
@@ -18562,67 +17814,6 @@ SELECT
     tie.EV_ID_of as [of_Unknown_Id]
 FROM
     [ties].[dPR_content_ST_location_EV_of](@intervalStart, @intervalEnd) tie;
-GO
--- Latest equivalence perspective -------------------------------------------------------------------------------------
--- EQ_Latest_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Latest_Program_content_Stage_location_of_Unknown] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.PR_ID_content as [Program_content_Id],
-    tie.ST_ID_location as [Stage_location_Id],
-    tie.EV_ID_of as [of_Unknown_Id]
-FROM
-    [ties].[elPR_content_ST_location_EV_of](@equivalent) tie;
-GO
--- Point-in-time equivalence perspective ------------------------------------------------------------------------------
--- EQ_Point_Program_content_Stage_location_of_Unknown viewed by the latest available information (may include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Point_Program_content_Stage_location_of_Unknown] (
-    @equivalent tinyint,
-    @changingTimepoint datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.Positor,
-    tie.PR_ID_content as [Program_content_Id],
-    tie.ST_ID_location as [Stage_location_Id],
-    tie.EV_ID_of as [of_Unknown_Id]
-FROM
-    [ties].[epPR_content_ST_location_EV_of](@equivalent, @changingTimepoint) tie
-GO
--- Now equivalence perspective ----------------------------------------------------------------------------------------
--- EQ_Current_Program_content_Stage_location_of_Unknown viewed as it currently is (cannot include future versions)
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Current_Program_content_Stage_location_of_Unknown] (
-    @equivalent tinyint
-)
-RETURNS TABLE AS RETURN
-SELECT
-    *
-FROM
-    [ties].[EQ_Point_Program_content_Stage_location_of_Unknown](@equivalent, sysdatetime());
-GO
--- Difference equivalence perspective ---------------------------------------------------------------------------------
--- EQ_Difference_Program_content_Stage_location_of_Unknown showing all differences between the given timepoints
------------------------------------------------------------------------------------------------------------------------
-CREATE FUNCTION [ties].[EQ_Difference_Program_content_Stage_location_of_Unknown] (
-    @equivalent tinyint,
-    @intervalStart datetime2,
-    @intervalEnd datetime2
-)
-RETURNS TABLE AS RETURN
-SELECT
-    tie.PR_content_ST_location_EV_of_Positor as [Positor],
-    tie.PR_content_ST_location_EV_of_ChangedAt as [Time_of_Change],
-    tie.PR_ID_content as [Program_content_Id],
-    tie.ST_ID_location as [Stage_location_Id],
-    tie.EV_ID_of as [of_Unknown_Id]
-FROM
-    [ties].[edPR_content_ST_location_EV_of](@equivalent, @intervalStart, @intervalEnd) tie;
 GO
 -- NATURAL KEYS -------------------------------------------------------------------------------------------------------
 --
@@ -18979,8 +18170,52 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor, filled by refresh_AC_Actor_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[AC_Actor_1st];
+GO
+CREATE TABLE [anchors].[AC_Actor_1st] (
+    Positor tinyint not null,
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
+    constraint pkAC_Actor_1st primary key (
+        Positor,
+        AC_ID
+    ),
+    constraint uqAC_Actor_1st unique (
+        Positor,
+        AC_NAM_Actor_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_AC_Actor_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_AC_Actor_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_AC_Actor_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[AC_Actor_1st];
+    INSERT INTO [anchors].[AC_Actor_1st] (
+        Positor,
+        AC_ID,
+        AC_NAM_Actor_Name
+    )
+    SELECT
+        Positor,
+        AC_ID,
+        AC_NAM_Actor_Name
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of PR_Program
 -----------------------------------------------------------------------------------------------------------------------

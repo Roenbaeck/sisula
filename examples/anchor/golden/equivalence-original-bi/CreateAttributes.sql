@@ -313,11 +313,13 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Annex" (
         "ST_MIN_PositedAt"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ID", "ST_MIN_PositedAt");
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Posit_ID_SEQ" START 1 INCREMENT 1;
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Posit" (
     "AC_NAM_ID" int default attributes."AC_NAM_Actor_Name_Posit_ID_SEQ".nextval not null, 
     "AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" binary not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Actor_Name_Posit" foreign key (
         "AC_ID"
