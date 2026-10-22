@@ -498,6 +498,8 @@ CREATE TABLE [attributes].[EV_LVL_Event_Level_Annex] (
     )
 );
 GO
+-- ST_NAM_Stage_Name is in the encryption group Places, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- ST_NAM_Stage_Name_Posit table (on ST_Stage)
 -----------------------------------------------------------------------------------------------------------------------
@@ -505,7 +507,7 @@ IF Object_ID('attributes.ST_NAM_Stage_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[ST_NAM_Stage_Name_Posit] (
     ST_NAM_ID int IDENTITY(1,1) not null,
     ST_NAM_ST_ID int not null,
-    ST_NAM_Stage_Name varbinary(max) not null,
+    ST_NAM_Stage_Name nvarchar(42) not null,
     ST_NAM_ChangedAt datetime2 not null,
     constraint fkST_NAM_Stage_Name_Posit foreign key (
         ST_NAM_ST_ID
@@ -661,6 +663,8 @@ CREATE TABLE [attributes].[ST_MIN_Stage_Minimum_Annex] (
     )
 );
 GO
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Posit table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -668,7 +672,7 @@ IF Object_ID('attributes.AC_NAM_Actor_Name_Posit', 'U') IS NULL
 CREATE TABLE [attributes].[AC_NAM_Actor_Name_Posit] (
     AC_NAM_ID int IDENTITY(1,1) not null,
     AC_NAM_AC_ID smallint not null,
-    AC_NAM_Actor_Name varbinary(max) not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
     AC_NAM_ChangedAt datetime2 not null,
     constraint fkAC_NAM_Actor_Name_Posit foreign key (
         AC_NAM_AC_ID
@@ -2862,7 +2866,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -2897,7 +2901,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -3409,7 +3413,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -3444,7 +3448,7 @@ BEGIN
         @changingTimepoint datetime2 = ''9999-12-31'',
         @positingTimepoint datetime2 = ''9999-12-31''
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -4196,7 +4200,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         primary key (
             AC_NAM_AC_ID asc,
             AC_NAM_ChangedAt desc,
@@ -8072,7 +8076,7 @@ BEGIN
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_PositedAt datetime2 not null,
         ST_NAM_Reliability decimal(5,2) not null,
-        ST_NAM_Stage_Name varbinary(max) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null,
         primary key (
             ST_NAM_ST_ID asc,
@@ -8257,7 +8261,7 @@ BEGIN
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_PositedAt datetime2 not null,
         ST_NAM_Reliability decimal(5,2) not null,
-        ST_NAM_Stage_Name varbinary(max) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -9741,7 +9745,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null,
         primary key (
             AC_NAM_AC_ID asc,
@@ -9926,7 +9930,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -11828,7 +11832,7 @@ BEGIN
         ST_NAM_ChangedAt datetime2 null,
         ST_NAM_PositedAt datetime2 null,
         ST_NAM_Reliability decimal(5,2) null,
-        ST_NAM_Stage_Name varbinary(max) null,
+        ST_NAM_Stage_Name nvarchar(42) null,
         ST_LOC_ST_ID int null,
         Metadata_ST_LOC int null,
         ST_LOC_PositedAt datetime2 null,
@@ -12542,7 +12546,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 null,
         AC_NAM_PositedAt datetime2 null,
         AC_NAM_Reliability decimal(5,2) null,
-        AC_NAM_Actor_Name varbinary(max) null,
+        AC_NAM_Actor_Name nvarchar(42) null,
         AC_GEN_AC_ID smallint null,
         Metadata_AC_GEN int null,
         AC_GEN_PositedAt datetime2 null,
@@ -17365,8 +17369,47 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 2nd key of ST_Stage has no key table: ST_NAM_Stage_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage, filled by refresh_ST_Stage_2nd
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.ST_Stage_2nd', 'U') IS NOT NULL
+DROP TABLE [anchors].[ST_Stage_2nd];
+GO
+CREATE TABLE [anchors].[ST_Stage_2nd] (
+    ST_ID int not null,
+    ST_NAM_Stage_Name nvarchar(42) not null,
+    constraint pkST_Stage_2nd primary key (
+        ST_ID
+    ),
+    constraint uqST_Stage_2nd unique (
+        ST_NAM_Stage_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_ST_Stage_2nd', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_ST_Stage_2nd];
+GO
+CREATE PROCEDURE [anchors].[refresh_ST_Stage_2nd] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[ST_Stage_2nd];
+    INSERT INTO [anchors].[ST_Stage_2nd] (
+        ST_ID,
+        ST_NAM_Stage_Name
+    )
+    SELECT
+        ST_ID,
+        ST_NAM_Stage_Name
+    FROM
+        [anchors].[key_ST_Stage_2nd]
+    WHERE
+        ST_NAM_Stage_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of AC_Actor
 -----------------------------------------------------------------------------------------------------------------------
@@ -17445,8 +17488,47 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor, filled by refresh_AC_Actor_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[AC_Actor_1st];
+GO
+CREATE TABLE [anchors].[AC_Actor_1st] (
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
+    constraint pkAC_Actor_1st primary key (
+        AC_ID
+    ),
+    constraint uqAC_Actor_1st unique (
+        AC_NAM_Actor_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_AC_Actor_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_AC_Actor_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_AC_Actor_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[AC_Actor_1st];
+    INSERT INTO [anchors].[AC_Actor_1st] (
+        AC_ID,
+        AC_NAM_Actor_Name
+    )
+    SELECT
+        AC_ID,
+        AC_NAM_Actor_Name
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of PR_Program
 -----------------------------------------------------------------------------------------------------------------------

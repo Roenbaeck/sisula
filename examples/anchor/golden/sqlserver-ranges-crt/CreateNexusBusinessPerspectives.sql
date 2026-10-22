@@ -23,7 +23,7 @@
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [nexuses].[Latest_Event] AS
 SELECT
-    [EV].Positor,
+    [EV].Who,
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],
@@ -45,7 +45,7 @@ CREATE FUNCTION [nexuses].[Point_Event] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [EV].Positor,
+    [EV].Who,
     [EV].EV_ID as [Event_Id],
     [EV].ST_ID_wasHeldAt as [Stage_wasHeldAt_Id],
     [EV].PR_ID_wasPlayed as [Program_wasPlayed_Id],

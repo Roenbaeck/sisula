@@ -4939,7 +4939,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null,
         primary key (
             AC_NAM_AC_ID asc,
@@ -5124,7 +5124,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_StatementType char(1) not null
     );
     INSERT INTO @retracted (
@@ -5211,7 +5211,7 @@ BEGIN
         AC_NAM_ChangedAt datetime2 not null,
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         previous_AC_NAM_PositedAt datetime2 not null,
         primary key(
             AC_NAM_AC_ID asc,

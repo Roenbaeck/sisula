@@ -663,13 +663,15 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Annex" (
         "ST_MIN_PositedAt"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ID", "ST_MIN_Positor", "ST_MIN_PositedAt");
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Posit table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Posit" (
     "AC_NAM_ID" not null,
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" binary not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Actor_Name_Posit" foreign key (
         "AC_NAM_AC_ID"
@@ -2530,7 +2532,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" ,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2555,7 +2557,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" ,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2616,7 +2618,7 @@ RETURNS TABLE (
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2662,7 +2664,7 @@ RETURNS TABLE (
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2702,7 +2704,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT
@@ -2731,7 +2733,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT
@@ -5556,7 +5558,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" ,
@@ -5796,7 +5798,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" ,
@@ -5907,7 +5909,7 @@ RETURNS TABLE (
     "AC_NAM_Positor" tinyint,
     "AC_NAM_Reliability" decimal(5,2),
     "AC_NAM_Assertion" string,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_GEN_AC_ID" smallint,
     "Metadata_AC_GEN" int,
     "AC_GEN_ID" ,
@@ -9177,7 +9179,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Positor" tinyint,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary
+    "AC_NAM_Actor_Name" varchar(42)
 )
 AS
 $$

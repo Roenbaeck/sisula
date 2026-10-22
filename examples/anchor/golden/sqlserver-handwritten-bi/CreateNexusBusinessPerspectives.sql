@@ -86,7 +86,7 @@ FROM (
         EV_STA_ChangedAt AS [Time_of_Change],
         'Status' AS [Subject_of_Change]
     FROM
-        [attributes].[eEV_STA_Event_Status](0) 
+        [attributes].[EV_STA_Event_Status]
     WHERE
         (@selection is null OR @selection like '%STA%')
     AND

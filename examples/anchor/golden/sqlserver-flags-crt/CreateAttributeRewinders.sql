@@ -1537,7 +1537,7 @@ BEGIN
         @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1
@@ -1575,7 +1575,7 @@ BEGIN
         @positingTimepoint datetime2 = ''9999-12-31'',
         @assertion char(1) = null
     )
-    RETURNS varbinary(max)
+    RETURNS nvarchar(42)
     AS
     BEGIN RETURN (
         SELECT TOP 1

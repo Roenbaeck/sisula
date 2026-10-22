@@ -1,14 +1,6 @@
 -- NEXUS TEMPORAL BUSINESS PERSPECTIVES -----------------------------------------------------------------------------
 --
 -- Drop perspectives -------------------------------------------------------------------------------------------------
-IF Object_ID('nexuses.EQ_Difference_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Difference_Event];
-IF Object_ID('nexuses.EQ_Current_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Current_Event];
-IF Object_ID('nexuses.EQ_Point_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Point_Event];
-IF Object_ID('nexuses.EQ_Latest_Event', 'IF') IS NOT NULL
-DROP FUNCTION [nexuses].[EQ_Latest_Event];
 IF Object_ID('nexuses.Difference_Event', 'IF') IS NOT NULL
 DROP FUNCTION [nexuses].[Difference_Event];
 IF Object_ID('nexuses.Current_Event', 'V') IS NOT NULL

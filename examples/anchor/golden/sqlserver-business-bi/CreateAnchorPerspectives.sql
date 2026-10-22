@@ -146,7 +146,6 @@ OUTER APPLY (
         [rAVG].ST_AVG_PositedAt,
         [rAVG].ST_AVG_Reliability,
         [kAVG].UTL_Utilization,
-        [kAVG].UTL_Utilization,
         [kAVG].Metadata_UTL,
         [rAVG].ST_AVG_UTL_ID
     FROM
@@ -173,7 +172,6 @@ OUTER APPLY (
         [rMIN].ST_MIN_ID,
         [rMIN].ST_MIN_PositedAt,
         [rMIN].ST_MIN_Reliability,
-        [kMIN].UTL_Utilization,
         [kMIN].UTL_Utilization,
         [kMIN].Metadata_UTL,
         [rMIN].ST_MIN_UTL_ID
@@ -364,7 +362,6 @@ OUTER APPLY (
         [rGEN].AC_GEN_Reliability,
         [kGEN].GEN_Checksum,
         [kGEN].GEN_Gender,
-        [kGEN].GEN_Gender,
         [kGEN].Metadata_GEN,
         [rGEN].AC_GEN_GEN_ID
     FROM
@@ -391,7 +388,6 @@ OUTER APPLY (
         [rPLV].AC_PLV_PositedAt,
         [rPLV].AC_PLV_Reliability,
         [kPLV].PLV_Checksum,
-        [kPLV].PLV_ProfessionalLevel,
         [kPLV].PLV_ProfessionalLevel,
         [kPLV].Metadata_PLV,
         [rPLV].AC_PLV_PLV_ID

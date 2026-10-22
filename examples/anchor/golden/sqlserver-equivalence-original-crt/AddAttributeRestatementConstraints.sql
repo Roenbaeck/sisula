@@ -281,7 +281,7 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @id smallint;
-    DECLARE @value varbinary(max);
+    DECLARE @value nvarchar(42);
     DECLARE @changed datetime2;
     SELECT
         @id = AC_ID,

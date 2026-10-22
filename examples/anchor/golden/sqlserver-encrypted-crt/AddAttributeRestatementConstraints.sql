@@ -150,7 +150,7 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @id int;
-    DECLARE @value varbinary(max);
+    DECLARE @value nvarchar(42);
     DECLARE @changed datetime2;
     SELECT
         @id = ST_NAM_ST_ID,
@@ -281,7 +281,7 @@ BEGIN
     RETURNS tinyint AS
     BEGIN
     DECLARE @id smallint;
-    DECLARE @value varbinary(max);
+    DECLARE @value nvarchar(42);
     DECLARE @changed datetime2;
     SELECT
         @id = AC_NAM_AC_ID,

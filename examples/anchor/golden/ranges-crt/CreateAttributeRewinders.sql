@@ -1370,7 +1370,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1395,7 +1395,7 @@ COPY GRANTS
 RETURNS TABLE (
     "AC_NAM_ID" bigint,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1456,7 +1456,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1502,7 +1502,7 @@ RETURNS TABLE (
     "AC_NAM_Confidence" decimal(7,3),
     "AC_NAM_Stance" string,
     "AC_NAM_AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -1542,7 +1542,7 @@ CREATE OR REPLACE FUNCTION attributes."preAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT
@@ -1571,7 +1571,7 @@ CREATE OR REPLACE FUNCTION attributes."folAC_NAM_Actor_Name" (
     assertion string
 )
 COPY GRANTS
-RETURNS binary
+RETURNS varchar(42)
 AS
 $$
 SELECT

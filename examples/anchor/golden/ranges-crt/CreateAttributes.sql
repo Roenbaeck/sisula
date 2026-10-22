@@ -464,6 +464,8 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Meta" (
         "ST_MIN_PositedAt"
     ) RELY
 ) CLUSTER BY ("ST_MIN_ID", "ST_MIN_Who", "ST_MIN_PositedAt");
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute posit table -----------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name_Fact table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
@@ -471,7 +473,7 @@ CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact_ID_SEQ" START 1
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact" (
     "AC_NAM_ID" bigint default attributes."AC_NAM_Actor_Name_Fact_ID_SEQ".nextval not null, 
     "AC_NAM_AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" binary not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     constraint "fkAC_NAM_Actor_Name_Fact" foreign key (
         "AC_NAM_AC_ID"

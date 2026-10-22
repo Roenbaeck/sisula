@@ -186,7 +186,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Positor" tinyint,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary
+    "AC_NAM_Actor_Name" varchar(42)
 )
 AS
 $$

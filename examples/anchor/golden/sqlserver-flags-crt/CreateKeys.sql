@@ -353,8 +353,52 @@ FROM (
         COUNT(*) > 1
 ) d;
 GO
--- The 1st key of AC_Actor has no key table: AC_NAM_Actor_Name is a (max) type, which a unique index cannot
--- hold; give its attribute a checksum.
+-- Key table ----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor, filled by refresh_AC_Actor_1st
+-----------------------------------------------------------------------------------------------------------------------
+IF Object_ID('anchors.AC_Actor_1st', 'U') IS NOT NULL
+DROP TABLE [anchors].[AC_Actor_1st];
+GO
+CREATE TABLE [anchors].[AC_Actor_1st] (
+    Positor tinyint not null,
+    AC_ID smallint not null,
+    AC_NAM_Actor_Name nvarchar(42) not null,
+    constraint pkAC_Actor_1st primary key (
+        Positor,
+        AC_ID
+    ),
+    constraint uqAC_Actor_1st unique (
+        Positor,
+        AC_NAM_Actor_Name
+    )
+);
+GO
+IF Object_ID('anchors.refresh_AC_Actor_1st', 'P') IS NOT NULL
+DROP PROCEDURE [anchors].[refresh_AC_Actor_1st];
+GO
+CREATE PROCEDURE [anchors].[refresh_AC_Actor_1st] AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRANSACTION;
+    DELETE FROM [anchors].[AC_Actor_1st];
+    INSERT INTO [anchors].[AC_Actor_1st] (
+        Positor,
+        AC_ID,
+        AC_NAM_Actor_Name
+    )
+    SELECT
+        Positor,
+        AC_ID,
+        AC_NAM_Actor_Name
+    FROM
+        [anchors].[key_AC_Actor_1st]
+    WHERE
+        AC_NAM_Actor_Name is not null
+    ;
+    COMMIT;
+END
+GO
 -- Key view -----------------------------------------------------------------------------------------------------------
 -- 1st key of PR_Program
 -----------------------------------------------------------------------------------------------------------------------

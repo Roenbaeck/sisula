@@ -83,7 +83,7 @@ FROM (
         ST_NAM_ChangedAt AS [Time_of_Change],
         'Name' AS [Subject_of_Change]
     FROM
-        [attributes].[eST_NAM_Stage_Name](0) 
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         (@selection is null OR @selection like '%NAM%')
     AND

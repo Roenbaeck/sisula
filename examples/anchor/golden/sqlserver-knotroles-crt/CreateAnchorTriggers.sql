@@ -858,7 +858,7 @@ BEGIN
         AC_NAM_Positor tinyint null,
         AC_NAM_PositedAt datetime2 null,
         AC_NAM_Reliability decimal(5,2) null,
-        AC_NAM_Actor_Name varbinary(max) null,
+        AC_NAM_Actor_Name nvarchar(42) null,
         AC_GEN_AC_ID smallint null,
         Metadata_AC_GEN int null,
         AC_GEN_Positor tinyint null,

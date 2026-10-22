@@ -28,7 +28,7 @@
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Stage] AS
 SELECT
-    [ST].Positor,
+    [ST].Who,
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
@@ -45,7 +45,7 @@ CREATE FUNCTION [anchors].[Point_Stage] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [ST].Positor,
+    [ST].Who,
     [ST].ST_ID as [Stage_Id],
     [ST].ST_NAM_Stage_Name as [Name],
     [ST].ST_LOC_Stage_Location as [Location],
@@ -110,7 +110,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Actor] AS
 SELECT
-    [AC].Positor,
+    [AC].Who,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
     [AC].AC_GEN_GEN_Gender as [Gender_Gender],
@@ -126,7 +126,7 @@ CREATE FUNCTION [anchors].[Point_Actor] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [AC].Positor,
+    [AC].Who,
     [AC].AC_ID as [Actor_Id],
     [AC].AC_NAM_Actor_Name as [Name],
     [AC].AC_GEN_GEN_Gender as [Gender_Gender],
@@ -190,7 +190,7 @@ GO
 -----------------------------------------------------------------------------------------------------------------------
 CREATE VIEW [anchors].[Latest_Program] AS
 SELECT
-    [PR].Positor,
+    [PR].Who,
     [PR].PR_ID as [Program_Id],
     [PR].PR_NAM_Program_Name as [Name],
     [PR].PR_LEN_Program_Length as [Length]
@@ -205,7 +205,7 @@ CREATE FUNCTION [anchors].[Point_Program] (
 )
 RETURNS TABLE AS RETURN
 SELECT
-    [PR].Positor,
+    [PR].Who,
     [PR].PR_ID as [Program_Id],
     [PR].PR_NAM_Program_Name as [Name],
     [PR].PR_LEN_Program_Length as [Length]

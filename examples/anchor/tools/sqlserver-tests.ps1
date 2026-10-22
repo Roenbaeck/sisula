@@ -3,8 +3,11 @@
     each suite and temporalization it creates an empty database, runs the SQL generated for the suite's test model in it
     (golden/sqlserver-triggers/_full.sql or golden/sqlserver-keys/_full.sql, or the -bi or -crt one, and
     golden/sqlserver-indecisive-crt/_full.sql), runs the tests (sqlserver-tests/<suite>-<t>.sql) and drops the database
-    again. The indecisive suite is crt only: its model is the crt trigger model with decisiveness off. It prints what
-    the scripts print, the result of every check among it, and exits 1 if a check failed or a script did not run through.
+    again. The indecisive suite is crt only: its model is the crt trigger model with decisiveness off. The deploy suite
+    runs the SQL generated for every SQL Server model of the temporalization (the handwritten ones left out), each in an
+    empty database, and says for each whether it ran through; a model with the original naming and two attributes on one
+    knot fails as is known (KNOWN), since that naming cannot have it. It prints what the scripts print, the result of every
+    check among it, and exits 1 if a check failed or a script did not run through.
 
     The SQL that is run is the golden output, so regenerate it first when Anchor's templates have changed
     (regenerate-golden.ps1 -Variant sqlserver-triggers,sqlserver-triggers-bi,sqlserver-triggers-crt, the same for
@@ -14,7 +17,7 @@
     script, the batches split at the lines that say GO, and rows, messages and errors printed as sqlcmd prints them.
 
     Usage:
-      sqlserver-tests.ps1 [-Server <name>] [-Suite triggers,keys,indecisive] [-Temporalization uni,bi,crt]
+      sqlserver-tests.ps1 [-Server <name>] [-Suite triggers,keys,indecisive,deploy] [-Temporalization uni,bi,crt]
                           [-Username <login> -Password <password>] [-TrustServerCertificate] [-Keep] [-Prefix <name>]
                           [-Sqlcmd <path> | -SqlClient]
 
@@ -26,7 +29,7 @@
 [CmdletBinding()]
 param(
     [string] $Server = 'localhost',
-    [string[]] $Suite = @('triggers', 'keys', 'indecisive'),
+    [string[]] $Suite = @('triggers', 'keys', 'indecisive', 'deploy'),
     [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [string] $Username,
     [string] $Password,
@@ -43,9 +46,9 @@ $root = Split-Path -Parent $PSScriptRoot
 # powershell -File passes "a,b" as one string.
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 # the temporalizations that each suite has a model for
-$temporalizationsOf = @{ triggers = @('uni', 'bi', 'crt'); keys = @('uni', 'bi', 'crt'); indecisive = @('crt') }
+$temporalizationsOf = @{ triggers = @('uni', 'bi', 'crt'); keys = @('uni', 'bi', 'crt'); indecisive = @('crt'); deploy = @('uni', 'bi', 'crt') }
 foreach ($s in $Suite) {
-    if (-not $temporalizationsOf.ContainsKey($s)) { throw "Unknown suite '$s': use triggers, keys or indecisive." }
+    if (-not $temporalizationsOf.ContainsKey($s)) { throw "Unknown suite '$s': use triggers, keys, indecisive or deploy." }
 }
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($t in $Temporalization) {
@@ -95,7 +98,7 @@ function Invoke-SqlClientLines([string] $database, [string] $sql, [bool] $stopOn
     $connectionObject = New-Object System.Data.SqlClient.SqlConnection $builder.ConnectionString
     # errors up to severity 16 arrive as messages, so that the batch goes on, as it does in sqlcmd
     $connectionObject.FireInfoMessageEventOnUserErrors = $true
-    $connectionObject.add_InfoMessage({ param($sender, $e) foreach ($sqlError in $e.Errors) { & $add $sqlError } }.GetNewClosure())
+    $connectionObject.add_InfoMessage({ param($source, $e) foreach ($sqlError in $e.Errors) { & $add $sqlError } }.GetNewClosure())
     try {
         $connectionObject.Open()
         foreach ($batch in [regex]::Split($sql, '(?im)^[ \t]*GO[ \t]*(?:--[^\r\n]*)?\r?$')) {
@@ -170,10 +173,65 @@ function Invoke-Checks([string] $database, [string] $checksFile) {
     }
 }
 
+# Runs the generated SQL of every SQL Server model of a temporalization, each in an empty database, and returns a PASS or
+# FAIL line for each. The SQL does not create the schemas of the capsules, which are a user's to make, so they are made
+# first; and the placeholder of the encryption password, which the modeler writes for a user to replace, is replaced by
+# a password that a password policy takes.
+function Invoke-Deploy([string] $t) {
+    $lines = New-Object System.Collections.Generic.List[string]
+    $database = "${Prefix}deploy_$t"
+    $drop = "IF DB_ID(N'$database') IS NOT NULL BEGIN ALTER DATABASE [$database] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$database]; END;"
+    $models = @(Get-ChildItem (Join-Path $root 'golden') -Directory | Where-Object {
+        $_.Name -like 'sqlserver-*' -and $_.Name -notlike 'sqlserver-handwritten*' -and
+        $(if ($_.Name -match '-(bi|crt)$') { $Matches[1] } else { 'uni' }) -eq $t
+    } | Sort-Object Name)
+    foreach ($model in $models) {
+        $sql = [IO.File]::ReadAllText((Join-Path $model.FullName '_full.sql'), [Text.Encoding]::UTF8)
+        $r = Invoke-Sql $null $null "$drop CREATE DATABASE [$database];" $true $false
+        if ($r.failed) { $lines.Add("FAIL deploy $($model.Name): the database could not be made: $($r.lines -join ' ')"); continue }
+        $schemas = @([regex]::Matches($sql, '(?i)\bCREATE\s+(?:TABLE|VIEW|FUNCTION|PROCEDURE|TRIGGER|SEQUENCE)\s+\[?(\w+)\]?\s*\.') |
+            ForEach-Object { $_.Groups[1].Value } | Where-Object { @('dbo', 'sys') -notcontains $_ } | Sort-Object -Unique)
+        if ($schemas.Count) {
+            $r = Invoke-Sql $database $null (($schemas | ForEach-Object { "EXEC('CREATE SCHEMA [$_]');" }) -join ' ') $true $false
+            if ($r.failed) { $lines.Add("FAIL deploy $($model.Name): the schemas could not be made: $($r.lines -join ' ')"); continue }
+        }
+        $file = [IO.Path]::GetTempFileName()
+        try {
+            [IO.File]::WriteAllText($file, $sql.Replace("'<TYPE STRONG PASSWORD HERE>'", "'Sisula-test-$([guid]::NewGuid())'"), (New-Object Text.UTF8Encoding($false)))
+            $r = Invoke-Sql $database $file $null $true $false
+        }
+        finally { Remove-Item $file -ErrorAction SilentlyContinue }
+        if ($r.failed) {
+            $first = @($r.lines | Where-Object { $_ -match '^Msg ' } | Select-Object -First 1)
+            $at = if ($first.Count) { [array]::IndexOf($r.lines, $first[0]) } else { -1 }
+            $why = if ($at -ge 0 -and $at + 1 -lt $r.lines.Count) { "$($r.lines[$at]) $($r.lines[$at + 1])" } else { ($r.lines | Select-Object -Last 2) -join ' ' }
+            # the original naming cannot have two attributes on one knot (Anchor's docs/ANCHOR.md, "Generated objects and
+            # naming"), and some models have that on purpose
+            $modelFile = Join-Path $root "models\$($model.Name).xml"
+            $original = (Test-Path $modelFile) -and ([IO.File]::ReadAllText($modelFile) -match '<metadata[^>]*\bnaming="original"')
+            if ($original -and $why -match '^Msg (4506|8156),') { $lines.Add("KNOWN deploy $($model.Name), with the original naming and two attributes on one knot: $why") }
+            else { $lines.Add("FAIL deploy $($model.Name): $why") }
+        }
+        else { $lines.Add("PASS deploy $($model.Name)") }
+    }
+    if (-not $Keep) { [void] (Invoke-Sql $null $null $drop $true $false) }
+    $lines
+}
+
 $failed = @()
 foreach ($s in $Suite) {
     foreach ($t in $Temporalization) {
         if ($temporalizationsOf[$s] -notcontains $t) { continue }
+        if ($s -eq 'deploy') {
+            Write-Host "deploy $t`: the generated SQL of every SQL Server model, on $Server"
+            $lines = @(Invoke-Deploy $t)
+            Write-Lines $lines
+            $failures = @($lines | Where-Object { $_ -match '^FAIL ' })
+            $known = @($lines | Where-Object { $_ -match '^KNOWN ' })
+            Write-Host "  $($lines.Count - $failures.Count - $known.Count) of $($lines.Count) models ran through, $($known.Count) did not as known"
+            if ($failures.Count) { $failed += "deploy $t ($($failures.Count) of $($lines.Count) models did not run through)" }
+            continue
+        }
         $suffix = ''
         if ($t -ne 'uni') { $suffix = "-$t" }
         $generated = Join-Path $root "golden\sqlserver-$s$suffix\_full.sql"

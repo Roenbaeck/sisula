@@ -464,12 +464,14 @@ CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum" (
         "ST_ID"
     ) RELY
 ) CLUSTER BY ("ST_ID");
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
 -- Historized attribute table -----------------------------------------------------------------------------------------
 -- AC_NAM_Actor_Name table (on AC_Actor)
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name" (
     "AC_ID" smallint not null,
-    "AC_NAM_Actor_Name" binary not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
     "AC_NAM_ChangedAt" datetime not null,
     "Metadata_AC_NAM" int not null,
     constraint "fkAC_NAM_Actor_Name" foreign key (
@@ -1295,7 +1297,7 @@ COPY GRANTS
 RETURNS TABLE (
     "Metadata_AC_NAM" int,
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "AC_NAM_ChangedAt" datetime
 )
 AS
@@ -2101,7 +2103,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2201,7 +2203,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2331,7 +2333,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2418,7 +2420,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2451,7 +2453,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -2489,7 +2491,7 @@ RETURNS TABLE (
     "Metadata_AC" int,
     "Metadata_AC_NAM" int,
     "AC_NAM_ChangedAt" datetime,
-    "AC_NAM_Actor_Name" binary,
+    "AC_NAM_Actor_Name" varchar(42),
     "Metadata_AC_GEN" int,
     "GEN_Checksum" numeric(19,0),
     "GEN_Gender" varchar(42),
@@ -5348,7 +5350,7 @@ CREATE OR REPLACE FUNCTION anchors."pkey_AC_Actor_1st" (
 COPY GRANTS
 RETURNS TABLE (
     "AC_ID" smallint,
-    "AC_NAM_Actor_Name" binary
+    "AC_NAM_Actor_Name" varchar(42)
 )
 AS
 $$

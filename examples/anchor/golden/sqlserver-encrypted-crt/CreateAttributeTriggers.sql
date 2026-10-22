@@ -2041,7 +2041,7 @@ BEGIN
         ST_NAM_PositedAt datetime2 not null,
         ST_NAM_Reliability decimal(5,2) not null,
         ST_NAM_Assertion char(1) not null,
-        ST_NAM_Stage_Name varbinary(max) not null,
+        ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_Version bigint not null,
         ST_NAM_StatementType char(1) not null,
         primary key(
@@ -3461,7 +3461,7 @@ BEGIN
         AC_NAM_PositedAt datetime2 not null,
         AC_NAM_Reliability decimal(5,2) not null,
         AC_NAM_Assertion char(1) not null,
-        AC_NAM_Actor_Name varbinary(max) not null,
+        AC_NAM_Actor_Name nvarchar(42) not null,
         AC_NAM_Version bigint not null,
         AC_NAM_StatementType char(1) not null,
         primary key(
