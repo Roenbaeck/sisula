@@ -20,6 +20,11 @@
     mean something else to the modeler than to a direct reading. A canonical model is one the
     modeler would have saved itself, so both readings agree.
 
+      -Features    switches the target database and the temporalization the way a user does, and checks that the settings and
+                   the fields that the modeler offers follow the table of what each database implements (FEATURES in
+                   SQL/Helpers.js): what is not implemented is hidden, and what is, is shown. It runs on the base model
+                   unless -Variant says otherwise.
+
       -Bindings    calls the modeler's own "JSON bindings" (Actions.bindings, the Generate menu) and
                    compares what it produces with the bindings that check.ps1 resolves for the
                    same model with the resolver in tools/resolve-model.js. Both start from the
@@ -27,7 +32,7 @@
                    exactly the JSON that the templates were verified against.
 
     Usage:
-      browser-check.ps1 [-Variant <name>,...] [-Canonicalize | -Bindings] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
+      browser-check.ps1 [-Variant <name>,...] [-Canonicalize | -Bindings | -Features] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
 
     Nothing is written to the Anchor checkout. A copy of index.html is made in a temporary folder
     with a <base> pointing at the checkout, so every script, directive and sisulet is read from it
@@ -45,6 +50,7 @@ param(
     [string[]] $Variant,
     [switch] $Canonicalize,
     [switch] $Bindings,
+    [switch] $Features,
     [string] $Anchor,
     [string] $Edge,
     [string] $KeepOutput,
@@ -61,6 +67,7 @@ if (-not $Edge) {
         Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 if (-not $Edge) { throw 'Microsoft Edge was not found; pass -Edge.' }
+if (-not $Variant -and $Features) { $Variant = 'base' }
 if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
     # the modeler reads it differently, so it is left out here and only run through check.ps1.
@@ -118,6 +125,36 @@ $harness = @'
         setTimeout(function () {
             try {
                 Actions._applyLoadedModel(new DOMParser().parseFromString(MODEL, 'text/xml'), false);
+                if (MODE === 'features') {
+                    var combinations = [['SQLServer', 'uni'], ['SQLServer', 'bi'], ['SQLServer', 'crt'], ['Snowflake', 'uni'], ['Snowflake', 'bi'], ['Snowflake', 'crt'], ['Oracle', 'uni']];
+                    Settings.setEquivalence('true');
+                    var attribute = null, knot = null;
+                    for (var i = 0; i < Model.components.length; i++) {
+                        var component = Model.components[i];
+                        if (!component.editables) continue;
+                        var equivalent = component.editables.indexOf(Editables.equivalenceEdit) >= 0, encrypted = component.editables.indexOf(Editables.encryptionGroupEdit) >= 0;
+                        if (!attribute && equivalent && encrypted) attribute = component;
+                        if (!knot && equivalent && !encrypted) knot = component;
+                    }
+                    if (!attribute || !knot) { report('ERROR the model has no attribute and knot to look at'); return; }
+                    var labels = function (component) {
+                        var container = document.createElement('div');
+                        component.tabular(container);
+                        return Array.prototype.map.call(container.querySelectorAll('tr > td:first-child'), function (td) { return td.textContent; });
+                    };
+                    var shown = function (id) { return getComputedStyle(document.getElementById(id).closest('li')).display !== 'none'; };
+                    var observed = combinations.map(function (combination) {
+                        Settings.setDatabase(combination[0], false);
+                        Settings.setTemporalization(combination[1]);
+                        return {
+                            database: combination[0], temporalization: combination[1],
+                            equivalenceSetting: shown('equivalence'), encryptionSetting: shown('encryptionGroup'), equivalentSuffixSetting: shown('equivalentSuffix'),
+                            attributeFields: labels(attribute), knotFields: labels(knot)
+                        };
+                    });
+                    report('BASE64:' + toBase64(JSON.stringify(observed)));
+                    return;
+                }
                 if (MODE === 'bindings') {
                     Actions.bindings().then(function (json) { report('BASE64:' + toBase64(json)); },
                                             function (e) { report('ERROR ' + (e && e.stack || e)); });
@@ -234,6 +271,35 @@ try {
             $changed = $saved -cne ($model -replace "`r`n", "`n")
             [IO.File]::WriteAllText($modelPath, $saved, $utf8)
             Write-Host ("{0}  {1}: saved as the modeler would save it" -f $(if ($changed) { 'WROTE' } else { 'SAME ' }), $v)
+            continue
+        }
+        if ($Features) {
+            $observed = Invoke-Modeler $v $model 'features'
+            if ($null -eq $observed) { $failed++; continue }
+            # the table that the generators read, which the modeler reads too
+            $helpers = [IO.File]::ReadAllText((Join-Path (Join-Path $Anchor 'SQL') 'Helpers.js'), [Text.Encoding]::UTF8)
+            $table = $null
+            $found = [regex]::Match($helpers, '(?s)/\*features\*/(.*?)/\*end features\*/')
+            if ($found.Success) { $table = $found.Groups[1].Value | ConvertFrom-Json }
+            if ($null -eq $table) { Write-Host ("FAIL  {0}: no table of features in SQL/Helpers.js" -f $v); $failed++; continue }
+            $problems = New-Object System.Collections.Generic.List[string]
+            $combinations = ConvertFrom-Json $observed   # not piped: Windows PowerShell 5.1 would hand the array on as one object
+            foreach ($o in $combinations) {
+                $implemented = $null
+                $database = $table.PSObject.Properties[$o.database]
+                if ($database) { $entry = $database.Value.PSObject.Properties[$o.temporalization]; if ($entry) { $implemented = $entry.Value } }
+                $equivalence = (-not $implemented) -or ($implemented.equivalence -ne $false)
+                $encryption = (-not $implemented) -or ($implemented.encryption -ne $false)
+                $where = "$($o.database) $($o.temporalization)"
+                if ([bool] $o.equivalenceSetting -ne $equivalence) { $problems.Add("$where`: the setting of equivalence is $($o.equivalenceSetting), expected $equivalence") }
+                if ([bool] $o.equivalentSuffixSetting -ne $equivalence) { $problems.Add("$where`: the setting of the equivalent suffix is $($o.equivalentSuffixSetting), expected $equivalence") }
+                if ([bool] $o.encryptionSetting -ne $encryption) { $problems.Add("$where`: the setting of the encryption group is $($o.encryptionSetting), expected $encryption") }
+                if ((@($o.attributeFields) -contains 'Equivalent:') -ne $equivalence) { $problems.Add("$where`: the Equivalent field of an attribute is $((@($o.attributeFields) -contains 'Equivalent:')), expected $equivalence") }
+                if ((@($o.knotFields) -contains 'Equivalent:') -ne $equivalence) { $problems.Add("$where`: the Equivalent field of a knot is $((@($o.knotFields) -contains 'Equivalent:')), expected $equivalence") }
+                if ((@($o.attributeFields) -contains 'Encryption group:') -ne $encryption) { $problems.Add("$where`: the Encryption group field is $((@($o.attributeFields) -contains 'Encryption group:')), expected $encryption") }
+            }
+            if ($problems.Count -eq 0) { Write-Host ("PASS  {0}: the modeler shows what each database and temporalization implement, and hides the rest ({1} combinations)" -f $v, @($combinations).Count) }
+            else { foreach ($p in $problems) { Write-Host ("FAIL  {0}: {1}" -f $v, $p) }; $failed++ }
             continue
         }
         if ($Bindings) {

@@ -25,7 +25,7 @@ these ways:
 | `tools\csharp-check.ps1` | the same templates and bindings through the C# renderer that runs inside SQL Server | an Anchor checkout, `sisula-mssql`'s `FixtureRunner.exe` |
 | `tools\lint-sql.ps1` | the golden SQL, for defects that made generated Snowflake SQL invalid: nameless columns, a stray colon, missing or dangling commas, a table or function that is used but never created, a replaced function or view without `COPY GRANTS`, and constructs that Snowflake was found to reject. It cannot say that SQL is valid, only that these are absent | PowerShell |
 | `tools\regenerate-golden.ps1` | writes the golden files from the templates (`check.ps1 -Update`); they are approved output, so a change to a template shows in `git diff` and is read before it is committed | an Anchor checkout |
-| `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL | an Anchor checkout, Edge |
+| `tools\browser-check.ps1` | the golden files with the modeler itself: its `index.html` in headless Edge, opening the model and pressing Generate SQL; with `-Features` it switches the database and the temporalization and checks that the modeler hides what the table of features in Anchor's `SQL/Helpers.js` says they do not implement | an Anchor checkout, Edge |
 | `tools\hosted-check.ps1` | the generator that runs in Snowflake (built by Anchor's `tools\build-snowflake-generator.ps1`), as far as it can run without Snowflake: the JavaScript of `ANCHOR_BINDINGS` and `SISULATE` under Jint, over the model XML as a user would paste it, against the golden files; also the temporalization argument and the error messages. The SQL around the JavaScript (the `CREATE`s, the table, the `LISTAGG`) is only run by Snowflake | an Anchor checkout |
 | `tools\converter-check.ps1` | the modeler's data type converter (`modules\DataTypeConverter.js`, with `-Anchor` for a checkout that has the change): the Snowflake and BigQuery mappings against a table of what each type becomes, both ways; every one of the 49 pairs of the six databases and Generic on every model here and on Anchor's `example.xml`, which must stay well-formed and change nothing but the values of the data type attributes; and a model of names that look like types, which must not change | an Anchor checkout |
 | `tools\make-sqlserver-models.ps1` | makes the SQL Server models from the Snowflake uni models and adds the SQL Server variants (see above); the models must then be saved through the modeler | an Anchor checkout |
@@ -175,6 +175,7 @@ powershell -File tools\check.ps1 -Variant base -Loose   # one model, ignoring bl
 powershell -File tools\regenerate-golden.ps1            # after a change to a template: then read git diff
 powershell -File tools\browser-check.ps1                # the golden files against the modeler
 powershell -File tools\browser-check.ps1 -Bindings      # the modeler's Generate > JSON bindings against the resolver's
+powershell -File tools\browser-check.ps1 -Features      # the modeler shows only what the selected database implements
 powershell -File tools\make-variants.ps1                # after a change to base.xml
 ```
 
