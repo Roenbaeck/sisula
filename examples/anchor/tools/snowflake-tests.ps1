@@ -2,8 +2,9 @@
     Runs the Snowflake tests: what the perspectives show for rows put straight into the tables, since Snowflake has no
     triggers. For each suite and temporalization it creates a database, runs the SQL generated for the suite's test
     model in it (golden/distinct/_full.sql, or the -bi or -crt one, for the perspectives,
-    golden/distinct-equivalence/_full.sql for equivalence, and golden/keys/_full.sql, or the -bi or -crt one, for the
-    natural keys), runs the tests (snowflake-tests/<suite>-<t>.sql), queries every view and calls every function in it
+    golden/distinct-equivalence/_full.sql for equivalence, golden/keys/_full.sql, or the -bi or -crt one, for the
+    natural keys, golden/flags-bi and -crt for the integrity checks of what may not be restated, and golden/distinct-crt
+    for those of decisiveness), runs the tests (snowflake-tests/<suite>-<t>.sql), queries every view and calls every function in it
     once (snowflake-tests/compile.sql), and drops the database again. It prints the result of every check and exits 1
     if a check failed or something did not run through.
 
@@ -24,7 +25,7 @@
 
     Usage:
       snowflake-tests.ps1 -Account <identifier> (-Token <token> | -TokenFile <path>) [-Warehouse <name>] [-Role <name>]
-                          [-Suite perspectives,equivalence,keys] [-Temporalization uni,bi,crt] [-Keep] [-Prefix <name>]
+                          [-Suite perspectives,equivalence,keys,integrity,decisive] [-Temporalization uni,bi,crt] [-Keep] [-Prefix <name>]
 
     The account is its identifier, such as myorg-myaccount, or the host name that Snowsight shows for it; without
     -Account, -Token and -TokenFile the environment variables SNOWFLAKE_ACCOUNT, SNOWFLAKE_TOKEN and
@@ -39,7 +40,7 @@ param(
     [string] $TokenFile = $env:SNOWFLAKE_TOKEN_FILE,
     [string] $Warehouse = $env:SNOWFLAKE_WAREHOUSE,
     [string] $Role = $env:SNOWFLAKE_ROLE,
-    [string[]] $Suite = @('perspectives', 'equivalence', 'keys'),
+    [string[]] $Suite = @('perspectives', 'equivalence', 'keys', 'integrity', 'decisive'),
     [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [switch] $Keep,
     [string] $Prefix = 'SISULA_',
@@ -53,10 +54,10 @@ $root = Split-Path -Parent $PSScriptRoot
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 # the test model of each suite, and the temporalizations that the suite has tests for (equivalence is uni only in
 # Anchor's Snowflake templates)
-$modelOf = @{ perspectives = 'distinct'; equivalence = 'distinct-equivalence'; keys = 'keys' }
-$temporalizationsOf = @{ perspectives = @('uni', 'bi', 'crt'); equivalence = @('uni'); keys = @('uni', 'bi', 'crt') }
+$modelOf = @{ perspectives = 'distinct'; equivalence = 'distinct-equivalence'; keys = 'keys'; integrity = 'flags'; decisive = 'distinct' }
+$temporalizationsOf = @{ perspectives = @('uni', 'bi', 'crt'); equivalence = @('uni'); keys = @('uni', 'bi', 'crt'); integrity = @('bi', 'crt'); decisive = @('crt') }
 foreach ($s in $Suite) {
-    if (-not $modelOf.ContainsKey($s)) { throw "Unknown suite '$s': use perspectives, equivalence or keys." }
+    if (-not $modelOf.ContainsKey($s)) { throw "Unknown suite '$s': use perspectives, equivalence, keys, integrity or decisive." }
 }
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($t in $Temporalization) {

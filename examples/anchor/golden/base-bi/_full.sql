@@ -5916,8 +5916,17 @@ HAVING
 --   duplicate primary key, duplicate unique key   the same key more than once
 --   no row in <table> for <column>                a reference to a row that does not exist
 --
--- In a bitemporal model an attribute and a tie are a posit table and an annex table, each with a view. What is not
--- checked is restatement and whether the time of a posit overlaps another: the uni-temporal checks do not carry over.
+-- In a bitemporal model an attribute and a tie are a posit table and an annex table, each with a view
+-- (ic_<posit table>, ic_<annex table>), and a third view, ic_<attribute or tie>, for what the two say together:
+--
+--   temporal duplicate                            the unique key of the assembled view in SQL Server: two annex rows with the
+--                                                 same entity (the identifiers of a tie, or all its roles), changing time,
+--                                                 positing time and reliability
+--   more than one posit asserted at a time        for the same entity (the identifiers of a tie) and changing time, more than
+--                                                 one posit asserted at a positing time: a correction retracts what it corrects
+--                                                 at its own positing time
+--   restatement                                   in an attribute or a tie that may not store them, a value that is asserted at
+--                                                 the changing time after the one that has it already
 --
 -- A view that returns nothing has nothing wrong. IntegrityViolations is all of them together; it reads every table.
 -- It also has the checks of the natural keys, ic_key_<anchor or nexus>_<route>, which are made with the keys: a key
@@ -6399,6 +6408,81 @@ WHERE
 GROUP BY
     c."EV_DAT_ID"
 ;
+-- EV_DAT_Event_Date integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_EV_DAT_Event_Date" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'EV_DAT_Event_Date',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'EV_DAT_EV_ID', "EV_DAT_EV_ID",
+        'EV_DAT_PositedAt', "EV_DAT_PositedAt",
+        'EV_DAT_Reliability', "EV_DAT_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."EV_DAT_Event_Date"
+GROUP BY
+    "EV_DAT_EV_ID",
+    "EV_DAT_PositedAt",
+    "EV_DAT_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'EV_DAT_Event_Date',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'EV_DAT_EV_ID', "EV_DAT_EV_ID",
+        'EV_DAT_PositedAt', "EV_DAT_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "EV_DAT_EV_ID",
+        "EV_DAT_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "EV_DAT_EV_ID"
+            ORDER BY
+                "EV_DAT_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "EV_DAT_EV_ID",
+            "EV_DAT_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "EV_DAT_ID" ORDER BY "EV_DAT_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "EV_DAT_ID",
+                "EV_DAT_EV_ID",
+                "EV_DAT_PositedAt",
+                IFF("EV_DAT_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."EV_DAT_Event_Date"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "EV_DAT_EV_ID",
+    "EV_DAT_PositedAt",
+    asserted
+;
 -- EV_AUD_Event_Audience_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_EV_AUD_Event_Audience_Posit" (
     Construct,
@@ -6493,6 +6577,81 @@ WHERE
 GROUP BY
     c."EV_AUD_ID"
 ;
+-- EV_AUD_Event_Audience integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_EV_AUD_Event_Audience" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'EV_AUD_Event_Audience',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'EV_AUD_EV_ID', "EV_AUD_EV_ID",
+        'EV_AUD_PositedAt', "EV_AUD_PositedAt",
+        'EV_AUD_Reliability', "EV_AUD_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."EV_AUD_Event_Audience"
+GROUP BY
+    "EV_AUD_EV_ID",
+    "EV_AUD_PositedAt",
+    "EV_AUD_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'EV_AUD_Event_Audience',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'EV_AUD_EV_ID', "EV_AUD_EV_ID",
+        'EV_AUD_PositedAt', "EV_AUD_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "EV_AUD_EV_ID",
+        "EV_AUD_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "EV_AUD_EV_ID"
+            ORDER BY
+                "EV_AUD_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "EV_AUD_EV_ID",
+            "EV_AUD_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "EV_AUD_ID" ORDER BY "EV_AUD_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "EV_AUD_ID",
+                "EV_AUD_EV_ID",
+                "EV_AUD_PositedAt",
+                IFF("EV_AUD_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."EV_AUD_Event_Audience"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "EV_AUD_EV_ID",
+    "EV_AUD_PositedAt",
+    asserted
+;
 -- EV_REV_Event_Revenue_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_EV_REV_Event_Revenue_Posit" (
     Construct,
@@ -6586,6 +6745,81 @@ WHERE
     p."EV_REV_ID" IS NULL
 GROUP BY
     c."EV_REV_ID"
+;
+-- EV_REV_Event_Revenue integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_EV_REV_Event_Revenue" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'EV_REV_Event_Revenue',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'EV_REV_EV_ID', "EV_REV_EV_ID",
+        'EV_REV_PositedAt', "EV_REV_PositedAt",
+        'EV_REV_Reliability', "EV_REV_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."EV_REV_Event_Revenue"
+GROUP BY
+    "EV_REV_EV_ID",
+    "EV_REV_PositedAt",
+    "EV_REV_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'EV_REV_Event_Revenue',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'EV_REV_EV_ID', "EV_REV_EV_ID",
+        'EV_REV_PositedAt', "EV_REV_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "EV_REV_EV_ID",
+        "EV_REV_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "EV_REV_EV_ID"
+            ORDER BY
+                "EV_REV_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "EV_REV_EV_ID",
+            "EV_REV_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "EV_REV_ID" ORDER BY "EV_REV_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "EV_REV_ID",
+                "EV_REV_EV_ID",
+                "EV_REV_PositedAt",
+                IFF("EV_REV_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."EV_REV_Event_Revenue"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "EV_REV_EV_ID",
+    "EV_REV_PositedAt",
+    asserted
 ;
 -- ST_NAM_Stage_Name_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_ST_NAM_Stage_Name_Posit" (
@@ -6683,6 +6917,89 @@ WHERE
 GROUP BY
     c."ST_NAM_ID"
 ;
+-- ST_NAM_Stage_Name integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_ST_NAM_Stage_Name" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'ST_NAM_Stage_Name',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'ST_NAM_ST_ID', "ST_NAM_ST_ID",
+        'ST_NAM_ChangedAt', "ST_NAM_ChangedAt",
+        'ST_NAM_PositedAt', "ST_NAM_PositedAt",
+        'ST_NAM_Reliability', "ST_NAM_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."ST_NAM_Stage_Name"
+GROUP BY
+    "ST_NAM_ST_ID",
+    "ST_NAM_ChangedAt",
+    "ST_NAM_PositedAt",
+    "ST_NAM_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'ST_NAM_Stage_Name',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'ST_NAM_ST_ID', "ST_NAM_ST_ID",
+        'ST_NAM_ChangedAt', "ST_NAM_ChangedAt",
+        'ST_NAM_PositedAt', "ST_NAM_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "ST_NAM_ST_ID",
+        "ST_NAM_ChangedAt",
+        "ST_NAM_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "ST_NAM_ST_ID",
+                "ST_NAM_ChangedAt"
+            ORDER BY
+                "ST_NAM_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "ST_NAM_ST_ID",
+            "ST_NAM_ChangedAt",
+            "ST_NAM_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "ST_NAM_ID" ORDER BY "ST_NAM_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "ST_NAM_ID",
+                "ST_NAM_ST_ID",
+                "ST_NAM_ChangedAt",
+                "ST_NAM_PositedAt",
+                IFF("ST_NAM_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."ST_NAM_Stage_Name"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "ST_NAM_ST_ID",
+    "ST_NAM_ChangedAt",
+    "ST_NAM_PositedAt",
+    asserted
+;
 -- ST_LOC_Stage_Location_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_ST_LOC_Stage_Location_Posit" (
     Construct,
@@ -6776,6 +7093,81 @@ WHERE
     p."ST_LOC_ID" IS NULL
 GROUP BY
     c."ST_LOC_ID"
+;
+-- ST_LOC_Stage_Location integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_ST_LOC_Stage_Location" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'ST_LOC_Stage_Location',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'ST_LOC_ST_ID', "ST_LOC_ST_ID",
+        'ST_LOC_PositedAt', "ST_LOC_PositedAt",
+        'ST_LOC_Reliability', "ST_LOC_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."ST_LOC_Stage_Location"
+GROUP BY
+    "ST_LOC_ST_ID",
+    "ST_LOC_PositedAt",
+    "ST_LOC_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'ST_LOC_Stage_Location',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'ST_LOC_ST_ID', "ST_LOC_ST_ID",
+        'ST_LOC_PositedAt', "ST_LOC_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "ST_LOC_ST_ID",
+        "ST_LOC_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "ST_LOC_ST_ID"
+            ORDER BY
+                "ST_LOC_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "ST_LOC_ST_ID",
+            "ST_LOC_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "ST_LOC_ID" ORDER BY "ST_LOC_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "ST_LOC_ID",
+                "ST_LOC_ST_ID",
+                "ST_LOC_PositedAt",
+                IFF("ST_LOC_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."ST_LOC_Stage_Location"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "ST_LOC_ST_ID",
+    "ST_LOC_PositedAt",
+    asserted
 ;
 -- ST_AVG_Stage_Average_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_ST_AVG_Stage_Average_Posit" (
@@ -6889,6 +7281,134 @@ WHERE
 GROUP BY
     c."ST_AVG_ID"
 ;
+-- ST_AVG_Stage_Average integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_ST_AVG_Stage_Average" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'ST_AVG_Stage_Average',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'ST_AVG_ST_ID', "ST_AVG_ST_ID",
+        'ST_AVG_ChangedAt', "ST_AVG_ChangedAt",
+        'ST_AVG_PositedAt', "ST_AVG_PositedAt",
+        'ST_AVG_Reliability', "ST_AVG_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."ST_AVG_Stage_Average"
+GROUP BY
+    "ST_AVG_ST_ID",
+    "ST_AVG_ChangedAt",
+    "ST_AVG_PositedAt",
+    "ST_AVG_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'ST_AVG_Stage_Average',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'ST_AVG_ST_ID', "ST_AVG_ST_ID",
+        'ST_AVG_ChangedAt', "ST_AVG_ChangedAt",
+        'ST_AVG_PositedAt', "ST_AVG_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "ST_AVG_ST_ID",
+        "ST_AVG_ChangedAt",
+        "ST_AVG_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "ST_AVG_ST_ID",
+                "ST_AVG_ChangedAt"
+            ORDER BY
+                "ST_AVG_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "ST_AVG_ST_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "ST_AVG_ID" ORDER BY "ST_AVG_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "ST_AVG_ID",
+                "ST_AVG_ST_ID",
+                "ST_AVG_ChangedAt",
+                "ST_AVG_PositedAt",
+                IFF("ST_AVG_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."ST_AVG_Stage_Average"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "ST_AVG_ST_ID",
+    "ST_AVG_ChangedAt",
+    "ST_AVG_PositedAt",
+    asserted
+UNION ALL
+-- restatement in what is in effect: the latest annex row of each posit, when it asserts the posit
+SELECT
+    'ST_AVG_Stage_Average',
+    'restatement',
+    OBJECT_CONSTRUCT(
+        'ST_AVG_ST_ID', "ST_AVG_ST_ID",
+        'ST_AVG_ChangedAt', "ST_AVG_ChangedAt"
+    ),
+    1
+FROM (
+    SELECT
+        "ST_AVG_ST_ID",
+        "ST_AVG_ChangedAt",
+        "ST_AVG_UTL_ID" AS compared,
+        LAG("ST_AVG_UTL_ID") OVER (
+            PARTITION BY "ST_AVG_ST_ID"
+            ORDER BY "ST_AVG_ChangedAt", "ST_AVG_ID"
+        ) AS previous,
+        LAG("ST_AVG_ChangedAt") OVER (
+            PARTITION BY "ST_AVG_ST_ID"
+            ORDER BY "ST_AVG_ChangedAt", "ST_AVG_ID"
+        ) AS previous_changing
+    FROM (
+        SELECT
+            "ST_AVG_ID",
+            "ST_AVG_ST_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_UTL_ID",
+            "ST_AVG_Reliability"
+        FROM
+            public."ST_AVG_Stage_Average"
+        QUALIFY
+            ROW_NUMBER() OVER (
+                PARTITION BY "ST_AVG_ID"
+                ORDER BY "ST_AVG_PositedAt" DESC
+            ) = 1
+    )
+    WHERE
+        "ST_AVG_Reliability" = 1
+)
+WHERE
+    compared = previous
+AND
+    previous_changing < "ST_AVG_ChangedAt"
+;
 -- ST_MIN_Stage_Minimum_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_ST_MIN_Stage_Minimum_Posit" (
     Construct,
@@ -6999,6 +7519,81 @@ WHERE
 GROUP BY
     c."ST_MIN_ID"
 ;
+-- ST_MIN_Stage_Minimum integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_ST_MIN_Stage_Minimum" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'ST_MIN_Stage_Minimum',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'ST_MIN_ST_ID', "ST_MIN_ST_ID",
+        'ST_MIN_PositedAt', "ST_MIN_PositedAt",
+        'ST_MIN_Reliability', "ST_MIN_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."ST_MIN_Stage_Minimum"
+GROUP BY
+    "ST_MIN_ST_ID",
+    "ST_MIN_PositedAt",
+    "ST_MIN_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'ST_MIN_Stage_Minimum',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'ST_MIN_ST_ID', "ST_MIN_ST_ID",
+        'ST_MIN_PositedAt', "ST_MIN_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "ST_MIN_ST_ID",
+        "ST_MIN_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "ST_MIN_ST_ID"
+            ORDER BY
+                "ST_MIN_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "ST_MIN_ST_ID",
+            "ST_MIN_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "ST_MIN_ID" ORDER BY "ST_MIN_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "ST_MIN_ID",
+                "ST_MIN_ST_ID",
+                "ST_MIN_PositedAt",
+                IFF("ST_MIN_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."ST_MIN_Stage_Minimum"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "ST_MIN_ST_ID",
+    "ST_MIN_PositedAt",
+    asserted
+;
 -- AC_NAM_Actor_Name_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_NAM_Actor_Name_Posit" (
     Construct,
@@ -7094,6 +7689,134 @@ WHERE
     p."AC_NAM_ID" IS NULL
 GROUP BY
     c."AC_NAM_ID"
+;
+-- AC_NAM_Actor_Name integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_NAM_Actor_Name" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_NAM_Actor_Name',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_NAM_AC_ID', "AC_NAM_AC_ID",
+        'AC_NAM_ChangedAt', "AC_NAM_ChangedAt",
+        'AC_NAM_PositedAt', "AC_NAM_PositedAt",
+        'AC_NAM_Reliability', "AC_NAM_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."AC_NAM_Actor_Name"
+GROUP BY
+    "AC_NAM_AC_ID",
+    "AC_NAM_ChangedAt",
+    "AC_NAM_PositedAt",
+    "AC_NAM_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'AC_NAM_Actor_Name',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_NAM_AC_ID', "AC_NAM_AC_ID",
+        'AC_NAM_ChangedAt', "AC_NAM_ChangedAt",
+        'AC_NAM_PositedAt', "AC_NAM_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_NAM_AC_ID",
+        "AC_NAM_ChangedAt",
+        "AC_NAM_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_NAM_AC_ID",
+                "AC_NAM_ChangedAt"
+            ORDER BY
+                "AC_NAM_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_NAM_AC_ID",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_NAM_ID" ORDER BY "AC_NAM_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_NAM_ID",
+                "AC_NAM_AC_ID",
+                "AC_NAM_ChangedAt",
+                "AC_NAM_PositedAt",
+                IFF("AC_NAM_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_NAM_Actor_Name"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_NAM_AC_ID",
+    "AC_NAM_ChangedAt",
+    "AC_NAM_PositedAt",
+    asserted
+UNION ALL
+-- restatement in what is in effect: the latest annex row of each posit, when it asserts the posit
+SELECT
+    'AC_NAM_Actor_Name',
+    'restatement',
+    OBJECT_CONSTRUCT(
+        'AC_NAM_AC_ID', "AC_NAM_AC_ID",
+        'AC_NAM_ChangedAt', "AC_NAM_ChangedAt"
+    ),
+    1
+FROM (
+    SELECT
+        "AC_NAM_AC_ID",
+        "AC_NAM_ChangedAt",
+        "AC_NAM_Actor_Name" AS compared,
+        LAG("AC_NAM_Actor_Name") OVER (
+            PARTITION BY "AC_NAM_AC_ID"
+            ORDER BY "AC_NAM_ChangedAt", "AC_NAM_ID"
+        ) AS previous,
+        LAG("AC_NAM_ChangedAt") OVER (
+            PARTITION BY "AC_NAM_AC_ID"
+            ORDER BY "AC_NAM_ChangedAt", "AC_NAM_ID"
+        ) AS previous_changing
+    FROM (
+        SELECT
+            "AC_NAM_ID",
+            "AC_NAM_AC_ID",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_Actor_Name",
+            "AC_NAM_Reliability"
+        FROM
+            public."AC_NAM_Actor_Name"
+        QUALIFY
+            ROW_NUMBER() OVER (
+                PARTITION BY "AC_NAM_ID"
+                ORDER BY "AC_NAM_PositedAt" DESC
+            ) = 1
+    )
+    WHERE
+        "AC_NAM_Reliability" = 1
+)
+WHERE
+    compared = previous
+AND
+    previous_changing < "AC_NAM_ChangedAt"
 ;
 -- AC_GEN_Actor_Gender_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_GEN_Actor_Gender_Posit" (
@@ -7204,6 +7927,81 @@ WHERE
     p."AC_GEN_ID" IS NULL
 GROUP BY
     c."AC_GEN_ID"
+;
+-- AC_GEN_Actor_Gender integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_GEN_Actor_Gender" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_GEN_Actor_Gender',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_GEN_AC_ID', "AC_GEN_AC_ID",
+        'AC_GEN_PositedAt', "AC_GEN_PositedAt",
+        'AC_GEN_Reliability', "AC_GEN_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."AC_GEN_Actor_Gender"
+GROUP BY
+    "AC_GEN_AC_ID",
+    "AC_GEN_PositedAt",
+    "AC_GEN_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'AC_GEN_Actor_Gender',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_GEN_AC_ID', "AC_GEN_AC_ID",
+        'AC_GEN_PositedAt', "AC_GEN_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_GEN_AC_ID",
+        "AC_GEN_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_GEN_AC_ID"
+            ORDER BY
+                "AC_GEN_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_GEN_AC_ID",
+            "AC_GEN_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_GEN_ID" ORDER BY "AC_GEN_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_GEN_ID",
+                "AC_GEN_AC_ID",
+                "AC_GEN_PositedAt",
+                IFF("AC_GEN_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_GEN_Actor_Gender"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_GEN_AC_ID",
+    "AC_GEN_PositedAt",
+    asserted
 ;
 -- AC_PLV_Actor_ProfessionalLevel_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_PLV_Actor_ProfessionalLevel_Posit" (
@@ -7317,6 +8115,89 @@ WHERE
 GROUP BY
     c."AC_PLV_ID"
 ;
+-- AC_PLV_Actor_ProfessionalLevel integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_PLV_Actor_ProfessionalLevel" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_PLV_Actor_ProfessionalLevel',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_PLV_AC_ID', "AC_PLV_AC_ID",
+        'AC_PLV_ChangedAt', "AC_PLV_ChangedAt",
+        'AC_PLV_PositedAt', "AC_PLV_PositedAt",
+        'AC_PLV_Reliability', "AC_PLV_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."AC_PLV_Actor_ProfessionalLevel"
+GROUP BY
+    "AC_PLV_AC_ID",
+    "AC_PLV_ChangedAt",
+    "AC_PLV_PositedAt",
+    "AC_PLV_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'AC_PLV_Actor_ProfessionalLevel',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_PLV_AC_ID', "AC_PLV_AC_ID",
+        'AC_PLV_ChangedAt', "AC_PLV_ChangedAt",
+        'AC_PLV_PositedAt', "AC_PLV_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_PLV_AC_ID",
+        "AC_PLV_ChangedAt",
+        "AC_PLV_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_PLV_AC_ID",
+                "AC_PLV_ChangedAt"
+            ORDER BY
+                "AC_PLV_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_PLV_AC_ID",
+            "AC_PLV_ChangedAt",
+            "AC_PLV_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_PLV_ID" ORDER BY "AC_PLV_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_PLV_ID",
+                "AC_PLV_AC_ID",
+                "AC_PLV_ChangedAt",
+                "AC_PLV_PositedAt",
+                IFF("AC_PLV_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_PLV_Actor_ProfessionalLevel"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_PLV_AC_ID",
+    "AC_PLV_ChangedAt",
+    "AC_PLV_PositedAt",
+    asserted
+;
 -- PR_NAM_Program_Name_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_PR_NAM_Program_Name_Posit" (
     Construct,
@@ -7410,6 +8291,81 @@ WHERE
     p."PR_NAM_ID" IS NULL
 GROUP BY
     c."PR_NAM_ID"
+;
+-- PR_NAM_Program_Name integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_PR_NAM_Program_Name" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'PR_NAM_Program_Name',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'PR_NAM_PR_ID', "PR_NAM_PR_ID",
+        'PR_NAM_PositedAt', "PR_NAM_PositedAt",
+        'PR_NAM_Reliability', "PR_NAM_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."PR_NAM_Program_Name"
+GROUP BY
+    "PR_NAM_PR_ID",
+    "PR_NAM_PositedAt",
+    "PR_NAM_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'PR_NAM_Program_Name',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'PR_NAM_PR_ID', "PR_NAM_PR_ID",
+        'PR_NAM_PositedAt', "PR_NAM_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "PR_NAM_PR_ID",
+        "PR_NAM_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "PR_NAM_PR_ID"
+            ORDER BY
+                "PR_NAM_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "PR_NAM_PR_ID",
+            "PR_NAM_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "PR_NAM_ID" ORDER BY "PR_NAM_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "PR_NAM_ID",
+                "PR_NAM_PR_ID",
+                "PR_NAM_PositedAt",
+                IFF("PR_NAM_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."PR_NAM_Program_Name"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "PR_NAM_PR_ID",
+    "PR_NAM_PositedAt",
+    asserted
 ;
 -- PR_LEN_Program_Length_Posit integrity ----------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_PR_LEN_Program_Length_Posit" (
@@ -7506,6 +8462,89 @@ WHERE
     p."PR_LEN_ID" IS NULL
 GROUP BY
     c."PR_LEN_ID"
+;
+-- PR_LEN_Program_Length integrity ---------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_PR_LEN_Program_Length" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'PR_LEN_Program_Length',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'PR_LEN_PR_ID', "PR_LEN_PR_ID",
+        'PR_LEN_ChangedAt', "PR_LEN_ChangedAt",
+        'PR_LEN_PositedAt', "PR_LEN_PositedAt",
+        'PR_LEN_Reliability', "PR_LEN_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."PR_LEN_Program_Length"
+GROUP BY
+    "PR_LEN_PR_ID",
+    "PR_LEN_ChangedAt",
+    "PR_LEN_PositedAt",
+    "PR_LEN_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same entity and changing time: a posit is asserted from its annex row until the next
+-- annex row of its own, so what is asserted at a positing time is the running sum of the changes up to it
+SELECT
+    'PR_LEN_Program_Length',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'PR_LEN_PR_ID', "PR_LEN_PR_ID",
+        'PR_LEN_ChangedAt', "PR_LEN_ChangedAt",
+        'PR_LEN_PositedAt', "PR_LEN_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "PR_LEN_PR_ID",
+        "PR_LEN_ChangedAt",
+        "PR_LEN_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "PR_LEN_PR_ID",
+                "PR_LEN_ChangedAt"
+            ORDER BY
+                "PR_LEN_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "PR_LEN_PR_ID",
+            "PR_LEN_ChangedAt",
+            "PR_LEN_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "PR_LEN_ID" ORDER BY "PR_LEN_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "PR_LEN_ID",
+                "PR_LEN_PR_ID",
+                "PR_LEN_ChangedAt",
+                "PR_LEN_PositedAt",
+                IFF("PR_LEN_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."PR_LEN_Program_Length"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "PR_LEN_PR_ID",
+    "PR_LEN_ChangedAt",
+    "PR_LEN_PositedAt",
+    asserted
 ;
 -- AC_partner_AC_with_ONG_currently_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_partner_AC_with_ONG_currently_Posit" (
@@ -7669,6 +8708,104 @@ WHERE
 GROUP BY
     c."AC_partner_AC_with_ONG_currently_ID"
 ;
+-- AC_partner_AC_with_ONG_currently integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_partner_AC_with_ONG_currently" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_partner_AC_with_ONG_currently',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_ID_partner', "AC_ID_partner",
+        'AC_ID_with', "AC_ID_with",
+        'ONG_ID_currently', "ONG_ID_currently",
+        'AC_partner_AC_with_ONG_currently_ChangedAt', "AC_partner_AC_with_ONG_currently_ChangedAt",
+        'AC_partner_AC_with_ONG_currently_PositedAt', "AC_partner_AC_with_ONG_currently_PositedAt"
+    ),
+    COUNT(*)
+FROM
+    public."AC_partner_AC_with_ONG_currently"
+GROUP BY
+    "AC_ID_partner",
+    "AC_ID_with",
+    "ONG_ID_currently",
+    "AC_partner_AC_with_ONG_currently_ChangedAt",
+    "AC_partner_AC_with_ONG_currently_PositedAt"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'AC_partner_AC_with_ONG_currently',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_ID_partner', "AC_ID_partner",
+        'AC_ID_with', "AC_ID_with",
+        'ONG_ID_currently', "ONG_ID_currently",
+        'AC_partner_AC_with_ONG_currently_ChangedAt', "AC_partner_AC_with_ONG_currently_ChangedAt",
+        'AC_partner_AC_with_ONG_currently_PositedAt', "AC_partner_AC_with_ONG_currently_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_ID_partner",
+        "AC_ID_with",
+        "ONG_ID_currently",
+        "AC_partner_AC_with_ONG_currently_ChangedAt",
+        "AC_partner_AC_with_ONG_currently_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_ID_partner",
+                "AC_ID_with",
+                "ONG_ID_currently",
+                "AC_partner_AC_with_ONG_currently_ChangedAt"
+            ORDER BY
+                "AC_partner_AC_with_ONG_currently_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_ID_partner",
+            "AC_ID_with",
+            "ONG_ID_currently",
+            "AC_partner_AC_with_ONG_currently_ChangedAt",
+            "AC_partner_AC_with_ONG_currently_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_partner_AC_with_ONG_currently_ID" ORDER BY "AC_partner_AC_with_ONG_currently_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_partner_AC_with_ONG_currently_ID",
+                "AC_ID_partner",
+                "AC_ID_with",
+                "ONG_ID_currently",
+                "AC_partner_AC_with_ONG_currently_ChangedAt",
+                "AC_partner_AC_with_ONG_currently_PositedAt",
+                IFF("AC_partner_AC_with_ONG_currently_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_partner_AC_with_ONG_currently"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_ID_partner",
+    "AC_ID_with",
+    "ONG_ID_currently",
+    "AC_partner_AC_with_ONG_currently_ChangedAt",
+    "AC_partner_AC_with_ONG_currently_PositedAt",
+    asserted
+;
 -- AC_subset_PN_of_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_subset_PN_of_Posit" (
     Construct,
@@ -7807,6 +8944,88 @@ WHERE
 GROUP BY
     c."AC_subset_PN_of_ID"
 ;
+-- AC_subset_PN_of integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_subset_PN_of" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_subset_PN_of',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_ID_subset', "AC_ID_subset",
+        'PN_ID_of', "PN_ID_of",
+        'AC_subset_PN_of_PositedAt', "AC_subset_PN_of_PositedAt"
+    ),
+    COUNT(*)
+FROM
+    public."AC_subset_PN_of"
+GROUP BY
+    "AC_ID_subset",
+    "PN_ID_of",
+    "AC_subset_PN_of_PositedAt"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'AC_subset_PN_of',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_ID_subset', "AC_ID_subset",
+        'PN_ID_of', "PN_ID_of",
+        'AC_subset_PN_of_PositedAt', "AC_subset_PN_of_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_ID_subset",
+        "PN_ID_of",
+        "AC_subset_PN_of_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_ID_subset",
+                "PN_ID_of"
+            ORDER BY
+                "AC_subset_PN_of_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_ID_subset",
+            "PN_ID_of",
+            "AC_subset_PN_of_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_subset_PN_of_ID" ORDER BY "AC_subset_PN_of_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_subset_PN_of_ID",
+                "AC_ID_subset",
+                "PN_ID_of",
+                "AC_subset_PN_of_PositedAt",
+                IFF("AC_subset_PN_of_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_subset_PN_of"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_ID_subset",
+    "PN_ID_of",
+    "AC_subset_PN_of_PositedAt",
+    asserted
+;
 -- EV_in_AC_wasCast_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_EV_in_AC_wasCast_Posit" (
     Construct,
@@ -7916,6 +9135,88 @@ WHERE
     p."EV_in_AC_wasCast_ID" IS NULL
 GROUP BY
     c."EV_in_AC_wasCast_ID"
+;
+-- EV_in_AC_wasCast integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_EV_in_AC_wasCast" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'EV_in_AC_wasCast',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'EV_ID_in', "EV_ID_in",
+        'AC_ID_wasCast', "AC_ID_wasCast",
+        'EV_in_AC_wasCast_PositedAt', "EV_in_AC_wasCast_PositedAt"
+    ),
+    COUNT(*)
+FROM
+    public."EV_in_AC_wasCast"
+GROUP BY
+    "EV_ID_in",
+    "AC_ID_wasCast",
+    "EV_in_AC_wasCast_PositedAt"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'EV_in_AC_wasCast',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'EV_ID_in', "EV_ID_in",
+        'AC_ID_wasCast', "AC_ID_wasCast",
+        'EV_in_AC_wasCast_PositedAt', "EV_in_AC_wasCast_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "EV_ID_in",
+        "AC_ID_wasCast",
+        "EV_in_AC_wasCast_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "EV_ID_in",
+                "AC_ID_wasCast"
+            ORDER BY
+                "EV_in_AC_wasCast_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "EV_ID_in",
+            "AC_ID_wasCast",
+            "EV_in_AC_wasCast_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "EV_in_AC_wasCast_ID" ORDER BY "EV_in_AC_wasCast_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "EV_in_AC_wasCast_ID",
+                "EV_ID_in",
+                "AC_ID_wasCast",
+                "EV_in_AC_wasCast_PositedAt",
+                IFF("EV_in_AC_wasCast_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."EV_in_AC_wasCast"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "EV_ID_in",
+    "AC_ID_wasCast",
+    "EV_in_AC_wasCast_PositedAt",
+    asserted
 ;
 -- AC_part_PR_in_RAT_got_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_part_PR_in_RAT_got_Posit" (
@@ -8047,6 +9348,98 @@ WHERE
 GROUP BY
     c."AC_part_PR_in_RAT_got_ID"
 ;
+-- AC_part_PR_in_RAT_got integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_part_PR_in_RAT_got" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_part_PR_in_RAT_got',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_ID_part', "AC_ID_part",
+        'PR_ID_in', "PR_ID_in",
+        'AC_part_PR_in_RAT_got_ChangedAt', "AC_part_PR_in_RAT_got_ChangedAt",
+        'AC_part_PR_in_RAT_got_PositedAt', "AC_part_PR_in_RAT_got_PositedAt",
+        'AC_part_PR_in_RAT_got_Reliability', "AC_part_PR_in_RAT_got_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."AC_part_PR_in_RAT_got"
+GROUP BY
+    "AC_ID_part",
+    "PR_ID_in",
+    "AC_part_PR_in_RAT_got_ChangedAt",
+    "AC_part_PR_in_RAT_got_PositedAt",
+    "AC_part_PR_in_RAT_got_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'AC_part_PR_in_RAT_got',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_ID_part', "AC_ID_part",
+        'PR_ID_in', "PR_ID_in",
+        'AC_part_PR_in_RAT_got_ChangedAt', "AC_part_PR_in_RAT_got_ChangedAt",
+        'AC_part_PR_in_RAT_got_PositedAt', "AC_part_PR_in_RAT_got_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_ID_part",
+        "PR_ID_in",
+        "AC_part_PR_in_RAT_got_ChangedAt",
+        "AC_part_PR_in_RAT_got_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_ID_part",
+                "PR_ID_in",
+                "AC_part_PR_in_RAT_got_ChangedAt"
+            ORDER BY
+                "AC_part_PR_in_RAT_got_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_ID_part",
+            "PR_ID_in",
+            "AC_part_PR_in_RAT_got_ChangedAt",
+            "AC_part_PR_in_RAT_got_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_part_PR_in_RAT_got_ID" ORDER BY "AC_part_PR_in_RAT_got_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_part_PR_in_RAT_got_ID",
+                "AC_ID_part",
+                "PR_ID_in",
+                "AC_part_PR_in_RAT_got_ChangedAt",
+                "AC_part_PR_in_RAT_got_PositedAt",
+                IFF("AC_part_PR_in_RAT_got_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_part_PR_in_RAT_got"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_ID_part",
+    "PR_ID_in",
+    "AC_part_PR_in_RAT_got_ChangedAt",
+    "AC_part_PR_in_RAT_got_PositedAt",
+    asserted
+;
 -- ST_at_PR_isPlaying_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_ST_at_PR_isPlaying_Posit" (
     Construct,
@@ -8158,6 +9551,96 @@ WHERE
     p."ST_at_PR_isPlaying_ID" IS NULL
 GROUP BY
     c."ST_at_PR_isPlaying_ID"
+;
+-- ST_at_PR_isPlaying integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_ST_at_PR_isPlaying" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'ST_at_PR_isPlaying',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'ST_ID_at', "ST_ID_at",
+        'PR_ID_isPlaying', "PR_ID_isPlaying",
+        'ST_at_PR_isPlaying_ChangedAt', "ST_at_PR_isPlaying_ChangedAt",
+        'ST_at_PR_isPlaying_PositedAt', "ST_at_PR_isPlaying_PositedAt"
+    ),
+    COUNT(*)
+FROM
+    public."ST_at_PR_isPlaying"
+GROUP BY
+    "ST_ID_at",
+    "PR_ID_isPlaying",
+    "ST_at_PR_isPlaying_ChangedAt",
+    "ST_at_PR_isPlaying_PositedAt"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'ST_at_PR_isPlaying',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'ST_ID_at', "ST_ID_at",
+        'PR_ID_isPlaying', "PR_ID_isPlaying",
+        'ST_at_PR_isPlaying_ChangedAt', "ST_at_PR_isPlaying_ChangedAt",
+        'ST_at_PR_isPlaying_PositedAt', "ST_at_PR_isPlaying_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "ST_ID_at",
+        "PR_ID_isPlaying",
+        "ST_at_PR_isPlaying_ChangedAt",
+        "ST_at_PR_isPlaying_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "ST_ID_at",
+                "PR_ID_isPlaying",
+                "ST_at_PR_isPlaying_ChangedAt"
+            ORDER BY
+                "ST_at_PR_isPlaying_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "ST_ID_at",
+            "PR_ID_isPlaying",
+            "ST_at_PR_isPlaying_ChangedAt",
+            "ST_at_PR_isPlaying_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "ST_at_PR_isPlaying_ID" ORDER BY "ST_at_PR_isPlaying_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "ST_at_PR_isPlaying_ID",
+                "ST_ID_at",
+                "PR_ID_isPlaying",
+                "ST_at_PR_isPlaying_ChangedAt",
+                "ST_at_PR_isPlaying_PositedAt",
+                IFF("ST_at_PR_isPlaying_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."ST_at_PR_isPlaying"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "ST_ID_at",
+    "PR_ID_isPlaying",
+    "ST_at_PR_isPlaying_ChangedAt",
+    "ST_at_PR_isPlaying_PositedAt",
+    asserted
 ;
 -- AC_parent_AC_child_PAT_having_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_AC_parent_AC_child_PAT_having_Posit" (
@@ -8287,6 +9770,96 @@ WHERE
 GROUP BY
     c."AC_parent_AC_child_PAT_having_ID"
 ;
+-- AC_parent_AC_child_PAT_having integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_AC_parent_AC_child_PAT_having" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'AC_parent_AC_child_PAT_having',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'AC_ID_parent', "AC_ID_parent",
+        'AC_ID_child', "AC_ID_child",
+        'PAT_ID_having', "PAT_ID_having",
+        'AC_parent_AC_child_PAT_having_PositedAt', "AC_parent_AC_child_PAT_having_PositedAt"
+    ),
+    COUNT(*)
+FROM
+    public."AC_parent_AC_child_PAT_having"
+GROUP BY
+    "AC_ID_parent",
+    "AC_ID_child",
+    "PAT_ID_having",
+    "AC_parent_AC_child_PAT_having_PositedAt"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'AC_parent_AC_child_PAT_having',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'AC_ID_parent', "AC_ID_parent",
+        'AC_ID_child', "AC_ID_child",
+        'PAT_ID_having', "PAT_ID_having",
+        'AC_parent_AC_child_PAT_having_PositedAt', "AC_parent_AC_child_PAT_having_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "AC_ID_parent",
+        "AC_ID_child",
+        "PAT_ID_having",
+        "AC_parent_AC_child_PAT_having_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "AC_ID_parent",
+                "AC_ID_child",
+                "PAT_ID_having"
+            ORDER BY
+                "AC_parent_AC_child_PAT_having_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "AC_ID_parent",
+            "AC_ID_child",
+            "PAT_ID_having",
+            "AC_parent_AC_child_PAT_having_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "AC_parent_AC_child_PAT_having_ID" ORDER BY "AC_parent_AC_child_PAT_having_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "AC_parent_AC_child_PAT_having_ID",
+                "AC_ID_parent",
+                "AC_ID_child",
+                "PAT_ID_having",
+                "AC_parent_AC_child_PAT_having_PositedAt",
+                IFF("AC_parent_AC_child_PAT_having_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."AC_parent_AC_child_PAT_having"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "AC_ID_parent",
+    "AC_ID_child",
+    "PAT_ID_having",
+    "AC_parent_AC_child_PAT_having_PositedAt",
+    asserted
+;
 -- PR_content_ST_location_EV_of_Posit integrity ----------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."ic_PR_content_ST_location_EV_of_Posit" (
     Construct,
@@ -8415,6 +9988,82 @@ WHERE
 GROUP BY
     c."PR_content_ST_location_EV_of_ID"
 ;
+-- PR_content_ST_location_EV_of integrity ---------------------------------------------------------------------------------------------
+-- What the posit and the annex say together, which no key can hold in Snowflake.
+CREATE OR REPLACE VIEW public."ic_PR_content_ST_location_EV_of" (
+    Construct,
+    Violation,
+    ViolationKey,
+    Occurrences
+)
+COPY GRANTS
+AS
+-- entity integrity, the unique key that the assembled view has in SQL Server
+SELECT
+    'PR_content_ST_location_EV_of',
+    'temporal duplicate',
+    OBJECT_CONSTRUCT(
+        'EV_ID_of', "EV_ID_of",
+        'PR_content_ST_location_EV_of_PositedAt', "PR_content_ST_location_EV_of_PositedAt",
+        'PR_content_ST_location_EV_of_Reliability', "PR_content_ST_location_EV_of_Reliability"
+    ),
+    COUNT(*)
+FROM
+    public."PR_content_ST_location_EV_of"
+GROUP BY
+    "EV_ID_of",
+    "PR_content_ST_location_EV_of_PositedAt",
+    "PR_content_ST_location_EV_of_Reliability"
+HAVING
+    COUNT(*) > 1
+UNION ALL
+-- what is asserted at one time for the same identifiers (all the roles, if there are none) and changing time: a posit is
+-- asserted from its annex row until the next annex row of its own, so what is asserted at a positing time is the running
+-- sum of the changes up to it
+SELECT
+    'PR_content_ST_location_EV_of',
+    'more than one posit asserted at a time',
+    OBJECT_CONSTRUCT(
+        'EV_ID_of', "EV_ID_of",
+        'PR_content_ST_location_EV_of_PositedAt', "PR_content_ST_location_EV_of_PositedAt"
+    ),
+    asserted
+FROM (
+    SELECT
+        "EV_ID_of",
+        "PR_content_ST_location_EV_of_PositedAt",
+        SUM(asserted_change) OVER (
+            PARTITION BY
+                "EV_ID_of"
+            ORDER BY
+                "PR_content_ST_location_EV_of_PositedAt"
+            RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS asserted
+    FROM (
+        SELECT
+            "EV_ID_of",
+            "PR_content_ST_location_EV_of_PositedAt",
+            is_asserted - COALESCE(LAG(is_asserted) OVER (
+                PARTITION BY "PR_content_ST_location_EV_of_ID" ORDER BY "PR_content_ST_location_EV_of_PositedAt"
+            ), 0) AS asserted_change
+        FROM (
+            SELECT
+                "PR_content_ST_location_EV_of_ID",
+                "EV_ID_of",
+                "PR_content_ST_location_EV_of_PositedAt",
+                IFF("PR_content_ST_location_EV_of_Reliability" = 1, 1, 0) AS is_asserted
+            FROM
+                public."PR_content_ST_location_EV_of"
+        )
+    )
+)
+WHERE
+    asserted > 1
+GROUP BY
+    "EV_ID_of",
+    "PR_content_ST_location_EV_of_PositedAt",
+    asserted
+;
 -- IntegrityViolations ------------------------------------------------------------------------------------------------
 -- Every integrity check of the model, in one view.
 -----------------------------------------------------------------------------------------------------------------------
@@ -8447,42 +10096,61 @@ UNION ALL SELECT * FROM public."ic_PR_Program"
 UNION ALL SELECT * FROM public."ic_EV_Event"
 UNION ALL SELECT * FROM public."ic_EV_DAT_Event_Date_Posit"
 UNION ALL SELECT * FROM public."ic_EV_DAT_Event_Date_Annex"
+UNION ALL SELECT * FROM public."ic_EV_DAT_Event_Date"
 UNION ALL SELECT * FROM public."ic_EV_AUD_Event_Audience_Posit"
 UNION ALL SELECT * FROM public."ic_EV_AUD_Event_Audience_Annex"
+UNION ALL SELECT * FROM public."ic_EV_AUD_Event_Audience"
 UNION ALL SELECT * FROM public."ic_EV_REV_Event_Revenue_Posit"
 UNION ALL SELECT * FROM public."ic_EV_REV_Event_Revenue_Annex"
+UNION ALL SELECT * FROM public."ic_EV_REV_Event_Revenue"
 UNION ALL SELECT * FROM public."ic_ST_NAM_Stage_Name_Posit"
 UNION ALL SELECT * FROM public."ic_ST_NAM_Stage_Name_Annex"
+UNION ALL SELECT * FROM public."ic_ST_NAM_Stage_Name"
 UNION ALL SELECT * FROM public."ic_ST_LOC_Stage_Location_Posit"
 UNION ALL SELECT * FROM public."ic_ST_LOC_Stage_Location_Annex"
+UNION ALL SELECT * FROM public."ic_ST_LOC_Stage_Location"
 UNION ALL SELECT * FROM public."ic_ST_AVG_Stage_Average_Posit"
 UNION ALL SELECT * FROM public."ic_ST_AVG_Stage_Average_Annex"
+UNION ALL SELECT * FROM public."ic_ST_AVG_Stage_Average"
 UNION ALL SELECT * FROM public."ic_ST_MIN_Stage_Minimum_Posit"
 UNION ALL SELECT * FROM public."ic_ST_MIN_Stage_Minimum_Annex"
+UNION ALL SELECT * FROM public."ic_ST_MIN_Stage_Minimum"
 UNION ALL SELECT * FROM public."ic_AC_NAM_Actor_Name_Posit"
 UNION ALL SELECT * FROM public."ic_AC_NAM_Actor_Name_Annex"
+UNION ALL SELECT * FROM public."ic_AC_NAM_Actor_Name"
 UNION ALL SELECT * FROM public."ic_AC_GEN_Actor_Gender_Posit"
 UNION ALL SELECT * FROM public."ic_AC_GEN_Actor_Gender_Annex"
+UNION ALL SELECT * FROM public."ic_AC_GEN_Actor_Gender"
 UNION ALL SELECT * FROM public."ic_AC_PLV_Actor_ProfessionalLevel_Posit"
 UNION ALL SELECT * FROM public."ic_AC_PLV_Actor_ProfessionalLevel_Annex"
+UNION ALL SELECT * FROM public."ic_AC_PLV_Actor_ProfessionalLevel"
 UNION ALL SELECT * FROM public."ic_PR_NAM_Program_Name_Posit"
 UNION ALL SELECT * FROM public."ic_PR_NAM_Program_Name_Annex"
+UNION ALL SELECT * FROM public."ic_PR_NAM_Program_Name"
 UNION ALL SELECT * FROM public."ic_PR_LEN_Program_Length_Posit"
 UNION ALL SELECT * FROM public."ic_PR_LEN_Program_Length_Annex"
+UNION ALL SELECT * FROM public."ic_PR_LEN_Program_Length"
 UNION ALL SELECT * FROM public."ic_AC_partner_AC_with_ONG_currently_Posit"
 UNION ALL SELECT * FROM public."ic_AC_partner_AC_with_ONG_currently_Annex"
+UNION ALL SELECT * FROM public."ic_AC_partner_AC_with_ONG_currently"
 UNION ALL SELECT * FROM public."ic_AC_subset_PN_of_Posit"
 UNION ALL SELECT * FROM public."ic_AC_subset_PN_of_Annex"
+UNION ALL SELECT * FROM public."ic_AC_subset_PN_of"
 UNION ALL SELECT * FROM public."ic_EV_in_AC_wasCast_Posit"
 UNION ALL SELECT * FROM public."ic_EV_in_AC_wasCast_Annex"
+UNION ALL SELECT * FROM public."ic_EV_in_AC_wasCast"
 UNION ALL SELECT * FROM public."ic_AC_part_PR_in_RAT_got_Posit"
 UNION ALL SELECT * FROM public."ic_AC_part_PR_in_RAT_got_Annex"
+UNION ALL SELECT * FROM public."ic_AC_part_PR_in_RAT_got"
 UNION ALL SELECT * FROM public."ic_ST_at_PR_isPlaying_Posit"
 UNION ALL SELECT * FROM public."ic_ST_at_PR_isPlaying_Annex"
+UNION ALL SELECT * FROM public."ic_ST_at_PR_isPlaying"
 UNION ALL SELECT * FROM public."ic_AC_parent_AC_child_PAT_having_Posit"
 UNION ALL SELECT * FROM public."ic_AC_parent_AC_child_PAT_having_Annex"
+UNION ALL SELECT * FROM public."ic_AC_parent_AC_child_PAT_having"
 UNION ALL SELECT * FROM public."ic_PR_content_ST_location_EV_of_Posit"
 UNION ALL SELECT * FROM public."ic_PR_content_ST_location_EV_of_Annex"
+UNION ALL SELECT * FROM public."ic_PR_content_ST_location_EV_of"
 UNION ALL SELECT * FROM public."ic_key_ST_Stage_1st"
 UNION ALL SELECT * FROM public."ic_key_ST_Stage_2nd"
 UNION ALL SELECT * FROM public."ic_key_AC_Actor_1st"
