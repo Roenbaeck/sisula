@@ -96,7 +96,7 @@ foreach ($other in 'bi', 'crt') {
 # Mistakes in the input have to say what is wrong.
 foreach ($case in @(
     @{ Name = 'not XML'; Xml = '<schema><metadata'; Wanted = $null; Expect = 'XML' },
-    @{ Name = 'no metadata'; Xml = '<schema format="0.101.2"></schema>'; Wanted = $null; Expect = 'no <metadata>' },
+    @{ Name = 'no metadata'; Xml = '<schema format="0.101.2"></schema>'; Wanted = $null; Expect = 'no metadata element' },
     @{ Name = 'a temporalization that does not exist'; Xml = $base; Wanted = 'tri'; Expect = "'uni', 'bi' or 'crt'" })) {
     try { [void] (Get-Bindings $case.Xml $case.Wanted); Write-Host ("FAIL  {0}: no error" -f $case.Name); $failed++ }
     catch {
