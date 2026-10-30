@@ -84,7 +84,10 @@ installed; a server with an expired certificate needs `-TrustServerCertificate`.
 What the Snowflake perspectives show is tested by `tools/snowflake-tests.ps1`, through Snowflake's SQL API with a
 programmatic access token. For each temporalization it makes a database, runs the golden output of `distinct` (or
 `-bi`, `-crt`) in it, then `snowflake-tests/perspectives-<t>.sql`, and drops the database again; `-Suite equivalence`
-does the same with `distinct-equivalence` and `snowflake-tests/equivalence-uni.sql`. Snowflake has no triggers, so the
+does the same with `distinct-equivalence` and `snowflake-tests/equivalence-uni.sql`, and `-Suite integrity,decisive` runs what
+the integrity checks of bi and crt say about deliberate violations (`flags-bi`, `flags-crt` and `distinct-crt`, with
+`integrity-bi.sql`, `integrity-crt.sql` and `decisive-crt.sql`): temporal duplicates, assertions that overlap or contradict,
+restatements, and the corrections that must not be flagged. Snowflake has no triggers, so the
 scripts put rows straight into the tables, and each check writes what a perspective shows next to what was expected.
 Last, `snowflake-tests/compile.sql` queries every view and calls every function once: Snowflake compiles the body of
 a view or a function only when it is used, so SQL that it cannot evaluate shows only then, and some of it only over
