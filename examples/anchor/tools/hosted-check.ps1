@@ -105,5 +105,35 @@ foreach ($case in @(
     }
 }
 
+# A mistake in the model has to be an error that says what and where (modules/ModelCheck.js), not names such as GEN_undefined.
+# Each case breaks base.xml in one way, and the message has to say it.
+function Edit-First([string] $text, [string] $from, [string] $to) {
+    $at = $text.IndexOf($from)
+    if ($at -lt 0) { throw "base.xml has no '$from'" }
+    $text.Substring(0, $at) + $to + $text.Substring($at + $from.Length)
+}
+$mutations = @(
+    @{ Name = 'a setting that is missing'; Xml = (Edit-First $base ' naturalKeyAttributes="true"' ''); Expect = @('these settings are missing', 'naturalKeyAttributes="true"') },
+    @{ Name = 'a flag that is not true or false'; Xml = (Edit-First $base 'triggers="true"' 'triggers="yes"'); Expect = @('triggers has to be "true" or "false", not "yes"') },
+    @{ Name = 'a naming that does not exist'; Xml = (Edit-First $base 'naming="improved"' 'naming="fancy"'); Expect = @('naming has to be "original" or "improved"') },
+    @{ Name = 'an attribute knotted to a knot that is not there'; Xml = (Edit-First $base 'knotRange="GEN"' 'knotRange="XYZ"'); Expect = @('its knotRange "XYZ" is not a knot of the model', 'anchor AC, attribute GEN') },
+    @{ Name = 'an attribute that is knotted and not'; Xml = (Edit-First $base 'knotRange="GEN"' 'knotRange="GEN" dataRange="int"'); Expect = @('both a dataRange and a knotRange') },
+    @{ Name = 'two anchors with one mnemonic'; Xml = (Edit-First $base '<anchor mnemonic="PR"' '<anchor mnemonic="AC"'); Expect = @('anchor AC: another anchor or nexus has the same mnemonic') },
+    @{ Name = 'a role of a type that is not there'; Xml = (Edit-First $base 'type="RAT"' 'type="RXT"'); Expect = @('its type "RXT" is not an anchor, nexus or knot of the model') },
+    @{ Name = 'a tie with one anchor only'; Xml = (Edit-First $base '<role role="of" type="PN"' '<role role="of" type="GEN"'); Expect = @('tie AC_subset_GEN_of', 'at least two roles that are anchors or nexuses', 'and it has 1') },
+    @{ Name = 'an identifier route that no key makes up'; Xml = (Edit-First $base 'route="2nd" of="ST"' 'route="9th" of="ST"'); Expect = @('the identifier route "2nd" is not made up by any key of ST') },
+    @{ Name = 'a role of a nexus that is an identifier'; Xml = (Edit-First $base '<role role="wasHeldAt" type="ST" identifier="false"' '<role role="wasHeldAt" type="ST" identifier="true"'); Expect = @('never an identifier') },
+    @{ Name = 'several mistakes at once'; Xml = (Edit-First (Edit-First $base 'knotRange="GEN"' 'knotRange="XYZ"') 'type="RAT"' 'type="RXT"'); Expect = @('The model has 2 problems', 'knotRange "XYZ"', 'type "RXT"', 'nothing was generated') }
+)
+foreach ($case in $mutations) {
+    try { [void] (Get-Bindings $case.Xml $null); Write-Host ("FAIL  {0}: no error" -f $case.Name); $failed++ }
+    catch {
+        $reason = $_.Exception.Message; if ($_.Exception.InnerException) { $reason = $_.Exception.InnerException.Message }
+        $lacking = @($case.Expect | Where-Object { -not $reason.Contains($_) })
+        if ($lacking.Count -eq 0) { Write-Host ("PASS  {0}: the message says what is wrong" -f $case.Name) }
+        else { Write-Host ("FAIL  {0}: the message lacks [{1}]: {2}" -f $case.Name, ($lacking -join ' | '), $reason); $failed++ }
+    }
+}
+
 if ($temporary) { Remove-Item -Recurse -Force $temporary -ErrorAction SilentlyContinue }
 if ($failed -gt 0) { exit 1 }
