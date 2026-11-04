@@ -31,8 +31,17 @@
                    same Anchor scripts; this shows that the modeler, with a real DOM, produces
                    exactly the JSON that the templates were verified against.
 
+      -Targets     selects every target database and temporalization the way a user does (the data types are converted, as
+                   when the database is picked in the list) and runs Generate SQL on the Anchor checkout's example.xml, the
+                   model that a user starts with. A target passes when the SQL is generated without an error and holds no
+                   template text that was never evaluated (hasMore, a conditional with a question mark, ${, undefined). The
+                   SQL of the databases that do not have a golden file is not run anywhere, so this is what shows that a
+                   change to a template or to Helpers.js did not break them. A target other than SQL Server that generates
+                   T-SQL (IF Object_ID) is KNOWN, as listed here, since its templates were copied from SQL Server's and
+                   are not ported yet. -Variant is ignored.
+
     Usage:
-      browser-check.ps1 [-Variant <name>,...] [-Canonicalize | -Bindings | -Features] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
+      browser-check.ps1 [-Variant <name>,...] [-Canonicalize | -Bindings | -Features | -Targets] [-Anchor <checkout>] [-Edge <msedge.exe>] [-KeepOutput <dir>]
 
     Nothing is written to the Anchor checkout. A copy of index.html is made in a temporary folder
     with a <base> pointing at the checkout, so every script, directive and sisulet is read from it
@@ -51,6 +60,7 @@ param(
     [switch] $Canonicalize,
     [switch] $Bindings,
     [switch] $Features,
+    [switch] $Targets,
     [string] $Anchor,
     [string] $Edge,
     [string] $KeepOutput,
@@ -68,6 +78,7 @@ if (-not $Edge) {
 }
 if (-not $Edge) { throw 'Microsoft Edge was not found; pass -Edge.' }
 if (-not $Variant -and $Features) { $Variant = 'base' }
+if ($Targets) { $Variant = 'example' }
 if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
     # the modeler reads it differently, so it is left out here and only run through check.ps1.
@@ -153,6 +164,32 @@ $harness = @'
                         };
                     });
                     report('BASE64:' + toBase64(JSON.stringify(observed)));
+                    return;
+                }
+                if (MODE === 'targets') {
+                    (async function () {
+                        var databases = ['BigQuery', 'Oracle', 'PostgreSQL', 'Snowflake', 'SQLServer', 'Vertica'];
+                        var temporalizations = ['uni', 'bi', 'crt'];
+                        var results = [];
+                        for (var d = 0; d < databases.length; d++) {
+                            for (var t = 0; t < temporalizations.length; t++) {
+                                var r = { database: databases[d], temporalization: temporalizations[t], error: null, length: 0, leftovers: 0, tsql: 0, unsupported: false };
+                                try {
+                                    Settings.setDatabase(r.database, true);
+                                    Settings.setTemporalization(r.temporalization);
+                                    var sql = await Actions.sql();
+                                    r.length = sql.length;
+                                    r.leftovers = (sql.match(/hasMore|\)\?|\$\{|undefined|\[object Object\]|NaN/g) || []).length;
+                                    r.tsql = (sql.match(/IF Object_ID\(/g) || []).length;
+                                    r.unsupported = /^The temporalization .* is not supported yet\./.test(sql);
+                                } catch (e) {
+                                    r.error = String(e && e.message || e);
+                                }
+                                results.push(r);
+                            }
+                        }
+                        report('BASE64:' + toBase64(JSON.stringify(results)));
+                    })();
                     return;
                 }
                 if (MODE === 'bindings') {
@@ -254,7 +291,28 @@ $failed = 0
 try {
     foreach ($v in $Variant) {
         $modelPath = Join-Path $root "models\$v.xml"
+        if ($Targets) { $modelPath = Join-Path $Anchor 'example.xml' }
         $model = [IO.File]::ReadAllText($modelPath, [Text.Encoding]::UTF8)
+        if ($Targets) {
+            $observed = Invoke-Modeler $v $model 'targets'
+            if ($null -eq $observed) { $failed++; continue }
+            # Templates that were copied from SQL Server's and are not ported: they generate T-SQL for another database.
+            $known = @('Vertica uni', 'Vertica bi', 'Vertica crt', 'PostgreSQL bi', 'PostgreSQL crt')
+            $results = ConvertFrom-Json $observed   # not piped: Windows PowerShell 5.1 would hand the array on as one object
+            foreach ($r in $results) {
+                $target = "$($r.database) $($r.temporalization)"
+                if ($r.error) { Write-Host ("FAIL  {0}: {1}" -f $target, $r.error); $failed++; continue }
+                if ($r.leftovers -gt 0) { Write-Host ("FAIL  {0}: {1} places of template text that was never evaluated" -f $target, $r.leftovers); $failed++; continue }
+                if ($r.unsupported) { Write-Host ("SKIP  {0}: not supported yet, and says so" -f $target); continue }
+                if ($r.database -ne 'SQLServer' -and $r.tsql -gt 0) {
+                    if ($known -contains $target) { Write-Host ("KNOWN {0}: generates, but {1} T-SQL statements (IF Object_ID) from SQL Server's templates" -f $target, $r.tsql); continue }
+                    Write-Host ("FAIL  {0}: {1} T-SQL statements (IF Object_ID) in SQL for another database" -f $target, $r.tsql); $failed++; continue
+                }
+                if ($known -contains $target) { Write-Host ("FAIL  {0}: no T-SQL any more; take it off the list of known targets in browser-check.ps1" -f $target); $failed++; continue }
+                Write-Host ("PASS  {0}: generates, {1:N0} characters" -f $target, $r.length)
+            }
+            continue
+        }
         if ($Canonicalize) {
             $saved = Invoke-Modeler $v $model 'save'
             if ($null -eq $saved) { $failed++; continue }
