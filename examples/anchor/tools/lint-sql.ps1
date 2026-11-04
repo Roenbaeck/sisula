@@ -35,7 +35,7 @@ function Remove-IdentifierQuotes([string] $text) {
     [regex]::Replace($text, '"([^"\r\n]*)"', { param($m) $m.Groups[1].Value -replace '[^\w$]', '_' })
 }
 
-function Test-Sql([string] $text) {
+function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
     $text = Remove-IdentifierQuotes $text
     $found = New-Object System.Collections.Generic.List[string]
     # comments and string literals are not code
@@ -50,9 +50,11 @@ function Test-Sql([string] $text) {
         if ($l -match '[<>=]\s+(then|else|end|and|or|when)\b') { $found.Add("line ${n}: an operator with nothing after it: [$($lines[$i])]") }
         if ($l -match '^\s+as\s+\w+\s*,?\s*$') { $found.Add("line ${n}: an alias with no expression: [$($lines[$i])]") }
         # found by running the generated SQL on Snowflake: a SQL function body does not accept it; a comma join does the same
-        if ($l -match '\bCROSS JOIN LATERAL\b') { $found.Add("line ${n}: CROSS JOIN LATERAL, which Snowflake rejects in a SQL function body (use a comma join): [$($lines[$i])]") }
+        if ($dialect -eq 'Snowflake' -and $l -match '\bCROSS JOIN LATERAL\b') { $found.Add("line ${n}: CROSS JOIN LATERAL, which Snowflake rejects in a SQL function body (use a comma join): [$($lines[$i])]") }
         # found the same way: SQL Server's length for the largest values, which Snowflake does not have (varbinary(max))
-        if ($l -match '\b[A-Za-z]+\(\s*max\s*\)') { $found.Add("line ${n}: a (max) length, which Snowflake does not have: [$($lines[$i])]") }
+        if ($l -match '\b[A-Za-z]+\(\s*max\s*\)') { $found.Add("line ${n}: a (max) length, which $dialect does not have: [$($lines[$i])]") }
+        # SQL Server's T-SQL, which the PostgreSQL templates were copied from
+        if ($dialect -ne 'SQLServer' -and $l -match '\bIF Object_ID\b|\bEXEC\s*\(|^\s*GO\s*$|\bnonclustered\b|\bclustered\b|\bsysdatetime\b|\bisnull\s*\(') { $found.Add("line ${n}: T-SQL in SQL for $dialect : [$($lines[$i])]") }
         # the next line that is code
         $j = $i + 1; while ($j -lt $code.Count -and $code[$j] -notmatch '\S') { $j++ }
         if ($j -lt $code.Count) {
@@ -68,6 +70,7 @@ function Test-Sql([string] $text) {
     # a replaced function or view must keep its grants: COPY GRANTS before RETURNS (function), and before
     # COMMENT and AS (view)
     for ($i = 0; $i -lt $code.Count; $i++) {
+        if ($dialect -ne 'Snowflake') { break }   # COPY GRANTS is Snowflake's
         if ($code[$i] -notmatch '^CREATE OR REPLACE (FUNCTION|VIEW)\b') { continue }
         $kind = $Matches[1]
         $j = $i; $head = ''
@@ -122,14 +125,16 @@ function Test-Sql([string] $text) {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    # sqlserver* are not Snowflake models (the lint knows Snowflake SQL only). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    # sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
     if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver)' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
 }
 $dirty = 0
 foreach ($t in $targets) {
-    $found = Test-Sql ([IO.File]::ReadAllText($t.Path, [Text.Encoding]::UTF8))
+    $dialect = 'Snowflake'
+    if ($t.Name -match '^postgresql') { $dialect = 'PostgreSQL' }
+    $found = Test-Sql ([IO.File]::ReadAllText($t.Path, [Text.Encoding]::UTF8)) $dialect
     if ($found.Count -eq 0) { Write-Host ("clean  {0}" -f $t.Name); continue }
     $dirty++
     $kinds = $found | ForEach-Object { ($_ -replace '^line \d+: ', '' -replace ':.*$', '') } | Group-Object | Sort-Object Count -Descending

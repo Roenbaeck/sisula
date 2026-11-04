@@ -1,0 +1,474 @@
+-- ATTRIBUTES ---------------------------------------------------------------------------------------------------------
+--
+-- BI attributes use posit and annex split with changing/positing time and reliability.
+--
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_DAT_Event_Date_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_DAT_Event_Date_Fact" (
+    "EV_DAT_ID" bigint default nextval('attributes."EV_DAT_Event_Date_Fact_ID_SEQ"') not null, 
+    "EV_DAT_EV_ID" numeric(12,0) not null,
+    "EV_DAT_Event_Date" timestamp not null,
+    constraint "fkEV_DAT_Event_Date_Fact" foreign key (
+        "EV_DAT_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "pkEV_DAT_Event_Date_Fact" primary key (
+        "EV_DAT_ID"
+    ),
+    constraint "uqEV_DAT_Event_Date_Fact" unique (
+        "EV_DAT_EV_ID",
+        "EV_DAT_Event_Date"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_DAT_Event_Date_Meta" (
+    "EV_DAT_ID" bigint not null,
+    "EV_DAT_PositedAt" timestamp(3) not null,
+    "EV_DAT_Confidence" decimal(7,3) not null,
+    "Metadata_EV_DAT" bigint not null,
+    constraint "fkEV_DAT_Event_Date_Meta" foreign key (
+        "EV_DAT_ID"
+    ) references attributes."EV_DAT_Event_Date_Fact"("EV_DAT_ID"),
+    constraint "pkEV_DAT_Event_Date_Meta" primary key (
+        "EV_DAT_ID",
+        "EV_DAT_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_AUD_Event_Audience_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_AUD_Event_Audience_Fact" (
+    "EV_AUD_ID" bigint default nextval('attributes."EV_AUD_Event_Audience_Fact_ID_SEQ"') not null, 
+    "EV_AUD_EV_ID" numeric(12,0) not null,
+    "EV_AUD_Event_Audience" integer not null,
+    constraint "fkEV_AUD_Event_Audience_Fact" foreign key (
+        "EV_AUD_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "pkEV_AUD_Event_Audience_Fact" primary key (
+        "EV_AUD_ID"
+    ),
+    constraint "uqEV_AUD_Event_Audience_Fact" unique (
+        "EV_AUD_EV_ID",
+        "EV_AUD_Event_Audience"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_AUD_Event_Audience_Meta" (
+    "EV_AUD_ID" bigint not null,
+    "EV_AUD_PositedAt" timestamp(3) not null,
+    "EV_AUD_Confidence" decimal(7,3) not null,
+    "Metadata_EV_AUD" bigint not null,
+    constraint "fkEV_AUD_Event_Audience_Meta" foreign key (
+        "EV_AUD_ID"
+    ) references attributes."EV_AUD_Event_Audience_Fact"("EV_AUD_ID"),
+    constraint "pkEV_AUD_Event_Audience_Meta" primary key (
+        "EV_AUD_ID",
+        "EV_AUD_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_REV_Event_Revenue_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_REV_Event_Revenue_Fact" (
+    "EV_REV_ID" bigint default nextval('attributes."EV_REV_Event_Revenue_Fact_ID_SEQ"') not null, 
+    "EV_REV_EV_ID" numeric(12,0) not null,
+    "EV_REV_Event_Revenue" decimal(19,4) not null,
+    constraint "fkEV_REV_Event_Revenue_Fact" foreign key (
+        "EV_REV_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "pkEV_REV_Event_Revenue_Fact" primary key (
+        "EV_REV_ID"
+    ),
+    constraint "uqEV_REV_Event_Revenue_Fact" unique (
+        "EV_REV_EV_ID",
+        "EV_REV_Event_Revenue"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_REV_Event_Revenue_Meta" (
+    "EV_REV_ID" bigint not null,
+    "EV_REV_PositedAt" timestamp(3) not null,
+    "EV_REV_Confidence" decimal(7,3) not null,
+    "Metadata_EV_REV" bigint not null,
+    constraint "fkEV_REV_Event_Revenue_Meta" foreign key (
+        "EV_REV_ID"
+    ) references attributes."EV_REV_Event_Revenue_Fact"("EV_REV_ID"),
+    constraint "pkEV_REV_Event_Revenue_Meta" primary key (
+        "EV_REV_ID",
+        "EV_REV_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_STA_Event_Status_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status_Fact" (
+    "EV_STA_ID" bigint default nextval('attributes."EV_STA_Event_Status_Fact_ID_SEQ"') not null, 
+    "EV_STA_EV_ID" numeric(12,0) not null,
+    "EV_STA_Event_Status" varchar(20) not null,
+    "EV_STA_ChangedAt" timestamp not null,
+    constraint "fkEV_STA_Event_Status_Fact" foreign key (
+        "EV_STA_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "pkEV_STA_Event_Status_Fact" primary key (
+        "EV_STA_ID"
+    ),
+    constraint "uqEV_STA_Event_Status_Fact" unique (
+        "EV_STA_EV_ID",
+        "EV_STA_ChangedAt",
+        "EV_STA_Event_Status"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status_Meta" (
+    "EV_STA_ID" bigint not null,
+    "EV_STA_PositedAt" timestamp(3) not null,
+    "EV_STA_Confidence" decimal(7,3) not null,
+    "Metadata_EV_STA" bigint not null,
+    constraint "fkEV_STA_Event_Status_Meta" foreign key (
+        "EV_STA_ID"
+    ) references attributes."EV_STA_Event_Status_Fact"("EV_STA_ID"),
+    constraint "pkEV_STA_Event_Status_Meta" primary key (
+        "EV_STA_ID",
+        "EV_STA_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_UTL_Event_Utilization_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_UTL_Event_Utilization_Fact" (
+    "EV_UTL_ID" bigint default nextval('attributes."EV_UTL_Event_Utilization_Fact_ID_SEQ"') not null, 
+    "EV_UTL_EV_ID" numeric(12,0) not null,
+    "EV_UTL_UTL_ID" smallint not null,
+    constraint "fk_A_EV_UTL_Event_Utilization_Fact" foreign key (
+        "EV_UTL_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "fk_K_EV_UTL_Event_Utilization_Fact" foreign key (
+        "EV_UTL_UTL_ID"
+    ) references knots."UTL_Utilization"("UTL_ID"),
+    constraint "pkEV_UTL_Event_Utilization_Fact" primary key (
+        "EV_UTL_ID"
+    ),
+    constraint "uqEV_UTL_Event_Utilization_Fact" unique (
+        "EV_UTL_EV_ID",
+        "EV_UTL_UTL_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_UTL_Event_Utilization_Meta" (
+    "EV_UTL_ID" bigint not null,
+    "EV_UTL_PositedAt" timestamp(3) not null,
+    "EV_UTL_Confidence" decimal(7,3) not null,
+    "Metadata_EV_UTL" bigint not null,
+    constraint "fkEV_UTL_Event_Utilization_Meta" foreign key (
+        "EV_UTL_ID"
+    ) references attributes."EV_UTL_Event_Utilization_Fact"("EV_UTL_ID"),
+    constraint "pkEV_UTL_Event_Utilization_Meta" primary key (
+        "EV_UTL_ID",
+        "EV_UTL_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."EV_LVL_Event_Level_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level_Fact" (
+    "EV_LVL_ID" bigint default nextval('attributes."EV_LVL_Event_Level_Fact_ID_SEQ"') not null, 
+    "EV_LVL_EV_ID" numeric(12,0) not null,
+    "EV_LVL_PLV_ID" smallint not null,
+    "EV_LVL_ChangedAt" date not null,
+    constraint "fk_A_EV_LVL_Event_Level_Fact" foreign key (
+        "EV_LVL_EV_ID"
+    ) references nexuses."EV_Event"("EV_ID"),
+    constraint "fk_K_EV_LVL_Event_Level_Fact" foreign key (
+        "EV_LVL_PLV_ID"
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID"),
+    constraint "pkEV_LVL_Event_Level_Fact" primary key (
+        "EV_LVL_ID"
+    ),
+    constraint "uqEV_LVL_Event_Level_Fact" unique (
+        "EV_LVL_EV_ID",
+        "EV_LVL_ChangedAt",
+        "EV_LVL_PLV_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level_Meta" (
+    "EV_LVL_ID" bigint not null,
+    "EV_LVL_PositedAt" timestamp(3) not null,
+    "EV_LVL_Confidence" decimal(7,3) not null,
+    "Metadata_EV_LVL" bigint not null,
+    constraint "fkEV_LVL_Event_Level_Meta" foreign key (
+        "EV_LVL_ID"
+    ) references attributes."EV_LVL_Event_Level_Fact"("EV_LVL_ID"),
+    constraint "pkEV_LVL_Event_Level_Meta" primary key (
+        "EV_LVL_ID",
+        "EV_LVL_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."ST_NAM_Stage_Name_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name_Fact" (
+    "ST_NAM_ID" bigint default nextval('attributes."ST_NAM_Stage_Name_Fact_ID_SEQ"') not null, 
+    "ST_NAM_ST_ID" integer not null,
+    "ST_NAM_Stage_Name" varchar(42) not null,
+    "ST_NAM_ChangedAt" timestamp not null,
+    constraint "fkST_NAM_Stage_Name_Fact" foreign key (
+        "ST_NAM_ST_ID"
+    ) references anchors."ST_Stage"("ST_ID"),
+    constraint "pkST_NAM_Stage_Name_Fact" primary key (
+        "ST_NAM_ID"
+    ),
+    constraint "uqST_NAM_Stage_Name_Fact" unique (
+        "ST_NAM_ST_ID",
+        "ST_NAM_ChangedAt",
+        "ST_NAM_Stage_Name"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name_Meta" (
+    "ST_NAM_ID" bigint not null,
+    "ST_NAM_PositedAt" timestamp(3) not null,
+    "ST_NAM_Confidence" decimal(7,3) not null,
+    "Metadata_ST_NAM" bigint not null,
+    constraint "fkST_NAM_Stage_Name_Meta" foreign key (
+        "ST_NAM_ID"
+    ) references attributes."ST_NAM_Stage_Name_Fact"("ST_NAM_ID"),
+    constraint "pkST_NAM_Stage_Name_Meta" primary key (
+        "ST_NAM_ID",
+        "ST_NAM_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."ST_LOC_Stage_Location_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location_Fact" (
+    "ST_LOC_ID" bigint default nextval('attributes."ST_LOC_Stage_Location_Fact_ID_SEQ"') not null, 
+    "ST_LOC_ST_ID" integer not null,
+    "ST_LOC_Stage_Location" geography not null,
+    "ST_LOC_Checksum" bytea generated always as (decode(md5("ST_LOC_Stage_Location"::text), 'hex')) stored,
+    constraint "fkST_LOC_Stage_Location_Fact" foreign key (
+        "ST_LOC_ST_ID"
+    ) references anchors."ST_Stage"("ST_ID"),
+    constraint "pkST_LOC_Stage_Location_Fact" primary key (
+        "ST_LOC_ID"
+    ),
+    constraint "uqST_LOC_Stage_Location_Fact" unique (
+        "ST_LOC_ST_ID",
+        "ST_LOC_Checksum" 
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location_Meta" (
+    "ST_LOC_ID" bigint not null,
+    "ST_LOC_PositedAt" timestamp(3) not null,
+    "ST_LOC_Confidence" decimal(7,3) not null,
+    "Metadata_ST_LOC" bigint not null,
+    constraint "fkST_LOC_Stage_Location_Meta" foreign key (
+        "ST_LOC_ID"
+    ) references attributes."ST_LOC_Stage_Location_Fact"("ST_LOC_ID"),
+    constraint "pkST_LOC_Stage_Location_Meta" primary key (
+        "ST_LOC_ID",
+        "ST_LOC_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."ST_AVG_Stage_Average_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."ST_AVG_Stage_Average_Fact" (
+    "ST_AVG_ID" bigint default nextval('attributes."ST_AVG_Stage_Average_Fact_ID_SEQ"') not null, 
+    "ST_AVG_ST_ID" integer not null,
+    "ST_AVG_UTL_ID" smallint not null,
+    "ST_AVG_ChangedAt" timestamp not null,
+    constraint "fk_A_ST_AVG_Stage_Average_Fact" foreign key (
+        "ST_AVG_ST_ID"
+    ) references anchors."ST_Stage"("ST_ID"),
+    constraint "fk_K_ST_AVG_Stage_Average_Fact" foreign key (
+        "ST_AVG_UTL_ID"
+    ) references knots."UTL_Utilization"("UTL_ID"),
+    constraint "pkST_AVG_Stage_Average_Fact" primary key (
+        "ST_AVG_ID"
+    ),
+    constraint "uqST_AVG_Stage_Average_Fact" unique (
+        "ST_AVG_ST_ID",
+        "ST_AVG_ChangedAt",
+        "ST_AVG_UTL_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."ST_AVG_Stage_Average_Meta" (
+    "ST_AVG_ID" bigint not null,
+    "ST_AVG_PositedAt" timestamp(3) not null,
+    "ST_AVG_Confidence" decimal(7,3) not null,
+    "Metadata_ST_AVG" bigint not null,
+    constraint "fkST_AVG_Stage_Average_Meta" foreign key (
+        "ST_AVG_ID"
+    ) references attributes."ST_AVG_Stage_Average_Fact"("ST_AVG_ID"),
+    constraint "pkST_AVG_Stage_Average_Meta" primary key (
+        "ST_AVG_ID",
+        "ST_AVG_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Fact" (
+    "ST_MIN_ID" bigint default nextval('attributes."ST_MIN_Stage_Minimum_Fact_ID_SEQ"') not null, 
+    "ST_MIN_ST_ID" integer not null,
+    "ST_MIN_UTL_ID" smallint not null,
+    constraint "fk_A_ST_MIN_Stage_Minimum_Fact" foreign key (
+        "ST_MIN_ST_ID"
+    ) references anchors."ST_Stage"("ST_ID"),
+    constraint "fk_K_ST_MIN_Stage_Minimum_Fact" foreign key (
+        "ST_MIN_UTL_ID"
+    ) references knots."UTL_Utilization"("UTL_ID"),
+    constraint "pkST_MIN_Stage_Minimum_Fact" primary key (
+        "ST_MIN_ID"
+    ),
+    constraint "uqST_MIN_Stage_Minimum_Fact" unique (
+        "ST_MIN_ST_ID",
+        "ST_MIN_UTL_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."ST_MIN_Stage_Minimum_Meta" (
+    "ST_MIN_ID" bigint not null,
+    "ST_MIN_PositedAt" timestamp(3) not null,
+    "ST_MIN_Confidence" decimal(7,3) not null,
+    "Metadata_ST_MIN" bigint not null,
+    constraint "fkST_MIN_Stage_Minimum_Meta" foreign key (
+        "ST_MIN_ID"
+    ) references attributes."ST_MIN_Stage_Minimum_Fact"("ST_MIN_ID"),
+    constraint "pkST_MIN_Stage_Minimum_Meta" primary key (
+        "ST_MIN_ID",
+        "ST_MIN_PositedAt"
+    )
+);
+-- AC_NAM_Actor_Name is in the encryption group PII, which is not used: this database does not encrypt
+-- in this temporalization, so the values are stored as they are
+CREATE SEQUENCE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Fact" (
+    "AC_NAM_ID" bigint default nextval('attributes."AC_NAM_Actor_Name_Fact_ID_SEQ"') not null, 
+    "AC_NAM_AC_ID" smallint not null,
+    "AC_NAM_Actor_Name" varchar(42) not null,
+    "AC_NAM_ChangedAt" timestamp not null,
+    constraint "fkAC_NAM_Actor_Name_Fact" foreign key (
+        "AC_NAM_AC_ID"
+    ) references anchors."AC_Actor"("AC_ID"),
+    constraint "pkAC_NAM_Actor_Name_Fact" primary key (
+        "AC_NAM_ID"
+    ),
+    constraint "uqAC_NAM_Actor_Name_Fact" unique (
+        "AC_NAM_AC_ID",
+        "AC_NAM_ChangedAt",
+        "AC_NAM_Actor_Name"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."AC_NAM_Actor_Name_Meta" (
+    "AC_NAM_ID" bigint not null,
+    "AC_NAM_PositedAt" timestamp(3) not null,
+    "AC_NAM_Confidence" decimal(7,3) not null,
+    "Metadata_AC_NAM" bigint not null,
+    constraint "fkAC_NAM_Actor_Name_Meta" foreign key (
+        "AC_NAM_ID"
+    ) references attributes."AC_NAM_Actor_Name_Fact"("AC_NAM_ID"),
+    constraint "pkAC_NAM_Actor_Name_Meta" primary key (
+        "AC_NAM_ID",
+        "AC_NAM_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."AC_GEN_Actor_Gender_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."AC_GEN_Actor_Gender_Fact" (
+    "AC_GEN_ID" bigint default nextval('attributes."AC_GEN_Actor_Gender_Fact_ID_SEQ"') not null, 
+    "AC_GEN_AC_ID" smallint not null,
+    "AC_GEN_GEN_ID" smallint not null,
+    constraint "fk_A_AC_GEN_Actor_Gender_Fact" foreign key (
+        "AC_GEN_AC_ID"
+    ) references anchors."AC_Actor"("AC_ID"),
+    constraint "fk_K_AC_GEN_Actor_Gender_Fact" foreign key (
+        "AC_GEN_GEN_ID"
+    ) references knots."GEN_Gender"("GEN_ID"),
+    constraint "pkAC_GEN_Actor_Gender_Fact" primary key (
+        "AC_GEN_ID"
+    ),
+    constraint "uqAC_GEN_Actor_Gender_Fact" unique (
+        "AC_GEN_AC_ID",
+        "AC_GEN_GEN_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."AC_GEN_Actor_Gender_Meta" (
+    "AC_GEN_ID" bigint not null,
+    "AC_GEN_PositedAt" timestamp(3) not null,
+    "AC_GEN_Confidence" decimal(7,3) not null,
+    "Metadata_AC_GEN" bigint not null,
+    constraint "fkAC_GEN_Actor_Gender_Meta" foreign key (
+        "AC_GEN_ID"
+    ) references attributes."AC_GEN_Actor_Gender_Fact"("AC_GEN_ID"),
+    constraint "pkAC_GEN_Actor_Gender_Meta" primary key (
+        "AC_GEN_ID",
+        "AC_GEN_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."AC_PLV_Actor_ProfessionalLevel_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."AC_PLV_Actor_ProfessionalLevel_Fact" (
+    "AC_PLV_ID" bigint default nextval('attributes."AC_PLV_Actor_ProfessionalLevel_Fact_ID_SEQ"') not null, 
+    "AC_PLV_AC_ID" smallint not null,
+    "AC_PLV_PLV_ID" smallint not null,
+    "AC_PLV_ChangedAt" timestamp not null,
+    constraint "fk_A_AC_PLV_Actor_ProfessionalLevel_Fact" foreign key (
+        "AC_PLV_AC_ID"
+    ) references anchors."AC_Actor"("AC_ID"),
+    constraint "fk_K_AC_PLV_Actor_ProfessionalLevel_Fact" foreign key (
+        "AC_PLV_PLV_ID"
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID"),
+    constraint "pkAC_PLV_Actor_ProfessionalLevel_Fact" primary key (
+        "AC_PLV_ID"
+    ),
+    constraint "uqAC_PLV_Actor_ProfessionalLevel_Fact" unique (
+        "AC_PLV_AC_ID",
+        "AC_PLV_ChangedAt",
+        "AC_PLV_PLV_ID"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."AC_PLV_Actor_ProfessionalLevel_Meta" (
+    "AC_PLV_ID" bigint not null,
+    "AC_PLV_PositedAt" timestamp(3) not null,
+    "AC_PLV_Confidence" decimal(7,3) not null,
+    "Metadata_AC_PLV" bigint not null,
+    constraint "fkAC_PLV_Actor_ProfessionalLevel_Meta" foreign key (
+        "AC_PLV_ID"
+    ) references attributes."AC_PLV_Actor_ProfessionalLevel_Fact"("AC_PLV_ID"),
+    constraint "pkAC_PLV_Actor_ProfessionalLevel_Meta" primary key (
+        "AC_PLV_ID",
+        "AC_PLV_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."PR_NAM_Program_Name_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."PR_NAM_Program_Name_Fact" (
+    "PR_NAM_ID" bigint default nextval('attributes."PR_NAM_Program_Name_Fact_ID_SEQ"') not null, 
+    "PR_NAM_PR_ID" bigint not null,
+    "PR_NAM_Program_Name" varchar(42) not null,
+    constraint "fkPR_NAM_Program_Name_Fact" foreign key (
+        "PR_NAM_PR_ID"
+    ) references anchors."PR_Program"("PR_ID"),
+    constraint "pkPR_NAM_Program_Name_Fact" primary key (
+        "PR_NAM_ID"
+    ),
+    constraint "uqPR_NAM_Program_Name_Fact" unique (
+        "PR_NAM_PR_ID",
+        "PR_NAM_Program_Name"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."PR_NAM_Program_Name_Meta" (
+    "PR_NAM_ID" bigint not null,
+    "PR_NAM_PositedAt" timestamp(3) not null,
+    "PR_NAM_Confidence" decimal(7,3) not null,
+    "Metadata_PR_NAM" bigint not null,
+    constraint "fkPR_NAM_Program_Name_Meta" foreign key (
+        "PR_NAM_ID"
+    ) references attributes."PR_NAM_Program_Name_Fact"("PR_NAM_ID"),
+    constraint "pkPR_NAM_Program_Name_Meta" primary key (
+        "PR_NAM_ID",
+        "PR_NAM_PositedAt"
+    )
+);
+CREATE SEQUENCE IF NOT EXISTS attributes."PR_LEN_Program_Length_Fact_ID_SEQ" START 1 INCREMENT 1;
+CREATE TABLE IF NOT EXISTS attributes."PR_LEN_Program_Length_Fact" (
+    "PR_LEN_ID" bigint default nextval('attributes."PR_LEN_Program_Length_Fact_ID_SEQ"') not null, 
+    "PR_LEN_PR_ID" bigint not null,
+    "PR_LEN_Program_Length" time not null,
+    "PR_LEN_ChangedAt" date not null,
+    constraint "fkPR_LEN_Program_Length_Fact" foreign key (
+        "PR_LEN_PR_ID"
+    ) references anchors."PR_Program"("PR_ID"),
+    constraint "pkPR_LEN_Program_Length_Fact" primary key (
+        "PR_LEN_ID"
+    ),
+    constraint "uqPR_LEN_Program_Length_Fact" unique (
+        "PR_LEN_PR_ID",
+        "PR_LEN_ChangedAt",
+        "PR_LEN_Program_Length"
+    )
+);
+CREATE TABLE IF NOT EXISTS attributes."PR_LEN_Program_Length_Meta" (
+    "PR_LEN_ID" bigint not null,
+    "PR_LEN_PositedAt" timestamp(3) not null,
+    "PR_LEN_Confidence" decimal(7,3) not null,
+    "Metadata_PR_LEN" bigint not null,
+    constraint "fkPR_LEN_Program_Length_Meta" foreign key (
+        "PR_LEN_ID"
+    ) references attributes."PR_LEN_Program_Length_Fact"("PR_LEN_ID"),
+    constraint "pkPR_LEN_Program_Length_Meta" primary key (
+        "PR_LEN_ID",
+        "PR_LEN_PositedAt"
+    )
+);

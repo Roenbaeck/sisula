@@ -297,7 +297,7 @@ try {
             $observed = Invoke-Modeler $v $model 'targets'
             if ($null -eq $observed) { $failed++; continue }
             # Templates that were copied from SQL Server's and are not ported: they generate T-SQL for another database.
-            $known = @('Vertica uni', 'Vertica bi', 'Vertica crt', 'PostgreSQL bi', 'PostgreSQL crt')
+            $known = @('Vertica uni', 'Vertica bi', 'Vertica crt')
             $results = ConvertFrom-Json $observed   # not piped: Windows PowerShell 5.1 would hand the array on as one object
             foreach ($r in $results) {
                 $target = "$($r.database) $($r.temporalization)"
