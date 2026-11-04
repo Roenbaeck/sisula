@@ -134,6 +134,7 @@ $dirty = 0
 foreach ($t in $targets) {
     $dialect = 'Snowflake'
     if ($t.Name -match '^postgresql') { $dialect = 'PostgreSQL' }
+    if ($t.Name -match '^vertica') { $dialect = 'Vertica' }
     $found = Test-Sql ([IO.File]::ReadAllText($t.Path, [Text.Encoding]::UTF8)) $dialect
     if ($found.Count -eq 0) { Write-Host ("clean  {0}" -f $t.Name); continue }
     $dirty++
