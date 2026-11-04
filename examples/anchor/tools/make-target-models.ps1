@@ -5,18 +5,22 @@
     each model has to be saved through the modeler (browser-check.ps1 -Canonicalize), which fills in what a model made this way
     leaves out; this script does not do that, so that the step can be seen.
 
+    -Types replaces a data type that the database has no type for here: PostgreSQL has geography only with PostGIS, which a plain
+    server lacks, so the models that are run on one have text.
+
     The models are the ones that test what a template does: base (the plain model), distinct (a historized and knotted
     attribute on a nexus, a tie with a nexus role and no identifiers), flags (what may not be restated, and decisiveness),
     national (names with national characters), plain and ranges.
 
     Usage:
-      make-target-models.ps1 -Database PostgreSQL [-Models base,distinct,...] [-Anchor <checkout>]
+      make-target-models.ps1 -Database PostgreSQL [-Models base,distinct,...] [-Types @{geography='text'}] [-Anchor <checkout>]
       browser-check.ps1 -Canonicalize -Variant <the names it prints>
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)] [string] $Database,
     [string[]] $Models = @('base', 'distinct', 'flags', 'national', 'plain', 'ranges'),
+    [hashtable] $Types = @{},
     [string] $Anchor
 )
 $ErrorActionPreference = 'Stop'
@@ -40,6 +44,7 @@ foreach ($name in $Models) {
         $engine.SetValue('modelText', $text) | Out-Null
         $converted = $engine.Execute("DataTypeConverter.convertText(modelText, 'Snowflake', '$Database')").GetCompletionValue().AsString()
         $converted = $converted.Replace('databaseTarget="Snowflake"', "databaseTarget=`"$Database`"")
+        foreach ($type in $Types.Keys) { $converted = $converted -replace ('(dataRange=")' + [regex]::Escape($type) + '(")'), ('${1}' + $Types[$type] + '${2}') }
         $out = "$prefix-$name$suffix"
         [IO.File]::WriteAllText((Join-Path $root "models\$out.xml"), $converted, $utf8)
         $made.Add($out)

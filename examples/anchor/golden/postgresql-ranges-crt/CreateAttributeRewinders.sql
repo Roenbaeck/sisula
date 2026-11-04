@@ -950,7 +950,7 @@ RETURNS TABLE (
     "ST_LOC_Stance" char(1),
     "ST_LOC_ST_ID" integer,
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography
+    "ST_LOC_Stage_Location" text
 )
 AS
 $$

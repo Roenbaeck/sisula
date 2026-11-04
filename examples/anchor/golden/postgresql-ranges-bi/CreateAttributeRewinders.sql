@@ -762,7 +762,7 @@ RETURNS TABLE (
     "ST_LOC_Confidence" decimal(7,3),
     "ST_LOC_ST_ID" integer,
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography
+    "ST_LOC_Stage_Location" text
 )
 AS
 $$

@@ -396,7 +396,7 @@ CREATE SEQUENCE IF NOT EXISTS public."ST_LOC_Stage_Location_Posit_ID_SEQ" START 
 CREATE TABLE IF NOT EXISTS public."ST_LOC_Stage_Location_Posit" (
     "ST_LOC_ID" integer default nextval('public."ST_LOC_Stage_Location_Posit_ID_SEQ"') not null, 
     "ST_LOC_ST_ID" integer not null,
-    "ST_LOC_Stage_Location" geography not null,
+    "ST_LOC_Stage_Location" text not null,
     "ST_LOC_Checksum" bytea generated always as (decode(md5("ST_LOC_Stage_Location"::text), 'hex')) stored,
     constraint "fkST_LOC_Stage_Location_Posit" foreign key (
         "ST_LOC_ST_ID"
@@ -1441,7 +1441,7 @@ RETURNS TABLE (
     "ST_LOC_Assertion" char(1),
     "ST_LOC_ST_ID" integer,
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography
+    "ST_LOC_Stage_Location" text
 )
 AS
 $$
@@ -2541,7 +2541,7 @@ RETURNS TABLE (
     "ST_LOC_Reliability" decimal(5,2),
     "ST_LOC_Assertion" char(1),
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography,
+    "ST_LOC_Stage_Location" text,
     "ST_AVG_ST_ID" integer,
     "Metadata_ST_AVG" integer,
     "ST_AVG_ID" integer,
@@ -2802,7 +2802,7 @@ RETURNS TABLE (
     "ST_LOC_Reliability" decimal(5,2),
     "ST_LOC_Assertion" char(1),
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography,
+    "ST_LOC_Stage_Location" text,
     "ST_AVG_ST_ID" integer,
     "Metadata_ST_AVG" integer,
     "ST_AVG_ID" integer,
@@ -2925,7 +2925,7 @@ RETURNS TABLE (
     "ST_LOC_Reliability" decimal(5,2),
     "ST_LOC_Assertion" char(1),
     "ST_LOC_Checksum" bytea,
-    "ST_LOC_Stage_Location" geography,
+    "ST_LOC_Stage_Location" text,
     "ST_AVG_ST_ID" integer,
     "Metadata_ST_AVG" integer,
     "ST_AVG_ID" integer,

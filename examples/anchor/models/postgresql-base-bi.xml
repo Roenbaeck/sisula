@@ -69,7 +69,7 @@ A person. Persons who perform are also registered as actors.
 Name of the stage. Historized, since a stage may be renamed over time.
 </description>
 </attribute>
-<attribute mnemonic="LOC" descriptor="Location" identity="integer" dataRange="geography">
+<attribute mnemonic="LOC" descriptor="Location" identity="integer" dataRange="text">
 <metadata privacy="Ignore" capsule="public" generator="true" assertive="true" checksum="true" idempotent="false" deletable="false"/>
 <key stop="1" route="1st" of="ST" branch="1"/>
 <key stop="3" route="1st" of="EV" branch="2"/>
