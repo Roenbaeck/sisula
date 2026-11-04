@@ -1,0 +1,6 @@
+-- NEXUS TEMPORAL PERSPECTIVES ----------------------------------------------------------------------------------------
+--
+-- BI nexus perspectives: latest (l) and now (n). Vertica has no function that returns a table, so the perspectives that
+-- take a time (time traveling, point-in-time and difference) are not made; the latest and the now perspectives take none,
+-- and are views over the rewinders of the attributes (views that show the latest annex row of every posit).
+--

@@ -1,0 +1,7 @@
+-- NEXUS TEMPORAL PERSPECTIVES ----------------------------------------------------------------------------------------
+--
+-- CRT nexus perspectives: latest (l) and now (n), for each positor. Vertica has no function that returns a table, so the
+-- perspectives that take a time or a positor (time traveling, point-in-time and difference) are not made; the latest and the now
+-- perspectives take none, and are views over the rewinders of the attributes (views that show the latest annex row of every posit
+-- for each positor). The assertion that they show is the positive one.
+--

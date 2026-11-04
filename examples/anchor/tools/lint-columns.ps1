@@ -74,7 +74,7 @@ function Test-Columns([System.Collections.Generic.List[string]] $code, [string[]
     for ($i = 0; $i -lt $code.Count; $i++) {
         if ($code[$i] -notmatch '^CREATE (?:OR REPLACE )?(VIEW|FUNCTION)(?: IF NOT EXISTS)? (\w+)\.(\w+)') { continue }
         $self = ($Matches[2] + '.' + $Matches[3]).ToLower()
-        $end = $i; while ($end -lt $code.Count -and $code[$end] -notmatch '^;\s*$') { $end++ }
+        $end = $i; while ($end -lt $code.Count -and $code[$end] -notmatch '^(;|\$\$ LANGUAGE sql\b.*;)\s*$') { $end++ }
         $text = ($code[$i..([Math]::Min($end, $code.Count - 1))] -join "`n")
         $params = $objects[$self].Params
         # aliases: schema.name alias, and TABLE(schema.function(...)) alias
@@ -87,6 +87,17 @@ function Test-Columns([System.Collections.Generic.List[string]] $code, [string[]
         }
         foreach ($m in [regex]::Matches($text, '(?i)\bTABLE\s*\(\s*(\w+)\.(\w+)\s*\(')) {
             $open = $text.IndexOf('(', $m.Index)
+            $close = Get-Balanced $text $open
+            if ($close -lt 0) { continue }
+            $after = [regex]::Match($text.Substring($close), '^\s*(?:AS\s+)?(\w+)')
+            if (-not $after.Success -or $script:KeywordsForAlias -contains $after.Groups[1].Value.ToUpper()) { continue }
+            $a = $after.Groups[1].Value.ToLower()
+            if (-not $aliases.ContainsKey($a)) { $aliases[$a] = @() }
+            $aliases[$a] += ($m.Groups[1].Value + '.' + $m.Groups[2].Value).ToLower()
+        }
+        # PostgreSQL reads a function that returns a table straight from FROM: schema.function(...) alias
+        foreach ($m in [regex]::Matches($text, '(?i)(?:\bFROM|\bJOIN|,)\s+(\w+)\.(\w+)\s*\(')) {
+            $open = $text.IndexOf('(', $m.Index + $m.Length - 1)
             $close = Get-Balanced $text $open
             if ($close -lt 0) { continue }
             $after = [regex]::Match($text.Substring($close), '^\s*(?:AS\s+)?(\w+)')
