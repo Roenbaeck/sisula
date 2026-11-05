@@ -5234,6 +5234,6474 @@ FROM
         '9999-12-31'::timestamp
     )
 ;
+-- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the assembled views make them behave like tables.
+-- There is one 'instead of' trigger for: insert.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- The rules are the ones in Anchor's docs/ANCHOR.md, "Loading through the latest views". Bitemporal modeling is decisive:
+-- one posit at a time is asserted for an entity (and a changing time). An assertion of another value therefore retracts, at
+-- its own positing time, the posit that is in effect, which is a correction; a posit is in effect at a positing time when its
+-- latest annex row up to then asserts it. The positing time is now (the clock, which moves between two statements) unless it is
+-- given.
+--
+-- For idempotent attributes, only changes that represent a value different from the previous or following value are stored.
+-- Others are silently ignored in order to avoid unnecessary temporal duplicates, although what they correct is retracted.
+--
+-- PostgreSQL runs a trigger of this kind for each row.
+--
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_EV_DAT_Event_Date tells whether two values of EV_DAT_Event_Date are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_EV_DAT_Event_Date"(
+    l timestamp,
+    r timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date instead of INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_EV_DAT_Event_Date"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."EV_DAT_PositedAt", _now);
+    _reliability := coalesce(NEW."EV_DAT_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."EV_DAT_ID"
+    INTO
+        _posit
+    FROM
+        public."EV_DAT_Event_Date_Posit" p
+    WHERE
+        p."EV_DAT_EV_ID" = NEW."EV_DAT_EV_ID"
+    AND
+        public."eq_EV_DAT_Event_Date"(p."EV_DAT_Event_Date", NEW."EV_DAT_Event_Date")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_DAT_Event_Date_Annex" a
+        WHERE
+            a."EV_DAT_ID" = _posit
+        AND
+            a."EV_DAT_PositedAt" = _positing
+        AND
+            a."EV_DAT_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_DAT_Event_Date for: %', concat_ws(', ', NEW."EV_DAT_EV_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_DAT_Event_Date_Posit" p
+        JOIN
+            public."EV_DAT_Event_Date_Annex" a
+        ON
+            a."EV_DAT_ID" = p."EV_DAT_ID"
+        WHERE
+            p."EV_DAT_EV_ID" = NEW."EV_DAT_EV_ID"
+        AND
+            NOT public."eq_EV_DAT_Event_Date"(p."EV_DAT_Event_Date", NEW."EV_DAT_Event_Date")
+        AND
+            a."EV_DAT_PositedAt" = _positing
+        AND
+            a."EV_DAT_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_DAT_Event_Date for: %', concat_ws(', ', NEW."EV_DAT_EV_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_DAT_Event_Date_Annex" a
+        WHERE
+            a."EV_DAT_ID" = _posit
+        AND
+            a."EV_DAT_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."EV_DAT_Reliability" = 1
+            FROM
+                public."EV_DAT_Event_Date_Annex" a
+            WHERE
+                a."EV_DAT_ID" = _posit
+            AND
+                a."EV_DAT_PositedAt" <= _positing
+            ORDER BY
+                a."EV_DAT_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."EV_DAT_Event_Date_Annex" (
+            "Metadata_EV_DAT",
+            "EV_DAT_ID",
+            "EV_DAT_PositedAt",
+            "EV_DAT_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_DAT", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."EV_DAT_ID"
+        FROM
+            public."EV_DAT_Event_Date_Posit" p
+        WHERE
+            p."EV_DAT_EV_ID" = NEW."EV_DAT_EV_ID"
+        AND
+            NOT public."eq_EV_DAT_Event_Date"(p."EV_DAT_Event_Date", NEW."EV_DAT_Event_Date")
+        AND
+            coalesce((
+                SELECT
+                    a."EV_DAT_Reliability" = 1
+                FROM
+                    public."EV_DAT_Event_Date_Annex" a
+                WHERE
+                    a."EV_DAT_ID" = p."EV_DAT_ID"
+                AND
+                    a."EV_DAT_PositedAt" <= _positing
+                ORDER BY
+                    a."EV_DAT_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."EV_DAT_Event_Date_Annex" (
+            "Metadata_EV_DAT",
+            "EV_DAT_ID",
+            "EV_DAT_PositedAt",
+            "EV_DAT_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_DAT", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."EV_DAT_Event_Date_Posit" (
+            "EV_DAT_EV_ID",
+            "EV_DAT_Event_Date"
+        )
+        VALUES (
+            NEW."EV_DAT_EV_ID",
+            NEW."EV_DAT_Event_Date"
+        )
+        RETURNING "EV_DAT_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."EV_DAT_Event_Date_Annex" (
+        "Metadata_EV_DAT",
+        "EV_DAT_ID",
+        "EV_DAT_PositedAt",
+        "EV_DAT_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_EV_DAT", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_DAT_Event_Date" ON public."EV_DAT_Event_Date";
+CREATE TRIGGER "it_EV_DAT_Event_Date"
+INSTEAD OF INSERT ON public."EV_DAT_Event_Date"
+FOR EACH ROW EXECUTE FUNCTION public."it_EV_DAT_Event_Date"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_EV_AUD_Event_Audience tells whether two values of EV_AUD_Event_Audience are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_EV_AUD_Event_Audience"(
+    l integer,
+    r integer
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience instead of INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_EV_AUD_Event_Audience"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."EV_AUD_PositedAt", _now);
+    _reliability := coalesce(NEW."EV_AUD_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."EV_AUD_ID"
+    INTO
+        _posit
+    FROM
+        public."EV_AUD_Event_Audience_Posit" p
+    WHERE
+        p."EV_AUD_EV_ID" = NEW."EV_AUD_EV_ID"
+    AND
+        public."eq_EV_AUD_Event_Audience"(p."EV_AUD_Event_Audience", NEW."EV_AUD_Event_Audience")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_AUD_Event_Audience_Annex" a
+        WHERE
+            a."EV_AUD_ID" = _posit
+        AND
+            a."EV_AUD_PositedAt" = _positing
+        AND
+            a."EV_AUD_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_AUD_Event_Audience for: %', concat_ws(', ', NEW."EV_AUD_EV_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_AUD_Event_Audience_Posit" p
+        JOIN
+            public."EV_AUD_Event_Audience_Annex" a
+        ON
+            a."EV_AUD_ID" = p."EV_AUD_ID"
+        WHERE
+            p."EV_AUD_EV_ID" = NEW."EV_AUD_EV_ID"
+        AND
+            NOT public."eq_EV_AUD_Event_Audience"(p."EV_AUD_Event_Audience", NEW."EV_AUD_Event_Audience")
+        AND
+            a."EV_AUD_PositedAt" = _positing
+        AND
+            a."EV_AUD_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_AUD_Event_Audience for: %', concat_ws(', ', NEW."EV_AUD_EV_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_AUD_Event_Audience_Annex" a
+        WHERE
+            a."EV_AUD_ID" = _posit
+        AND
+            a."EV_AUD_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."EV_AUD_Reliability" = 1
+            FROM
+                public."EV_AUD_Event_Audience_Annex" a
+            WHERE
+                a."EV_AUD_ID" = _posit
+            AND
+                a."EV_AUD_PositedAt" <= _positing
+            ORDER BY
+                a."EV_AUD_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."EV_AUD_Event_Audience_Annex" (
+            "Metadata_EV_AUD",
+            "EV_AUD_ID",
+            "EV_AUD_PositedAt",
+            "EV_AUD_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_AUD", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."EV_AUD_ID"
+        FROM
+            public."EV_AUD_Event_Audience_Posit" p
+        WHERE
+            p."EV_AUD_EV_ID" = NEW."EV_AUD_EV_ID"
+        AND
+            NOT public."eq_EV_AUD_Event_Audience"(p."EV_AUD_Event_Audience", NEW."EV_AUD_Event_Audience")
+        AND
+            coalesce((
+                SELECT
+                    a."EV_AUD_Reliability" = 1
+                FROM
+                    public."EV_AUD_Event_Audience_Annex" a
+                WHERE
+                    a."EV_AUD_ID" = p."EV_AUD_ID"
+                AND
+                    a."EV_AUD_PositedAt" <= _positing
+                ORDER BY
+                    a."EV_AUD_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."EV_AUD_Event_Audience_Annex" (
+            "Metadata_EV_AUD",
+            "EV_AUD_ID",
+            "EV_AUD_PositedAt",
+            "EV_AUD_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_AUD", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."EV_AUD_Event_Audience_Posit" (
+            "EV_AUD_EV_ID",
+            "EV_AUD_Event_Audience"
+        )
+        VALUES (
+            NEW."EV_AUD_EV_ID",
+            NEW."EV_AUD_Event_Audience"
+        )
+        RETURNING "EV_AUD_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."EV_AUD_Event_Audience_Annex" (
+        "Metadata_EV_AUD",
+        "EV_AUD_ID",
+        "EV_AUD_PositedAt",
+        "EV_AUD_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_EV_AUD", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_AUD_Event_Audience" ON public."EV_AUD_Event_Audience";
+CREATE TRIGGER "it_EV_AUD_Event_Audience"
+INSTEAD OF INSERT ON public."EV_AUD_Event_Audience"
+FOR EACH ROW EXECUTE FUNCTION public."it_EV_AUD_Event_Audience"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_EV_REV_Event_Revenue tells whether two values of EV_REV_Event_Revenue are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_EV_REV_Event_Revenue"(
+    l decimal(19,4),
+    r decimal(19,4)
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue instead of INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_EV_REV_Event_Revenue"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."EV_REV_PositedAt", _now);
+    _reliability := coalesce(NEW."EV_REV_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."EV_REV_ID"
+    INTO
+        _posit
+    FROM
+        public."EV_REV_Event_Revenue_Posit" p
+    WHERE
+        p."EV_REV_EV_ID" = NEW."EV_REV_EV_ID"
+    AND
+        public."eq_EV_REV_Event_Revenue"(p."EV_REV_Event_Revenue", NEW."EV_REV_Event_Revenue")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_REV_Event_Revenue_Annex" a
+        WHERE
+            a."EV_REV_ID" = _posit
+        AND
+            a."EV_REV_PositedAt" = _positing
+        AND
+            a."EV_REV_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_REV_Event_Revenue for: %', concat_ws(', ', NEW."EV_REV_EV_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_REV_Event_Revenue_Posit" p
+        JOIN
+            public."EV_REV_Event_Revenue_Annex" a
+        ON
+            a."EV_REV_ID" = p."EV_REV_ID"
+        WHERE
+            p."EV_REV_EV_ID" = NEW."EV_REV_EV_ID"
+        AND
+            NOT public."eq_EV_REV_Event_Revenue"(p."EV_REV_Event_Revenue", NEW."EV_REV_Event_Revenue")
+        AND
+            a."EV_REV_PositedAt" = _positing
+        AND
+            a."EV_REV_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_REV_Event_Revenue for: %', concat_ws(', ', NEW."EV_REV_EV_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_REV_Event_Revenue_Annex" a
+        WHERE
+            a."EV_REV_ID" = _posit
+        AND
+            a."EV_REV_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."EV_REV_Reliability" = 1
+            FROM
+                public."EV_REV_Event_Revenue_Annex" a
+            WHERE
+                a."EV_REV_ID" = _posit
+            AND
+                a."EV_REV_PositedAt" <= _positing
+            ORDER BY
+                a."EV_REV_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."EV_REV_Event_Revenue_Annex" (
+            "Metadata_EV_REV",
+            "EV_REV_ID",
+            "EV_REV_PositedAt",
+            "EV_REV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_REV", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."EV_REV_ID"
+        FROM
+            public."EV_REV_Event_Revenue_Posit" p
+        WHERE
+            p."EV_REV_EV_ID" = NEW."EV_REV_EV_ID"
+        AND
+            NOT public."eq_EV_REV_Event_Revenue"(p."EV_REV_Event_Revenue", NEW."EV_REV_Event_Revenue")
+        AND
+            coalesce((
+                SELECT
+                    a."EV_REV_Reliability" = 1
+                FROM
+                    public."EV_REV_Event_Revenue_Annex" a
+                WHERE
+                    a."EV_REV_ID" = p."EV_REV_ID"
+                AND
+                    a."EV_REV_PositedAt" <= _positing
+                ORDER BY
+                    a."EV_REV_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."EV_REV_Event_Revenue_Annex" (
+            "Metadata_EV_REV",
+            "EV_REV_ID",
+            "EV_REV_PositedAt",
+            "EV_REV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_REV", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."EV_REV_Event_Revenue_Posit" (
+            "EV_REV_EV_ID",
+            "EV_REV_Event_Revenue"
+        )
+        VALUES (
+            NEW."EV_REV_EV_ID",
+            NEW."EV_REV_Event_Revenue"
+        )
+        RETURNING "EV_REV_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."EV_REV_Event_Revenue_Annex" (
+        "Metadata_EV_REV",
+        "EV_REV_ID",
+        "EV_REV_PositedAt",
+        "EV_REV_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_EV_REV", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_REV_Event_Revenue" ON public."EV_REV_Event_Revenue";
+CREATE TRIGGER "it_EV_REV_Event_Revenue"
+INSTEAD OF INSERT ON public."EV_REV_Event_Revenue"
+FOR EACH ROW EXECUTE FUNCTION public."it_EV_REV_Event_Revenue"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_ST_NAM_Stage_Name tells whether two values of ST_NAM_Stage_Name are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_ST_NAM_Stage_Name"(
+    l varchar(42),
+    r varchar(42)
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_NAM_Stage_Name instead of INSERT trigger on ST_NAM_Stage_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_ST_NAM_Stage_Name"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."ST_NAM_PositedAt", _now);
+    _reliability := coalesce(NEW."ST_NAM_Reliability", 1);
+    _changing := coalesce(NEW."ST_NAM_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."ST_NAM_ID"
+    INTO
+        _posit
+    FROM
+        public."ST_NAM_Stage_Name_Posit" p
+    WHERE
+        p."ST_NAM_ST_ID" = NEW."ST_NAM_ST_ID"
+    AND
+        p."ST_NAM_ChangedAt" = _changing
+    AND
+        public."eq_ST_NAM_Stage_Name"(p."ST_NAM_Stage_Name", NEW."ST_NAM_Stage_Name")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_NAM_Stage_Name_Annex" a
+        WHERE
+            a."ST_NAM_ID" = _posit
+        AND
+            a."ST_NAM_PositedAt" = _positing
+        AND
+            a."ST_NAM_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_NAM_Stage_Name for: %', concat_ws(', ', NEW."ST_NAM_ST_ID",
+            _changing,
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_NAM_Stage_Name_Posit" p
+        JOIN
+            public."ST_NAM_Stage_Name_Annex" a
+        ON
+            a."ST_NAM_ID" = p."ST_NAM_ID"
+        WHERE
+            p."ST_NAM_ST_ID" = NEW."ST_NAM_ST_ID"
+        AND
+            p."ST_NAM_ChangedAt" = _changing
+        AND
+            NOT public."eq_ST_NAM_Stage_Name"(p."ST_NAM_Stage_Name", NEW."ST_NAM_Stage_Name")
+        AND
+            a."ST_NAM_PositedAt" = _positing
+        AND
+            a."ST_NAM_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_NAM_Stage_Name for: %', concat_ws(', ', NEW."ST_NAM_ST_ID",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_NAM_Stage_Name_Annex" a
+        WHERE
+            a."ST_NAM_ID" = _posit
+        AND
+            a."ST_NAM_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."ST_NAM_Reliability" = 1
+            FROM
+                public."ST_NAM_Stage_Name_Annex" a
+            WHERE
+                a."ST_NAM_ID" = _posit
+            AND
+                a."ST_NAM_PositedAt" <= _positing
+            ORDER BY
+                a."ST_NAM_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."ST_NAM_Stage_Name_Annex" (
+            "Metadata_ST_NAM",
+            "ST_NAM_ID",
+            "ST_NAM_PositedAt",
+            "ST_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_NAM", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."ST_NAM_ID"
+        FROM
+            public."ST_NAM_Stage_Name_Posit" p
+        WHERE
+            p."ST_NAM_ST_ID" = NEW."ST_NAM_ST_ID"
+        AND
+            p."ST_NAM_ChangedAt" = _changing
+        AND
+            NOT public."eq_ST_NAM_Stage_Name"(p."ST_NAM_Stage_Name", NEW."ST_NAM_Stage_Name")
+        AND
+            coalesce((
+                SELECT
+                    a."ST_NAM_Reliability" = 1
+                FROM
+                    public."ST_NAM_Stage_Name_Annex" a
+                WHERE
+                    a."ST_NAM_ID" = p."ST_NAM_ID"
+                AND
+                    a."ST_NAM_PositedAt" <= _positing
+                ORDER BY
+                    a."ST_NAM_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."ST_NAM_Stage_Name_Annex" (
+            "Metadata_ST_NAM",
+            "ST_NAM_ID",
+            "ST_NAM_PositedAt",
+            "ST_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_NAM", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."ST_NAM_Stage_Name_Posit" (
+            "ST_NAM_ST_ID",
+            "ST_NAM_ChangedAt",
+            "ST_NAM_Stage_Name"
+        )
+        VALUES (
+            NEW."ST_NAM_ST_ID",
+            _changing,
+            NEW."ST_NAM_Stage_Name"
+        )
+        RETURNING "ST_NAM_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."ST_NAM_Stage_Name_Annex" (
+        "Metadata_ST_NAM",
+        "ST_NAM_ID",
+        "ST_NAM_PositedAt",
+        "ST_NAM_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_ST_NAM", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_NAM_Stage_Name" ON public."ST_NAM_Stage_Name";
+CREATE TRIGGER "it_ST_NAM_Stage_Name"
+INSTEAD OF INSERT ON public."ST_NAM_Stage_Name"
+FOR EACH ROW EXECUTE FUNCTION public."it_ST_NAM_Stage_Name"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_ST_LOC_Stage_Location tells whether two values of ST_LOC_Stage_Location are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_ST_LOC_Stage_Location"(
+    l text,
+    r text
+)
+RETURNS boolean
+AS
+$$
+    SELECT md5(l::text) = md5(r::text)
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_LOC_Stage_Location instead of INSERT trigger on ST_LOC_Stage_Location
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_ST_LOC_Stage_Location"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."ST_LOC_PositedAt", _now);
+    _reliability := coalesce(NEW."ST_LOC_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."ST_LOC_ID"
+    INTO
+        _posit
+    FROM
+        public."ST_LOC_Stage_Location_Posit" p
+    WHERE
+        p."ST_LOC_ST_ID" = NEW."ST_LOC_ST_ID"
+    AND
+        public."eq_ST_LOC_Stage_Location"(p."ST_LOC_Stage_Location", NEW."ST_LOC_Stage_Location")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_LOC_Stage_Location_Annex" a
+        WHERE
+            a."ST_LOC_ID" = _posit
+        AND
+            a."ST_LOC_PositedAt" = _positing
+        AND
+            a."ST_LOC_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_LOC_Stage_Location for: %', concat_ws(', ', NEW."ST_LOC_ST_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_LOC_Stage_Location_Posit" p
+        JOIN
+            public."ST_LOC_Stage_Location_Annex" a
+        ON
+            a."ST_LOC_ID" = p."ST_LOC_ID"
+        WHERE
+            p."ST_LOC_ST_ID" = NEW."ST_LOC_ST_ID"
+        AND
+            NOT public."eq_ST_LOC_Stage_Location"(p."ST_LOC_Stage_Location", NEW."ST_LOC_Stage_Location")
+        AND
+            a."ST_LOC_PositedAt" = _positing
+        AND
+            a."ST_LOC_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_LOC_Stage_Location for: %', concat_ws(', ', NEW."ST_LOC_ST_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_LOC_Stage_Location_Annex" a
+        WHERE
+            a."ST_LOC_ID" = _posit
+        AND
+            a."ST_LOC_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."ST_LOC_Reliability" = 1
+            FROM
+                public."ST_LOC_Stage_Location_Annex" a
+            WHERE
+                a."ST_LOC_ID" = _posit
+            AND
+                a."ST_LOC_PositedAt" <= _positing
+            ORDER BY
+                a."ST_LOC_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."ST_LOC_Stage_Location_Annex" (
+            "Metadata_ST_LOC",
+            "ST_LOC_ID",
+            "ST_LOC_PositedAt",
+            "ST_LOC_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_LOC", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."ST_LOC_ID"
+        FROM
+            public."ST_LOC_Stage_Location_Posit" p
+        WHERE
+            p."ST_LOC_ST_ID" = NEW."ST_LOC_ST_ID"
+        AND
+            NOT public."eq_ST_LOC_Stage_Location"(p."ST_LOC_Stage_Location", NEW."ST_LOC_Stage_Location")
+        AND
+            coalesce((
+                SELECT
+                    a."ST_LOC_Reliability" = 1
+                FROM
+                    public."ST_LOC_Stage_Location_Annex" a
+                WHERE
+                    a."ST_LOC_ID" = p."ST_LOC_ID"
+                AND
+                    a."ST_LOC_PositedAt" <= _positing
+                ORDER BY
+                    a."ST_LOC_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."ST_LOC_Stage_Location_Annex" (
+            "Metadata_ST_LOC",
+            "ST_LOC_ID",
+            "ST_LOC_PositedAt",
+            "ST_LOC_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_LOC", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."ST_LOC_Stage_Location_Posit" (
+            "ST_LOC_ST_ID",
+            "ST_LOC_Stage_Location"
+        )
+        VALUES (
+            NEW."ST_LOC_ST_ID",
+            NEW."ST_LOC_Stage_Location"
+        )
+        RETURNING "ST_LOC_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."ST_LOC_Stage_Location_Annex" (
+        "Metadata_ST_LOC",
+        "ST_LOC_ID",
+        "ST_LOC_PositedAt",
+        "ST_LOC_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_ST_LOC", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_LOC_Stage_Location" ON public."ST_LOC_Stage_Location";
+CREATE TRIGGER "it_ST_LOC_Stage_Location"
+INSTEAD OF INSERT ON public."ST_LOC_Stage_Location"
+FOR EACH ROW EXECUTE FUNCTION public."it_ST_LOC_Stage_Location"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_ST_AVG_Stage_Average tells whether two values of ST_AVG_Stage_Average are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_ST_AVG_Stage_Average"(
+    l smallint,
+    r smallint
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_AVG_Stage_Average instead of INSERT trigger on ST_AVG_Stage_Average
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_ST_AVG_Stage_Average"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."ST_AVG_PositedAt", _now);
+    _reliability := coalesce(NEW."ST_AVG_Reliability", 1);
+    _changing := coalesce(NEW."ST_AVG_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."ST_AVG_ID"
+    INTO
+        _posit
+    FROM
+        public."ST_AVG_Stage_Average_Posit" p
+    WHERE
+        p."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+    AND
+        p."ST_AVG_ChangedAt" = _changing
+    AND
+        public."eq_ST_AVG_Stage_Average"(p."ST_AVG_UTL_ID", NEW."ST_AVG_UTL_ID")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_AVG_Stage_Average_Annex" a
+        WHERE
+            a."ST_AVG_ID" = _posit
+        AND
+            a."ST_AVG_PositedAt" = _positing
+        AND
+            a."ST_AVG_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_AVG_Stage_Average for: %', concat_ws(', ', NEW."ST_AVG_ST_ID",
+            _changing,
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_AVG_Stage_Average_Posit" p
+        JOIN
+            public."ST_AVG_Stage_Average_Annex" a
+        ON
+            a."ST_AVG_ID" = p."ST_AVG_ID"
+        WHERE
+            p."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+        AND
+            p."ST_AVG_ChangedAt" = _changing
+        AND
+            NOT public."eq_ST_AVG_Stage_Average"(p."ST_AVG_UTL_ID", NEW."ST_AVG_UTL_ID")
+        AND
+            a."ST_AVG_PositedAt" = _positing
+        AND
+            a."ST_AVG_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_AVG_Stage_Average for: %', concat_ws(', ', NEW."ST_AVG_ST_ID",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_AVG_Stage_Average_Annex" a
+        WHERE
+            a."ST_AVG_ID" = _posit
+        AND
+            a."ST_AVG_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."ST_AVG_Reliability" = 1
+            FROM
+                public."ST_AVG_Stage_Average_Annex" a
+            WHERE
+                a."ST_AVG_ID" = _posit
+            AND
+                a."ST_AVG_PositedAt" <= _positing
+            ORDER BY
+                a."ST_AVG_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."ST_AVG_Stage_Average_Annex" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ID",
+            "ST_AVG_PositedAt",
+            "ST_AVG_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."ST_AVG_ID"
+        FROM
+            public."ST_AVG_Stage_Average_Posit" p
+        WHERE
+            p."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+        AND
+            p."ST_AVG_ChangedAt" = _changing
+        AND
+            NOT public."eq_ST_AVG_Stage_Average"(p."ST_AVG_UTL_ID", NEW."ST_AVG_UTL_ID")
+        AND
+            coalesce((
+                SELECT
+                    a."ST_AVG_Reliability" = 1
+                FROM
+                    public."ST_AVG_Stage_Average_Annex" a
+                WHERE
+                    a."ST_AVG_ID" = p."ST_AVG_ID"
+                AND
+                    a."ST_AVG_PositedAt" <= _positing
+                ORDER BY
+                    a."ST_AVG_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."ST_AVG_Stage_Average_Annex" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ID",
+            "ST_AVG_PositedAt",
+            "ST_AVG_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the same value as the version before it, which is asserted at the positing time, is a restatement
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."ST_AVG_UTL_ID"
+            FROM
+                public."ST_AVG_Stage_Average_Posit" p
+            WHERE
+                p."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+            AND
+                p."ST_AVG_ChangedAt" < _changing
+            AND
+                coalesce((
+                    SELECT
+                        a."ST_AVG_Reliability" = 1
+                    FROM
+                        public."ST_AVG_Stage_Average_Annex" a
+                    WHERE
+                        a."ST_AVG_ID" = p."ST_AVG_ID"
+                    AND
+                        a."ST_AVG_PositedAt" <= _positing
+                    ORDER BY
+                        a."ST_AVG_PositedAt" DESC
+                    LIMIT 1
+                ), false)
+            ORDER BY
+                p."ST_AVG_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            public."eq_ST_AVG_Stage_Average"(pre."ST_AVG_UTL_ID", NEW."ST_AVG_UTL_ID")
+    ) THEN
+        -- (an idempotent attribute does not store it)
+        RETURN NULL;
+    END IF;
+    -- the same value as the version after it makes that version a restatement
+    SELECT
+        f."ST_AVG_ID"
+    INTO
+        _following
+    FROM
+        public."ST_AVG_Stage_Average_Posit" f
+    WHERE
+        f."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+    AND
+        f."ST_AVG_ChangedAt" > _changing
+    AND
+        coalesce((
+            SELECT
+                a."ST_AVG_Reliability" = 1
+            FROM
+                public."ST_AVG_Stage_Average_Annex" a
+            WHERE
+                a."ST_AVG_ID" = f."ST_AVG_ID"
+            AND
+                a."ST_AVG_PositedAt" <= _positing
+            ORDER BY
+                a."ST_AVG_PositedAt" DESC
+            LIMIT 1
+        ), false)
+    ORDER BY
+        f."ST_AVG_ChangedAt" ASC
+    LIMIT 1;
+    IF _following IS NOT NULL AND public."eq_ST_AVG_Stage_Average"((
+        SELECT x."ST_AVG_UTL_ID" FROM public."ST_AVG_Stage_Average_Posit" x WHERE x."ST_AVG_ID" = _following
+    ), NEW."ST_AVG_UTL_ID") THEN
+        -- (an idempotent attribute retracts it)
+        INSERT INTO public."ST_AVG_Stage_Average_Annex" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ID",
+            "ST_AVG_PositedAt",
+            "ST_AVG_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", 0),
+            _following,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."ST_AVG_Stage_Average_Posit" (
+            "ST_AVG_ST_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_UTL_ID"
+        )
+        VALUES (
+            NEW."ST_AVG_ST_ID",
+            _changing,
+            NEW."ST_AVG_UTL_ID"
+        )
+        RETURNING "ST_AVG_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."ST_AVG_Stage_Average_Annex" (
+        "Metadata_ST_AVG",
+        "ST_AVG_ID",
+        "ST_AVG_PositedAt",
+        "ST_AVG_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_ST_AVG", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_AVG_Stage_Average" ON public."ST_AVG_Stage_Average";
+CREATE TRIGGER "it_ST_AVG_Stage_Average"
+INSTEAD OF INSERT ON public."ST_AVG_Stage_Average"
+FOR EACH ROW EXECUTE FUNCTION public."it_ST_AVG_Stage_Average"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_ST_MIN_Stage_Minimum tells whether two values of ST_MIN_Stage_Minimum are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_ST_MIN_Stage_Minimum"(
+    l smallint,
+    r smallint
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_MIN_Stage_Minimum instead of INSERT trigger on ST_MIN_Stage_Minimum
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_ST_MIN_Stage_Minimum"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."ST_MIN_PositedAt", _now);
+    _reliability := coalesce(NEW."ST_MIN_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."ST_MIN_ID"
+    INTO
+        _posit
+    FROM
+        public."ST_MIN_Stage_Minimum_Posit" p
+    WHERE
+        p."ST_MIN_ST_ID" = NEW."ST_MIN_ST_ID"
+    AND
+        public."eq_ST_MIN_Stage_Minimum"(p."ST_MIN_UTL_ID", NEW."ST_MIN_UTL_ID")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_MIN_Stage_Minimum_Annex" a
+        WHERE
+            a."ST_MIN_ID" = _posit
+        AND
+            a."ST_MIN_PositedAt" = _positing
+        AND
+            a."ST_MIN_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_MIN_Stage_Minimum for: %', concat_ws(', ', NEW."ST_MIN_ST_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_MIN_Stage_Minimum_Posit" p
+        JOIN
+            public."ST_MIN_Stage_Minimum_Annex" a
+        ON
+            a."ST_MIN_ID" = p."ST_MIN_ID"
+        WHERE
+            p."ST_MIN_ST_ID" = NEW."ST_MIN_ST_ID"
+        AND
+            NOT public."eq_ST_MIN_Stage_Minimum"(p."ST_MIN_UTL_ID", NEW."ST_MIN_UTL_ID")
+        AND
+            a."ST_MIN_PositedAt" = _positing
+        AND
+            a."ST_MIN_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_MIN_Stage_Minimum for: %', concat_ws(', ', NEW."ST_MIN_ST_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_MIN_Stage_Minimum_Annex" a
+        WHERE
+            a."ST_MIN_ID" = _posit
+        AND
+            a."ST_MIN_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."ST_MIN_Reliability" = 1
+            FROM
+                public."ST_MIN_Stage_Minimum_Annex" a
+            WHERE
+                a."ST_MIN_ID" = _posit
+            AND
+                a."ST_MIN_PositedAt" <= _positing
+            ORDER BY
+                a."ST_MIN_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."ST_MIN_Stage_Minimum_Annex" (
+            "Metadata_ST_MIN",
+            "ST_MIN_ID",
+            "ST_MIN_PositedAt",
+            "ST_MIN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_MIN", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."ST_MIN_ID"
+        FROM
+            public."ST_MIN_Stage_Minimum_Posit" p
+        WHERE
+            p."ST_MIN_ST_ID" = NEW."ST_MIN_ST_ID"
+        AND
+            NOT public."eq_ST_MIN_Stage_Minimum"(p."ST_MIN_UTL_ID", NEW."ST_MIN_UTL_ID")
+        AND
+            coalesce((
+                SELECT
+                    a."ST_MIN_Reliability" = 1
+                FROM
+                    public."ST_MIN_Stage_Minimum_Annex" a
+                WHERE
+                    a."ST_MIN_ID" = p."ST_MIN_ID"
+                AND
+                    a."ST_MIN_PositedAt" <= _positing
+                ORDER BY
+                    a."ST_MIN_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."ST_MIN_Stage_Minimum_Annex" (
+            "Metadata_ST_MIN",
+            "ST_MIN_ID",
+            "ST_MIN_PositedAt",
+            "ST_MIN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_MIN", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."ST_MIN_Stage_Minimum_Posit" (
+            "ST_MIN_ST_ID",
+            "ST_MIN_UTL_ID"
+        )
+        VALUES (
+            NEW."ST_MIN_ST_ID",
+            NEW."ST_MIN_UTL_ID"
+        )
+        RETURNING "ST_MIN_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."ST_MIN_Stage_Minimum_Annex" (
+        "Metadata_ST_MIN",
+        "ST_MIN_ID",
+        "ST_MIN_PositedAt",
+        "ST_MIN_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_ST_MIN", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_MIN_Stage_Minimum" ON public."ST_MIN_Stage_Minimum";
+CREATE TRIGGER "it_ST_MIN_Stage_Minimum"
+INSTEAD OF INSERT ON public."ST_MIN_Stage_Minimum"
+FOR EACH ROW EXECUTE FUNCTION public."it_ST_MIN_Stage_Minimum"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_AC_NAM_Actor_Name tells whether two values of AC_NAM_Actor_Name are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_AC_NAM_Actor_Name"(
+    l varchar(42),
+    r varchar(42)
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_NAM_Actor_Name instead of INSERT trigger on AC_NAM_Actor_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_NAM_Actor_Name"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_NAM_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_NAM_Reliability", 1);
+    _changing := coalesce(NEW."AC_NAM_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."AC_NAM_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_NAM_Actor_Name_Posit" p
+    WHERE
+        p."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+    AND
+        p."AC_NAM_ChangedAt" = _changing
+    AND
+        public."eq_AC_NAM_Actor_Name"(p."AC_NAM_Actor_Name", NEW."AC_NAM_Actor_Name")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_NAM_Actor_Name_Annex" a
+        WHERE
+            a."AC_NAM_ID" = _posit
+        AND
+            a."AC_NAM_PositedAt" = _positing
+        AND
+            a."AC_NAM_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID",
+            _changing,
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_NAM_Actor_Name_Posit" p
+        JOIN
+            public."AC_NAM_Actor_Name_Annex" a
+        ON
+            a."AC_NAM_ID" = p."AC_NAM_ID"
+        WHERE
+            p."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+        AND
+            p."AC_NAM_ChangedAt" = _changing
+        AND
+            NOT public."eq_AC_NAM_Actor_Name"(p."AC_NAM_Actor_Name", NEW."AC_NAM_Actor_Name")
+        AND
+            a."AC_NAM_PositedAt" = _positing
+        AND
+            a."AC_NAM_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_NAM_Actor_Name_Annex" a
+        WHERE
+            a."AC_NAM_ID" = _posit
+        AND
+            a."AC_NAM_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."AC_NAM_Reliability" = 1
+            FROM
+                public."AC_NAM_Actor_Name_Annex" a
+            WHERE
+                a."AC_NAM_ID" = _posit
+            AND
+                a."AC_NAM_PositedAt" <= _positing
+            ORDER BY
+                a."AC_NAM_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_NAM_Actor_Name_Annex" (
+            "Metadata_AC_NAM",
+            "AC_NAM_ID",
+            "AC_NAM_PositedAt",
+            "AC_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_NAM", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."AC_NAM_ID"
+        FROM
+            public."AC_NAM_Actor_Name_Posit" p
+        WHERE
+            p."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+        AND
+            p."AC_NAM_ChangedAt" = _changing
+        AND
+            NOT public."eq_AC_NAM_Actor_Name"(p."AC_NAM_Actor_Name", NEW."AC_NAM_Actor_Name")
+        AND
+            coalesce((
+                SELECT
+                    a."AC_NAM_Reliability" = 1
+                FROM
+                    public."AC_NAM_Actor_Name_Annex" a
+                WHERE
+                    a."AC_NAM_ID" = p."AC_NAM_ID"
+                AND
+                    a."AC_NAM_PositedAt" <= _positing
+                ORDER BY
+                    a."AC_NAM_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."AC_NAM_Actor_Name_Annex" (
+            "Metadata_AC_NAM",
+            "AC_NAM_ID",
+            "AC_NAM_PositedAt",
+            "AC_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_NAM", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the same value as the version before it, which is asserted at the positing time, is a restatement
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."AC_NAM_Actor_Name"
+            FROM
+                public."AC_NAM_Actor_Name_Posit" p
+            WHERE
+                p."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+            AND
+                p."AC_NAM_ChangedAt" < _changing
+            AND
+                coalesce((
+                    SELECT
+                        a."AC_NAM_Reliability" = 1
+                    FROM
+                        public."AC_NAM_Actor_Name_Annex" a
+                    WHERE
+                        a."AC_NAM_ID" = p."AC_NAM_ID"
+                    AND
+                        a."AC_NAM_PositedAt" <= _positing
+                    ORDER BY
+                        a."AC_NAM_PositedAt" DESC
+                    LIMIT 1
+                ), false)
+            ORDER BY
+                p."AC_NAM_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            public."eq_AC_NAM_Actor_Name"(pre."AC_NAM_Actor_Name", NEW."AC_NAM_Actor_Name")
+    ) THEN
+        RAISE EXCEPTION 'Restatement in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID", _changing, _positing);
+    END IF;
+    -- the same value as the version after it makes that version a restatement
+    SELECT
+        f."AC_NAM_ID"
+    INTO
+        _following
+    FROM
+        public."AC_NAM_Actor_Name_Posit" f
+    WHERE
+        f."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+    AND
+        f."AC_NAM_ChangedAt" > _changing
+    AND
+        coalesce((
+            SELECT
+                a."AC_NAM_Reliability" = 1
+            FROM
+                public."AC_NAM_Actor_Name_Annex" a
+            WHERE
+                a."AC_NAM_ID" = f."AC_NAM_ID"
+            AND
+                a."AC_NAM_PositedAt" <= _positing
+            ORDER BY
+                a."AC_NAM_PositedAt" DESC
+            LIMIT 1
+        ), false)
+    ORDER BY
+        f."AC_NAM_ChangedAt" ASC
+    LIMIT 1;
+    IF _following IS NOT NULL AND public."eq_AC_NAM_Actor_Name"((
+        SELECT x."AC_NAM_Actor_Name" FROM public."AC_NAM_Actor_Name_Posit" x WHERE x."AC_NAM_ID" = _following
+    ), NEW."AC_NAM_Actor_Name") THEN
+        RAISE EXCEPTION 'Restatement in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID", _changing, _positing);
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_NAM_Actor_Name_Posit" (
+            "AC_NAM_AC_ID",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_Actor_Name"
+        )
+        VALUES (
+            NEW."AC_NAM_AC_ID",
+            _changing,
+            NEW."AC_NAM_Actor_Name"
+        )
+        RETURNING "AC_NAM_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_NAM_Actor_Name_Annex" (
+        "Metadata_AC_NAM",
+        "AC_NAM_ID",
+        "AC_NAM_PositedAt",
+        "AC_NAM_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_NAM", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_NAM_Actor_Name" ON public."AC_NAM_Actor_Name";
+CREATE TRIGGER "it_AC_NAM_Actor_Name"
+INSTEAD OF INSERT ON public."AC_NAM_Actor_Name"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_NAM_Actor_Name"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_AC_GEN_Actor_Gender tells whether two values of AC_GEN_Actor_Gender are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_AC_GEN_Actor_Gender"(
+    l smallint,
+    r smallint
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_GEN_Actor_Gender instead of INSERT trigger on AC_GEN_Actor_Gender
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_GEN_Actor_Gender"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_GEN_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_GEN_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."AC_GEN_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_GEN_Actor_Gender_Posit" p
+    WHERE
+        p."AC_GEN_AC_ID" = NEW."AC_GEN_AC_ID"
+    AND
+        public."eq_AC_GEN_Actor_Gender"(p."AC_GEN_GEN_ID", NEW."AC_GEN_GEN_ID")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_GEN_Actor_Gender_Annex" a
+        WHERE
+            a."AC_GEN_ID" = _posit
+        AND
+            a."AC_GEN_PositedAt" = _positing
+        AND
+            a."AC_GEN_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_GEN_Actor_Gender for: %', concat_ws(', ', NEW."AC_GEN_AC_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_GEN_Actor_Gender_Posit" p
+        JOIN
+            public."AC_GEN_Actor_Gender_Annex" a
+        ON
+            a."AC_GEN_ID" = p."AC_GEN_ID"
+        WHERE
+            p."AC_GEN_AC_ID" = NEW."AC_GEN_AC_ID"
+        AND
+            NOT public."eq_AC_GEN_Actor_Gender"(p."AC_GEN_GEN_ID", NEW."AC_GEN_GEN_ID")
+        AND
+            a."AC_GEN_PositedAt" = _positing
+        AND
+            a."AC_GEN_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_GEN_Actor_Gender for: %', concat_ws(', ', NEW."AC_GEN_AC_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_GEN_Actor_Gender_Annex" a
+        WHERE
+            a."AC_GEN_ID" = _posit
+        AND
+            a."AC_GEN_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."AC_GEN_Reliability" = 1
+            FROM
+                public."AC_GEN_Actor_Gender_Annex" a
+            WHERE
+                a."AC_GEN_ID" = _posit
+            AND
+                a."AC_GEN_PositedAt" <= _positing
+            ORDER BY
+                a."AC_GEN_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_GEN_Actor_Gender_Annex" (
+            "Metadata_AC_GEN",
+            "AC_GEN_ID",
+            "AC_GEN_PositedAt",
+            "AC_GEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_GEN", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."AC_GEN_ID"
+        FROM
+            public."AC_GEN_Actor_Gender_Posit" p
+        WHERE
+            p."AC_GEN_AC_ID" = NEW."AC_GEN_AC_ID"
+        AND
+            NOT public."eq_AC_GEN_Actor_Gender"(p."AC_GEN_GEN_ID", NEW."AC_GEN_GEN_ID")
+        AND
+            coalesce((
+                SELECT
+                    a."AC_GEN_Reliability" = 1
+                FROM
+                    public."AC_GEN_Actor_Gender_Annex" a
+                WHERE
+                    a."AC_GEN_ID" = p."AC_GEN_ID"
+                AND
+                    a."AC_GEN_PositedAt" <= _positing
+                ORDER BY
+                    a."AC_GEN_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."AC_GEN_Actor_Gender_Annex" (
+            "Metadata_AC_GEN",
+            "AC_GEN_ID",
+            "AC_GEN_PositedAt",
+            "AC_GEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_GEN", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_GEN_Actor_Gender_Posit" (
+            "AC_GEN_AC_ID",
+            "AC_GEN_GEN_ID"
+        )
+        VALUES (
+            NEW."AC_GEN_AC_ID",
+            NEW."AC_GEN_GEN_ID"
+        )
+        RETURNING "AC_GEN_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_GEN_Actor_Gender_Annex" (
+        "Metadata_AC_GEN",
+        "AC_GEN_ID",
+        "AC_GEN_PositedAt",
+        "AC_GEN_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_GEN", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_GEN_Actor_Gender" ON public."AC_GEN_Actor_Gender";
+CREATE TRIGGER "it_AC_GEN_Actor_Gender"
+INSTEAD OF INSERT ON public."AC_GEN_Actor_Gender"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_GEN_Actor_Gender"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_AC_PLV_Actor_ProfessionalLevel tells whether two values of AC_PLV_Actor_ProfessionalLevel are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_AC_PLV_Actor_ProfessionalLevel"(
+    l smallint,
+    r smallint
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_PLV_Actor_ProfessionalLevel instead of INSERT trigger on AC_PLV_Actor_ProfessionalLevel
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_PLV_Actor_ProfessionalLevel"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_PLV_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_PLV_Reliability", 1);
+    _changing := coalesce(NEW."AC_PLV_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."AC_PLV_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_PLV_Actor_ProfessionalLevel_Posit" p
+    WHERE
+        p."AC_PLV_AC_ID" = NEW."AC_PLV_AC_ID"
+    AND
+        p."AC_PLV_ChangedAt" = _changing
+    AND
+        public."eq_AC_PLV_Actor_ProfessionalLevel"(p."AC_PLV_PLV_ID", NEW."AC_PLV_PLV_ID")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_PLV_Actor_ProfessionalLevel_Annex" a
+        WHERE
+            a."AC_PLV_ID" = _posit
+        AND
+            a."AC_PLV_PositedAt" = _positing
+        AND
+            a."AC_PLV_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: %', concat_ws(', ', NEW."AC_PLV_AC_ID",
+            _changing,
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_PLV_Actor_ProfessionalLevel_Posit" p
+        JOIN
+            public."AC_PLV_Actor_ProfessionalLevel_Annex" a
+        ON
+            a."AC_PLV_ID" = p."AC_PLV_ID"
+        WHERE
+            p."AC_PLV_AC_ID" = NEW."AC_PLV_AC_ID"
+        AND
+            p."AC_PLV_ChangedAt" = _changing
+        AND
+            NOT public."eq_AC_PLV_Actor_ProfessionalLevel"(p."AC_PLV_PLV_ID", NEW."AC_PLV_PLV_ID")
+        AND
+            a."AC_PLV_PositedAt" = _positing
+        AND
+            a."AC_PLV_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: %', concat_ws(', ', NEW."AC_PLV_AC_ID",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_PLV_Actor_ProfessionalLevel_Annex" a
+        WHERE
+            a."AC_PLV_ID" = _posit
+        AND
+            a."AC_PLV_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."AC_PLV_Reliability" = 1
+            FROM
+                public."AC_PLV_Actor_ProfessionalLevel_Annex" a
+            WHERE
+                a."AC_PLV_ID" = _posit
+            AND
+                a."AC_PLV_PositedAt" <= _positing
+            ORDER BY
+                a."AC_PLV_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_PLV_Actor_ProfessionalLevel_Annex" (
+            "Metadata_AC_PLV",
+            "AC_PLV_ID",
+            "AC_PLV_PositedAt",
+            "AC_PLV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_PLV", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."AC_PLV_ID"
+        FROM
+            public."AC_PLV_Actor_ProfessionalLevel_Posit" p
+        WHERE
+            p."AC_PLV_AC_ID" = NEW."AC_PLV_AC_ID"
+        AND
+            p."AC_PLV_ChangedAt" = _changing
+        AND
+            NOT public."eq_AC_PLV_Actor_ProfessionalLevel"(p."AC_PLV_PLV_ID", NEW."AC_PLV_PLV_ID")
+        AND
+            coalesce((
+                SELECT
+                    a."AC_PLV_Reliability" = 1
+                FROM
+                    public."AC_PLV_Actor_ProfessionalLevel_Annex" a
+                WHERE
+                    a."AC_PLV_ID" = p."AC_PLV_ID"
+                AND
+                    a."AC_PLV_PositedAt" <= _positing
+                ORDER BY
+                    a."AC_PLV_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."AC_PLV_Actor_ProfessionalLevel_Annex" (
+            "Metadata_AC_PLV",
+            "AC_PLV_ID",
+            "AC_PLV_PositedAt",
+            "AC_PLV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_PLV", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_PLV_Actor_ProfessionalLevel_Posit" (
+            "AC_PLV_AC_ID",
+            "AC_PLV_ChangedAt",
+            "AC_PLV_PLV_ID"
+        )
+        VALUES (
+            NEW."AC_PLV_AC_ID",
+            _changing,
+            NEW."AC_PLV_PLV_ID"
+        )
+        RETURNING "AC_PLV_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_PLV_Actor_ProfessionalLevel_Annex" (
+        "Metadata_AC_PLV",
+        "AC_PLV_ID",
+        "AC_PLV_PositedAt",
+        "AC_PLV_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_PLV", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_PLV_Actor_ProfessionalLevel" ON public."AC_PLV_Actor_ProfessionalLevel";
+CREATE TRIGGER "it_AC_PLV_Actor_ProfessionalLevel"
+INSTEAD OF INSERT ON public."AC_PLV_Actor_ProfessionalLevel"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_PLV_Actor_ProfessionalLevel"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_PR_NAM_Program_Name tells whether two values of PR_NAM_Program_Name are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_PR_NAM_Program_Name"(
+    l varchar(42),
+    r varchar(42)
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_NAM_Program_Name instead of INSERT trigger on PR_NAM_Program_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_PR_NAM_Program_Name"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."PR_NAM_PositedAt", _now);
+    _reliability := coalesce(NEW."PR_NAM_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."PR_NAM_ID"
+    INTO
+        _posit
+    FROM
+        public."PR_NAM_Program_Name_Posit" p
+    WHERE
+        p."PR_NAM_PR_ID" = NEW."PR_NAM_PR_ID"
+    AND
+        public."eq_PR_NAM_Program_Name"(p."PR_NAM_Program_Name", NEW."PR_NAM_Program_Name")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_NAM_Program_Name_Annex" a
+        WHERE
+            a."PR_NAM_ID" = _posit
+        AND
+            a."PR_NAM_PositedAt" = _positing
+        AND
+            a."PR_NAM_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_NAM_Program_Name for: %', concat_ws(', ', NEW."PR_NAM_PR_ID",
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_NAM_Program_Name_Posit" p
+        JOIN
+            public."PR_NAM_Program_Name_Annex" a
+        ON
+            a."PR_NAM_ID" = p."PR_NAM_ID"
+        WHERE
+            p."PR_NAM_PR_ID" = NEW."PR_NAM_PR_ID"
+        AND
+            NOT public."eq_PR_NAM_Program_Name"(p."PR_NAM_Program_Name", NEW."PR_NAM_Program_Name")
+        AND
+            a."PR_NAM_PositedAt" = _positing
+        AND
+            a."PR_NAM_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_NAM_Program_Name for: %', concat_ws(', ', NEW."PR_NAM_PR_ID",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_NAM_Program_Name_Annex" a
+        WHERE
+            a."PR_NAM_ID" = _posit
+        AND
+            a."PR_NAM_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."PR_NAM_Reliability" = 1
+            FROM
+                public."PR_NAM_Program_Name_Annex" a
+            WHERE
+                a."PR_NAM_ID" = _posit
+            AND
+                a."PR_NAM_PositedAt" <= _positing
+            ORDER BY
+                a."PR_NAM_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."PR_NAM_Program_Name_Annex" (
+            "Metadata_PR_NAM",
+            "PR_NAM_ID",
+            "PR_NAM_PositedAt",
+            "PR_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_NAM", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."PR_NAM_ID"
+        FROM
+            public."PR_NAM_Program_Name_Posit" p
+        WHERE
+            p."PR_NAM_PR_ID" = NEW."PR_NAM_PR_ID"
+        AND
+            NOT public."eq_PR_NAM_Program_Name"(p."PR_NAM_Program_Name", NEW."PR_NAM_Program_Name")
+        AND
+            coalesce((
+                SELECT
+                    a."PR_NAM_Reliability" = 1
+                FROM
+                    public."PR_NAM_Program_Name_Annex" a
+                WHERE
+                    a."PR_NAM_ID" = p."PR_NAM_ID"
+                AND
+                    a."PR_NAM_PositedAt" <= _positing
+                ORDER BY
+                    a."PR_NAM_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."PR_NAM_Program_Name_Annex" (
+            "Metadata_PR_NAM",
+            "PR_NAM_ID",
+            "PR_NAM_PositedAt",
+            "PR_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_NAM", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."PR_NAM_Program_Name_Posit" (
+            "PR_NAM_PR_ID",
+            "PR_NAM_Program_Name"
+        )
+        VALUES (
+            NEW."PR_NAM_PR_ID",
+            NEW."PR_NAM_Program_Name"
+        )
+        RETURNING "PR_NAM_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."PR_NAM_Program_Name_Annex" (
+        "Metadata_PR_NAM",
+        "PR_NAM_ID",
+        "PR_NAM_PositedAt",
+        "PR_NAM_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_PR_NAM", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_NAM_Program_Name" ON public."PR_NAM_Program_Name";
+CREATE TRIGGER "it_PR_NAM_Program_Name"
+INSTEAD OF INSERT ON public."PR_NAM_Program_Name"
+FOR EACH ROW EXECUTE FUNCTION public."it_PR_NAM_Program_Name"();
+-- Equality of two values -----------------------------------------------------------------------------------------------
+-- eq_PR_LEN_Program_Length tells whether two values of PR_LEN_Program_Length are the same (by checksum, if it has one)
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."eq_PR_LEN_Program_Length"(
+    l time,
+    r time
+)
+RETURNS boolean
+AS
+$$
+    SELECT l = r
+$$ LANGUAGE sql IMMUTABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_LEN_Program_Length instead of INSERT trigger on PR_LEN_Program_Length
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_PR_LEN_Program_Length"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing date;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."PR_LEN_PositedAt", _now);
+    _reliability := coalesce(NEW."PR_LEN_Reliability", 1);
+    _changing := coalesce(NEW."PR_LEN_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."PR_LEN_ID"
+    INTO
+        _posit
+    FROM
+        public."PR_LEN_Program_Length_Posit" p
+    WHERE
+        p."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+    AND
+        p."PR_LEN_ChangedAt" = _changing
+    AND
+        public."eq_PR_LEN_Program_Length"(p."PR_LEN_Program_Length", NEW."PR_LEN_Program_Length")
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction, and so, since
+    -- one posit at a time is asserted, is an assertion of another value at that time
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_LEN_Program_Length_Annex" a
+        WHERE
+            a."PR_LEN_ID" = _posit
+        AND
+            a."PR_LEN_PositedAt" = _positing
+        AND
+            a."PR_LEN_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_LEN_Program_Length for: %', concat_ws(', ', NEW."PR_LEN_PR_ID",
+            _changing,
+            _positing);
+    END IF;
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_LEN_Program_Length_Posit" p
+        JOIN
+            public."PR_LEN_Program_Length_Annex" a
+        ON
+            a."PR_LEN_ID" = p."PR_LEN_ID"
+        WHERE
+            p."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+        AND
+            p."PR_LEN_ChangedAt" = _changing
+        AND
+            NOT public."eq_PR_LEN_Program_Length"(p."PR_LEN_Program_Length", NEW."PR_LEN_Program_Length")
+        AND
+            a."PR_LEN_PositedAt" = _positing
+        AND
+            a."PR_LEN_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_LEN_Program_Length for: %', concat_ws(', ', NEW."PR_LEN_PR_ID",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_LEN_Program_Length_Annex" a
+        WHERE
+            a."PR_LEN_ID" = _posit
+        AND
+            a."PR_LEN_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- whether the posit is asserted at the positing time
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT coalesce((
+            SELECT
+                a."PR_LEN_Reliability" = 1
+            FROM
+                public."PR_LEN_Program_Length_Annex" a
+            WHERE
+                a."PR_LEN_ID" = _posit
+            AND
+                a."PR_LEN_PositedAt" <= _positing
+            ORDER BY
+                a."PR_LEN_PositedAt" DESC
+            LIMIT 1
+        ), false) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."PR_LEN_Program_Length_Annex" (
+            "Metadata_PR_LEN",
+            "PR_LEN_ID",
+            "PR_LEN_PositedAt",
+            "PR_LEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion that is asserted already, at the positing time, is skipped unless the attribute is assertive
+    -- an assertion corrects what is asserted at the positing time for the same entity (and changing time), when that has
+    -- another value: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."PR_LEN_ID"
+        FROM
+            public."PR_LEN_Program_Length_Posit" p
+        WHERE
+            p."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+        AND
+            p."PR_LEN_ChangedAt" = _changing
+        AND
+            NOT public."eq_PR_LEN_Program_Length"(p."PR_LEN_Program_Length", NEW."PR_LEN_Program_Length")
+        AND
+            coalesce((
+                SELECT
+                    a."PR_LEN_Reliability" = 1
+                FROM
+                    public."PR_LEN_Program_Length_Annex" a
+                WHERE
+                    a."PR_LEN_ID" = p."PR_LEN_ID"
+                AND
+                    a."PR_LEN_PositedAt" <= _positing
+                ORDER BY
+                    a."PR_LEN_PositedAt" DESC
+                LIMIT 1
+            ), false)
+    LOOP
+        INSERT INTO public."PR_LEN_Program_Length_Annex" (
+            "Metadata_PR_LEN",
+            "PR_LEN_ID",
+            "PR_LEN_PositedAt",
+            "PR_LEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the same value as the version before it, which is asserted at the positing time, is a restatement
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."PR_LEN_Program_Length"
+            FROM
+                public."PR_LEN_Program_Length_Posit" p
+            WHERE
+                p."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+            AND
+                p."PR_LEN_ChangedAt" < _changing
+            AND
+                coalesce((
+                    SELECT
+                        a."PR_LEN_Reliability" = 1
+                    FROM
+                        public."PR_LEN_Program_Length_Annex" a
+                    WHERE
+                        a."PR_LEN_ID" = p."PR_LEN_ID"
+                    AND
+                        a."PR_LEN_PositedAt" <= _positing
+                    ORDER BY
+                        a."PR_LEN_PositedAt" DESC
+                    LIMIT 1
+                ), false)
+            ORDER BY
+                p."PR_LEN_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            public."eq_PR_LEN_Program_Length"(pre."PR_LEN_Program_Length", NEW."PR_LEN_Program_Length")
+    ) THEN
+        -- (an idempotent attribute does not store it)
+        RETURN NULL;
+    END IF;
+    -- the same value as the version after it makes that version a restatement
+    SELECT
+        f."PR_LEN_ID"
+    INTO
+        _following
+    FROM
+        public."PR_LEN_Program_Length_Posit" f
+    WHERE
+        f."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+    AND
+        f."PR_LEN_ChangedAt" > _changing
+    AND
+        coalesce((
+            SELECT
+                a."PR_LEN_Reliability" = 1
+            FROM
+                public."PR_LEN_Program_Length_Annex" a
+            WHERE
+                a."PR_LEN_ID" = f."PR_LEN_ID"
+            AND
+                a."PR_LEN_PositedAt" <= _positing
+            ORDER BY
+                a."PR_LEN_PositedAt" DESC
+            LIMIT 1
+        ), false)
+    ORDER BY
+        f."PR_LEN_ChangedAt" ASC
+    LIMIT 1;
+    IF _following IS NOT NULL AND public."eq_PR_LEN_Program_Length"((
+        SELECT x."PR_LEN_Program_Length" FROM public."PR_LEN_Program_Length_Posit" x WHERE x."PR_LEN_ID" = _following
+    ), NEW."PR_LEN_Program_Length") THEN
+        -- (an idempotent attribute retracts it)
+        INSERT INTO public."PR_LEN_Program_Length_Annex" (
+            "Metadata_PR_LEN",
+            "PR_LEN_ID",
+            "PR_LEN_PositedAt",
+            "PR_LEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", 0),
+            _following,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."PR_LEN_Program_Length_Posit" (
+            "PR_LEN_PR_ID",
+            "PR_LEN_ChangedAt",
+            "PR_LEN_Program_Length"
+        )
+        VALUES (
+            NEW."PR_LEN_PR_ID",
+            _changing,
+            NEW."PR_LEN_Program_Length"
+        )
+        RETURNING "PR_LEN_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."PR_LEN_Program_Length_Annex" (
+        "Metadata_PR_LEN",
+        "PR_LEN_ID",
+        "PR_LEN_PositedAt",
+        "PR_LEN_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_PR_LEN", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_LEN_Program_Length" ON public."PR_LEN_Program_Length";
+CREATE TRIGGER "it_PR_LEN_Program_Length"
+INSTEAD OF INSERT ON public."PR_LEN_Program_Length"
+FOR EACH ROW EXECUTE FUNCTION public."it_PR_LEN_Program_Length"();
+-- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the assembled views of the attributes (whose triggers keep the
+-- posit and annex tables) in a consistent way. Default values are used for some columns if not provided by the
+-- corresponding SQL statements: the changing and positing times are now, the reliability is 1.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates (the triggers of the attributes see to that).
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_Stage instead of INSERT trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lST_Stage"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    _id := NEW."ST_ID";
+    IF _id IS NULL THEN
+        INSERT INTO public."ST_Stage" (
+            "Metadata_ST"
+        )
+        VALUES (
+            NEW."Metadata_ST"
+        )
+        RETURNING "ST_ID" INTO _id;
+    END IF;
+    IF NEW."ST_NAM_Stage_Name" IS NOT NULL THEN
+        INSERT INTO public."ST_NAM_Stage_Name" (
+            "Metadata_ST_NAM",
+            "ST_NAM_ST_ID",
+            "ST_NAM_Stage_Name",
+            "ST_NAM_ChangedAt",
+            "ST_NAM_PositedAt",
+            "ST_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_NAM", NEW."Metadata_ST"),
+            coalesce(NEW."ST_NAM_ST_ID", _id),
+            NEW."ST_NAM_Stage_Name",
+            coalesce(NEW."ST_NAM_ChangedAt", _now),
+            coalesce(NEW."ST_NAM_PositedAt", _now),
+            coalesce(NEW."ST_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."ST_LOC_Stage_Location" IS NOT NULL THEN
+        INSERT INTO public."ST_LOC_Stage_Location" (
+            "Metadata_ST_LOC",
+            "ST_LOC_ST_ID",
+            "ST_LOC_Stage_Location",
+            "ST_LOC_PositedAt",
+            "ST_LOC_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_LOC", NEW."Metadata_ST"),
+            coalesce(NEW."ST_LOC_ST_ID", _id),
+            NEW."ST_LOC_Stage_Location",
+            coalesce(NEW."ST_LOC_PositedAt", _now),
+            coalesce(NEW."ST_LOC_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _AVG := NEW."ST_AVG_UTL_ID";
+    IF _AVG IS NULL AND NEW."ST_AVG_UTL_Utilization" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _AVG
+        FROM
+            public."UTL_Utilization" k
+        WHERE
+            k."UTL_Utilization" = NEW."ST_AVG_UTL_Utilization"
+        LIMIT 1;
+    END IF;
+    IF _AVG IS NOT NULL THEN
+        INSERT INTO public."ST_AVG_Stage_Average" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ST_ID",
+            "ST_AVG_UTL_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_PositedAt",
+            "ST_AVG_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", NEW."Metadata_ST"),
+            coalesce(NEW."ST_AVG_ST_ID", _id),
+            _AVG,
+            coalesce(NEW."ST_AVG_ChangedAt", _now),
+            coalesce(NEW."ST_AVG_PositedAt", _now),
+            coalesce(NEW."ST_AVG_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _MIN := NEW."ST_MIN_UTL_ID";
+    IF _MIN IS NULL AND NEW."ST_MIN_UTL_Utilization" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _MIN
+        FROM
+            public."UTL_Utilization" k
+        WHERE
+            k."UTL_Utilization" = NEW."ST_MIN_UTL_Utilization"
+        LIMIT 1;
+    END IF;
+    IF _MIN IS NOT NULL THEN
+        INSERT INTO public."ST_MIN_Stage_Minimum" (
+            "Metadata_ST_MIN",
+            "ST_MIN_ST_ID",
+            "ST_MIN_UTL_ID",
+            "ST_MIN_PositedAt",
+            "ST_MIN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_MIN", NEW."Metadata_ST"),
+            coalesce(NEW."ST_MIN_ST_ID", _id),
+            _MIN,
+            coalesce(NEW."ST_MIN_PositedAt", _now),
+            coalesce(NEW."ST_MIN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lST_Stage" ON public."lST_Stage";
+CREATE TRIGGER "it_lST_Stage"
+INSTEAD OF INSERT ON public."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION public."it_lST_Stage"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lST_Stage instead of UPDATE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lST_Stage"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    IF NEW."ST_ID" IS DISTINCT FROM OLD."ST_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_ID" IS DISTINCT FROM OLD."ST_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_ST_ID" IS DISTINCT FROM OLD."ST_NAM_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_NAM_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_NAM_Stage_Name, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_NAM_Reliability" IS DISTINCT FROM OLD."ST_NAM_Reliability" THEN NEW."ST_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt" THEN NEW."ST_NAM_PositedAt"
+        WHEN NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" AND NEW."ST_NAM_Stage_Name" IS NULL THEN NEW."ST_NAM_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."ST_NAM_Stage_Name" IS DISTINCT FROM OLD."ST_NAM_Stage_Name"
+    OR NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt"
+    OR NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt"
+    OR NEW."ST_NAM_Reliability" IS DISTINCT FROM OLD."ST_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."ST_NAM_Stage_Name" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_NAM_Stage_Name" IS NULL
+            OR NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt"
+            OR NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt"
+            OR OLD."ST_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_NAM_Stage_Name" <> NEW."ST_NAM_Stage_Name"
+            THEN
+                INSERT INTO public."ST_NAM_Stage_Name" (
+                    "Metadata_ST_NAM",
+                    "ST_NAM_ST_ID",
+                    "ST_NAM_Stage_Name",
+                    "ST_NAM_ChangedAt",
+                    "ST_NAM_PositedAt",
+                    "ST_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_NAM" IS NOT DISTINCT FROM OLD."Metadata_ST_NAM"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_NAM"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_NAM_ST_ID", NEW."ST_ID"),
+                    NEW."ST_NAM_Stage_Name",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" THEN NEW."ST_NAM_ChangedAt"
+                        WHEN OLD."ST_NAM_Stage_Name" = NEW."ST_NAM_Stage_Name" THEN NEW."ST_NAM_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."ST_NAM_Stage_Name" IS NULL AND OLD."ST_NAM_Stage_Name" IS NOT NULL THEN
+            INSERT INTO public."ST_NAM_Stage_Name" (
+                "Metadata_ST_NAM",
+                "ST_NAM_ST_ID",
+                "ST_NAM_Stage_Name",
+                "ST_NAM_ChangedAt",
+                "ST_NAM_PositedAt",
+                "ST_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_NAM" IS NOT DISTINCT FROM OLD."Metadata_ST_NAM"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_NAM"
+                    END, NEW."Metadata_ST"),
+                p."ST_NAM_ST_ID",
+                p."ST_NAM_Stage_Name",
+                p."ST_NAM_ChangedAt",
+                _positing,
+                0
+            FROM
+                public."ST_NAM_Stage_Name_Posit" p
+            WHERE
+                p."ST_NAM_ID" = OLD."ST_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_LOC_ID" IS DISTINCT FROM OLD."ST_LOC_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_LOC_ID is not updatable.';
+    END IF;
+    IF NEW."ST_LOC_ST_ID" IS DISTINCT FROM OLD."ST_LOC_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_LOC_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_LOC_Stage_Location, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_LOC_Reliability" IS DISTINCT FROM OLD."ST_LOC_Reliability" THEN NEW."ST_LOC_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_LOC_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt" THEN NEW."ST_LOC_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."ST_LOC_Stage_Location" IS DISTINCT FROM OLD."ST_LOC_Stage_Location"
+    OR NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt"
+    OR NEW."ST_LOC_Reliability" IS DISTINCT FROM OLD."ST_LOC_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."ST_LOC_Stage_Location" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_LOC_Stage_Location" IS NULL
+            OR NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt"
+            OR OLD."ST_LOC_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR md5(OLD."ST_LOC_Stage_Location"::text) <> md5(NEW."ST_LOC_Stage_Location"::text)
+            THEN
+                INSERT INTO public."ST_LOC_Stage_Location" (
+                    "Metadata_ST_LOC",
+                    "ST_LOC_ST_ID",
+                    "ST_LOC_Stage_Location",
+                    "ST_LOC_PositedAt",
+                    "ST_LOC_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_LOC" IS NOT DISTINCT FROM OLD."Metadata_ST_LOC"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_LOC"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_LOC_ST_ID", NEW."ST_ID"),
+                    NEW."ST_LOC_Stage_Location",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."ST_LOC_Stage_Location" IS NULL AND OLD."ST_LOC_Stage_Location" IS NOT NULL THEN
+            INSERT INTO public."ST_LOC_Stage_Location" (
+                "Metadata_ST_LOC",
+                "ST_LOC_ST_ID",
+                "ST_LOC_Stage_Location",
+                "ST_LOC_PositedAt",
+                "ST_LOC_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_LOC" IS NOT DISTINCT FROM OLD."Metadata_ST_LOC"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_LOC"
+                    END, NEW."Metadata_ST"),
+                p."ST_LOC_ST_ID",
+                p."ST_LOC_Stage_Location",
+                _positing,
+                0
+            FROM
+                public."ST_LOC_Stage_Location_Posit" p
+            WHERE
+                p."ST_LOC_ID" = OLD."ST_LOC_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_AVG_ID" IS DISTINCT FROM OLD."ST_AVG_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_AVG_ID is not updatable.';
+    END IF;
+    IF NEW."ST_AVG_ST_ID" IS DISTINCT FROM OLD."ST_AVG_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_AVG_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_AVG_Stage_Average, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_AVG_Reliability" IS DISTINCT FROM OLD."ST_AVG_Reliability" THEN NEW."ST_AVG_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_AVG_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt" THEN NEW."ST_AVG_PositedAt"
+        WHEN NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" AND NEW."ST_AVG_UTL_ID" IS NULL THEN NEW."ST_AVG_ChangedAt"
+        ELSE _now
+    END;
+    _AVG := NEW."ST_AVG_UTL_ID";
+    IF _AVG IS NOT DISTINCT FROM OLD."ST_AVG_UTL_ID" AND NEW."ST_AVG_UTL_Utilization" IS DISTINCT FROM OLD."ST_AVG_UTL_Utilization" THEN
+        _AVG := NULL;
+        IF NEW."ST_AVG_UTL_Utilization" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _AVG
+            FROM
+                public."UTL_Utilization" k
+            WHERE
+                k."UTL_Utilization" = NEW."ST_AVG_UTL_Utilization"
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."ST_AVG_UTL_ID" IS DISTINCT FROM OLD."ST_AVG_UTL_ID"
+    OR NEW."ST_AVG_UTL_Utilization" IS DISTINCT FROM OLD."ST_AVG_UTL_Utilization"
+    OR NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt"
+    OR NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt"
+    OR NEW."ST_AVG_Reliability" IS DISTINCT FROM OLD."ST_AVG_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _AVG IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_AVG_UTL_ID" IS NULL
+            OR NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt"
+            OR NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt"
+            OR OLD."ST_AVG_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_AVG_UTL_ID" <> _AVG
+            THEN
+                INSERT INTO public."ST_AVG_Stage_Average" (
+                    "Metadata_ST_AVG",
+                    "ST_AVG_ST_ID",
+                    "ST_AVG_UTL_ID",
+                    "ST_AVG_ChangedAt",
+                    "ST_AVG_PositedAt",
+                    "ST_AVG_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_AVG" IS NOT DISTINCT FROM OLD."Metadata_ST_AVG"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_AVG"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_AVG_ST_ID", NEW."ST_ID"),
+                    _AVG,
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" THEN NEW."ST_AVG_ChangedAt"
+                        WHEN OLD."ST_AVG_UTL_ID" = _AVG THEN NEW."ST_AVG_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."ST_AVG_UTL_ID" IS NOT NULL AND (
+            NEW."ST_AVG_UTL_ID" IS NULL OR (
+                NEW."ST_AVG_UTL_ID" = OLD."ST_AVG_UTL_ID"
+                AND NEW."ST_AVG_UTL_Utilization" IS NULL AND OLD."ST_AVG_UTL_Utilization" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO public."ST_AVG_Stage_Average" (
+                "Metadata_ST_AVG",
+                "ST_AVG_ST_ID",
+                "ST_AVG_UTL_ID",
+                "ST_AVG_ChangedAt",
+                "ST_AVG_PositedAt",
+                "ST_AVG_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_AVG" IS NOT DISTINCT FROM OLD."Metadata_ST_AVG"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_AVG"
+                    END, NEW."Metadata_ST"),
+                p."ST_AVG_ST_ID",
+                p."ST_AVG_UTL_ID",
+                p."ST_AVG_ChangedAt",
+                _positing,
+                0
+            FROM
+                public."ST_AVG_Stage_Average_Posit" p
+            WHERE
+                p."ST_AVG_ID" = OLD."ST_AVG_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_MIN_ID" IS DISTINCT FROM OLD."ST_MIN_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_MIN_ID is not updatable.';
+    END IF;
+    IF NEW."ST_MIN_ST_ID" IS DISTINCT FROM OLD."ST_MIN_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_MIN_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_MIN_Stage_Minimum, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_MIN_Reliability" IS DISTINCT FROM OLD."ST_MIN_Reliability" THEN NEW."ST_MIN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_MIN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt" THEN NEW."ST_MIN_PositedAt"
+        ELSE _now
+    END;
+    _MIN := NEW."ST_MIN_UTL_ID";
+    IF _MIN IS NOT DISTINCT FROM OLD."ST_MIN_UTL_ID" AND NEW."ST_MIN_UTL_Utilization" IS DISTINCT FROM OLD."ST_MIN_UTL_Utilization" THEN
+        _MIN := NULL;
+        IF NEW."ST_MIN_UTL_Utilization" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _MIN
+            FROM
+                public."UTL_Utilization" k
+            WHERE
+                k."UTL_Utilization" = NEW."ST_MIN_UTL_Utilization"
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."ST_MIN_UTL_ID" IS DISTINCT FROM OLD."ST_MIN_UTL_ID"
+    OR NEW."ST_MIN_UTL_Utilization" IS DISTINCT FROM OLD."ST_MIN_UTL_Utilization"
+    OR NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt"
+    OR NEW."ST_MIN_Reliability" IS DISTINCT FROM OLD."ST_MIN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _MIN IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_MIN_UTL_ID" IS NULL
+            OR NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt"
+            OR OLD."ST_MIN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_MIN_UTL_ID" <> _MIN
+            THEN
+                INSERT INTO public."ST_MIN_Stage_Minimum" (
+                    "Metadata_ST_MIN",
+                    "ST_MIN_ST_ID",
+                    "ST_MIN_UTL_ID",
+                    "ST_MIN_PositedAt",
+                    "ST_MIN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_MIN" IS NOT DISTINCT FROM OLD."Metadata_ST_MIN"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_MIN"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_MIN_ST_ID", NEW."ST_ID"),
+                    _MIN,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."ST_MIN_UTL_ID" IS NOT NULL AND (
+            NEW."ST_MIN_UTL_ID" IS NULL OR (
+                NEW."ST_MIN_UTL_ID" = OLD."ST_MIN_UTL_ID"
+                AND NEW."ST_MIN_UTL_Utilization" IS NULL AND OLD."ST_MIN_UTL_Utilization" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO public."ST_MIN_Stage_Minimum" (
+                "Metadata_ST_MIN",
+                "ST_MIN_ST_ID",
+                "ST_MIN_UTL_ID",
+                "ST_MIN_PositedAt",
+                "ST_MIN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_MIN" IS NOT DISTINCT FROM OLD."Metadata_ST_MIN"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_MIN"
+                    END, NEW."Metadata_ST"),
+                p."ST_MIN_ST_ID",
+                p."ST_MIN_UTL_ID",
+                _positing,
+                0
+            FROM
+                public."ST_MIN_Stage_Minimum_Posit" p
+            WHERE
+                p."ST_MIN_ID" = OLD."ST_MIN_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lST_Stage" ON public."lST_Stage";
+CREATE TRIGGER "ut_lST_Stage"
+INSTEAD OF UPDATE ON public."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lST_Stage"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_Stage instead of DELETE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lST_Stage"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of ST_NAM_Stage_Name is retracted
+    INSERT INTO public."ST_NAM_Stage_Name_Annex" (
+        "Metadata_ST_NAM",
+        "ST_NAM_ID",
+        "ST_NAM_PositedAt",
+        "ST_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_NAM",
+        OLD."ST_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_LOC_Stage_Location is retracted
+    INSERT INTO public."ST_LOC_Stage_Location_Annex" (
+        "Metadata_ST_LOC",
+        "ST_LOC_ID",
+        "ST_LOC_PositedAt",
+        "ST_LOC_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_LOC",
+        OLD."ST_LOC_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_LOC_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_AVG_Stage_Average is retracted
+    INSERT INTO public."ST_AVG_Stage_Average_Annex" (
+        "Metadata_ST_AVG",
+        "ST_AVG_ID",
+        "ST_AVG_PositedAt",
+        "ST_AVG_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_AVG",
+        OLD."ST_AVG_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_AVG_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_MIN_Stage_Minimum is retracted
+    INSERT INTO public."ST_MIN_Stage_Minimum_Annex" (
+        "Metadata_ST_MIN",
+        "ST_MIN_ID",
+        "ST_MIN_PositedAt",
+        "ST_MIN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_MIN",
+        OLD."ST_MIN_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_MIN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lST_Stage" ON public."lST_Stage";
+CREATE TRIGGER "dt_lST_Stage"
+INSTEAD OF DELETE ON public."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lST_Stage"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_Actor instead of INSERT trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    _id := NEW."AC_ID";
+    IF _id IS NULL THEN
+        INSERT INTO public."AC_Actor" (
+            "Metadata_AC"
+        )
+        VALUES (
+            NEW."Metadata_AC"
+        )
+        RETURNING "AC_ID" INTO _id;
+    END IF;
+    IF NEW."AC_NAM_Actor_Name" IS NOT NULL THEN
+        INSERT INTO public."AC_NAM_Actor_Name" (
+            "Metadata_AC_NAM",
+            "AC_NAM_AC_ID",
+            "AC_NAM_Actor_Name",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_PositedAt",
+            "AC_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_NAM", NEW."Metadata_AC"),
+            coalesce(NEW."AC_NAM_AC_ID", _id),
+            NEW."AC_NAM_Actor_Name",
+            coalesce(NEW."AC_NAM_ChangedAt", _now),
+            coalesce(NEW."AC_NAM_PositedAt", _now),
+            coalesce(NEW."AC_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _GEN := NEW."AC_GEN_GEN_ID";
+    IF _GEN IS NULL AND NEW."AC_GEN_GEN_Gender" IS NOT NULL THEN
+        SELECT
+            k."GEN_ID"
+        INTO
+            _GEN
+        FROM
+            public."GEN_Gender" k
+        WHERE
+            k."GEN_Gender" = NEW."AC_GEN_GEN_Gender"
+        LIMIT 1;
+    END IF;
+    IF _GEN IS NOT NULL THEN
+        INSERT INTO public."AC_GEN_Actor_Gender" (
+            "Metadata_AC_GEN",
+            "AC_GEN_AC_ID",
+            "AC_GEN_GEN_ID",
+            "AC_GEN_PositedAt",
+            "AC_GEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_GEN", NEW."Metadata_AC"),
+            coalesce(NEW."AC_GEN_AC_ID", _id),
+            _GEN,
+            coalesce(NEW."AC_GEN_PositedAt", _now),
+            coalesce(NEW."AC_GEN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _PLV := NEW."AC_PLV_PLV_ID";
+    IF _PLV IS NULL AND NEW."AC_PLV_PLV_ProfessionalLevel" IS NOT NULL THEN
+        SELECT
+            k."PLV_ID"
+        INTO
+            _PLV
+        FROM
+            public."PLV_ProfessionalLevel" k
+        WHERE
+            k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_ProfessionalLevel"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _PLV IS NOT NULL THEN
+        INSERT INTO public."AC_PLV_Actor_ProfessionalLevel" (
+            "Metadata_AC_PLV",
+            "AC_PLV_AC_ID",
+            "AC_PLV_PLV_ID",
+            "AC_PLV_ChangedAt",
+            "AC_PLV_PositedAt",
+            "AC_PLV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_PLV", NEW."Metadata_AC"),
+            coalesce(NEW."AC_PLV_AC_ID", _id),
+            _PLV,
+            coalesce(NEW."AC_PLV_ChangedAt", _now),
+            coalesce(NEW."AC_PLV_PositedAt", _now),
+            coalesce(NEW."AC_PLV_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_Actor" ON public."lAC_Actor";
+CREATE TRIGGER "it_lAC_Actor"
+INSTEAD OF INSERT ON public."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION public."it_lAC_Actor"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_Actor instead of UPDATE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    IF NEW."AC_ID" IS DISTINCT FROM OLD."AC_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_ID" IS DISTINCT FROM OLD."AC_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_AC_ID" IS DISTINCT FROM OLD."AC_NAM_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_NAM_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_NAM_Actor_Name, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_NAM_Reliability" IS DISTINCT FROM OLD."AC_NAM_Reliability" THEN NEW."AC_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt" THEN NEW."AC_NAM_PositedAt"
+        WHEN NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" AND NEW."AC_NAM_Actor_Name" IS NULL THEN NEW."AC_NAM_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."AC_NAM_Actor_Name" IS DISTINCT FROM OLD."AC_NAM_Actor_Name"
+    OR NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt"
+    OR NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt"
+    OR NEW."AC_NAM_Reliability" IS DISTINCT FROM OLD."AC_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."AC_NAM_Actor_Name" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_NAM_Actor_Name" IS NULL
+            OR NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt"
+            OR NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt"
+            OR OLD."AC_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_NAM_Actor_Name" <> NEW."AC_NAM_Actor_Name"
+            THEN
+                INSERT INTO public."AC_NAM_Actor_Name" (
+                    "Metadata_AC_NAM",
+                    "AC_NAM_AC_ID",
+                    "AC_NAM_Actor_Name",
+                    "AC_NAM_ChangedAt",
+                    "AC_NAM_PositedAt",
+                    "AC_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_NAM" IS NOT DISTINCT FROM OLD."Metadata_AC_NAM"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_NAM"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_NAM_AC_ID", NEW."AC_ID"),
+                    NEW."AC_NAM_Actor_Name",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" THEN NEW."AC_NAM_ChangedAt"
+                        WHEN OLD."AC_NAM_Actor_Name" = NEW."AC_NAM_Actor_Name" THEN NEW."AC_NAM_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."AC_NAM_Actor_Name" IS NULL AND OLD."AC_NAM_Actor_Name" IS NOT NULL THEN
+            INSERT INTO public."AC_NAM_Actor_Name" (
+                "Metadata_AC_NAM",
+                "AC_NAM_AC_ID",
+                "AC_NAM_Actor_Name",
+                "AC_NAM_ChangedAt",
+                "AC_NAM_PositedAt",
+                "AC_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_NAM" IS NOT DISTINCT FROM OLD."Metadata_AC_NAM"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_NAM"
+                    END, NEW."Metadata_AC"),
+                p."AC_NAM_AC_ID",
+                p."AC_NAM_Actor_Name",
+                p."AC_NAM_ChangedAt",
+                _positing,
+                0
+            FROM
+                public."AC_NAM_Actor_Name_Posit" p
+            WHERE
+                p."AC_NAM_ID" = OLD."AC_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."AC_GEN_ID" IS DISTINCT FROM OLD."AC_GEN_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_GEN_ID is not updatable.';
+    END IF;
+    IF NEW."AC_GEN_AC_ID" IS DISTINCT FROM OLD."AC_GEN_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_GEN_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_GEN_Actor_Gender, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_GEN_Reliability" IS DISTINCT FROM OLD."AC_GEN_Reliability" THEN NEW."AC_GEN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_GEN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt" THEN NEW."AC_GEN_PositedAt"
+        ELSE _now
+    END;
+    _GEN := NEW."AC_GEN_GEN_ID";
+    IF _GEN IS NOT DISTINCT FROM OLD."AC_GEN_GEN_ID" AND NEW."AC_GEN_GEN_Gender" IS DISTINCT FROM OLD."AC_GEN_GEN_Gender" THEN
+        _GEN := NULL;
+        IF NEW."AC_GEN_GEN_Gender" IS NOT NULL THEN
+            SELECT
+                k."GEN_ID"
+            INTO
+                _GEN
+            FROM
+                public."GEN_Gender" k
+            WHERE
+                k."GEN_Gender" = NEW."AC_GEN_GEN_Gender"
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."AC_GEN_GEN_ID" IS DISTINCT FROM OLD."AC_GEN_GEN_ID"
+    OR NEW."AC_GEN_GEN_Gender" IS DISTINCT FROM OLD."AC_GEN_GEN_Gender"
+    OR NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt"
+    OR NEW."AC_GEN_Reliability" IS DISTINCT FROM OLD."AC_GEN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _GEN IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_GEN_GEN_ID" IS NULL
+            OR NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt"
+            OR OLD."AC_GEN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_GEN_GEN_ID" <> _GEN
+            THEN
+                INSERT INTO public."AC_GEN_Actor_Gender" (
+                    "Metadata_AC_GEN",
+                    "AC_GEN_AC_ID",
+                    "AC_GEN_GEN_ID",
+                    "AC_GEN_PositedAt",
+                    "AC_GEN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_GEN" IS NOT DISTINCT FROM OLD."Metadata_AC_GEN"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_GEN"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_GEN_AC_ID", NEW."AC_ID"),
+                    _GEN,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."AC_GEN_GEN_ID" IS NOT NULL AND (
+            NEW."AC_GEN_GEN_ID" IS NULL OR (
+                NEW."AC_GEN_GEN_ID" = OLD."AC_GEN_GEN_ID"
+                AND NEW."AC_GEN_GEN_Gender" IS NULL AND OLD."AC_GEN_GEN_Gender" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO public."AC_GEN_Actor_Gender" (
+                "Metadata_AC_GEN",
+                "AC_GEN_AC_ID",
+                "AC_GEN_GEN_ID",
+                "AC_GEN_PositedAt",
+                "AC_GEN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_GEN" IS NOT DISTINCT FROM OLD."Metadata_AC_GEN"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_GEN"
+                    END, NEW."Metadata_AC"),
+                p."AC_GEN_AC_ID",
+                p."AC_GEN_GEN_ID",
+                _positing,
+                0
+            FROM
+                public."AC_GEN_Actor_Gender_Posit" p
+            WHERE
+                p."AC_GEN_ID" = OLD."AC_GEN_ID";
+        END IF;
+    END IF;
+    IF NEW."AC_PLV_ID" IS DISTINCT FROM OLD."AC_PLV_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_PLV_ID is not updatable.';
+    END IF;
+    IF NEW."AC_PLV_AC_ID" IS DISTINCT FROM OLD."AC_PLV_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_PLV_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_PLV_Actor_ProfessionalLevel, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_PLV_Reliability" IS DISTINCT FROM OLD."AC_PLV_Reliability" THEN NEW."AC_PLV_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_PLV_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt" THEN NEW."AC_PLV_PositedAt"
+        WHEN NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" AND NEW."AC_PLV_PLV_ID" IS NULL THEN NEW."AC_PLV_ChangedAt"
+        ELSE _now
+    END;
+    _PLV := NEW."AC_PLV_PLV_ID";
+    IF _PLV IS NOT DISTINCT FROM OLD."AC_PLV_PLV_ID" AND NEW."AC_PLV_PLV_ProfessionalLevel" IS DISTINCT FROM OLD."AC_PLV_PLV_ProfessionalLevel" THEN
+        _PLV := NULL;
+        IF NEW."AC_PLV_PLV_ProfessionalLevel" IS NOT NULL THEN
+            SELECT
+                k."PLV_ID"
+            INTO
+                _PLV
+            FROM
+                public."PLV_ProfessionalLevel" k
+            WHERE
+                k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_ProfessionalLevel"::text), 'hex')
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."AC_PLV_PLV_ID" IS DISTINCT FROM OLD."AC_PLV_PLV_ID"
+    OR NEW."AC_PLV_PLV_ProfessionalLevel" IS DISTINCT FROM OLD."AC_PLV_PLV_ProfessionalLevel"
+    OR NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt"
+    OR NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt"
+    OR NEW."AC_PLV_Reliability" IS DISTINCT FROM OLD."AC_PLV_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _PLV IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_PLV_PLV_ID" IS NULL
+            OR NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt"
+            OR NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt"
+            OR OLD."AC_PLV_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_PLV_PLV_ID" <> _PLV
+            THEN
+                INSERT INTO public."AC_PLV_Actor_ProfessionalLevel" (
+                    "Metadata_AC_PLV",
+                    "AC_PLV_AC_ID",
+                    "AC_PLV_PLV_ID",
+                    "AC_PLV_ChangedAt",
+                    "AC_PLV_PositedAt",
+                    "AC_PLV_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_PLV" IS NOT DISTINCT FROM OLD."Metadata_AC_PLV"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_PLV"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_PLV_AC_ID", NEW."AC_ID"),
+                    _PLV,
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" THEN NEW."AC_PLV_ChangedAt"
+                        WHEN OLD."AC_PLV_PLV_ID" = _PLV THEN NEW."AC_PLV_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."AC_PLV_PLV_ID" IS NOT NULL AND (
+            NEW."AC_PLV_PLV_ID" IS NULL OR (
+                NEW."AC_PLV_PLV_ID" = OLD."AC_PLV_PLV_ID"
+                AND NEW."AC_PLV_PLV_ProfessionalLevel" IS NULL AND OLD."AC_PLV_PLV_ProfessionalLevel" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO public."AC_PLV_Actor_ProfessionalLevel" (
+                "Metadata_AC_PLV",
+                "AC_PLV_AC_ID",
+                "AC_PLV_PLV_ID",
+                "AC_PLV_ChangedAt",
+                "AC_PLV_PositedAt",
+                "AC_PLV_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_PLV" IS NOT DISTINCT FROM OLD."Metadata_AC_PLV"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_PLV"
+                    END, NEW."Metadata_AC"),
+                p."AC_PLV_AC_ID",
+                p."AC_PLV_PLV_ID",
+                p."AC_PLV_ChangedAt",
+                _positing,
+                0
+            FROM
+                public."AC_PLV_Actor_ProfessionalLevel_Posit" p
+            WHERE
+                p."AC_PLV_ID" = OLD."AC_PLV_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_Actor" ON public."lAC_Actor";
+CREATE TRIGGER "ut_lAC_Actor"
+INSTEAD OF UPDATE ON public."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lAC_Actor"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_Actor instead of DELETE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of AC_NAM_Actor_Name is retracted
+    INSERT INTO public."AC_NAM_Actor_Name_Annex" (
+        "Metadata_AC_NAM",
+        "AC_NAM_ID",
+        "AC_NAM_PositedAt",
+        "AC_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_NAM",
+        OLD."AC_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of AC_GEN_Actor_Gender is retracted
+    INSERT INTO public."AC_GEN_Actor_Gender_Annex" (
+        "Metadata_AC_GEN",
+        "AC_GEN_ID",
+        "AC_GEN_PositedAt",
+        "AC_GEN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_GEN",
+        OLD."AC_GEN_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_GEN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of AC_PLV_Actor_ProfessionalLevel is retracted
+    INSERT INTO public."AC_PLV_Actor_ProfessionalLevel_Annex" (
+        "Metadata_AC_PLV",
+        "AC_PLV_ID",
+        "AC_PLV_PositedAt",
+        "AC_PLV_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_PLV",
+        OLD."AC_PLV_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_PLV_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_Actor" ON public."lAC_Actor";
+CREATE TRIGGER "dt_lAC_Actor"
+INSTEAD OF DELETE ON public."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lAC_Actor"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_Program instead of INSERT trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lPR_Program"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+BEGIN
+    _id := NEW."PR_ID";
+    IF _id IS NULL THEN
+        INSERT INTO public."PR_Program" (
+            "Metadata_PR"
+        )
+        VALUES (
+            NEW."Metadata_PR"
+        )
+        RETURNING "PR_ID" INTO _id;
+    END IF;
+    IF NEW."PR_NAM_Program_Name" IS NOT NULL THEN
+        INSERT INTO public."PR_NAM_Program_Name" (
+            "Metadata_PR_NAM",
+            "PR_NAM_PR_ID",
+            "PR_NAM_Program_Name",
+            "PR_NAM_PositedAt",
+            "PR_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_NAM", NEW."Metadata_PR"),
+            coalesce(NEW."PR_NAM_PR_ID", _id),
+            NEW."PR_NAM_Program_Name",
+            coalesce(NEW."PR_NAM_PositedAt", _now),
+            coalesce(NEW."PR_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."PR_LEN_Program_Length" IS NOT NULL THEN
+        INSERT INTO public."PR_LEN_Program_Length" (
+            "Metadata_PR_LEN",
+            "PR_LEN_PR_ID",
+            "PR_LEN_Program_Length",
+            "PR_LEN_ChangedAt",
+            "PR_LEN_PositedAt",
+            "PR_LEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", NEW."Metadata_PR"),
+            coalesce(NEW."PR_LEN_PR_ID", _id),
+            NEW."PR_LEN_Program_Length",
+            coalesce(NEW."PR_LEN_ChangedAt", _now),
+            coalesce(NEW."PR_LEN_PositedAt", _now),
+            coalesce(NEW."PR_LEN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lPR_Program" ON public."lPR_Program";
+CREATE TRIGGER "it_lPR_Program"
+INSTEAD OF INSERT ON public."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION public."it_lPR_Program"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_Program instead of UPDATE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lPR_Program"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+BEGIN
+    IF NEW."PR_ID" IS DISTINCT FROM OLD."PR_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_ID" IS DISTINCT FROM OLD."PR_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_PR_ID" IS DISTINCT FROM OLD."PR_NAM_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_NAM_PR_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of PR_NAM_Program_Name, and when it posits
+    _reliability := CASE
+        WHEN NEW."PR_NAM_Reliability" IS DISTINCT FROM OLD."PR_NAM_Reliability" THEN NEW."PR_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."PR_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt" THEN NEW."PR_NAM_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."PR_NAM_Program_Name" IS DISTINCT FROM OLD."PR_NAM_Program_Name"
+    OR NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt"
+    OR NEW."PR_NAM_Reliability" IS DISTINCT FROM OLD."PR_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."PR_NAM_Program_Name" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."PR_NAM_Program_Name" IS NULL
+            OR NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt"
+            OR OLD."PR_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."PR_NAM_Program_Name" <> NEW."PR_NAM_Program_Name"
+            THEN
+                INSERT INTO public."PR_NAM_Program_Name" (
+                    "Metadata_PR_NAM",
+                    "PR_NAM_PR_ID",
+                    "PR_NAM_Program_Name",
+                    "PR_NAM_PositedAt",
+                    "PR_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                             AND NEW."Metadata_PR_NAM" IS NOT DISTINCT FROM OLD."Metadata_PR_NAM"
+                            THEN NEW."Metadata_PR"
+                            ELSE NEW."Metadata_PR_NAM"
+                        END, NEW."Metadata_PR"),
+                    coalesce(NEW."PR_NAM_PR_ID", NEW."PR_ID"),
+                    NEW."PR_NAM_Program_Name",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."PR_NAM_Program_Name" IS NULL AND OLD."PR_NAM_Program_Name" IS NOT NULL THEN
+            INSERT INTO public."PR_NAM_Program_Name" (
+                "Metadata_PR_NAM",
+                "PR_NAM_PR_ID",
+                "PR_NAM_Program_Name",
+                "PR_NAM_PositedAt",
+                "PR_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_NAM" IS NOT DISTINCT FROM OLD."Metadata_PR_NAM"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_NAM"
+                    END, NEW."Metadata_PR"),
+                p."PR_NAM_PR_ID",
+                p."PR_NAM_Program_Name",
+                _positing,
+                0
+            FROM
+                public."PR_NAM_Program_Name_Posit" p
+            WHERE
+                p."PR_NAM_ID" = OLD."PR_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."PR_LEN_ID" IS DISTINCT FROM OLD."PR_LEN_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_LEN_ID is not updatable.';
+    END IF;
+    IF NEW."PR_LEN_PR_ID" IS DISTINCT FROM OLD."PR_LEN_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_LEN_PR_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of PR_LEN_Program_Length, and when it posits
+    _reliability := CASE
+        WHEN NEW."PR_LEN_Reliability" IS DISTINCT FROM OLD."PR_LEN_Reliability" THEN NEW."PR_LEN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."PR_LEN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt" THEN NEW."PR_LEN_PositedAt"
+        WHEN NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" AND NEW."PR_LEN_Program_Length" IS NULL THEN NEW."PR_LEN_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."PR_LEN_Program_Length" IS DISTINCT FROM OLD."PR_LEN_Program_Length"
+    OR NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt"
+    OR NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt"
+    OR NEW."PR_LEN_Reliability" IS DISTINCT FROM OLD."PR_LEN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."PR_LEN_Program_Length" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."PR_LEN_Program_Length" IS NULL
+            OR NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt"
+            OR NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt"
+            OR OLD."PR_LEN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."PR_LEN_Program_Length" <> NEW."PR_LEN_Program_Length"
+            THEN
+                INSERT INTO public."PR_LEN_Program_Length" (
+                    "Metadata_PR_LEN",
+                    "PR_LEN_PR_ID",
+                    "PR_LEN_Program_Length",
+                    "PR_LEN_ChangedAt",
+                    "PR_LEN_PositedAt",
+                    "PR_LEN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                             AND NEW."Metadata_PR_LEN" IS NOT DISTINCT FROM OLD."Metadata_PR_LEN"
+                            THEN NEW."Metadata_PR"
+                            ELSE NEW."Metadata_PR_LEN"
+                        END, NEW."Metadata_PR"),
+                    coalesce(NEW."PR_LEN_PR_ID", NEW."PR_ID"),
+                    NEW."PR_LEN_Program_Length",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" THEN NEW."PR_LEN_ChangedAt"
+                        WHEN OLD."PR_LEN_Program_Length" = NEW."PR_LEN_Program_Length" THEN NEW."PR_LEN_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."PR_LEN_Program_Length" IS NULL AND OLD."PR_LEN_Program_Length" IS NOT NULL THEN
+            INSERT INTO public."PR_LEN_Program_Length" (
+                "Metadata_PR_LEN",
+                "PR_LEN_PR_ID",
+                "PR_LEN_Program_Length",
+                "PR_LEN_ChangedAt",
+                "PR_LEN_PositedAt",
+                "PR_LEN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_LEN" IS NOT DISTINCT FROM OLD."Metadata_PR_LEN"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_LEN"
+                    END, NEW."Metadata_PR"),
+                p."PR_LEN_PR_ID",
+                p."PR_LEN_Program_Length",
+                p."PR_LEN_ChangedAt",
+                _positing,
+                0
+            FROM
+                public."PR_LEN_Program_Length_Posit" p
+            WHERE
+                p."PR_LEN_ID" = OLD."PR_LEN_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lPR_Program" ON public."lPR_Program";
+CREATE TRIGGER "ut_lPR_Program"
+INSTEAD OF UPDATE ON public."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lPR_Program"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_Program instead of DELETE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lPR_Program"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of PR_NAM_Program_Name is retracted
+    INSERT INTO public."PR_NAM_Program_Name_Annex" (
+        "Metadata_PR_NAM",
+        "PR_NAM_ID",
+        "PR_NAM_PositedAt",
+        "PR_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_PR_NAM",
+        OLD."PR_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."PR_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of PR_LEN_Program_Length is retracted
+    INSERT INTO public."PR_LEN_Program_Length_Annex" (
+        "Metadata_PR_LEN",
+        "PR_LEN_ID",
+        "PR_LEN_PositedAt",
+        "PR_LEN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_PR_LEN",
+        OLD."PR_LEN_ID",
+        _now,
+        0
+    WHERE
+        OLD."PR_LEN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lPR_Program" ON public."lPR_Program";
+CREATE TRIGGER "dt_lPR_Program"
+INSTEAD OF DELETE ON public."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lPR_Program"();
+-- NEXUS TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the assembled views of the attributes (whose triggers keep the
+-- posit and annex tables) in a consistent way. Default values are used for some columns if not provided by the
+-- corresponding SQL statements: the changing and positing times are now, the reliability is 1.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates (the triggers of the attributes see to that).
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_Event instead of INSERT trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lEV_Event"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+BEGIN
+    _id := NEW."EV_ID";
+    IF _id IS NULL THEN
+        INSERT INTO public."EV_Event" (
+            "ST_ID_wasHeldAt",
+            "PR_ID_wasPlayed",
+            "ETY_ID_of",
+            "Metadata_EV"
+        )
+        VALUES (
+            NEW."ST_ID_wasHeldAt",
+            NEW."PR_ID_wasPlayed",
+            NEW."ETY_ID_of",
+            NEW."Metadata_EV"
+        )
+        RETURNING "EV_ID" INTO _id;
+    END IF;
+    IF NEW."EV_DAT_Event_Date" IS NOT NULL THEN
+        INSERT INTO public."EV_DAT_Event_Date" (
+            "Metadata_EV_DAT",
+            "EV_DAT_EV_ID",
+            "EV_DAT_Event_Date",
+            "EV_DAT_PositedAt",
+            "EV_DAT_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_DAT", NEW."Metadata_EV"),
+            coalesce(NEW."EV_DAT_EV_ID", _id),
+            NEW."EV_DAT_Event_Date",
+            coalesce(NEW."EV_DAT_PositedAt", _now),
+            coalesce(NEW."EV_DAT_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."EV_AUD_Event_Audience" IS NOT NULL THEN
+        INSERT INTO public."EV_AUD_Event_Audience" (
+            "Metadata_EV_AUD",
+            "EV_AUD_EV_ID",
+            "EV_AUD_Event_Audience",
+            "EV_AUD_PositedAt",
+            "EV_AUD_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_AUD", NEW."Metadata_EV"),
+            coalesce(NEW."EV_AUD_EV_ID", _id),
+            NEW."EV_AUD_Event_Audience",
+            coalesce(NEW."EV_AUD_PositedAt", _now),
+            coalesce(NEW."EV_AUD_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."EV_REV_Event_Revenue" IS NOT NULL THEN
+        INSERT INTO public."EV_REV_Event_Revenue" (
+            "Metadata_EV_REV",
+            "EV_REV_EV_ID",
+            "EV_REV_Event_Revenue",
+            "EV_REV_PositedAt",
+            "EV_REV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_REV", NEW."Metadata_EV"),
+            coalesce(NEW."EV_REV_EV_ID", _id),
+            NEW."EV_REV_Event_Revenue",
+            coalesce(NEW."EV_REV_PositedAt", _now),
+            coalesce(NEW."EV_REV_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lEV_Event" ON public."lEV_Event";
+CREATE TRIGGER "it_lEV_Event"
+INSTEAD OF INSERT ON public."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION public."it_lEV_Event"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lEV_Event instead of UPDATE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lEV_Event"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+BEGIN
+    IF NEW."EV_ID" IS DISTINCT FROM OLD."EV_ID" THEN
+        RAISE EXCEPTION 'The identity column EV_ID is not updatable.';
+    END IF;
+    IF NEW."ST_ID_wasHeldAt" IS DISTINCT FROM OLD."ST_ID_wasHeldAt" THEN
+        RAISE EXCEPTION 'The role column ST_ID_wasHeldAt is not updatable.';
+    END IF;
+    IF NEW."PR_ID_wasPlayed" IS DISTINCT FROM OLD."PR_ID_wasPlayed" THEN
+        RAISE EXCEPTION 'The role column PR_ID_wasPlayed is not updatable.';
+    END IF;
+    IF NEW."ETY_ID_of" IS DISTINCT FROM OLD."ETY_ID_of" THEN
+        RAISE EXCEPTION 'The role column ETY_ID_of is not updatable.';
+    END IF;
+    IF NEW."of_ETY_EventType" IS DISTINCT FROM OLD."of_ETY_EventType" THEN
+        RAISE EXCEPTION 'The role column of_ETY_EventType is not updatable.';
+    END IF;
+    IF NEW."EV_DAT_ID" IS DISTINCT FROM OLD."EV_DAT_ID" THEN
+        RAISE EXCEPTION 'The identity column EV_DAT_ID is not updatable.';
+    END IF;
+    IF NEW."EV_DAT_EV_ID" IS DISTINCT FROM OLD."EV_DAT_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_DAT_EV_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of EV_DAT_Event_Date, and when it posits
+    _reliability := CASE
+        WHEN NEW."EV_DAT_Reliability" IS DISTINCT FROM OLD."EV_DAT_Reliability" THEN NEW."EV_DAT_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."EV_DAT_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."EV_DAT_PositedAt" IS DISTINCT FROM OLD."EV_DAT_PositedAt" THEN NEW."EV_DAT_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."EV_DAT_Event_Date" IS DISTINCT FROM OLD."EV_DAT_Event_Date"
+    OR NEW."EV_DAT_PositedAt" IS DISTINCT FROM OLD."EV_DAT_PositedAt"
+    OR NEW."EV_DAT_Reliability" IS DISTINCT FROM OLD."EV_DAT_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."EV_DAT_Event_Date" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."EV_DAT_Event_Date" IS NULL
+            OR NEW."EV_DAT_PositedAt" IS DISTINCT FROM OLD."EV_DAT_PositedAt"
+            OR OLD."EV_DAT_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."EV_DAT_Event_Date" <> NEW."EV_DAT_Event_Date"
+            THEN
+                INSERT INTO public."EV_DAT_Event_Date" (
+                    "Metadata_EV_DAT",
+                    "EV_DAT_EV_ID",
+                    "EV_DAT_Event_Date",
+                    "EV_DAT_PositedAt",
+                    "EV_DAT_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                             AND NEW."Metadata_EV_DAT" IS NOT DISTINCT FROM OLD."Metadata_EV_DAT"
+                            THEN NEW."Metadata_EV"
+                            ELSE NEW."Metadata_EV_DAT"
+                        END, NEW."Metadata_EV"),
+                    coalesce(NEW."EV_DAT_EV_ID", NEW."EV_ID"),
+                    NEW."EV_DAT_Event_Date",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."EV_DAT_Event_Date" IS NULL AND OLD."EV_DAT_Event_Date" IS NOT NULL THEN
+            INSERT INTO public."EV_DAT_Event_Date" (
+                "Metadata_EV_DAT",
+                "EV_DAT_EV_ID",
+                "EV_DAT_Event_Date",
+                "EV_DAT_PositedAt",
+                "EV_DAT_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_DAT" IS NOT DISTINCT FROM OLD."Metadata_EV_DAT"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_DAT"
+                    END, NEW."Metadata_EV"),
+                p."EV_DAT_EV_ID",
+                p."EV_DAT_Event_Date",
+                _positing,
+                0
+            FROM
+                public."EV_DAT_Event_Date_Posit" p
+            WHERE
+                p."EV_DAT_ID" = OLD."EV_DAT_ID";
+        END IF;
+    END IF;
+    IF NEW."EV_AUD_ID" IS DISTINCT FROM OLD."EV_AUD_ID" THEN
+        RAISE EXCEPTION 'The identity column EV_AUD_ID is not updatable.';
+    END IF;
+    IF NEW."EV_AUD_EV_ID" IS DISTINCT FROM OLD."EV_AUD_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_AUD_EV_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of EV_AUD_Event_Audience, and when it posits
+    _reliability := CASE
+        WHEN NEW."EV_AUD_Reliability" IS DISTINCT FROM OLD."EV_AUD_Reliability" THEN NEW."EV_AUD_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."EV_AUD_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."EV_AUD_PositedAt" IS DISTINCT FROM OLD."EV_AUD_PositedAt" THEN NEW."EV_AUD_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."EV_AUD_Event_Audience" IS DISTINCT FROM OLD."EV_AUD_Event_Audience"
+    OR NEW."EV_AUD_PositedAt" IS DISTINCT FROM OLD."EV_AUD_PositedAt"
+    OR NEW."EV_AUD_Reliability" IS DISTINCT FROM OLD."EV_AUD_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."EV_AUD_Event_Audience" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."EV_AUD_Event_Audience" IS NULL
+            OR NEW."EV_AUD_PositedAt" IS DISTINCT FROM OLD."EV_AUD_PositedAt"
+            OR OLD."EV_AUD_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."EV_AUD_Event_Audience" <> NEW."EV_AUD_Event_Audience"
+            THEN
+                INSERT INTO public."EV_AUD_Event_Audience" (
+                    "Metadata_EV_AUD",
+                    "EV_AUD_EV_ID",
+                    "EV_AUD_Event_Audience",
+                    "EV_AUD_PositedAt",
+                    "EV_AUD_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                             AND NEW."Metadata_EV_AUD" IS NOT DISTINCT FROM OLD."Metadata_EV_AUD"
+                            THEN NEW."Metadata_EV"
+                            ELSE NEW."Metadata_EV_AUD"
+                        END, NEW."Metadata_EV"),
+                    coalesce(NEW."EV_AUD_EV_ID", NEW."EV_ID"),
+                    NEW."EV_AUD_Event_Audience",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."EV_AUD_Event_Audience" IS NULL AND OLD."EV_AUD_Event_Audience" IS NOT NULL THEN
+            INSERT INTO public."EV_AUD_Event_Audience" (
+                "Metadata_EV_AUD",
+                "EV_AUD_EV_ID",
+                "EV_AUD_Event_Audience",
+                "EV_AUD_PositedAt",
+                "EV_AUD_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_AUD" IS NOT DISTINCT FROM OLD."Metadata_EV_AUD"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_AUD"
+                    END, NEW."Metadata_EV"),
+                p."EV_AUD_EV_ID",
+                p."EV_AUD_Event_Audience",
+                _positing,
+                0
+            FROM
+                public."EV_AUD_Event_Audience_Posit" p
+            WHERE
+                p."EV_AUD_ID" = OLD."EV_AUD_ID";
+        END IF;
+    END IF;
+    IF NEW."EV_REV_ID" IS DISTINCT FROM OLD."EV_REV_ID" THEN
+        RAISE EXCEPTION 'The identity column EV_REV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_REV_EV_ID" IS DISTINCT FROM OLD."EV_REV_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_REV_EV_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of EV_REV_Event_Revenue, and when it posits
+    _reliability := CASE
+        WHEN NEW."EV_REV_Reliability" IS DISTINCT FROM OLD."EV_REV_Reliability" THEN NEW."EV_REV_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."EV_REV_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."EV_REV_PositedAt" IS DISTINCT FROM OLD."EV_REV_PositedAt" THEN NEW."EV_REV_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."EV_REV_Event_Revenue" IS DISTINCT FROM OLD."EV_REV_Event_Revenue"
+    OR NEW."EV_REV_PositedAt" IS DISTINCT FROM OLD."EV_REV_PositedAt"
+    OR NEW."EV_REV_Reliability" IS DISTINCT FROM OLD."EV_REV_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."EV_REV_Event_Revenue" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."EV_REV_Event_Revenue" IS NULL
+            OR NEW."EV_REV_PositedAt" IS DISTINCT FROM OLD."EV_REV_PositedAt"
+            OR OLD."EV_REV_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."EV_REV_Event_Revenue" <> NEW."EV_REV_Event_Revenue"
+            THEN
+                INSERT INTO public."EV_REV_Event_Revenue" (
+                    "Metadata_EV_REV",
+                    "EV_REV_EV_ID",
+                    "EV_REV_Event_Revenue",
+                    "EV_REV_PositedAt",
+                    "EV_REV_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                             AND NEW."Metadata_EV_REV" IS NOT DISTINCT FROM OLD."Metadata_EV_REV"
+                            THEN NEW."Metadata_EV"
+                            ELSE NEW."Metadata_EV_REV"
+                        END, NEW."Metadata_EV"),
+                    coalesce(NEW."EV_REV_EV_ID", NEW."EV_ID"),
+                    NEW."EV_REV_Event_Revenue",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."EV_REV_Event_Revenue" IS NULL AND OLD."EV_REV_Event_Revenue" IS NOT NULL THEN
+            INSERT INTO public."EV_REV_Event_Revenue" (
+                "Metadata_EV_REV",
+                "EV_REV_EV_ID",
+                "EV_REV_Event_Revenue",
+                "EV_REV_PositedAt",
+                "EV_REV_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_REV" IS NOT DISTINCT FROM OLD."Metadata_EV_REV"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_REV"
+                    END, NEW."Metadata_EV"),
+                p."EV_REV_EV_ID",
+                p."EV_REV_Event_Revenue",
+                _positing,
+                0
+            FROM
+                public."EV_REV_Event_Revenue_Posit" p
+            WHERE
+                p."EV_REV_ID" = OLD."EV_REV_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lEV_Event" ON public."lEV_Event";
+CREATE TRIGGER "ut_lEV_Event"
+INSTEAD OF UPDATE ON public."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lEV_Event"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_Event instead of DELETE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lEV_Event"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of EV_DAT_Event_Date is retracted
+    INSERT INTO public."EV_DAT_Event_Date_Annex" (
+        "Metadata_EV_DAT",
+        "EV_DAT_ID",
+        "EV_DAT_PositedAt",
+        "EV_DAT_Reliability"
+    )
+    SELECT
+        OLD."Metadata_EV_DAT",
+        OLD."EV_DAT_ID",
+        _now,
+        0
+    WHERE
+        OLD."EV_DAT_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of EV_AUD_Event_Audience is retracted
+    INSERT INTO public."EV_AUD_Event_Audience_Annex" (
+        "Metadata_EV_AUD",
+        "EV_AUD_ID",
+        "EV_AUD_PositedAt",
+        "EV_AUD_Reliability"
+    )
+    SELECT
+        OLD."Metadata_EV_AUD",
+        OLD."EV_AUD_ID",
+        _now,
+        0
+    WHERE
+        OLD."EV_AUD_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of EV_REV_Event_Revenue is retracted
+    INSERT INTO public."EV_REV_Event_Revenue_Annex" (
+        "Metadata_EV_REV",
+        "EV_REV_ID",
+        "EV_REV_PositedAt",
+        "EV_REV_Reliability"
+    )
+    SELECT
+        OLD."Metadata_EV_REV",
+        OLD."EV_REV_ID",
+        _now,
+        0
+    WHERE
+        OLD."EV_REV_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lEV_Event" ON public."lEV_Event";
+CREATE TRIGGER "dt_lEV_Event"
+INSTEAD OF DELETE ON public."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lEV_Event"();
+-- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the assembled and latest views make them behave like tables.
+-- The assembled view has an 'instead of' trigger for insert, which keeps the posit and annex tables. The latest view has
+-- three: insert, update, and delete. They propagate such operations to the assembled view in a consistent way. Default
+-- values are used for some columns if not provided by the corresponding SQL statements: the changing and positing times
+-- are now, the reliability is 1.
+--
+-- The rules are the ones of the attributes (see the attribute triggers). A tie that has identifiers and other roles, which
+-- are its values, is decisive about the values of the identifiers (at a changing time): an assertion of other values retracts,
+-- at its own positing time, the posit that is in effect, which is a correction.
+--
+-- For idempotent ties, only changes that represent values different from the previous or following value are stored.
+-- Others are silently ignored in order to avoid unnecessary temporal duplicates.
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_AC_partner_AC_with_ONG_currently tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_AC_partner_AC_with_ONG_currently"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."AC_partner_AC_with_ONG_currently_Reliability" = 1
+            FROM
+                public."AC_partner_AC_with_ONG_currently_Annex" a
+            WHERE
+                a."AC_partner_AC_with_ONG_currently_ID" = _id
+            AND
+                a."AC_partner_AC_with_ONG_currently_PositedAt" <= _positing
+            ORDER BY
+                a."AC_partner_AC_with_ONG_currently_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_partner_AC_with_ONG_currently instead of INSERT trigger on AC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_partner_AC_with_ONG_currently_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_partner_AC_with_ONG_currently_Reliability", 1);
+    _changing := coalesce(NEW."AC_partner_AC_with_ONG_currently_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."AC_partner_AC_with_ONG_currently_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_partner_AC_with_ONG_currently_Posit" p
+    WHERE
+        p."AC_ID_partner" = NEW."AC_ID_partner"
+    AND
+        p."AC_ID_with" = NEW."AC_ID_with"
+    AND
+        p."ONG_ID_currently" = NEW."ONG_ID_currently"
+    AND
+        p."AC_partner_AC_with_ONG_currently_ChangedAt" = _changing
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_partner_AC_with_ONG_currently_Annex" a
+        WHERE
+            a."AC_partner_AC_with_ONG_currently_ID" = _posit
+        AND
+            a."AC_partner_AC_with_ONG_currently_PositedAt" = _positing
+        AND
+            a."AC_partner_AC_with_ONG_currently_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_partner_AC_with_ONG_currently for: %', concat_ws(', ',
+            NEW."AC_ID_partner",
+            NEW."AC_ID_with",
+            NEW."ONG_ID_currently",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_partner_AC_with_ONG_currently_Annex" a
+        WHERE
+            a."AC_partner_AC_with_ONG_currently_ID" = _posit
+        AND
+            a."AC_partner_AC_with_ONG_currently_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_AC_partner_AC_with_ONG_currently"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_partner_AC_with_ONG_currently_Annex" (
+            "Metadata_AC_partner_AC_with_ONG_currently",
+            "AC_partner_AC_with_ONG_currently_ID",
+            "AC_partner_AC_with_ONG_currently_PositedAt",
+            "AC_partner_AC_with_ONG_currently_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_partner_AC_with_ONG_currently", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_partner_AC_with_ONG_currently_Posit" (
+            "AC_ID_partner",
+            "AC_ID_with",
+            "ONG_ID_currently",
+            "AC_partner_AC_with_ONG_currently_ChangedAt"
+        )
+        VALUES (
+            NEW."AC_ID_partner",
+            NEW."AC_ID_with",
+            NEW."ONG_ID_currently",
+            _changing
+        )
+        RETURNING "AC_partner_AC_with_ONG_currently_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_partner_AC_with_ONG_currently_Annex" (
+        "Metadata_AC_partner_AC_with_ONG_currently",
+        "AC_partner_AC_with_ONG_currently_ID",
+        "AC_partner_AC_with_ONG_currently_PositedAt",
+        "AC_partner_AC_with_ONG_currently_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_partner_AC_with_ONG_currently", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_partner_AC_with_ONG_currently" ON public."AC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "it_AC_partner_AC_with_ONG_currently"
+INSTEAD OF INSERT ON public."AC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_partner_AC_with_ONG_currently"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_partner_AC_with_ONG_currently instead of INSERT trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."AC_partner_AC_with_ONG_currently" (
+        "Metadata_AC_partner_AC_with_ONG_currently",
+        "AC_ID_partner",
+        "AC_ID_with",
+        "ONG_ID_currently",
+        "AC_partner_AC_with_ONG_currently_ChangedAt",
+        "AC_partner_AC_with_ONG_currently_PositedAt",
+        "AC_partner_AC_with_ONG_currently_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_AC_partner_AC_with_ONG_currently",
+        NEW."AC_ID_partner",
+        NEW."AC_ID_with",
+        coalesce(NEW."ONG_ID_currently", (
+            SELECT
+                k."ONG_ID"
+            FROM
+                public."ONG_Ongoing" k
+            WHERE
+                k."ONG_Ongoing" = NEW."currently_ONG_Ongoing"
+            LIMIT 1
+        )),
+        coalesce(NEW."AC_partner_AC_with_ONG_currently_ChangedAt", _now),
+        coalesce(NEW."AC_partner_AC_with_ONG_currently_PositedAt", _now),
+        coalesce(NEW."AC_partner_AC_with_ONG_currently_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_partner_AC_with_ONG_currently" ON public."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "it_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF INSERT ON public."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION public."it_lAC_partner_AC_with_ONG_currently"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_partner_AC_with_ONG_currently instead of UPDATE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _ONG_currently smallint;
+BEGIN
+    _ONG_currently := NEW."ONG_ID_currently";
+    IF NEW."currently_ONG_Ongoing" IS DISTINCT FROM OLD."currently_ONG_Ongoing" AND NEW."ONG_ID_currently" IS NOT DISTINCT FROM OLD."ONG_ID_currently" THEN
+        _ONG_currently := NULL;
+        IF NEW."currently_ONG_Ongoing" IS NOT NULL THEN
+            SELECT
+                k."ONG_ID"
+            INTO
+                _ONG_currently
+            FROM
+                public."ONG_Ongoing" k
+            WHERE
+                k."ONG_Ongoing" = NEW."currently_ONG_Ongoing"
+            LIMIT 1;
+        END IF;
+    END IF;
+    _positing := CASE
+        WHEN NEW."AC_partner_AC_with_ONG_currently_PositedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_PositedAt" THEN NEW."AC_partner_AC_with_ONG_currently_PositedAt"
+        ELSE _now
+    END;
+    IF
+        NEW."AC_ID_partner" IS DISTINCT FROM OLD."AC_ID_partner" OR
+        NEW."AC_ID_with" IS DISTINCT FROM OLD."AC_ID_with" OR
+        _ONG_currently IS DISTINCT FROM OLD."ONG_ID_currently" OR
+        NEW."AC_partner_AC_with_ONG_currently_ChangedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_ChangedAt" OR
+        NEW."AC_partner_AC_with_ONG_currently_PositedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_PositedAt" OR
+        NEW."AC_partner_AC_with_ONG_currently_Reliability" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_Reliability"
+    THEN
+        IF
+            NEW."AC_ID_partner" IS NOT NULL
+        AND
+            NEW."AC_ID_with" IS NOT NULL
+        AND
+            _ONG_currently IS NOT NULL
+        THEN
+            INSERT INTO public."AC_partner_AC_with_ONG_currently" (
+                "Metadata_AC_partner_AC_with_ONG_currently",
+                "AC_ID_partner",
+                "AC_ID_with",
+                "ONG_ID_currently",
+                "AC_partner_AC_with_ONG_currently_ChangedAt",
+                "AC_partner_AC_with_ONG_currently_PositedAt",
+                "AC_partner_AC_with_ONG_currently_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_partner_AC_with_ONG_currently",
+                NEW."AC_ID_partner",
+                NEW."AC_ID_with",
+                _ONG_currently,
+                -- the shown version asserted again keeps its changing time, as does one that is given
+                CASE
+                    WHEN NEW."AC_partner_AC_with_ONG_currently_ChangedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_ChangedAt" THEN NEW."AC_partner_AC_with_ONG_currently_ChangedAt"
+                    WHEN
+                        NEW."AC_ID_partner" = OLD."AC_ID_partner"
+                    AND
+                        NEW."AC_ID_with" = OLD."AC_ID_with"
+                    AND
+                        _ONG_currently = OLD."ONG_ID_currently"
+                    THEN NEW."AC_partner_AC_with_ONG_currently_ChangedAt"
+                    ELSE _now
+                END,
+                _positing,
+                coalesce(NEW."AC_partner_AC_with_ONG_currently_Reliability", 1)
+            );
+        ELSE
+            -- logical delete by setting a value to null: the shown version is retracted
+            INSERT INTO public."AC_partner_AC_with_ONG_currently" (
+                "Metadata_AC_partner_AC_with_ONG_currently",
+                "AC_ID_partner",
+                "AC_ID_with",
+                "ONG_ID_currently",
+                "AC_partner_AC_with_ONG_currently_ChangedAt",
+                "AC_partner_AC_with_ONG_currently_PositedAt",
+                "AC_partner_AC_with_ONG_currently_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_partner_AC_with_ONG_currently",
+                OLD."AC_ID_partner",
+                OLD."AC_ID_with",
+                OLD."ONG_ID_currently",
+                OLD."AC_partner_AC_with_ONG_currently_ChangedAt",
+                _positing,
+                0
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_partner_AC_with_ONG_currently" ON public."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "ut_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF UPDATE ON public."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lAC_partner_AC_with_ONG_currently"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_partner_AC_with_ONG_currently instead of DELETE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."AC_partner_AC_with_ONG_currently_Annex" (
+        "Metadata_AC_partner_AC_with_ONG_currently",
+        "AC_partner_AC_with_ONG_currently_ID",
+        "AC_partner_AC_with_ONG_currently_PositedAt",
+        "AC_partner_AC_with_ONG_currently_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_partner_AC_with_ONG_currently",
+        OLD."AC_partner_AC_with_ONG_currently_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_partner_AC_with_ONG_currently_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_partner_AC_with_ONG_currently" ON public."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "dt_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF DELETE ON public."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lAC_partner_AC_with_ONG_currently"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_AC_subset_PN_of tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_AC_subset_PN_of"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."AC_subset_PN_of_Reliability" = 1
+            FROM
+                public."AC_subset_PN_of_Annex" a
+            WHERE
+                a."AC_subset_PN_of_ID" = _id
+            AND
+                a."AC_subset_PN_of_PositedAt" <= _positing
+            ORDER BY
+                a."AC_subset_PN_of_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_subset_PN_of instead of INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_subset_PN_of_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_subset_PN_of_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."AC_subset_PN_of_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_subset_PN_of_Posit" p
+    WHERE
+        p."AC_ID_subset" = NEW."AC_ID_subset"
+    AND
+        p."PN_ID_of" = NEW."PN_ID_of"
+    AND
+        true
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_subset_PN_of_Annex" a
+        WHERE
+            a."AC_subset_PN_of_ID" = _posit
+        AND
+            a."AC_subset_PN_of_PositedAt" = _positing
+        AND
+            a."AC_subset_PN_of_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_subset_PN_of for: %', concat_ws(', ',
+            NEW."AC_ID_subset",
+            NEW."PN_ID_of",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_subset_PN_of_Annex" a
+        WHERE
+            a."AC_subset_PN_of_ID" = _posit
+        AND
+            a."AC_subset_PN_of_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_AC_subset_PN_of"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_subset_PN_of_Annex" (
+            "Metadata_AC_subset_PN_of",
+            "AC_subset_PN_of_ID",
+            "AC_subset_PN_of_PositedAt",
+            "AC_subset_PN_of_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_subset_PN_of", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_subset_PN_of_Posit" (
+            "AC_ID_subset",
+            "PN_ID_of",
+            "AC_subset_PN_of_ID"
+        )
+        VALUES (
+            NEW."AC_ID_subset",
+            NEW."PN_ID_of",
+            DEFAULT
+        )
+        RETURNING "AC_subset_PN_of_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_subset_PN_of_Annex" (
+        "Metadata_AC_subset_PN_of",
+        "AC_subset_PN_of_ID",
+        "AC_subset_PN_of_PositedAt",
+        "AC_subset_PN_of_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_subset_PN_of", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_subset_PN_of" ON public."AC_subset_PN_of";
+CREATE TRIGGER "it_AC_subset_PN_of"
+INSTEAD OF INSERT ON public."AC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_subset_PN_of"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_subset_PN_of instead of INSERT trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."AC_subset_PN_of" (
+        "Metadata_AC_subset_PN_of",
+        "AC_ID_subset",
+        "PN_ID_of",
+        "AC_subset_PN_of_PositedAt",
+        "AC_subset_PN_of_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_AC_subset_PN_of",
+        NEW."AC_ID_subset",
+        NEW."PN_ID_of",
+        coalesce(NEW."AC_subset_PN_of_PositedAt", _now),
+        coalesce(NEW."AC_subset_PN_of_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_subset_PN_of" ON public."lAC_subset_PN_of";
+CREATE TRIGGER "it_lAC_subset_PN_of"
+INSTEAD OF INSERT ON public."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION public."it_lAC_subset_PN_of"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_subset_PN_of instead of UPDATE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+BEGIN
+    _positing := CASE
+        WHEN NEW."AC_subset_PN_of_PositedAt" IS DISTINCT FROM OLD."AC_subset_PN_of_PositedAt" THEN NEW."AC_subset_PN_of_PositedAt"
+        ELSE _now
+    END;
+    IF
+        NEW."AC_ID_subset" IS DISTINCT FROM OLD."AC_ID_subset" OR
+        NEW."PN_ID_of" IS DISTINCT FROM OLD."PN_ID_of" OR
+        NEW."AC_subset_PN_of_PositedAt" IS DISTINCT FROM OLD."AC_subset_PN_of_PositedAt" OR
+        NEW."AC_subset_PN_of_Reliability" IS DISTINCT FROM OLD."AC_subset_PN_of_Reliability"
+    THEN
+        IF
+            NEW."AC_ID_subset" IS NOT NULL
+        AND
+            NEW."PN_ID_of" IS NOT NULL
+        THEN
+            INSERT INTO public."AC_subset_PN_of" (
+                "Metadata_AC_subset_PN_of",
+                "AC_ID_subset",
+                "PN_ID_of",
+                "AC_subset_PN_of_PositedAt",
+                "AC_subset_PN_of_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_subset_PN_of",
+                NEW."AC_ID_subset",
+                NEW."PN_ID_of",
+                _positing,
+                coalesce(NEW."AC_subset_PN_of_Reliability", 1)
+            );
+        ELSE
+            -- logical delete by setting a value to null: the shown version is retracted
+            INSERT INTO public."AC_subset_PN_of" (
+                "Metadata_AC_subset_PN_of",
+                "AC_ID_subset",
+                "PN_ID_of",
+                "AC_subset_PN_of_PositedAt",
+                "AC_subset_PN_of_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_subset_PN_of",
+                OLD."AC_ID_subset",
+                OLD."PN_ID_of",
+                _positing,
+                0
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_subset_PN_of" ON public."lAC_subset_PN_of";
+CREATE TRIGGER "ut_lAC_subset_PN_of"
+INSTEAD OF UPDATE ON public."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lAC_subset_PN_of"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_subset_PN_of instead of DELETE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."AC_subset_PN_of_Annex" (
+        "Metadata_AC_subset_PN_of",
+        "AC_subset_PN_of_ID",
+        "AC_subset_PN_of_PositedAt",
+        "AC_subset_PN_of_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_subset_PN_of",
+        OLD."AC_subset_PN_of_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_subset_PN_of_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_subset_PN_of" ON public."lAC_subset_PN_of";
+CREATE TRIGGER "dt_lAC_subset_PN_of"
+INSTEAD OF DELETE ON public."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lAC_subset_PN_of"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_EV_in_AC_wasCast tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_EV_in_AC_wasCast"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."EV_in_AC_wasCast_Reliability" = 1
+            FROM
+                public."EV_in_AC_wasCast_Annex" a
+            WHERE
+                a."EV_in_AC_wasCast_ID" = _id
+            AND
+                a."EV_in_AC_wasCast_PositedAt" <= _positing
+            ORDER BY
+                a."EV_in_AC_wasCast_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_in_AC_wasCast instead of INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_EV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."EV_in_AC_wasCast_PositedAt", _now);
+    _reliability := coalesce(NEW."EV_in_AC_wasCast_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."EV_in_AC_wasCast_ID"
+    INTO
+        _posit
+    FROM
+        public."EV_in_AC_wasCast_Posit" p
+    WHERE
+        p."EV_ID_in" = NEW."EV_ID_in"
+    AND
+        p."AC_ID_wasCast" = NEW."AC_ID_wasCast"
+    AND
+        true
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_in_AC_wasCast_Annex" a
+        WHERE
+            a."EV_in_AC_wasCast_ID" = _posit
+        AND
+            a."EV_in_AC_wasCast_PositedAt" = _positing
+        AND
+            a."EV_in_AC_wasCast_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_in_AC_wasCast for: %', concat_ws(', ',
+            NEW."EV_ID_in",
+            NEW."AC_ID_wasCast",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."EV_in_AC_wasCast_Annex" a
+        WHERE
+            a."EV_in_AC_wasCast_ID" = _posit
+        AND
+            a."EV_in_AC_wasCast_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_EV_in_AC_wasCast"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."EV_in_AC_wasCast_Annex" (
+            "Metadata_EV_in_AC_wasCast",
+            "EV_in_AC_wasCast_ID",
+            "EV_in_AC_wasCast_PositedAt",
+            "EV_in_AC_wasCast_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_in_AC_wasCast", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."EV_in_AC_wasCast_Posit" (
+            "EV_ID_in",
+            "AC_ID_wasCast",
+            "EV_in_AC_wasCast_ID"
+        )
+        VALUES (
+            NEW."EV_ID_in",
+            NEW."AC_ID_wasCast",
+            DEFAULT
+        )
+        RETURNING "EV_in_AC_wasCast_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."EV_in_AC_wasCast_Annex" (
+        "Metadata_EV_in_AC_wasCast",
+        "EV_in_AC_wasCast_ID",
+        "EV_in_AC_wasCast_PositedAt",
+        "EV_in_AC_wasCast_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_EV_in_AC_wasCast", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_in_AC_wasCast" ON public."EV_in_AC_wasCast";
+CREATE TRIGGER "it_EV_in_AC_wasCast"
+INSTEAD OF INSERT ON public."EV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION public."it_EV_in_AC_wasCast"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_in_AC_wasCast instead of INSERT trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lEV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."EV_in_AC_wasCast" (
+        "Metadata_EV_in_AC_wasCast",
+        "EV_ID_in",
+        "AC_ID_wasCast",
+        "EV_in_AC_wasCast_PositedAt",
+        "EV_in_AC_wasCast_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_EV_in_AC_wasCast",
+        NEW."EV_ID_in",
+        NEW."AC_ID_wasCast",
+        coalesce(NEW."EV_in_AC_wasCast_PositedAt", _now),
+        coalesce(NEW."EV_in_AC_wasCast_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lEV_in_AC_wasCast" ON public."lEV_in_AC_wasCast";
+CREATE TRIGGER "it_lEV_in_AC_wasCast"
+INSTEAD OF INSERT ON public."lEV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION public."it_lEV_in_AC_wasCast"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_in_AC_wasCast instead of DELETE trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lEV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."EV_in_AC_wasCast_Annex" (
+        "Metadata_EV_in_AC_wasCast",
+        "EV_in_AC_wasCast_ID",
+        "EV_in_AC_wasCast_PositedAt",
+        "EV_in_AC_wasCast_Reliability"
+    )
+    SELECT
+        OLD."Metadata_EV_in_AC_wasCast",
+        OLD."EV_in_AC_wasCast_ID",
+        _now,
+        0
+    WHERE
+        OLD."EV_in_AC_wasCast_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lEV_in_AC_wasCast" ON public."lEV_in_AC_wasCast";
+CREATE TRIGGER "dt_lEV_in_AC_wasCast"
+INSTEAD OF DELETE ON public."lEV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lEV_in_AC_wasCast"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_AC_part_PR_in_RAT_got tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_AC_part_PR_in_RAT_got"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."AC_part_PR_in_RAT_got_Reliability" = 1
+            FROM
+                public."AC_part_PR_in_RAT_got_Annex" a
+            WHERE
+                a."AC_part_PR_in_RAT_got_ID" = _id
+            AND
+                a."AC_part_PR_in_RAT_got_PositedAt" <= _positing
+            ORDER BY
+                a."AC_part_PR_in_RAT_got_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_part_PR_in_RAT_got instead of INSERT trigger on AC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_part_PR_in_RAT_got_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_part_PR_in_RAT_got_Reliability", 1);
+    _changing := coalesce(NEW."AC_part_PR_in_RAT_got_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."AC_part_PR_in_RAT_got_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_part_PR_in_RAT_got_Posit" p
+    WHERE
+        p."AC_ID_part" = NEW."AC_ID_part"
+    AND
+        p."PR_ID_in" = NEW."PR_ID_in"
+    AND
+        p."RAT_ID_got" = NEW."RAT_ID_got"
+    AND
+        p."AC_part_PR_in_RAT_got_ChangedAt" = _changing
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_part_PR_in_RAT_got_Annex" a
+        WHERE
+            a."AC_part_PR_in_RAT_got_ID" = _posit
+        AND
+            a."AC_part_PR_in_RAT_got_PositedAt" = _positing
+        AND
+            a."AC_part_PR_in_RAT_got_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_part_PR_in_RAT_got for: %', concat_ws(', ',
+            NEW."AC_ID_part",
+            NEW."PR_ID_in",
+            NEW."RAT_ID_got",
+            _changing,
+            _positing);
+    END IF;
+    -- other values for identifiers that already have values at that time, asserted at the positing time, are a contradiction
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_part_PR_in_RAT_got_Posit" p
+        JOIN
+            public."AC_part_PR_in_RAT_got_Annex" a
+        ON
+            a."AC_part_PR_in_RAT_got_ID" = p."AC_part_PR_in_RAT_got_ID"
+        WHERE
+            p."AC_ID_part" = NEW."AC_ID_part"
+        AND
+            p."PR_ID_in" = NEW."PR_ID_in"
+        AND
+            p."AC_part_PR_in_RAT_got_ChangedAt" = _changing
+        AND
+            NOT (
+                p."RAT_ID_got" = NEW."RAT_ID_got"
+            )
+        AND
+            a."AC_part_PR_in_RAT_got_PositedAt" = _positing
+        AND
+            a."AC_part_PR_in_RAT_got_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_part_PR_in_RAT_got for: %', concat_ws(', ',
+            NEW."AC_ID_part",
+            NEW."PR_ID_in",
+            NEW."RAT_ID_got",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_part_PR_in_RAT_got_Annex" a
+        WHERE
+            a."AC_part_PR_in_RAT_got_ID" = _posit
+        AND
+            a."AC_part_PR_in_RAT_got_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_AC_part_PR_in_RAT_got"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_part_PR_in_RAT_got_Annex" (
+            "Metadata_AC_part_PR_in_RAT_got",
+            "AC_part_PR_in_RAT_got_ID",
+            "AC_part_PR_in_RAT_got_PositedAt",
+            "AC_part_PR_in_RAT_got_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_part_PR_in_RAT_got", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion corrects what is asserted at the positing time for the same identifiers (and changing time), when that has
+    -- other values: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."AC_part_PR_in_RAT_got_ID"
+        FROM
+            public."AC_part_PR_in_RAT_got_Posit" p
+        WHERE
+            p."AC_ID_part" = NEW."AC_ID_part"
+        AND
+            p."PR_ID_in" = NEW."PR_ID_in"
+        AND
+            p."AC_part_PR_in_RAT_got_ChangedAt" = _changing
+        AND
+            NOT (
+                p."RAT_ID_got" = NEW."RAT_ID_got"
+            )
+        AND
+            public."ie_AC_part_PR_in_RAT_got"(p."AC_part_PR_in_RAT_got_ID", _positing)
+    LOOP
+        INSERT INTO public."AC_part_PR_in_RAT_got_Annex" (
+            "Metadata_AC_part_PR_in_RAT_got",
+            "AC_part_PR_in_RAT_got_ID",
+            "AC_part_PR_in_RAT_got_PositedAt",
+            "AC_part_PR_in_RAT_got_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_part_PR_in_RAT_got", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_part_PR_in_RAT_got_Posit" (
+            "AC_ID_part",
+            "PR_ID_in",
+            "RAT_ID_got",
+            "AC_part_PR_in_RAT_got_ChangedAt"
+        )
+        VALUES (
+            NEW."AC_ID_part",
+            NEW."PR_ID_in",
+            NEW."RAT_ID_got",
+            _changing
+        )
+        RETURNING "AC_part_PR_in_RAT_got_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_part_PR_in_RAT_got_Annex" (
+        "Metadata_AC_part_PR_in_RAT_got",
+        "AC_part_PR_in_RAT_got_ID",
+        "AC_part_PR_in_RAT_got_PositedAt",
+        "AC_part_PR_in_RAT_got_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_part_PR_in_RAT_got", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_part_PR_in_RAT_got" ON public."AC_part_PR_in_RAT_got";
+CREATE TRIGGER "it_AC_part_PR_in_RAT_got"
+INSTEAD OF INSERT ON public."AC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_part_PR_in_RAT_got"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_part_PR_in_RAT_got instead of INSERT trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."AC_part_PR_in_RAT_got" (
+        "Metadata_AC_part_PR_in_RAT_got",
+        "AC_ID_part",
+        "PR_ID_in",
+        "RAT_ID_got",
+        "AC_part_PR_in_RAT_got_ChangedAt",
+        "AC_part_PR_in_RAT_got_PositedAt",
+        "AC_part_PR_in_RAT_got_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_AC_part_PR_in_RAT_got",
+        NEW."AC_ID_part",
+        NEW."PR_ID_in",
+        coalesce(NEW."RAT_ID_got", (
+            SELECT
+                k."RAT_ID"
+            FROM
+                public."RAT_Rating" k
+            WHERE
+                k."RAT_Rating" = NEW."got_RAT_Rating"
+            LIMIT 1
+        )),
+        coalesce(NEW."AC_part_PR_in_RAT_got_ChangedAt", _now),
+        coalesce(NEW."AC_part_PR_in_RAT_got_PositedAt", _now),
+        coalesce(NEW."AC_part_PR_in_RAT_got_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_part_PR_in_RAT_got" ON public."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "it_lAC_part_PR_in_RAT_got"
+INSTEAD OF INSERT ON public."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION public."it_lAC_part_PR_in_RAT_got"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_part_PR_in_RAT_got instead of UPDATE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _RAT_got smallint;
+BEGIN
+    IF NEW."AC_ID_part" IS DISTINCT FROM OLD."AC_ID_part" THEN
+        RAISE EXCEPTION 'The identity column AC_ID_part is not updatable.';
+    END IF;
+    IF NEW."PR_ID_in" IS DISTINCT FROM OLD."PR_ID_in" THEN
+        RAISE EXCEPTION 'The identity column PR_ID_in is not updatable.';
+    END IF;
+    _RAT_got := NEW."RAT_ID_got";
+    IF NEW."got_RAT_Rating" IS DISTINCT FROM OLD."got_RAT_Rating" AND NEW."RAT_ID_got" IS NOT DISTINCT FROM OLD."RAT_ID_got" THEN
+        _RAT_got := NULL;
+        IF NEW."got_RAT_Rating" IS NOT NULL THEN
+            SELECT
+                k."RAT_ID"
+            INTO
+                _RAT_got
+            FROM
+                public."RAT_Rating" k
+            WHERE
+                k."RAT_Rating" = NEW."got_RAT_Rating"
+            LIMIT 1;
+        END IF;
+    END IF;
+    _positing := CASE
+        WHEN NEW."AC_part_PR_in_RAT_got_PositedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_PositedAt" THEN NEW."AC_part_PR_in_RAT_got_PositedAt"
+        ELSE _now
+    END;
+    IF
+        NEW."AC_ID_part" IS DISTINCT FROM OLD."AC_ID_part" OR
+        NEW."PR_ID_in" IS DISTINCT FROM OLD."PR_ID_in" OR
+        _RAT_got IS DISTINCT FROM OLD."RAT_ID_got" OR
+        NEW."AC_part_PR_in_RAT_got_ChangedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_ChangedAt" OR
+        NEW."AC_part_PR_in_RAT_got_PositedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_PositedAt" OR
+        NEW."AC_part_PR_in_RAT_got_Reliability" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_Reliability"
+    THEN
+        IF
+            NEW."AC_ID_part" IS NOT NULL
+        AND
+            NEW."PR_ID_in" IS NOT NULL
+        AND
+            _RAT_got IS NOT NULL
+        THEN
+            INSERT INTO public."AC_part_PR_in_RAT_got" (
+                "Metadata_AC_part_PR_in_RAT_got",
+                "AC_ID_part",
+                "PR_ID_in",
+                "RAT_ID_got",
+                "AC_part_PR_in_RAT_got_ChangedAt",
+                "AC_part_PR_in_RAT_got_PositedAt",
+                "AC_part_PR_in_RAT_got_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_part_PR_in_RAT_got",
+                NEW."AC_ID_part",
+                NEW."PR_ID_in",
+                _RAT_got,
+                -- the shown version asserted again keeps its changing time, as does one that is given
+                CASE
+                    WHEN NEW."AC_part_PR_in_RAT_got_ChangedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_ChangedAt" THEN NEW."AC_part_PR_in_RAT_got_ChangedAt"
+                    WHEN
+                        NEW."AC_ID_part" = OLD."AC_ID_part"
+                    AND
+                        NEW."PR_ID_in" = OLD."PR_ID_in"
+                    AND
+                        _RAT_got = OLD."RAT_ID_got"
+                    THEN NEW."AC_part_PR_in_RAT_got_ChangedAt"
+                    ELSE _now
+                END,
+                _positing,
+                coalesce(NEW."AC_part_PR_in_RAT_got_Reliability", 1)
+            );
+        ELSE
+            -- logical delete by setting a value to null: the shown version is retracted
+            INSERT INTO public."AC_part_PR_in_RAT_got" (
+                "Metadata_AC_part_PR_in_RAT_got",
+                "AC_ID_part",
+                "PR_ID_in",
+                "RAT_ID_got",
+                "AC_part_PR_in_RAT_got_ChangedAt",
+                "AC_part_PR_in_RAT_got_PositedAt",
+                "AC_part_PR_in_RAT_got_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_AC_part_PR_in_RAT_got",
+                OLD."AC_ID_part",
+                OLD."PR_ID_in",
+                OLD."RAT_ID_got",
+                OLD."AC_part_PR_in_RAT_got_ChangedAt",
+                _positing,
+                0
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_part_PR_in_RAT_got" ON public."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "ut_lAC_part_PR_in_RAT_got"
+INSTEAD OF UPDATE ON public."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lAC_part_PR_in_RAT_got"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_part_PR_in_RAT_got instead of DELETE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."AC_part_PR_in_RAT_got_Annex" (
+        "Metadata_AC_part_PR_in_RAT_got",
+        "AC_part_PR_in_RAT_got_ID",
+        "AC_part_PR_in_RAT_got_PositedAt",
+        "AC_part_PR_in_RAT_got_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_part_PR_in_RAT_got",
+        OLD."AC_part_PR_in_RAT_got_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_part_PR_in_RAT_got_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_part_PR_in_RAT_got" ON public."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "dt_lAC_part_PR_in_RAT_got"
+INSTEAD OF DELETE ON public."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lAC_part_PR_in_RAT_got"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_ST_at_PR_isPlaying tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_ST_at_PR_isPlaying"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."ST_at_PR_isPlaying_Reliability" = 1
+            FROM
+                public."ST_at_PR_isPlaying_Annex" a
+            WHERE
+                a."ST_at_PR_isPlaying_ID" = _id
+            AND
+                a."ST_at_PR_isPlaying_PositedAt" <= _positing
+            ORDER BY
+                a."ST_at_PR_isPlaying_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_at_PR_isPlaying instead of INSERT trigger on ST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_ST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _changing timestamp;
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."ST_at_PR_isPlaying_PositedAt", _now);
+    _reliability := coalesce(NEW."ST_at_PR_isPlaying_Reliability", 1);
+    _changing := coalesce(NEW."ST_at_PR_isPlaying_ChangedAt", _now);
+    -- the posit, if there is one
+    SELECT
+        p."ST_at_PR_isPlaying_ID"
+    INTO
+        _posit
+    FROM
+        public."ST_at_PR_isPlaying_Posit" p
+    WHERE
+        p."ST_ID_at" = NEW."ST_ID_at"
+    AND
+        p."PR_ID_isPlaying" = NEW."PR_ID_isPlaying"
+    AND
+        p."ST_at_PR_isPlaying_ChangedAt" = _changing
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_at_PR_isPlaying_Annex" a
+        WHERE
+            a."ST_at_PR_isPlaying_ID" = _posit
+        AND
+            a."ST_at_PR_isPlaying_PositedAt" = _positing
+        AND
+            a."ST_at_PR_isPlaying_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_at_PR_isPlaying for: %', concat_ws(', ',
+            NEW."ST_ID_at",
+            NEW."PR_ID_isPlaying",
+            _changing,
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."ST_at_PR_isPlaying_Annex" a
+        WHERE
+            a."ST_at_PR_isPlaying_ID" = _posit
+        AND
+            a."ST_at_PR_isPlaying_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_ST_at_PR_isPlaying"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."ST_at_PR_isPlaying_Annex" (
+            "Metadata_ST_at_PR_isPlaying",
+            "ST_at_PR_isPlaying_ID",
+            "ST_at_PR_isPlaying_PositedAt",
+            "ST_at_PR_isPlaying_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_at_PR_isPlaying", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."ST_at_PR_isPlaying_Posit" (
+            "ST_ID_at",
+            "PR_ID_isPlaying",
+            "ST_at_PR_isPlaying_ChangedAt"
+        )
+        VALUES (
+            NEW."ST_ID_at",
+            NEW."PR_ID_isPlaying",
+            _changing
+        )
+        RETURNING "ST_at_PR_isPlaying_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."ST_at_PR_isPlaying_Annex" (
+        "Metadata_ST_at_PR_isPlaying",
+        "ST_at_PR_isPlaying_ID",
+        "ST_at_PR_isPlaying_PositedAt",
+        "ST_at_PR_isPlaying_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_ST_at_PR_isPlaying", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_at_PR_isPlaying" ON public."ST_at_PR_isPlaying";
+CREATE TRIGGER "it_ST_at_PR_isPlaying"
+INSTEAD OF INSERT ON public."ST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION public."it_ST_at_PR_isPlaying"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_at_PR_isPlaying instead of INSERT trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."ST_at_PR_isPlaying" (
+        "Metadata_ST_at_PR_isPlaying",
+        "ST_ID_at",
+        "PR_ID_isPlaying",
+        "ST_at_PR_isPlaying_ChangedAt",
+        "ST_at_PR_isPlaying_PositedAt",
+        "ST_at_PR_isPlaying_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_ST_at_PR_isPlaying",
+        NEW."ST_ID_at",
+        NEW."PR_ID_isPlaying",
+        coalesce(NEW."ST_at_PR_isPlaying_ChangedAt", _now),
+        coalesce(NEW."ST_at_PR_isPlaying_PositedAt", _now),
+        coalesce(NEW."ST_at_PR_isPlaying_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lST_at_PR_isPlaying" ON public."lST_at_PR_isPlaying";
+CREATE TRIGGER "it_lST_at_PR_isPlaying"
+INSTEAD OF INSERT ON public."lST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION public."it_lST_at_PR_isPlaying"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_at_PR_isPlaying instead of DELETE trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."ST_at_PR_isPlaying_Annex" (
+        "Metadata_ST_at_PR_isPlaying",
+        "ST_at_PR_isPlaying_ID",
+        "ST_at_PR_isPlaying_PositedAt",
+        "ST_at_PR_isPlaying_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_at_PR_isPlaying",
+        OLD."ST_at_PR_isPlaying_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_at_PR_isPlaying_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lST_at_PR_isPlaying" ON public."lST_at_PR_isPlaying";
+CREATE TRIGGER "dt_lST_at_PR_isPlaying"
+INSTEAD OF DELETE ON public."lST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lST_at_PR_isPlaying"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_AC_parent_AC_child_PAT_having tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_AC_parent_AC_child_PAT_having"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."AC_parent_AC_child_PAT_having_Reliability" = 1
+            FROM
+                public."AC_parent_AC_child_PAT_having_Annex" a
+            WHERE
+                a."AC_parent_AC_child_PAT_having_ID" = _id
+            AND
+                a."AC_parent_AC_child_PAT_having_PositedAt" <= _positing
+            ORDER BY
+                a."AC_parent_AC_child_PAT_having_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_parent_AC_child_PAT_having instead of INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_AC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."AC_parent_AC_child_PAT_having_PositedAt", _now);
+    _reliability := coalesce(NEW."AC_parent_AC_child_PAT_having_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."AC_parent_AC_child_PAT_having_ID"
+    INTO
+        _posit
+    FROM
+        public."AC_parent_AC_child_PAT_having_Posit" p
+    WHERE
+        p."AC_ID_parent" = NEW."AC_ID_parent"
+    AND
+        p."AC_ID_child" = NEW."AC_ID_child"
+    AND
+        p."PAT_ID_having" = NEW."PAT_ID_having"
+    AND
+        true
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_parent_AC_child_PAT_having_Annex" a
+        WHERE
+            a."AC_parent_AC_child_PAT_having_ID" = _posit
+        AND
+            a."AC_parent_AC_child_PAT_having_PositedAt" = _positing
+        AND
+            a."AC_parent_AC_child_PAT_having_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_parent_AC_child_PAT_having for: %', concat_ws(', ',
+            NEW."AC_ID_parent",
+            NEW."AC_ID_child",
+            NEW."PAT_ID_having",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."AC_parent_AC_child_PAT_having_Annex" a
+        WHERE
+            a."AC_parent_AC_child_PAT_having_ID" = _posit
+        AND
+            a."AC_parent_AC_child_PAT_having_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_AC_parent_AC_child_PAT_having"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."AC_parent_AC_child_PAT_having_Annex" (
+            "Metadata_AC_parent_AC_child_PAT_having",
+            "AC_parent_AC_child_PAT_having_ID",
+            "AC_parent_AC_child_PAT_having_PositedAt",
+            "AC_parent_AC_child_PAT_having_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_parent_AC_child_PAT_having", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."AC_parent_AC_child_PAT_having_Posit" (
+            "AC_ID_parent",
+            "AC_ID_child",
+            "PAT_ID_having",
+            "AC_parent_AC_child_PAT_having_ID"
+        )
+        VALUES (
+            NEW."AC_ID_parent",
+            NEW."AC_ID_child",
+            NEW."PAT_ID_having",
+            DEFAULT
+        )
+        RETURNING "AC_parent_AC_child_PAT_having_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."AC_parent_AC_child_PAT_having_Annex" (
+        "Metadata_AC_parent_AC_child_PAT_having",
+        "AC_parent_AC_child_PAT_having_ID",
+        "AC_parent_AC_child_PAT_having_PositedAt",
+        "AC_parent_AC_child_PAT_having_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_AC_parent_AC_child_PAT_having", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_parent_AC_child_PAT_having" ON public."AC_parent_AC_child_PAT_having";
+CREATE TRIGGER "it_AC_parent_AC_child_PAT_having"
+INSTEAD OF INSERT ON public."AC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION public."it_AC_parent_AC_child_PAT_having"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_parent_AC_child_PAT_having instead of INSERT trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lAC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."AC_parent_AC_child_PAT_having" (
+        "Metadata_AC_parent_AC_child_PAT_having",
+        "AC_ID_parent",
+        "AC_ID_child",
+        "PAT_ID_having",
+        "AC_parent_AC_child_PAT_having_PositedAt",
+        "AC_parent_AC_child_PAT_having_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_AC_parent_AC_child_PAT_having",
+        NEW."AC_ID_parent",
+        NEW."AC_ID_child",
+        coalesce(NEW."PAT_ID_having", (
+            SELECT
+                k."PAT_ID"
+            FROM
+                public."PAT_ParentalType" k
+            WHERE
+                k."PAT_ParentalType" = NEW."having_PAT_ParentalType"
+            LIMIT 1
+        )),
+        coalesce(NEW."AC_parent_AC_child_PAT_having_PositedAt", _now),
+        coalesce(NEW."AC_parent_AC_child_PAT_having_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_parent_AC_child_PAT_having" ON public."lAC_parent_AC_child_PAT_having";
+CREATE TRIGGER "it_lAC_parent_AC_child_PAT_having"
+INSTEAD OF INSERT ON public."lAC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION public."it_lAC_parent_AC_child_PAT_having"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_parent_AC_child_PAT_having instead of DELETE trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lAC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."AC_parent_AC_child_PAT_having_Annex" (
+        "Metadata_AC_parent_AC_child_PAT_having",
+        "AC_parent_AC_child_PAT_having_ID",
+        "AC_parent_AC_child_PAT_having_PositedAt",
+        "AC_parent_AC_child_PAT_having_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_parent_AC_child_PAT_having",
+        OLD."AC_parent_AC_child_PAT_having_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_parent_AC_child_PAT_having_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_parent_AC_child_PAT_having" ON public."lAC_parent_AC_child_PAT_having";
+CREATE TRIGGER "dt_lAC_parent_AC_child_PAT_having"
+INSTEAD OF DELETE ON public."lAC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lAC_parent_AC_child_PAT_having"();
+-- In effect ------------------------------------------------------------------------------------------------------------
+-- ie_PR_content_ST_location_EV_of tells whether a posit is asserted at a positing time: its latest annex row up to then asserts it
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ie_PR_content_ST_location_EV_of"(
+    _id integer,
+    _positing timestamp
+)
+RETURNS boolean
+AS
+$$
+    SELECT
+        coalesce((
+            SELECT
+                a."PR_content_ST_location_EV_of_Reliability" = 1
+            FROM
+                public."PR_content_ST_location_EV_of_Annex" a
+            WHERE
+                a."PR_content_ST_location_EV_of_ID" = _id
+            AND
+                a."PR_content_ST_location_EV_of_PositedAt" <= _positing
+            ORDER BY
+                a."PR_content_ST_location_EV_of_PositedAt" DESC
+            LIMIT 1
+        ), false)
+$$ LANGUAGE sql STABLE;
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_content_ST_location_EV_of instead of INSERT trigger on PR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_PR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+    _reliability decimal(5,2);
+    _posit integer;
+    _other integer;
+    _following integer;
+BEGIN
+    _positing := coalesce(NEW."PR_content_ST_location_EV_of_PositedAt", _now);
+    _reliability := coalesce(NEW."PR_content_ST_location_EV_of_Reliability", 1);
+    -- the posit, if there is one
+    SELECT
+        p."PR_content_ST_location_EV_of_ID"
+    INTO
+        _posit
+    FROM
+        public."PR_content_ST_location_EV_of_Posit" p
+    WHERE
+        p."PR_ID_content" = NEW."PR_ID_content"
+    AND
+        p."ST_ID_location" = NEW."ST_ID_location"
+    AND
+        p."EV_ID_of" = NEW."EV_ID_of"
+    AND
+        true
+    LIMIT 1;
+    -- another reliability at a positing time that already has an assertion of the posit is a contradiction
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_content_ST_location_EV_of_Annex" a
+        WHERE
+            a."PR_content_ST_location_EV_of_ID" = _posit
+        AND
+            a."PR_content_ST_location_EV_of_PositedAt" = _positing
+        AND
+            a."PR_content_ST_location_EV_of_Reliability" <> _reliability
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_content_ST_location_EV_of for: %', concat_ws(', ',
+            NEW."PR_ID_content",
+            NEW."ST_ID_location",
+            NEW."EV_ID_of",
+            _positing);
+    END IF;
+    -- other values for identifiers that already have values at that time, asserted at the positing time, are a contradiction
+    IF _reliability = 1 AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_content_ST_location_EV_of_Posit" p
+        JOIN
+            public."PR_content_ST_location_EV_of_Annex" a
+        ON
+            a."PR_content_ST_location_EV_of_ID" = p."PR_content_ST_location_EV_of_ID"
+        WHERE
+            p."EV_ID_of" = NEW."EV_ID_of"
+        AND
+            NOT (
+                p."PR_ID_content" = NEW."PR_ID_content"
+                AND
+                p."ST_ID_location" = NEW."ST_ID_location"
+            )
+        AND
+            a."PR_content_ST_location_EV_of_PositedAt" = _positing
+        AND
+            a."PR_content_ST_location_EV_of_Reliability" = 1
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_content_ST_location_EV_of for: %', concat_ws(', ',
+            NEW."PR_ID_content",
+            NEW."ST_ID_location",
+            NEW."EV_ID_of",
+            _positing);
+    END IF;
+    -- the identical (the posit and the assertion are there already) states nothing
+    IF _posit IS NOT NULL AND EXISTS (
+        SELECT
+            1
+        FROM
+            public."PR_content_ST_location_EV_of_Annex" a
+        WHERE
+            a."PR_content_ST_location_EV_of_ID" = _posit
+        AND
+            a."PR_content_ST_location_EV_of_PositedAt" = _positing
+    ) THEN
+        RETURN NULL;
+    END IF;
+    IF _reliability = 0 THEN
+        -- a retraction of what is not asserted states nothing
+        IF _posit IS NULL OR NOT public."ie_PR_content_ST_location_EV_of"(_posit, _positing) THEN
+            RETURN NULL;
+        END IF;
+        INSERT INTO public."PR_content_ST_location_EV_of_Annex" (
+            "Metadata_PR_content_ST_location_EV_of",
+            "PR_content_ST_location_EV_of_ID",
+            "PR_content_ST_location_EV_of_PositedAt",
+            "PR_content_ST_location_EV_of_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_content_ST_location_EV_of", 0),
+            _posit,
+            _positing,
+            _reliability
+        );
+        RETURN NEW;
+    END IF;
+    -- an assertion corrects what is asserted at the positing time for the same identifiers (and changing time), when that has
+    -- other values: it is retracted at the positing time of the assertion, so that one posit at a time is asserted
+    FOR _other IN
+        SELECT
+            p."PR_content_ST_location_EV_of_ID"
+        FROM
+            public."PR_content_ST_location_EV_of_Posit" p
+        WHERE
+            p."EV_ID_of" = NEW."EV_ID_of"
+        AND
+            NOT (
+                p."PR_ID_content" = NEW."PR_ID_content"
+                AND
+                p."ST_ID_location" = NEW."ST_ID_location"
+            )
+        AND
+            public."ie_PR_content_ST_location_EV_of"(p."PR_content_ST_location_EV_of_ID", _positing)
+    LOOP
+        INSERT INTO public."PR_content_ST_location_EV_of_Annex" (
+            "Metadata_PR_content_ST_location_EV_of",
+            "PR_content_ST_location_EV_of_ID",
+            "PR_content_ST_location_EV_of_PositedAt",
+            "PR_content_ST_location_EV_of_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_content_ST_location_EV_of", 0),
+            _other,
+            _positing,
+            0
+        )
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    -- the posit, which is new when it was not found
+    IF _posit IS NULL THEN
+        INSERT INTO public."PR_content_ST_location_EV_of_Posit" (
+            "PR_ID_content",
+            "ST_ID_location",
+            "EV_ID_of",
+            "PR_content_ST_location_EV_of_ID"
+        )
+        VALUES (
+            NEW."PR_ID_content",
+            NEW."ST_ID_location",
+            NEW."EV_ID_of",
+            DEFAULT
+        )
+        RETURNING "PR_content_ST_location_EV_of_ID" INTO _posit;
+    END IF;
+    INSERT INTO public."PR_content_ST_location_EV_of_Annex" (
+        "Metadata_PR_content_ST_location_EV_of",
+        "PR_content_ST_location_EV_of_ID",
+        "PR_content_ST_location_EV_of_PositedAt",
+        "PR_content_ST_location_EV_of_Reliability"
+    )
+    VALUES (
+        coalesce(NEW."Metadata_PR_content_ST_location_EV_of", 0),
+        _posit,
+        _positing,
+        _reliability
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_content_ST_location_EV_of" ON public."PR_content_ST_location_EV_of";
+CREATE TRIGGER "it_PR_content_ST_location_EV_of"
+INSTEAD OF INSERT ON public."PR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION public."it_PR_content_ST_location_EV_of"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_content_ST_location_EV_of instead of INSERT trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."it_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    INSERT INTO public."PR_content_ST_location_EV_of" (
+        "Metadata_PR_content_ST_location_EV_of",
+        "PR_ID_content",
+        "ST_ID_location",
+        "EV_ID_of",
+        "PR_content_ST_location_EV_of_PositedAt",
+        "PR_content_ST_location_EV_of_Reliability"
+    )
+    VALUES (
+        NEW."Metadata_PR_content_ST_location_EV_of",
+        NEW."PR_ID_content",
+        NEW."ST_ID_location",
+        NEW."EV_ID_of",
+        coalesce(NEW."PR_content_ST_location_EV_of_PositedAt", _now),
+        coalesce(NEW."PR_content_ST_location_EV_of_Reliability", 1)
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lPR_content_ST_location_EV_of" ON public."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "it_lPR_content_ST_location_EV_of"
+INSTEAD OF INSERT ON public."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION public."it_lPR_content_ST_location_EV_of"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_content_ST_location_EV_of instead of UPDATE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."ut_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _positing timestamp;
+BEGIN
+    IF NEW."EV_ID_of" IS DISTINCT FROM OLD."EV_ID_of" THEN
+        RAISE EXCEPTION 'The identity column EV_ID_of is not updatable.';
+    END IF;
+    _positing := CASE
+        WHEN NEW."PR_content_ST_location_EV_of_PositedAt" IS DISTINCT FROM OLD."PR_content_ST_location_EV_of_PositedAt" THEN NEW."PR_content_ST_location_EV_of_PositedAt"
+        ELSE _now
+    END;
+    IF
+        NEW."PR_ID_content" IS DISTINCT FROM OLD."PR_ID_content" OR
+        NEW."ST_ID_location" IS DISTINCT FROM OLD."ST_ID_location" OR
+        NEW."EV_ID_of" IS DISTINCT FROM OLD."EV_ID_of" OR
+        NEW."PR_content_ST_location_EV_of_PositedAt" IS DISTINCT FROM OLD."PR_content_ST_location_EV_of_PositedAt" OR
+        NEW."PR_content_ST_location_EV_of_Reliability" IS DISTINCT FROM OLD."PR_content_ST_location_EV_of_Reliability"
+    THEN
+        IF
+            NEW."PR_ID_content" IS NOT NULL
+        AND
+            NEW."ST_ID_location" IS NOT NULL
+        AND
+            NEW."EV_ID_of" IS NOT NULL
+        THEN
+            INSERT INTO public."PR_content_ST_location_EV_of" (
+                "Metadata_PR_content_ST_location_EV_of",
+                "PR_ID_content",
+                "ST_ID_location",
+                "EV_ID_of",
+                "PR_content_ST_location_EV_of_PositedAt",
+                "PR_content_ST_location_EV_of_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_PR_content_ST_location_EV_of",
+                NEW."PR_ID_content",
+                NEW."ST_ID_location",
+                NEW."EV_ID_of",
+                _positing,
+                coalesce(NEW."PR_content_ST_location_EV_of_Reliability", 1)
+            );
+        ELSE
+            -- logical delete by setting a value to null: the shown version is retracted
+            INSERT INTO public."PR_content_ST_location_EV_of" (
+                "Metadata_PR_content_ST_location_EV_of",
+                "PR_ID_content",
+                "ST_ID_location",
+                "EV_ID_of",
+                "PR_content_ST_location_EV_of_PositedAt",
+                "PR_content_ST_location_EV_of_Reliability"
+            )
+            VALUES (
+                NEW."Metadata_PR_content_ST_location_EV_of",
+                OLD."PR_ID_content",
+                OLD."ST_ID_location",
+                OLD."EV_ID_of",
+                _positing,
+                0
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lPR_content_ST_location_EV_of" ON public."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "ut_lPR_content_ST_location_EV_of"
+INSTEAD OF UPDATE ON public."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION public."ut_lPR_content_ST_location_EV_of"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_content_ST_location_EV_of instead of DELETE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."dt_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown is retracted
+    INSERT INTO public."PR_content_ST_location_EV_of_Annex" (
+        "Metadata_PR_content_ST_location_EV_of",
+        "PR_content_ST_location_EV_of_ID",
+        "PR_content_ST_location_EV_of_PositedAt",
+        "PR_content_ST_location_EV_of_Reliability"
+    )
+    SELECT
+        OLD."Metadata_PR_content_ST_location_EV_of",
+        OLD."PR_content_ST_location_EV_of_ID",
+        _now,
+        0
+    WHERE
+        OLD."PR_content_ST_location_EV_of_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lPR_content_ST_location_EV_of" ON public."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "dt_lPR_content_ST_location_EV_of"
+INSTEAD OF DELETE ON public."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION public."dt_lPR_content_ST_location_EV_of"();
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
 --
 -- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and

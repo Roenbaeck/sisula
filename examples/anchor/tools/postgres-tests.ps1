@@ -1,7 +1,9 @@
 <#
-    Runs the PostgreSQL tests: what the perspectives show for rows put straight into the tables (the bi and crt generators make no
-    triggers). For each suite and temporalization it creates a database on a PostgreSQL server, runs the SQL generated for the
-    suite's test model in it (golden/postgresql-distinct-bi/_full.sql, or the -crt one), runs the tests
+    Runs the PostgreSQL tests: what the perspectives show for rows put straight into the tables (suite perspectives), what the
+    triggers store for inserts, updates and deletes through the views (suite triggers, and indecisive for crt without
+    decisiveness), what equivalence does (suite equivalence, uni) and whether every model deploys (suite deploy). For each suite
+    and temporalization it creates a database on a PostgreSQL server, runs the SQL generated for the suite's test model in it
+    (golden/postgresql-distinct-bi/_full.sql, or the -crt one, or postgresql-triggers-*), runs the tests
     (postgres-tests/<suite>-<t>.sql), queries every view and calls every function in it once (postgres-tests/compile.sql), and
     drops the database again. It prints the result of every check and exits 1 if a check failed or something did not run through.
 
@@ -20,7 +22,7 @@
 
     Usage:
       postgres-tests.ps1 [-Psql <psql.exe>] [-Server 127.0.0.1] [-Port 5432] [-User postgres] [-Password <password>]
-                         [-Suite perspectives,deploy] [-Temporalization bi,crt] [-Keep] [-Prefix <name>]
+                         [-Suite perspectives,triggers,indecisive,deploy] [-Temporalization bi,crt] [-Keep] [-Prefix <name>]
 
     psql is looked for on the path, or in the environment variable POSTGRES_PSQL; the server, the port, the user and the password in
     PGHOST, PGPORT, PGUSER and PGPASSWORD. The user has to be allowed to make databases. The databases are called
@@ -34,8 +36,8 @@ param(
     [int] $Port = $(if ($env:PGPORT) { [int] $env:PGPORT } else { 5432 }),
     [string] $User = $(if ($env:PGUSER) { $env:PGUSER } else { 'postgres' }),
     [string] $Password = $env:PGPASSWORD,
-    [string[]] $Suite = @('perspectives', 'deploy'),
-    [string[]] $Temporalization = @('bi', 'crt'),
+    [string[]] $Suite = @('perspectives', 'equivalence', 'triggers', 'indecisive', 'deploy'),
+    [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [switch] $Keep,
     [string] $Prefix = 'sisula_'
 )
@@ -45,8 +47,8 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
-foreach ($s in $Suite) { if (@('perspectives', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives or deploy." } }
-foreach ($t in $Temporalization) { if (@('bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use bi or crt." } }
+foreach ($s in $Suite) { if (@('perspectives', 'equivalence', 'triggers', 'indecisive', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives, equivalence, triggers, indecisive or deploy." } }
+foreach ($t in $Temporalization) { if (@('uni', 'bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use uni, bi or crt." } }
 if ($Prefix -notmatch '^[a-z_][a-z0-9_]*$') { throw "The prefix '$Prefix' has to be a plain name in lower case." }
 if (-not $Psql) { $found = Get-Command psql -ErrorAction SilentlyContinue; if ($found) { $Psql = $found.Source } }
 if (-not $Psql -or -not (Test-Path $Psql)) { throw 'psql was not found: put it on the path, or give it with -Psql or POSTGRES_PSQL.' }
@@ -90,12 +92,21 @@ function Invoke-Checks([string] $database, [string] $checksFile) {
 }
 
 $failed = @()
-$known = @('postgresql-plain-bi', 'postgresql-plain-crt')   # the original naming
+$known = @('postgresql-plain', 'postgresql-plain-bi', 'postgresql-plain-crt')   # the original naming
 $jobs = @()
 foreach ($s in $Suite) {
     foreach ($t in $Temporalization) {
-        if ($s -eq 'perspectives') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-distinct-$t") } }
-        else { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @(Get-ChildItem (Join-Path $root 'models') -Filter "postgresql-*-$t.xml" | Sort-Object Name | ForEach-Object { $_.BaseName }) } }
+        $suffix = ''
+        if ($t -ne 'uni') { $suffix = "-$t" }
+        if ($s -eq 'perspectives') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-distinct$suffix") } }
+        elseif ($s -eq 'triggers') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-triggers$suffix") } }
+        elseif ($s -eq 'indecisive') { if ($t -eq 'crt') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @('postgresql-indecisive-crt') } } }
+        elseif ($s -eq 'equivalence') { if ($t -eq 'uni') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @('postgresql-distinct-equivalence') } } }
+        else {
+            $names = Get-ChildItem (Join-Path $root 'models') -Filter 'postgresql-*.xml' | Sort-Object Name | ForEach-Object { $_.BaseName }
+            if ($t -eq 'uni') { $names = @($names | Where-Object { $_ -notmatch '-(bi|crt)$' }) } else { $names = @($names | Where-Object { $_ -match "-$t`$" }) }
+            $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @($names) }
+        }
     }
 }
 foreach ($job in $jobs) {
