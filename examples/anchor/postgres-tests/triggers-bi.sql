@@ -628,3 +628,29 @@ BEGIN
 END;
 $$;
 GO
+
+-- b22 a delete through the latest view of a tie retracts what it shows
+DO $$
+DECLARE
+    s integer;
+    o integer;
+    n integer;
+    error text;
+BEGIN
+    INSERT INTO public."SU_Subject" ("Metadata_SU") VALUES (0) RETURNING "SU_ID" INTO s;
+    INSERT INTO public."OB_Object" ("Metadata_OB") VALUES (0) RETURNING "OB_ID" INTO o;
+    INSERT INTO public."lSU_holder_OB_item_GRD_grade" ("Metadata_SU_holder_OB_item_GRD_grade", "SU_holder_OB_item_GRD_grade_ChangedAt", "SU_holder_OB_item_GRD_grade_PositedAt", "SU_ID_holder", "OB_ID_item", "GRD_ID_grade")
+    VALUES (0, '2020-01-01', '2024-01-01', s, o, 1);
+    INSERT INTO public."lOB_part_SU_owner" ("Metadata_OB_part_SU_owner", "OB_part_SU_owner_PositedAt", "OB_ID_part", "SU_ID_owner") VALUES (0, '2024-01-01', o, s);
+    BEGIN
+        DELETE FROM public."lSU_holder_OB_item_GRD_grade" WHERE "SU_ID_holder" = s AND "OB_ID_item" = o;
+        DELETE FROM public."lOB_part_SU_owner" WHERE "OB_ID_part" = o;
+    EXCEPTION WHEN OTHERS THEN
+        error := SQLERRM;
+    END;
+    n := (SELECT count(*) FROM public."lSU_holder_OB_item_GRD_grade" WHERE "SU_ID_holder" = s AND "OB_ID_item" = o)
+       + (SELECT count(*) FROM public."lOB_part_SU_owner" WHERE "OB_ID_part" = o);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('b22 a delete through the latest view of a tie retracts what it shows', error IS NULL AND n = 0, n || ' shown, expected 0' || coalesce(' ' || error, ''));
+END;
+$$;
+GO
