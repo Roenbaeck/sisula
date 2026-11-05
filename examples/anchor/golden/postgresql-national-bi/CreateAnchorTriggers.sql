@@ -1,0 +1,1398 @@
+-- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the assembled views of the attributes (whose triggers keep the
+-- posit and annex tables) in a consistent way. Default values are used for some columns if not provided by the
+-- corresponding SQL statements: the changing and positing times are now, the reliability is 1.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates (the triggers of the attributes see to that).
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_Scen instead of INSERT trigger on lST_Scen
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lST_Scen"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    _id := NEW."ST_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."ST_Scen" (
+            "Metadata_ST"
+        )
+        VALUES (
+            NEW."Metadata_ST"
+        )
+        RETURNING "ST_ID" INTO _id;
+    END IF;
+    IF NEW."ST_NAM_Scen_Namn" IS NOT NULL THEN
+        INSERT INTO attributes."ST_NAM_Scen_Namn" (
+            "Metadata_ST_NAM",
+            "ST_NAM_ST_ID",
+            "ST_NAM_Scen_Namn",
+            "ST_NAM_ChangedAt",
+            "ST_NAM_PositedAt",
+            "ST_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_NAM", NEW."Metadata_ST"),
+            coalesce(NEW."ST_NAM_ST_ID", _id),
+            NEW."ST_NAM_Scen_Namn",
+            coalesce(NEW."ST_NAM_ChangedAt", _now),
+            coalesce(NEW."ST_NAM_PositedAt", _now),
+            coalesce(NEW."ST_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."ST_LOC_Scen_Plats" IS NOT NULL THEN
+        INSERT INTO attributes."ST_LOC_Scen_Plats" (
+            "Metadata_ST_LOC",
+            "ST_LOC_ST_ID",
+            "ST_LOC_Scen_Plats",
+            "ST_LOC_PositedAt",
+            "ST_LOC_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_LOC", NEW."Metadata_ST"),
+            coalesce(NEW."ST_LOC_ST_ID", _id),
+            NEW."ST_LOC_Scen_Plats",
+            coalesce(NEW."ST_LOC_PositedAt", _now),
+            coalesce(NEW."ST_LOC_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _AVG := NEW."ST_AVG_UTL_ID";
+    IF _AVG IS NULL AND NEW."ST_AVG_UTL_Utnyttjande" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _AVG
+        FROM
+            knots."UTL_Utnyttjande" k
+        WHERE
+            k."UTL_Utnyttjande" = NEW."ST_AVG_UTL_Utnyttjande"
+        LIMIT 1;
+    END IF;
+    IF _AVG IS NOT NULL THEN
+        INSERT INTO attributes."ST_AVG_Scen_Medel" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ST_ID",
+            "ST_AVG_UTL_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_PositedAt",
+            "ST_AVG_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", NEW."Metadata_ST"),
+            coalesce(NEW."ST_AVG_ST_ID", _id),
+            _AVG,
+            coalesce(NEW."ST_AVG_ChangedAt", _now),
+            coalesce(NEW."ST_AVG_PositedAt", _now),
+            coalesce(NEW."ST_AVG_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _MIN := NEW."ST_MIN_UTL_ID";
+    IF _MIN IS NULL AND NEW."ST_MIN_UTL_Utnyttjande" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _MIN
+        FROM
+            knots."UTL_Utnyttjande" k
+        WHERE
+            k."UTL_Utnyttjande" = NEW."ST_MIN_UTL_Utnyttjande"
+        LIMIT 1;
+    END IF;
+    IF _MIN IS NOT NULL THEN
+        INSERT INTO attributes."ST_MIN_Scen_Minimum" (
+            "Metadata_ST_MIN",
+            "ST_MIN_ST_ID",
+            "ST_MIN_UTL_ID",
+            "ST_MIN_PositedAt",
+            "ST_MIN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_MIN", NEW."Metadata_ST"),
+            coalesce(NEW."ST_MIN_ST_ID", _id),
+            _MIN,
+            coalesce(NEW."ST_MIN_PositedAt", _now),
+            coalesce(NEW."ST_MIN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lST_Scen" ON anchors."lST_Scen";
+CREATE TRIGGER "it_lST_Scen"
+INSTEAD OF INSERT ON anchors."lST_Scen"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lST_Scen"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lST_Scen instead of UPDATE trigger on lST_Scen
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lST_Scen"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    IF NEW."ST_ID" IS DISTINCT FROM OLD."ST_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_ID" IS DISTINCT FROM OLD."ST_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_ST_ID" IS DISTINCT FROM OLD."ST_NAM_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_NAM_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_NAM_Scen_Namn, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_NAM_Reliability" IS DISTINCT FROM OLD."ST_NAM_Reliability" THEN NEW."ST_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt" THEN NEW."ST_NAM_PositedAt"
+        WHEN NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" AND NEW."ST_NAM_Scen_Namn" IS NULL THEN NEW."ST_NAM_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."ST_NAM_Scen_Namn" IS DISTINCT FROM OLD."ST_NAM_Scen_Namn"
+    OR NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt"
+    OR NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt"
+    OR NEW."ST_NAM_Reliability" IS DISTINCT FROM OLD."ST_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."ST_NAM_Scen_Namn" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_NAM_Scen_Namn" IS NULL
+            OR NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt"
+            OR NEW."ST_NAM_PositedAt" IS DISTINCT FROM OLD."ST_NAM_PositedAt"
+            OR OLD."ST_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_NAM_Scen_Namn" <> NEW."ST_NAM_Scen_Namn"
+            THEN
+                INSERT INTO attributes."ST_NAM_Scen_Namn" (
+                    "Metadata_ST_NAM",
+                    "ST_NAM_ST_ID",
+                    "ST_NAM_Scen_Namn",
+                    "ST_NAM_ChangedAt",
+                    "ST_NAM_PositedAt",
+                    "ST_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_NAM" IS NOT DISTINCT FROM OLD."Metadata_ST_NAM"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_NAM"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_NAM_ST_ID", NEW."ST_ID"),
+                    NEW."ST_NAM_Scen_Namn",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" THEN NEW."ST_NAM_ChangedAt"
+                        WHEN OLD."ST_NAM_Scen_Namn" = NEW."ST_NAM_Scen_Namn" THEN NEW."ST_NAM_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."ST_NAM_Scen_Namn" IS NULL AND OLD."ST_NAM_Scen_Namn" IS NOT NULL THEN
+            INSERT INTO attributes."ST_NAM_Scen_Namn" (
+                "Metadata_ST_NAM",
+                "ST_NAM_ST_ID",
+                "ST_NAM_Scen_Namn",
+                "ST_NAM_ChangedAt",
+                "ST_NAM_PositedAt",
+                "ST_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_NAM" IS NOT DISTINCT FROM OLD."Metadata_ST_NAM"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_NAM"
+                    END, NEW."Metadata_ST"),
+                p."ST_NAM_ST_ID",
+                p."ST_NAM_Scen_Namn",
+                p."ST_NAM_ChangedAt",
+                _positing,
+                0
+            FROM
+                attributes."ST_NAM_Scen_Namn_Posit" p
+            WHERE
+                p."ST_NAM_ID" = OLD."ST_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_LOC_ID" IS DISTINCT FROM OLD."ST_LOC_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_LOC_ID is not updatable.';
+    END IF;
+    IF NEW."ST_LOC_ST_ID" IS DISTINCT FROM OLD."ST_LOC_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_LOC_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_LOC_Scen_Plats, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_LOC_Reliability" IS DISTINCT FROM OLD."ST_LOC_Reliability" THEN NEW."ST_LOC_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_LOC_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt" THEN NEW."ST_LOC_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."ST_LOC_Scen_Plats" IS DISTINCT FROM OLD."ST_LOC_Scen_Plats"
+    OR NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt"
+    OR NEW."ST_LOC_Reliability" IS DISTINCT FROM OLD."ST_LOC_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."ST_LOC_Scen_Plats" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_LOC_Scen_Plats" IS NULL
+            OR NEW."ST_LOC_PositedAt" IS DISTINCT FROM OLD."ST_LOC_PositedAt"
+            OR OLD."ST_LOC_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR md5(OLD."ST_LOC_Scen_Plats"::text) <> md5(NEW."ST_LOC_Scen_Plats"::text)
+            THEN
+                INSERT INTO attributes."ST_LOC_Scen_Plats" (
+                    "Metadata_ST_LOC",
+                    "ST_LOC_ST_ID",
+                    "ST_LOC_Scen_Plats",
+                    "ST_LOC_PositedAt",
+                    "ST_LOC_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_LOC" IS NOT DISTINCT FROM OLD."Metadata_ST_LOC"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_LOC"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_LOC_ST_ID", NEW."ST_ID"),
+                    NEW."ST_LOC_Scen_Plats",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."ST_LOC_Scen_Plats" IS NULL AND OLD."ST_LOC_Scen_Plats" IS NOT NULL THEN
+            INSERT INTO attributes."ST_LOC_Scen_Plats" (
+                "Metadata_ST_LOC",
+                "ST_LOC_ST_ID",
+                "ST_LOC_Scen_Plats",
+                "ST_LOC_PositedAt",
+                "ST_LOC_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_LOC" IS NOT DISTINCT FROM OLD."Metadata_ST_LOC"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_LOC"
+                    END, NEW."Metadata_ST"),
+                p."ST_LOC_ST_ID",
+                p."ST_LOC_Scen_Plats",
+                _positing,
+                0
+            FROM
+                attributes."ST_LOC_Scen_Plats_Posit" p
+            WHERE
+                p."ST_LOC_ID" = OLD."ST_LOC_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_AVG_ID" IS DISTINCT FROM OLD."ST_AVG_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_AVG_ID is not updatable.';
+    END IF;
+    IF NEW."ST_AVG_ST_ID" IS DISTINCT FROM OLD."ST_AVG_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_AVG_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_AVG_Scen_Medel, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_AVG_Reliability" IS DISTINCT FROM OLD."ST_AVG_Reliability" THEN NEW."ST_AVG_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_AVG_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt" THEN NEW."ST_AVG_PositedAt"
+        WHEN NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" AND NEW."ST_AVG_UTL_ID" IS NULL THEN NEW."ST_AVG_ChangedAt"
+        ELSE _now
+    END;
+    _AVG := NEW."ST_AVG_UTL_ID";
+    IF _AVG IS NOT DISTINCT FROM OLD."ST_AVG_UTL_ID" AND NEW."ST_AVG_UTL_Utnyttjande" IS DISTINCT FROM OLD."ST_AVG_UTL_Utnyttjande" THEN
+        _AVG := NULL;
+        IF NEW."ST_AVG_UTL_Utnyttjande" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _AVG
+            FROM
+                knots."UTL_Utnyttjande" k
+            WHERE
+                k."UTL_Utnyttjande" = NEW."ST_AVG_UTL_Utnyttjande"
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."ST_AVG_UTL_ID" IS DISTINCT FROM OLD."ST_AVG_UTL_ID"
+    OR NEW."ST_AVG_UTL_Utnyttjande" IS DISTINCT FROM OLD."ST_AVG_UTL_Utnyttjande"
+    OR NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt"
+    OR NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt"
+    OR NEW."ST_AVG_Reliability" IS DISTINCT FROM OLD."ST_AVG_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _AVG IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_AVG_UTL_ID" IS NULL
+            OR NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt"
+            OR NEW."ST_AVG_PositedAt" IS DISTINCT FROM OLD."ST_AVG_PositedAt"
+            OR OLD."ST_AVG_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_AVG_UTL_ID" <> _AVG
+            THEN
+                INSERT INTO attributes."ST_AVG_Scen_Medel" (
+                    "Metadata_ST_AVG",
+                    "ST_AVG_ST_ID",
+                    "ST_AVG_UTL_ID",
+                    "ST_AVG_ChangedAt",
+                    "ST_AVG_PositedAt",
+                    "ST_AVG_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_AVG" IS NOT DISTINCT FROM OLD."Metadata_ST_AVG"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_AVG"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_AVG_ST_ID", NEW."ST_ID"),
+                    _AVG,
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" THEN NEW."ST_AVG_ChangedAt"
+                        WHEN OLD."ST_AVG_UTL_ID" = _AVG THEN NEW."ST_AVG_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."ST_AVG_UTL_ID" IS NOT NULL AND (
+            NEW."ST_AVG_UTL_ID" IS NULL OR (
+                NEW."ST_AVG_UTL_ID" = OLD."ST_AVG_UTL_ID"
+                AND NEW."ST_AVG_UTL_Utnyttjande" IS NULL AND OLD."ST_AVG_UTL_Utnyttjande" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO attributes."ST_AVG_Scen_Medel" (
+                "Metadata_ST_AVG",
+                "ST_AVG_ST_ID",
+                "ST_AVG_UTL_ID",
+                "ST_AVG_ChangedAt",
+                "ST_AVG_PositedAt",
+                "ST_AVG_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_AVG" IS NOT DISTINCT FROM OLD."Metadata_ST_AVG"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_AVG"
+                    END, NEW."Metadata_ST"),
+                p."ST_AVG_ST_ID",
+                p."ST_AVG_UTL_ID",
+                p."ST_AVG_ChangedAt",
+                _positing,
+                0
+            FROM
+                attributes."ST_AVG_Scen_Medel_Posit" p
+            WHERE
+                p."ST_AVG_ID" = OLD."ST_AVG_ID";
+        END IF;
+    END IF;
+    IF NEW."ST_MIN_ID" IS DISTINCT FROM OLD."ST_MIN_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_MIN_ID is not updatable.';
+    END IF;
+    IF NEW."ST_MIN_ST_ID" IS DISTINCT FROM OLD."ST_MIN_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_MIN_ST_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of ST_MIN_Scen_Minimum, and when it posits
+    _reliability := CASE
+        WHEN NEW."ST_MIN_Reliability" IS DISTINCT FROM OLD."ST_MIN_Reliability" THEN NEW."ST_MIN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."ST_MIN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt" THEN NEW."ST_MIN_PositedAt"
+        ELSE _now
+    END;
+    _MIN := NEW."ST_MIN_UTL_ID";
+    IF _MIN IS NOT DISTINCT FROM OLD."ST_MIN_UTL_ID" AND NEW."ST_MIN_UTL_Utnyttjande" IS DISTINCT FROM OLD."ST_MIN_UTL_Utnyttjande" THEN
+        _MIN := NULL;
+        IF NEW."ST_MIN_UTL_Utnyttjande" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _MIN
+            FROM
+                knots."UTL_Utnyttjande" k
+            WHERE
+                k."UTL_Utnyttjande" = NEW."ST_MIN_UTL_Utnyttjande"
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."ST_MIN_UTL_ID" IS DISTINCT FROM OLD."ST_MIN_UTL_ID"
+    OR NEW."ST_MIN_UTL_Utnyttjande" IS DISTINCT FROM OLD."ST_MIN_UTL_Utnyttjande"
+    OR NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt"
+    OR NEW."ST_MIN_Reliability" IS DISTINCT FROM OLD."ST_MIN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _MIN IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."ST_MIN_UTL_ID" IS NULL
+            OR NEW."ST_MIN_PositedAt" IS DISTINCT FROM OLD."ST_MIN_PositedAt"
+            OR OLD."ST_MIN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."ST_MIN_UTL_ID" <> _MIN
+            THEN
+                INSERT INTO attributes."ST_MIN_Scen_Minimum" (
+                    "Metadata_ST_MIN",
+                    "ST_MIN_ST_ID",
+                    "ST_MIN_UTL_ID",
+                    "ST_MIN_PositedAt",
+                    "ST_MIN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                             AND NEW."Metadata_ST_MIN" IS NOT DISTINCT FROM OLD."Metadata_ST_MIN"
+                            THEN NEW."Metadata_ST"
+                            ELSE NEW."Metadata_ST_MIN"
+                        END, NEW."Metadata_ST"),
+                    coalesce(NEW."ST_MIN_ST_ID", NEW."ST_ID"),
+                    _MIN,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."ST_MIN_UTL_ID" IS NOT NULL AND (
+            NEW."ST_MIN_UTL_ID" IS NULL OR (
+                NEW."ST_MIN_UTL_ID" = OLD."ST_MIN_UTL_ID"
+                AND NEW."ST_MIN_UTL_Utnyttjande" IS NULL AND OLD."ST_MIN_UTL_Utnyttjande" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO attributes."ST_MIN_Scen_Minimum" (
+                "Metadata_ST_MIN",
+                "ST_MIN_ST_ID",
+                "ST_MIN_UTL_ID",
+                "ST_MIN_PositedAt",
+                "ST_MIN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_MIN" IS NOT DISTINCT FROM OLD."Metadata_ST_MIN"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_MIN"
+                    END, NEW."Metadata_ST"),
+                p."ST_MIN_ST_ID",
+                p."ST_MIN_UTL_ID",
+                _positing,
+                0
+            FROM
+                attributes."ST_MIN_Scen_Minimum_Posit" p
+            WHERE
+                p."ST_MIN_ID" = OLD."ST_MIN_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lST_Scen" ON anchors."lST_Scen";
+CREATE TRIGGER "ut_lST_Scen"
+INSTEAD OF UPDATE ON anchors."lST_Scen"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lST_Scen"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_Scen instead of DELETE trigger on lST_Scen
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lST_Scen"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of ST_NAM_Scen_Namn is retracted
+    INSERT INTO attributes."ST_NAM_Scen_Namn_Annex" (
+        "Metadata_ST_NAM",
+        "ST_NAM_ID",
+        "ST_NAM_PositedAt",
+        "ST_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_NAM",
+        OLD."ST_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_LOC_Scen_Plats is retracted
+    INSERT INTO attributes."ST_LOC_Scen_Plats_Annex" (
+        "Metadata_ST_LOC",
+        "ST_LOC_ID",
+        "ST_LOC_PositedAt",
+        "ST_LOC_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_LOC",
+        OLD."ST_LOC_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_LOC_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_AVG_Scen_Medel is retracted
+    INSERT INTO attributes."ST_AVG_Scen_Medel_Annex" (
+        "Metadata_ST_AVG",
+        "ST_AVG_ID",
+        "ST_AVG_PositedAt",
+        "ST_AVG_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_AVG",
+        OLD."ST_AVG_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_AVG_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of ST_MIN_Scen_Minimum is retracted
+    INSERT INTO attributes."ST_MIN_Scen_Minimum_Annex" (
+        "Metadata_ST_MIN",
+        "ST_MIN_ID",
+        "ST_MIN_PositedAt",
+        "ST_MIN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_ST_MIN",
+        OLD."ST_MIN_ID",
+        _now,
+        0
+    WHERE
+        OLD."ST_MIN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lST_Scen" ON anchors."lST_Scen";
+CREATE TRIGGER "dt_lST_Scen"
+INSTEAD OF DELETE ON anchors."lST_Scen"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lST_Scen"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_Skådespelare instead of INSERT trigger on lAC_Skådespelare
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lAC_Skådespelare"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id smallint;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    _id := NEW."AC_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."AC_Skådespelare" (
+            "Metadata_AC"
+        )
+        VALUES (
+            NEW."Metadata_AC"
+        )
+        RETURNING "AC_ID" INTO _id;
+    END IF;
+    IF NEW."AC_NAM_Skådespelare_Namn" IS NOT NULL THEN
+        INSERT INTO attributes."AC_NAM_Skådespelare_Namn" (
+            "Metadata_AC_NAM",
+            "AC_NAM_AC_ID",
+            "AC_NAM_Skådespelare_Namn",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_PositedAt",
+            "AC_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_NAM", NEW."Metadata_AC"),
+            coalesce(NEW."AC_NAM_AC_ID", _id),
+            NEW."AC_NAM_Skådespelare_Namn",
+            coalesce(NEW."AC_NAM_ChangedAt", _now),
+            coalesce(NEW."AC_NAM_PositedAt", _now),
+            coalesce(NEW."AC_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _GEN := NEW."AC_GEN_GEN_ID";
+    IF _GEN IS NULL AND NEW."AC_GEN_GEN_Kön" IS NOT NULL THEN
+        SELECT
+            k."GEN_ID"
+        INTO
+            _GEN
+        FROM
+            knots."GEN_Kön" k
+        WHERE
+            k."GEN_Checksum" = decode(md5(NEW."AC_GEN_GEN_Kön"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _GEN IS NOT NULL THEN
+        INSERT INTO attributes."AC_GEN_Skådespelare_Kön" (
+            "Metadata_AC_GEN",
+            "AC_GEN_AC_ID",
+            "AC_GEN_GEN_ID",
+            "AC_GEN_PositedAt",
+            "AC_GEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_GEN", NEW."Metadata_AC"),
+            coalesce(NEW."AC_GEN_AC_ID", _id),
+            _GEN,
+            coalesce(NEW."AC_GEN_PositedAt", _now),
+            coalesce(NEW."AC_GEN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    _PLV := NEW."AC_PLV_PLV_ID";
+    IF _PLV IS NULL AND NEW."AC_PLV_PLV_Yrkesnivå" IS NOT NULL THEN
+        SELECT
+            k."PLV_ID"
+        INTO
+            _PLV
+        FROM
+            knots."PLV_Yrkesnivå" k
+        WHERE
+            k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_Yrkesnivå"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _PLV IS NOT NULL THEN
+        INSERT INTO attributes."AC_PLV_Skådespelare_Yrkesnivå" (
+            "Metadata_AC_PLV",
+            "AC_PLV_AC_ID",
+            "AC_PLV_PLV_ID",
+            "AC_PLV_ChangedAt",
+            "AC_PLV_PositedAt",
+            "AC_PLV_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_PLV", NEW."Metadata_AC"),
+            coalesce(NEW."AC_PLV_AC_ID", _id),
+            _PLV,
+            coalesce(NEW."AC_PLV_ChangedAt", _now),
+            coalesce(NEW."AC_PLV_PositedAt", _now),
+            coalesce(NEW."AC_PLV_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_Skådespelare" ON anchors."lAC_Skådespelare";
+CREATE TRIGGER "it_lAC_Skådespelare"
+INSTEAD OF INSERT ON anchors."lAC_Skådespelare"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lAC_Skådespelare"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_Skådespelare instead of UPDATE trigger on lAC_Skådespelare
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lAC_Skådespelare"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    IF NEW."AC_ID" IS DISTINCT FROM OLD."AC_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_ID" IS DISTINCT FROM OLD."AC_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_AC_ID" IS DISTINCT FROM OLD."AC_NAM_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_NAM_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_NAM_Skådespelare_Namn, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_NAM_Reliability" IS DISTINCT FROM OLD."AC_NAM_Reliability" THEN NEW."AC_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt" THEN NEW."AC_NAM_PositedAt"
+        WHEN NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" AND NEW."AC_NAM_Skådespelare_Namn" IS NULL THEN NEW."AC_NAM_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."AC_NAM_Skådespelare_Namn" IS DISTINCT FROM OLD."AC_NAM_Skådespelare_Namn"
+    OR NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt"
+    OR NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt"
+    OR NEW."AC_NAM_Reliability" IS DISTINCT FROM OLD."AC_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."AC_NAM_Skådespelare_Namn" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_NAM_Skådespelare_Namn" IS NULL
+            OR NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt"
+            OR NEW."AC_NAM_PositedAt" IS DISTINCT FROM OLD."AC_NAM_PositedAt"
+            OR OLD."AC_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_NAM_Skådespelare_Namn" <> NEW."AC_NAM_Skådespelare_Namn"
+            THEN
+                INSERT INTO attributes."AC_NAM_Skådespelare_Namn" (
+                    "Metadata_AC_NAM",
+                    "AC_NAM_AC_ID",
+                    "AC_NAM_Skådespelare_Namn",
+                    "AC_NAM_ChangedAt",
+                    "AC_NAM_PositedAt",
+                    "AC_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_NAM" IS NOT DISTINCT FROM OLD."Metadata_AC_NAM"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_NAM"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_NAM_AC_ID", NEW."AC_ID"),
+                    NEW."AC_NAM_Skådespelare_Namn",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" THEN NEW."AC_NAM_ChangedAt"
+                        WHEN OLD."AC_NAM_Skådespelare_Namn" = NEW."AC_NAM_Skådespelare_Namn" THEN NEW."AC_NAM_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."AC_NAM_Skådespelare_Namn" IS NULL AND OLD."AC_NAM_Skådespelare_Namn" IS NOT NULL THEN
+            INSERT INTO attributes."AC_NAM_Skådespelare_Namn" (
+                "Metadata_AC_NAM",
+                "AC_NAM_AC_ID",
+                "AC_NAM_Skådespelare_Namn",
+                "AC_NAM_ChangedAt",
+                "AC_NAM_PositedAt",
+                "AC_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_NAM" IS NOT DISTINCT FROM OLD."Metadata_AC_NAM"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_NAM"
+                    END, NEW."Metadata_AC"),
+                p."AC_NAM_AC_ID",
+                p."AC_NAM_Skådespelare_Namn",
+                p."AC_NAM_ChangedAt",
+                _positing,
+                0
+            FROM
+                attributes."AC_NAM_Skådespelare_Namn_Posit" p
+            WHERE
+                p."AC_NAM_ID" = OLD."AC_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."AC_GEN_ID" IS DISTINCT FROM OLD."AC_GEN_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_GEN_ID is not updatable.';
+    END IF;
+    IF NEW."AC_GEN_AC_ID" IS DISTINCT FROM OLD."AC_GEN_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_GEN_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_GEN_Skådespelare_Kön, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_GEN_Reliability" IS DISTINCT FROM OLD."AC_GEN_Reliability" THEN NEW."AC_GEN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_GEN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt" THEN NEW."AC_GEN_PositedAt"
+        ELSE _now
+    END;
+    _GEN := NEW."AC_GEN_GEN_ID";
+    IF _GEN IS NOT DISTINCT FROM OLD."AC_GEN_GEN_ID" AND NEW."AC_GEN_GEN_Kön" IS DISTINCT FROM OLD."AC_GEN_GEN_Kön" THEN
+        _GEN := NULL;
+        IF NEW."AC_GEN_GEN_Kön" IS NOT NULL THEN
+            SELECT
+                k."GEN_ID"
+            INTO
+                _GEN
+            FROM
+                knots."GEN_Kön" k
+            WHERE
+                k."GEN_Checksum" = decode(md5(NEW."AC_GEN_GEN_Kön"::text), 'hex')
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."AC_GEN_GEN_ID" IS DISTINCT FROM OLD."AC_GEN_GEN_ID"
+    OR NEW."AC_GEN_GEN_Kön" IS DISTINCT FROM OLD."AC_GEN_GEN_Kön"
+    OR NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt"
+    OR NEW."AC_GEN_Reliability" IS DISTINCT FROM OLD."AC_GEN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _GEN IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_GEN_GEN_ID" IS NULL
+            OR NEW."AC_GEN_PositedAt" IS DISTINCT FROM OLD."AC_GEN_PositedAt"
+            OR OLD."AC_GEN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_GEN_GEN_ID" <> _GEN
+            THEN
+                INSERT INTO attributes."AC_GEN_Skådespelare_Kön" (
+                    "Metadata_AC_GEN",
+                    "AC_GEN_AC_ID",
+                    "AC_GEN_GEN_ID",
+                    "AC_GEN_PositedAt",
+                    "AC_GEN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_GEN" IS NOT DISTINCT FROM OLD."Metadata_AC_GEN"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_GEN"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_GEN_AC_ID", NEW."AC_ID"),
+                    _GEN,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."AC_GEN_GEN_ID" IS NOT NULL AND (
+            NEW."AC_GEN_GEN_ID" IS NULL OR (
+                NEW."AC_GEN_GEN_ID" = OLD."AC_GEN_GEN_ID"
+                AND NEW."AC_GEN_GEN_Kön" IS NULL AND OLD."AC_GEN_GEN_Kön" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO attributes."AC_GEN_Skådespelare_Kön" (
+                "Metadata_AC_GEN",
+                "AC_GEN_AC_ID",
+                "AC_GEN_GEN_ID",
+                "AC_GEN_PositedAt",
+                "AC_GEN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_GEN" IS NOT DISTINCT FROM OLD."Metadata_AC_GEN"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_GEN"
+                    END, NEW."Metadata_AC"),
+                p."AC_GEN_AC_ID",
+                p."AC_GEN_GEN_ID",
+                _positing,
+                0
+            FROM
+                attributes."AC_GEN_Skådespelare_Kön_Posit" p
+            WHERE
+                p."AC_GEN_ID" = OLD."AC_GEN_ID";
+        END IF;
+    END IF;
+    IF NEW."AC_PLV_ID" IS DISTINCT FROM OLD."AC_PLV_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_PLV_ID is not updatable.';
+    END IF;
+    IF NEW."AC_PLV_AC_ID" IS DISTINCT FROM OLD."AC_PLV_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_PLV_AC_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of AC_PLV_Skådespelare_Yrkesnivå, and when it posits
+    _reliability := CASE
+        WHEN NEW."AC_PLV_Reliability" IS DISTINCT FROM OLD."AC_PLV_Reliability" THEN NEW."AC_PLV_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."AC_PLV_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt" THEN NEW."AC_PLV_PositedAt"
+        WHEN NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" AND NEW."AC_PLV_PLV_ID" IS NULL THEN NEW."AC_PLV_ChangedAt"
+        ELSE _now
+    END;
+    _PLV := NEW."AC_PLV_PLV_ID";
+    IF _PLV IS NOT DISTINCT FROM OLD."AC_PLV_PLV_ID" AND NEW."AC_PLV_PLV_Yrkesnivå" IS DISTINCT FROM OLD."AC_PLV_PLV_Yrkesnivå" THEN
+        _PLV := NULL;
+        IF NEW."AC_PLV_PLV_Yrkesnivå" IS NOT NULL THEN
+            SELECT
+                k."PLV_ID"
+            INTO
+                _PLV
+            FROM
+                knots."PLV_Yrkesnivå" k
+            WHERE
+                k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_Yrkesnivå"::text), 'hex')
+            LIMIT 1;
+        END IF;
+    END IF;
+    IF NEW."AC_PLV_PLV_ID" IS DISTINCT FROM OLD."AC_PLV_PLV_ID"
+    OR NEW."AC_PLV_PLV_Yrkesnivå" IS DISTINCT FROM OLD."AC_PLV_PLV_Yrkesnivå"
+    OR NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt"
+    OR NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt"
+    OR NEW."AC_PLV_Reliability" IS DISTINCT FROM OLD."AC_PLV_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF _PLV IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."AC_PLV_PLV_ID" IS NULL
+            OR NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt"
+            OR NEW."AC_PLV_PositedAt" IS DISTINCT FROM OLD."AC_PLV_PositedAt"
+            OR OLD."AC_PLV_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."AC_PLV_PLV_ID" <> _PLV
+            THEN
+                INSERT INTO attributes."AC_PLV_Skådespelare_Yrkesnivå" (
+                    "Metadata_AC_PLV",
+                    "AC_PLV_AC_ID",
+                    "AC_PLV_PLV_ID",
+                    "AC_PLV_ChangedAt",
+                    "AC_PLV_PositedAt",
+                    "AC_PLV_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                             AND NEW."Metadata_AC_PLV" IS NOT DISTINCT FROM OLD."Metadata_AC_PLV"
+                            THEN NEW."Metadata_AC"
+                            ELSE NEW."Metadata_AC_PLV"
+                        END, NEW."Metadata_AC"),
+                    coalesce(NEW."AC_PLV_AC_ID", NEW."AC_ID"),
+                    _PLV,
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" THEN NEW."AC_PLV_ChangedAt"
+                        WHEN OLD."AC_PLV_PLV_ID" = _PLV THEN NEW."AC_PLV_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF OLD."AC_PLV_PLV_ID" IS NOT NULL AND (
+            NEW."AC_PLV_PLV_ID" IS NULL OR (
+                NEW."AC_PLV_PLV_ID" = OLD."AC_PLV_PLV_ID"
+                AND NEW."AC_PLV_PLV_Yrkesnivå" IS NULL AND OLD."AC_PLV_PLV_Yrkesnivå" IS NOT NULL
+            )
+        ) THEN
+            INSERT INTO attributes."AC_PLV_Skådespelare_Yrkesnivå" (
+                "Metadata_AC_PLV",
+                "AC_PLV_AC_ID",
+                "AC_PLV_PLV_ID",
+                "AC_PLV_ChangedAt",
+                "AC_PLV_PositedAt",
+                "AC_PLV_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_PLV" IS NOT DISTINCT FROM OLD."Metadata_AC_PLV"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_PLV"
+                    END, NEW."Metadata_AC"),
+                p."AC_PLV_AC_ID",
+                p."AC_PLV_PLV_ID",
+                p."AC_PLV_ChangedAt",
+                _positing,
+                0
+            FROM
+                attributes."AC_PLV_Skådespelare_Yrkesnivå_Posit" p
+            WHERE
+                p."AC_PLV_ID" = OLD."AC_PLV_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_Skådespelare" ON anchors."lAC_Skådespelare";
+CREATE TRIGGER "ut_lAC_Skådespelare"
+INSTEAD OF UPDATE ON anchors."lAC_Skådespelare"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lAC_Skådespelare"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_Skådespelare instead of DELETE trigger on lAC_Skådespelare
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lAC_Skådespelare"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of AC_NAM_Skådespelare_Namn is retracted
+    INSERT INTO attributes."AC_NAM_Skådespelare_Namn_Annex" (
+        "Metadata_AC_NAM",
+        "AC_NAM_ID",
+        "AC_NAM_PositedAt",
+        "AC_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_NAM",
+        OLD."AC_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of AC_GEN_Skådespelare_Kön is retracted
+    INSERT INTO attributes."AC_GEN_Skådespelare_Kön_Annex" (
+        "Metadata_AC_GEN",
+        "AC_GEN_ID",
+        "AC_GEN_PositedAt",
+        "AC_GEN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_GEN",
+        OLD."AC_GEN_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_GEN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of AC_PLV_Skådespelare_Yrkesnivå is retracted
+    INSERT INTO attributes."AC_PLV_Skådespelare_Yrkesnivå_Annex" (
+        "Metadata_AC_PLV",
+        "AC_PLV_ID",
+        "AC_PLV_PositedAt",
+        "AC_PLV_Reliability"
+    )
+    SELECT
+        OLD."Metadata_AC_PLV",
+        OLD."AC_PLV_ID",
+        _now,
+        0
+    WHERE
+        OLD."AC_PLV_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_Skådespelare" ON anchors."lAC_Skådespelare";
+CREATE TRIGGER "dt_lAC_Skådespelare"
+INSTEAD OF DELETE ON anchors."lAC_Skådespelare"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lAC_Skådespelare"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_Föreställning instead of INSERT trigger on lPR_Föreställning
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lPR_Föreställning"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id bigint;
+BEGIN
+    _id := NEW."PR_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."PR_Föreställning" (
+            "Metadata_PR"
+        )
+        VALUES (
+            NEW."Metadata_PR"
+        )
+        RETURNING "PR_ID" INTO _id;
+    END IF;
+    IF NEW."PR_NAM_Föreställning_Namn" IS NOT NULL THEN
+        INSERT INTO attributes."PR_NAM_Föreställning_Namn" (
+            "Metadata_PR_NAM",
+            "PR_NAM_PR_ID",
+            "PR_NAM_Föreställning_Namn",
+            "PR_NAM_PositedAt",
+            "PR_NAM_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_NAM", NEW."Metadata_PR"),
+            coalesce(NEW."PR_NAM_PR_ID", _id),
+            NEW."PR_NAM_Föreställning_Namn",
+            coalesce(NEW."PR_NAM_PositedAt", _now),
+            coalesce(NEW."PR_NAM_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    IF NEW."PR_LEN_Föreställning_Längd" IS NOT NULL THEN
+        INSERT INTO attributes."PR_LEN_Föreställning_Längd" (
+            "Metadata_PR_LEN",
+            "PR_LEN_PR_ID",
+            "PR_LEN_Föreställning_Längd",
+            "PR_LEN_ChangedAt",
+            "PR_LEN_PositedAt",
+            "PR_LEN_Reliability"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", NEW."Metadata_PR"),
+            coalesce(NEW."PR_LEN_PR_ID", _id),
+            NEW."PR_LEN_Föreställning_Längd",
+            coalesce(NEW."PR_LEN_ChangedAt", _now),
+            coalesce(NEW."PR_LEN_PositedAt", _now),
+            coalesce(NEW."PR_LEN_Reliability", NEW."Reliability", 1)
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lPR_Föreställning" ON anchors."lPR_Föreställning";
+CREATE TRIGGER "it_lPR_Föreställning"
+INSTEAD OF INSERT ON anchors."lPR_Föreställning"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lPR_Föreställning"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_Föreställning instead of UPDATE trigger on lPR_Föreställning
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lPR_Föreställning"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _reliability decimal(5,2);
+    _positing timestamp;
+BEGIN
+    IF NEW."PR_ID" IS DISTINCT FROM OLD."PR_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_ID" IS DISTINCT FROM OLD."PR_NAM_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_NAM_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_PR_ID" IS DISTINCT FROM OLD."PR_NAM_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_NAM_PR_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of PR_NAM_Föreställning_Namn, and when it posits
+    _reliability := CASE
+        WHEN NEW."PR_NAM_Reliability" IS DISTINCT FROM OLD."PR_NAM_Reliability" THEN NEW."PR_NAM_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."PR_NAM_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt" THEN NEW."PR_NAM_PositedAt"
+        ELSE _now
+    END;
+    IF NEW."PR_NAM_Föreställning_Namn" IS DISTINCT FROM OLD."PR_NAM_Föreställning_Namn"
+    OR NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt"
+    OR NEW."PR_NAM_Reliability" IS DISTINCT FROM OLD."PR_NAM_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."PR_NAM_Föreställning_Namn" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."PR_NAM_Föreställning_Namn" IS NULL
+            OR NEW."PR_NAM_PositedAt" IS DISTINCT FROM OLD."PR_NAM_PositedAt"
+            OR OLD."PR_NAM_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."PR_NAM_Föreställning_Namn" <> NEW."PR_NAM_Föreställning_Namn"
+            THEN
+                INSERT INTO attributes."PR_NAM_Föreställning_Namn" (
+                    "Metadata_PR_NAM",
+                    "PR_NAM_PR_ID",
+                    "PR_NAM_Föreställning_Namn",
+                    "PR_NAM_PositedAt",
+                    "PR_NAM_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                             AND NEW."Metadata_PR_NAM" IS NOT DISTINCT FROM OLD."Metadata_PR_NAM"
+                            THEN NEW."Metadata_PR"
+                            ELSE NEW."Metadata_PR_NAM"
+                        END, NEW."Metadata_PR"),
+                    coalesce(NEW."PR_NAM_PR_ID", NEW."PR_ID"),
+                    NEW."PR_NAM_Föreställning_Namn",
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."PR_NAM_Föreställning_Namn" IS NULL AND OLD."PR_NAM_Föreställning_Namn" IS NOT NULL THEN
+            INSERT INTO attributes."PR_NAM_Föreställning_Namn" (
+                "Metadata_PR_NAM",
+                "PR_NAM_PR_ID",
+                "PR_NAM_Föreställning_Namn",
+                "PR_NAM_PositedAt",
+                "PR_NAM_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_NAM" IS NOT DISTINCT FROM OLD."Metadata_PR_NAM"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_NAM"
+                    END, NEW."Metadata_PR"),
+                p."PR_NAM_PR_ID",
+                p."PR_NAM_Föreställning_Namn",
+                _positing,
+                0
+            FROM
+                attributes."PR_NAM_Föreställning_Namn_Posit" p
+            WHERE
+                p."PR_NAM_ID" = OLD."PR_NAM_ID";
+        END IF;
+    END IF;
+    IF NEW."PR_LEN_ID" IS DISTINCT FROM OLD."PR_LEN_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_LEN_ID is not updatable.';
+    END IF;
+    IF NEW."PR_LEN_PR_ID" IS DISTINCT FROM OLD."PR_LEN_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_LEN_PR_ID is not updatable.';
+    END IF;
+    -- what the update says about the reliability of PR_LEN_Föreställning_Längd, and when it posits
+    _reliability := CASE
+        WHEN NEW."PR_LEN_Reliability" IS DISTINCT FROM OLD."PR_LEN_Reliability" THEN NEW."PR_LEN_Reliability"
+        WHEN NEW."Reliability" IS DISTINCT FROM OLD."Reliability" THEN NEW."Reliability"
+        ELSE NEW."PR_LEN_Reliability"
+    END;
+    _positing := CASE
+        WHEN NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt" THEN NEW."PR_LEN_PositedAt"
+        WHEN NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" AND NEW."PR_LEN_Föreställning_Längd" IS NULL THEN NEW."PR_LEN_ChangedAt"
+        ELSE _now
+    END;
+    IF NEW."PR_LEN_Föreställning_Längd" IS DISTINCT FROM OLD."PR_LEN_Föreställning_Längd"
+    OR NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt"
+    OR NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt"
+    OR NEW."PR_LEN_Reliability" IS DISTINCT FROM OLD."PR_LEN_Reliability"
+    OR NEW."Reliability" IS DISTINCT FROM OLD."Reliability"
+    THEN
+        IF NEW."PR_LEN_Föreställning_Längd" IS NOT NULL THEN
+            -- a statement that leaves everything as it is states nothing
+            IF OLD."PR_LEN_Föreställning_Längd" IS NULL
+            OR NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt"
+            OR NEW."PR_LEN_PositedAt" IS DISTINCT FROM OLD."PR_LEN_PositedAt"
+            OR OLD."PR_LEN_Reliability" IS DISTINCT FROM coalesce(_reliability, 1)
+            OR OLD."PR_LEN_Föreställning_Längd" <> NEW."PR_LEN_Föreställning_Längd"
+            THEN
+                INSERT INTO attributes."PR_LEN_Föreställning_Längd" (
+                    "Metadata_PR_LEN",
+                    "PR_LEN_PR_ID",
+                    "PR_LEN_Föreställning_Längd",
+                    "PR_LEN_ChangedAt",
+                    "PR_LEN_PositedAt",
+                    "PR_LEN_Reliability"
+                )
+                VALUES (
+                    coalesce(
+                        CASE
+                            WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                             AND NEW."Metadata_PR_LEN" IS NOT DISTINCT FROM OLD."Metadata_PR_LEN"
+                            THEN NEW."Metadata_PR"
+                            ELSE NEW."Metadata_PR_LEN"
+                        END, NEW."Metadata_PR"),
+                    coalesce(NEW."PR_LEN_PR_ID", NEW."PR_ID"),
+                    NEW."PR_LEN_Föreställning_Längd",
+                    -- the shown version asserted again keeps its changing time, as does one that is given
+                    CASE
+                        WHEN NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" THEN NEW."PR_LEN_ChangedAt"
+                        WHEN OLD."PR_LEN_Föreställning_Längd" = NEW."PR_LEN_Föreställning_Längd" THEN NEW."PR_LEN_ChangedAt"
+                        ELSE _now
+                    END,
+                    _positing,
+                    coalesce(_reliability, 1)
+                );
+            END IF;
+        END IF;
+        -- logical delete by setting the value to null
+        IF NEW."PR_LEN_Föreställning_Längd" IS NULL AND OLD."PR_LEN_Föreställning_Längd" IS NOT NULL THEN
+            INSERT INTO attributes."PR_LEN_Föreställning_Längd" (
+                "Metadata_PR_LEN",
+                "PR_LEN_PR_ID",
+                "PR_LEN_Föreställning_Längd",
+                "PR_LEN_ChangedAt",
+                "PR_LEN_PositedAt",
+                "PR_LEN_Reliability"
+            )
+            SELECT
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_LEN" IS NOT DISTINCT FROM OLD."Metadata_PR_LEN"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_LEN"
+                    END, NEW."Metadata_PR"),
+                p."PR_LEN_PR_ID",
+                p."PR_LEN_Föreställning_Längd",
+                p."PR_LEN_ChangedAt",
+                _positing,
+                0
+            FROM
+                attributes."PR_LEN_Föreställning_Längd_Posit" p
+            WHERE
+                p."PR_LEN_ID" = OLD."PR_LEN_ID";
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lPR_Föreställning" ON anchors."lPR_Föreställning";
+CREATE TRIGGER "ut_lPR_Föreställning"
+INSTEAD OF UPDATE ON anchors."lPR_Föreställning"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lPR_Föreställning"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_Föreställning instead of DELETE trigger on lPR_Föreställning
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lPR_Föreställning"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- what is shown of PR_NAM_Föreställning_Namn is retracted
+    INSERT INTO attributes."PR_NAM_Föreställning_Namn_Annex" (
+        "Metadata_PR_NAM",
+        "PR_NAM_ID",
+        "PR_NAM_PositedAt",
+        "PR_NAM_Reliability"
+    )
+    SELECT
+        OLD."Metadata_PR_NAM",
+        OLD."PR_NAM_ID",
+        _now,
+        0
+    WHERE
+        OLD."PR_NAM_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    -- what is shown of PR_LEN_Föreställning_Längd is retracted
+    INSERT INTO attributes."PR_LEN_Föreställning_Längd_Annex" (
+        "Metadata_PR_LEN",
+        "PR_LEN_ID",
+        "PR_LEN_PositedAt",
+        "PR_LEN_Reliability"
+    )
+    SELECT
+        OLD."Metadata_PR_LEN",
+        OLD."PR_LEN_ID",
+        _now,
+        0
+    WHERE
+        OLD."PR_LEN_ID" IS NOT NULL
+    ON CONFLICT DO NOTHING;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lPR_Föreställning" ON anchors."lPR_Föreställning";
+CREATE TRIGGER "dt_lPR_Föreställning"
+INSTEAD OF DELETE ON anchors."lPR_Föreställning"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lPR_Föreställning"();
