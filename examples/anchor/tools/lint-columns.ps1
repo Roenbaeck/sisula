@@ -74,7 +74,7 @@ function Test-Columns([System.Collections.Generic.List[string]] $code, [string[]
     for ($i = 0; $i -lt $code.Count; $i++) {
         if ($code[$i] -notmatch '^CREATE (?:OR REPLACE )?(VIEW|FUNCTION)(?: IF NOT EXISTS)? (\w+)\.(\w+)') { continue }
         $self = ($Matches[2] + '.' + $Matches[3]).ToLower()
-        $end = $i; while ($end -lt $code.Count -and $code[$end] -notmatch '^(;|\$\$ LANGUAGE sql\b.*;)\s*$') { $end++ }
+        $end = $i; while ($end -lt $code.Count -and $code[$end] -notmatch '^(;|\$\$ LANGUAGE (sql|plpgsql)\b.*;)\s*$') { $end++ }
         $text = ($code[$i..([Math]::Min($end, $code.Count - 1))] -join "`n")
         $params = $objects[$self].Params
         # aliases: schema.name alias, and TABLE(schema.function(...)) alias

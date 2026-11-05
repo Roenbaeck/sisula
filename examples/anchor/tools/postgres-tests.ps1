@@ -34,7 +34,7 @@ param(
     [int] $Port = $(if ($env:PGPORT) { [int] $env:PGPORT } else { 5432 }),
     [string] $User = $(if ($env:PGUSER) { $env:PGUSER } else { 'postgres' }),
     [string] $Password = $env:PGPASSWORD,
-    [string[]] $Suite = @('perspectives', 'equivalence', 'deploy'),
+    [string[]] $Suite = @('perspectives', 'equivalence', 'triggers', 'deploy'),
     [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [switch] $Keep,
     [string] $Prefix = 'sisula_'
@@ -45,7 +45,7 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
-foreach ($s in $Suite) { if (@('perspectives', 'equivalence', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives, equivalence or deploy." } }
+foreach ($s in $Suite) { if (@('perspectives', 'equivalence', 'triggers', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives, equivalence, triggers or deploy." } }
 foreach ($t in $Temporalization) { if (@('uni', 'bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use uni, bi or crt." } }
 if ($Prefix -notmatch '^[a-z_][a-z0-9_]*$') { throw "The prefix '$Prefix' has to be a plain name in lower case." }
 if (-not $Psql) { $found = Get-Command psql -ErrorAction SilentlyContinue; if ($found) { $Psql = $found.Source } }
@@ -97,6 +97,7 @@ foreach ($s in $Suite) {
         $suffix = ''
         if ($t -ne 'uni') { $suffix = "-$t" }
         if ($s -eq 'perspectives') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-distinct$suffix") } }
+        elseif ($s -eq 'triggers') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-triggers$suffix") } }
         elseif ($s -eq 'equivalence') { if ($t -eq 'uni') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @('postgresql-distinct-equivalence') } } }
         else {
             $names = Get-ChildItem (Join-Path $root 'models') -Filter 'postgresql-*.xml' | Sort-Object Name | ForEach-Object { $_.BaseName }

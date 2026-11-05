@@ -1,7 +1,7 @@
 -- Every view and function in the database, queried or called once. PostgreSQL checks the body of a function in SQL when it
 -- is made, but a view or a function can still fail over rows (a division by nothing, a cast), so tools/postgres-tests.ps1 runs this
 -- after the tests, when the views are queried over rows. A function is called with nulls for its arguments, since what the
--- perspectives show is for the tests to check.
+-- perspectives show is for the tests to check; a function that is a trigger cannot be called, and the tests run it.
 DO $$
 DECLARE
     o record;
@@ -35,6 +35,8 @@ BEGIN
             n.nspname NOT IN ('pg_catalog', 'information_schema')
         AND
             p.prokind = 'f'
+        AND
+            p.prorettype <> 'trigger'::regtype
         ORDER BY
             1
     LOOP

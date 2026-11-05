@@ -2722,6 +2722,2993 @@ FROM
 WHERE
     tie."PR_content_ST_location_EV_of_ChangedAt" BETWEEN intervalStart AND intervalEnd
 $$ LANGUAGE sql STABLE;
+-- ATTRIBUTE TRIGGERS ------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the attribute tables make them behave as the model says: a row that is already there is
+-- not stored again, another value at a time that has a value is a contradiction, and a value that is the same as the
+-- one before it (a restatement) is skipped by an idempotent attribute and refused by one that may not be restated.
+--
+-- For idempotent attributes, only changes that represent a value different from the previous or following value are
+-- stored. Others are silently ignored in order to avoid unnecessary temporal duplicates.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_DAT_Event_Date before INSERT trigger on EV_DAT_Event_Date
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_DAT_Event_Date"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_DAT_Event_Date" x
+        WHERE
+            x."EV_DAT_EV_ID" = NEW."EV_DAT_EV_ID"
+        AND
+            x."EV_DAT_Event_Date" = NEW."EV_DAT_Event_Date"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_DAT_Event_Date" x
+        WHERE
+            x."EV_DAT_EV_ID" = NEW."EV_DAT_EV_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_DAT_Event_Date for: %', NEW."EV_DAT_EV_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_DAT_Event_Date" ON attributes."EV_DAT_Event_Date";
+CREATE TRIGGER "it_EV_DAT_Event_Date"
+BEFORE INSERT ON attributes."EV_DAT_Event_Date"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_DAT_Event_Date"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_AUD_Event_Audience before INSERT trigger on EV_AUD_Event_Audience
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_AUD_Event_Audience"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_AUD_Event_Audience" x
+        WHERE
+            x."EV_AUD_EV_ID" = NEW."EV_AUD_EV_ID"
+        AND
+            x."EV_AUD_Event_Audience" = NEW."EV_AUD_Event_Audience"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_AUD_Event_Audience" x
+        WHERE
+            x."EV_AUD_EV_ID" = NEW."EV_AUD_EV_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_AUD_Event_Audience for: %', NEW."EV_AUD_EV_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_AUD_Event_Audience" ON attributes."EV_AUD_Event_Audience";
+CREATE TRIGGER "it_EV_AUD_Event_Audience"
+BEFORE INSERT ON attributes."EV_AUD_Event_Audience"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_AUD_Event_Audience"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_REV_Event_Revenue before INSERT trigger on EV_REV_Event_Revenue
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_REV_Event_Revenue"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_REV_Event_Revenue" x
+        WHERE
+            x."EV_REV_EV_ID" = NEW."EV_REV_EV_ID"
+        AND
+            x."EV_REV_Event_Revenue" = NEW."EV_REV_Event_Revenue"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_REV_Event_Revenue" x
+        WHERE
+            x."EV_REV_EV_ID" = NEW."EV_REV_EV_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_REV_Event_Revenue for: %', NEW."EV_REV_EV_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_REV_Event_Revenue" ON attributes."EV_REV_Event_Revenue";
+CREATE TRIGGER "it_EV_REV_Event_Revenue"
+BEFORE INSERT ON attributes."EV_REV_Event_Revenue"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_REV_Event_Revenue"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_STA_Event_Status before INSERT trigger on EV_STA_Event_Status
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_STA_Event_Status"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_STA_Event_Status" x
+        WHERE
+            x."EV_STA_ChangedAt" = NEW."EV_STA_ChangedAt"
+        AND
+            x."EV_STA_EV_ID" = NEW."EV_STA_EV_ID"
+        AND
+            x."EV_STA_Event_Status" = NEW."EV_STA_Event_Status"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_STA_Event_Status" x
+        WHERE
+            x."EV_STA_EV_ID" = NEW."EV_STA_EV_ID"
+        AND
+            x."EV_STA_ChangedAt" = NEW."EV_STA_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_STA_Event_Status for: %', concat_ws(', ', NEW."EV_STA_EV_ID", NEW."EV_STA_ChangedAt");
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_STA_Event_Status" ON attributes."EV_STA_Event_Status";
+CREATE TRIGGER "it_EV_STA_Event_Status"
+BEFORE INSERT ON attributes."EV_STA_Event_Status"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_STA_Event_Status"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_UTL_Event_Utilization before INSERT trigger on EV_UTL_Event_Utilization
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_UTL_Event_Utilization"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_UTL_Event_Utilization" x
+        WHERE
+            x."EV_UTL_EV_ID" = NEW."EV_UTL_EV_ID"
+        AND
+            x."EV_UTL_UTL_ID" = NEW."EV_UTL_UTL_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_UTL_Event_Utilization" x
+        WHERE
+            x."EV_UTL_EV_ID" = NEW."EV_UTL_EV_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_UTL_Event_Utilization for: %', NEW."EV_UTL_EV_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_UTL_Event_Utilization" ON attributes."EV_UTL_Event_Utilization";
+CREATE TRIGGER "it_EV_UTL_Event_Utilization"
+BEFORE INSERT ON attributes."EV_UTL_Event_Utilization"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_UTL_Event_Utilization"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_LVL_Event_Level before INSERT trigger on EV_LVL_Event_Level
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_EV_LVL_Event_Level"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_LVL_Event_Level" x
+        WHERE
+            x."EV_LVL_ChangedAt" = NEW."EV_LVL_ChangedAt"
+        AND
+            x."EV_LVL_EV_ID" = NEW."EV_LVL_EV_ID"
+        AND
+            x."EV_LVL_PLV_ID" = NEW."EV_LVL_PLV_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_LVL_Event_Level" x
+        WHERE
+            x."EV_LVL_EV_ID" = NEW."EV_LVL_EV_ID"
+        AND
+            x."EV_LVL_ChangedAt" = NEW."EV_LVL_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in EV_LVL_Event_Level for: %', concat_ws(', ', NEW."EV_LVL_EV_ID", NEW."EV_LVL_ChangedAt");
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_LVL_Event_Level" ON attributes."EV_LVL_Event_Level";
+CREATE TRIGGER "it_EV_LVL_Event_Level"
+BEFORE INSERT ON attributes."EV_LVL_Event_Level"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_EV_LVL_Event_Level"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_NAM_Stage_Name before INSERT trigger on ST_NAM_Stage_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_ST_NAM_Stage_Name"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_NAM_Stage_Name" x
+        WHERE
+            x."ST_NAM_ChangedAt" = NEW."ST_NAM_ChangedAt"
+        AND
+            x."ST_NAM_ST_ID" = NEW."ST_NAM_ST_ID"
+        AND
+            x."ST_NAM_Stage_Name" = NEW."ST_NAM_Stage_Name"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_NAM_Stage_Name" x
+        WHERE
+            x."ST_NAM_ST_ID" = NEW."ST_NAM_ST_ID"
+        AND
+            x."ST_NAM_ChangedAt" = NEW."ST_NAM_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_NAM_Stage_Name for: %', concat_ws(', ', NEW."ST_NAM_ST_ID", NEW."ST_NAM_ChangedAt");
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_NAM_Stage_Name" ON attributes."ST_NAM_Stage_Name";
+CREATE TRIGGER "it_ST_NAM_Stage_Name"
+BEFORE INSERT ON attributes."ST_NAM_Stage_Name"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_ST_NAM_Stage_Name"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_LOC_Stage_Location before INSERT trigger on ST_LOC_Stage_Location
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_ST_LOC_Stage_Location"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_LOC_Stage_Location" x
+        WHERE
+            x."ST_LOC_ST_ID" = NEW."ST_LOC_ST_ID"
+        AND
+            md5(x."ST_LOC_Stage_Location"::text) = md5(NEW."ST_LOC_Stage_Location"::text)
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_LOC_Stage_Location" x
+        WHERE
+            x."ST_LOC_ST_ID" = NEW."ST_LOC_ST_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_LOC_Stage_Location for: %', NEW."ST_LOC_ST_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_LOC_Stage_Location" ON attributes."ST_LOC_Stage_Location";
+CREATE TRIGGER "it_ST_LOC_Stage_Location"
+BEFORE INSERT ON attributes."ST_LOC_Stage_Location"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_ST_LOC_Stage_Location"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_AVG_Stage_Average before INSERT trigger on ST_AVG_Stage_Average
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_ST_AVG_Stage_Average"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_AVG_Stage_Average" x
+        WHERE
+            x."ST_AVG_ChangedAt" = NEW."ST_AVG_ChangedAt"
+        AND
+            x."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+        AND
+            x."ST_AVG_UTL_ID" = NEW."ST_AVG_UTL_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_AVG_Stage_Average" x
+        WHERE
+            x."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+        AND
+            x."ST_AVG_ChangedAt" = NEW."ST_AVG_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_AVG_Stage_Average for: %', concat_ws(', ', NEW."ST_AVG_ST_ID", NEW."ST_AVG_ChangedAt");
+    END IF;
+    -- what is the same as the value before it, or as the value after it, is a restatement
+    -- (an idempotent attribute does not store it, and removes the one after it that the new value makes a restatement of)
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."ST_AVG_UTL_ID"
+            FROM
+                attributes."ST_AVG_Stage_Average" p
+            WHERE
+                p."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+            AND
+                p."ST_AVG_ChangedAt" < NEW."ST_AVG_ChangedAt"
+            ORDER BY
+                p."ST_AVG_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            pre."ST_AVG_UTL_ID" = NEW."ST_AVG_UTL_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    DELETE FROM
+        attributes."ST_AVG_Stage_Average" x
+    WHERE
+        x."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+    AND
+        x."ST_AVG_ChangedAt" = (
+            SELECT
+                min(f."ST_AVG_ChangedAt")
+            FROM
+                attributes."ST_AVG_Stage_Average" f
+            WHERE
+                f."ST_AVG_ST_ID" = NEW."ST_AVG_ST_ID"
+            AND
+                f."ST_AVG_ChangedAt" > NEW."ST_AVG_ChangedAt"
+        )
+    AND
+        x."ST_AVG_UTL_ID" = NEW."ST_AVG_UTL_ID";
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_AVG_Stage_Average" ON attributes."ST_AVG_Stage_Average";
+CREATE TRIGGER "it_ST_AVG_Stage_Average"
+BEFORE INSERT ON attributes."ST_AVG_Stage_Average"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_ST_AVG_Stage_Average"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_MIN_Stage_Minimum before INSERT trigger on ST_MIN_Stage_Minimum
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_ST_MIN_Stage_Minimum"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_MIN_Stage_Minimum" x
+        WHERE
+            x."ST_MIN_ST_ID" = NEW."ST_MIN_ST_ID"
+        AND
+            x."ST_MIN_UTL_ID" = NEW."ST_MIN_UTL_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_MIN_Stage_Minimum" x
+        WHERE
+            x."ST_MIN_ST_ID" = NEW."ST_MIN_ST_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in ST_MIN_Stage_Minimum for: %', NEW."ST_MIN_ST_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_MIN_Stage_Minimum" ON attributes."ST_MIN_Stage_Minimum";
+CREATE TRIGGER "it_ST_MIN_Stage_Minimum"
+BEFORE INSERT ON attributes."ST_MIN_Stage_Minimum"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_ST_MIN_Stage_Minimum"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_NAM_Actor_Name before INSERT trigger on AC_NAM_Actor_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_AC_NAM_Actor_Name"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_NAM_Actor_Name" x
+        WHERE
+            x."AC_NAM_ChangedAt" = NEW."AC_NAM_ChangedAt"
+        AND
+            x."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+        AND
+            x."AC_NAM_Actor_Name" = NEW."AC_NAM_Actor_Name"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_NAM_Actor_Name" x
+        WHERE
+            x."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+        AND
+            x."AC_NAM_ChangedAt" = NEW."AC_NAM_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID", NEW."AC_NAM_ChangedAt");
+    END IF;
+    -- what is the same as the value before it, or as the value after it, is a restatement
+    -- (an attribute that may not be restated refuses it)
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."AC_NAM_Actor_Name"
+            FROM
+                attributes."AC_NAM_Actor_Name" p
+            WHERE
+                p."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+            AND
+                p."AC_NAM_ChangedAt" < NEW."AC_NAM_ChangedAt"
+            ORDER BY
+                p."AC_NAM_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            pre."AC_NAM_Actor_Name" = NEW."AC_NAM_Actor_Name"
+    ) THEN
+        RAISE EXCEPTION 'Restatement in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID", NEW."AC_NAM_ChangedAt");
+    END IF;
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                f."AC_NAM_Actor_Name"
+            FROM
+                attributes."AC_NAM_Actor_Name" f
+            WHERE
+                f."AC_NAM_AC_ID" = NEW."AC_NAM_AC_ID"
+            AND
+                f."AC_NAM_ChangedAt" > NEW."AC_NAM_ChangedAt"
+            ORDER BY
+                f."AC_NAM_ChangedAt" ASC
+            LIMIT 1
+        ) fol
+        WHERE
+            fol."AC_NAM_Actor_Name" = NEW."AC_NAM_Actor_Name"
+    ) THEN
+        RAISE EXCEPTION 'Restatement in AC_NAM_Actor_Name for: %', concat_ws(', ', NEW."AC_NAM_AC_ID", NEW."AC_NAM_ChangedAt");
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_NAM_Actor_Name" ON attributes."AC_NAM_Actor_Name";
+CREATE TRIGGER "it_AC_NAM_Actor_Name"
+BEFORE INSERT ON attributes."AC_NAM_Actor_Name"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_AC_NAM_Actor_Name"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_GEN_Actor_Gender before INSERT trigger on AC_GEN_Actor_Gender
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_AC_GEN_Actor_Gender"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_GEN_Actor_Gender" x
+        WHERE
+            x."AC_GEN_AC_ID" = NEW."AC_GEN_AC_ID"
+        AND
+            x."AC_GEN_GEN_ID" = NEW."AC_GEN_GEN_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_GEN_Actor_Gender" x
+        WHERE
+            x."AC_GEN_AC_ID" = NEW."AC_GEN_AC_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_GEN_Actor_Gender for: %', NEW."AC_GEN_AC_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_GEN_Actor_Gender" ON attributes."AC_GEN_Actor_Gender";
+CREATE TRIGGER "it_AC_GEN_Actor_Gender"
+BEFORE INSERT ON attributes."AC_GEN_Actor_Gender"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_AC_GEN_Actor_Gender"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_PLV_Actor_ProfessionalLevel before INSERT trigger on AC_PLV_Actor_ProfessionalLevel
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_AC_PLV_Actor_ProfessionalLevel"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_PLV_Actor_ProfessionalLevel" x
+        WHERE
+            x."AC_PLV_ChangedAt" = NEW."AC_PLV_ChangedAt"
+        AND
+            x."AC_PLV_AC_ID" = NEW."AC_PLV_AC_ID"
+        AND
+            x."AC_PLV_PLV_ID" = NEW."AC_PLV_PLV_ID"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_PLV_Actor_ProfessionalLevel" x
+        WHERE
+            x."AC_PLV_AC_ID" = NEW."AC_PLV_AC_ID"
+        AND
+            x."AC_PLV_ChangedAt" = NEW."AC_PLV_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_PLV_Actor_ProfessionalLevel for: %', concat_ws(', ', NEW."AC_PLV_AC_ID", NEW."AC_PLV_ChangedAt");
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_PLV_Actor_ProfessionalLevel" ON attributes."AC_PLV_Actor_ProfessionalLevel";
+CREATE TRIGGER "it_AC_PLV_Actor_ProfessionalLevel"
+BEFORE INSERT ON attributes."AC_PLV_Actor_ProfessionalLevel"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_AC_PLV_Actor_ProfessionalLevel"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_NAM_Program_Name before INSERT trigger on PR_NAM_Program_Name
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_PR_NAM_Program_Name"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_NAM_Program_Name" x
+        WHERE
+            x."PR_NAM_PR_ID" = NEW."PR_NAM_PR_ID"
+        AND
+            x."PR_NAM_Program_Name" = NEW."PR_NAM_Program_Name"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value for an entity that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_NAM_Program_Name" x
+        WHERE
+            x."PR_NAM_PR_ID" = NEW."PR_NAM_PR_ID"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_NAM_Program_Name for: %', NEW."PR_NAM_PR_ID";
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_NAM_Program_Name" ON attributes."PR_NAM_Program_Name";
+CREATE TRIGGER "it_PR_NAM_Program_Name"
+BEFORE INSERT ON attributes."PR_NAM_Program_Name"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_PR_NAM_Program_Name"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_LEN_Program_Length before INSERT trigger on PR_LEN_Program_Length
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION attributes."it_PR_LEN_Program_Length"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_LEN_Program_Length" x
+        WHERE
+            x."PR_LEN_ChangedAt" = NEW."PR_LEN_ChangedAt"
+        AND
+            x."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+        AND
+            x."PR_LEN_Program_Length" = NEW."PR_LEN_Program_Length"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- another value at a time that already has a value is a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_LEN_Program_Length" x
+        WHERE
+            x."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+        AND
+            x."PR_LEN_ChangedAt" = NEW."PR_LEN_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in PR_LEN_Program_Length for: %', concat_ws(', ', NEW."PR_LEN_PR_ID", NEW."PR_LEN_ChangedAt");
+    END IF;
+    -- what is the same as the value before it, or as the value after it, is a restatement
+    -- (an idempotent attribute does not store it, and removes the one after it that the new value makes a restatement of)
+    IF EXISTS (
+        SELECT
+            1
+        FROM (
+            SELECT
+                p."PR_LEN_Program_Length"
+            FROM
+                attributes."PR_LEN_Program_Length" p
+            WHERE
+                p."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+            AND
+                p."PR_LEN_ChangedAt" < NEW."PR_LEN_ChangedAt"
+            ORDER BY
+                p."PR_LEN_ChangedAt" DESC
+            LIMIT 1
+        ) pre
+        WHERE
+            pre."PR_LEN_Program_Length" = NEW."PR_LEN_Program_Length"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    DELETE FROM
+        attributes."PR_LEN_Program_Length" x
+    WHERE
+        x."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+    AND
+        x."PR_LEN_ChangedAt" = (
+            SELECT
+                min(f."PR_LEN_ChangedAt")
+            FROM
+                attributes."PR_LEN_Program_Length" f
+            WHERE
+                f."PR_LEN_PR_ID" = NEW."PR_LEN_PR_ID"
+            AND
+                f."PR_LEN_ChangedAt" > NEW."PR_LEN_ChangedAt"
+        )
+    AND
+        x."PR_LEN_Program_Length" = NEW."PR_LEN_Program_Length";
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_LEN_Program_Length" ON attributes."PR_LEN_Program_Length";
+CREATE TRIGGER "it_PR_LEN_Program_Length"
+BEFORE INSERT ON attributes."PR_LEN_Program_Length"
+FOR EACH ROW EXECUTE FUNCTION attributes."it_PR_LEN_Program_Length"();
+-- ANCHOR TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates (the triggers of the attribute tables see to that).
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_Stage instead of INSERT trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lST_Stage"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id integer;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    _id := NEW."ST_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."ST_Stage" (
+            "Metadata_ST"
+        )
+        VALUES (
+            NEW."Metadata_ST"
+        )
+        RETURNING "ST_ID" INTO _id;
+    END IF;
+    IF NEW."ST_NAM_Stage_Name" IS NOT NULL THEN
+        INSERT INTO attributes."ST_NAM_Stage_Name" (
+            "Metadata_ST_NAM",
+            "ST_NAM_ST_ID",
+            "ST_NAM_ChangedAt",
+            "ST_NAM_Stage_Name"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_NAM", NEW."Metadata_ST"),
+            coalesce(NEW."ST_NAM_ST_ID", _id),
+            coalesce(NEW."ST_NAM_ChangedAt", _now),
+            NEW."ST_NAM_Stage_Name"
+        );
+    END IF;
+    IF NEW."ST_LOC_Stage_Location" IS NOT NULL THEN
+        INSERT INTO attributes."ST_LOC_Stage_Location" (
+            "Metadata_ST_LOC",
+            "ST_LOC_ST_ID",
+            "ST_LOC_Stage_Location"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_LOC", NEW."Metadata_ST"),
+            coalesce(NEW."ST_LOC_ST_ID", _id),
+            NEW."ST_LOC_Stage_Location"
+        );
+    END IF;
+    _AVG := NEW."ST_AVG_UTL_ID";
+    IF _AVG IS NULL AND NEW."ST_AVG_UTL_Utilization" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _AVG
+        FROM
+            knots."UTL_Utilization" k
+        WHERE
+            k."UTL_Utilization" = NEW."ST_AVG_UTL_Utilization"
+        LIMIT 1;
+    END IF;
+    IF _AVG IS NOT NULL THEN
+        INSERT INTO attributes."ST_AVG_Stage_Average" (
+            "Metadata_ST_AVG",
+            "ST_AVG_ST_ID",
+            "ST_AVG_ChangedAt",
+            "ST_AVG_UTL_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_AVG", NEW."Metadata_ST"),
+            coalesce(NEW."ST_AVG_ST_ID", _id),
+            coalesce(NEW."ST_AVG_ChangedAt", _now),
+            _AVG
+        );
+    END IF;
+    _MIN := NEW."ST_MIN_UTL_ID";
+    IF _MIN IS NULL AND NEW."ST_MIN_UTL_Utilization" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _MIN
+        FROM
+            knots."UTL_Utilization" k
+        WHERE
+            k."UTL_Utilization" = NEW."ST_MIN_UTL_Utilization"
+        LIMIT 1;
+    END IF;
+    IF _MIN IS NOT NULL THEN
+        INSERT INTO attributes."ST_MIN_Stage_Minimum" (
+            "Metadata_ST_MIN",
+            "ST_MIN_ST_ID",
+            "ST_MIN_UTL_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_ST_MIN", NEW."Metadata_ST"),
+            coalesce(NEW."ST_MIN_ST_ID", _id),
+            _MIN
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lST_Stage" ON anchors."lST_Stage";
+CREATE TRIGGER "it_lST_Stage"
+INSTEAD OF INSERT ON anchors."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lST_Stage"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lST_Stage instead of UPDATE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lST_Stage"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _AVG smallint;
+    _MIN smallint;
+BEGIN
+    IF NEW."ST_ID" IS DISTINCT FROM OLD."ST_ID" THEN
+        RAISE EXCEPTION 'The identity column ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_ST_ID" IS DISTINCT FROM OLD."ST_NAM_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_NAM_ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_NAM_Stage_Name" IS DISTINCT FROM OLD."ST_NAM_Stage_Name"
+    OR NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."ST_NAM_Stage_Name" IS NOT NULL AND (
+            NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" OR
+            OLD."ST_NAM_Stage_Name" IS NULL OR
+            OLD."ST_NAM_Stage_Name" <> NEW."ST_NAM_Stage_Name"
+        ) THEN
+            INSERT INTO attributes."ST_NAM_Stage_Name" (
+                "Metadata_ST_NAM",
+                "ST_NAM_ST_ID",
+                "ST_NAM_ChangedAt",
+                "ST_NAM_Stage_Name"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_NAM" IS NOT DISTINCT FROM OLD."Metadata_ST_NAM"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_NAM"
+                    END, NEW."Metadata_ST"),
+                coalesce(NEW."ST_NAM_ST_ID", NEW."ST_ID"),
+                CASE
+                    WHEN NEW."ST_NAM_ChangedAt" IS DISTINCT FROM OLD."ST_NAM_ChangedAt" THEN NEW."ST_NAM_ChangedAt"
+                    ELSE _now
+                END,
+                NEW."ST_NAM_Stage_Name"
+            );
+        END IF;
+    END IF;
+    IF NEW."ST_LOC_ST_ID" IS DISTINCT FROM OLD."ST_LOC_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_LOC_ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_LOC_Stage_Location" IS DISTINCT FROM OLD."ST_LOC_Stage_Location"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."ST_LOC_Stage_Location" IS NOT NULL AND (
+            OLD."ST_LOC_Stage_Location" IS NULL OR
+            md5(OLD."ST_LOC_Stage_Location"::text) <> md5(NEW."ST_LOC_Stage_Location"::text)
+        ) THEN
+            INSERT INTO attributes."ST_LOC_Stage_Location" (
+                "Metadata_ST_LOC",
+                "ST_LOC_ST_ID",
+                "ST_LOC_Stage_Location"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_LOC" IS NOT DISTINCT FROM OLD."Metadata_ST_LOC"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_LOC"
+                    END, NEW."Metadata_ST"),
+                coalesce(NEW."ST_LOC_ST_ID", NEW."ST_ID"),
+                NEW."ST_LOC_Stage_Location"
+            );
+        END IF;
+    END IF;
+    IF NEW."ST_AVG_ST_ID" IS DISTINCT FROM OLD."ST_AVG_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_AVG_ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_AVG_UTL_ID" IS DISTINCT FROM OLD."ST_AVG_UTL_ID"
+    OR NEW."ST_AVG_UTL_Utilization" IS DISTINCT FROM OLD."ST_AVG_UTL_Utilization"
+    OR NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt"
+    THEN
+        _AVG := NEW."ST_AVG_UTL_ID";
+        IF _AVG IS NOT DISTINCT FROM OLD."ST_AVG_UTL_ID" AND NEW."ST_AVG_UTL_Utilization" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _AVG
+            FROM
+                knots."UTL_Utilization" k
+            WHERE
+                k."UTL_Utilization" = NEW."ST_AVG_UTL_Utilization"
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _AVG IS NOT NULL AND (
+            NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" OR
+            OLD."ST_AVG_UTL_ID" IS NULL OR
+            OLD."ST_AVG_UTL_ID" <> _AVG
+        ) THEN
+            INSERT INTO attributes."ST_AVG_Stage_Average" (
+                "Metadata_ST_AVG",
+                "ST_AVG_ST_ID",
+                "ST_AVG_ChangedAt",
+                "ST_AVG_UTL_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_AVG" IS NOT DISTINCT FROM OLD."Metadata_ST_AVG"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_AVG"
+                    END, NEW."Metadata_ST"),
+                coalesce(NEW."ST_AVG_ST_ID", NEW."ST_ID"),
+                CASE
+                    WHEN NEW."ST_AVG_ChangedAt" IS DISTINCT FROM OLD."ST_AVG_ChangedAt" THEN NEW."ST_AVG_ChangedAt"
+                    ELSE _now
+                END,
+                _AVG
+            );
+        END IF;
+    END IF;
+    IF NEW."ST_MIN_ST_ID" IS DISTINCT FROM OLD."ST_MIN_ST_ID" THEN
+        RAISE EXCEPTION 'The foreign key column ST_MIN_ST_ID is not updatable.';
+    END IF;
+    IF NEW."ST_MIN_UTL_ID" IS DISTINCT FROM OLD."ST_MIN_UTL_ID"
+    OR NEW."ST_MIN_UTL_Utilization" IS DISTINCT FROM OLD."ST_MIN_UTL_Utilization"
+    THEN
+        _MIN := NEW."ST_MIN_UTL_ID";
+        IF _MIN IS NOT DISTINCT FROM OLD."ST_MIN_UTL_ID" AND NEW."ST_MIN_UTL_Utilization" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _MIN
+            FROM
+                knots."UTL_Utilization" k
+            WHERE
+                k."UTL_Utilization" = NEW."ST_MIN_UTL_Utilization"
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _MIN IS NOT NULL AND (
+            OLD."ST_MIN_UTL_ID" IS NULL OR
+            OLD."ST_MIN_UTL_ID" <> _MIN
+        ) THEN
+            INSERT INTO attributes."ST_MIN_Stage_Minimum" (
+                "Metadata_ST_MIN",
+                "ST_MIN_ST_ID",
+                "ST_MIN_UTL_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_ST" IS DISTINCT FROM OLD."Metadata_ST"
+                         AND NEW."Metadata_ST_MIN" IS NOT DISTINCT FROM OLD."Metadata_ST_MIN"
+                        THEN NEW."Metadata_ST"
+                        ELSE NEW."Metadata_ST_MIN"
+                    END, NEW."Metadata_ST"),
+                coalesce(NEW."ST_MIN_ST_ID", NEW."ST_ID"),
+                _MIN
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lST_Stage" ON anchors."lST_Stage";
+CREATE TRIGGER "ut_lST_Stage"
+INSTEAD OF UPDATE ON anchors."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lST_Stage"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_Stage instead of DELETE trigger on lST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lST_Stage"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        attributes."ST_NAM_Stage_Name" x
+    WHERE
+        x."ST_NAM_ST_ID" = OLD."ST_ID"
+    AND
+        x."ST_NAM_ChangedAt" = OLD."ST_NAM_ChangedAt"
+    ;
+    DELETE FROM
+        attributes."ST_LOC_Stage_Location" x
+    WHERE
+        x."ST_LOC_ST_ID" = OLD."ST_ID"
+    ;
+    DELETE FROM
+        attributes."ST_AVG_Stage_Average" x
+    WHERE
+        x."ST_AVG_ST_ID" = OLD."ST_ID"
+    AND
+        x."ST_AVG_ChangedAt" = OLD."ST_AVG_ChangedAt"
+    ;
+    DELETE FROM
+        attributes."ST_MIN_Stage_Minimum" x
+    WHERE
+        x."ST_MIN_ST_ID" = OLD."ST_ID"
+    ;
+    -- an anchor that has no attribute rows left is removed
+    DELETE FROM
+        anchors."ST_Stage" a
+    WHERE
+        a."ST_ID" = OLD."ST_ID"
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_NAM_Stage_Name" x
+        WHERE
+            x."ST_NAM_ST_ID" = a."ST_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_LOC_Stage_Location" x
+        WHERE
+            x."ST_LOC_ST_ID" = a."ST_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_AVG_Stage_Average" x
+        WHERE
+            x."ST_AVG_ST_ID" = a."ST_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."ST_MIN_Stage_Minimum" x
+        WHERE
+            x."ST_MIN_ST_ID" = a."ST_ID"
+    )
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lST_Stage" ON anchors."lST_Stage";
+CREATE TRIGGER "dt_lST_Stage"
+INSTEAD OF DELETE ON anchors."lST_Stage"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lST_Stage"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_Actor instead of INSERT trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id smallint;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    _id := NEW."AC_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."AC_Actor" (
+            "Metadata_AC"
+        )
+        VALUES (
+            NEW."Metadata_AC"
+        )
+        RETURNING "AC_ID" INTO _id;
+    END IF;
+    IF NEW."AC_NAM_Actor_Name" IS NOT NULL THEN
+        INSERT INTO attributes."AC_NAM_Actor_Name" (
+            "Metadata_AC_NAM",
+            "AC_NAM_AC_ID",
+            "AC_NAM_ChangedAt",
+            "AC_NAM_Actor_Name"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_NAM", NEW."Metadata_AC"),
+            coalesce(NEW."AC_NAM_AC_ID", _id),
+            coalesce(NEW."AC_NAM_ChangedAt", _now),
+            NEW."AC_NAM_Actor_Name"
+        );
+    END IF;
+    _GEN := NEW."AC_GEN_GEN_ID";
+    IF _GEN IS NULL AND NEW."AC_GEN_GEN_Gender" IS NOT NULL THEN
+        SELECT
+            k."GEN_ID"
+        INTO
+            _GEN
+        FROM
+            knots."GEN_Gender" k
+        WHERE
+            k."GEN_Checksum" = decode(md5(NEW."AC_GEN_GEN_Gender"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _GEN IS NOT NULL THEN
+        INSERT INTO attributes."AC_GEN_Actor_Gender" (
+            "Metadata_AC_GEN",
+            "AC_GEN_AC_ID",
+            "AC_GEN_GEN_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_GEN", NEW."Metadata_AC"),
+            coalesce(NEW."AC_GEN_AC_ID", _id),
+            _GEN
+        );
+    END IF;
+    _PLV := NEW."AC_PLV_PLV_ID";
+    IF _PLV IS NULL AND NEW."AC_PLV_PLV_ProfessionalLevel" IS NOT NULL THEN
+        SELECT
+            k."PLV_ID"
+        INTO
+            _PLV
+        FROM
+            knots."PLV_ProfessionalLevel" k
+        WHERE
+            k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_ProfessionalLevel"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _PLV IS NOT NULL THEN
+        INSERT INTO attributes."AC_PLV_Actor_ProfessionalLevel" (
+            "Metadata_AC_PLV",
+            "AC_PLV_AC_ID",
+            "AC_PLV_ChangedAt",
+            "AC_PLV_PLV_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_AC_PLV", NEW."Metadata_AC"),
+            coalesce(NEW."AC_PLV_AC_ID", _id),
+            coalesce(NEW."AC_PLV_ChangedAt", _now),
+            _PLV
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_Actor" ON anchors."lAC_Actor";
+CREATE TRIGGER "it_lAC_Actor"
+INSTEAD OF INSERT ON anchors."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lAC_Actor"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_Actor instead of UPDATE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _GEN smallint;
+    _PLV smallint;
+BEGIN
+    IF NEW."AC_ID" IS DISTINCT FROM OLD."AC_ID" THEN
+        RAISE EXCEPTION 'The identity column AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_AC_ID" IS DISTINCT FROM OLD."AC_NAM_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_NAM_AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_NAM_Actor_Name" IS DISTINCT FROM OLD."AC_NAM_Actor_Name"
+    OR NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."AC_NAM_Actor_Name" IS NOT NULL AND (
+            NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" OR
+            OLD."AC_NAM_Actor_Name" IS NULL OR
+            OLD."AC_NAM_Actor_Name" <> NEW."AC_NAM_Actor_Name"
+        ) THEN
+            INSERT INTO attributes."AC_NAM_Actor_Name" (
+                "Metadata_AC_NAM",
+                "AC_NAM_AC_ID",
+                "AC_NAM_ChangedAt",
+                "AC_NAM_Actor_Name"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_NAM" IS NOT DISTINCT FROM OLD."Metadata_AC_NAM"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_NAM"
+                    END, NEW."Metadata_AC"),
+                coalesce(NEW."AC_NAM_AC_ID", NEW."AC_ID"),
+                CASE
+                    WHEN NEW."AC_NAM_ChangedAt" IS DISTINCT FROM OLD."AC_NAM_ChangedAt" THEN NEW."AC_NAM_ChangedAt"
+                    ELSE _now
+                END,
+                NEW."AC_NAM_Actor_Name"
+            );
+        END IF;
+    END IF;
+    IF NEW."AC_GEN_AC_ID" IS DISTINCT FROM OLD."AC_GEN_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_GEN_AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_GEN_GEN_ID" IS DISTINCT FROM OLD."AC_GEN_GEN_ID"
+    OR NEW."AC_GEN_GEN_Gender" IS DISTINCT FROM OLD."AC_GEN_GEN_Gender"
+    THEN
+        _GEN := NEW."AC_GEN_GEN_ID";
+        IF _GEN IS NOT DISTINCT FROM OLD."AC_GEN_GEN_ID" AND NEW."AC_GEN_GEN_Gender" IS NOT NULL THEN
+            SELECT
+                k."GEN_ID"
+            INTO
+                _GEN
+            FROM
+                knots."GEN_Gender" k
+            WHERE
+                k."GEN_Checksum" = decode(md5(NEW."AC_GEN_GEN_Gender"::text), 'hex')
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _GEN IS NOT NULL AND (
+            OLD."AC_GEN_GEN_ID" IS NULL OR
+            OLD."AC_GEN_GEN_ID" <> _GEN
+        ) THEN
+            INSERT INTO attributes."AC_GEN_Actor_Gender" (
+                "Metadata_AC_GEN",
+                "AC_GEN_AC_ID",
+                "AC_GEN_GEN_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_GEN" IS NOT DISTINCT FROM OLD."Metadata_AC_GEN"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_GEN"
+                    END, NEW."Metadata_AC"),
+                coalesce(NEW."AC_GEN_AC_ID", NEW."AC_ID"),
+                _GEN
+            );
+        END IF;
+    END IF;
+    IF NEW."AC_PLV_AC_ID" IS DISTINCT FROM OLD."AC_PLV_AC_ID" THEN
+        RAISE EXCEPTION 'The foreign key column AC_PLV_AC_ID is not updatable.';
+    END IF;
+    IF NEW."AC_PLV_PLV_ID" IS DISTINCT FROM OLD."AC_PLV_PLV_ID"
+    OR NEW."AC_PLV_PLV_ProfessionalLevel" IS DISTINCT FROM OLD."AC_PLV_PLV_ProfessionalLevel"
+    OR NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt"
+    THEN
+        _PLV := NEW."AC_PLV_PLV_ID";
+        IF _PLV IS NOT DISTINCT FROM OLD."AC_PLV_PLV_ID" AND NEW."AC_PLV_PLV_ProfessionalLevel" IS NOT NULL THEN
+            SELECT
+                k."PLV_ID"
+            INTO
+                _PLV
+            FROM
+                knots."PLV_ProfessionalLevel" k
+            WHERE
+                k."PLV_Checksum" = decode(md5(NEW."AC_PLV_PLV_ProfessionalLevel"::text), 'hex')
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _PLV IS NOT NULL AND (
+            NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" OR
+            OLD."AC_PLV_PLV_ID" IS NULL OR
+            OLD."AC_PLV_PLV_ID" <> _PLV
+        ) THEN
+            INSERT INTO attributes."AC_PLV_Actor_ProfessionalLevel" (
+                "Metadata_AC_PLV",
+                "AC_PLV_AC_ID",
+                "AC_PLV_ChangedAt",
+                "AC_PLV_PLV_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_AC" IS DISTINCT FROM OLD."Metadata_AC"
+                         AND NEW."Metadata_AC_PLV" IS NOT DISTINCT FROM OLD."Metadata_AC_PLV"
+                        THEN NEW."Metadata_AC"
+                        ELSE NEW."Metadata_AC_PLV"
+                    END, NEW."Metadata_AC"),
+                coalesce(NEW."AC_PLV_AC_ID", NEW."AC_ID"),
+                CASE
+                    WHEN NEW."AC_PLV_ChangedAt" IS DISTINCT FROM OLD."AC_PLV_ChangedAt" THEN NEW."AC_PLV_ChangedAt"
+                    ELSE _now
+                END,
+                _PLV
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_Actor" ON anchors."lAC_Actor";
+CREATE TRIGGER "ut_lAC_Actor"
+INSTEAD OF UPDATE ON anchors."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lAC_Actor"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_Actor instead of DELETE trigger on lAC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lAC_Actor"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        attributes."AC_NAM_Actor_Name" x
+    WHERE
+        x."AC_NAM_AC_ID" = OLD."AC_ID"
+    AND
+        x."AC_NAM_ChangedAt" = OLD."AC_NAM_ChangedAt"
+    ;
+    DELETE FROM
+        attributes."AC_GEN_Actor_Gender" x
+    WHERE
+        x."AC_GEN_AC_ID" = OLD."AC_ID"
+    ;
+    DELETE FROM
+        attributes."AC_PLV_Actor_ProfessionalLevel" x
+    WHERE
+        x."AC_PLV_AC_ID" = OLD."AC_ID"
+    AND
+        x."AC_PLV_ChangedAt" = OLD."AC_PLV_ChangedAt"
+    ;
+    -- an anchor that has no attribute rows left is removed
+    DELETE FROM
+        anchors."AC_Actor" a
+    WHERE
+        a."AC_ID" = OLD."AC_ID"
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_NAM_Actor_Name" x
+        WHERE
+            x."AC_NAM_AC_ID" = a."AC_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_GEN_Actor_Gender" x
+        WHERE
+            x."AC_GEN_AC_ID" = a."AC_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."AC_PLV_Actor_ProfessionalLevel" x
+        WHERE
+            x."AC_PLV_AC_ID" = a."AC_ID"
+    )
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_Actor" ON anchors."lAC_Actor";
+CREATE TRIGGER "dt_lAC_Actor"
+INSTEAD OF DELETE ON anchors."lAC_Actor"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lAC_Actor"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_Program instead of INSERT trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."it_lPR_Program"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id bigint;
+BEGIN
+    _id := NEW."PR_ID";
+    IF _id IS NULL THEN
+        INSERT INTO anchors."PR_Program" (
+            "Metadata_PR"
+        )
+        VALUES (
+            NEW."Metadata_PR"
+        )
+        RETURNING "PR_ID" INTO _id;
+    END IF;
+    IF NEW."PR_NAM_Program_Name" IS NOT NULL THEN
+        INSERT INTO attributes."PR_NAM_Program_Name" (
+            "Metadata_PR_NAM",
+            "PR_NAM_PR_ID",
+            "PR_NAM_Program_Name"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_NAM", NEW."Metadata_PR"),
+            coalesce(NEW."PR_NAM_PR_ID", _id),
+            NEW."PR_NAM_Program_Name"
+        );
+    END IF;
+    IF NEW."PR_LEN_Program_Length" IS NOT NULL THEN
+        INSERT INTO attributes."PR_LEN_Program_Length" (
+            "Metadata_PR_LEN",
+            "PR_LEN_PR_ID",
+            "PR_LEN_ChangedAt",
+            "PR_LEN_Program_Length"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_PR_LEN", NEW."Metadata_PR"),
+            coalesce(NEW."PR_LEN_PR_ID", _id),
+            coalesce(NEW."PR_LEN_ChangedAt", _now),
+            NEW."PR_LEN_Program_Length"
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lPR_Program" ON anchors."lPR_Program";
+CREATE TRIGGER "it_lPR_Program"
+INSTEAD OF INSERT ON anchors."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION anchors."it_lPR_Program"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_Program instead of UPDATE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."ut_lPR_Program"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    IF NEW."PR_ID" IS DISTINCT FROM OLD."PR_ID" THEN
+        RAISE EXCEPTION 'The identity column PR_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_PR_ID" IS DISTINCT FROM OLD."PR_NAM_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_NAM_PR_ID is not updatable.';
+    END IF;
+    IF NEW."PR_NAM_Program_Name" IS DISTINCT FROM OLD."PR_NAM_Program_Name"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."PR_NAM_Program_Name" IS NOT NULL AND (
+            OLD."PR_NAM_Program_Name" IS NULL OR
+            OLD."PR_NAM_Program_Name" <> NEW."PR_NAM_Program_Name"
+        ) THEN
+            INSERT INTO attributes."PR_NAM_Program_Name" (
+                "Metadata_PR_NAM",
+                "PR_NAM_PR_ID",
+                "PR_NAM_Program_Name"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_NAM" IS NOT DISTINCT FROM OLD."Metadata_PR_NAM"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_NAM"
+                    END, NEW."Metadata_PR"),
+                coalesce(NEW."PR_NAM_PR_ID", NEW."PR_ID"),
+                NEW."PR_NAM_Program_Name"
+            );
+        END IF;
+    END IF;
+    IF NEW."PR_LEN_PR_ID" IS DISTINCT FROM OLD."PR_LEN_PR_ID" THEN
+        RAISE EXCEPTION 'The foreign key column PR_LEN_PR_ID is not updatable.';
+    END IF;
+    IF NEW."PR_LEN_Program_Length" IS DISTINCT FROM OLD."PR_LEN_Program_Length"
+    OR NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."PR_LEN_Program_Length" IS NOT NULL AND (
+            NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" OR
+            OLD."PR_LEN_Program_Length" IS NULL OR
+            OLD."PR_LEN_Program_Length" <> NEW."PR_LEN_Program_Length"
+        ) THEN
+            INSERT INTO attributes."PR_LEN_Program_Length" (
+                "Metadata_PR_LEN",
+                "PR_LEN_PR_ID",
+                "PR_LEN_ChangedAt",
+                "PR_LEN_Program_Length"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_PR" IS DISTINCT FROM OLD."Metadata_PR"
+                         AND NEW."Metadata_PR_LEN" IS NOT DISTINCT FROM OLD."Metadata_PR_LEN"
+                        THEN NEW."Metadata_PR"
+                        ELSE NEW."Metadata_PR_LEN"
+                    END, NEW."Metadata_PR"),
+                coalesce(NEW."PR_LEN_PR_ID", NEW."PR_ID"),
+                CASE
+                    WHEN NEW."PR_LEN_ChangedAt" IS DISTINCT FROM OLD."PR_LEN_ChangedAt" THEN NEW."PR_LEN_ChangedAt"
+                    ELSE _now
+                END,
+                NEW."PR_LEN_Program_Length"
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lPR_Program" ON anchors."lPR_Program";
+CREATE TRIGGER "ut_lPR_Program"
+INSTEAD OF UPDATE ON anchors."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION anchors."ut_lPR_Program"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_Program instead of DELETE trigger on lPR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION anchors."dt_lPR_Program"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        attributes."PR_NAM_Program_Name" x
+    WHERE
+        x."PR_NAM_PR_ID" = OLD."PR_ID"
+    ;
+    DELETE FROM
+        attributes."PR_LEN_Program_Length" x
+    WHERE
+        x."PR_LEN_PR_ID" = OLD."PR_ID"
+    AND
+        x."PR_LEN_ChangedAt" = OLD."PR_LEN_ChangedAt"
+    ;
+    -- an anchor that has no attribute rows left is removed
+    DELETE FROM
+        anchors."PR_Program" a
+    WHERE
+        a."PR_ID" = OLD."PR_ID"
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_NAM_Program_Name" x
+        WHERE
+            x."PR_NAM_PR_ID" = a."PR_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."PR_LEN_Program_Length" x
+        WHERE
+            x."PR_LEN_PR_ID" = a."PR_ID"
+    )
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lPR_Program" ON anchors."lPR_Program";
+CREATE TRIGGER "dt_lPR_Program"
+INSTEAD OF DELETE ON anchors."lPR_Program"
+FOR EACH ROW EXECUTE FUNCTION anchors."dt_lPR_Program"();
+-- NEXUS TRIGGERS ---------------------------------------------------------------------------------------------------
+--
+-- The following triggers on the latest view make it behave like a table.
+-- There are three different 'instead of' triggers: insert, update, and delete.
+-- They will ensure that such operations are propagated to the underlying tables
+-- in a consistent way. Default values are used for some columns if not provided
+-- by the corresponding SQL statements.
+--
+-- For idempotent attributes, only changes that represent a value different from
+-- the previous or following value are stored. Others are silently ignored in
+-- order to avoid unnecessary temporal duplicates (the triggers of the attribute tables see to that).
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_Event instead of INSERT trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION nexuses."it_lEV_Event"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _id numeric(12,0);
+    _UTL smallint;
+    _LVL smallint;
+BEGIN
+    _id := NEW."EV_ID";
+    IF _id IS NULL THEN
+        INSERT INTO nexuses."EV_Event" (
+            "ST_ID_wasHeldAt",
+            "PR_ID_wasPlayed",
+            "ETY_ID_of",
+            "Metadata_EV"
+        )
+        VALUES (
+            NEW."ST_ID_wasHeldAt",
+            NEW."PR_ID_wasPlayed",
+            NEW."ETY_ID_of",
+            NEW."Metadata_EV"
+        )
+        RETURNING "EV_ID" INTO _id;
+    END IF;
+    IF NEW."EV_DAT_Event_Date" IS NOT NULL THEN
+        INSERT INTO attributes."EV_DAT_Event_Date" (
+            "Metadata_EV_DAT",
+            "EV_DAT_EV_ID",
+            "EV_DAT_Event_Date"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_DAT", NEW."Metadata_EV"),
+            coalesce(NEW."EV_DAT_EV_ID", _id),
+            NEW."EV_DAT_Event_Date"
+        );
+    END IF;
+    IF NEW."EV_AUD_Event_Audience" IS NOT NULL THEN
+        INSERT INTO attributes."EV_AUD_Event_Audience" (
+            "Metadata_EV_AUD",
+            "EV_AUD_EV_ID",
+            "EV_AUD_Event_Audience"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_AUD", NEW."Metadata_EV"),
+            coalesce(NEW."EV_AUD_EV_ID", _id),
+            NEW."EV_AUD_Event_Audience"
+        );
+    END IF;
+    IF NEW."EV_REV_Event_Revenue" IS NOT NULL THEN
+        INSERT INTO attributes."EV_REV_Event_Revenue" (
+            "Metadata_EV_REV",
+            "EV_REV_EV_ID",
+            "EV_REV_Event_Revenue"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_REV", NEW."Metadata_EV"),
+            coalesce(NEW."EV_REV_EV_ID", _id),
+            NEW."EV_REV_Event_Revenue"
+        );
+    END IF;
+    IF NEW."EV_STA_Event_Status" IS NOT NULL THEN
+        INSERT INTO attributes."EV_STA_Event_Status" (
+            "Metadata_EV_STA",
+            "EV_STA_EV_ID",
+            "EV_STA_ChangedAt",
+            "EV_STA_Event_Status"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_STA", NEW."Metadata_EV"),
+            coalesce(NEW."EV_STA_EV_ID", _id),
+            coalesce(NEW."EV_STA_ChangedAt", _now),
+            NEW."EV_STA_Event_Status"
+        );
+    END IF;
+    _UTL := NEW."EV_UTL_UTL_ID";
+    IF _UTL IS NULL AND NEW."EV_UTL_UTL_Utilization" IS NOT NULL THEN
+        SELECT
+            k."UTL_ID"
+        INTO
+            _UTL
+        FROM
+            knots."UTL_Utilization" k
+        WHERE
+            k."UTL_Utilization" = NEW."EV_UTL_UTL_Utilization"
+        LIMIT 1;
+    END IF;
+    IF _UTL IS NOT NULL THEN
+        INSERT INTO attributes."EV_UTL_Event_Utilization" (
+            "Metadata_EV_UTL",
+            "EV_UTL_EV_ID",
+            "EV_UTL_UTL_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_UTL", NEW."Metadata_EV"),
+            coalesce(NEW."EV_UTL_EV_ID", _id),
+            _UTL
+        );
+    END IF;
+    _LVL := NEW."EV_LVL_PLV_ID";
+    IF _LVL IS NULL AND NEW."EV_LVL_PLV_ProfessionalLevel" IS NOT NULL THEN
+        SELECT
+            k."PLV_ID"
+        INTO
+            _LVL
+        FROM
+            knots."PLV_ProfessionalLevel" k
+        WHERE
+            k."PLV_Checksum" = decode(md5(NEW."EV_LVL_PLV_ProfessionalLevel"::text), 'hex')
+        LIMIT 1;
+    END IF;
+    IF _LVL IS NOT NULL THEN
+        INSERT INTO attributes."EV_LVL_Event_Level" (
+            "Metadata_EV_LVL",
+            "EV_LVL_EV_ID",
+            "EV_LVL_ChangedAt",
+            "EV_LVL_PLV_ID"
+        )
+        VALUES (
+            coalesce(NEW."Metadata_EV_LVL", NEW."Metadata_EV"),
+            coalesce(NEW."EV_LVL_EV_ID", _id),
+            coalesce(NEW."EV_LVL_ChangedAt", _now),
+            _LVL
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lEV_Event" ON nexuses."lEV_Event";
+CREATE TRIGGER "it_lEV_Event"
+INSTEAD OF INSERT ON nexuses."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION nexuses."it_lEV_Event"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lEV_Event instead of UPDATE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION nexuses."ut_lEV_Event"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _UTL smallint;
+    _LVL smallint;
+BEGIN
+    IF NEW."EV_ID" IS DISTINCT FROM OLD."EV_ID" THEN
+        RAISE EXCEPTION 'The identity column EV_ID is not updatable.';
+    END IF;
+    IF NEW."ST_ID_wasHeldAt" IS DISTINCT FROM OLD."ST_ID_wasHeldAt" THEN
+        RAISE EXCEPTION 'The role column ST_ID_wasHeldAt is not updatable.';
+    END IF;
+    IF NEW."PR_ID_wasPlayed" IS DISTINCT FROM OLD."PR_ID_wasPlayed" THEN
+        RAISE EXCEPTION 'The role column PR_ID_wasPlayed is not updatable.';
+    END IF;
+    IF NEW."ETY_ID_of" IS DISTINCT FROM OLD."ETY_ID_of" THEN
+        RAISE EXCEPTION 'The role column ETY_ID_of is not updatable.';
+    END IF;
+    IF NEW."of_ETY_EventType" IS DISTINCT FROM OLD."of_ETY_EventType" THEN
+        RAISE EXCEPTION 'The role column of_ETY_EventType is not updatable.';
+    END IF;
+    IF NEW."EV_DAT_EV_ID" IS DISTINCT FROM OLD."EV_DAT_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_DAT_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_DAT_Event_Date" IS DISTINCT FROM OLD."EV_DAT_Event_Date"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."EV_DAT_Event_Date" IS NOT NULL AND (
+            OLD."EV_DAT_Event_Date" IS NULL OR
+            OLD."EV_DAT_Event_Date" <> NEW."EV_DAT_Event_Date"
+        ) THEN
+            INSERT INTO attributes."EV_DAT_Event_Date" (
+                "Metadata_EV_DAT",
+                "EV_DAT_EV_ID",
+                "EV_DAT_Event_Date"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_DAT" IS NOT DISTINCT FROM OLD."Metadata_EV_DAT"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_DAT"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_DAT_EV_ID", NEW."EV_ID"),
+                NEW."EV_DAT_Event_Date"
+            );
+        END IF;
+    END IF;
+    IF NEW."EV_AUD_EV_ID" IS DISTINCT FROM OLD."EV_AUD_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_AUD_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_AUD_Event_Audience" IS DISTINCT FROM OLD."EV_AUD_Event_Audience"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."EV_AUD_Event_Audience" IS NOT NULL AND (
+            OLD."EV_AUD_Event_Audience" IS NULL OR
+            OLD."EV_AUD_Event_Audience" <> NEW."EV_AUD_Event_Audience"
+        ) THEN
+            INSERT INTO attributes."EV_AUD_Event_Audience" (
+                "Metadata_EV_AUD",
+                "EV_AUD_EV_ID",
+                "EV_AUD_Event_Audience"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_AUD" IS NOT DISTINCT FROM OLD."Metadata_EV_AUD"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_AUD"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_AUD_EV_ID", NEW."EV_ID"),
+                NEW."EV_AUD_Event_Audience"
+            );
+        END IF;
+    END IF;
+    IF NEW."EV_REV_EV_ID" IS DISTINCT FROM OLD."EV_REV_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_REV_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_REV_Event_Revenue" IS DISTINCT FROM OLD."EV_REV_Event_Revenue"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."EV_REV_Event_Revenue" IS NOT NULL AND (
+            OLD."EV_REV_Event_Revenue" IS NULL OR
+            OLD."EV_REV_Event_Revenue" <> NEW."EV_REV_Event_Revenue"
+        ) THEN
+            INSERT INTO attributes."EV_REV_Event_Revenue" (
+                "Metadata_EV_REV",
+                "EV_REV_EV_ID",
+                "EV_REV_Event_Revenue"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_REV" IS NOT DISTINCT FROM OLD."Metadata_EV_REV"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_REV"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_REV_EV_ID", NEW."EV_ID"),
+                NEW."EV_REV_Event_Revenue"
+            );
+        END IF;
+    END IF;
+    IF NEW."EV_STA_EV_ID" IS DISTINCT FROM OLD."EV_STA_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_STA_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_STA_Event_Status" IS DISTINCT FROM OLD."EV_STA_Event_Status"
+    OR NEW."EV_STA_ChangedAt" IS DISTINCT FROM OLD."EV_STA_ChangedAt"
+    THEN
+        -- a value that is left as it is states nothing
+        IF NEW."EV_STA_Event_Status" IS NOT NULL AND (
+            NEW."EV_STA_ChangedAt" IS DISTINCT FROM OLD."EV_STA_ChangedAt" OR
+            OLD."EV_STA_Event_Status" IS NULL OR
+            OLD."EV_STA_Event_Status" <> NEW."EV_STA_Event_Status"
+        ) THEN
+            INSERT INTO attributes."EV_STA_Event_Status" (
+                "Metadata_EV_STA",
+                "EV_STA_EV_ID",
+                "EV_STA_ChangedAt",
+                "EV_STA_Event_Status"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_STA" IS NOT DISTINCT FROM OLD."Metadata_EV_STA"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_STA"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_STA_EV_ID", NEW."EV_ID"),
+                CASE
+                    WHEN NEW."EV_STA_ChangedAt" IS DISTINCT FROM OLD."EV_STA_ChangedAt" THEN NEW."EV_STA_ChangedAt"
+                    ELSE _now
+                END,
+                NEW."EV_STA_Event_Status"
+            );
+        END IF;
+    END IF;
+    IF NEW."EV_UTL_EV_ID" IS DISTINCT FROM OLD."EV_UTL_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_UTL_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_UTL_UTL_ID" IS DISTINCT FROM OLD."EV_UTL_UTL_ID"
+    OR NEW."EV_UTL_UTL_Utilization" IS DISTINCT FROM OLD."EV_UTL_UTL_Utilization"
+    THEN
+        _UTL := NEW."EV_UTL_UTL_ID";
+        IF _UTL IS NOT DISTINCT FROM OLD."EV_UTL_UTL_ID" AND NEW."EV_UTL_UTL_Utilization" IS NOT NULL THEN
+            SELECT
+                k."UTL_ID"
+            INTO
+                _UTL
+            FROM
+                knots."UTL_Utilization" k
+            WHERE
+                k."UTL_Utilization" = NEW."EV_UTL_UTL_Utilization"
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _UTL IS NOT NULL AND (
+            OLD."EV_UTL_UTL_ID" IS NULL OR
+            OLD."EV_UTL_UTL_ID" <> _UTL
+        ) THEN
+            INSERT INTO attributes."EV_UTL_Event_Utilization" (
+                "Metadata_EV_UTL",
+                "EV_UTL_EV_ID",
+                "EV_UTL_UTL_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_UTL" IS NOT DISTINCT FROM OLD."Metadata_EV_UTL"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_UTL"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_UTL_EV_ID", NEW."EV_ID"),
+                _UTL
+            );
+        END IF;
+    END IF;
+    IF NEW."EV_LVL_EV_ID" IS DISTINCT FROM OLD."EV_LVL_EV_ID" THEN
+        RAISE EXCEPTION 'The foreign key column EV_LVL_EV_ID is not updatable.';
+    END IF;
+    IF NEW."EV_LVL_PLV_ID" IS DISTINCT FROM OLD."EV_LVL_PLV_ID"
+    OR NEW."EV_LVL_PLV_ProfessionalLevel" IS DISTINCT FROM OLD."EV_LVL_PLV_ProfessionalLevel"
+    OR NEW."EV_LVL_ChangedAt" IS DISTINCT FROM OLD."EV_LVL_ChangedAt"
+    THEN
+        _LVL := NEW."EV_LVL_PLV_ID";
+        IF _LVL IS NOT DISTINCT FROM OLD."EV_LVL_PLV_ID" AND NEW."EV_LVL_PLV_ProfessionalLevel" IS NOT NULL THEN
+            SELECT
+                k."PLV_ID"
+            INTO
+                _LVL
+            FROM
+                knots."PLV_ProfessionalLevel" k
+            WHERE
+                k."PLV_Checksum" = decode(md5(NEW."EV_LVL_PLV_ProfessionalLevel"::text), 'hex')
+            LIMIT 1;
+        END IF;
+        -- a value that is left as it is states nothing
+        IF _LVL IS NOT NULL AND (
+            NEW."EV_LVL_ChangedAt" IS DISTINCT FROM OLD."EV_LVL_ChangedAt" OR
+            OLD."EV_LVL_PLV_ID" IS NULL OR
+            OLD."EV_LVL_PLV_ID" <> _LVL
+        ) THEN
+            INSERT INTO attributes."EV_LVL_Event_Level" (
+                "Metadata_EV_LVL",
+                "EV_LVL_EV_ID",
+                "EV_LVL_ChangedAt",
+                "EV_LVL_PLV_ID"
+            )
+            VALUES (
+                coalesce(
+                    CASE
+                        WHEN NEW."Metadata_EV" IS DISTINCT FROM OLD."Metadata_EV"
+                         AND NEW."Metadata_EV_LVL" IS NOT DISTINCT FROM OLD."Metadata_EV_LVL"
+                        THEN NEW."Metadata_EV"
+                        ELSE NEW."Metadata_EV_LVL"
+                    END, NEW."Metadata_EV"),
+                coalesce(NEW."EV_LVL_EV_ID", NEW."EV_ID"),
+                CASE
+                    WHEN NEW."EV_LVL_ChangedAt" IS DISTINCT FROM OLD."EV_LVL_ChangedAt" THEN NEW."EV_LVL_ChangedAt"
+                    ELSE _now
+                END,
+                _LVL
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lEV_Event" ON nexuses."lEV_Event";
+CREATE TRIGGER "ut_lEV_Event"
+INSTEAD OF UPDATE ON nexuses."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION nexuses."ut_lEV_Event"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_Event instead of DELETE trigger on lEV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION nexuses."dt_lEV_Event"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        attributes."EV_DAT_Event_Date" x
+    WHERE
+        x."EV_DAT_EV_ID" = OLD."EV_ID"
+    ;
+    DELETE FROM
+        attributes."EV_AUD_Event_Audience" x
+    WHERE
+        x."EV_AUD_EV_ID" = OLD."EV_ID"
+    ;
+    DELETE FROM
+        attributes."EV_REV_Event_Revenue" x
+    WHERE
+        x."EV_REV_EV_ID" = OLD."EV_ID"
+    ;
+    DELETE FROM
+        attributes."EV_STA_Event_Status" x
+    WHERE
+        x."EV_STA_EV_ID" = OLD."EV_ID"
+    AND
+        x."EV_STA_ChangedAt" = OLD."EV_STA_ChangedAt"
+    ;
+    DELETE FROM
+        attributes."EV_UTL_Event_Utilization" x
+    WHERE
+        x."EV_UTL_EV_ID" = OLD."EV_ID"
+    ;
+    DELETE FROM
+        attributes."EV_LVL_Event_Level" x
+    WHERE
+        x."EV_LVL_EV_ID" = OLD."EV_ID"
+    AND
+        x."EV_LVL_ChangedAt" = OLD."EV_LVL_ChangedAt"
+    ;
+    -- a nexus that has no attribute rows left is removed
+    DELETE FROM
+        nexuses."EV_Event" a
+    WHERE
+        a."EV_ID" = OLD."EV_ID"
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_DAT_Event_Date" x
+        WHERE
+            x."EV_DAT_EV_ID" = a."EV_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_AUD_Event_Audience" x
+        WHERE
+            x."EV_AUD_EV_ID" = a."EV_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_REV_Event_Revenue" x
+        WHERE
+            x."EV_REV_EV_ID" = a."EV_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_STA_Event_Status" x
+        WHERE
+            x."EV_STA_EV_ID" = a."EV_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_UTL_Event_Utilization" x
+        WHERE
+            x."EV_UTL_EV_ID" = a."EV_ID"
+    )
+    AND NOT EXISTS (
+        SELECT
+            1
+        FROM
+            attributes."EV_LVL_Event_Level" x
+        WHERE
+            x."EV_LVL_EV_ID" = a."EV_ID"
+    )
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lEV_Event" ON nexuses."lEV_Event";
+CREATE TRIGGER "dt_lEV_Event"
+INSTEAD OF DELETE ON nexuses."lEV_Event"
+FOR EACH ROW EXECUTE FUNCTION nexuses."dt_lEV_Event"();
+-- TIE TRIGGERS -------------------------------------------------------------------------------------------------------
+--
+-- The following triggers make a tie and its latest view behave like a table that is loaded with plain statements.
+-- The tie table has a trigger for insert, which stores a row only when it is not there already, refuses a contradiction
+-- and, for an idempotent tie, leaves out what only states again what the row before it says. The latest view has
+-- three 'instead of' triggers: insert, update, and delete. They propagate such operations to the tie table in a consistent
+-- way. Default values are used for some columns if not provided by the corresponding SQL statements.
+--
+-- For idempotent ties, only changes that represent values different from the previous or following value are stored.
+-- Others are silently ignored in order to avoid unnecessary temporal duplicates.
+--
+-- PostgreSQL runs a trigger of this kind for each row, so a statement is a row at a time. Whether a column is set in an UPDATE
+-- is told from whether it has another value than the row had.
+--
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_partner_AC_with_ONG_currently before INSERT trigger on AC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_AC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_AC_partner_AC_with_ONG_currently" := coalesce(NEW."Metadata_AC_partner_AC_with_ONG_currently", 0);
+    NEW."AC_partner_AC_with_ONG_currently_ChangedAt" := coalesce(NEW."AC_partner_AC_with_ONG_currently_ChangedAt", _now);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."AC_partner_AC_with_ONG_currently" x
+        WHERE
+            x."AC_ID_partner" = NEW."AC_ID_partner"
+        AND
+            x."AC_ID_with" = NEW."AC_ID_with"
+        AND
+            x."ONG_ID_currently" = NEW."ONG_ID_currently"
+        AND
+            x."AC_partner_AC_with_ONG_currently_ChangedAt" = NEW."AC_partner_AC_with_ONG_currently_ChangedAt"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_partner_AC_with_ONG_currently" ON ties."AC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "it_AC_partner_AC_with_ONG_currently"
+BEFORE INSERT ON ties."AC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION ties."it_AC_partner_AC_with_ONG_currently"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_partner_AC_with_ONG_currently instead of INSERT trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."AC_partner_AC_with_ONG_currently" (
+        "Metadata_AC_partner_AC_with_ONG_currently",
+        "AC_partner_AC_with_ONG_currently_ChangedAt",
+        "AC_ID_partner",
+        "AC_ID_with",
+        "ONG_ID_currently"
+    )
+    SELECT
+        NEW."Metadata_AC_partner_AC_with_ONG_currently",
+        NEW."AC_partner_AC_with_ONG_currently_ChangedAt",
+        NEW."AC_ID_partner",
+        NEW."AC_ID_with",
+        coalesce(NEW."ONG_ID_currently", (
+            SELECT
+                k."ONG_ID"
+            FROM
+                knots."ONG_Ongoing" k
+            WHERE
+                k."ONG_Ongoing" = NEW."currently_ONG_Ongoing"
+            LIMIT 1
+        ))
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_partner_AC_with_ONG_currently" ON ties."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "it_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF INSERT ON ties."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lAC_partner_AC_with_ONG_currently"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_partner_AC_with_ONG_currently instead of UPDATE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."ut_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _ONG_currently smallint;
+BEGIN
+    _ONG_currently := NEW."ONG_ID_currently";
+    IF NEW."currently_ONG_Ongoing" IS DISTINCT FROM OLD."currently_ONG_Ongoing" THEN
+        SELECT
+            k."ONG_ID"
+        INTO
+            _ONG_currently
+        FROM
+            knots."ONG_Ongoing" k
+        WHERE
+            k."ONG_Ongoing" = NEW."currently_ONG_Ongoing"
+        LIMIT 1;
+    END IF;
+    -- values that are left as they are state nothing
+    IF
+        NEW."AC_ID_partner" IS NOT NULL
+    AND
+        NEW."AC_ID_with" IS NOT NULL
+    AND
+        _ONG_currently IS NOT NULL
+    AND
+        (
+            NEW."AC_partner_AC_with_ONG_currently_ChangedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_ChangedAt" OR
+            NEW."AC_ID_partner" IS DISTINCT FROM OLD."AC_ID_partner"
+        OR
+            NEW."AC_ID_with" IS DISTINCT FROM OLD."AC_ID_with"
+        OR
+            _ONG_currently IS DISTINCT FROM OLD."ONG_ID_currently"
+        )
+    THEN
+        INSERT INTO ties."AC_partner_AC_with_ONG_currently" (
+            "Metadata_AC_partner_AC_with_ONG_currently",
+            "AC_partner_AC_with_ONG_currently_ChangedAt",
+            "AC_ID_partner",
+            "AC_ID_with",
+            "ONG_ID_currently"
+        )
+        VALUES (
+            NEW."Metadata_AC_partner_AC_with_ONG_currently",
+            CASE
+                WHEN NEW."AC_partner_AC_with_ONG_currently_ChangedAt" IS DISTINCT FROM OLD."AC_partner_AC_with_ONG_currently_ChangedAt" THEN NEW."AC_partner_AC_with_ONG_currently_ChangedAt"
+                ELSE _now
+            END,
+            NEW."AC_ID_partner",
+            NEW."AC_ID_with",
+            _ONG_currently
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_partner_AC_with_ONG_currently" ON ties."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "ut_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF UPDATE ON ties."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION ties."ut_lAC_partner_AC_with_ONG_currently"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_partner_AC_with_ONG_currently instead of DELETE trigger on lAC_partner_AC_with_ONG_currently
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lAC_partner_AC_with_ONG_currently"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."AC_partner_AC_with_ONG_currently" x
+    WHERE
+        x."AC_partner_AC_with_ONG_currently_ChangedAt" = OLD."AC_partner_AC_with_ONG_currently_ChangedAt"
+    AND
+        x."AC_ID_partner" = OLD."AC_ID_partner"
+    AND
+        x."AC_ID_with" = OLD."AC_ID_with"
+    AND
+        x."ONG_ID_currently" = OLD."ONG_ID_currently"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_partner_AC_with_ONG_currently" ON ties."lAC_partner_AC_with_ONG_currently";
+CREATE TRIGGER "dt_lAC_partner_AC_with_ONG_currently"
+INSTEAD OF DELETE ON ties."lAC_partner_AC_with_ONG_currently"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lAC_partner_AC_with_ONG_currently"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_subset_PN_of before INSERT trigger on AC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_AC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_AC_subset_PN_of" := coalesce(NEW."Metadata_AC_subset_PN_of", 0);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."AC_subset_PN_of" x
+        WHERE
+            x."AC_ID_subset" = NEW."AC_ID_subset"
+        AND
+            x."PN_ID_of" = NEW."PN_ID_of"
+        AND
+            true
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_subset_PN_of" ON ties."AC_subset_PN_of";
+CREATE TRIGGER "it_AC_subset_PN_of"
+BEFORE INSERT ON ties."AC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION ties."it_AC_subset_PN_of"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_subset_PN_of instead of INSERT trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."AC_subset_PN_of" (
+        "Metadata_AC_subset_PN_of",
+        "AC_ID_subset",
+        "PN_ID_of"
+    )
+    SELECT
+        NEW."Metadata_AC_subset_PN_of",
+        NEW."AC_ID_subset",
+        NEW."PN_ID_of"
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_subset_PN_of" ON ties."lAC_subset_PN_of";
+CREATE TRIGGER "it_lAC_subset_PN_of"
+INSTEAD OF INSERT ON ties."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lAC_subset_PN_of"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_subset_PN_of instead of UPDATE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."ut_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- values that are left as they are state nothing
+    IF
+        NEW."AC_ID_subset" IS NOT NULL
+    AND
+        NEW."PN_ID_of" IS NOT NULL
+    AND
+        (
+            NEW."AC_ID_subset" IS DISTINCT FROM OLD."AC_ID_subset"
+        OR
+            NEW."PN_ID_of" IS DISTINCT FROM OLD."PN_ID_of"
+        )
+    THEN
+        INSERT INTO ties."AC_subset_PN_of" (
+            "Metadata_AC_subset_PN_of",
+            "AC_ID_subset",
+            "PN_ID_of"
+        )
+        VALUES (
+            NEW."Metadata_AC_subset_PN_of",
+            NEW."AC_ID_subset",
+            NEW."PN_ID_of"
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_subset_PN_of" ON ties."lAC_subset_PN_of";
+CREATE TRIGGER "ut_lAC_subset_PN_of"
+INSTEAD OF UPDATE ON ties."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION ties."ut_lAC_subset_PN_of"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_subset_PN_of instead of DELETE trigger on lAC_subset_PN_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lAC_subset_PN_of"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."AC_subset_PN_of" x
+    WHERE
+        x."AC_ID_subset" = OLD."AC_ID_subset"
+    AND
+        x."PN_ID_of" = OLD."PN_ID_of"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_subset_PN_of" ON ties."lAC_subset_PN_of";
+CREATE TRIGGER "dt_lAC_subset_PN_of"
+INSTEAD OF DELETE ON ties."lAC_subset_PN_of"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lAC_subset_PN_of"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_EV_in_AC_wasCast before INSERT trigger on EV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_EV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_EV_in_AC_wasCast" := coalesce(NEW."Metadata_EV_in_AC_wasCast", 0);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."EV_in_AC_wasCast" x
+        WHERE
+            x."EV_ID_in" = NEW."EV_ID_in"
+        AND
+            x."AC_ID_wasCast" = NEW."AC_ID_wasCast"
+        AND
+            true
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_EV_in_AC_wasCast" ON ties."EV_in_AC_wasCast";
+CREATE TRIGGER "it_EV_in_AC_wasCast"
+BEFORE INSERT ON ties."EV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION ties."it_EV_in_AC_wasCast"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lEV_in_AC_wasCast instead of INSERT trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lEV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."EV_in_AC_wasCast" (
+        "Metadata_EV_in_AC_wasCast",
+        "EV_ID_in",
+        "AC_ID_wasCast"
+    )
+    SELECT
+        NEW."Metadata_EV_in_AC_wasCast",
+        NEW."EV_ID_in",
+        NEW."AC_ID_wasCast"
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lEV_in_AC_wasCast" ON ties."lEV_in_AC_wasCast";
+CREATE TRIGGER "it_lEV_in_AC_wasCast"
+INSTEAD OF INSERT ON ties."lEV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lEV_in_AC_wasCast"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lEV_in_AC_wasCast instead of DELETE trigger on lEV_in_AC_wasCast
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lEV_in_AC_wasCast"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."EV_in_AC_wasCast" x
+    WHERE
+        x."EV_ID_in" = OLD."EV_ID_in"
+    AND
+        x."AC_ID_wasCast" = OLD."AC_ID_wasCast"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lEV_in_AC_wasCast" ON ties."lEV_in_AC_wasCast";
+CREATE TRIGGER "dt_lEV_in_AC_wasCast"
+INSTEAD OF DELETE ON ties."lEV_in_AC_wasCast"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lEV_in_AC_wasCast"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_part_PR_in_RAT_got before INSERT trigger on AC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_AC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_AC_part_PR_in_RAT_got" := coalesce(NEW."Metadata_AC_part_PR_in_RAT_got", 0);
+    NEW."AC_part_PR_in_RAT_got_ChangedAt" := coalesce(NEW."AC_part_PR_in_RAT_got_ChangedAt", _now);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."AC_part_PR_in_RAT_got" x
+        WHERE
+            x."AC_ID_part" = NEW."AC_ID_part"
+        AND
+            x."PR_ID_in" = NEW."PR_ID_in"
+        AND
+            x."RAT_ID_got" = NEW."RAT_ID_got"
+        AND
+            x."AC_part_PR_in_RAT_got_ChangedAt" = NEW."AC_part_PR_in_RAT_got_ChangedAt"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    -- other values for identifiers that already have values (at that time) are a contradiction
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."AC_part_PR_in_RAT_got" x
+        WHERE
+            x."AC_ID_part" = NEW."AC_ID_part"
+        AND
+            x."PR_ID_in" = NEW."PR_ID_in"
+        AND
+            x."AC_part_PR_in_RAT_got_ChangedAt" = NEW."AC_part_PR_in_RAT_got_ChangedAt"
+    ) THEN
+        RAISE EXCEPTION 'Contradiction in AC_part_PR_in_RAT_got for: %', concat_ws(', ',
+            NEW."AC_ID_part",
+            NEW."PR_ID_in",
+            NEW."AC_part_PR_in_RAT_got_ChangedAt"
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_part_PR_in_RAT_got" ON ties."AC_part_PR_in_RAT_got";
+CREATE TRIGGER "it_AC_part_PR_in_RAT_got"
+BEFORE INSERT ON ties."AC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION ties."it_AC_part_PR_in_RAT_got"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_part_PR_in_RAT_got instead of INSERT trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."AC_part_PR_in_RAT_got" (
+        "Metadata_AC_part_PR_in_RAT_got",
+        "AC_part_PR_in_RAT_got_ChangedAt",
+        "AC_ID_part",
+        "PR_ID_in",
+        "RAT_ID_got"
+    )
+    SELECT
+        NEW."Metadata_AC_part_PR_in_RAT_got",
+        NEW."AC_part_PR_in_RAT_got_ChangedAt",
+        NEW."AC_ID_part",
+        NEW."PR_ID_in",
+        coalesce(NEW."RAT_ID_got", (
+            SELECT
+                k."RAT_ID"
+            FROM
+                knots."RAT_Rating" k
+            WHERE
+                k."RAT_Rating" = NEW."got_RAT_Rating"
+            LIMIT 1
+        ))
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_part_PR_in_RAT_got" ON ties."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "it_lAC_part_PR_in_RAT_got"
+INSTEAD OF INSERT ON ties."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lAC_part_PR_in_RAT_got"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lAC_part_PR_in_RAT_got instead of UPDATE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."ut_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+    _RAT_got smallint;
+BEGIN
+    IF NEW."AC_ID_part" IS DISTINCT FROM OLD."AC_ID_part" THEN
+        RAISE EXCEPTION 'The identity column AC_ID_part is not updatable.';
+    END IF;
+    IF NEW."PR_ID_in" IS DISTINCT FROM OLD."PR_ID_in" THEN
+        RAISE EXCEPTION 'The identity column PR_ID_in is not updatable.';
+    END IF;
+    _RAT_got := NEW."RAT_ID_got";
+    IF NEW."got_RAT_Rating" IS DISTINCT FROM OLD."got_RAT_Rating" THEN
+        SELECT
+            k."RAT_ID"
+        INTO
+            _RAT_got
+        FROM
+            knots."RAT_Rating" k
+        WHERE
+            k."RAT_Rating" = NEW."got_RAT_Rating"
+        LIMIT 1;
+    END IF;
+    -- values that are left as they are state nothing
+    IF
+        _RAT_got IS NOT NULL
+    AND
+        (
+            NEW."AC_part_PR_in_RAT_got_ChangedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_ChangedAt" OR
+            NEW."AC_ID_part" IS DISTINCT FROM OLD."AC_ID_part"
+        OR
+            NEW."PR_ID_in" IS DISTINCT FROM OLD."PR_ID_in"
+        OR
+            _RAT_got IS DISTINCT FROM OLD."RAT_ID_got"
+        )
+    THEN
+        INSERT INTO ties."AC_part_PR_in_RAT_got" (
+            "Metadata_AC_part_PR_in_RAT_got",
+            "AC_part_PR_in_RAT_got_ChangedAt",
+            "AC_ID_part",
+            "PR_ID_in",
+            "RAT_ID_got"
+        )
+        VALUES (
+            NEW."Metadata_AC_part_PR_in_RAT_got",
+            CASE
+                WHEN NEW."AC_part_PR_in_RAT_got_ChangedAt" IS DISTINCT FROM OLD."AC_part_PR_in_RAT_got_ChangedAt" THEN NEW."AC_part_PR_in_RAT_got_ChangedAt"
+                ELSE _now
+            END,
+            NEW."AC_ID_part",
+            NEW."PR_ID_in",
+            _RAT_got
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lAC_part_PR_in_RAT_got" ON ties."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "ut_lAC_part_PR_in_RAT_got"
+INSTEAD OF UPDATE ON ties."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION ties."ut_lAC_part_PR_in_RAT_got"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_part_PR_in_RAT_got instead of DELETE trigger on lAC_part_PR_in_RAT_got
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lAC_part_PR_in_RAT_got"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."AC_part_PR_in_RAT_got" x
+    WHERE
+        x."AC_part_PR_in_RAT_got_ChangedAt" = OLD."AC_part_PR_in_RAT_got_ChangedAt"
+    AND
+        x."AC_ID_part" = OLD."AC_ID_part"
+    AND
+        x."PR_ID_in" = OLD."PR_ID_in"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_part_PR_in_RAT_got" ON ties."lAC_part_PR_in_RAT_got";
+CREATE TRIGGER "dt_lAC_part_PR_in_RAT_got"
+INSTEAD OF DELETE ON ties."lAC_part_PR_in_RAT_got"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lAC_part_PR_in_RAT_got"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_ST_at_PR_isPlaying before INSERT trigger on ST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_ST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_ST_at_PR_isPlaying" := coalesce(NEW."Metadata_ST_at_PR_isPlaying", 0);
+    NEW."ST_at_PR_isPlaying_ChangedAt" := coalesce(NEW."ST_at_PR_isPlaying_ChangedAt", _now);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."ST_at_PR_isPlaying" x
+        WHERE
+            x."ST_ID_at" = NEW."ST_ID_at"
+        AND
+            x."PR_ID_isPlaying" = NEW."PR_ID_isPlaying"
+        AND
+            x."ST_at_PR_isPlaying_ChangedAt" = NEW."ST_at_PR_isPlaying_ChangedAt"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_ST_at_PR_isPlaying" ON ties."ST_at_PR_isPlaying";
+CREATE TRIGGER "it_ST_at_PR_isPlaying"
+BEFORE INSERT ON ties."ST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION ties."it_ST_at_PR_isPlaying"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lST_at_PR_isPlaying instead of INSERT trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."ST_at_PR_isPlaying" (
+        "Metadata_ST_at_PR_isPlaying",
+        "ST_at_PR_isPlaying_ChangedAt",
+        "ST_ID_at",
+        "PR_ID_isPlaying"
+    )
+    SELECT
+        NEW."Metadata_ST_at_PR_isPlaying",
+        NEW."ST_at_PR_isPlaying_ChangedAt",
+        NEW."ST_ID_at",
+        NEW."PR_ID_isPlaying"
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lST_at_PR_isPlaying" ON ties."lST_at_PR_isPlaying";
+CREATE TRIGGER "it_lST_at_PR_isPlaying"
+INSTEAD OF INSERT ON ties."lST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lST_at_PR_isPlaying"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lST_at_PR_isPlaying instead of DELETE trigger on lST_at_PR_isPlaying
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lST_at_PR_isPlaying"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."ST_at_PR_isPlaying" x
+    WHERE
+        x."ST_at_PR_isPlaying_ChangedAt" = OLD."ST_at_PR_isPlaying_ChangedAt"
+    AND
+        x."ST_ID_at" = OLD."ST_ID_at"
+    AND
+        x."PR_ID_isPlaying" = OLD."PR_ID_isPlaying"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lST_at_PR_isPlaying" ON ties."lST_at_PR_isPlaying";
+CREATE TRIGGER "dt_lST_at_PR_isPlaying"
+INSTEAD OF DELETE ON ties."lST_at_PR_isPlaying"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lST_at_PR_isPlaying"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_AC_parent_AC_child_PAT_having before INSERT trigger on AC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_AC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_AC_parent_AC_child_PAT_having" := coalesce(NEW."Metadata_AC_parent_AC_child_PAT_having", 0);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."AC_parent_AC_child_PAT_having" x
+        WHERE
+            x."AC_ID_parent" = NEW."AC_ID_parent"
+        AND
+            x."AC_ID_child" = NEW."AC_ID_child"
+        AND
+            x."PAT_ID_having" = NEW."PAT_ID_having"
+        AND
+            true
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_AC_parent_AC_child_PAT_having" ON ties."AC_parent_AC_child_PAT_having";
+CREATE TRIGGER "it_AC_parent_AC_child_PAT_having"
+BEFORE INSERT ON ties."AC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION ties."it_AC_parent_AC_child_PAT_having"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lAC_parent_AC_child_PAT_having instead of INSERT trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lAC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."AC_parent_AC_child_PAT_having" (
+        "Metadata_AC_parent_AC_child_PAT_having",
+        "AC_ID_parent",
+        "AC_ID_child",
+        "PAT_ID_having"
+    )
+    SELECT
+        NEW."Metadata_AC_parent_AC_child_PAT_having",
+        NEW."AC_ID_parent",
+        NEW."AC_ID_child",
+        coalesce(NEW."PAT_ID_having", (
+            SELECT
+                k."PAT_ID"
+            FROM
+                knots."PAT_ParentalType" k
+            WHERE
+                k."PAT_ParentalType" = NEW."having_PAT_ParentalType"
+            LIMIT 1
+        ))
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lAC_parent_AC_child_PAT_having" ON ties."lAC_parent_AC_child_PAT_having";
+CREATE TRIGGER "it_lAC_parent_AC_child_PAT_having"
+INSTEAD OF INSERT ON ties."lAC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lAC_parent_AC_child_PAT_having"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lAC_parent_AC_child_PAT_having instead of DELETE trigger on lAC_parent_AC_child_PAT_having
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lAC_parent_AC_child_PAT_having"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."AC_parent_AC_child_PAT_having" x
+    WHERE
+        x."AC_ID_parent" = OLD."AC_ID_parent"
+    AND
+        x."AC_ID_child" = OLD."AC_ID_child"
+    AND
+        x."PAT_ID_having" = OLD."PAT_ID_having"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lAC_parent_AC_child_PAT_having" ON ties."lAC_parent_AC_child_PAT_having";
+CREATE TRIGGER "dt_lAC_parent_AC_child_PAT_having"
+INSTEAD OF DELETE ON ties."lAC_parent_AC_child_PAT_having"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lAC_parent_AC_child_PAT_having"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_PR_content_ST_location_EV_of before INSERT trigger on PR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_PR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    NEW."Metadata_PR_content_ST_location_EV_of" := coalesce(NEW."Metadata_PR_content_ST_location_EV_of", 0);
+    NEW."PR_content_ST_location_EV_of_ChangedAt" := coalesce(NEW."PR_content_ST_location_EV_of_ChangedAt", _now);
+    -- the identical is not stored again
+    IF EXISTS (
+        SELECT
+            1
+        FROM
+            ties."PR_content_ST_location_EV_of" x
+        WHERE
+            x."PR_ID_content" = NEW."PR_ID_content"
+        AND
+            x."ST_ID_location" = NEW."ST_ID_location"
+        AND
+            x."EV_ID_of" = NEW."EV_ID_of"
+        AND
+            x."PR_content_ST_location_EV_of_ChangedAt" = NEW."PR_content_ST_location_EV_of_ChangedAt"
+    ) THEN
+        RETURN NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_PR_content_ST_location_EV_of" ON ties."PR_content_ST_location_EV_of";
+CREATE TRIGGER "it_PR_content_ST_location_EV_of"
+BEFORE INSERT ON ties."PR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION ties."it_PR_content_ST_location_EV_of"();
+-- Insert trigger -----------------------------------------------------------------------------------------------------
+-- it_lPR_content_ST_location_EV_of instead of INSERT trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."it_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    INSERT INTO ties."PR_content_ST_location_EV_of" (
+        "Metadata_PR_content_ST_location_EV_of",
+        "PR_content_ST_location_EV_of_ChangedAt",
+        "PR_ID_content",
+        "ST_ID_location",
+        "EV_ID_of"
+    )
+    SELECT
+        NEW."Metadata_PR_content_ST_location_EV_of",
+        NEW."PR_content_ST_location_EV_of_ChangedAt",
+        NEW."PR_ID_content",
+        NEW."ST_ID_location",
+        NEW."EV_ID_of"
+    ;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "it_lPR_content_ST_location_EV_of" ON ties."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "it_lPR_content_ST_location_EV_of"
+INSTEAD OF INSERT ON ties."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION ties."it_lPR_content_ST_location_EV_of"();
+-- UPDATE trigger -----------------------------------------------------------------------------------------------------
+-- ut_lPR_content_ST_location_EV_of instead of UPDATE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."ut_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+DECLARE
+    _now timestamp := current_timestamp::timestamp;
+BEGIN
+    -- values that are left as they are state nothing
+    IF
+        NEW."PR_ID_content" IS NOT NULL
+    AND
+        NEW."ST_ID_location" IS NOT NULL
+    AND
+        NEW."EV_ID_of" IS NOT NULL
+    AND
+        (
+            NEW."PR_content_ST_location_EV_of_ChangedAt" IS DISTINCT FROM OLD."PR_content_ST_location_EV_of_ChangedAt" OR
+            NEW."PR_ID_content" IS DISTINCT FROM OLD."PR_ID_content"
+        OR
+            NEW."ST_ID_location" IS DISTINCT FROM OLD."ST_ID_location"
+        OR
+            NEW."EV_ID_of" IS DISTINCT FROM OLD."EV_ID_of"
+        )
+    THEN
+        INSERT INTO ties."PR_content_ST_location_EV_of" (
+            "Metadata_PR_content_ST_location_EV_of",
+            "PR_content_ST_location_EV_of_ChangedAt",
+            "PR_ID_content",
+            "ST_ID_location",
+            "EV_ID_of"
+        )
+        VALUES (
+            NEW."Metadata_PR_content_ST_location_EV_of",
+            CASE
+                WHEN NEW."PR_content_ST_location_EV_of_ChangedAt" IS DISTINCT FROM OLD."PR_content_ST_location_EV_of_ChangedAt" THEN NEW."PR_content_ST_location_EV_of_ChangedAt"
+                ELSE _now
+            END,
+            NEW."PR_ID_content",
+            NEW."ST_ID_location",
+            NEW."EV_ID_of"
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "ut_lPR_content_ST_location_EV_of" ON ties."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "ut_lPR_content_ST_location_EV_of"
+INSTEAD OF UPDATE ON ties."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION ties."ut_lPR_content_ST_location_EV_of"();
+-- DELETE trigger -----------------------------------------------------------------------------------------------------
+-- dt_lPR_content_ST_location_EV_of instead of DELETE trigger on lPR_content_ST_location_EV_of
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION ties."dt_lPR_content_ST_location_EV_of"()
+RETURNS trigger
+AS
+$$
+BEGIN
+    DELETE FROM
+        ties."PR_content_ST_location_EV_of" x
+    WHERE
+        x."PR_content_ST_location_EV_of_ChangedAt" = OLD."PR_content_ST_location_EV_of_ChangedAt"
+    AND
+        x."PR_ID_content" = OLD."PR_ID_content"
+    AND
+        x."ST_ID_location" = OLD."ST_ID_location"
+    AND
+        x."EV_ID_of" = OLD."EV_ID_of"
+    ;
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS "dt_lPR_content_ST_location_EV_of" ON ties."lPR_content_ST_location_EV_of";
+CREATE TRIGGER "dt_lPR_content_ST_location_EV_of"
+INSTEAD OF DELETE ON ties."lPR_content_ST_location_EV_of"
+FOR EACH ROW EXECUTE FUNCTION ties."dt_lPR_content_ST_location_EV_of"();
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
 --
 -- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and

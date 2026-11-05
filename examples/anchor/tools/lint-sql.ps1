@@ -25,7 +25,7 @@ $root = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'lint-columns.ps1')
 
 $types = 'int|tinyint|smallint|bigint|integer|decimal\(\d+,\s*\d+\)|number\(\d+(,\s*\d+)?\)|numeric\(\d+(,\s*\d+)?\)|timestamp_ntz(\(\d+\))?|timestamp(\(\d+\))?|datetime|date|string|text|varchar(\(\d+\))?|char(\(\d+\))?|boolean|bit|geography|binary'
-$column = "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b[^,]*$"          # a column definition with no comma at its end
+$column = "^\s+[A-Za-z_][A-Za-z0-9_]*\s+($types)\b[^,;]*$"         # a column definition with no comma at its end (not a declaration in a function, which ends with a semicolon)
 $selectItem = '^\s+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\s*$' # "x.Column" with no comma at its end
 
 # The templates write the names that come from the model inside double quotes ("AC_Actor"), which keeps their case and lets them
