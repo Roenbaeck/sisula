@@ -34,8 +34,8 @@ param(
     [int] $Port = $(if ($env:PGPORT) { [int] $env:PGPORT } else { 5432 }),
     [string] $User = $(if ($env:PGUSER) { $env:PGUSER } else { 'postgres' }),
     [string] $Password = $env:PGPASSWORD,
-    [string[]] $Suite = @('perspectives', 'deploy'),
-    [string[]] $Temporalization = @('bi', 'crt'),
+    [string[]] $Suite = @('perspectives', 'equivalence', 'deploy'),
+    [string[]] $Temporalization = @('uni', 'bi', 'crt'),
     [switch] $Keep,
     [string] $Prefix = 'sisula_'
 )
@@ -45,8 +45,8 @@ $root = Split-Path -Parent $PSScriptRoot
 
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $Temporalization = @($Temporalization | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
-foreach ($s in $Suite) { if (@('perspectives', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives or deploy." } }
-foreach ($t in $Temporalization) { if (@('bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use bi or crt." } }
+foreach ($s in $Suite) { if (@('perspectives', 'equivalence', 'deploy') -notcontains $s) { throw "Unknown suite '$s': use perspectives, equivalence or deploy." } }
+foreach ($t in $Temporalization) { if (@('uni', 'bi', 'crt') -notcontains $t) { throw "Unknown temporalization '$t': use uni, bi or crt." } }
 if ($Prefix -notmatch '^[a-z_][a-z0-9_]*$') { throw "The prefix '$Prefix' has to be a plain name in lower case." }
 if (-not $Psql) { $found = Get-Command psql -ErrorAction SilentlyContinue; if ($found) { $Psql = $found.Source } }
 if (-not $Psql -or -not (Test-Path $Psql)) { throw 'psql was not found: put it on the path, or give it with -Psql or POSTGRES_PSQL.' }
@@ -90,12 +90,19 @@ function Invoke-Checks([string] $database, [string] $checksFile) {
 }
 
 $failed = @()
-$known = @('postgresql-plain-bi', 'postgresql-plain-crt')   # the original naming
+$known = @('postgresql-plain', 'postgresql-plain-bi', 'postgresql-plain-crt')   # the original naming
 $jobs = @()
 foreach ($s in $Suite) {
     foreach ($t in $Temporalization) {
-        if ($s -eq 'perspectives') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-distinct-$t") } }
-        else { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @(Get-ChildItem (Join-Path $root 'models') -Filter "postgresql-*-$t.xml" | Sort-Object Name | ForEach-Object { $_.BaseName }) } }
+        $suffix = ''
+        if ($t -ne 'uni') { $suffix = "-$t" }
+        if ($s -eq 'perspectives') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @("postgresql-distinct$suffix") } }
+        elseif ($s -eq 'equivalence') { if ($t -eq 'uni') { $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @('postgresql-distinct-equivalence') } } }
+        else {
+            $names = Get-ChildItem (Join-Path $root 'models') -Filter 'postgresql-*.xml' | Sort-Object Name | ForEach-Object { $_.BaseName }
+            if ($t -eq 'uni') { $names = @($names | Where-Object { $_ -notmatch '-(bi|crt)$' }) } else { $names = @($names | Where-Object { $_ -match "-$t`$" }) }
+            $jobs += [pscustomobject]@{ Suite = $s; T = $t; Models = @($names) }
+        }
     }
 }
 foreach ($job in $jobs) {
