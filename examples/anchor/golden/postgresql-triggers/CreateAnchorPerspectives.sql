@@ -10,6 +10,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "Metadata_SU",
     "SU_NAM_SU_ID",
     "Metadata_SU_NAM",
+    "Deletable_SU_NAM",
     "SU_NAM_Subject_Name",
     "SU_COD_SU_ID",
     "Metadata_SU_COD",
@@ -41,6 +42,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "SU_TAG_Subject_Tag",
     "SU_LVL_SU_ID",
     "Metadata_SU_LVL",
+    "Deletable_SU_LVL",
     "SU_LVL_ChangedAt",
     "SU_LVL_GRD_Grade",
     "SU_LVL_Metadata_GRD",
@@ -56,6 +58,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "SU_ASR_Subject_Assessment",
     "SU_ERS_SU_ID",
     "Metadata_SU_ERS",
+    "Deletable_SU_ERS",
     "SU_ERS_ChangedAt",
     "SU_ERS_Subject_Erasable"
 )
@@ -65,6 +68,7 @@ SELECT
     "SU"."Metadata_SU",
     "NAM"."SU_NAM_SU_ID",
     "NAM"."Metadata_SU_NAM",
+    NULL::boolean,
     "NAM"."SU_NAM_Subject_Name",
     "COD"."SU_COD_SU_ID",
     "COD"."Metadata_SU_COD",
@@ -96,6 +100,7 @@ SELECT
     "TAG"."SU_TAG_Subject_Tag",
     "LVL"."SU_LVL_SU_ID",
     "LVL"."Metadata_SU_LVL",
+    NULL::boolean,
     "LVL"."SU_LVL_ChangedAt",
     "kLVL"."GRD_Grade" AS "SU_LVL_GRD_Grade",
     "kLVL"."Metadata_GRD" AS "SU_LVL_Metadata_GRD",
@@ -111,6 +116,7 @@ SELECT
     "ASR"."SU_ASR_Subject_Assessment",
     "ERS"."SU_ERS_SU_ID",
     "ERS"."Metadata_SU_ERS",
+    NULL::boolean,
     "ERS"."SU_ERS_ChangedAt",
     "ERS"."SU_ERS_Subject_Erasable"
 FROM

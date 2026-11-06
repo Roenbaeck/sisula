@@ -286,6 +286,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_ST_MIN" IS TRUE
+    AND OLD."ST_MIN_UTL_ID" IS NOT NULL
+    AND (NEW."ST_MIN_UTL_ID" IS NULL OR NEW."ST_MIN_UTL_Utilization" IS NULL)
+    THEN
+        IF to_regclass('attributes."ST_MIN_Stage_Minimum_Deleted"') IS NULL THEN
+            CREATE TABLE attributes."ST_MIN_Stage_Minimum_Deleted" (
+                LIKE attributes."ST_MIN_Stage_Minimum",
+                "ST_MIN_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM attributes."ST_MIN_Stage_Minimum"
+            WHERE "ST_MIN_ST_ID" = OLD."ST_ID"
+            RETURNING *
+        )
+        INSERT INTO attributes."ST_MIN_Stage_Minimum_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

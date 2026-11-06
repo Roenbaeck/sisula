@@ -11,9 +11,11 @@ CREATE OR REPLACE VIEW public."lEV_Event" (
     "SU_ID_for",
     "EV_QTY_EV_ID",
     "Metadata_EV_QTY",
+    "Deletable_EV_QTY",
     "EV_QTY_Event_Quantity",
     "EV_PLC_EV_ID",
     "Metadata_EV_PLC",
+    "Deletable_EV_PLC",
     "EV_PLC_ChangedAt",
     "EV_PLC_Event_Place"
 )
@@ -24,9 +26,11 @@ SELECT
     "EV"."SU_ID_for",
     "QTY"."EV_QTY_EV_ID",
     "QTY"."Metadata_EV_QTY",
+    NULL::boolean,
     "QTY"."EV_QTY_Event_Quantity",
     "PLC"."EV_PLC_EV_ID",
     "PLC"."Metadata_EV_PLC",
+    NULL::boolean,
     "PLC"."EV_PLC_ChangedAt",
     "PLC"."EV_PLC_Event_Place"
 FROM

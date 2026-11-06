@@ -270,6 +270,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_NAM" IS TRUE
+    AND OLD."SU_NAM_Subject_Name" IS NOT NULL
+    AND NEW."SU_NAM_Subject_Name" IS NULL
+    THEN
+        IF to_regclass('public."SU_NAM_Subject_Name_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_NAM_Subject_Name_Deleted" (
+                LIKE public."SU_NAM_Subject_Name",
+                "SU_NAM_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_NAM_Subject_Name"
+            WHERE "SU_NAM_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_NAM_Subject_Name_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     IF NEW."SU_COD_SU_ID" IS DISTINCT FROM OLD."SU_COD_SU_ID" THEN
         RAISE EXCEPTION 'The foreign key column SU_COD_SU_ID is not updatable.';
     END IF;
@@ -555,6 +578,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_LVL" IS TRUE
+    AND OLD."SU_LVL_GRD_ID" IS NOT NULL
+    AND (NEW."SU_LVL_GRD_ID" IS NULL OR NEW."SU_LVL_GRD_Grade" IS NULL)
+    THEN
+        IF to_regclass('public."SU_LVL_Subject_Level_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_LVL_Subject_Level_Deleted" (
+                LIKE public."SU_LVL_Subject_Level",
+                "SU_LVL_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_LVL_Subject_Level"
+            WHERE "SU_LVL_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_LVL_Subject_Level_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_LVL_ChangedAt" IS DISTINCT FROM OLD."SU_LVL_ChangedAt" THEN NEW."SU_LVL_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
+    END IF;
     IF NEW."SU_TXT_SU_ID" IS DISTINCT FROM OLD."SU_TXT_SU_ID" THEN
         RAISE EXCEPTION 'The foreign key column SU_TXT_SU_ID is not updatable.';
     END IF;
@@ -659,6 +705,29 @@ BEGIN
                 NEW."SU_ERS_Subject_Erasable"
             );
         END IF;
+    END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_ERS" IS TRUE
+    AND OLD."SU_ERS_Subject_Erasable" IS NOT NULL
+    AND NEW."SU_ERS_Subject_Erasable" IS NULL
+    THEN
+        IF to_regclass('public."SU_ERS_Subject_Erasable_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_ERS_Subject_Erasable_Deleted" (
+                LIKE public."SU_ERS_Subject_Erasable",
+                "SU_ERS_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_ERS_Subject_Erasable"
+            WHERE "SU_ERS_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_ERS_Subject_Erasable_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_ERS_ChangedAt" IS DISTINCT FROM OLD."SU_ERS_ChangedAt" THEN NEW."SU_ERS_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;

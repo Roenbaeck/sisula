@@ -90,6 +90,11 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
             if (-not $created.ContainsKey($key)) { $created[$key] = $i }   # where the first statement that creates it starts
             $schemas[$Matches[1].ToLower()] = $true
         }
+        # a table that a trigger makes when it needs it (the deletion tables of deletable attributes and ties) is there for every statement
+        elseif ($code[$i] -match '^\s+CREATE TABLE (\w+)\.(\w+)') {
+            $key = ($Matches[1] + '.' + $Matches[2]).ToLower()
+            if (-not $created.ContainsKey($key)) { $created[$key] = 0 }
+        }
     }
     $missing = [ordered]@{}
     $tooEarly = [ordered]@{}

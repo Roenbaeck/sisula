@@ -14,6 +14,7 @@ CREATE OR REPLACE VIEW public."lST_Stage" (
     "ST_AVG_ChangedAt",
     "UTL_Utilization",
     "UTL_ID",
+    "Deletable_ST_MIN",
     "UTL_Utilization",
     "UTL_ID"
 )
@@ -27,6 +28,7 @@ SELECT
     "AVG"."ST_AVG_ChangedAt",
     "kAVG"."UTL_Utilization" AS "UTL_Utilization",
     "AVG"."UTL_ID",
+    NULL::boolean,
     "kMIN"."UTL_Utilization" AS "UTL_Utilization",
     "MIN"."UTL_ID"
 FROM

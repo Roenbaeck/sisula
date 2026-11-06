@@ -26,6 +26,7 @@ CREATE OR REPLACE VIEW anchors."lST_Scen" (
     "ST_AVG_UTL_ID",
     "ST_MIN_ST_ID",
     "Metadata_ST_MIN",
+    "Deletable_ST_MIN",
     "ST_MIN_UTL_Utnyttjande",
     "ST_MIN_Metadata_UTL",
     "ST_MIN_UTL_ID"
@@ -52,6 +53,7 @@ SELECT
     "AVG"."ST_AVG_UTL_ID",
     "MIN"."ST_MIN_ST_ID",
     "MIN"."Metadata_ST_MIN",
+    NULL::boolean,
     "kMIN"."UTL_Utnyttjande" AS "ST_MIN_UTL_Utnyttjande",
     "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
     "MIN"."ST_MIN_UTL_ID"
