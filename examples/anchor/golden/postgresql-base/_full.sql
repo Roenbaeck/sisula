@@ -724,6 +724,7 @@ CREATE OR REPLACE VIEW public."lST_Stage" (
     "ST_AVG_UTL_ID",
     "ST_MIN_ST_ID",
     "Metadata_ST_MIN",
+    "Deletable_ST_MIN",
     "ST_MIN_UTL_Utilization",
     "ST_MIN_Metadata_UTL",
     "ST_MIN_UTL_ID"
@@ -748,6 +749,7 @@ SELECT
     "AVG"."ST_AVG_UTL_ID",
     "MIN"."ST_MIN_ST_ID",
     "MIN"."Metadata_ST_MIN",
+    NULL::boolean,
     "kMIN"."UTL_Utilization" AS "ST_MIN_UTL_Utilization",
     "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
     "MIN"."ST_MIN_UTL_ID"
@@ -3120,6 +3122,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_ST_MIN" IS TRUE
+    AND OLD."ST_MIN_UTL_ID" IS NOT NULL
+    AND (NEW."ST_MIN_UTL_ID" IS NULL OR NEW."ST_MIN_UTL_Utilization" IS NULL)
+    THEN
+        IF to_regclass('public."ST_MIN_Stage_Minimum_Deleted"') IS NULL THEN
+            CREATE TABLE public."ST_MIN_Stage_Minimum_Deleted" (
+                LIKE public."ST_MIN_Stage_Minimum",
+                "ST_MIN_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."ST_MIN_Stage_Minimum"
+            WHERE "ST_MIN_ST_ID" = OLD."ST_ID"
+            RETURNING *
+        )
+        INSERT INTO public."ST_MIN_Stage_Minimum_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -4840,6 +4865,348 @@ DROP TRIGGER IF EXISTS "dt_lPR_content_ST_location_EV_of" ON public."lPR_content
 CREATE TRIGGER "dt_lPR_content_ST_location_EV_of"
 INSTEAD OF DELETE ON public."lPR_content_ST_location_EV_of"
 FOR EACH ROW EXECUTE FUNCTION public."dt_lPR_content_ST_location_EV_of"();
+-- NATURAL KEYS -------------------------------------------------------------------------------------------------------
+--
+-- A natural key is a route in the model: the values that identify an anchor or a nexus, reached from it through its
+-- attributes, its roles and ties (see naturalKeys() in Helpers.js for the rules a route follows). For each route of
+-- each anchor and nexus there is
+--
+--   key_<anchor or nexus>_<route>          the key of every identity, from the latest values, with one column for
+--                                          each value; a value with a checksum, such as a geography, is followed by
+--                                          the checksum, a hash of the value, which is what it is matched on
+--   pkey_<anchor or nexus>_<route>(time)   the key of every identity at a changing time, for a route that passes
+--                                          something historized, since its key can change
+--   ic_key_<anchor or nexus>_<route>       the keys that more than one identity has, and the identities that have
+--                                          more than one key; a violation is a row with the construct, what is wrong, the key as jsonb
+--
+-- PostgreSQL does not enforce that a key is unique (the primary keys are the identities), so a lookup through a key
+-- view can find more than one identity when ic_key_ is not empty.
+--
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_ST_Stage_1st" (
+    "ST_ID",
+    "ST_LOC_Stage_Location",
+    "ST_LOC_Checksum"
+)
+AS
+SELECT
+    "ST"."ST_ID",
+    "ST"."ST_LOC_Stage_Location",
+    "ST"."ST_LOC_Checksum"
+FROM
+    public."lST_Stage" "ST"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_ST_Stage_1st" (
+    "Construct",
+    "Violation",
+    "ViolationKey",
+    "Occurrences"
+)
+AS
+SELECT
+    'key_ST_Stage_1st',
+    'duplicate natural key',
+    jsonb_build_object(
+        'ST_LOC_Checksum', "ST_LOC_Checksum"
+    ),
+    COUNT(DISTINCT "ST_ID")
+FROM
+    public."key_ST_Stage_1st"
+WHERE
+    "ST_LOC_Checksum" IS NOT NULL
+GROUP BY
+    "ST_LOC_Checksum"
+HAVING
+    COUNT(DISTINCT "ST_ID") > 1
+UNION ALL
+SELECT
+    'key_ST_Stage_1st',
+    'more than one natural key',
+    jsonb_build_object(
+        'ST_ID', "ST_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_ST_Stage_1st"
+GROUP BY
+    "ST_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_ST_Stage_2nd" (
+    "ST_ID",
+    "ST_NAM_Stage_Name"
+)
+AS
+SELECT
+    "ST"."ST_ID",
+    "ST"."ST_NAM_Stage_Name"
+FROM
+    public."lST_Stage" "ST"
+;
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."pkey_ST_Stage_2nd" (
+    changingTimepoint timestamp
+)
+RETURNS TABLE (
+    "ST_ID" integer,
+    "ST_NAM_Stage_Name" varchar(42)
+)
+AS
+$$
+SELECT
+    "ST"."ST_ID",
+    "ST"."ST_NAM_Stage_Name"
+FROM
+    public."pST_Stage"(changingTimepoint) "ST"
+$$ LANGUAGE sql STABLE;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 2nd key of ST_Stage
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_ST_Stage_2nd" (
+    "Construct",
+    "Violation",
+    "ViolationKey",
+    "Occurrences"
+)
+AS
+SELECT
+    'key_ST_Stage_2nd',
+    'duplicate natural key',
+    jsonb_build_object(
+        'ST_NAM_Stage_Name', "ST_NAM_Stage_Name"
+    ),
+    COUNT(DISTINCT "ST_ID")
+FROM
+    public."key_ST_Stage_2nd"
+WHERE
+    "ST_NAM_Stage_Name" IS NOT NULL
+GROUP BY
+    "ST_NAM_Stage_Name"
+HAVING
+    COUNT(DISTINCT "ST_ID") > 1
+UNION ALL
+SELECT
+    'key_ST_Stage_2nd',
+    'more than one natural key',
+    jsonb_build_object(
+        'ST_ID', "ST_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_ST_Stage_2nd"
+GROUP BY
+    "ST_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_AC_Actor_1st" (
+    "AC_ID",
+    "AC_NAM_Actor_Name"
+)
+AS
+SELECT
+    "AC"."AC_ID",
+    "AC"."AC_NAM_Actor_Name"
+FROM
+    public."lAC_Actor" "AC"
+;
+-- Point-in-time key --------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor at a changing time
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public."pkey_AC_Actor_1st" (
+    changingTimepoint timestamp
+)
+RETURNS TABLE (
+    "AC_ID" integer,
+    "AC_NAM_Actor_Name" varchar(42)
+)
+AS
+$$
+SELECT
+    "AC"."AC_ID",
+    "AC"."AC_NAM_Actor_Name"
+FROM
+    public."pAC_Actor"(changingTimepoint) "AC"
+$$ LANGUAGE sql STABLE;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of AC_Actor
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_AC_Actor_1st" (
+    "Construct",
+    "Violation",
+    "ViolationKey",
+    "Occurrences"
+)
+AS
+SELECT
+    'key_AC_Actor_1st',
+    'duplicate natural key',
+    jsonb_build_object(
+        'AC_NAM_Actor_Name', "AC_NAM_Actor_Name"
+    ),
+    COUNT(DISTINCT "AC_ID")
+FROM
+    public."key_AC_Actor_1st"
+WHERE
+    "AC_NAM_Actor_Name" IS NOT NULL
+GROUP BY
+    "AC_NAM_Actor_Name"
+HAVING
+    COUNT(DISTINCT "AC_ID") > 1
+UNION ALL
+SELECT
+    'key_AC_Actor_1st',
+    'more than one natural key',
+    jsonb_build_object(
+        'AC_ID', "AC_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_AC_Actor_1st"
+GROUP BY
+    "AC_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_PR_Program_1st" (
+    "PR_ID",
+    "PR_NAM_Program_Name"
+)
+AS
+SELECT
+    "PR"."PR_ID",
+    "PR"."PR_NAM_Program_Name"
+FROM
+    public."lPR_Program" "PR"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of PR_Program
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_PR_Program_1st" (
+    "Construct",
+    "Violation",
+    "ViolationKey",
+    "Occurrences"
+)
+AS
+SELECT
+    'key_PR_Program_1st',
+    'duplicate natural key',
+    jsonb_build_object(
+        'PR_NAM_Program_Name', "PR_NAM_Program_Name"
+    ),
+    COUNT(DISTINCT "PR_ID")
+FROM
+    public."key_PR_Program_1st"
+WHERE
+    "PR_NAM_Program_Name" IS NOT NULL
+GROUP BY
+    "PR_NAM_Program_Name"
+HAVING
+    COUNT(DISTINCT "PR_ID") > 1
+UNION ALL
+SELECT
+    'key_PR_Program_1st',
+    'more than one natural key',
+    jsonb_build_object(
+        'PR_ID', "PR_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_PR_Program_1st"
+GROUP BY
+    "PR_ID"
+HAVING
+    COUNT(*) > 1;
+-- Key view -----------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."key_EV_Event_1st" (
+    "EV_ID",
+    "EV_DAT_Event_Date",
+    "wasHeldAt_ST_LOC_Stage_Location",
+    "wasHeldAt_ST_LOC_Checksum",
+    "wasPlayed_PR_NAM_Program_Name"
+)
+AS
+SELECT
+    "EV"."EV_ID",
+    "EV"."EV_DAT_Event_Date",
+    "s2"."ST_LOC_Stage_Location",
+    "s2"."ST_LOC_Checksum",
+    "s4"."PR_NAM_Program_Name"
+FROM
+    public."lEV_Event" "EV"
+LEFT JOIN
+    public."lST_Stage" "s2"
+ON
+    "s2"."ST_ID" = "EV"."ST_ID_wasHeldAt"
+LEFT JOIN
+    public."lPR_Program" "s4"
+ON
+    "s4"."PR_ID" = "EV"."PR_ID_wasPlayed"
+;
+-- Key integrity ------------------------------------------------------------------------------------------------------
+-- 1st key of EV_Event
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW public."ic_key_EV_Event_1st" (
+    "Construct",
+    "Violation",
+    "ViolationKey",
+    "Occurrences"
+)
+AS
+SELECT
+    'key_EV_Event_1st',
+    'duplicate natural key',
+    jsonb_build_object(
+        'EV_DAT_Event_Date', "EV_DAT_Event_Date",
+        'wasHeldAt_ST_LOC_Checksum', "wasHeldAt_ST_LOC_Checksum",
+        'wasPlayed_PR_NAM_Program_Name', "wasPlayed_PR_NAM_Program_Name"
+    ),
+    COUNT(DISTINCT "EV_ID")
+FROM
+    public."key_EV_Event_1st"
+WHERE
+    "EV_DAT_Event_Date" IS NOT NULL
+AND
+    "wasHeldAt_ST_LOC_Checksum" IS NOT NULL
+AND
+    "wasPlayed_PR_NAM_Program_Name" IS NOT NULL
+GROUP BY
+    "EV_DAT_Event_Date",
+    "wasHeldAt_ST_LOC_Checksum",
+    "wasPlayed_PR_NAM_Program_Name"
+HAVING
+    COUNT(DISTINCT "EV_ID") > 1
+UNION ALL
+SELECT
+    'key_EV_Event_1st',
+    'more than one natural key',
+    jsonb_build_object(
+        'EV_ID', "EV_ID"
+    ),
+    COUNT(*)
+FROM
+    public."key_EV_Event_1st"
+GROUP BY
+    "EV_ID"
+HAVING
+    COUNT(*) > 1;
 -- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
 --
 -- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and

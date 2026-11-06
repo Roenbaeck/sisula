@@ -7,8 +7,6 @@
 -- "Loading through the latest views". PostgreSQL runs a trigger of this kind for each row, and tells that a column is set in
 -- an update from its having another value than before, so a column set to what it was is not set (an update that sets a
 -- value and its changing time states it again on purpose, as it does in SQL Server).
--- Not run: the deletable attributes (a null moves the history to a table of deleted rows), which PostgreSQL's generator does not
--- have yet.
 
 CREATE OR REPLACE FUNCTION public.try(statement text) RETURNS text
 LANGUAGE plpgsql
@@ -202,6 +200,121 @@ BEGIN
     INSERT INTO public."SU_LBL_Subject_Label" ("SU_LBL_SU_ID", "SU_LBL_ChangedAt", "SU_LBL_Subject_Label", "Metadata_SU_LBL") VALUES (s, '2020-01-01', 'x', 0);
     SELECT count(*), min("SU_LBL_ChangedAt") INTO n, changed FROM public."SU_LBL_Subject_Label" WHERE "SU_LBL_SU_ID" = s;
     INSERT INTO public.test_result (test, passed, detail) VALUES ('u07 idempotent: the value counts from the earlier time', n = 1 AND changed = '2020-01-01', n || ' versions from ' || changed);
+END;
+$$;
+GO
+
+-- u08 null on a deletable attribute: nothing for an attribute that is not deletable, nothing without the deletable column,
+--     and the history moved to the deletion table with it (historized, static, knotted, and a nexus attribute)
+DO $$
+DECLARE
+    s integer; other integer;
+    n integer;
+    deleted integer;
+    shown text;
+    stamped timestamp;
+BEGIN
+    INSERT INTO public."lSU_Subject" ("Metadata_SU", "SU_TTL_Subject_Title", "SU_TTL_ChangedAt", "SU_ERS_Subject_Erasable", "SU_ERS_ChangedAt") VALUES (0, 't', '2020-01-01', 'e', '2020-01-01');
+    s := (SELECT max("SU_ID") FROM public."SU_Subject");
+    UPDATE public."lSU_Subject" SET "SU_ERS_Subject_Erasable" = 'f', "SU_ERS_ChangedAt" = '2021-01-01' WHERE "SU_ID" = s;
+    UPDATE public."lSU_Subject" SET "SU_TTL_Subject_Title" = NULL WHERE "SU_ID" = s;
+    shown := (SELECT "SU_TTL_Subject_Title" FROM public."lSU_Subject" WHERE "SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 null changes nothing when not deletable', shown = 't', 'shown ' || coalesce(shown, 'nothing'));
+    UPDATE public."lSU_Subject" SET "SU_ERS_Subject_Erasable" = NULL WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_ERS_Subject_Erasable" WHERE "SU_ERS_SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 null without the deletable column changes nothing', n = 2, n || ' versions, expected 2');
+    UPDATE public."lSU_Subject" SET "SU_ERS_Subject_Erasable" = NULL, "Deletable_SU_ERS" = true, "SU_ERS_ChangedAt" = '2022-02-02' WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_ERS_Subject_Erasable" WHERE "SU_ERS_SU_ID" = s);
+    deleted := (SELECT count(*) FROM public."SU_ERS_Subject_Erasable_Deleted" WHERE "SU_ERS_SU_ID" = s);
+    stamped := (SELECT min("SU_ERS_Deleted") FROM public."SU_ERS_Subject_Erasable_Deleted" WHERE "SU_ERS_SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 null with the deletable column moves the history to the deletion table', n = 0 AND deleted = 2, n || ' left, ' || deleted || ' moved');
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a historized deletion is stamped with the changing time given', stamped = '2022-02-02', 'stamped ' || coalesce(stamped::text, 'nothing'));
+    shown := (SELECT "SU_TTL_Subject_Title" FROM public."lSU_Subject" WHERE "SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 the other attributes of the entity are left alone', shown = 't', 'shown ' || coalesce(shown, 'nothing'));
+    -- an entity without a value does not move anything, and another entity's history stays where it is
+    INSERT INTO public."lSU_Subject" ("Metadata_SU", "SU_ERS_Subject_Erasable", "SU_ERS_ChangedAt") VALUES (0, 'other', '2020-01-01');
+    other := (SELECT max("SU_ID") FROM public."SU_Subject");
+    UPDATE public."lSU_Subject" SET "SU_ERS_Subject_Erasable" = NULL, "Deletable_SU_ERS" = true WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_ERS_Subject_Erasable" WHERE "SU_ERS_SU_ID" = other);
+    deleted := (SELECT count(*) FROM public."SU_ERS_Subject_Erasable_Deleted" WHERE "SU_ERS_SU_ID" = s) + (SELECT count(*) FROM public."SU_ERS_Subject_Erasable_Deleted" WHERE "SU_ERS_SU_ID" = other);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a null for an entity without a value moves nothing, and nothing of another entity', n = 1 AND deleted = 2, n || ' left, ' || deleted || ' deleted');
+    -- a value can be given again after a deletion
+    UPDATE public."lSU_Subject" SET "SU_ERS_Subject_Erasable" = 'again', "SU_ERS_ChangedAt" = '2023-01-01' WHERE "SU_ID" = s;
+    shown := (SELECT "SU_ERS_Subject_Erasable" FROM public."lSU_Subject" WHERE "SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a value given after a deletion is shown', shown = 'again', 'shown ' || coalesce(shown, 'nothing'));
+
+    -- static
+    INSERT INTO public."lSU_Subject" ("Metadata_SU", "SU_NAM_Subject_Name", "SU_TTL_Subject_Title", "SU_TTL_ChangedAt") VALUES (0, 'name', 'title', '2020-01-01');
+    s := (SELECT max("SU_ID") FROM public."SU_Subject");
+    UPDATE public."lSU_Subject" SET "SU_NAM_Subject_Name" = NULL, "Deletable_SU_NAM" = true WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_NAM_Subject_Name" WHERE "SU_NAM_SU_ID" = s);
+    deleted := (SELECT count(*) FROM public."SU_NAM_Subject_Name_Deleted" WHERE "SU_NAM_SU_ID" = s);
+    stamped := (SELECT "SU_NAM_Deleted" FROM public."SU_NAM_Subject_Name_Deleted" WHERE "SU_NAM_SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a static attribute is moved to its deletion table, stamped with now', n = 0 AND deleted = 1 AND stamped > '2025-01-01', n || ' left, ' || deleted || ' moved, stamped ' || coalesce(stamped::text, 'nothing'));
+
+    -- knotted, historized: a null knot value deletes too
+    INSERT INTO public."lSU_Subject" ("Metadata_SU", "SU_LVL_GRD_Grade", "SU_LVL_ChangedAt") VALUES (0, 'A', '2020-01-01');
+    s := (SELECT max("SU_ID") FROM public."SU_Subject");
+    UPDATE public."lSU_Subject" SET "SU_LVL_GRD_Grade" = 'B', "SU_LVL_ChangedAt" = '2021-01-01' WHERE "SU_ID" = s;
+    UPDATE public."lSU_Subject" SET "SU_LVL_GRD_Grade" = NULL WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_LVL_Subject_Level" WHERE "SU_LVL_SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a null knot value without the deletable column changes nothing', n = 2, n || ' versions, expected 2');
+    UPDATE public."lSU_Subject" SET "SU_LVL_GRD_Grade" = NULL, "Deletable_SU_LVL" = true WHERE "SU_ID" = s;
+    n := (SELECT count(*) FROM public."SU_LVL_Subject_Level" WHERE "SU_LVL_SU_ID" = s);
+    deleted := (SELECT count(*) FROM public."SU_LVL_Subject_Level_Deleted" WHERE "SU_LVL_SU_ID" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a null knot value with the deletable column moves the history', n = 0 AND deleted = 2, n || ' left, ' || deleted || ' moved');
+END;
+$$;
+GO
+
+-- u08 nexus attributes (static and historized) and ties (historized and static) that are deletable
+DO $$
+DECLARE
+    s integer; o integer; e integer;
+    n integer;
+    deleted integer;
+    shown text;
+    stamped timestamp;
+BEGIN
+    INSERT INTO public."SU_Subject" ("Metadata_SU") VALUES (0) RETURNING "SU_ID" INTO s;
+    INSERT INTO public."OB_Object" ("Metadata_OB") VALUES (0) RETURNING "OB_ID" INTO o;
+    INSERT INTO public."lEV_Event" ("Metadata_EV", "SU_ID_for", "EV_QTY_Event_Quantity", "EV_PLC_Event_Place", "EV_PLC_ChangedAt") VALUES (0, s, 5, 'here', '2020-01-01');
+    e := (SELECT max("EV_ID") FROM public."EV_Event" WHERE "SU_ID_for" = s);
+    UPDATE public."lEV_Event" SET "EV_QTY_Event_Quantity" = NULL, "EV_PLC_Event_Place" = NULL WHERE "EV_ID" = e;
+    n := (SELECT count(*) FROM public."EV_QTY_Event_Quantity" WHERE "EV_QTY_EV_ID" = e) + (SELECT count(*) FROM public."EV_PLC_Event_Place" WHERE "EV_PLC_EV_ID" = e);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a nexus: null without the deletable column changes nothing', n = 2, n || ' rows, expected 2');
+    UPDATE public."lEV_Event" SET "EV_QTY_Event_Quantity" = NULL, "Deletable_EV_QTY" = true WHERE "EV_ID" = e;
+    n := (SELECT count(*) FROM public."EV_QTY_Event_Quantity" WHERE "EV_QTY_EV_ID" = e);
+    deleted := (SELECT count(*) FROM public."EV_QTY_Event_Quantity_Deleted" WHERE "EV_QTY_EV_ID" = e);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a nexus: a static attribute is moved to its deletion table', n = 0 AND deleted = 1, n || ' left, ' || deleted || ' moved');
+    shown := (SELECT "EV_PLC_Event_Place" FROM public."lEV_Event" WHERE "EV_ID" = e);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a nexus: the other attribute is left alone', shown = 'here', 'shown ' || coalesce(shown, 'nothing'));
+    UPDATE public."lEV_Event" SET "EV_PLC_Event_Place" = NULL, "Deletable_EV_PLC" = true, "EV_PLC_ChangedAt" = '2021-03-03' WHERE "EV_ID" = e;
+    n := (SELECT count(*) FROM public."EV_PLC_Event_Place" WHERE "EV_PLC_EV_ID" = e);
+    deleted := (SELECT count(*) FROM public."EV_PLC_Event_Place_Deleted" WHERE "EV_PLC_EV_ID" = e);
+    stamped := (SELECT "EV_PLC_Deleted" FROM public."EV_PLC_Event_Place_Deleted" WHERE "EV_PLC_EV_ID" = e);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a nexus: a historized attribute is moved, stamped with the changing time', n = 0 AND deleted = 1 AND stamped = '2021-03-03', n || ' left, ' || deleted || ' moved, stamped ' || coalesce(stamped::text, 'nothing'));
+
+    -- a historized tie with identifiers and a value
+    INSERT INTO public."lSU_holder_OB_item_GRD_grade" ("Metadata_SU_holder_OB_item_GRD_grade", "SU_holder_OB_item_GRD_grade_ChangedAt", "SU_ID_holder", "OB_ID_item", "GRD_ID_grade") VALUES (0, '2020-01-01', s, o, 1);
+    UPDATE public."lSU_holder_OB_item_GRD_grade" SET "grade_GRD_Grade" = 'B', "SU_holder_OB_item_GRD_grade_ChangedAt" = '2021-01-01' WHERE "SU_ID_holder" = s AND "OB_ID_item" = o;
+    UPDATE public."lSU_holder_OB_item_GRD_grade" SET "grade_GRD_Grade" = NULL WHERE "SU_ID_holder" = s AND "OB_ID_item" = o;
+    n := (SELECT count(*) FROM public."SU_holder_OB_item_GRD_grade" WHERE "SU_ID_holder" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a tie: null without the deletable column changes nothing', n = 2, n || ' versions, expected 2');
+    UPDATE public."lSU_holder_OB_item_GRD_grade" SET "grade_GRD_Grade" = NULL, "Deletable_SU_holder_OB_item_GRD_grade" = true WHERE "SU_ID_holder" = s AND "OB_ID_item" = o;
+    n := (SELECT count(*) FROM public."SU_holder_OB_item_GRD_grade" WHERE "SU_ID_holder" = s);
+    deleted := (SELECT count(*) FROM public."SU_holder_OB_item_GRD_grade_Deleted" WHERE "SU_ID_holder" = s);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a tie: null with the deletable column moves its versions to the deletion table', n = 0 AND deleted = 2, n || ' left, ' || deleted || ' moved');
+
+    -- a static tie with an identifier and a value
+    INSERT INTO public."lOB_part_SU_owner" ("Metadata_OB_part_SU_owner", "OB_ID_part", "SU_ID_owner") VALUES (0, o, s);
+    UPDATE public."lOB_part_SU_owner" SET "SU_ID_owner" = NULL WHERE "OB_ID_part" = o;
+    n := (SELECT count(*) FROM public."OB_part_SU_owner" WHERE "OB_ID_part" = o);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a static tie: null without the deletable column changes nothing', n = 1, n || ' rows, expected 1');
+    UPDATE public."lOB_part_SU_owner" SET "SU_ID_owner" = NULL, "Deletable_OB_part_SU_owner" = true WHERE "OB_ID_part" = o;
+    n := (SELECT count(*) FROM public."OB_part_SU_owner" WHERE "OB_ID_part" = o);
+    deleted := (SELECT count(*) FROM public."OB_part_SU_owner_Deleted" WHERE "OB_ID_part" = o);
+    INSERT INTO public.test_result (test, passed, detail) VALUES ('u08 a static tie: null with the deletable column moves its row to the deletion table', n = 0 AND deleted = 1, n || ' left, ' || deleted || ' moved');
 END;
 $$;
 GO

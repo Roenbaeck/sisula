@@ -24,6 +24,7 @@ CREATE OR REPLACE VIEW public."lST_Stage" (
     "ST_AVG_UTL_ID",
     "ST_MIN_ST_ID",
     "Metadata_ST_MIN",
+    "Deletable_ST_MIN",
     "ST_MIN_UTL_Utilization",
     "ST_MIN_Metadata_UTL",
     "ST_MIN_UTL_ID"
@@ -48,6 +49,7 @@ SELECT
     "AVG"."ST_AVG_UTL_ID",
     "MIN"."ST_MIN_ST_ID",
     "MIN"."Metadata_ST_MIN",
+    NULL::boolean,
     "kMIN"."UTL_Utilization" AS "ST_MIN_UTL_Utilization",
     "kMIN"."Metadata_UTL" AS "ST_MIN_Metadata_UTL",
     "MIN"."ST_MIN_UTL_ID"

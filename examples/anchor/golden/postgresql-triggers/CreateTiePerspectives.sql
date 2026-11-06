@@ -7,6 +7,7 @@
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."lSU_holder_OB_item_GRD_grade" (
     "Metadata_SU_holder_OB_item_GRD_grade",
+    "Deletable_SU_holder_OB_item_GRD_grade",
     "SU_holder_OB_item_GRD_grade_ChangedAt",
     "SU_ID_holder",
     "OB_ID_item",
@@ -17,6 +18,7 @@ CREATE OR REPLACE VIEW public."lSU_holder_OB_item_GRD_grade" (
 AS
 SELECT
     tie."Metadata_SU_holder_OB_item_GRD_grade",
+    NULL::boolean,
     tie."SU_holder_OB_item_GRD_grade_ChangedAt",
     tie."SU_ID_holder",
     tie."OB_ID_item",
@@ -263,12 +265,14 @@ $$ LANGUAGE sql STABLE;
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."lOB_part_SU_owner" (
     "Metadata_OB_part_SU_owner",
+    "Deletable_OB_part_SU_owner",
     "OB_ID_part",
     "SU_ID_owner"
 )
 AS
 SELECT
     tie."Metadata_OB_part_SU_owner",
+    NULL::boolean,
     tie."OB_ID_part",
     tie."SU_ID_owner"
 FROM

@@ -668,6 +668,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "Metadata_SU",
     "SU_NAM_SU_ID",
     "Metadata_SU_NAM",
+    "Deletable_SU_NAM",
     "SU_NAM_Subject_Name",
     "SU_COD_SU_ID",
     "Metadata_SU_COD",
@@ -699,6 +700,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "SU_TAG_Subject_Tag",
     "SU_LVL_SU_ID",
     "Metadata_SU_LVL",
+    "Deletable_SU_LVL",
     "SU_LVL_ChangedAt",
     "SU_LVL_GRD_Grade",
     "SU_LVL_Metadata_GRD",
@@ -714,6 +716,7 @@ CREATE OR REPLACE VIEW public."lSU_Subject" (
     "SU_ASR_Subject_Assessment",
     "SU_ERS_SU_ID",
     "Metadata_SU_ERS",
+    "Deletable_SU_ERS",
     "SU_ERS_ChangedAt",
     "SU_ERS_Subject_Erasable"
 )
@@ -723,6 +726,7 @@ SELECT
     "SU"."Metadata_SU",
     "NAM"."SU_NAM_SU_ID",
     "NAM"."Metadata_SU_NAM",
+    NULL::boolean,
     "NAM"."SU_NAM_Subject_Name",
     "COD"."SU_COD_SU_ID",
     "COD"."Metadata_SU_COD",
@@ -754,6 +758,7 @@ SELECT
     "TAG"."SU_TAG_Subject_Tag",
     "LVL"."SU_LVL_SU_ID",
     "LVL"."Metadata_SU_LVL",
+    NULL::boolean,
     "LVL"."SU_LVL_ChangedAt",
     "kLVL"."GRD_Grade" AS "SU_LVL_GRD_Grade",
     "kLVL"."Metadata_GRD" AS "SU_LVL_Metadata_GRD",
@@ -769,6 +774,7 @@ SELECT
     "ASR"."SU_ASR_Subject_Assessment",
     "ERS"."SU_ERS_SU_ID",
     "ERS"."Metadata_SU_ERS",
+    NULL::boolean,
     "ERS"."SU_ERS_ChangedAt",
     "ERS"."SU_ERS_Subject_Erasable"
 FROM
@@ -1619,9 +1625,11 @@ CREATE OR REPLACE VIEW public."lEV_Event" (
     "SU_ID_for",
     "EV_QTY_EV_ID",
     "Metadata_EV_QTY",
+    "Deletable_EV_QTY",
     "EV_QTY_Event_Quantity",
     "EV_PLC_EV_ID",
     "Metadata_EV_PLC",
+    "Deletable_EV_PLC",
     "EV_PLC_ChangedAt",
     "EV_PLC_Event_Place"
 )
@@ -1632,9 +1640,11 @@ SELECT
     "EV"."SU_ID_for",
     "QTY"."EV_QTY_EV_ID",
     "QTY"."Metadata_EV_QTY",
+    NULL::boolean,
     "QTY"."EV_QTY_Event_Quantity",
     "PLC"."EV_PLC_EV_ID",
     "PLC"."Metadata_EV_PLC",
+    NULL::boolean,
     "PLC"."EV_PLC_ChangedAt",
     "PLC"."EV_PLC_Event_Place"
 FROM
@@ -1802,6 +1812,7 @@ $$ LANGUAGE sql STABLE;
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."lSU_holder_OB_item_GRD_grade" (
     "Metadata_SU_holder_OB_item_GRD_grade",
+    "Deletable_SU_holder_OB_item_GRD_grade",
     "SU_holder_OB_item_GRD_grade_ChangedAt",
     "SU_ID_holder",
     "OB_ID_item",
@@ -1812,6 +1823,7 @@ CREATE OR REPLACE VIEW public."lSU_holder_OB_item_GRD_grade" (
 AS
 SELECT
     tie."Metadata_SU_holder_OB_item_GRD_grade",
+    NULL::boolean,
     tie."SU_holder_OB_item_GRD_grade_ChangedAt",
     tie."SU_ID_holder",
     tie."OB_ID_item",
@@ -2058,12 +2070,14 @@ $$ LANGUAGE sql STABLE;
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW public."lOB_part_SU_owner" (
     "Metadata_OB_part_SU_owner",
+    "Deletable_OB_part_SU_owner",
     "OB_ID_part",
     "SU_ID_owner"
 )
 AS
 SELECT
     tie."Metadata_OB_part_SU_owner",
+    NULL::boolean,
     tie."OB_ID_part",
     tie."SU_ID_owner"
 FROM
@@ -3262,6 +3276,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_NAM" IS TRUE
+    AND OLD."SU_NAM_Subject_Name" IS NOT NULL
+    AND NEW."SU_NAM_Subject_Name" IS NULL
+    THEN
+        IF to_regclass('public."SU_NAM_Subject_Name_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_NAM_Subject_Name_Deleted" (
+                LIKE public."SU_NAM_Subject_Name",
+                "SU_NAM_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_NAM_Subject_Name"
+            WHERE "SU_NAM_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_NAM_Subject_Name_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     IF NEW."SU_COD_SU_ID" IS DISTINCT FROM OLD."SU_COD_SU_ID" THEN
         RAISE EXCEPTION 'The foreign key column SU_COD_SU_ID is not updatable.';
     END IF;
@@ -3547,6 +3584,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_LVL" IS TRUE
+    AND OLD."SU_LVL_GRD_ID" IS NOT NULL
+    AND (NEW."SU_LVL_GRD_ID" IS NULL OR NEW."SU_LVL_GRD_Grade" IS NULL)
+    THEN
+        IF to_regclass('public."SU_LVL_Subject_Level_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_LVL_Subject_Level_Deleted" (
+                LIKE public."SU_LVL_Subject_Level",
+                "SU_LVL_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_LVL_Subject_Level"
+            WHERE "SU_LVL_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_LVL_Subject_Level_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_LVL_ChangedAt" IS DISTINCT FROM OLD."SU_LVL_ChangedAt" THEN NEW."SU_LVL_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
+    END IF;
     IF NEW."SU_TXT_SU_ID" IS DISTINCT FROM OLD."SU_TXT_SU_ID" THEN
         RAISE EXCEPTION 'The foreign key column SU_TXT_SU_ID is not updatable.';
     END IF;
@@ -3651,6 +3711,29 @@ BEGIN
                 NEW."SU_ERS_Subject_Erasable"
             );
         END IF;
+    END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_SU_ERS" IS TRUE
+    AND OLD."SU_ERS_Subject_Erasable" IS NOT NULL
+    AND NEW."SU_ERS_Subject_Erasable" IS NULL
+    THEN
+        IF to_regclass('public."SU_ERS_Subject_Erasable_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_ERS_Subject_Erasable_Deleted" (
+                LIKE public."SU_ERS_Subject_Erasable",
+                "SU_ERS_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_ERS_Subject_Erasable"
+            WHERE "SU_ERS_SU_ID" = OLD."SU_ID"
+            RETURNING *
+        )
+        INSERT INTO public."SU_ERS_Subject_Erasable_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_ERS_ChangedAt" IS DISTINCT FROM OLD."SU_ERS_ChangedAt" THEN NEW."SU_ERS_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;
@@ -4089,6 +4172,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_EV_QTY" IS TRUE
+    AND OLD."EV_QTY_Event_Quantity" IS NOT NULL
+    AND NEW."EV_QTY_Event_Quantity" IS NULL
+    THEN
+        IF to_regclass('public."EV_QTY_Event_Quantity_Deleted"') IS NULL THEN
+            CREATE TABLE public."EV_QTY_Event_Quantity_Deleted" (
+                LIKE public."EV_QTY_Event_Quantity",
+                "EV_QTY_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."EV_QTY_Event_Quantity"
+            WHERE "EV_QTY_EV_ID" = OLD."EV_ID"
+            RETURNING *
+        )
+        INSERT INTO public."EV_QTY_Event_Quantity_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     IF NEW."EV_PLC_EV_ID" IS DISTINCT FROM OLD."EV_PLC_EV_ID" THEN
         RAISE EXCEPTION 'The foreign key column EV_PLC_EV_ID is not updatable.';
     END IF;
@@ -4123,6 +4229,29 @@ BEGIN
                 NEW."EV_PLC_Event_Place"
             );
         END IF;
+    END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_EV_PLC" IS TRUE
+    AND OLD."EV_PLC_Event_Place" IS NOT NULL
+    AND NEW."EV_PLC_Event_Place" IS NULL
+    THEN
+        IF to_regclass('public."EV_PLC_Event_Place_Deleted"') IS NULL THEN
+            CREATE TABLE public."EV_PLC_Event_Place_Deleted" (
+                LIKE public."EV_PLC_Event_Place",
+                "EV_PLC_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."EV_PLC_Event_Place"
+            WHERE "EV_PLC_EV_ID" = OLD."EV_ID"
+            RETURNING *
+        )
+        INSERT INTO public."EV_PLC_Event_Place_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."EV_PLC_ChangedAt" IS DISTINCT FROM OLD."EV_PLC_ChangedAt" THEN NEW."EV_PLC_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;
@@ -4345,6 +4474,31 @@ BEGIN
             NEW."OB_ID_item",
             _GRD_grade
         );
+    END IF;
+    -- a null in every value of a deletable tie moves what the identifiers have to the deletion table
+    IF NEW."Deletable_SU_holder_OB_item_GRD_grade" IS TRUE
+    AND (NEW."GRD_ID_grade" IS NULL OR NEW."grade_GRD_Grade" IS NULL)
+    THEN
+        IF to_regclass('public."SU_holder_OB_item_GRD_grade_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_holder_OB_item_GRD_grade_Deleted" (
+                LIKE public."SU_holder_OB_item_GRD_grade",
+                "SU_holder_OB_item_GRD_grade_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_holder_OB_item_GRD_grade"
+            WHERE
+                "SU_ID_holder" = OLD."SU_ID_holder"
+            AND
+                "OB_ID_item" = OLD."OB_ID_item"
+            RETURNING *
+        )
+        INSERT INTO public."SU_holder_OB_item_GRD_grade_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_holder_OB_item_GRD_grade_ChangedAt" IS DISTINCT FROM OLD."SU_holder_OB_item_GRD_grade_ChangedAt" THEN NEW."SU_holder_OB_item_GRD_grade_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;
@@ -4724,6 +4878,29 @@ BEGIN
             NEW."OB_ID_part",
             NEW."SU_ID_owner"
         );
+    END IF;
+    -- a null in every value of a deletable tie moves what the identifiers have to the deletion table
+    IF NEW."Deletable_OB_part_SU_owner" IS TRUE
+    AND NEW."SU_ID_owner" IS NULL
+    THEN
+        IF to_regclass('public."OB_part_SU_owner_Deleted"') IS NULL THEN
+            CREATE TABLE public."OB_part_SU_owner_Deleted" (
+                LIKE public."OB_part_SU_owner",
+                "OB_part_SU_owner_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."OB_part_SU_owner"
+            WHERE
+                "OB_ID_part" = OLD."OB_ID_part"
+            RETURNING *
+        )
+        INSERT INTO public."OB_part_SU_owner_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;

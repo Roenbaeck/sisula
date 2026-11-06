@@ -164,6 +164,31 @@ BEGIN
             _GRD_grade
         );
     END IF;
+    -- a null in every value of a deletable tie moves what the identifiers have to the deletion table
+    IF NEW."Deletable_SU_holder_OB_item_GRD_grade" IS TRUE
+    AND (NEW."GRD_ID_grade" IS NULL OR NEW."grade_GRD_Grade" IS NULL)
+    THEN
+        IF to_regclass('public."SU_holder_OB_item_GRD_grade_Deleted"') IS NULL THEN
+            CREATE TABLE public."SU_holder_OB_item_GRD_grade_Deleted" (
+                LIKE public."SU_holder_OB_item_GRD_grade",
+                "SU_holder_OB_item_GRD_grade_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."SU_holder_OB_item_GRD_grade"
+            WHERE
+                "SU_ID_holder" = OLD."SU_ID_holder"
+            AND
+                "OB_ID_item" = OLD."OB_ID_item"
+            RETURNING *
+        )
+        INSERT INTO public."SU_holder_OB_item_GRD_grade_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."SU_holder_OB_item_GRD_grade_ChangedAt" IS DISTINCT FROM OLD."SU_holder_OB_item_GRD_grade_ChangedAt" THEN NEW."SU_holder_OB_item_GRD_grade_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -542,6 +567,29 @@ BEGIN
             NEW."OB_ID_part",
             NEW."SU_ID_owner"
         );
+    END IF;
+    -- a null in every value of a deletable tie moves what the identifiers have to the deletion table
+    IF NEW."Deletable_OB_part_SU_owner" IS TRUE
+    AND NEW."SU_ID_owner" IS NULL
+    THEN
+        IF to_regclass('public."OB_part_SU_owner_Deleted"') IS NULL THEN
+            CREATE TABLE public."OB_part_SU_owner_Deleted" (
+                LIKE public."OB_part_SU_owner",
+                "OB_part_SU_owner_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."OB_part_SU_owner"
+            WHERE
+                "OB_ID_part" = OLD."OB_ID_part"
+            RETURNING *
+        )
+        INSERT INTO public."OB_part_SU_owner_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;

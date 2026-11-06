@@ -113,6 +113,29 @@ BEGIN
             );
         END IF;
     END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_EV_QTY" IS TRUE
+    AND OLD."EV_QTY_Event_Quantity" IS NOT NULL
+    AND NEW."EV_QTY_Event_Quantity" IS NULL
+    THEN
+        IF to_regclass('public."EV_QTY_Event_Quantity_Deleted"') IS NULL THEN
+            CREATE TABLE public."EV_QTY_Event_Quantity_Deleted" (
+                LIKE public."EV_QTY_Event_Quantity",
+                "EV_QTY_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."EV_QTY_Event_Quantity"
+            WHERE "EV_QTY_EV_ID" = OLD."EV_ID"
+            RETURNING *
+        )
+        INSERT INTO public."EV_QTY_Event_Quantity_Deleted"
+        SELECT
+            d.*,
+            _now
+        FROM
+            d;
+    END IF;
     IF NEW."EV_PLC_EV_ID" IS DISTINCT FROM OLD."EV_PLC_EV_ID" THEN
         RAISE EXCEPTION 'The foreign key column EV_PLC_EV_ID is not updatable.';
     END IF;
@@ -147,6 +170,29 @@ BEGIN
                 NEW."EV_PLC_Event_Place"
             );
         END IF;
+    END IF;
+    -- a null on a deletable attribute moves what the entity has of it to the deletion table
+    IF NEW."Deletable_EV_PLC" IS TRUE
+    AND OLD."EV_PLC_Event_Place" IS NOT NULL
+    AND NEW."EV_PLC_Event_Place" IS NULL
+    THEN
+        IF to_regclass('public."EV_PLC_Event_Place_Deleted"') IS NULL THEN
+            CREATE TABLE public."EV_PLC_Event_Place_Deleted" (
+                LIKE public."EV_PLC_Event_Place",
+                "EV_PLC_Deleted" timestamp
+            );
+        END IF;
+        WITH d AS (
+            DELETE FROM public."EV_PLC_Event_Place"
+            WHERE "EV_PLC_EV_ID" = OLD."EV_ID"
+            RETURNING *
+        )
+        INSERT INTO public."EV_PLC_Event_Place_Deleted"
+        SELECT
+            d.*,
+            (CASE WHEN NEW."EV_PLC_ChangedAt" IS DISTINCT FROM OLD."EV_PLC_ChangedAt" THEN NEW."EV_PLC_ChangedAt" ELSE _now END)::timestamp
+        FROM
+            d;
     END IF;
     RETURN NEW;
 END;
