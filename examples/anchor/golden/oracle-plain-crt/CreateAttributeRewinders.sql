@@ -1,0 +1,371 @@
+-- ATTRIBUTE CRT ASSEMBLED VIEWS --------------------------------------------------------------------------------------
+--
+-- Oracle-compatible CRT assembly views. These provide a stable baseline
+-- for perspectives and can later be expanded to parameterized SQL macros.
+--
+CREATE OR REPLACE VIEW public.rEV_DAT_Event_Date AS
+SELECT
+    p.EV_DAT_ID,
+    a.EV_DAT_PositedAt,
+    a.EV_DAT_Positor,
+    a.EV_DAT_Reliability,
+    a.EV_DAT_Assertion,
+    a.,
+    p.EV_ID,
+    p.EV_DAT_Event_Date
+FROM
+    public.EV_DAT_Event_Date_Posit p
+JOIN
+    public.EV_DAT_Event_Date_Annex a
+ON
+    a.EV_DAT_ID = p.EV_DAT_ID
+WHERE
+    a.EV_DAT_Positor = 0
+AND
+    a.EV_DAT_PositedAt = (
+        SELECT
+            MAX(sub.EV_DAT_PositedAt)
+        FROM
+            public.EV_DAT_Event_Date_Annex sub
+        WHERE
+            sub.EV_DAT_ID = p.EV_DAT_ID
+        AND
+            sub.EV_DAT_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rEV_AUD_Event_Audience AS
+SELECT
+    p.EV_AUD_ID,
+    a.EV_AUD_PositedAt,
+    a.EV_AUD_Positor,
+    a.EV_AUD_Reliability,
+    a.EV_AUD_Assertion,
+    a.,
+    p.EV_ID,
+    p.EV_AUD_Event_Audience
+FROM
+    public.EV_AUD_Event_Audience_Posit p
+JOIN
+    public.EV_AUD_Event_Audience_Annex a
+ON
+    a.EV_AUD_ID = p.EV_AUD_ID
+WHERE
+    a.EV_AUD_Positor = 0
+AND
+    a.EV_AUD_PositedAt = (
+        SELECT
+            MAX(sub.EV_AUD_PositedAt)
+        FROM
+            public.EV_AUD_Event_Audience_Annex sub
+        WHERE
+            sub.EV_AUD_ID = p.EV_AUD_ID
+        AND
+            sub.EV_AUD_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rEV_REV_Event_Revenue AS
+SELECT
+    p.EV_REV_ID,
+    a.EV_REV_PositedAt,
+    a.EV_REV_Positor,
+    a.EV_REV_Reliability,
+    a.EV_REV_Assertion,
+    a.,
+    p.EV_ID,
+    p.EV_REV_Event_Revenue
+FROM
+    public.EV_REV_Event_Revenue_Posit p
+JOIN
+    public.EV_REV_Event_Revenue_Annex a
+ON
+    a.EV_REV_ID = p.EV_REV_ID
+WHERE
+    a.EV_REV_Positor = 0
+AND
+    a.EV_REV_PositedAt = (
+        SELECT
+            MAX(sub.EV_REV_PositedAt)
+        FROM
+            public.EV_REV_Event_Revenue_Annex sub
+        WHERE
+            sub.EV_REV_ID = p.EV_REV_ID
+        AND
+            sub.EV_REV_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rST_NAM_Stage_Name AS
+SELECT
+    p.ST_NAM_ID,
+    a.ST_NAM_PositedAt,
+    a.ST_NAM_Positor,
+    a.ST_NAM_Reliability,
+    a.ST_NAM_Assertion,
+    a.,
+    p.ST_ID,
+    p.ST_NAM_Stage_Name
+    , p.ST_NAM_ChangedAt
+FROM
+    public.ST_NAM_Stage_Name_Posit p
+JOIN
+    public.ST_NAM_Stage_Name_Annex a
+ON
+    a.ST_NAM_ID = p.ST_NAM_ID
+WHERE
+    a.ST_NAM_Positor = 0
+AND
+    a.ST_NAM_PositedAt = (
+        SELECT
+            MAX(sub.ST_NAM_PositedAt)
+        FROM
+            public.ST_NAM_Stage_Name_Annex sub
+        WHERE
+            sub.ST_NAM_ID = p.ST_NAM_ID
+        AND
+            sub.ST_NAM_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rST_LOC_Stage_Location AS
+SELECT
+    p.ST_LOC_ID,
+    a.ST_LOC_PositedAt,
+    a.ST_LOC_Positor,
+    a.ST_LOC_Reliability,
+    a.ST_LOC_Assertion,
+    a.,
+    p.ST_ID,
+    p.ST_LOC_Checksum,
+    p.ST_LOC_Stage_Location
+FROM
+    public.ST_LOC_Stage_Location_Posit p
+JOIN
+    public.ST_LOC_Stage_Location_Annex a
+ON
+    a.ST_LOC_ID = p.ST_LOC_ID
+WHERE
+    a.ST_LOC_Positor = 0
+AND
+    a.ST_LOC_PositedAt = (
+        SELECT
+            MAX(sub.ST_LOC_PositedAt)
+        FROM
+            public.ST_LOC_Stage_Location_Annex sub
+        WHERE
+            sub.ST_LOC_ID = p.ST_LOC_ID
+        AND
+            sub.ST_LOC_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rST_AVG_Stage_Average AS
+SELECT
+    p.ST_AVG_ID,
+    a.ST_AVG_PositedAt,
+    a.ST_AVG_Positor,
+    a.ST_AVG_Reliability,
+    a.ST_AVG_Assertion,
+    a.,
+    p.ST_ID,
+    p.UTL_ID
+    , p.ST_AVG_ChangedAt
+FROM
+    public.ST_AVG_Stage_Average_Posit p
+JOIN
+    public.ST_AVG_Stage_Average_Annex a
+ON
+    a.ST_AVG_ID = p.ST_AVG_ID
+WHERE
+    a.ST_AVG_Positor = 0
+AND
+    a.ST_AVG_PositedAt = (
+        SELECT
+            MAX(sub.ST_AVG_PositedAt)
+        FROM
+            public.ST_AVG_Stage_Average_Annex sub
+        WHERE
+            sub.ST_AVG_ID = p.ST_AVG_ID
+        AND
+            sub.ST_AVG_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rST_MIN_Stage_Minimum AS
+SELECT
+    p.ST_MIN_ID,
+    a.ST_MIN_PositedAt,
+    a.ST_MIN_Positor,
+    a.ST_MIN_Reliability,
+    a.ST_MIN_Assertion,
+    a.,
+    p.ST_ID,
+    p.UTL_ID
+FROM
+    public.ST_MIN_Stage_Minimum_Posit p
+JOIN
+    public.ST_MIN_Stage_Minimum_Annex a
+ON
+    a.ST_MIN_ID = p.ST_MIN_ID
+WHERE
+    a.ST_MIN_Positor = 0
+AND
+    a.ST_MIN_PositedAt = (
+        SELECT
+            MAX(sub.ST_MIN_PositedAt)
+        FROM
+            public.ST_MIN_Stage_Minimum_Annex sub
+        WHERE
+            sub.ST_MIN_ID = p.ST_MIN_ID
+        AND
+            sub.ST_MIN_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rAC_NAM_Actor_Name AS
+SELECT
+    p.AC_NAM_ID,
+    a.AC_NAM_PositedAt,
+    a.AC_NAM_Positor,
+    a.AC_NAM_Reliability,
+    a.AC_NAM_Assertion,
+    a.,
+    p.AC_ID,
+    p.AC_NAM_Actor_Name
+    , p.AC_NAM_ChangedAt
+FROM
+    public.AC_NAM_Actor_Name_Posit p
+JOIN
+    public.AC_NAM_Actor_Name_Annex a
+ON
+    a.AC_NAM_ID = p.AC_NAM_ID
+WHERE
+    a.AC_NAM_Positor = 0
+AND
+    a.AC_NAM_PositedAt = (
+        SELECT
+            MAX(sub.AC_NAM_PositedAt)
+        FROM
+            public.AC_NAM_Actor_Name_Annex sub
+        WHERE
+            sub.AC_NAM_ID = p.AC_NAM_ID
+        AND
+            sub.AC_NAM_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rAC_GEN_Actor_Gender AS
+SELECT
+    p.AC_GEN_ID,
+    a.AC_GEN_PositedAt,
+    a.AC_GEN_Positor,
+    a.AC_GEN_Reliability,
+    a.AC_GEN_Assertion,
+    a.,
+    p.AC_ID,
+    p.GEN_ID
+FROM
+    public.AC_GEN_Actor_Gender_Posit p
+JOIN
+    public.AC_GEN_Actor_Gender_Annex a
+ON
+    a.AC_GEN_ID = p.AC_GEN_ID
+WHERE
+    a.AC_GEN_Positor = 0
+AND
+    a.AC_GEN_PositedAt = (
+        SELECT
+            MAX(sub.AC_GEN_PositedAt)
+        FROM
+            public.AC_GEN_Actor_Gender_Annex sub
+        WHERE
+            sub.AC_GEN_ID = p.AC_GEN_ID
+        AND
+            sub.AC_GEN_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rAC_PLV_Actor_ProfessionalLevel AS
+SELECT
+    p.AC_PLV_ID,
+    a.AC_PLV_PositedAt,
+    a.AC_PLV_Positor,
+    a.AC_PLV_Reliability,
+    a.AC_PLV_Assertion,
+    a.,
+    p.AC_ID,
+    p.PLV_ID
+    , p.AC_PLV_ChangedAt
+FROM
+    public.AC_PLV_Actor_ProfessionalLevel_Posit p
+JOIN
+    public.AC_PLV_Actor_ProfessionalLevel_Annex a
+ON
+    a.AC_PLV_ID = p.AC_PLV_ID
+WHERE
+    a.AC_PLV_Positor = 0
+AND
+    a.AC_PLV_PositedAt = (
+        SELECT
+            MAX(sub.AC_PLV_PositedAt)
+        FROM
+            public.AC_PLV_Actor_ProfessionalLevel_Annex sub
+        WHERE
+            sub.AC_PLV_ID = p.AC_PLV_ID
+        AND
+            sub.AC_PLV_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rPR_NAM_Program_Name AS
+SELECT
+    p.PR_NAM_ID,
+    a.PR_NAM_PositedAt,
+    a.PR_NAM_Positor,
+    a.PR_NAM_Reliability,
+    a.PR_NAM_Assertion,
+    a.,
+    p.PR_ID,
+    p.PR_NAM_Program_Name
+FROM
+    public.PR_NAM_Program_Name_Posit p
+JOIN
+    public.PR_NAM_Program_Name_Annex a
+ON
+    a.PR_NAM_ID = p.PR_NAM_ID
+WHERE
+    a.PR_NAM_Positor = 0
+AND
+    a.PR_NAM_PositedAt = (
+        SELECT
+            MAX(sub.PR_NAM_PositedAt)
+        FROM
+            public.PR_NAM_Program_Name_Annex sub
+        WHERE
+            sub.PR_NAM_ID = p.PR_NAM_ID
+        AND
+            sub.PR_NAM_Positor = 0
+    )
+;
+CREATE OR REPLACE VIEW public.rPR_LEN_Program_Length AS
+SELECT
+    p.PR_LEN_ID,
+    a.PR_LEN_PositedAt,
+    a.PR_LEN_Positor,
+    a.PR_LEN_Reliability,
+    a.PR_LEN_Assertion,
+    a.,
+    p.PR_ID,
+    p.PR_LEN_Program_Length
+    , p.PR_LEN_ChangedAt
+FROM
+    public.PR_LEN_Program_Length_Posit p
+JOIN
+    public.PR_LEN_Program_Length_Annex a
+ON
+    a.PR_LEN_ID = p.PR_LEN_ID
+WHERE
+    a.PR_LEN_Positor = 0
+AND
+    a.PR_LEN_PositedAt = (
+        SELECT
+            MAX(sub.PR_LEN_PositedAt)
+        FROM
+            public.PR_LEN_Program_Length_Annex sub
+        WHERE
+            sub.PR_LEN_ID = p.PR_LEN_ID
+        AND
+            sub.PR_LEN_Positor = 0
+    )
+;

@@ -142,8 +142,8 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    # sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
-    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver)' } }
+    # oracle* are the original Oracle sisulets, ported as they were, and they have the defects that the original SQL had (see the handover; lint-sql.ps1 -Variant oracle-base shows them). sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver|oracle)' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
 }
@@ -153,6 +153,7 @@ foreach ($t in $targets) {
     if ($t.Name -match '^postgresql') { $dialect = 'PostgreSQL' }
     if ($t.Name -match '^vertica') { $dialect = 'Vertica' }
     if ($t.Name -match '^bigquery') { $dialect = 'BigQuery' }
+    if ($t.Name -match '^oracle') { $dialect = 'Oracle' }
     $found = Test-Sql ([IO.File]::ReadAllText($t.Path, [Text.Encoding]::UTF8)) $dialect
     if ($found.Count -eq 0) { Write-Host ("clean  {0}" -f $t.Name); continue }
     $dirty++

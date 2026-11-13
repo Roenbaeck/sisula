@@ -1,4 +1,4 @@
-# Used by lint-sql.ps1. Does every column that the SQL names exist in the table, view or function that it
+﻿# Used by lint-sql.ps1. Does every column that the SQL names exist in the table, view or function that it
 # is taken from? Found necessary by running the generated SQL on Snowflake: a difference function asked a
 # posit table for a column that only the annex table has ("invalid identifier").
 #
@@ -15,7 +15,8 @@
 # It is a heuristic over generated text, not a SQL parser.
 
 $script:KeywordsForAlias = @('WHERE', 'JOIN', 'ON', 'LEFT', 'RIGHT', 'INNER', 'CROSS', 'FULL', 'UNION', 'GROUP', 'ORDER', 'LIMIT', 'AND', 'OR', 'NATURAL', 'QUALIFY', 'HAVING', 'LATERAL')
-$script:KeywordsInQuery = @('SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'IS', 'NULL', 'NOT', 'LIKE', 'BETWEEN', 'IN', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'ON', 'JOIN', 'UNION', 'ALL', 'TRUE', 'FALSE', 'ASC', 'DESC', 'BY', 'ORDER', 'LIMIT', 'GROUP', 'HAVING')
+$script:KeywordsInQuery = @('SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'IS', 'NULL', 'NOT', 'LIKE', 'BETWEEN', 'IN', 'AS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'ON', 'JOIN', 'UNION', 'ALL', 'TRUE', 'FALSE', 'ASC', 'DESC', 'BY', 'ORDER', 'LIMIT', 'GROUP', 'HAVING', 'QUALIFY', 'PARTITION')
+
 
 # name (lower case, schema.name) -> @{ Kind; Columns (a hashtable of lower case names, or $null if unknown); Params }
 function Get-ObjectColumns([System.Collections.Generic.List[string]] $code) {

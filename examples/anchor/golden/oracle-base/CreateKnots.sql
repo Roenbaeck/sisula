@@ -1,0 +1,148 @@
+-- KNOTS --------------------------------------------------------------------------------------------------------------
+--
+-- Knots are used to store finite sets of values, normally used to describe states
+-- of entities (through knotted attributes) or relationships (through knotted ties).
+-- Knots have their own surrogate identities and are therefore immutable.
+-- Values can be added to the set over time though.
+-- Knots should have values that are mutually exclusive and exhaustive.
+--
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- PAT_ParentalType table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.PAT_ParentalType (
+            PAT_ID number(3) not null,
+            PAT_ParentalType nvarchar2(42) not null,
+            Metadata_PAT number(10) not null,
+            constraint PK_PAT_ParentalType primary key (
+                PAT_ID
+            ),
+            constraint UK_PAT_ParentalType unique (
+                PAT_ParentalType
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- GEN_Gender table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.GEN_Gender (
+            GEN_ID number(3) not null,
+            GEN_Gender nvarchar2(42) not null,
+            Metadata_GEN number(10) not null,
+            constraint PK_GEN_Gender primary key (
+                GEN_ID
+            ),
+            constraint UK_GEN_Gender unique (
+                GEN_Gender
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- PLV_ProfessionalLevel table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.PLV_ProfessionalLevel (
+            PLV_ID number(3) not null,
+            PLV_ProfessionalLevel nclob not null,
+            Metadata_PLV number(10) not null,
+            constraint PK_PLV_ProfessionalLevel primary key (
+                PLV_ID
+            ),
+            constraint UK_PLV_ProfessionalLevel unique (
+                PLV_ProfessionalLevel
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- UTL_Utilization table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.UTL_Utilization (
+            UTL_ID number(3) not null,
+            UTL_Utilization number(3) not null,
+            Metadata_UTL number(10) not null,
+            constraint PK_UTL_Utilization primary key (
+                UTL_ID
+            ),
+            constraint UK_UTL_Utilization unique (
+                UTL_Utilization
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- ONG_Ongoing table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.ONG_Ongoing (
+            ONG_ID number(3) not null,
+            ONG_Ongoing nvarchar2(3) not null,
+            Metadata_ONG number(10) not null,
+            constraint PK_ONG_Ongoing primary key (
+                ONG_ID
+            ),
+            constraint UK_ONG_Ongoing unique (
+                ONG_Ongoing
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- RAT_Rating table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.RAT_Rating (
+            RAT_ID number(3) not null,
+            RAT_Rating nvarchar2(42) not null,
+            Metadata_RAT number(10) not null,
+            constraint PK_RAT_Rating primary key (
+                RAT_ID
+            ),
+            constraint UK_RAT_Rating unique (
+                RAT_Rating
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+-- Knot table ---------------------------------------------------------------------------------------------------------
+-- ETY_EventType table
+-----------------------------------------------------------------------------------------------------------------------
+BEGIN
+    EXECUTE IMMEDIATE '
+        CREATE TABLE public.ETY_EventType (
+            ETY_ID number(3) not null,
+            ETY_EventType nvarchar2(42) not null,
+            Metadata_ETY number(10) not null,
+            constraint PK_ETY_EventType primary key (
+                ETY_ID
+            ),
+            constraint UK_ETY_EventType unique (
+                ETY_EventType
+            )
+        )';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE = -955 THEN NULL; ELSE RAISE; END IF;
+END;
+/

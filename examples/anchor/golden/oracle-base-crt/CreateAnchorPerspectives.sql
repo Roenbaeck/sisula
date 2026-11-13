@@ -1,0 +1,460 @@
+-- ANCHOR CRT PERSPECTIVES --------------------------------------------------------------------------------------------
+--
+-- Oracle-compatible latest and now perspectives for CRT anchors.
+--
+CREATE OR REPLACE VIEW public.lST_Stage AS
+SELECT
+    a.ST_ID,
+    a.Metadata_ST,
+    rNAM.ST_NAM_Stage_Name,
+    rNAM.ST_NAM_ChangedAt,
+    rNAM.ST_NAM_PositedAt,
+    rNAM.ST_NAM_Positor,
+    rNAM.ST_NAM_Reliability,
+    rNAM.ST_NAM_Assertion,
+    rNAM.,
+    rLOC.ST_LOC_Stage_Location,
+    rLOC.ST_LOC_PositedAt,
+    rLOC.ST_LOC_Positor,
+    rLOC.ST_LOC_Reliability,
+    rLOC.ST_LOC_Assertion,
+    rLOC.,
+    rAVG.ST_AVG_UTL_ID,
+    rAVG.ST_AVG_ChangedAt,
+    rAVG.ST_AVG_PositedAt,
+    rAVG.ST_AVG_Positor,
+    rAVG.ST_AVG_Reliability,
+    rAVG.ST_AVG_Assertion,
+    rAVG.,
+    rMIN.ST_MIN_UTL_ID,
+    rMIN.ST_MIN_PositedAt,
+    rMIN.ST_MIN_Positor,
+    rMIN.ST_MIN_Reliability,
+    rMIN.ST_MIN_Assertion,
+    rMIN.
+FROM
+    public.ST_Stage a
+LEFT JOIN
+    public.rST_NAM_Stage_Name rNAM
+ON
+    rNAM.ST_NAM_ST_ID = a.ST_ID
+LEFT JOIN
+    public.rST_LOC_Stage_Location rLOC
+ON
+    rLOC.ST_LOC_ST_ID = a.ST_ID
+LEFT JOIN
+    public.rST_AVG_Stage_Average rAVG
+ON
+    rAVG.ST_AVG_ST_ID = a.ST_ID
+LEFT JOIN
+    public.UTL_Utilization kAVG
+ON
+    kAVG.UTL_ID = rAVG.ST_AVG_UTL_ID
+LEFT JOIN
+    public.rST_MIN_Stage_Minimum rMIN
+ON
+    rMIN.ST_MIN_ST_ID = a.ST_ID
+LEFT JOIN
+    public.UTL_Utilization kMIN
+ON
+    kMIN.UTL_ID = rMIN.ST_MIN_UTL_ID
+;
+
+CREATE OR REPLACE VIEW public.nST_Stage AS
+SELECT
+    *
+FROM
+    public.lST_Stage
+;
+
+CREATE OR REPLACE FUNCTION public.tST_Stage (
+    positor number(3),
+    changingTimepoint timestamp(9),
+    positingTimepoint timestamp,
+    assertion varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lST_Stage t
+        WHERE
+            (
+                positor IS NULL
+                OR (
+                    t.ST_NAM_Positor = positor OR
+                    t.ST_LOC_Positor = positor OR
+                    t.ST_AVG_Positor = positor OR
+                    t.ST_MIN_Positor = positor 
+                )
+            )
+        AND
+            (
+                assertion IS NULL
+                OR (
+                    t.ST_NAM_Assertion = assertion OR
+                    t.ST_LOC_Assertion = assertion OR
+                    t.ST_AVG_Assertion = assertion OR
+                    t.ST_MIN_Assertion = assertion 
+                )
+            )
+        AND
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.ST_NAM_ChangedAt <= changingTimepoint OR
+                    t.ST_AVG_ChangedAt <= changingTimepoint 
+                )
+            )
+        AND
+            (
+                positingTimepoint IS NULL
+                OR (
+                    t.ST_NAM_PositedAt <= positingTimepoint OR
+                    t.ST_LOC_PositedAt <= positingTimepoint OR
+                    t.ST_AVG_PositedAt <= positingTimepoint OR
+                    t.ST_MIN_PositedAt <= positingTimepoint 
+                )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.pST_Stage (
+    changingTimepoint timestamp(9)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lST_Stage t
+        WHERE
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.ST_NAM_ChangedAt <= changingTimepoint OR
+                    t.ST_AVG_ChangedAt <= changingTimepoint 
+            )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.dST_Stage (
+    intervalStart timestamp(9),
+    intervalEnd timestamp(9),
+    selection varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lST_Stage t
+        WHERE
+            (
+                intervalStart IS NULL
+                OR intervalEnd IS NULL
+                OR (
+                    t.ST_NAM_ChangedAt BETWEEN intervalStart AND intervalEnd OR
+                    t.ST_AVG_ChangedAt BETWEEN intervalStart AND intervalEnd 
+                )
+            )
+    ]';
+END;
+/
+CREATE OR REPLACE VIEW public.lAC_Actor AS
+SELECT
+    a.AC_ID,
+    a.Metadata_AC,
+    rNAM.AC_NAM_Actor_Name,
+    rNAM.AC_NAM_ChangedAt,
+    rNAM.AC_NAM_PositedAt,
+    rNAM.AC_NAM_Positor,
+    rNAM.AC_NAM_Reliability,
+    rNAM.AC_NAM_Assertion,
+    rNAM.,
+    rGEN.AC_GEN_GEN_ID,
+    rGEN.AC_GEN_PositedAt,
+    rGEN.AC_GEN_Positor,
+    rGEN.AC_GEN_Reliability,
+    rGEN.AC_GEN_Assertion,
+    rGEN.,
+    rPLV.AC_PLV_PLV_ID,
+    rPLV.AC_PLV_ChangedAt,
+    rPLV.AC_PLV_PositedAt,
+    rPLV.AC_PLV_Positor,
+    rPLV.AC_PLV_Reliability,
+    rPLV.AC_PLV_Assertion,
+    rPLV.
+FROM
+    public.AC_Actor a
+LEFT JOIN
+    public.rAC_NAM_Actor_Name rNAM
+ON
+    rNAM.AC_NAM_AC_ID = a.AC_ID
+LEFT JOIN
+    public.rAC_GEN_Actor_Gender rGEN
+ON
+    rGEN.AC_GEN_AC_ID = a.AC_ID
+LEFT JOIN
+    public.GEN_Gender kGEN
+ON
+    kGEN.GEN_ID = rGEN.AC_GEN_GEN_ID
+LEFT JOIN
+    public.rAC_PLV_Actor_ProfessionalLevel rPLV
+ON
+    rPLV.AC_PLV_AC_ID = a.AC_ID
+LEFT JOIN
+    public.PLV_ProfessionalLevel kPLV
+ON
+    kPLV.PLV_ID = rPLV.AC_PLV_PLV_ID
+;
+
+CREATE OR REPLACE VIEW public.nAC_Actor AS
+SELECT
+    *
+FROM
+    public.lAC_Actor
+;
+
+CREATE OR REPLACE FUNCTION public.tAC_Actor (
+    positor number(3),
+    changingTimepoint timestamp(9),
+    positingTimepoint timestamp,
+    assertion varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lAC_Actor t
+        WHERE
+            (
+                positor IS NULL
+                OR (
+                    t.AC_NAM_Positor = positor OR
+                    t.AC_GEN_Positor = positor OR
+                    t.AC_PLV_Positor = positor 
+                )
+            )
+        AND
+            (
+                assertion IS NULL
+                OR (
+                    t.AC_NAM_Assertion = assertion OR
+                    t.AC_GEN_Assertion = assertion OR
+                    t.AC_PLV_Assertion = assertion 
+                )
+            )
+        AND
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.AC_NAM_ChangedAt <= changingTimepoint OR
+                    t.AC_PLV_ChangedAt <= changingTimepoint 
+                )
+            )
+        AND
+            (
+                positingTimepoint IS NULL
+                OR (
+                    t.AC_NAM_PositedAt <= positingTimepoint OR
+                    t.AC_GEN_PositedAt <= positingTimepoint OR
+                    t.AC_PLV_PositedAt <= positingTimepoint 
+                )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.pAC_Actor (
+    changingTimepoint timestamp(9)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lAC_Actor t
+        WHERE
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.AC_NAM_ChangedAt <= changingTimepoint OR
+                    t.AC_PLV_ChangedAt <= changingTimepoint 
+            )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.dAC_Actor (
+    intervalStart timestamp(9),
+    intervalEnd timestamp(9),
+    selection varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lAC_Actor t
+        WHERE
+            (
+                intervalStart IS NULL
+                OR intervalEnd IS NULL
+                OR (
+                    t.AC_NAM_ChangedAt BETWEEN intervalStart AND intervalEnd OR
+                    t.AC_PLV_ChangedAt BETWEEN intervalStart AND intervalEnd 
+                )
+            )
+    ]';
+END;
+/
+CREATE OR REPLACE VIEW public.lPR_Program AS
+SELECT
+    a.PR_ID,
+    a.Metadata_PR,
+    rNAM.PR_NAM_Program_Name,
+    rNAM.PR_NAM_PositedAt,
+    rNAM.PR_NAM_Positor,
+    rNAM.PR_NAM_Reliability,
+    rNAM.PR_NAM_Assertion,
+    rNAM.,
+    rLEN.PR_LEN_Program_Length,
+    rLEN.PR_LEN_ChangedAt,
+    rLEN.PR_LEN_PositedAt,
+    rLEN.PR_LEN_Positor,
+    rLEN.PR_LEN_Reliability,
+    rLEN.PR_LEN_Assertion,
+    rLEN.
+FROM
+    public.PR_Program a
+LEFT JOIN
+    public.rPR_NAM_Program_Name rNAM
+ON
+    rNAM.PR_NAM_PR_ID = a.PR_ID
+LEFT JOIN
+    public.rPR_LEN_Program_Length rLEN
+ON
+    rLEN.PR_LEN_PR_ID = a.PR_ID
+;
+
+CREATE OR REPLACE VIEW public.nPR_Program AS
+SELECT
+    *
+FROM
+    public.lPR_Program
+;
+
+CREATE OR REPLACE FUNCTION public.tPR_Program (
+    positor number(3),
+    changingTimepoint timestamp(9),
+    positingTimepoint timestamp,
+    assertion varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lPR_Program t
+        WHERE
+            (
+                positor IS NULL
+                OR (
+                    t.PR_NAM_Positor = positor OR
+                    t.PR_LEN_Positor = positor 
+                )
+            )
+        AND
+            (
+                assertion IS NULL
+                OR (
+                    t.PR_NAM_Assertion = assertion OR
+                    t.PR_LEN_Assertion = assertion 
+                )
+            )
+        AND
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.PR_LEN_ChangedAt <= changingTimepoint 
+                )
+            )
+        AND
+            (
+                positingTimepoint IS NULL
+                OR (
+                    t.PR_NAM_PositedAt <= positingTimepoint OR
+                    t.PR_LEN_PositedAt <= positingTimepoint 
+                )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.pPR_Program (
+    changingTimepoint timestamp(9)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lPR_Program t
+        WHERE
+            (
+                changingTimepoint IS NULL
+                OR (
+                    t.PR_LEN_ChangedAt <= changingTimepoint 
+            )
+            )
+    ]';
+END;
+/
+
+CREATE OR REPLACE FUNCTION public.dPR_Program (
+    intervalStart timestamp(9),
+    intervalEnd timestamp(9),
+    selection varchar2(4000)
+)
+RETURN varchar2 SQL_MACRO(TABLE)
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            t.*
+        FROM
+            public.lPR_Program t
+        WHERE
+            (
+                intervalStart IS NULL
+                OR intervalEnd IS NULL
+                OR (
+                    t.PR_LEN_ChangedAt BETWEEN intervalStart AND intervalEnd 
+                )
+            )
+    ]';
+END;
+/
