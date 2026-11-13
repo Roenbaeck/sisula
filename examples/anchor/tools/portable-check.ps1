@@ -10,12 +10,12 @@
       - that metadataElement() is a model's start: a model made of it and nothing else is generated.
 
     Usage:
-      portable-check.ps1 [-Target SQLServer,Snowflake,PostgreSQL,Vertica,BigQuery] [-Variant <model name>,...] [-Anchor <checkout>]
+      portable-check.ps1 [-Target SQLServer,Snowflake,PostgreSQL,Vertica,BigQuery,Oracle] [-Variant <model name>,...] [-Anchor <checkout>]
                          [-Parts <directory with the generators>] [-JintPath <Jint.dll>]
 #>
 [CmdletBinding()]
 param(
-    [string[]] $Target = @('SQLServer', 'Snowflake', 'PostgreSQL', 'Vertica', 'BigQuery'),
+    [string[]] $Target = @('SQLServer', 'Snowflake', 'PostgreSQL', 'Vertica', 'BigQuery', 'Oracle'),
     [string[]] $Variant,
     [string] $Anchor,
     [string] $Parts,

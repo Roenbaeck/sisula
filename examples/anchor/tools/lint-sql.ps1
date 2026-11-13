@@ -38,6 +38,7 @@ function Remove-IdentifierQuotes([string] $text, [string] $dialect = 'Snowflake'
 }
 
 function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
+    if ($dialect -eq 'Oracle') { $text = $text -replace "q'\[", '   ' -replace "\]'", '  ' }   # the text of an EXECUTE IMMEDIATE and of a macro is code
     $text = Remove-IdentifierQuotes $text $dialect
     $found = New-Object System.Collections.Generic.List[string]
     # comments and string literals are not code
@@ -97,7 +98,8 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
     # every table, view, function and sequence that the script refers to as schema.name must be created by it
     $created = @{}; $schemas = @{}
     for ($i = 0; $i -lt $code.Count; $i++) {
-        if ($code[$i] -match '^CREATE (?:OR REPLACE )?(?:TABLE FUNCTION|TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
+        # (Oracle: a sequence is made in a block, on the line of EXECUTE IMMEDIATE; procedures and triggers are objects too)
+        if ($code[$i] -match '^(?:\s*EXECUTE IMMEDIATE\s+)?CREATE (?:OR REPLACE )?(?:TABLE FUNCTION|TABLE|VIEW|FUNCTION|PROCEDURE|TRIGGER|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
             $key = ($Matches[1] + '.' + $Matches[2]).ToLower()
             if (-not $created.ContainsKey($key)) { $created[$key] = $i }   # where the first statement that creates it starts
             $schemas[$Matches[1].ToLower()] = $true
@@ -112,7 +114,7 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
     $tooEarly = [ordered]@{}
     $statement = -1
     for ($i = 0; $i -lt $code.Count; $i++) {
-        if ($code[$i] -match '^CREATE ') { $statement = $i }
+        if ($code[$i] -match '^(?:\s*EXECUTE IMMEDIATE\s+)?CREATE ') { $statement = $i }
         foreach ($m in [regex]::Matches($code[$i], '\b(\w+)\.(\w+)\b')) {
             $schema = $m.Groups[1].Value.ToLower()
             if (-not $schemas.ContainsKey($schema)) { continue }
@@ -142,8 +144,8 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    # oracle* are the original Oracle sisulets, ported as they were, and they have the defects that the original SQL had (see the handover; lint-sql.ps1 -Variant oracle-base shows them). sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
-    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver|oracle)' } }
+    sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver)' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
 }

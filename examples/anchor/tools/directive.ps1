@@ -8,7 +8,7 @@
 # its original sisulets can be kept as <Database>_<t>.legacy.directive and run by golden.ps1, which is in the git
 # history (commit 2115504); Snowflake and SQL Server have none left.
 
-$script:PreludePattern = '(^|/)(Helpers|NamingConvention|derive)\.js$'
+$script:PreludePattern = '(^|/)(Helpers|NamingConvention|derive(-[A-Za-z0-9]+)?)\.js$'
 
 function Get-ModelTemporalization([string] $ModelPath) {
     $xml = New-Object Xml.XmlDocument

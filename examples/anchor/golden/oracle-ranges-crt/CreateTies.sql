@@ -2,402 +2,476 @@
 --
 -- CRT ties use posit and annex split with changing/positing time, positor, reliability, and assertion.
 --
-CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Fact (
-    AC_partner_AC_with_ONG_currently_ID number(19) IDENTITY(1,1) not null, 
-    AC_ID_partner number(5) not null, 
-    AC_ID_with number(5) not null, 
-    ONG_ID_currently number(3) not null,
-    AC_partner_AC_with_ONG_currently_ChangedAt timestamp not null,
-    constraint AC_partner_AC_with_ONG_currently_Fact_fkAC_partner foreign key (
-        AC_ID_partner
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_partner_AC_with_ONG_currently_Fact_fkAC_with foreign key (
-        AC_ID_with
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_partner_AC_with_ONG_currently_Fact_fkONG_currently foreign key (
-        ONG_ID_currently
-    ) references knots.ONG_Ongoing(ONG_ID),
-    constraint AC_partner_AC_with_ONG_currently_Fact_uqAC_partner unique (
-        AC_ID_partner,
-        AC_partner_AC_with_ONG_currently_ChangedAt
-    ),
-    constraint AC_partner_AC_with_ONG_currently_Fact_uqAC_with unique (
-        AC_ID_with,
-        AC_partner_AC_with_ONG_currently_ChangedAt
-    ),
-    constraint pkAC_partner_AC_with_ONG_currently_Fact primary key (
-        AC_partner_AC_with_ONG_currently_ID
-    ),
-    constraint uqAC_partner_AC_with_ONG_currently unique (
-        AC_partner_AC_with_ONG_currently_ChangedAt,
-        AC_ID_partner,
-        AC_ID_with,
-        ONG_ID_currently
-    )
-) CLUSTER BY (
-    AC_partner_AC_with_ONG_currently_ChangedAt
-);
-
-CREATE TABLE IF NOT EXISTS ties.AC_partner_AC_with_ONG_currently_Meta (
-    AC_partner_AC_with_ONG_currently_ID number(19) not null,
-    AC_partner_AC_with_ONG_currently_PositedAt timestamp(3) not null,
-    AC_partner_AC_with_ONG_currently_Who number(5) not null,
-    AC_partner_AC_with_ONG_currently_Confidence number(7,3) not null,
-    AC_partner_AC_with_ONG_currently_Stance varchar2(4000) default (
-        case
-            when AC_partner_AC_with_ONG_currently_Confidence > 0.25 then '+'
-            when AC_partner_AC_with_ONG_currently_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when AC_partner_AC_with_ONG_currently_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_AC_partner_AC_with_ONG_currently number(19) not null,
-    constraint fkAC_partner_AC_with_ONG_currently_Meta foreign key (
-        AC_partner_AC_with_ONG_currently_ID
-    ) references ties.AC_partner_AC_with_ONG_currently_Fact(AC_partner_AC_with_ONG_currently_ID),
-    constraint pkAC_partner_AC_with_ONG_currently_Meta primary key (
-        AC_partner_AC_with_ONG_currently_ID,
-        AC_partner_AC_with_ONG_currently_Who,
-        AC_partner_AC_with_ONG_currently_PositedAt
-    )
-) CLUSTER BY (AC_partner_AC_with_ONG_currently_ID, AC_partner_AC_with_ONG_currently_Who, AC_partner_AC_with_ONG_currently_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Fact (
-    AC_subset_PN_of_ID number(19) IDENTITY(1,1) not null, 
-    AC_ID_subset number(5) not null, 
-    PN_ID_of number(19) not null, 
-    constraint AC_subset_PN_of_Fact_fkAC_subset foreign key (
-        AC_ID_subset
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_subset_PN_of_Fact_fkPN_of foreign key (
-        PN_ID_of
-    ) references anchors.PN_Person(PN_ID),
-    constraint AC_subset_PN_of_Fact_uqAC_subset unique (
-        AC_ID_subset
-    ),
-    constraint AC_subset_PN_of_Fact_uqPN_of unique (
-        PN_ID_of
-    ),
-    constraint pkAC_subset_PN_of_Fact primary key (
-        AC_subset_PN_of_ID
-    ),
-    constraint uqAC_subset_PN_of unique (
-        AC_ID_subset,
-        PN_ID_of
-    )
-) CLUSTER BY (
-);
-
-CREATE TABLE IF NOT EXISTS ties.AC_subset_PN_of_Meta (
-    AC_subset_PN_of_ID number(19) not null,
-    AC_subset_PN_of_PositedAt timestamp(3) not null,
-    AC_subset_PN_of_Who number(5) not null,
-    AC_subset_PN_of_Confidence number(7,3) not null,
-    AC_subset_PN_of_Stance varchar2(4000) default (
-        case
-            when AC_subset_PN_of_Confidence > 0.25 then '+'
-            when AC_subset_PN_of_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when AC_subset_PN_of_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_AC_subset_PN_of number(19) not null,
-    constraint fkAC_subset_PN_of_Meta foreign key (
-        AC_subset_PN_of_ID
-    ) references ties.AC_subset_PN_of_Fact(AC_subset_PN_of_ID),
-    constraint pkAC_subset_PN_of_Meta primary key (
-        AC_subset_PN_of_ID,
-        AC_subset_PN_of_Who,
-        AC_subset_PN_of_PositedAt
-    )
-) CLUSTER BY (AC_subset_PN_of_ID, AC_subset_PN_of_Who, AC_subset_PN_of_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Fact (
-    EV_in_AC_wasCast_ID number(19) IDENTITY(1,1) not null, 
-    EV_ID_in number(12,0) not null, 
-    AC_ID_wasCast number(5) not null, 
-    constraint EV_in_AC_wasCast_Fact_fkEV_in foreign key (
-        EV_ID_in
-    ) references nexuses.EV_Event(EV_ID),
-    constraint EV_in_AC_wasCast_Fact_fkAC_wasCast foreign key (
-        AC_ID_wasCast
-    ) references anchors.AC_Actor(AC_ID),
-    constraint pkEV_in_AC_wasCast_Fact primary key (
-        EV_in_AC_wasCast_ID
-    ),
-    constraint uqEV_in_AC_wasCast unique (
-        EV_ID_in,
-        AC_ID_wasCast
-    )
-) CLUSTER BY (
-    EV_ID_in,
-    AC_ID_wasCast
-);
-
-CREATE TABLE IF NOT EXISTS ties.EV_in_AC_wasCast_Meta (
-    EV_in_AC_wasCast_ID number(19) not null,
-    EV_in_AC_wasCast_PositedAt timestamp(3) not null,
-    EV_in_AC_wasCast_Who number(5) not null,
-    EV_in_AC_wasCast_Confidence number(7,3) not null,
-    EV_in_AC_wasCast_Stance varchar2(4000) default (
-        case
-            when EV_in_AC_wasCast_Confidence > 0.25 then '+'
-            when EV_in_AC_wasCast_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when EV_in_AC_wasCast_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_EV_in_AC_wasCast number(19) not null,
-    constraint fkEV_in_AC_wasCast_Meta foreign key (
-        EV_in_AC_wasCast_ID
-    ) references ties.EV_in_AC_wasCast_Fact(EV_in_AC_wasCast_ID),
-    constraint pkEV_in_AC_wasCast_Meta primary key (
-        EV_in_AC_wasCast_ID,
-        EV_in_AC_wasCast_Who,
-        EV_in_AC_wasCast_PositedAt
-    )
-) CLUSTER BY (EV_in_AC_wasCast_ID, EV_in_AC_wasCast_Who, EV_in_AC_wasCast_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Fact (
-    AC_part_PR_in_RAT_got_ID number(19) IDENTITY(1,1) not null, 
-    AC_ID_part number(5) not null, 
-    PR_ID_in number(19) not null, 
-    RAT_ID_got number(3) not null,
-    AC_part_PR_in_RAT_got_ChangedAt timestamp not null,
-    constraint AC_part_PR_in_RAT_got_Fact_fkAC_part foreign key (
-        AC_ID_part
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_part_PR_in_RAT_got_Fact_fkPR_in foreign key (
-        PR_ID_in
-    ) references anchors.PR_Program(PR_ID),
-    constraint AC_part_PR_in_RAT_got_Fact_fkRAT_got foreign key (
-        RAT_ID_got
-    ) references knots.RAT_Rating(RAT_ID),
-    constraint pkAC_part_PR_in_RAT_got_Fact primary key (
-        AC_part_PR_in_RAT_got_ID
-    ),
-    constraint uqAC_part_PR_in_RAT_got unique (
-        AC_ID_part,
-        PR_ID_in,
-        AC_part_PR_in_RAT_got_ChangedAt,
-        RAT_ID_got
-    )
-) CLUSTER BY (
-    AC_ID_part,
-    PR_ID_in,
-    AC_part_PR_in_RAT_got_ChangedAt
-);
-
-CREATE TABLE IF NOT EXISTS ties.AC_part_PR_in_RAT_got_Meta (
-    AC_part_PR_in_RAT_got_ID number(19) not null,
-    AC_part_PR_in_RAT_got_PositedAt timestamp(3) not null,
-    AC_part_PR_in_RAT_got_Who number(5) not null,
-    AC_part_PR_in_RAT_got_Confidence number(7,3) not null,
-    AC_part_PR_in_RAT_got_Stance varchar2(4000) default (
-        case
-            when AC_part_PR_in_RAT_got_Confidence > 0.25 then '+'
-            when AC_part_PR_in_RAT_got_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when AC_part_PR_in_RAT_got_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_AC_part_PR_in_RAT_got number(19) not null,
-    constraint fkAC_part_PR_in_RAT_got_Meta foreign key (
-        AC_part_PR_in_RAT_got_ID
-    ) references ties.AC_part_PR_in_RAT_got_Fact(AC_part_PR_in_RAT_got_ID),
-    constraint pkAC_part_PR_in_RAT_got_Meta primary key (
-        AC_part_PR_in_RAT_got_ID,
-        AC_part_PR_in_RAT_got_Who,
-        AC_part_PR_in_RAT_got_PositedAt
-    )
-) CLUSTER BY (AC_part_PR_in_RAT_got_ID, AC_part_PR_in_RAT_got_Who, AC_part_PR_in_RAT_got_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Fact (
-    ST_at_PR_isPlaying_ID number(19) IDENTITY(1,1) not null, 
-    ST_ID_at number(10) not null, 
-    PR_ID_isPlaying number(19) not null, 
-    ST_at_PR_isPlaying_ChangedAt timestamp not null,
-    constraint ST_at_PR_isPlaying_Fact_fkST_at foreign key (
-        ST_ID_at
-    ) references anchors.ST_Stage(ST_ID),
-    constraint ST_at_PR_isPlaying_Fact_fkPR_isPlaying foreign key (
-        PR_ID_isPlaying
-    ) references anchors.PR_Program(PR_ID),
-    constraint pkST_at_PR_isPlaying_Fact primary key (
-        ST_at_PR_isPlaying_ID
-    ),
-    constraint uqST_at_PR_isPlaying unique (
-        ST_ID_at,
-        PR_ID_isPlaying,
-        ST_at_PR_isPlaying_ChangedAt
-    )
-) CLUSTER BY (
-    ST_ID_at,
-    PR_ID_isPlaying,
-    ST_at_PR_isPlaying_ChangedAt
-);
-
-CREATE TABLE IF NOT EXISTS ties.ST_at_PR_isPlaying_Meta (
-    ST_at_PR_isPlaying_ID number(19) not null,
-    ST_at_PR_isPlaying_PositedAt timestamp(3) not null,
-    ST_at_PR_isPlaying_Who number(5) not null,
-    ST_at_PR_isPlaying_Confidence number(7,3) not null,
-    ST_at_PR_isPlaying_Stance varchar2(4000) default (
-        case
-            when ST_at_PR_isPlaying_Confidence > 0.25 then '+'
-            when ST_at_PR_isPlaying_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when ST_at_PR_isPlaying_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_ST_at_PR_isPlaying number(19) not null,
-    constraint fkST_at_PR_isPlaying_Meta foreign key (
-        ST_at_PR_isPlaying_ID
-    ) references ties.ST_at_PR_isPlaying_Fact(ST_at_PR_isPlaying_ID),
-    constraint pkST_at_PR_isPlaying_Meta primary key (
-        ST_at_PR_isPlaying_ID,
-        ST_at_PR_isPlaying_Who,
-        ST_at_PR_isPlaying_PositedAt
-    )
-) CLUSTER BY (ST_at_PR_isPlaying_ID, ST_at_PR_isPlaying_Who, ST_at_PR_isPlaying_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Fact (
-    AC_parent_AC_child_PAT_having_ID number(19) IDENTITY(1,1) not null, 
-    AC_ID_parent number(5) not null, 
-    AC_ID_child number(5) not null, 
-    PAT_ID_having number(3) not null,
-    constraint AC_parent_AC_child_PAT_having_Fact_fkAC_parent foreign key (
-        AC_ID_parent
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_parent_AC_child_PAT_having_Fact_fkAC_child foreign key (
-        AC_ID_child
-    ) references anchors.AC_Actor(AC_ID),
-    constraint AC_parent_AC_child_PAT_having_Fact_fkPAT_having foreign key (
-        PAT_ID_having
-    ) references knots.PAT_ParentalType(PAT_ID),
-    constraint pkAC_parent_AC_child_PAT_having_Fact primary key (
-        AC_parent_AC_child_PAT_having_ID
-    ),
-    constraint uqAC_parent_AC_child_PAT_having unique (
-        AC_ID_parent,
-        AC_ID_child,
-        PAT_ID_having
-    )
-) CLUSTER BY (
-    AC_ID_parent,
-    AC_ID_child,
-    PAT_ID_having
-);
-
-CREATE TABLE IF NOT EXISTS ties.AC_parent_AC_child_PAT_having_Meta (
-    AC_parent_AC_child_PAT_having_ID number(19) not null,
-    AC_parent_AC_child_PAT_having_PositedAt timestamp(3) not null,
-    AC_parent_AC_child_PAT_having_Who number(5) not null,
-    AC_parent_AC_child_PAT_having_Confidence number(7,3) not null,
-    AC_parent_AC_child_PAT_having_Stance varchar2(4000) default (
-        case
-            when AC_parent_AC_child_PAT_having_Confidence > 0.25 then '+'
-            when AC_parent_AC_child_PAT_having_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when AC_parent_AC_child_PAT_having_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_AC_parent_AC_child_PAT_having number(19) not null,
-    constraint fkAC_parent_AC_child_PAT_having_Meta foreign key (
-        AC_parent_AC_child_PAT_having_ID
-    ) references ties.AC_parent_AC_child_PAT_having_Fact(AC_parent_AC_child_PAT_having_ID),
-    constraint pkAC_parent_AC_child_PAT_having_Meta primary key (
-        AC_parent_AC_child_PAT_having_ID,
-        AC_parent_AC_child_PAT_having_Who,
-        AC_parent_AC_child_PAT_having_PositedAt
-    )
-) CLUSTER BY (AC_parent_AC_child_PAT_having_ID, AC_parent_AC_child_PAT_having_Who, AC_parent_AC_child_PAT_having_PositedAt);
-CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Fact (
-    PR_content_ST_location_EV_of_ID number(19) IDENTITY(1,1) not null, 
-    PR_ID_content number(19) not null, 
-    ST_ID_location number(10) not null, 
-    EV_ID_of number(12,0) not null, 
-    PR_content_ST_location_EV_of_ChangedAt timestamp not null,
-    constraint PR_content_ST_location_EV_of_Fact_fkPR_content foreign key (
-        PR_ID_content
-    ) references anchors.PR_Program(PR_ID),
-    constraint PR_content_ST_location_EV_of_Fact_fkST_location foreign key (
-        ST_ID_location
-    ) references anchors.ST_Stage(ST_ID),
-    constraint PR_content_ST_location_EV_of_Fact_fkEV_of foreign key (
-        EV_ID_of
-    ) references nexuses.EV_Event(EV_ID),
-    constraint PR_content_ST_location_EV_of_Fact_uqPR_content unique (
-        PR_ID_content,
-        PR_content_ST_location_EV_of_ChangedAt
-    ),
-    constraint PR_content_ST_location_EV_of_Fact_uqST_location unique (
-        ST_ID_location,
-        PR_content_ST_location_EV_of_ChangedAt
-    ),
-    constraint pkPR_content_ST_location_EV_of_Fact primary key (
-        PR_content_ST_location_EV_of_ID
-    ),
-    constraint uqPR_content_ST_location_EV_of unique (
-        PR_content_ST_location_EV_of_ChangedAt,
-        PR_ID_content,
-        ST_ID_location,
-        EV_ID_of
-    )
-) CLUSTER BY (
-    PR_content_ST_location_EV_of_ChangedAt
-);
-
-CREATE TABLE IF NOT EXISTS ties.PR_content_ST_location_EV_of_Meta (
-    PR_content_ST_location_EV_of_ID number(19) not null,
-    PR_content_ST_location_EV_of_PositedAt timestamp(3) not null,
-    PR_content_ST_location_EV_of_Who number(5) not null,
-    PR_content_ST_location_EV_of_Confidence number(7,3) not null,
-    PR_content_ST_location_EV_of_Stance varchar2(4000) default (
-        case
-            when PR_content_ST_location_EV_of_Confidence > 0.25 then '+'
-            when PR_content_ST_location_EV_of_Confidence = 0.25 then '?'
-            else '-'
-        end
-    ),
-     number(10) default (
-        case
-            when PR_content_ST_location_EV_of_Confidence <  then 0
-            else 1
-        end
-    ),
-    Metadata_PR_content_ST_location_EV_of number(19) not null,
-    constraint fkPR_content_ST_location_EV_of_Meta foreign key (
-        PR_content_ST_location_EV_of_ID
-    ) references ties.PR_content_ST_location_EV_of_Fact(PR_content_ST_location_EV_of_ID),
-    constraint pkPR_content_ST_location_EV_of_Meta primary key (
-        PR_content_ST_location_EV_of_ID,
-        PR_content_ST_location_EV_of_Who,
-        PR_content_ST_location_EV_of_PositedAt
-    )
-) CLUSTER BY (PR_content_ST_location_EV_of_ID, PR_content_ST_location_EV_of_Who, PR_content_ST_location_EV_of_PositedAt);
+-- Every object is made inside a block that lets one that is already there be, so a script can be run again.
+-- (ORA-00955: name is already used by an existing object)
+--
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.AC_partner_AC_with_ONG_currently_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_partner_AC_with_ONG_currently_Fact (
+            AC_partner_AC_with_ONG_currently_ID number(19) default ties.AC_partner_AC_with_ONG_currently_Fact_ID_SEQ.nextval not null, 
+            AC_ID_partner number(5) not null, 
+            AC_ID_with number(5) not null, 
+            ONG_ID_currently number(3) not null,
+            AC_partner_AC_with_ONG_currently_ChangedAt timestamp not null,
+            constraint AC_partner_AC_with_ONG_currently_Fact_fkAC_partner foreign key (
+                AC_ID_partner
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_partner_AC_with_ONG_currently_Fact_fkAC_with foreign key (
+                AC_ID_with
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_partner_AC_with_ONG_currently_Fact_fkONG_currently foreign key (
+                ONG_ID_currently
+            ) references knots.ONG_Ongoing(ONG_ID),
+            constraint AC_partner_AC_with_ONG_currently_Fact_uqAC_partner unique (
+                AC_ID_partner,
+                AC_partner_AC_with_ONG_currently_ChangedAt
+            ),
+            constraint AC_partner_AC_with_ONG_currently_Fact_uqAC_with unique (
+                AC_ID_with,
+                AC_partner_AC_with_ONG_currently_ChangedAt
+            ),
+            constraint pkAC_partner_AC_with_ONG_currently_Fact primary key (
+                AC_partner_AC_with_ONG_currently_ID
+            ),
+            constraint uqAC_partner_AC_with_ONG_currently unique (
+                AC_partner_AC_with_ONG_currently_ChangedAt,
+                AC_ID_partner,
+                AC_ID_with,
+                ONG_ID_currently
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_partner_AC_with_ONG_currently_Meta (
+            AC_partner_AC_with_ONG_currently_ID number(19) not null,
+            AC_partner_AC_with_ONG_currently_PositedAt timestamp(3) not null,
+            AC_partner_AC_with_ONG_currently_Who number(5) not null,
+            AC_partner_AC_with_ONG_currently_Confidence number(7,3) not null,
+            AC_partner_AC_with_ONG_currently_Stance char(1) generated always as (
+                case
+                    when AC_partner_AC_with_ONG_currently_Confidence > 0.25 then '+'
+                    when AC_partner_AC_with_ONG_currently_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_AC_partner_AC_with_ONG_currently number(19) not null,
+            constraint fkAC_partner_AC_with_ONG_currently_Meta foreign key (
+                AC_partner_AC_with_ONG_currently_ID
+            ) references ties.AC_partner_AC_with_ONG_currently_Fact(AC_partner_AC_with_ONG_currently_ID),
+            constraint pkAC_partner_AC_with_ONG_currently_Meta primary key (
+                AC_partner_AC_with_ONG_currently_ID,
+                AC_partner_AC_with_ONG_currently_Who,
+                AC_partner_AC_with_ONG_currently_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.AC_subset_PN_of_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_subset_PN_of_Fact (
+            AC_subset_PN_of_ID number(19) default ties.AC_subset_PN_of_Fact_ID_SEQ.nextval not null, 
+            AC_ID_subset number(5) not null, 
+            PN_ID_of number(19) not null, 
+            constraint AC_subset_PN_of_Fact_fkAC_subset foreign key (
+                AC_ID_subset
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_subset_PN_of_Fact_fkPN_of foreign key (
+                PN_ID_of
+            ) references anchors.PN_Person(PN_ID),
+            constraint AC_subset_PN_of_Fact_uqAC_subset unique (
+                AC_ID_subset
+            ),
+            constraint AC_subset_PN_of_Fact_uqPN_of unique (
+                PN_ID_of
+            ),
+            constraint pkAC_subset_PN_of_Fact primary key (
+                AC_subset_PN_of_ID
+            ),
+            constraint uqAC_subset_PN_of unique (
+                AC_ID_subset,
+                PN_ID_of
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_subset_PN_of_Meta (
+            AC_subset_PN_of_ID number(19) not null,
+            AC_subset_PN_of_PositedAt timestamp(3) not null,
+            AC_subset_PN_of_Who number(5) not null,
+            AC_subset_PN_of_Confidence number(7,3) not null,
+            AC_subset_PN_of_Stance char(1) generated always as (
+                case
+                    when AC_subset_PN_of_Confidence > 0.25 then '+'
+                    when AC_subset_PN_of_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_AC_subset_PN_of number(19) not null,
+            constraint fkAC_subset_PN_of_Meta foreign key (
+                AC_subset_PN_of_ID
+            ) references ties.AC_subset_PN_of_Fact(AC_subset_PN_of_ID),
+            constraint pkAC_subset_PN_of_Meta primary key (
+                AC_subset_PN_of_ID,
+                AC_subset_PN_of_Who,
+                AC_subset_PN_of_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.EV_in_AC_wasCast_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.EV_in_AC_wasCast_Fact (
+            EV_in_AC_wasCast_ID number(19) default ties.EV_in_AC_wasCast_Fact_ID_SEQ.nextval not null, 
+            EV_ID_in number(12,0) not null, 
+            AC_ID_wasCast number(5) not null, 
+            constraint EV_in_AC_wasCast_Fact_fkEV_in foreign key (
+                EV_ID_in
+            ) references nexuses.EV_Event(EV_ID),
+            constraint EV_in_AC_wasCast_Fact_fkAC_wasCast foreign key (
+                AC_ID_wasCast
+            ) references anchors.AC_Actor(AC_ID),
+            constraint pkEV_in_AC_wasCast_Fact primary key (
+                EV_in_AC_wasCast_ID
+            ),
+            constraint uqEV_in_AC_wasCast unique (
+                EV_ID_in,
+                AC_ID_wasCast
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.EV_in_AC_wasCast_Meta (
+            EV_in_AC_wasCast_ID number(19) not null,
+            EV_in_AC_wasCast_PositedAt timestamp(3) not null,
+            EV_in_AC_wasCast_Who number(5) not null,
+            EV_in_AC_wasCast_Confidence number(7,3) not null,
+            EV_in_AC_wasCast_Stance char(1) generated always as (
+                case
+                    when EV_in_AC_wasCast_Confidence > 0.25 then '+'
+                    when EV_in_AC_wasCast_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_EV_in_AC_wasCast number(19) not null,
+            constraint fkEV_in_AC_wasCast_Meta foreign key (
+                EV_in_AC_wasCast_ID
+            ) references ties.EV_in_AC_wasCast_Fact(EV_in_AC_wasCast_ID),
+            constraint pkEV_in_AC_wasCast_Meta primary key (
+                EV_in_AC_wasCast_ID,
+                EV_in_AC_wasCast_Who,
+                EV_in_AC_wasCast_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.AC_part_PR_in_RAT_got_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_part_PR_in_RAT_got_Fact (
+            AC_part_PR_in_RAT_got_ID number(19) default ties.AC_part_PR_in_RAT_got_Fact_ID_SEQ.nextval not null, 
+            AC_ID_part number(5) not null, 
+            PR_ID_in number(19) not null, 
+            RAT_ID_got number(3) not null,
+            AC_part_PR_in_RAT_got_ChangedAt timestamp not null,
+            constraint AC_part_PR_in_RAT_got_Fact_fkAC_part foreign key (
+                AC_ID_part
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_part_PR_in_RAT_got_Fact_fkPR_in foreign key (
+                PR_ID_in
+            ) references anchors.PR_Program(PR_ID),
+            constraint AC_part_PR_in_RAT_got_Fact_fkRAT_got foreign key (
+                RAT_ID_got
+            ) references knots.RAT_Rating(RAT_ID),
+            constraint pkAC_part_PR_in_RAT_got_Fact primary key (
+                AC_part_PR_in_RAT_got_ID
+            ),
+            constraint uqAC_part_PR_in_RAT_got unique (
+                AC_ID_part,
+                PR_ID_in,
+                AC_part_PR_in_RAT_got_ChangedAt,
+                RAT_ID_got
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_part_PR_in_RAT_got_Meta (
+            AC_part_PR_in_RAT_got_ID number(19) not null,
+            AC_part_PR_in_RAT_got_PositedAt timestamp(3) not null,
+            AC_part_PR_in_RAT_got_Who number(5) not null,
+            AC_part_PR_in_RAT_got_Confidence number(7,3) not null,
+            AC_part_PR_in_RAT_got_Stance char(1) generated always as (
+                case
+                    when AC_part_PR_in_RAT_got_Confidence > 0.25 then '+'
+                    when AC_part_PR_in_RAT_got_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_AC_part_PR_in_RAT_got number(19) not null,
+            constraint fkAC_part_PR_in_RAT_got_Meta foreign key (
+                AC_part_PR_in_RAT_got_ID
+            ) references ties.AC_part_PR_in_RAT_got_Fact(AC_part_PR_in_RAT_got_ID),
+            constraint pkAC_part_PR_in_RAT_got_Meta primary key (
+                AC_part_PR_in_RAT_got_ID,
+                AC_part_PR_in_RAT_got_Who,
+                AC_part_PR_in_RAT_got_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.ST_at_PR_isPlaying_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.ST_at_PR_isPlaying_Fact (
+            ST_at_PR_isPlaying_ID number(19) default ties.ST_at_PR_isPlaying_Fact_ID_SEQ.nextval not null, 
+            ST_ID_at number(10) not null, 
+            PR_ID_isPlaying number(19) not null, 
+            ST_at_PR_isPlaying_ChangedAt timestamp not null,
+            constraint ST_at_PR_isPlaying_Fact_fkST_at foreign key (
+                ST_ID_at
+            ) references anchors.ST_Stage(ST_ID),
+            constraint ST_at_PR_isPlaying_Fact_fkPR_isPlaying foreign key (
+                PR_ID_isPlaying
+            ) references anchors.PR_Program(PR_ID),
+            constraint pkST_at_PR_isPlaying_Fact primary key (
+                ST_at_PR_isPlaying_ID
+            ),
+            constraint uqST_at_PR_isPlaying unique (
+                ST_ID_at,
+                PR_ID_isPlaying,
+                ST_at_PR_isPlaying_ChangedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.ST_at_PR_isPlaying_Meta (
+            ST_at_PR_isPlaying_ID number(19) not null,
+            ST_at_PR_isPlaying_PositedAt timestamp(3) not null,
+            ST_at_PR_isPlaying_Who number(5) not null,
+            ST_at_PR_isPlaying_Confidence number(7,3) not null,
+            ST_at_PR_isPlaying_Stance char(1) generated always as (
+                case
+                    when ST_at_PR_isPlaying_Confidence > 0.25 then '+'
+                    when ST_at_PR_isPlaying_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_ST_at_PR_isPlaying number(19) not null,
+            constraint fkST_at_PR_isPlaying_Meta foreign key (
+                ST_at_PR_isPlaying_ID
+            ) references ties.ST_at_PR_isPlaying_Fact(ST_at_PR_isPlaying_ID),
+            constraint pkST_at_PR_isPlaying_Meta primary key (
+                ST_at_PR_isPlaying_ID,
+                ST_at_PR_isPlaying_Who,
+                ST_at_PR_isPlaying_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.AC_parent_AC_child_PAT_having_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_parent_AC_child_PAT_having_Fact (
+            AC_parent_AC_child_PAT_having_ID number(19) default ties.AC_parent_AC_child_PAT_having_Fact_ID_SEQ.nextval not null, 
+            AC_ID_parent number(5) not null, 
+            AC_ID_child number(5) not null, 
+            PAT_ID_having number(3) not null,
+            constraint AC_parent_AC_child_PAT_having_Fact_fkAC_parent foreign key (
+                AC_ID_parent
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_parent_AC_child_PAT_having_Fact_fkAC_child foreign key (
+                AC_ID_child
+            ) references anchors.AC_Actor(AC_ID),
+            constraint AC_parent_AC_child_PAT_having_Fact_fkPAT_having foreign key (
+                PAT_ID_having
+            ) references knots.PAT_ParentalType(PAT_ID),
+            constraint pkAC_parent_AC_child_PAT_having_Fact primary key (
+                AC_parent_AC_child_PAT_having_ID
+            ),
+            constraint uqAC_parent_AC_child_PAT_having unique (
+                AC_ID_parent,
+                AC_ID_child,
+                PAT_ID_having
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.AC_parent_AC_child_PAT_having_Meta (
+            AC_parent_AC_child_PAT_having_ID number(19) not null,
+            AC_parent_AC_child_PAT_having_PositedAt timestamp(3) not null,
+            AC_parent_AC_child_PAT_having_Who number(5) not null,
+            AC_parent_AC_child_PAT_having_Confidence number(7,3) not null,
+            AC_parent_AC_child_PAT_having_Stance char(1) generated always as (
+                case
+                    when AC_parent_AC_child_PAT_having_Confidence > 0.25 then '+'
+                    when AC_parent_AC_child_PAT_having_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_AC_parent_AC_child_PAT_having number(19) not null,
+            constraint fkAC_parent_AC_child_PAT_having_Meta foreign key (
+                AC_parent_AC_child_PAT_having_ID
+            ) references ties.AC_parent_AC_child_PAT_having_Fact(AC_parent_AC_child_PAT_having_ID),
+            constraint pkAC_parent_AC_child_PAT_having_Meta primary key (
+                AC_parent_AC_child_PAT_having_ID,
+                AC_parent_AC_child_PAT_having_Who,
+                AC_parent_AC_child_PAT_having_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[CREATE SEQUENCE ties.PR_content_ST_location_EV_of_Fact_ID_SEQ START WITH 1 INCREMENT BY 1]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.PR_content_ST_location_EV_of_Fact (
+            PR_content_ST_location_EV_of_ID number(19) default ties.PR_content_ST_location_EV_of_Fact_ID_SEQ.nextval not null, 
+            PR_ID_content number(19) not null, 
+            ST_ID_location number(10) not null, 
+            EV_ID_of number(12,0) not null, 
+            PR_content_ST_location_EV_of_ChangedAt timestamp not null,
+            constraint PR_content_ST_location_EV_of_Fact_fkPR_content foreign key (
+                PR_ID_content
+            ) references anchors.PR_Program(PR_ID),
+            constraint PR_content_ST_location_EV_of_Fact_fkST_location foreign key (
+                ST_ID_location
+            ) references anchors.ST_Stage(ST_ID),
+            constraint PR_content_ST_location_EV_of_Fact_fkEV_of foreign key (
+                EV_ID_of
+            ) references nexuses.EV_Event(EV_ID),
+            constraint PR_content_ST_location_EV_of_Fact_uqPR_content unique (
+                PR_ID_content,
+                PR_content_ST_location_EV_of_ChangedAt
+            ),
+            constraint PR_content_ST_location_EV_of_Fact_uqST_location unique (
+                ST_ID_location,
+                PR_content_ST_location_EV_of_ChangedAt
+            ),
+            constraint pkPR_content_ST_location_EV_of_Fact primary key (
+                PR_content_ST_location_EV_of_ID
+            ),
+            constraint uqPR_content_ST_location_EV_of unique (
+                PR_content_ST_location_EV_of_ChangedAt,
+                PR_ID_content,
+                ST_ID_location,
+                EV_ID_of
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[
+        CREATE TABLE ties.PR_content_ST_location_EV_of_Meta (
+            PR_content_ST_location_EV_of_ID number(19) not null,
+            PR_content_ST_location_EV_of_PositedAt timestamp(3) not null,
+            PR_content_ST_location_EV_of_Who number(5) not null,
+            PR_content_ST_location_EV_of_Confidence number(7,3) not null,
+            PR_content_ST_location_EV_of_Stance char(1) generated always as (
+                case
+                    when PR_content_ST_location_EV_of_Confidence > 0.25 then '+'
+                    when PR_content_ST_location_EV_of_Confidence = 0.25 then '?'
+                    else '-'
+                end
+            ) virtual,
+            Metadata_PR_content_ST_location_EV_of number(19) not null,
+            constraint fkPR_content_ST_location_EV_of_Meta foreign key (
+                PR_content_ST_location_EV_of_ID
+            ) references ties.PR_content_ST_location_EV_of_Fact(PR_content_ST_location_EV_of_ID),
+            constraint pkPR_content_ST_location_EV_of_Meta primary key (
+                PR_content_ST_location_EV_of_ID,
+                PR_content_ST_location_EV_of_Who,
+                PR_content_ST_location_EV_of_PositedAt
+            )
+        )
+    ]';
+EXCEPTION WHEN OTHERS THEN
+    IF SQLCODE <> -955 THEN RAISE; END IF;
+END;
+/

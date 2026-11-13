@@ -1,167 +1,491 @@
--- TIE PERSPECTIVES ---------------------------------------------------------------------------------------------------
+-- TIE TEMPORAL PERSPECTIVES ------------------------------------------------------------------------------------------
 --
--- Oracle latest (l) and now (n) perspectives.
+-- tie perspectives: latest (l), point-in-time (p), now (n) and difference (d).
 --
-CREATE OR REPLACE VIEW public.lAC_partner_AC_with_ONG_currently AS
+-- The point-in-time and difference perspectives are SQL table macros (SQL_MACRO, Oracle Database 19.7 or later): a function
+-- that returns the text of a query, in which its parameters stand for the values given. They are called in the FROM clause
+-- of a query, like a table: SELECT * FROM pAC_part_EV_in(TIMESTAMP '2020-01-01 00:00:00').
+--
+-- A historized tie shows, for each identifier (for each anchor, in a tie without identifiers), the rows that have the latest
+-- changing time: that is worked out with an analytic MAX in an inline view, whose column holds the latest time.
+--
+-- A table alias is written inside double quotes where it can be a word that Oracle reserves.
+--
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lAC_partner_AC_with_ONG_currently (
+    AC_partner_AC_with_ONG_currently_ChangedAt,
+    AC_ID_partner,
+    AC_ID_with,
+    ONG_Ongoing,
+    ONG_ID_currently
+)
+AS
 SELECT
     tie.AC_partner_AC_with_ONG_currently_ChangedAt,
     tie.AC_ID_partner,
     tie.AC_ID_with,
-    ONG_currently.ONG_Ongoing AS ONG_Ongoing,
+    "ONG_currently".ONG_Ongoing AS ONG_Ongoing,
     tie.ONG_ID_currently
 FROM
-    public.AC_partner_AC_with_ONG_currently tie
-LEFT JOIN
-    public.ONG_Ongoing ONG_currently
-ON
-    ONG_currently.ONG_ID = tie.ONG_ID_currently
-WHERE (
-    tie.AC_partner_AC_with_ONG_currently_ChangedAt = (
+    (
         SELECT
-            MAX(sub.AC_partner_AC_with_ONG_currently_ChangedAt)
+            t.*,
+            MAX(t.AC_partner_AC_with_ONG_currently_ChangedAt) OVER (PARTITION BY t.AC_ID_partner) AS latestAC_ID_partner,
+            MAX(t.AC_partner_AC_with_ONG_currently_ChangedAt) OVER (PARTITION BY t.AC_ID_with) AS latestAC_ID_with
         FROM
-            public.AC_partner_AC_with_ONG_currently sub
-        WHERE
-            (
-                sub.AC_ID_partner = tie.AC_ID_partner
-            OR
-                sub.AC_ID_with = tie.AC_ID_with
-            OR
-                sub.ONG_ID_currently = tie.ONG_ID_currently
-            )
-    )
-    OR tie.AC_partner_AC_with_ONG_currently_ChangedAt IS NULL
-)
+            AC_partner_AC_with_ONG_currently t
+    ) tie
+LEFT JOIN
+    ONG_Ongoing "ONG_currently"
+ON
+    "ONG_currently".ONG_ID = tie.ONG_ID_currently
+WHERE
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = tie.latestAC_ID_partner
+AND
+    tie.AC_partner_AC_with_ONG_currently_ChangedAt = tie.latestAC_ID_with
 ;
-
-CREATE OR REPLACE VIEW public.nAC_partner_AC_with_ONG_currently AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pAC_partner_AC_with_ONG_currently (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+            tie.AC_ID_partner,
+            tie.AC_ID_with,
+            "ONG_currently".ONG_Ongoing AS ONG_Ongoing,
+            tie.ONG_ID_currently
+        FROM
+            (
+                SELECT
+                    t.*,
+                    MAX(t.AC_partner_AC_with_ONG_currently_ChangedAt) OVER (PARTITION BY t.AC_ID_partner) AS latestAC_ID_partner,
+                    MAX(t.AC_partner_AC_with_ONG_currently_ChangedAt) OVER (PARTITION BY t.AC_ID_with) AS latestAC_ID_with
+                FROM
+                    AC_partner_AC_with_ONG_currently t
+                WHERE
+                    t.AC_partner_AC_with_ONG_currently_ChangedAt <= changingTimepoint
+            ) tie
+        LEFT JOIN
+            ONG_Ongoing "ONG_currently"
+        ON
+            "ONG_currently".ONG_ID = tie.ONG_ID_currently
+        WHERE
+            tie.AC_partner_AC_with_ONG_currently_ChangedAt = tie.latestAC_ID_partner
+        AND
+            tie.AC_partner_AC_with_ONG_currently_ChangedAt = tie.latestAC_ID_with
+    ]';
+END pAC_partner_AC_with_ONG_currently;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nAC_partner_AC_with_ONG_currently
+AS
 SELECT
     *
 FROM
-    public.lAC_partner_AC_with_ONG_currently
+    pAC_partner_AC_with_ONG_currently(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lAC_subset_PN_of AS
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION dAC_partner_AC_with_ONG_currently (
+    intervalStart IN timestamp,
+    intervalEnd IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_partner_AC_with_ONG_currently_ChangedAt,
+            tie.AC_ID_partner,
+            tie.AC_ID_with,
+            "ONG_currently".ONG_Ongoing AS ONG_Ongoing,
+            tie.ONG_ID_currently
+        FROM
+            AC_partner_AC_with_ONG_currently tie
+        LEFT JOIN
+            ONG_Ongoing "ONG_currently"
+        ON
+            "ONG_currently".ONG_ID = tie.ONG_ID_currently
+        WHERE
+            tie.AC_partner_AC_with_ONG_currently_ChangedAt BETWEEN intervalStart AND intervalEnd
+    ]';
+END dAC_partner_AC_with_ONG_currently;
+/
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lAC_subset_PN_of (
+    AC_ID_subset,
+    PN_ID_of
+)
+AS
 SELECT
     tie.AC_ID_subset,
     tie.PN_ID_of
 FROM
-    public.AC_subset_PN_of tie
+    AC_subset_PN_of tie
 ;
-
-CREATE OR REPLACE VIEW public.nAC_subset_PN_of AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pAC_subset_PN_of (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_ID_subset,
+            tie.PN_ID_of
+        FROM
+            AC_subset_PN_of tie
+    ]';
+END pAC_subset_PN_of;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nAC_subset_PN_of
+AS
 SELECT
     *
 FROM
-    public.lAC_subset_PN_of
+    pAC_subset_PN_of(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lEV_in_AC_wasCast AS
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lEV_in_AC_wasCast (
+    EV_ID_in,
+    AC_ID_wasCast
+)
+AS
 SELECT
     tie.EV_ID_in,
     tie.AC_ID_wasCast
 FROM
-    public.EV_in_AC_wasCast tie
+    EV_in_AC_wasCast tie
 ;
-
-CREATE OR REPLACE VIEW public.nEV_in_AC_wasCast AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pEV_in_AC_wasCast (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.EV_ID_in,
+            tie.AC_ID_wasCast
+        FROM
+            EV_in_AC_wasCast tie
+    ]';
+END pEV_in_AC_wasCast;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nEV_in_AC_wasCast
+AS
 SELECT
     *
 FROM
-    public.lEV_in_AC_wasCast
+    pEV_in_AC_wasCast(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lAC_part_PR_in_RAT_got AS
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lAC_part_PR_in_RAT_got (
+    AC_part_PR_in_RAT_got_ChangedAt,
+    AC_ID_part,
+    PR_ID_in,
+    RAT_Rating,
+    RAT_ID_got
+)
+AS
 SELECT
     tie.AC_part_PR_in_RAT_got_ChangedAt,
     tie.AC_ID_part,
     tie.PR_ID_in,
-    RAT_got.RAT_Rating AS RAT_Rating,
+    "RAT_got".RAT_Rating AS RAT_Rating,
     tie.RAT_ID_got
 FROM
-    public.AC_part_PR_in_RAT_got tie
-LEFT JOIN
-    public.RAT_Rating RAT_got
-ON
-    RAT_got.RAT_ID = tie.RAT_ID_got
-WHERE (
-    tie.AC_part_PR_in_RAT_got_ChangedAt = (
+    (
         SELECT
-            MAX(sub.AC_part_PR_in_RAT_got_ChangedAt)
+            t.*,
+            MAX(t.AC_part_PR_in_RAT_got_ChangedAt) OVER (
+                PARTITION BY
+                    t.AC_ID_part,
+                    t.PR_ID_in
+            ) AS latestTime
         FROM
-            public.AC_part_PR_in_RAT_got sub
-        WHERE
-            sub.AC_ID_part = tie.AC_ID_part
-        AND
-            sub.PR_ID_in = tie.PR_ID_in
-    )
-    OR tie.AC_part_PR_in_RAT_got_ChangedAt IS NULL
-)
+            AC_part_PR_in_RAT_got t
+    ) tie
+LEFT JOIN
+    RAT_Rating "RAT_got"
+ON
+    "RAT_got".RAT_ID = tie.RAT_ID_got
+WHERE
+    tie.AC_part_PR_in_RAT_got_ChangedAt = tie.latestTime
 ;
-
-CREATE OR REPLACE VIEW public.nAC_part_PR_in_RAT_got AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pAC_part_PR_in_RAT_got (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_part_PR_in_RAT_got_ChangedAt,
+            tie.AC_ID_part,
+            tie.PR_ID_in,
+            "RAT_got".RAT_Rating AS RAT_Rating,
+            tie.RAT_ID_got
+        FROM
+            (
+                SELECT
+                    t.*,
+                    MAX(t.AC_part_PR_in_RAT_got_ChangedAt) OVER (
+                        PARTITION BY
+                            t.AC_ID_part,
+                            t.PR_ID_in
+                    ) AS latestTime
+                FROM
+                    AC_part_PR_in_RAT_got t
+                WHERE
+                    t.AC_part_PR_in_RAT_got_ChangedAt <= changingTimepoint
+            ) tie
+        LEFT JOIN
+            RAT_Rating "RAT_got"
+        ON
+            "RAT_got".RAT_ID = tie.RAT_ID_got
+        WHERE
+            tie.AC_part_PR_in_RAT_got_ChangedAt = tie.latestTime
+    ]';
+END pAC_part_PR_in_RAT_got;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nAC_part_PR_in_RAT_got
+AS
 SELECT
     *
 FROM
-    public.lAC_part_PR_in_RAT_got
+    pAC_part_PR_in_RAT_got(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lST_at_PR_isPlaying AS
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION dAC_part_PR_in_RAT_got (
+    intervalStart IN timestamp,
+    intervalEnd IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_part_PR_in_RAT_got_ChangedAt,
+            tie.AC_ID_part,
+            tie.PR_ID_in,
+            "RAT_got".RAT_Rating AS RAT_Rating,
+            tie.RAT_ID_got
+        FROM
+            AC_part_PR_in_RAT_got tie
+        LEFT JOIN
+            RAT_Rating "RAT_got"
+        ON
+            "RAT_got".RAT_ID = tie.RAT_ID_got
+        WHERE
+            tie.AC_part_PR_in_RAT_got_ChangedAt BETWEEN intervalStart AND intervalEnd
+    ]';
+END dAC_part_PR_in_RAT_got;
+/
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lST_at_PR_isPlaying (
+    ST_at_PR_isPlaying_ChangedAt,
+    ST_ID_at,
+    PR_ID_isPlaying
+)
+AS
 SELECT
     tie.ST_at_PR_isPlaying_ChangedAt,
     tie.ST_ID_at,
     tie.PR_ID_isPlaying
 FROM
-    public.ST_at_PR_isPlaying tie
-WHERE (
-    tie.ST_at_PR_isPlaying_ChangedAt = (
+    (
         SELECT
-            MAX(sub.ST_at_PR_isPlaying_ChangedAt)
+            t.*,
+            MAX(t.ST_at_PR_isPlaying_ChangedAt) OVER (
+                PARTITION BY
+                    t.ST_ID_at,
+                    t.PR_ID_isPlaying
+            ) AS latestTime
         FROM
-            public.ST_at_PR_isPlaying sub
-        WHERE
-            sub.ST_ID_at = tie.ST_ID_at
-        AND
-            sub.PR_ID_isPlaying = tie.PR_ID_isPlaying
-    )
-    OR tie.ST_at_PR_isPlaying_ChangedAt IS NULL
-)
+            ST_at_PR_isPlaying t
+    ) tie
+WHERE
+    tie.ST_at_PR_isPlaying_ChangedAt = tie.latestTime
 ;
-
-CREATE OR REPLACE VIEW public.nST_at_PR_isPlaying AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pST_at_PR_isPlaying (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.ST_at_PR_isPlaying_ChangedAt,
+            tie.ST_ID_at,
+            tie.PR_ID_isPlaying
+        FROM
+            (
+                SELECT
+                    t.*,
+                    MAX(t.ST_at_PR_isPlaying_ChangedAt) OVER (
+                        PARTITION BY
+                            t.ST_ID_at,
+                            t.PR_ID_isPlaying
+                    ) AS latestTime
+                FROM
+                    ST_at_PR_isPlaying t
+                WHERE
+                    t.ST_at_PR_isPlaying_ChangedAt <= changingTimepoint
+            ) tie
+        WHERE
+            tie.ST_at_PR_isPlaying_ChangedAt = tie.latestTime
+    ]';
+END pST_at_PR_isPlaying;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nST_at_PR_isPlaying
+AS
 SELECT
     *
 FROM
-    public.lST_at_PR_isPlaying
+    pST_at_PR_isPlaying(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lAC_parent_AC_child_PAT_having AS
+-- Difference perspective ---------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION dST_at_PR_isPlaying (
+    intervalStart IN timestamp,
+    intervalEnd IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.ST_at_PR_isPlaying_ChangedAt,
+            tie.ST_ID_at,
+            tie.PR_ID_isPlaying
+        FROM
+            ST_at_PR_isPlaying tie
+        WHERE
+            tie.ST_at_PR_isPlaying_ChangedAt BETWEEN intervalStart AND intervalEnd
+    ]';
+END dST_at_PR_isPlaying;
+/
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lAC_parent_AC_child_PAT_having (
+    AC_ID_parent,
+    AC_ID_child,
+    PAT_ParentalType,
+    PAT_ID_having
+)
+AS
 SELECT
     tie.AC_ID_parent,
     tie.AC_ID_child,
-    PAT_having.PAT_ParentalType AS PAT_ParentalType,
+    "PAT_having".PAT_ParentalType AS PAT_ParentalType,
     tie.PAT_ID_having
 FROM
-    public.AC_parent_AC_child_PAT_having tie
+    AC_parent_AC_child_PAT_having tie
 LEFT JOIN
-    public.PAT_ParentalType PAT_having
+    PAT_ParentalType "PAT_having"
 ON
-    PAT_having.PAT_ID = tie.PAT_ID_having
+    "PAT_having".PAT_ID = tie.PAT_ID_having
 ;
-
-CREATE OR REPLACE VIEW public.nAC_parent_AC_child_PAT_having AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pAC_parent_AC_child_PAT_having (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.AC_ID_parent,
+            tie.AC_ID_child,
+            "PAT_having".PAT_ParentalType AS PAT_ParentalType,
+            tie.PAT_ID_having
+        FROM
+            AC_parent_AC_child_PAT_having tie
+        LEFT JOIN
+            PAT_ParentalType "PAT_having"
+        ON
+            "PAT_having".PAT_ID = tie.PAT_ID_having
+    ]';
+END pAC_parent_AC_child_PAT_having;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nAC_parent_AC_child_PAT_having
+AS
 SELECT
     *
 FROM
-    public.lAC_parent_AC_child_PAT_having
+    pAC_parent_AC_child_PAT_having(CAST(current_timestamp AS timestamp(9)))
 ;
-CREATE OR REPLACE VIEW public.lPR_content_ST_location_EV_of AS
+-- Latest perspective -------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW lPR_content_ST_location_EV_of (
+    PR_ID_content,
+    ST_ID_location,
+    EV_ID_of
+)
+AS
 SELECT
     tie.PR_ID_content,
     tie.ST_ID_location,
     tie.EV_ID_of
 FROM
-    public.PR_content_ST_location_EV_of tie
+    PR_content_ST_location_EV_of tie
 ;
-
-CREATE OR REPLACE VIEW public.nPR_content_ST_location_EV_of AS
+-- Point-in-time perspective ------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pPR_content_ST_location_EV_of (
+    changingTimepoint IN timestamp
+)
+RETURN VARCHAR2 SQL_MACRO
+IS
+BEGIN
+    RETURN q'[
+        SELECT
+            tie.PR_ID_content,
+            tie.ST_ID_location,
+            tie.EV_ID_of
+        FROM
+            PR_content_ST_location_EV_of tie
+    ]';
+END pPR_content_ST_location_EV_of;
+/
+-- Now perspective ----------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW nPR_content_ST_location_EV_of
+AS
 SELECT
     *
 FROM
-    public.lPR_content_ST_location_EV_of
+    pPR_content_ST_location_EV_of(CAST(current_timestamp AS timestamp(9)))
 ;
