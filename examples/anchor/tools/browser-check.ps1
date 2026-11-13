@@ -83,7 +83,7 @@ if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
     # the modeler reads it differently, so it is left out here and only run through check.ps1.
     $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name |
-        ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' }
+        ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(sqlserver-)?handwritten' }
 }
 $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $utf8 = New-Object Text.UTF8Encoding($false)
@@ -113,6 +113,7 @@ $harness = @'
 (function () {
     var MODEL = __MODEL__;
     var MODE = __MODE__;
+    var KEEP = __KEEP__;
     var TEMPORALIZATION = __TEMPORALIZATION__;
     var DATABASE = __DATABASE__;
     function report(text) { document.getElementById('sisula-result').textContent = text; }
@@ -179,6 +180,7 @@ $harness = @'
                                     Settings.setTemporalization(r.temporalization);
                                     var sql = await Actions.sql();
                                     r.length = sql.length;
+                                    if (KEEP) r.sql = sql;
                                     r.leftovers = (sql.match(/hasMore|\)\?|\$\{|undefined|\[object Object\]|NaN/g) || []).length;
                                     r.tsql = (sql.match(/IF Object_ID\(/g) || []).length;
                                     r.unsupported = /^The temporalization .* is not supported yet\./.test(sql);
@@ -225,7 +227,7 @@ $harness = @'
 function Invoke-Modeler([string] $name, [string] $model, [string] $mode) {
     # The model goes into the page as a JavaScript string literal.
     $literal = '"' + ($model -replace '\\', '\\' -replace '"', '\"' -replace "`r", '\r' -replace "`n", '\n' -replace '</', '<\/') + '"'
-    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'").Replace('__TEMPORALIZATION__', "'$(([regex]::Match($model, 'temporalization="(\w+)"')).Groups[1].Value)'").Replace('__DATABASE__', "'$(([regex]::Match($model, 'databaseTarget="(\w+)"')).Groups[1].Value)'"))
+    $html = $page.Insert($bodyEndAt, $harness.Replace('__MODEL__', $literal).Replace('__MODE__', "'$mode'").Replace('__KEEP__', $(if ($KeepOutput) { 'true' } else { 'false' })).Replace('__TEMPORALIZATION__', "'$(([regex]::Match($model, 'temporalization="(\w+)"')).Groups[1].Value)'").Replace('__DATABASE__', "'$(([regex]::Match($model, 'databaseTarget="(\w+)"')).Groups[1].Value)'"))
     $pagePath = Join-Path $work "$name.html"
     [IO.File]::WriteAllText($pagePath, $html, $utf8)
     $profileDir = Join-Path $work "profile-$name"
@@ -301,6 +303,7 @@ try {
             $results = ConvertFrom-Json $observed   # not piped: Windows PowerShell 5.1 would hand the array on as one object
             foreach ($r in $results) {
                 $target = "$($r.database) $($r.temporalization)"
+                if ($KeepOutput -and $r.sql) { [IO.File]::WriteAllText((Join-Path $KeepOutput "$($r.database)_$($r.temporalization).sql"), $r.sql, $utf8) }
                 if ($r.error) { Write-Host ("FAIL  {0}: {1}" -f $target, $r.error); $failed++; continue }
                 if ($r.leftovers -gt 0) { Write-Host ("FAIL  {0}: {1} places of template text that was never evaluated" -f $target, $r.leftovers); $failed++; continue }
                 if ($r.unsupported) { Write-Host ("SKIP  {0}: not supported yet, and says so" -f $target); continue }

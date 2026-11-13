@@ -1,0 +1,17 @@
+-- SCHEMAS ------------------------------------------------------------------------------------------------------------
+--
+-- In Oracle a schema is a user, which a script does not create. The schemas that the model puts its tables, views,
+-- functions and procedures in must exist before this script is run, and the user that runs it needs the privileges to
+-- create those objects in them (CREATE ANY TABLE, CREATE ANY VIEW, ... or the same privileges on each schema).
+--
+-- The schemas of this model are
+--
+--   dw
+--   knots
+--   anchors
+--   nexuses
+--   attributes
+--   ties
+--
+-- A model whose schema is public, or that has none, creates everything in the schema that the script is run in.
+--

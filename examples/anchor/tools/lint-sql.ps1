@@ -31,12 +31,15 @@ $selectItem = '^\s+[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\s*$' # "x.Colu
 # The templates write the names that come from the model inside double quotes ("AC_Actor"), which keeps their case and lets them
 # hold national characters. For this lint a quoted name is the name: the quotes are taken off, and a character that is not a letter,
 # digit or underscore (a space, say) becomes an underscore, so that the name stays one word.
-function Remove-IdentifierQuotes([string] $text) {
-    [regex]::Replace($text, '"([^"\r\n]*)"', { param($m) $m.Groups[1].Value -replace '[^\w$]', '_' })
+function Remove-IdentifierQuotes([string] $text, [string] $dialect = 'Snowflake') {
+    $pattern = '"([^"\r\n]*)"'
+    if ($dialect -eq 'BigQuery') { $pattern = '`([^`\r\n]*)`' }   # BigQuery quotes a name with backticks
+    [regex]::Replace($text, $pattern, { param($m) $m.Groups[1].Value -replace '[^\w$]', '_' })
 }
 
 function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
-    $text = Remove-IdentifierQuotes $text
+    if ($dialect -eq 'Oracle') { $text = $text -replace "q'\[", '   ' -replace "\]'", '  ' }   # the text of an EXECUTE IMMEDIATE and of a macro is code
+    $text = Remove-IdentifierQuotes $text $dialect
     $found = New-Object System.Collections.Generic.List[string]
     # comments and string literals are not code
     $lines = $text -split "`r?`n"
@@ -55,6 +58,16 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
         if ($l -match '\b[A-Za-z]+\(\s*max\s*\)') { $found.Add("line ${n}: a (max) length, which $dialect does not have: [$($lines[$i])]") }
         # SQL Server's T-SQL, which the PostgreSQL templates were copied from
         if ($dialect -ne 'SQLServer' -and $l -match '\bIF Object_ID\b|\bEXEC\s*\(|^\s*GO\s*$|\bnonclustered\b|\bclustered\b|\bsysdatetime\b|\bisnull\s*\(') { $found.Add("line ${n}: T-SQL in SQL for $dialect : [$($lines[$i])]") }
+        # what Snowflake's templates have that BigQuery does not take, which the BigQuery templates were made from
+        if ($dialect -eq 'BigQuery') {
+            if ($l -match '::\s*\w') { $found.Add("line ${n}: a :: cast, which BigQuery does not have (CAST(x AS type)): [$($lines[$i])]") }
+            if ($l -match '\bCOPY GRANTS\b|\bRELY\b|\.nextval\b|\bCREATE SEQUENCE\b|\bIDENTITY\s*\(|\btimestamp_ntz\b|\bhash\s*\(|\bsysdate\s*\(|\bLISTAGG\b|\bOBJECT_CONSTRUCT\b') { $found.Add("line ${n}: Snowflake SQL in SQL for BigQuery: [$($lines[$i])]") }
+            if ($l -match '\bCLUSTER BY\s*\(') { $found.Add("line ${n}: CLUSTER BY with parentheses; BigQuery has none: [$($lines[$i])]") }
+            if ($l -match '\bUNIQUE\b') { $found.Add("line ${n}: a unique constraint, which BigQuery does not have: [$($lines[$i])]") }
+            if ($l -cmatch '^\s*constraint\b') { $found.Add("line ${n}: a constraint written as in other databases (BigQuery: PRIMARY KEY (...) NOT ENFORCED, CONSTRAINT name FOREIGN KEY (...) REFERENCES ... NOT ENFORCED): [$($lines[$i])]") }
+            if ($l -match '\bRETURNS TABLE\b|^\s*\$\$|\bTABLE\s*\(\s*\w+\.\w+\s*\(') { $found.Add("line ${n}: a function written as in Snowflake (BigQuery: CREATE TABLE FUNCTION ... AS (query), called as a table): [$($lines[$i])]") }
+            if ($l -match '\bUNION\b(?!\s+(ALL|DISTINCT)\b)') { $found.Add("line ${n}: UNION without ALL or DISTINCT, which BigQuery requires: [$($lines[$i])]") }
+        }
         # the next line that is code
         $j = $i + 1; while ($j -lt $code.Count -and $code[$j] -notmatch '\S') { $j++ }
         if ($j -lt $code.Count) {
@@ -85,7 +98,8 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
     # every table, view, function and sequence that the script refers to as schema.name must be created by it
     $created = @{}; $schemas = @{}
     for ($i = 0; $i -lt $code.Count; $i++) {
-        if ($code[$i] -match '^CREATE (?:OR REPLACE )?(?:TABLE|VIEW|FUNCTION|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
+        # (Oracle: a sequence is made in a block, on the line of EXECUTE IMMEDIATE; procedures and triggers are objects too)
+        if ($code[$i] -match '^(?:\s*EXECUTE IMMEDIATE\s+)?CREATE (?:OR REPLACE )?(?:TABLE FUNCTION|TABLE|VIEW|FUNCTION|PROCEDURE|TRIGGER|SEQUENCE)(?: IF NOT EXISTS)? (\w+)\.(\w+)') {
             $key = ($Matches[1] + '.' + $Matches[2]).ToLower()
             if (-not $created.ContainsKey($key)) { $created[$key] = $i }   # where the first statement that creates it starts
             $schemas[$Matches[1].ToLower()] = $true
@@ -100,7 +114,7 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
     $tooEarly = [ordered]@{}
     $statement = -1
     for ($i = 0; $i -lt $code.Count; $i++) {
-        if ($code[$i] -match '^CREATE ') { $statement = $i }
+        if ($code[$i] -match '^(?:\s*EXECUTE IMMEDIATE\s+)?CREATE ') { $statement = $i }
         foreach ($m in [regex]::Matches($code[$i], '\b(\w+)\.(\w+)\b')) {
             $schema = $m.Groups[1].Value.ToLower()
             if (-not $schemas.ContainsKey($schema)) { continue }
@@ -130,7 +144,7 @@ function Test-Sql([string] $text, [string] $dialect = 'Snowflake') {
 
 if ($Path) { $targets = @([pscustomobject]@{ Name = (Split-Path $Path -Leaf); Path = $Path }) }
 else {
-    # sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
+    sqlserver* are not models that the lint knows (it knows Snowflake and PostgreSQL SQL). handwritten* are not models that the modeler would save (see make-variants.ps1); they refer to tables that the generators never create, on purpose, so they are left out unless named
     if (-not $Variant) { $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name | ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(handwritten|sqlserver)' } }
     $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
     $targets = @($Variant | ForEach-Object { [pscustomobject]@{ Name = $_; Path = (Join-Path $root "golden\$_\_full.sql") } })
@@ -140,6 +154,8 @@ foreach ($t in $targets) {
     $dialect = 'Snowflake'
     if ($t.Name -match '^postgresql') { $dialect = 'PostgreSQL' }
     if ($t.Name -match '^vertica') { $dialect = 'Vertica' }
+    if ($t.Name -match '^bigquery') { $dialect = 'BigQuery' }
+    if ($t.Name -match '^oracle') { $dialect = 'Oracle' }
     $found = Test-Sql ([IO.File]::ReadAllText($t.Path, [Text.Encoding]::UTF8)) $dialect
     if ($found.Count -eq 0) { Write-Host ("clean  {0}" -f $t.Name); continue }
     $dirty++

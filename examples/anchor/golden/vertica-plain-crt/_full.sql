@@ -1991,6 +1991,216 @@ AND
 -- perspectives take none, and are views over the rewinders of the attributes (views that show the latest annex row of every posit
 -- for each positor). The assertion that they show is the positive one.
 --
+CREATE OR REPLACE VIEW public."lEV_Event" AS
+SELECT
+    p."Positor",
+    cast(null as decimal(5,2)) AS "Reliability",
+    "EV"."EV_ID",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "kETY_of"."ETY_EventType" AS "ETY_EventType",
+    "EV"."ETY_ID_of",
+    "DAT"."EV_DAT_ID",
+    "DAT"."EV_DAT_PositedAt",
+    "DAT"."EV_DAT_Positor",
+    "DAT"."EV_DAT_Reliability",
+    "DAT"."EV_DAT_Assertion",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."EV_AUD_ID",
+    "AUD"."EV_AUD_PositedAt",
+    "AUD"."EV_AUD_Positor",
+    "AUD"."EV_AUD_Reliability",
+    "AUD"."EV_AUD_Assertion",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."EV_REV_ID",
+    "REV"."EV_REV_PositedAt",
+    "REV"."EV_REV_Positor",
+    "REV"."EV_REV_Reliability",
+    "REV"."EV_REV_Assertion",
+    "REV"."EV_REV_Event_Revenue"
+FROM
+    public."EV_Event" "EV"
+CROSS JOIN
+    public."_Positor" p
+LEFT JOIN
+    public."ETY_EventType" "kETY_of"
+ON
+    "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_DAT_Event_Date" r
+    ) x
+    WHERE
+        x."EV_DAT_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_DAT_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_DAT_PositedAt" DESC,
+            x."EV_DAT_Reliability" DESC
+    )
+) "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+AND
+    "DAT"."EV_DAT_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_AUD_Event_Audience" r
+    ) x
+    WHERE
+        x."EV_AUD_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_AUD_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_AUD_PositedAt" DESC,
+            x."EV_AUD_Reliability" DESC
+    )
+) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+AND
+    "AUD"."EV_AUD_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_REV_Event_Revenue" r
+    ) x
+    WHERE
+        x."EV_REV_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_REV_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_REV_PositedAt" DESC,
+            x."EV_REV_Reliability" DESC
+    )
+) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+AND
+    "REV"."EV_REV_Positor" = p."Positor"
+;
+CREATE OR REPLACE VIEW public."nEV_Event" AS
+SELECT
+    p."Positor",
+    cast(null as decimal(5,2)) AS "Reliability",
+    "EV"."EV_ID",
+    "EV"."ST_ID_wasHeldAt",
+    "EV"."PR_ID_wasPlayed",
+    "kETY_of"."ETY_EventType" AS "ETY_EventType",
+    "EV"."ETY_ID_of",
+    "DAT"."EV_DAT_ID",
+    "DAT"."EV_DAT_PositedAt",
+    "DAT"."EV_DAT_Positor",
+    "DAT"."EV_DAT_Reliability",
+    "DAT"."EV_DAT_Assertion",
+    "DAT"."EV_DAT_Event_Date",
+    "AUD"."EV_AUD_ID",
+    "AUD"."EV_AUD_PositedAt",
+    "AUD"."EV_AUD_Positor",
+    "AUD"."EV_AUD_Reliability",
+    "AUD"."EV_AUD_Assertion",
+    "AUD"."EV_AUD_Event_Audience",
+    "REV"."EV_REV_ID",
+    "REV"."EV_REV_PositedAt",
+    "REV"."EV_REV_Positor",
+    "REV"."EV_REV_Reliability",
+    "REV"."EV_REV_Assertion",
+    "REV"."EV_REV_Event_Revenue"
+FROM
+    public."EV_Event" "EV"
+CROSS JOIN
+    public."_Positor" p
+LEFT JOIN
+    public."ETY_EventType" "kETY_of"
+ON
+    "kETY_of"."ETY_ID" = "EV"."ETY_ID_of"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_DAT_Event_Date" r
+    ) x
+    WHERE
+        x."EV_DAT_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_DAT_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_DAT_PositedAt" DESC,
+            x."EV_DAT_Reliability" DESC
+    )
+) "DAT"
+ON
+    "DAT"."EV_ID" = "EV"."EV_ID"
+AND
+    "DAT"."EV_DAT_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_AUD_Event_Audience" r
+    ) x
+    WHERE
+        x."EV_AUD_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_AUD_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_AUD_PositedAt" DESC,
+            x."EV_AUD_Reliability" DESC
+    )
+) "AUD"
+ON
+    "AUD"."EV_ID" = "EV"."EV_ID"
+AND
+    "AUD"."EV_AUD_Positor" = p."Positor"
+LEFT JOIN (
+    -- the posit in effect for each nexus and positor
+    SELECT
+        x.*
+    FROM (
+        SELECT
+            r.*
+        FROM
+            public."rEV_REV_Event_Revenue" r
+    ) x
+    WHERE
+        x."EV_REV_Assertion" = '+'
+    LIMIT 1 OVER (
+        PARTITION BY x."EV_REV_Positor", x."EV_ID"
+        ORDER BY
+            x."EV_REV_PositedAt" DESC,
+            x."EV_REV_Reliability" DESC
+    )
+) "REV"
+ON
+    "REV"."EV_ID" = "EV"."EV_ID"
+AND
+    "REV"."EV_REV_Positor" = p."Positor"
+;
 -- TIES ---------------------------------------------------------------------------------------------------------------
 --
 -- CRT ties use posit and annex split with changing/positing time, positor, reliability, and assertion.
