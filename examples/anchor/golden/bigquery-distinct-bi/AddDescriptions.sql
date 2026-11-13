@@ -1,0 +1,62 @@
+-- DESCRIPTIONS -------------------------------------------------------------------------------------------------------
+--
+-- Descriptions in the model are added as comments on the schema, tables, and the columns holding values and
+-- references, making them available to catalogs and semantic layers.
+--
+ALTER SCHEMA dw SET OPTIONS(description='Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.');
+ALTER TABLE knots.`PAT_ParentalType` SET OPTIONS(description='Kind of parent-child relationship between two actors, such as biological or adoptive parent.');
+ALTER TABLE knots.`PAT_ParentalType` ALTER COLUMN `PAT_ParentalType` SET OPTIONS(description='Kind of parent-child relationship between two actors, such as biological or adoptive parent.');
+ALTER TABLE knots.`GEN_Gender` SET OPTIONS(description='Gender of an actor.');
+ALTER TABLE knots.`GEN_Gender` ALTER COLUMN `GEN_Gender` SET OPTIONS(description='Gender of an actor.');
+ALTER TABLE knots.`PLV_ProfessionalLevel` SET OPTIONS(description='Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.');
+ALTER TABLE knots.`PLV_ProfessionalLevel` ALTER COLUMN `PLV_ProfessionalLevel` SET OPTIONS(description='Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.');
+ALTER TABLE knots.`UTL_Utilization` SET OPTIONS(description='Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.');
+ALTER TABLE knots.`UTL_Utilization` ALTER COLUMN `UTL_Utilization` SET OPTIONS(description='Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.');
+ALTER TABLE knots.`ONG_Ongoing` SET OPTIONS(description='Yes or No flag indicating whether a relationship is still ongoing or has ended.');
+ALTER TABLE knots.`ONG_Ongoing` ALTER COLUMN `ONG_Ongoing` SET OPTIONS(description='Yes or No flag indicating whether a relationship is still ongoing or has ended.');
+ALTER TABLE knots.`RAT_Rating` SET OPTIONS(description='Rating of how well an actor performs a part in a program, such as good, mediocre or bad.');
+ALTER TABLE knots.`RAT_Rating` ALTER COLUMN `RAT_Rating` SET OPTIONS(description='Rating of how well an actor performs a part in a program, such as good, mediocre or bad.');
+ALTER TABLE attributes.`EV_DAT_Event_Date_Posit` ALTER COLUMN `EV_DAT_Event_Date` SET OPTIONS(description='Date and time when the event took place.');
+ALTER TABLE attributes.`EV_AUD_Event_Audience_Posit` ALTER COLUMN `EV_AUD_Event_Audience` SET OPTIONS(description='Number of people in the audience at the event.');
+ALTER TABLE attributes.`EV_REV_Event_Revenue_Posit` ALTER COLUMN `EV_REV_Event_Revenue` SET OPTIONS(description='Revenue from ticket sales for the event.');
+ALTER TABLE attributes.`EV_STA_Event_Status_Posit` ALTER COLUMN `EV_STA_Event_Status` SET OPTIONS(description='Status of the event, which may change until it has taken place.');
+ALTER TABLE attributes.`EV_LVL_Event_Level_Posit` ALTER COLUMN `EV_LVL_PLV_ID` SET OPTIONS(description='Professional level required for the event, over time.');
+ALTER TABLE attributes.`ST_NAM_Stage_Name_Posit` ALTER COLUMN `ST_NAM_Stage_Name` SET OPTIONS(description='Name of the stage. Historized, since a stage may be renamed over time.');
+ALTER TABLE attributes.`ST_LOC_Stage_Location_Posit` ALTER COLUMN `ST_LOC_Stage_Location` SET OPTIONS(description='Geographic location of the stage as a geography point.');
+ALTER TABLE attributes.`ST_AVG_Stage_Average_Posit` ALTER COLUMN `ST_AVG_UTL_ID` SET OPTIONS(description='Average utilization of the stage capacity, recalculated over time.');
+ALTER TABLE attributes.`ST_MIN_Stage_Minimum_Posit` ALTER COLUMN `ST_MIN_UTL_ID` SET OPTIONS(description='Minimum utilization of the stage capacity required for a performance to take place.');
+ALTER TABLE attributes.`AC_NAM_Actor_Name_Posit` ALTER COLUMN `AC_NAM_Actor_Name` SET OPTIONS(description='Name of the actor, such as a stage name. Historized, since it may change over time.');
+ALTER TABLE attributes.`AC_GEN_Actor_Gender_Posit` ALTER COLUMN `AC_GEN_GEN_ID` SET OPTIONS(description='Gender of the actor.');
+ALTER TABLE attributes.`AC_PLV_Actor_ProfessionalLevel_Posit` ALTER COLUMN `AC_PLV_PLV_ID` SET OPTIONS(description='Professional level of the actor, which may change as the actor gains experience.');
+ALTER TABLE attributes.`PR_NAM_Program_Name_Posit` ALTER COLUMN `PR_NAM_Program_Name` SET OPTIONS(description='Name or title of the program.');
+ALTER TABLE attributes.`PR_LEN_Program_Length_Posit` ALTER COLUMN `PR_LEN_Program_Length` SET OPTIONS(description='Running time of the program. Historized, since the program may be shortened or extended over time.');
+ALTER TABLE anchors.`PN_Person` SET OPTIONS(description='A person. Persons who perform are also registered as actors.');
+ALTER TABLE anchors.`ST_Stage` SET OPTIONS(description='A stage or venue where programs are played and events are held.');
+ALTER TABLE anchors.`AC_Actor` SET OPTIONS(description='An actor, a person who performs parts in programs and is cast in events.');
+ALTER TABLE nexuses.`EV_Event` SET OPTIONS(description='An event, a single performance of a program held at a stage at a specific date and time.');
+ALTER TABLE nexuses.`EV_Event` ALTER COLUMN `ST_ID_wasHeldAt` SET OPTIONS(description='The stage at which the event was held.');
+ALTER TABLE nexuses.`EV_Event` ALTER COLUMN `PR_ID_wasPlayed` SET OPTIONS(description='The program that was played at the event.');
+ALTER TABLE ties.`AC_partner_AC_with_ONG_currently_Posit` SET OPTIONS(description='Marriage or domestic partnership between two actors. This is a one-to-one relationship, since an actor can have at most one partner at any point in time. History is never deleted, so the end of a partnership is recorded by changing its ongoing status to No.');
+ALTER TABLE ties.`AC_partner_AC_with_ONG_currently_Posit` ALTER COLUMN `AC_ID_partner` SET OPTIONS(description='One of the actors in the partnership.');
+ALTER TABLE ties.`AC_partner_AC_with_ONG_currently_Posit` ALTER COLUMN `AC_ID_with` SET OPTIONS(description='The other actor in the partnership.');
+ALTER TABLE ties.`AC_partner_AC_with_ONG_currently_Posit` ALTER COLUMN `ONG_ID_currently` SET OPTIONS(description='Whether the partnership is still ongoing (Yes) or has ended (No).');
+ALTER TABLE ties.`AC_subset_PN_of_Posit` ALTER COLUMN `AC_ID_subset` SET OPTIONS(description='An actor, a person who performs parts in programs and is cast in events.');
+ALTER TABLE ties.`AC_subset_PN_of_Posit` ALTER COLUMN `PN_ID_of` SET OPTIONS(description='The person who is the actor.');
+ALTER TABLE ties.`EV_in_AC_wasCast_Posit` SET OPTIONS(description='The actors that were cast in an event, meaning those who performed at that performance.');
+ALTER TABLE ties.`EV_in_AC_wasCast_Posit` ALTER COLUMN `EV_ID_in` SET OPTIONS(description='The event the actor was cast in.');
+ALTER TABLE ties.`EV_in_AC_wasCast_Posit` ALTER COLUMN `AC_ID_wasCast` SET OPTIONS(description='An actor cast in the event.');
+ALTER TABLE ties.`AC_part_PR_in_RAT_got_Posit` SET OPTIONS(description='Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.');
+ALTER TABLE ties.`AC_part_PR_in_RAT_got_Posit` ALTER COLUMN `AC_ID_part` SET OPTIONS(description='The actor having a part in the program.');
+ALTER TABLE ties.`AC_part_PR_in_RAT_got_Posit` ALTER COLUMN `PR_ID_in` SET OPTIONS(description='The program the actor has a part in.');
+ALTER TABLE ties.`AC_part_PR_in_RAT_got_Posit` ALTER COLUMN `RAT_ID_got` SET OPTIONS(description='The rating the actor got for the part.');
+ALTER TABLE ties.`ST_at_PR_isPlaying_Posit` SET OPTIONS(description='Programs that are currently playing at stages, meaning which stage is running which program. Historized over time.');
+ALTER TABLE ties.`ST_at_PR_isPlaying_Posit` ALTER COLUMN `ST_ID_at` SET OPTIONS(description='The stage where the program is playing.');
+ALTER TABLE ties.`ST_at_PR_isPlaying_Posit` ALTER COLUMN `PR_ID_isPlaying` SET OPTIONS(description='The program playing at the stage.');
+ALTER TABLE ties.`AC_parent_AC_child_PAT_having_Posit` SET OPTIONS(description='Parent-child relationships between actors, along with the type of parental relationship.');
+ALTER TABLE ties.`AC_parent_AC_child_PAT_having_Posit` ALTER COLUMN `AC_ID_parent` SET OPTIONS(description='The actor who is the parent.');
+ALTER TABLE ties.`AC_parent_AC_child_PAT_having_Posit` ALTER COLUMN `AC_ID_child` SET OPTIONS(description='The actor who is the child.');
+ALTER TABLE ties.`AC_parent_AC_child_PAT_having_Posit` ALTER COLUMN `PAT_ID_having` SET OPTIONS(description='The type of parental relationship.');
+ALTER TABLE ties.`PR_content_ST_location_EV_of_Posit` SET OPTIONS(description='The program content and stage location of an event, connecting each event to what was played and where. This deliberately repeats the wasHeldAt and wasPlayed roles of the Event nexus, to show that the same fact can be modeled either as nexus roles or as a tie.');
+ALTER TABLE ties.`PR_content_ST_location_EV_of_Posit` ALTER COLUMN `PR_ID_content` SET OPTIONS(description='The program that made up the content of the event.');
+ALTER TABLE ties.`PR_content_ST_location_EV_of_Posit` ALTER COLUMN `ST_ID_location` SET OPTIONS(description='The stage where the event was located.');
+ALTER TABLE ties.`PR_content_ST_location_EV_of_Posit` ALTER COLUMN `EV_ID_of` SET OPTIONS(description='The event.');
