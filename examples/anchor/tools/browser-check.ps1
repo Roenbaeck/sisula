@@ -83,7 +83,7 @@ if (-not $Variant) {
     # handwritten is, on purpose, not a model the modeler would save (see make-variants.ps1), so
     # the modeler reads it differently, so it is left out here and only run through check.ps1.
     $Variant = Get-ChildItem (Join-Path $root 'models') -Filter *.xml | Sort-Object Name |
-        ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^handwritten' }
+        ForEach-Object { $_.BaseName } | Where-Object { $_ -notmatch '^(sqlserver-)?handwritten' }
 }
 $Variant = @($Variant | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 $utf8 = New-Object Text.UTF8Encoding($false)
