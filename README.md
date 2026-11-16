@@ -21,7 +21,7 @@ This repository holds the **core engine**: one renderer, one language reference 
 
 ### The previous engine
 
-Earlier versions of this repository held a different engine, the "Sisulator", which translated templates to JScript with regular expressions and evaluated the result against an object built from XML. It is no longer here. It lives on in the Anchor Modeler's built-in generator and in the ETL framework, which has its own repository, [dw-framework](https://github.com/Roenbaeck/dw-framework), with the full history of the old branch.
+Earlier versions of this repository held a different engine, the "Sisulator", which translated templates to JScript with regular expressions and evaluated the result against an object built from XML. It is retired. It is no longer here, and since 2026-11-16 it is not in the Anchor Modeler (0.101.16: `modules/Objectifier.js` turns a model into the object that the bindings are made from, and the templates are rendered by this engine) or in the ETL framework [dw-framework](https://github.com/Roenbaeck/dw-framework) either, which renders every output with this engine too. The old code is in their histories: Anchor before `cec2a7b`, dw-framework before `7e620ea` (its last commit that has `Sisulator.js` is `273eccf`), and the full history of the old ETL branch is in dw-framework.
 
 ### History
 
