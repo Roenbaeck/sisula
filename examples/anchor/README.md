@@ -104,7 +104,7 @@ with a nexus role and no identifiers, an encrypted attribute and capsules of the
 
 ```
 model.xml --xml-to-tree--> neutral tree --DomFacade--> DOM
-   DOM --Sisulator.objectify, then the scripts the directive starts with--> schema
+   DOM --Objectifier.objectify, then the scripts the directive starts with--> schema
    schema --Resolver.resolve--> bindings JSON --sisulate(template), in directive order--> SQL
 ```
 
