@@ -80,9 +80,7 @@ $engine.SetValue('host', (New-Object SisulaGoldenHost $Anchor)) | Out-Null
 $engine.Execute('var XPathResult;') | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\DomFacade.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Map.js'))) | Out-Null
-# Anchor's own Sisulator.objectify and Resolver. The Sisulator also holds the original engine, whose
-# async/await Jint 2 cannot parse; it is not used here, so they are stripped.
-$engine.Execute(((Read-Text (Join-Path $Anchor 'modules\Sisulator.js')) -replace '\basync\s+', '' -replace '\bawait\s+', '')) | Out-Null
+$engine.Execute((Read-Text (Join-Path $Anchor 'modules\Objectifier.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\Resolver.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $here 'resolve-model.js'))) | Out-Null
 $engine.Execute((Read-Text (Join-Path $Anchor 'modules\sisula.js'))) | Out-Null

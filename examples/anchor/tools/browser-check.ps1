@@ -190,6 +190,23 @@ $harness = @'
                                 results.push(r);
                             }
                         }
+                        var originalGetDirectives = Actions.getDirectives;
+                        var invalidDirectives = [
+                            { text: 'SQL/old.js', message: 'Legacy JavaScript sisulets' },
+                            { text: 'SQL/old.js\nSQL/new.sisula', message: 'Legacy JavaScript sisulets' },
+                            { text: '# empty directive', message: 'does not list any Sisula templates' }
+                        ];
+                        for (var i = 0; i < invalidDirectives.length; i++) {
+                            var test = invalidDirectives[i], failure = null;
+                            Actions.getDirectives = async function () { return test.text; };
+                            try { await Actions.sql(); }
+                            catch (e) { failure = String(e && e.message || e); }
+                            if (!failure || failure.indexOf(test.message) < 0) {
+                                report('ERROR invalid directive was not rejected: ' + test.text + '; ' + failure);
+                                return;
+                            }
+                        }
+                        Actions.getDirectives = originalGetDirectives;
                         report('BASE64:' + toBase64(JSON.stringify(results)));
                     })();
                     return;
