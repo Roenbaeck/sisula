@@ -1,23 +1,19 @@
-# Anchor to Snowflake and SQL Server, in Sisula dialect B
+# Checking Anchor's generators: the models, the golden files and the tools
 
-The Anchor Modeler's Snowflake and SQL Server generators (uni-, bi- and concurrent-reliance-temporal),
-ported from JScript sisulets that are `eval`'d against a live object graph to declarative Sisula
-templates over JSON. This folder was called `anchor-snowflake` until it held SQL Server too, so
-older commits name it that way.
+The Anchor Modeler generates SQL for SQL Server, Snowflake, PostgreSQL, Vertica, BigQuery and Oracle (uni-, bi- and
+concurrent-reliance-temporal; Oracle has no bi) from declarative Sisula templates over JSON bindings. This folder was called
+`anchor-snowflake` until it held SQL Server too, so older commits name it that way.
 
-**The templates live in the Anchor repository now**, as `SQL/Snowflake/{uni,bi,crt}/*.sisula`, listed by
-Anchor's `Snowflake_{uni,bi,crt}.directive`, and the modeler renders them with the vendored engine
-(`modules/sisula.js`). This folder is what checks them: the models, the golden files, and the tools
-that compare. The golden files used to come from the original JScript sisulets, which were the
-independent check while the templates were written; once the output had been run on Snowflake those
-sisulets, and the legacy directives that listed them, were removed from Anchor, and so were SQL Server's once
-its output had been run on a SQL Server. They are in the git history of both repositories (`tools/golden.ps1`
-here, at commit `2115504`, shows how they were run), and the sisulets of the Snowflake constructs that are not
-ported yet (triggers, key generators, restatement constraints) are still in Anchor as the record of what is missing.
+**The templates live in the Anchor repository**, as `SQL/<Database>/{uni,bi,crt}/*.sisula`, listed by Anchor's
+`<Database>_{uni,bi,crt}.directive`, and the modeler renders them with the vendored engine (`modules/sisula.js`). This folder is
+what checks them: the models, the golden files, and the tools that compare. The golden files of Snowflake and SQL Server were
+first made by the original JScript sisulets, which were the independent check while the templates were written; once the output
+had been run on a server those sisulets, and the legacy directives that listed them, were removed from Anchor, and the original
+evaluator (the Sisulator) was retired on 2026-11-16. They are in the git history of both repositories (`tools/golden.ps1` here, at
+commit `2115504`, shows how they were run). The golden files are approved output now: a change to a template changes them, and the
+change is read in `git diff` before it is committed. What checks them independently is below.
 
-The port is complete for what the modeler generates, and has grown since: 15 templates for uni, 15 for bi and 16
-for crt (bi and crt share uni's `AddDescriptions` and `CreateKeys`). For every model in `models/` the generated SQL is checked
-these ways:
+Every model in `models/` is checked these ways:
 
 | Check | Compares | Needs |
 |---|---|---|
@@ -274,6 +270,6 @@ Anchor's `HANDOVER-sisula-port.md`. These remain.)
 
 - The planted-bug check above was done for uni only. For bi and crt the agreement with the original
   engine on 11 models each is the evidence; no bugs were planted.
-- The Snowflake sisulets that the directive does not enable: triggers, key generators,
-  restatement constraints, business perspectives and schema tracking. The modeler does not
-  generate them for Snowflake.
+- Snowflake's triggers, key generators, restatement constraints, business perspectives and schema tracking: the originals
+  were deleted from Anchor on 2026-11-16 (the last Anchor commit that has them is `cec2a7b`). The modeler does not generate them
+  for Snowflake, which has integrity checks, keys as metadata and assembled views instead.
