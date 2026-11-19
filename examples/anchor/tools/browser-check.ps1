@@ -45,8 +45,8 @@
 
     Nothing is written to the Anchor checkout. A copy of index.html is made in a temporary folder
     with a <base> pointing at the checkout, so every script, directive and sisulet is read from it
-    unchanged. The copy leaves out the two Google Fonts links, so the run needs no network, and
-    adds one script that
+    unchanged. If the page still has Google Fonts links (older versions do), the copy leaves them out,
+    so the run needs no network. It adds one script that
       - answers the modeler's alert and confirm dialogs (confirm answers yes, as a user accepting
         the model's settings would),
       - serves fetch() through XMLHttpRequest, since Chromium's fetch cannot read file:// URLs,
@@ -95,7 +95,8 @@ New-Item -ItemType Directory $work | Out-Null
 $page = [IO.File]::ReadAllText((Join-Path $Anchor 'index.html'), [Text.Encoding]::UTF8)
 $baseHref = 'file:///' + ($Anchor -replace '\\', '/').TrimEnd('/') + '/'
 $fonts = [regex]::Matches($page, '<link href=''https://fonts\.googleapis\.com/[^>]*>')
-if ($fonts.Count -ne 2) { throw "Expected two Google Fonts links in index.html, found $($fonts.Count)." }
+# older versions of the modeler load two web fonts; newer ones use the system fonts and have none
+if ($fonts.Count -ne 0 -and $fonts.Count -ne 2) { throw "Expected no or two Google Fonts links in index.html, found $($fonts.Count)." }
 foreach ($f in $fonts) { $page = $page.Replace($f.Value, '') }
 # The page's own <head> is the first one and its </body> the last; the others are inside a
 # JavaScript string that writes a documentation page.
