@@ -159,6 +159,35 @@
         expect(Model.version === version + 1, 'the version did not move on');
     });
 
+    test('the model tells its listeners about changes, and the history buttons listen', async function () {
+        await fresh();
+        var seen = { changed: 0, history: [], replaced: 0, after: 0 };
+        var onChanged = function () { seen.changed++; }, onHistory = function (d) { seen.history.push(d.undo + '/' + d.redo); }, onReplaced = function () { seen.replaced++; };
+        var failing = function () { throw new Error('a listener that fails'); }, afterFailing = function () { seen.after++; };
+        Model.on('changed', failing); Model.on('changed', afterFailing);
+        Model.on('changed', onChanged); Model.on('history', onHistory); Model.on('replaced', onReplaced);
+        var errors = console.error; console.error = function () {};
+        try {
+            Model.addAttribute([ofType(NodeType.ANCHOR)[0]]);
+            expect(seen.changed >= 1, 'no changed event');
+            expect(seen.after >= 1, 'a listener that fails stopped the next one');
+            var last = seen.history[seen.history.length - 1].split('/');
+            expect(Number(last[0]) === Model.version && last[1] === '0', 'history event ' + seen.history.join(' '));
+            expect(document.getElementById('undo').firstChild.nodeValue === 'Undo (' + Model.version + ')', 'the undo button says ' + document.getElementById('undo').firstChild.nodeValue);
+            ControlButtons.undo(); await settle();
+            expect(seen.replaced >= 1, 'no replaced event after an undo');
+            expect(document.getElementById('redo').firstChild.nodeValue === 'Redo (1)', 'the redo button says ' + document.getElementById('redo').firstChild.nodeValue);
+            Model.off('changed', onChanged);
+            var count = seen.changed;
+            Model.addAttribute([ofType(NodeType.ANCHOR)[0]]);
+            expect(seen.changed === count, 'a listener that was removed was still told');
+        } finally {
+            console.error = errors;
+            Model.off('changed', failing); Model.off('changed', afterFailing); Model.off('changed', onChanged);
+            Model.off('history', onHistory); Model.off('replaced', onReplaced);
+        }
+    });
+
     test('the history is limited', async function () {
         Model.clearStates();
         for (var i = 0; i < Model.maxUndoLevels + 30; i++) Model.recordState();
