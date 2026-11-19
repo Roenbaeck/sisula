@@ -12,6 +12,14 @@
     function sleep(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
     // waits until the layout has settled (the engine stops), as a user would before the next click
     async function settle() { for (var i = 0; i < 30 && DrawingEngine.running; i++) await sleep(50); await sleep(50); }
+    // presses undo or redo until the history is at a version, and fails with what it found instead of going on for ever
+    async function stepTo(target, forward) {
+        for (var n = 0; forward ? Model.version < target : Model.version > target; n++) {
+            if (n > 30) throw new Error('stuck at version ' + Model.version + ' on the way to ' + target + ' (states 0 to ' + (Model.versions.length - 1) + ', restoring ' + DrawingEngine.restoring + ', engine running ' + DrawingEngine.running + ', newState ' + DrawingEngine.newState + ')');
+            if (forward) ControlButtons.redo(); else ControlButtons.undo();
+            await settle();
+        }
+    }
     function expect(condition, message) { if (!condition) throw new Error(message); }
 
     // A short fingerprint of the model as it would be saved: without the positions (they come from the physics), without what
@@ -137,14 +145,14 @@
         var sizesBefore = sizes();
         // some operations record more than one state, so the walk goes to the states that were fingerprinted
         for (var i = versions.length - 1; i >= 0; i--) {
-            while (Model.version > versions[i]) { ControlButtons.undo(); await settle(); }
+            await stepTo(versions[i], false);
             expect(Model.version === versions[i], 'at version ' + Model.version + ', expected ' + versions[i]);
             expect(fingerprint() === fps[versions[i]], 'undo state ' + versions[i] + ' differs ' + difference(xmlOf(), xmls[versions[i]]));
         }
         var sizesAfter = sizes();
         expect(sizesBefore === sizesAfter, 'loading a saved state changed it: sizes ' + sizesBefore + ' became ' + sizesAfter);
         for (i = 1; i < versions.length; i++) {
-            while (Model.version < versions[i]) { ControlButtons.redo(); await settle(); }
+            await stepTo(versions[i], true);
             expect(fingerprint() === fps[versions[i]], 'redo state ' + versions[i] + ' (model at ' + Model.version + ' of ' + (Model.versions.length - 1) + '; fingerprinted versions ' + versions + ') differs ' + difference(xmlOf(), xmls[versions[i]]));
         }
     });
@@ -426,6 +434,79 @@
 
     test('there is no cloud and the gist loader is there', async function () {
         expect(!document.getElementById('cloud') && typeof Actions.loadModelFromGist === 'function', 'cloud or gist wrong');
+    });
+
+    // What every control of the menu bar does, found without doing it: the functions of Actions and Settings, and the few
+    // others that the menus call, are replaced by recorders, and each menu item is clicked and each field is changed.
+    // What is recorded for a control is the list of calls it made. A control that is wired in another way, but calls the
+    // same functions with the same arguments, gives the same record.
+    test('every menu item and every settings field calls what it called', async function () {
+        await load(window.__MODELS['example.xml']);
+        var calls = [], restore = [];
+        function show(a) {
+            if (typeof a === 'string') return a.length > 60 ? '<string>' : JSON.stringify(a);
+            if (a && a.nodeType) return '<element ' + (a.id || a.nodeName) + '>';
+            if (a && typeof a === 'object') return '<object>';
+            return String(a);
+        }
+        function recorder(name) { return function () { calls.push(name + '(' + Array.prototype.map.call(arguments, show).join(', ') + ')'); }; }
+        // a few menu items call a function of Actions that only makes the calls the markup used to make itself (see Wiring.js);
+        // it is left as it is, so that what is recorded for the item is those calls, as it was
+        var wrappers = ['chooseModelFile', 'saveSettingsInBrowser', 'saveModelToDisk', 'saveSVGToDisk', 'mailModel', 'resetView', 'screenshotSVG', 'screenshotPNG', 'openTutorials', 'openAbout'];
+        function replaceAll(owner, ownerName) {
+            Object.keys(owner).forEach(function (k) {
+                if (typeof owner[k] === 'function' && wrappers.indexOf(k) < 0) { restore.push([owner, k, owner[k]]); owner[k] = recorder(ownerName + '.' + k); }
+            });
+        }
+        replaceAll(Actions, 'Actions'); replaceAll(Settings, 'Settings');
+        ['save', 'URLPopover'].forEach(function (g) { restore.push([window, g, window[g]]); window[g] = recorder(g); });
+        restore.push([HTMLInputElement.prototype, 'click', HTMLInputElement.prototype.click]);
+        HTMLInputElement.prototype.click = function () { calls.push('input.click(' + this.id + ')'); };
+        var controls = Array.prototype.slice.call(document.querySelectorAll('#header li, #header input, #header select'));
+        var seen = {};
+        try {
+            controls.forEach(function (el, i) {
+                var menu = el.closest('.menu'), label = el.tagName === 'LI' ? el.textContent.replace(/\s+/g, ' ').trim().slice(0, 40) : (el.id || 'field' + i);
+                var key = 'wiring.' + (el.tagName === 'LI' ? 'item.' : 'field.') + (menu ? menu.id : 'bar') + '.' + label;
+                if (seen[key]) key += '#' + i;
+                seen[key] = true;
+                var before = calls.length;
+                if (el.tagName === 'LI') {
+                    el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                } else {
+                    var value = el.value, checked = el.checked, index = el.selectedIndex;
+                    if (el.type === 'checkbox') el.checked = !el.checked;
+                    else if (el.tagName === 'SELECT') el.selectedIndex = el.options.length - 1;
+                    else if (el.type === 'number') el.value = '5';
+                    else el.value = 'x';
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    el.dispatchEvent(new Event('blur'));
+                    if (el.id === 'searchFilter' || el.id === 'nodeSelector') { el.dispatchEvent(new Event('focus')); el.dispatchEvent(new MouseEvent('mouseover')); }
+                    el.value = value; el.checked = checked; el.selectedIndex = index;
+                }
+                record(key, calls.slice(before).join(' ; ') || '-');
+            });
+        } finally {
+            restore.reverse().forEach(function (r) { r[0][r[1]] = r[2]; });
+        }
+        expect(controls.length > 80, 'only ' + controls.length + ' controls');
+    });
+
+    test('the item that loads a model can be opened with Enter and Space on the keyboard', async function () {
+        var item = Array.prototype.filter.call(document.querySelectorAll('#file li'), function (li) { return /Load model from local file/.test(li.textContent); })[0];
+        expect(item && item.getAttribute('tabindex') === '0', 'no focusable item');
+        var clicks = [], click = HTMLInputElement.prototype.click;
+        HTMLInputElement.prototype.click = function () { clicks.push(this.id); };
+        try {
+            var enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+            item.dispatchEvent(enter);
+            var space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+            item.dispatchEvent(space);
+            var other = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+            item.dispatchEvent(other);
+        } finally { HTMLInputElement.prototype.click = click; }
+        expect(clicks.join() === 'modelFileInput,modelFileInput', 'clicks: ' + clicks.join());
+        expect(enter.defaultPrevented && space.defaultPrevented && !other.defaultPrevented, 'the keys were not handled as they should');
     });
 
     test('the menus offer what they did', async function () {
