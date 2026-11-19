@@ -12,7 +12,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "PR_ID_wasPlayed" COMMENT 'The program that was played at the event.',
     "of_ETY_Checksum",
     "of_ETY_EventType",
-    "of_ETY_EQ",
     "of_Metadata_ETY",
     "ETY_ID_of",
     "EV_DAT_EV_ID",
@@ -20,7 +19,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "EV_DAT_Event_Date" COMMENT 'Date and time when the event took place.',
     "EV_AUD_EV_ID",
     "Metadata_EV_AUD",
-    "EV_AUD_EQ",
     "EV_AUD_Event_Audience" COMMENT 'Number of people in the audience at the event.',
     "EV_REV_EV_ID",
     "Metadata_EV_REV",
@@ -28,7 +26,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "EV_STA_EV_ID",
     "Metadata_EV_STA",
     "EV_STA_ChangedAt",
-    "EV_STA_EQ",
     "EV_STA_Event_Status" COMMENT 'Status of the event, which may change until it has taken place.',
     "EV_UTL_EV_ID",
     "Metadata_EV_UTL",
@@ -39,7 +36,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "Metadata_EV_LVL",
     "EV_LVL_ChangedAt",
     "EV_LVL_PLV_Checksum",
-    "EV_LVL_PLV_EQ",
     "EV_LVL_PLV_ProfessionalLevel" COMMENT 'Professional level required for the event, over time.',
     "EV_LVL_Metadata_PLV",
     "EV_LVL_PLV_ID" COMMENT 'Professional level required for the event, over time.'
@@ -52,7 +48,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -60,7 +55,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -68,7 +62,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -79,14 +72,13 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
 FROM
     nexuses."EV_Event" "EV"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -94,7 +86,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -102,7 +94,7 @@ LEFT JOIN
 ON
     "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_STA_Event_Status"(0)) "STA"
+    attributes."EV_STA_Event_Status" "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
@@ -110,7 +102,7 @@ AND
         SELECT
             max(sub."EV_STA_ChangedAt")
         FROM
-            TABLE(attributes."eEV_STA_Event_Status"(0)) sub 
+            attributes."EV_STA_Event_Status" sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
    )
@@ -136,7 +128,7 @@ AND
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID";
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -152,7 +144,6 @@ RETURNS TABLE (
     "PR_ID_wasPlayed" number(10,0),
     "of_ETY_Checksum" numeric(19,0),
     "of_ETY_EventType" varchar(42),
-    "of_ETY_EQ" tinyint,
     "of_Metadata_ETY" int,
     "ETY_ID_of" tinyint,
     "EV_DAT_EV_ID" numeric(12,0),
@@ -160,7 +151,6 @@ RETURNS TABLE (
     "EV_DAT_Event_Date" datetime,
     "EV_AUD_EV_ID" numeric(12,0),
     "Metadata_EV_AUD" int,
-    "EV_AUD_EQ" tinyint,
     "EV_AUD_Event_Audience" int,
     "EV_REV_EV_ID" numeric(12,0),
     "Metadata_EV_REV" int,
@@ -168,7 +158,6 @@ RETURNS TABLE (
     "EV_STA_EV_ID" numeric(12,0),
     "Metadata_EV_STA" int,
     "EV_STA_ChangedAt" datetime,
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_UTL_EV_ID" numeric(12,0),
     "Metadata_EV_UTL" int,
@@ -179,7 +168,6 @@ RETURNS TABLE (
     "Metadata_EV_LVL" int,
     "EV_LVL_ChangedAt" date,
     "EV_LVL_PLV_Checksum" numeric(19,0),
-    "EV_LVL_PLV_EQ" tinyint,
     "EV_LVL_PLV_ProfessionalLevel" string,
     "EV_LVL_Metadata_PLV" int,
     "EV_LVL_PLV_ID" tinyint
@@ -193,7 +181,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -201,7 +188,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -209,7 +195,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -220,14 +205,13 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
 FROM
     nexuses."EV_Event" "EV"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -235,7 +219,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -243,7 +227,7 @@ LEFT JOIN
 ON
     "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."rEV_STA_Event_Status"(0, changingTimepoint::datetime)) "STA"
+    TABLE(attributes."rEV_STA_Event_Status"(changingTimepoint::datetime)) "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
@@ -251,7 +235,7 @@ AND
         SELECT
             max(sub."EV_STA_ChangedAt")
         FROM
-            TABLE(attributes."rEV_STA_Event_Status"(0, changingTimepoint::datetime)) sub
+            TABLE(attributes."rEV_STA_Event_Status"(changingTimepoint::datetime)) sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
    )
@@ -277,7 +261,7 @@ AND
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
@@ -307,7 +291,6 @@ RETURNS TABLE (
     "PR_ID_wasPlayed" number(10,0),
     "of_ETY_Checksum" numeric(19,0),
     "of_ETY_EventType" varchar(42),
-    "of_ETY_EQ" tinyint,
     "of_Metadata_ETY" int,
     "ETY_ID_of" tinyint,
     "EV_DAT_EV_ID" numeric(12,0),
@@ -315,7 +298,6 @@ RETURNS TABLE (
     "EV_DAT_Event_Date" datetime,
     "EV_AUD_EV_ID" numeric(12,0),
     "Metadata_EV_AUD" int,
-    "EV_AUD_EQ" tinyint,
     "EV_AUD_Event_Audience" int,
     "EV_REV_EV_ID" numeric(12,0),
     "Metadata_EV_REV" int,
@@ -323,7 +305,6 @@ RETURNS TABLE (
     "EV_STA_EV_ID" numeric(12,0),
     "Metadata_EV_STA" int,
     "EV_STA_ChangedAt" datetime,
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_UTL_EV_ID" numeric(12,0),
     "Metadata_EV_UTL" int,
@@ -334,7 +315,6 @@ RETURNS TABLE (
     "Metadata_EV_LVL" int,
     "EV_LVL_ChangedAt" date,
     "EV_LVL_PLV_Checksum" numeric(19,0),
-    "EV_LVL_PLV_EQ" tinyint,
     "EV_LVL_PLV_ProfessionalLevel" string,
     "EV_LVL_Metadata_PLV" int,
     "EV_LVL_PLV_ID" tinyint
@@ -353,7 +333,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -361,7 +340,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -369,7 +347,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -380,7 +357,6 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
@@ -390,7 +366,7 @@ FROM (
         h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'STA' AS mnemonic
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+        attributes."EV_STA_Event_Status" h
     WHERE
         (selection IS NULL OR selection LIKE '%STA%')
     AND
@@ -412,7 +388,7 @@ JOIN
 ON
     "EV"."EV_ID" = timepoints."EV_ID"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -420,7 +396,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -435,7 +411,7 @@ LEFT JOIN (
             ORDER BY h."EV_STA_ChangedAt"
         ) AS "until"
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+        attributes."EV_STA_Event_Status" h
 ) "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
@@ -474,7 +450,7 @@ OR
     "LVL"."until" > timepoints.inspectedTimepoint::date
 )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$

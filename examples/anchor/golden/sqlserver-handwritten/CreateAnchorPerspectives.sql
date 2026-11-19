@@ -43,11 +43,9 @@ SELECT
     [NAM].ST_NAM_ST_ID,
     [NAM].Metadata_ST_NAM,
     [NAM].ST_NAM_ChangedAt,
-    [NAM].ST_NAM_EQ,
     [NAM].ST_NAM_Stage_Name,
     [LOC].ST_LOC_ST_ID,
     [LOC].Metadata_ST_LOC,
-    [LOC].ST_LOC_EQ,
     [LOC].ST_LOC_Checksum,
     [LOC].ST_LOC_Stage_Location,
     [AVG].ST_AVG_ST_ID,
@@ -65,7 +63,7 @@ SELECT
 FROM
     [anchors].[ST_Stage] [ST]
 LEFT JOIN
-    [attributes].[eST_NAM_Stage_Name](0) [NAM]
+    [attributes].[ST_NAM_Stage_Name] [NAM]
 ON
     [NAM].ST_NAM_ST_ID = [ST].ST_ID
 AND
@@ -73,12 +71,12 @@ AND
         SELECT
             max(sub.ST_NAM_ChangedAt)
         FROM
-            [attributes].[eST_NAM_Stage_Name](0) sub 
+            [attributes].[ST_NAM_Stage_Name] sub
         WHERE
             sub.ST_NAM_ST_ID = [ST].ST_ID
    )
 LEFT JOIN
-    [attributes].[eST_LOC_Stage_Location](0) [LOC]
+    [attributes].[ST_LOC_Stage_Location] [LOC]
 ON
     [LOC].ST_LOC_ST_ID = [ST].ST_ID
 LEFT JOIN
@@ -120,11 +118,9 @@ SELECT
     [NAM].ST_NAM_ST_ID,
     [NAM].Metadata_ST_NAM,
     [NAM].ST_NAM_ChangedAt,
-    [NAM].ST_NAM_EQ,
     [NAM].ST_NAM_Stage_Name,
     [LOC].ST_LOC_ST_ID,
     [LOC].Metadata_ST_LOC,
-    [LOC].ST_LOC_EQ,
     [LOC].ST_LOC_Checksum,
     [LOC].ST_LOC_Stage_Location,
     [AVG].ST_AVG_ST_ID,
@@ -141,7 +137,7 @@ SELECT
 FROM
     [anchors].[ST_Stage] [ST]
 LEFT JOIN
-    [attributes].[rST_NAM_Stage_Name](0, @changingTimepoint) [NAM]
+    [attributes].[rST_NAM_Stage_Name](@changingTimepoint) [NAM]
 ON
     [NAM].ST_NAM_ST_ID = [ST].ST_ID
 AND
@@ -149,12 +145,12 @@ AND
         SELECT
             max(sub.ST_NAM_ChangedAt)
         FROM
-            [attributes].[rST_NAM_Stage_Name](0, @changingTimepoint) sub 
+            [attributes].[rST_NAM_Stage_Name](@changingTimepoint) sub
         WHERE
             sub.ST_NAM_ST_ID = [ST].ST_ID
    )
 LEFT JOIN
-    [attributes].[eST_LOC_Stage_Location](0) [LOC]
+    [attributes].[ST_LOC_Stage_Location] [LOC]
 ON
     [LOC].ST_LOC_ST_ID = [ST].ST_ID
 LEFT JOIN
@@ -212,7 +208,7 @@ FROM (
         ST_NAM_ChangedAt AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        [attributes].[eST_NAM_Stage_Name](0) 
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         (@selection is null OR @selection like '%NAM%')
     AND
@@ -265,7 +261,6 @@ SELECT
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
     [kPLV].PLV_Checksum AS AC_PLV_PLV_Checksum,
-    [kPLV].PLV_EQ AS AC_PLV_PLV_EQ,
     [kPLV].PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
     [kPLV].Metadata_PLV AS AC_PLV_Metadata_PLV,
     [PLV].AC_PLV_PLV_ID
@@ -306,7 +301,7 @@ AND
             sub.AC_PLV_AC_ID = [AC].AC_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kPLV]
+    [knots].[PLV_ProfessionalLevel] [kPLV]
 ON
     [kPLV].PLV_ID = [PLV].AC_PLV_PLV_ID;
 GO
@@ -334,7 +329,6 @@ SELECT
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
     [kPLV].PLV_Checksum AS AC_PLV_PLV_Checksum,
-    [kPLV].PLV_EQ AS AC_PLV_PLV_EQ,
     [kPLV].PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
     [kPLV].Metadata_PLV AS AC_PLV_Metadata_PLV,
     [PLV].AC_PLV_PLV_ID
@@ -375,7 +369,7 @@ AND
             sub.AC_PLV_AC_ID = [AC].AC_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kPLV]
+    [knots].[PLV_ProfessionalLevel] [kPLV]
 ON
     [kPLV].PLV_ID = [PLV].AC_PLV_PLV_ID;
 GO

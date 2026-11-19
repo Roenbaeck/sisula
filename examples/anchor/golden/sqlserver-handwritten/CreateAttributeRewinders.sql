@@ -14,18 +14,16 @@ IF Object_ID('attributes.rEV_STA_Event_Status','IF') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rEV_STA_Event_Status] (
-        @equivalent tinyint,
         @changingTimepoint datetime2
     )
     RETURNS TABLE WITH SCHEMABINDING AS RETURN
     SELECT
         Metadata_EV_STA,
         EV_STA_EV_ID,
-        EV_STA_EQ,
         EV_STA_Event_Status,
         EV_STA_ChangedAt
     FROM
-        [attributes].[eEV_STA_Event_Status](@equivalent)
+        [attributes].[EV_STA_Event_Status]
     WHERE
         EV_STA_ChangedAt <= @changingTimepoint;
     ');
@@ -60,18 +58,16 @@ IF Object_ID('attributes.rST_NAM_Stage_Name','IF') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rST_NAM_Stage_Name] (
-        @equivalent tinyint,
         @changingTimepoint datetime2
     )
     RETURNS TABLE WITH SCHEMABINDING AS RETURN
     SELECT
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name,
         ST_NAM_ChangedAt
     FROM
-        [attributes].[eST_NAM_Stage_Name](@equivalent)
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         ST_NAM_ChangedAt <= @changingTimepoint;
     ');

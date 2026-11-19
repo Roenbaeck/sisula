@@ -243,13 +243,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -278,13 +277,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -326,13 +324,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -446,13 +443,12 @@ SELECT
     tie.AC_ID_parent,
     tie.AC_ID_child,
     [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
-    [PAT_having].PAT_EQ AS having_PAT_EQ,
     [PAT_having].Metadata_PAT AS having_Metadata_PAT,
     tie.PAT_ID_having
 FROM
     [ties].[AC_parent_AC_child_PAT_having] tie
 LEFT JOIN
-    [knots].[ePAT_ParentalType](0) [PAT_having]
+    [knots].[PAT_ParentalType] [PAT_having]
 ON
     [PAT_having].PAT_ID = tie.PAT_ID_having;
 GO
@@ -468,13 +464,12 @@ SELECT
     tie.AC_ID_parent,
     tie.AC_ID_child,
     [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
-    [PAT_having].PAT_EQ AS having_PAT_EQ,
     [PAT_having].Metadata_PAT AS having_Metadata_PAT,
     tie.PAT_ID_having
 FROM
     [ties].[AC_parent_AC_child_PAT_having] tie
 LEFT JOIN
-    [knots].[ePAT_ParentalType](0) [PAT_having]
+    [knots].[PAT_ParentalType] [PAT_having]
 ON
     [PAT_having].PAT_ID = tie.PAT_ID_having;
 GO

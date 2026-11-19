@@ -22,14 +22,12 @@ CREATE TABLE IF NOT EXISTS attributes."EV_DAT_Event_Date" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."EV_AUD_Event_Audience" (
     "EV_AUD_EV_ID" numeric(12,0) not null,
-    "EV_AUD_EQ" tinyint not null,
     "EV_AUD_Event_Audience" int not null,
     "Metadata_EV_AUD" int not null,
     constraint "fkEV_AUD_Event_Audience" foreign key (
         "EV_AUD_EV_ID"
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "pkEV_AUD_Event_Audience" primary key (
-        "EV_AUD_EQ",
         "EV_AUD_EV_ID"
     ) RELY
 ) CLUSTER BY ("EV_AUD_EV_ID");
@@ -52,7 +50,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_REV_Event_Revenue" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status" (
     "EV_STA_EV_ID" numeric(12,0) not null,
-    "EV_STA_EQ" tinyint not null,
     "EV_STA_Event_Status" varchar(20) not null,
     "EV_STA_ChangedAt" datetime not null,
     "Metadata_EV_STA" int not null,
@@ -60,7 +57,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status" (
         "EV_STA_EV_ID"
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "pkEV_STA_Event_Status" primary key (
-        "EV_STA_EQ",
         "EV_STA_EV_ID",
         "EV_STA_ChangedAt"
     ) RELY
@@ -95,7 +91,7 @@ CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level" (
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "fk_K_EV_LVL_Event_Level" foreign key (
         "EV_LVL_PLV_ID"
-    ) references knots."PLV_ProfessionalLevel_ID"("PLV_ID") RELY,
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID") RELY,
     constraint "pkEV_LVL_Event_Level" primary key (
         "EV_LVL_EV_ID",
         "EV_LVL_ChangedAt"
@@ -106,7 +102,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
     "ST_NAM_ST_ID" int not null,
-    "ST_NAM_EQ" tinyint not null,
     "ST_NAM_Stage_Name" varchar(42) not null,
     "ST_NAM_ChangedAt" datetime not null,
     "Metadata_ST_NAM" int not null,
@@ -114,7 +109,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
         "ST_NAM_ST_ID"
     ) references anchors."ST_Stage"("ST_ID") RELY,
     constraint "pkST_NAM_Stage_Name" primary key (
-        "ST_NAM_EQ",
         "ST_NAM_ST_ID",
         "ST_NAM_ChangedAt"
     ) RELY
@@ -124,7 +118,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location" (
     "ST_LOC_ST_ID" int not null,
-    "ST_LOC_EQ" tinyint not null,
     "ST_LOC_Stage_Location" geography not null,
     "ST_LOC_Checksum" numeric(19,0) default hash("ST_LOC_Stage_Location"),
     "Metadata_ST_LOC" int not null,
@@ -132,7 +125,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location" (
         "ST_LOC_ST_ID"
     ) references anchors."ST_Stage"("ST_ID") RELY,
     constraint "pkST_LOC_Stage_Location" primary key (
-        "ST_LOC_EQ",
         "ST_LOC_ST_ID"
     ) RELY
 ) CLUSTER BY ("ST_LOC_ST_ID");
@@ -220,7 +212,7 @@ CREATE TABLE IF NOT EXISTS attributes."AC_PLV_Actor_ProfessionalLevel" (
     ) references anchors."AC_Actor"("AC_ID") RELY,
     constraint "fk_K_AC_PLV_Actor_ProfessionalLevel" foreign key (
         "AC_PLV_PLV_ID"
-    ) references knots."PLV_ProfessionalLevel_ID"("PLV_ID") RELY,
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID") RELY,
     constraint "pkAC_PLV_Actor_ProfessionalLevel" primary key (
         "AC_PLV_AC_ID",
         "AC_PLV_ChangedAt"

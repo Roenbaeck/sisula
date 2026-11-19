@@ -105,7 +105,7 @@ CREATE TABLE [ties].[AC_part_PR_in_RAT_got] (
     ) references [anchors].[PR_Program](PR_ID),
     constraint AC_part_PR_in_RAT_got_fkRAT_got foreign key (
         RAT_ID_got
-    ) references [knots].[RAT_Rating_ID](RAT_ID),
+    ) references [knots].[RAT_Rating](RAT_ID),
     constraint pkAC_part_PR_in_RAT_got primary key (
         AC_ID_part asc,
         PR_ID_in asc,
@@ -152,7 +152,7 @@ CREATE TABLE [ties].[AC_parent_AC_child_PAT_having] (
     ) references [anchors].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_fkPAT_having foreign key (
         PAT_ID_having
-    ) references [knots].[PAT_ParentalType_ID](PAT_ID),
+    ) references [knots].[PAT_ParentalType](PAT_ID),
     constraint pkAC_parent_AC_child_PAT_having primary key (
         AC_ID_parent asc,
         AC_ID_child asc,

@@ -280,7 +280,7 @@ CREATE TABLE [nexuses].[EV_Event] (
     ) references [anchors].[PR_Program](PR_ID),
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
-    ) references [knots].[ETY_EventType_ID](ETY_ID),
+    ) references [knots].[ETY_EventType](ETY_ID),
     Metadata_EV int not null,
     constraint pkEV_Event primary key (
         EV_ID asc
@@ -315,14 +315,12 @@ GO
 IF Object_ID('attributes.EV_AUD_Event_Audience', 'U') IS NULL
 CREATE TABLE [attributes].[EV_AUD_Event_Audience] (
     EV_AUD_EV_ID numeric(12,0) not null,
-    EV_AUD_EQ tinyint not null,
     EV_AUD_Event_Audience int not null,
     Metadata_EV_AUD int not null,
     constraint fkEV_AUD_Event_Audience foreign key (
         EV_AUD_EV_ID
     ) references [nexuses].[EV_Event](EV_ID),
     constraint pkEV_AUD_Event_Audience primary key (
-        EV_AUD_EQ asc,
         EV_AUD_EV_ID asc
     )
 );
@@ -349,7 +347,6 @@ GO
 IF Object_ID('attributes.EV_STA_Event_Status', 'U') IS NULL
 CREATE TABLE [attributes].[EV_STA_Event_Status] (
     EV_STA_EV_ID numeric(12,0) not null,
-    EV_STA_EQ tinyint not null,
     EV_STA_Event_Status nvarchar(20) not null,
     EV_STA_ChangedAt datetime2 not null,
     Metadata_EV_STA int not null,
@@ -357,7 +354,6 @@ CREATE TABLE [attributes].[EV_STA_Event_Status] (
         EV_STA_EV_ID
     ) references [nexuses].[EV_Event](EV_ID),
     constraint pkEV_STA_Event_Status primary key (
-        EV_STA_EQ asc,
         EV_STA_EV_ID asc,
         EV_STA_ChangedAt desc
     )
@@ -396,7 +392,7 @@ CREATE TABLE [attributes].[EV_LVL_Event_Level] (
     ) references [nexuses].[EV_Event](EV_ID),
     constraint fk_K_EV_LVL_Event_Level foreign key (
         EV_LVL_PLV_ID
-    ) references [knots].[PLV_ProfessionalLevel_ID](PLV_ID),
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
     constraint pkEV_LVL_Event_Level primary key (
         EV_LVL_EV_ID asc,
         EV_LVL_ChangedAt desc
@@ -409,7 +405,6 @@ GO
 IF Object_ID('attributes.ST_NAM_Stage_Name', 'U') IS NULL
 CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
     ST_NAM_ST_ID int not null,
-    ST_NAM_EQ tinyint not null,
     ST_NAM_Stage_Name nvarchar(42) not null,
     ST_NAM_ChangedAt datetime2 not null,
     Metadata_ST_NAM int not null,
@@ -417,7 +412,6 @@ CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
         ST_NAM_ST_ID
     ) references [anchors].[ST_Stage](ST_ID),
     constraint pkST_NAM_Stage_Name primary key (
-        ST_NAM_EQ asc,
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc
     )
@@ -429,7 +423,6 @@ GO
 IF Object_ID('attributes.ST_LOC_Stage_Location', 'U') IS NULL
 CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
     ST_LOC_ST_ID int not null,
-    ST_LOC_EQ tinyint not null,
     ST_LOC_Stage_Location geography not null,
     ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     Metadata_ST_LOC int not null,
@@ -437,7 +430,6 @@ CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
         ST_LOC_ST_ID
     ) references [anchors].[ST_Stage](ST_ID),
     constraint pkST_LOC_Stage_Location primary key (
-        ST_LOC_EQ asc,
         ST_LOC_ST_ID asc
     )
 );
@@ -533,7 +525,7 @@ CREATE TABLE [attributes].[AC_PLV_Actor_ProfessionalLevel] (
     ) references [anchors].[AC_Actor](AC_ID),
     constraint fk_K_AC_PLV_Actor_ProfessionalLevel foreign key (
         AC_PLV_PLV_ID
-    ) references [knots].[PLV_ProfessionalLevel_ID](PLV_ID),
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
     constraint pkAC_PLV_Actor_ProfessionalLevel primary key (
         AC_PLV_AC_ID asc,
         AC_PLV_ChangedAt desc
@@ -681,7 +673,7 @@ CREATE TABLE [ties].[AC_part_PR_in_RAT_got] (
     ) references [anchors].[PR_Program](PR_ID),
     constraint AC_part_PR_in_RAT_got_fkRAT_got foreign key (
         RAT_ID_got
-    ) references [knots].[RAT_Rating_ID](RAT_ID),
+    ) references [knots].[RAT_Rating](RAT_ID),
     constraint pkAC_part_PR_in_RAT_got primary key (
         AC_ID_part asc,
         PR_ID_in asc,
@@ -728,7 +720,7 @@ CREATE TABLE [ties].[AC_parent_AC_child_PAT_having] (
     ) references [anchors].[AC_Actor](AC_ID),
     constraint AC_parent_AC_child_PAT_having_fkPAT_having foreign key (
         PAT_ID_having
-    ) references [knots].[PAT_ParentalType_ID](PAT_ID),
+    ) references [knots].[PAT_ParentalType](PAT_ID),
     constraint pkAC_parent_AC_child_PAT_having primary key (
         AC_ID_parent asc,
         AC_ID_child asc,
@@ -809,7 +801,6 @@ BEGIN
     DECLARE @message varchar(max);
     DECLARE @EV_STA_Event_Status TABLE (
         EV_STA_EV_ID numeric(12,0) not null,
-        EV_STA_EQ tinyint not null,
         Metadata_EV_STA int not null,
         EV_STA_ChangedAt datetime2 not null,
         EV_STA_Event_Status nvarchar(20) not null,
@@ -820,14 +811,12 @@ BEGIN
     );
     INSERT INTO @EV_STA_Event_Status (
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
     )
     SELECT
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
@@ -835,20 +824,17 @@ BEGIN
         inserted;
     INSERT INTO @EV_STA_Event_Status (
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
     )
     SELECT
         p.EV_STA_EV_ID,
-        p.EV_STA_EQ,
         p.Metadata_EV_STA,
         p.EV_STA_ChangedAt,
         p.EV_STA_Event_Status
     FROM (
         SELECT DISTINCT
-            EV_STA_EQ,
             EV_STA_EV_ID
         FROM
             @EV_STA_Event_Status
@@ -856,8 +842,6 @@ BEGIN
     JOIN
         [attributes].[EV_STA_Event_Status] p
     ON
-        p.EV_STA_EQ = i.EV_STA_EQ
-    AND
         p.EV_STA_EV_ID = i.EV_STA_EV_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -865,8 +849,6 @@ BEGIN
         FROM
             @EV_STA_Event_Status x
         WHERE
-            p.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = p.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = p.EV_STA_ChangedAt
@@ -879,15 +861,12 @@ BEGIN
             @EV_STA_Event_Status i
         CROSS APPLY (
             SELECT TOP 1
-                h.EV_STA_EQ,
                 h.EV_STA_EV_ID,
                 h.EV_STA_ChangedAt,
                 h.EV_STA_Event_Status
             FROM
                 @EV_STA_Event_Status h
             WHERE
-                h.EV_STA_EQ = i.EV_STA_EQ
-            AND
                 h.EV_STA_EV_ID = i.EV_STA_EV_ID
             AND
                 h.EV_STA_ChangedAt < i.EV_STA_ChangedAt
@@ -1301,18 +1280,16 @@ IF Object_ID('attributes.rEV_STA_Event_Status','IF') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rEV_STA_Event_Status] (
-        @equivalent tinyint,
         @changingTimepoint datetime2
     )
     RETURNS TABLE WITH SCHEMABINDING AS RETURN
     SELECT
         Metadata_EV_STA,
         EV_STA_EV_ID,
-        EV_STA_EQ,
         EV_STA_Event_Status,
         EV_STA_ChangedAt
     FROM
-        [attributes].[eEV_STA_Event_Status](@equivalent)
+        [attributes].[EV_STA_Event_Status]
     WHERE
         EV_STA_ChangedAt <= @changingTimepoint;
     ');
@@ -1347,18 +1324,16 @@ IF Object_ID('attributes.rST_NAM_Stage_Name','IF') IS NULL
 BEGIN
     EXEC('
     CREATE FUNCTION [attributes].[rST_NAM_Stage_Name] (
-        @equivalent tinyint,
         @changingTimepoint datetime2
     )
     RETURNS TABLE WITH SCHEMABINDING AS RETURN
     SELECT
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name,
         ST_NAM_ChangedAt
     FROM
-        [attributes].[eST_NAM_Stage_Name](@equivalent)
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         ST_NAM_ChangedAt <= @changingTimepoint;
     ');
@@ -1539,11 +1514,9 @@ SELECT
     [NAM].ST_NAM_ST_ID,
     [NAM].Metadata_ST_NAM,
     [NAM].ST_NAM_ChangedAt,
-    [NAM].ST_NAM_EQ,
     [NAM].ST_NAM_Stage_Name,
     [LOC].ST_LOC_ST_ID,
     [LOC].Metadata_ST_LOC,
-    [LOC].ST_LOC_EQ,
     [LOC].ST_LOC_Checksum,
     [LOC].ST_LOC_Stage_Location,
     [AVG].ST_AVG_ST_ID,
@@ -1561,7 +1534,7 @@ SELECT
 FROM
     [anchors].[ST_Stage] [ST]
 LEFT JOIN
-    [attributes].[eST_NAM_Stage_Name](0) [NAM]
+    [attributes].[ST_NAM_Stage_Name] [NAM]
 ON
     [NAM].ST_NAM_ST_ID = [ST].ST_ID
 AND
@@ -1569,12 +1542,12 @@ AND
         SELECT
             max(sub.ST_NAM_ChangedAt)
         FROM
-            [attributes].[eST_NAM_Stage_Name](0) sub 
+            [attributes].[ST_NAM_Stage_Name] sub
         WHERE
             sub.ST_NAM_ST_ID = [ST].ST_ID
    )
 LEFT JOIN
-    [attributes].[eST_LOC_Stage_Location](0) [LOC]
+    [attributes].[ST_LOC_Stage_Location] [LOC]
 ON
     [LOC].ST_LOC_ST_ID = [ST].ST_ID
 LEFT JOIN
@@ -1616,11 +1589,9 @@ SELECT
     [NAM].ST_NAM_ST_ID,
     [NAM].Metadata_ST_NAM,
     [NAM].ST_NAM_ChangedAt,
-    [NAM].ST_NAM_EQ,
     [NAM].ST_NAM_Stage_Name,
     [LOC].ST_LOC_ST_ID,
     [LOC].Metadata_ST_LOC,
-    [LOC].ST_LOC_EQ,
     [LOC].ST_LOC_Checksum,
     [LOC].ST_LOC_Stage_Location,
     [AVG].ST_AVG_ST_ID,
@@ -1637,7 +1608,7 @@ SELECT
 FROM
     [anchors].[ST_Stage] [ST]
 LEFT JOIN
-    [attributes].[rST_NAM_Stage_Name](0, @changingTimepoint) [NAM]
+    [attributes].[rST_NAM_Stage_Name](@changingTimepoint) [NAM]
 ON
     [NAM].ST_NAM_ST_ID = [ST].ST_ID
 AND
@@ -1645,12 +1616,12 @@ AND
         SELECT
             max(sub.ST_NAM_ChangedAt)
         FROM
-            [attributes].[rST_NAM_Stage_Name](0, @changingTimepoint) sub 
+            [attributes].[rST_NAM_Stage_Name](@changingTimepoint) sub
         WHERE
             sub.ST_NAM_ST_ID = [ST].ST_ID
    )
 LEFT JOIN
-    [attributes].[eST_LOC_Stage_Location](0) [LOC]
+    [attributes].[ST_LOC_Stage_Location] [LOC]
 ON
     [LOC].ST_LOC_ST_ID = [ST].ST_ID
 LEFT JOIN
@@ -1708,7 +1679,7 @@ FROM (
         ST_NAM_ChangedAt AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        [attributes].[eST_NAM_Stage_Name](0) 
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         (@selection is null OR @selection like '%NAM%')
     AND
@@ -1761,7 +1732,6 @@ SELECT
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
     [kPLV].PLV_Checksum AS AC_PLV_PLV_Checksum,
-    [kPLV].PLV_EQ AS AC_PLV_PLV_EQ,
     [kPLV].PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
     [kPLV].Metadata_PLV AS AC_PLV_Metadata_PLV,
     [PLV].AC_PLV_PLV_ID
@@ -1802,7 +1772,7 @@ AND
             sub.AC_PLV_AC_ID = [AC].AC_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kPLV]
+    [knots].[PLV_ProfessionalLevel] [kPLV]
 ON
     [kPLV].PLV_ID = [PLV].AC_PLV_PLV_ID;
 GO
@@ -1830,7 +1800,6 @@ SELECT
     [PLV].Metadata_AC_PLV,
     [PLV].AC_PLV_ChangedAt,
     [kPLV].PLV_Checksum AS AC_PLV_PLV_Checksum,
-    [kPLV].PLV_EQ AS AC_PLV_PLV_EQ,
     [kPLV].PLV_ProfessionalLevel AS AC_PLV_PLV_ProfessionalLevel,
     [kPLV].Metadata_PLV AS AC_PLV_Metadata_PLV,
     [PLV].AC_PLV_PLV_ID
@@ -1871,7 +1840,7 @@ AND
             sub.AC_PLV_AC_ID = [AC].AC_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kPLV]
+    [knots].[PLV_ProfessionalLevel] [kPLV]
 ON
     [kPLV].PLV_ID = [PLV].AC_PLV_PLV_ID;
 GO
@@ -2130,7 +2099,7 @@ FROM (
         ST_NAM_ChangedAt AS [Time_of_Change],
         'Name' AS [Subject_of_Change]
     FROM
-        [attributes].[eST_NAM_Stage_Name](0) 
+        [attributes].[ST_NAM_Stage_Name]
     WHERE
         (@selection is null OR @selection like '%NAM%')
     AND
@@ -2374,7 +2343,6 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_Checksum AS of_ETY_Checksum,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
     [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
@@ -2382,7 +2350,6 @@ SELECT
     [DAT].EV_DAT_Event_Date,
     [AUD].EV_AUD_EV_ID,
     [AUD].Metadata_EV_AUD,
-    [AUD].EV_AUD_EQ,
     [AUD].EV_AUD_Event_Audience,
     [REV].EV_REV_EV_ID,
     [REV].Metadata_EV_REV,
@@ -2390,7 +2357,6 @@ SELECT
     [STA].EV_STA_EV_ID,
     [STA].Metadata_EV_STA,
     [STA].EV_STA_ChangedAt,
-    [STA].EV_STA_EQ,
     [STA].EV_STA_Event_Status,
     [UTL].EV_UTL_EV_ID,
     [UTL].Metadata_EV_UTL,
@@ -2401,14 +2367,13 @@ SELECT
     [LVL].Metadata_EV_LVL,
     [LVL].EV_LVL_ChangedAt,
     [kLVL].PLV_Checksum AS EV_LVL_PLV_Checksum,
-    [kLVL].PLV_EQ AS EV_LVL_PLV_EQ,
     [kLVL].PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     [kLVL].Metadata_PLV AS EV_LVL_Metadata_PLV,
     [LVL].EV_LVL_PLV_ID
 FROM
     [nexuses].[EV_Event] [EV]
 LEFT JOIN
-    [knots].[eETY_EventType](0) [ETY_of]
+    [knots].[ETY_EventType] [ETY_of]
 ON
     [ETY_of].ETY_ID = [EV].ETY_ID_of
 LEFT JOIN
@@ -2416,7 +2381,7 @@ LEFT JOIN
 ON
     [DAT].EV_DAT_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_AUD_Event_Audience](0) [AUD]
+    [attributes].[EV_AUD_Event_Audience] [AUD]
 ON
     [AUD].EV_AUD_EV_ID = [EV].EV_ID
 LEFT JOIN
@@ -2424,7 +2389,7 @@ LEFT JOIN
 ON
     [REV].EV_REV_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_STA_Event_Status](0) [STA]
+    [attributes].[EV_STA_Event_Status] [STA]
 ON
     [STA].EV_STA_EV_ID = [EV].EV_ID
 AND
@@ -2432,7 +2397,7 @@ AND
         SELECT
             max(sub.EV_STA_ChangedAt)
         FROM
-            [attributes].[eEV_STA_Event_Status](0) sub 
+            [attributes].[EV_STA_Event_Status] sub
         WHERE
             sub.EV_STA_EV_ID = [EV].EV_ID
    )
@@ -2458,7 +2423,7 @@ AND
             sub.EV_LVL_EV_ID = [EV].EV_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kLVL]
+    [knots].[PLV_ProfessionalLevel] [kLVL]
 ON
     [kLVL].PLV_ID = [LVL].EV_LVL_PLV_ID;
 GO
@@ -2476,7 +2441,6 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_Checksum AS of_ETY_Checksum,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
     [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
@@ -2484,7 +2448,6 @@ SELECT
     [DAT].EV_DAT_Event_Date,
     [AUD].EV_AUD_EV_ID,
     [AUD].Metadata_EV_AUD,
-    [AUD].EV_AUD_EQ,
     [AUD].EV_AUD_Event_Audience,
     [REV].EV_REV_EV_ID,
     [REV].Metadata_EV_REV,
@@ -2492,7 +2455,6 @@ SELECT
     [STA].EV_STA_EV_ID,
     [STA].Metadata_EV_STA,
     [STA].EV_STA_ChangedAt,
-    [STA].EV_STA_EQ,
     [STA].EV_STA_Event_Status,
     [UTL].EV_UTL_EV_ID,
     [UTL].Metadata_EV_UTL,
@@ -2503,14 +2465,13 @@ SELECT
     [LVL].Metadata_EV_LVL,
     [LVL].EV_LVL_ChangedAt,
     [kLVL].PLV_Checksum AS EV_LVL_PLV_Checksum,
-    [kLVL].PLV_EQ AS EV_LVL_PLV_EQ,
     [kLVL].PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     [kLVL].Metadata_PLV AS EV_LVL_Metadata_PLV,
     [LVL].EV_LVL_PLV_ID
 FROM
     [nexuses].[EV_Event] [EV]
 LEFT JOIN
-    [knots].[eETY_EventType](0) [ETY_of]
+    [knots].[ETY_EventType] [ETY_of]
 ON
     [ETY_of].ETY_ID = [EV].ETY_ID_of
 LEFT JOIN
@@ -2518,7 +2479,7 @@ LEFT JOIN
 ON
     [DAT].EV_DAT_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_AUD_Event_Audience](0) [AUD]
+    [attributes].[EV_AUD_Event_Audience] [AUD]
 ON
     [AUD].EV_AUD_EV_ID = [EV].EV_ID
 LEFT JOIN
@@ -2526,7 +2487,7 @@ LEFT JOIN
 ON
     [REV].EV_REV_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[rEV_STA_Event_Status](0, @changingTimepoint) [STA]
+    [attributes].[rEV_STA_Event_Status](@changingTimepoint) [STA]
 ON
     [STA].EV_STA_EV_ID = [EV].EV_ID
 AND
@@ -2534,7 +2495,7 @@ AND
         SELECT
             max(sub.EV_STA_ChangedAt)
         FROM
-            [attributes].[rEV_STA_Event_Status](0, @changingTimepoint) sub 
+            [attributes].[rEV_STA_Event_Status](@changingTimepoint) sub
         WHERE
             sub.EV_STA_EV_ID = [EV].EV_ID
    )
@@ -2560,7 +2521,7 @@ AND
             sub.EV_LVL_EV_ID = [EV].EV_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kLVL]
+    [knots].[PLV_ProfessionalLevel] [kLVL]
 ON
     [kLVL].PLV_ID = [LVL].EV_LVL_PLV_ID;
 GO
@@ -2593,7 +2554,7 @@ FROM (
         EV_STA_ChangedAt AS inspectedTimepoint,
         'STA' AS mnemonic
     FROM
-        [attributes].[eEV_STA_Event_Status](0) 
+        [attributes].[EV_STA_Event_Status]
     WHERE
         (@selection is null OR @selection like '%STA%')
     AND
@@ -2703,7 +2664,7 @@ FROM (
         EV_STA_ChangedAt AS [Time_of_Change],
         'Status' AS [Subject_of_Change]
     FROM
-        [attributes].[eEV_STA_Event_Status](0) 
+        [attributes].[EV_STA_Event_Status]
     WHERE
         (@selection is null OR @selection like '%STA%')
     AND
@@ -2813,15 +2774,12 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.EV_AUD_EQ,
             i.EV_AUD_EV_ID
         FROM
             inserted i
         JOIN
             [attributes].[EV_AUD_Event_Audience] x
         ON
-            x.EV_AUD_EQ = i.EV_AUD_EQ
-        AND
             x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
         WHERE NOT (
             x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
@@ -2838,13 +2796,11 @@ BEGIN
     INSERT INTO [attributes].[EV_AUD_Event_Audience] (
         Metadata_EV_AUD,
         EV_AUD_EV_ID,
-        EV_AUD_EQ,
         EV_AUD_Event_Audience
     )
     SELECT
         Metadata_EV_AUD,
         EV_AUD_EV_ID,
-        EV_AUD_EQ,
         EV_AUD_Event_Audience
     FROM
         inserted i
@@ -2854,8 +2810,6 @@ BEGIN
         FROM
             [attributes].[EV_AUD_Event_Audience] x
         WHERE
-            x.EV_AUD_EQ = i.EV_AUD_EQ
-        AND
             x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
         AND
             x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
@@ -2936,13 +2890,11 @@ BEGIN
     SET @now = sysdatetime();
     DECLARE @EV_STA_Event_Status TABLE (
     EV_STA_EV_ID numeric(12,0) not null,
-        EV_STA_EQ tinyint not null,
         Metadata_EV_STA int not null,
         EV_STA_ChangedAt datetime2 not null,
         EV_STA_Event_Status nvarchar(20) not null,
         EV_STA_StatementType char(1) not null,
         primary key (
-            EV_STA_EQ asc,
             EV_STA_EV_ID asc,
             EV_STA_ChangedAt desc
         )
@@ -2950,7 +2902,6 @@ BEGIN
     INSERT INTO @EV_STA_Event_Status
     SELECT
         i.EV_STA_EV_ID,
-        i.EV_STA_EQ,
         i.Metadata_EV_STA,
         i.EV_STA_ChangedAt,
         i.EV_STA_Event_Status,
@@ -2963,8 +2914,6 @@ BEGIN
         FROM
             [attributes].[EV_STA_Event_Status] x
         WHERE
-            x.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = i.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = i.EV_STA_ChangedAt
@@ -2975,7 +2924,6 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.EV_STA_EQ,
             i.EV_STA_EV_ID,
             i.EV_STA_ChangedAt
         FROM
@@ -2983,8 +2931,6 @@ BEGIN
         JOIN
             [attributes].[EV_STA_Event_Status] x
         ON
-            x.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = i.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = i.EV_STA_ChangedAt
@@ -3001,14 +2947,12 @@ BEGIN
         Metadata_EV_STA,
         EV_STA_EV_ID,
         EV_STA_ChangedAt,
-        EV_STA_EQ,
         EV_STA_Event_Status
     )
     SELECT
         Metadata_EV_STA,
         EV_STA_EV_ID,
         EV_STA_ChangedAt,
-        EV_STA_EQ,
         EV_STA_Event_Status
     FROM
         @EV_STA_Event_Status
@@ -3175,13 +3119,11 @@ BEGIN
     SET @now = sysdatetime();
     DECLARE @ST_NAM_Stage_Name TABLE (
     ST_NAM_ST_ID int not null,
-        ST_NAM_EQ tinyint not null,
         Metadata_ST_NAM int not null,
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null,
         primary key (
-            ST_NAM_EQ asc,
             ST_NAM_ST_ID asc,
             ST_NAM_ChangedAt desc
         )
@@ -3189,7 +3131,6 @@ BEGIN
     INSERT INTO @ST_NAM_Stage_Name
     SELECT
         i.ST_NAM_ST_ID,
-        i.ST_NAM_EQ,
         i.Metadata_ST_NAM,
         i.ST_NAM_ChangedAt,
         i.ST_NAM_Stage_Name,
@@ -3202,8 +3143,6 @@ BEGIN
         FROM
             [attributes].[ST_NAM_Stage_Name] x
         WHERE
-            x.ST_NAM_EQ = i.ST_NAM_EQ
-        AND
             x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
@@ -3214,7 +3153,6 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.ST_NAM_EQ,
             i.ST_NAM_ST_ID,
             i.ST_NAM_ChangedAt
         FROM
@@ -3222,8 +3160,6 @@ BEGIN
         JOIN
             [attributes].[ST_NAM_Stage_Name] x
         ON
-            x.ST_NAM_EQ = i.ST_NAM_EQ
-        AND
             x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
@@ -3240,14 +3176,12 @@ BEGIN
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
         ST_NAM_ChangedAt,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name
     )
     SELECT
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
         ST_NAM_ChangedAt,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name
     FROM
         @ST_NAM_Stage_Name
@@ -3272,15 +3206,12 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.ST_LOC_EQ,
             i.ST_LOC_ST_ID
         FROM
             inserted i
         JOIN
             [attributes].[ST_LOC_Stage_Location] x
         ON
-            x.ST_LOC_EQ = i.ST_LOC_EQ
-        AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         WHERE NOT (
             x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
@@ -3297,13 +3228,11 @@ BEGIN
     INSERT INTO [attributes].[ST_LOC_Stage_Location] (
         Metadata_ST_LOC,
         ST_LOC_ST_ID,
-        ST_LOC_EQ,
         ST_LOC_Stage_Location
     )
     SELECT
         Metadata_ST_LOC,
         ST_LOC_ST_ID,
-        ST_LOC_EQ,
         ST_LOC_Stage_Location
     FROM
         inserted i
@@ -3313,8 +3242,6 @@ BEGIN
         FROM
             [attributes].[ST_LOC_Stage_Location] x
         WHERE
-            x.ST_LOC_EQ = i.ST_LOC_EQ
-        AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
             x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
@@ -4008,11 +3935,9 @@ BEGIN
         ST_NAM_ST_ID int null,
         Metadata_ST_NAM int null,
         ST_NAM_ChangedAt datetime2 null,
-        ST_NAM_EQ tinyint null,
         ST_NAM_Stage_Name nvarchar(42) null,
         ST_LOC_ST_ID int null,
         Metadata_ST_LOC int null,
-        ST_LOC_EQ tinyint null,
         ST_LOC_Stage_Location geography null,
         ST_AVG_ST_ID int null,
         Metadata_ST_AVG int null,
@@ -4033,11 +3958,9 @@ BEGIN
         ISNULL(ISNULL(i.ST_NAM_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
         ISNULL(i.ST_NAM_ChangedAt, @now),
-        ISNULL(i.ST_NAM_EQ, 0),
         i.ST_NAM_Stage_Name,
         ISNULL(ISNULL(i.ST_LOC_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_LOC, i.Metadata_ST),
-        ISNULL(i.ST_LOC_EQ, 0),
         i.ST_LOC_Stage_Location,
         ISNULL(ISNULL(i.ST_AVG_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_AVG, i.Metadata_ST),
@@ -4057,11 +3980,9 @@ BEGIN
             ST_NAM_ST_ID,
             Metadata_ST_NAM,
             ST_NAM_ChangedAt,
-            ST_NAM_EQ,
             ST_NAM_Stage_Name,
             ST_LOC_ST_ID,
             Metadata_ST_LOC,
-            ST_LOC_EQ,
             ST_LOC_Stage_Location,
             ST_AVG_ST_ID,
             Metadata_ST_AVG,
@@ -4166,7 +4087,6 @@ BEGIN
     DECLARE @updated_ST_NAM_Stage_Name bit = CASE WHEN UPDATE(ST_NAM_Stage_Name) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_ST_NAM bit = CASE WHEN UPDATE(Metadata_ST_NAM) THEN 1 ELSE 0 END;
     DECLARE @updated_ST_NAM_ChangedAt bit = CASE WHEN UPDATE(ST_NAM_ChangedAt) THEN 1 ELSE 0 END;
-    DECLARE @updated_ST_NAM_EQ bit = CASE WHEN UPDATE(ST_NAM_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_NAM_ST_ID))
         RAISERROR('The foreign key column ST_NAM_ST_ID is not updatable.', 16, 1);
     IF(@updated_ST_NAM_Stage_Name = 1)
@@ -4174,7 +4094,6 @@ BEGIN
         INSERT INTO [attributes].[ST_NAM_Stage_Name] (
             Metadata_ST_NAM,
             ST_NAM_ST_ID,
-            ST_NAM_EQ,
             ST_NAM_ChangedAt,
             ST_NAM_Stage_Name
         )
@@ -4185,7 +4104,6 @@ BEGIN
                 ELSE i.Metadata_ST_NAM
             END, i.Metadata_ST),
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
-            ISNULL(i.ST_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.ST_NAM_Stage_Name is null THEN i.ST_NAM_ChangedAt
                 WHEN @updated_ST_NAM_ChangedAt = 1 THEN i.ST_NAM_ChangedAt
@@ -4201,14 +4119,12 @@ BEGIN
             i.ST_NAM_Stage_Name is not null
         AND ( -- a value that is left as it is states nothing
             @updated_ST_NAM_ChangedAt = 1 OR
-            @updated_ST_NAM_EQ = 1 OR
             d.ST_NAM_Stage_Name is null OR
             d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
         );
     END
     DECLARE @updated_ST_LOC_Stage_Location bit = CASE WHEN UPDATE(ST_LOC_Stage_Location) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_ST_LOC bit = CASE WHEN UPDATE(Metadata_ST_LOC) THEN 1 ELSE 0 END;
-    DECLARE @updated_ST_LOC_EQ bit = CASE WHEN UPDATE(ST_LOC_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_LOC_ST_ID))
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
     IF(@updated_ST_LOC_Stage_Location = 1)
@@ -4216,7 +4132,6 @@ BEGIN
         INSERT INTO [attributes].[ST_LOC_Stage_Location] (
             Metadata_ST_LOC,
             ST_LOC_ST_ID,
-            ST_LOC_EQ,
             ST_LOC_Stage_Location
         )
         SELECT 
@@ -4226,7 +4141,6 @@ BEGIN
                 ELSE i.Metadata_ST_LOC
             END, i.Metadata_ST),
             ISNULL(i.ST_LOC_ST_ID, i.ST_ID),
-            ISNULL(i.ST_LOC_EQ, 0),
             i.ST_LOC_Stage_Location
         FROM
             inserted i
@@ -4237,7 +4151,6 @@ BEGIN
         WHERE
             i.ST_LOC_Stage_Location is not null
         AND ( -- a value that is left as it is states nothing
-            @updated_ST_LOC_EQ = 1 OR
             d.ST_LOC_Stage_Location is null OR
             d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         );
@@ -4378,8 +4291,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.ST_NAM_EQ = [NAM].ST_NAM_EQ
-    AND
         d.ST_NAM_ChangedAt = [NAM].ST_NAM_ChangedAt
     AND
         d.ST_NAM_ST_ID = [NAM].ST_NAM_ST_ID;
@@ -4389,8 +4300,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.ST_LOC_EQ = [LOC].ST_LOC_EQ
-    AND
         d.ST_LOC_ST_ID = [LOC].ST_LOC_ST_ID;
     DELETE [AVG]
     FROM
@@ -4494,7 +4403,6 @@ BEGIN
         AC_PLV_ChangedAt datetime2 null,
         AC_PLV_PLV_ProfessionalLevel nvarchar(max) null,
         AC_PLV_PLV_Checksum varbinary(16) null,
-        AC_PLV_PLV_EQ tinyint null,
         AC_PLV_Metadata_PLV int null,
         AC_PLV_PLV_ID tinyint null
     );
@@ -4517,7 +4425,6 @@ BEGIN
         ISNULL(i.AC_PLV_ChangedAt, @now),
         i.AC_PLV_PLV_ProfessionalLevel,
         ISNULL(i.AC_PLV_PLV_Checksum, dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.AC_PLV_PLV_EQ, 0),
         ISNULL(i.AC_PLV_Metadata_PLV, i.Metadata_AC),
         i.AC_PLV_PLV_ID
     FROM (
@@ -4539,7 +4446,6 @@ BEGIN
             AC_PLV_ChangedAt,
             AC_PLV_PLV_ProfessionalLevel,
             AC_PLV_PLV_Checksum,
-            AC_PLV_PLV_EQ,
             AC_PLV_Metadata_PLV,
             AC_PLV_PLV_ID,
             ROW_NUMBER() OVER (PARTITION BY AC_ID ORDER BY AC_ID) AS Row
@@ -4599,8 +4505,6 @@ BEGIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
         [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum
-    AND
-        [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
     WHERE
         ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -4728,8 +4632,6 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
-        AND
-            [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
         LEFT JOIN
             deleted d
         ON
@@ -5085,7 +4987,6 @@ BEGIN
         EV_DAT_Event_Date datetime2 null,
         EV_AUD_EV_ID numeric(12,0) null,
         Metadata_EV_AUD int null,
-        EV_AUD_EQ tinyint null,
         EV_AUD_Event_Audience int null,
         EV_REV_EV_ID numeric(12,0) null,
         Metadata_EV_REV int null,
@@ -5093,7 +4994,6 @@ BEGIN
         EV_STA_EV_ID numeric(12,0) null,
         Metadata_EV_STA int null,
         EV_STA_ChangedAt datetime2 null,
-        EV_STA_EQ tinyint null,
         EV_STA_Event_Status nvarchar(20) null,
         EV_UTL_EV_ID numeric(12,0) null,
         Metadata_EV_UTL int null,
@@ -5105,7 +5005,6 @@ BEGIN
         EV_LVL_ChangedAt date null,
         EV_LVL_PLV_ProfessionalLevel nvarchar(max) null,
         EV_LVL_PLV_Checksum varbinary(16) null,
-        EV_LVL_PLV_EQ tinyint null,
         EV_LVL_Metadata_PLV int null,
         EV_LVL_PLV_ID tinyint null
     );
@@ -5134,7 +5033,6 @@ BEGIN
         i.EV_DAT_Event_Date,
         ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
-        ISNULL(i.EV_AUD_EQ, 0),
         i.EV_AUD_Event_Audience,
         ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
@@ -5142,7 +5040,6 @@ BEGIN
         ISNULL(i.EV_STA_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
-        ISNULL(i.EV_STA_EQ, 0),
         i.EV_STA_Event_Status,
         ISNULL(i.EV_UTL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
@@ -5154,7 +5051,6 @@ BEGIN
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.EV_LVL_PLV_EQ, 0),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
     INTO
@@ -5169,7 +5065,6 @@ BEGIN
         i.EV_DAT_Event_Date,
         ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
-        ISNULL(i.EV_AUD_EQ, 0),
         i.EV_AUD_Event_Audience,
         ISNULL(i.EV_REV_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
@@ -5177,7 +5072,6 @@ BEGIN
         ISNULL(i.EV_STA_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
-        ISNULL(i.EV_STA_EQ, 0),
         i.EV_STA_Event_Status,
         ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
@@ -5189,7 +5083,6 @@ BEGIN
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.EV_LVL_PLV_EQ, 0),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
     FROM
@@ -5284,8 +5177,6 @@ BEGIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
         [kPLV].PLV_Checksum = i.EV_LVL_PLV_Checksum 
-    AND
-        [kPLV].PLV_EQ = i.EV_LVL_PLV_EQ
     WHERE
         ISNULL(i.EV_LVL_PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -5347,7 +5238,6 @@ BEGIN
     END
     DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_EV_AUD bit = CASE WHEN UPDATE(Metadata_EV_AUD) THEN 1 ELSE 0 END;
-    DECLARE @updated_EV_AUD_EQ bit = CASE WHEN UPDATE(EV_AUD_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
     IF(@updated_EV_AUD_Event_Audience = 1)
@@ -5355,7 +5245,6 @@ BEGIN
         INSERT INTO [attributes].[EV_AUD_Event_Audience] (
             Metadata_EV_AUD,
             EV_AUD_EV_ID,
-            EV_AUD_EQ,
             EV_AUD_Event_Audience
         )
         SELECT DISTINCT
@@ -5365,7 +5254,6 @@ BEGIN
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
-            ISNULL(i.EV_AUD_EQ, 0),
             i.EV_AUD_Event_Audience
         FROM
             inserted i
@@ -5376,7 +5264,6 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is not null
         AND ( -- a value that is left as it is states nothing
-            @updated_EV_AUD_EQ = 1 OR
             d.EV_AUD_Event_Audience is null OR
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
         );
@@ -5416,7 +5303,6 @@ BEGIN
     DECLARE @updated_EV_STA_Event_Status bit = CASE WHEN UPDATE(EV_STA_Event_Status) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_EV_STA bit = CASE WHEN UPDATE(Metadata_EV_STA) THEN 1 ELSE 0 END;
     DECLARE @updated_EV_STA_ChangedAt bit = CASE WHEN UPDATE(EV_STA_ChangedAt) THEN 1 ELSE 0 END;
-    DECLARE @updated_EV_STA_EQ bit = CASE WHEN UPDATE(EV_STA_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_STA_EV_ID))
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
     IF(@updated_EV_STA_Event_Status = 1)
@@ -5424,7 +5310,6 @@ BEGIN
         INSERT INTO [attributes].[EV_STA_Event_Status] (
             Metadata_EV_STA,
             EV_STA_EV_ID,
-            EV_STA_EQ,
             EV_STA_ChangedAt,
             EV_STA_Event_Status
         )
@@ -5435,7 +5320,6 @@ BEGIN
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_STA_EV_ID, i.EV_ID),
-            ISNULL(i.EV_STA_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.EV_STA_Event_Status is null THEN i.EV_STA_ChangedAt
                 WHEN @updated_EV_STA_ChangedAt = 1 THEN i.EV_STA_ChangedAt
@@ -5451,7 +5335,6 @@ BEGIN
             i.EV_STA_Event_Status is not null
         AND ( -- a value that is left as it is states nothing
             @updated_EV_STA_ChangedAt = 1 OR
-            @updated_EV_STA_EQ = 1 OR
             d.EV_STA_Event_Status is null OR
             d.EV_STA_Event_Status <> i.EV_STA_Event_Status
         );
@@ -5525,8 +5408,6 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max))) 
-        AND
-            [kPLV].PLV_EQ = i.EV_LVL_PLV_EQ
         LEFT JOIN
             deleted d
         ON
@@ -5562,8 +5443,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.EV_AUD_EQ = [AUD].EV_AUD_EQ
-    AND
         d.EV_AUD_EV_ID = [AUD].EV_AUD_EV_ID;
     DELETE [REV]
     FROM
@@ -5578,8 +5457,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.EV_STA_EQ = [STA].EV_STA_EQ
-    AND
         d.EV_STA_ChangedAt = [STA].EV_STA_ChangedAt
     AND
         d.EV_STA_EV_ID = [STA].EV_STA_EV_ID;
@@ -6103,13 +5980,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -6138,13 +6014,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -6186,13 +6061,12 @@ SELECT
     tie.PR_ID_in,
     [RAT_got].RAT_Checksum AS got_RAT_Checksum,
     [RAT_got].RAT_Rating AS got_RAT_Rating,
-    [RAT_got].RAT_EQ AS got_RAT_EQ,
     [RAT_got].Metadata_RAT AS got_Metadata_RAT,
     tie.RAT_ID_got
 FROM
     [ties].[AC_part_PR_in_RAT_got] tie
 LEFT JOIN
-    [knots].[eRAT_Rating](0) [RAT_got]
+    [knots].[RAT_Rating] [RAT_got]
 ON
     [RAT_got].RAT_ID = tie.RAT_ID_got
 WHERE
@@ -6306,13 +6180,12 @@ SELECT
     tie.AC_ID_parent,
     tie.AC_ID_child,
     [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
-    [PAT_having].PAT_EQ AS having_PAT_EQ,
     [PAT_having].Metadata_PAT AS having_Metadata_PAT,
     tie.PAT_ID_having
 FROM
     [ties].[AC_parent_AC_child_PAT_having] tie
 LEFT JOIN
-    [knots].[ePAT_ParentalType](0) [PAT_having]
+    [knots].[PAT_ParentalType] [PAT_having]
 ON
     [PAT_having].PAT_ID = tie.PAT_ID_having;
 GO
@@ -6328,13 +6201,12 @@ SELECT
     tie.AC_ID_parent,
     tie.AC_ID_child,
     [PAT_having].PAT_ParentalType AS having_PAT_ParentalType,
-    [PAT_having].PAT_EQ AS having_PAT_EQ,
     [PAT_having].Metadata_PAT AS having_Metadata_PAT,
     tie.PAT_ID_having
 FROM
     [ties].[AC_parent_AC_child_PAT_having] tie
 LEFT JOIN
-    [knots].[ePAT_ParentalType](0) [PAT_having]
+    [knots].[PAT_ParentalType] [PAT_having]
 ON
     [PAT_having].PAT_ID = tie.PAT_ID_having;
 GO
@@ -10122,7 +9994,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -10130,7 +10002,7 @@ EXEC sp_addextendedproperty
 Kind of parent-child relationship between two actors, such as biological or adoptive parent.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -10150,7 +10022,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel_ID';
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -10158,7 +10030,7 @@ EXEC sp_addextendedproperty
 Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel_ID';
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -10192,7 +10064,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID';
+@level1type = N'Table', @level1name = 'RAT_Rating';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -10200,7 +10072,7 @@ EXEC sp_addextendedproperty
 Rating of how well an actor performs a part in a program, such as good, mediocre or bad.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID';
+@level1type = N'Table', @level1name = 'RAT_Rating';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

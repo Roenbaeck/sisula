@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_part_PR_in_RAT_got" (
     ) references anchors."PR_Program"("PR_ID") RELY, 
     constraint "AC_part_PR_in_RAT_got_fkRAT_got" foreign key (
         "RAT_ID_got"
-    ) references knots."RAT_Rating_ID"("RAT_ID") RELY,
+    ) references knots."RAT_Rating"("RAT_ID") RELY,
     constraint "pkAC_part_PR_in_RAT_got" primary key (
         "AC_ID_part",
         "PR_ID_in",
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_parent_AC_child_PAT_having" (
     ) references anchors."AC_Actor"("AC_ID") RELY, 
     constraint "AC_parent_AC_child_PAT_having_fkPAT_having" foreign key (
         "PAT_ID_having"
-    ) references knots."PAT_ParentalType_ID"("PAT_ID") RELY,
+    ) references knots."PAT_ParentalType"("PAT_ID") RELY,
     constraint "pkAC_parent_AC_child_PAT_having" primary key (
         "AC_ID_parent",
         "AC_ID_child",

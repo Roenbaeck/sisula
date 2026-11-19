@@ -65,7 +65,6 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_Checksum AS of_ETY_Checksum,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
     [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
@@ -73,7 +72,6 @@ SELECT
     [DAT].EV_DAT_Event_Date,
     [AUD].EV_AUD_EV_ID,
     [AUD].Metadata_EV_AUD,
-    [AUD].EV_AUD_EQ,
     [AUD].EV_AUD_Event_Audience,
     [REV].EV_REV_EV_ID,
     [REV].Metadata_EV_REV,
@@ -81,7 +79,6 @@ SELECT
     [STA].EV_STA_EV_ID,
     [STA].Metadata_EV_STA,
     [STA].EV_STA_ChangedAt,
-    [STA].EV_STA_EQ,
     [STA].EV_STA_Event_Status,
     [UTL].EV_UTL_EV_ID,
     [UTL].Metadata_EV_UTL,
@@ -92,14 +89,13 @@ SELECT
     [LVL].Metadata_EV_LVL,
     [LVL].EV_LVL_ChangedAt,
     [kLVL].PLV_Checksum AS EV_LVL_PLV_Checksum,
-    [kLVL].PLV_EQ AS EV_LVL_PLV_EQ,
     [kLVL].PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     [kLVL].Metadata_PLV AS EV_LVL_Metadata_PLV,
     [LVL].EV_LVL_PLV_ID
 FROM
     [nexuses].[EV_Event] [EV]
 LEFT JOIN
-    [knots].[eETY_EventType](0) [ETY_of]
+    [knots].[ETY_EventType] [ETY_of]
 ON
     [ETY_of].ETY_ID = [EV].ETY_ID_of
 LEFT JOIN
@@ -107,7 +103,7 @@ LEFT JOIN
 ON
     [DAT].EV_DAT_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_AUD_Event_Audience](0) [AUD]
+    [attributes].[EV_AUD_Event_Audience] [AUD]
 ON
     [AUD].EV_AUD_EV_ID = [EV].EV_ID
 LEFT JOIN
@@ -115,7 +111,7 @@ LEFT JOIN
 ON
     [REV].EV_REV_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_STA_Event_Status](0) [STA]
+    [attributes].[EV_STA_Event_Status] [STA]
 ON
     [STA].EV_STA_EV_ID = [EV].EV_ID
 AND
@@ -123,7 +119,7 @@ AND
         SELECT
             max(sub.EV_STA_ChangedAt)
         FROM
-            [attributes].[eEV_STA_Event_Status](0) sub 
+            [attributes].[EV_STA_Event_Status] sub
         WHERE
             sub.EV_STA_EV_ID = [EV].EV_ID
    )
@@ -149,7 +145,7 @@ AND
             sub.EV_LVL_EV_ID = [EV].EV_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kLVL]
+    [knots].[PLV_ProfessionalLevel] [kLVL]
 ON
     [kLVL].PLV_ID = [LVL].EV_LVL_PLV_ID;
 GO
@@ -167,7 +163,6 @@ SELECT
     [EV].PR_ID_wasPlayed,
     [ETY_of].ETY_Checksum AS of_ETY_Checksum,
     [ETY_of].ETY_EventType AS of_ETY_EventType,
-    [ETY_of].ETY_EQ AS of_ETY_EQ,
     [ETY_of].Metadata_ETY AS of_Metadata_ETY,
     [EV].ETY_ID_of,
     [DAT].EV_DAT_EV_ID,
@@ -175,7 +170,6 @@ SELECT
     [DAT].EV_DAT_Event_Date,
     [AUD].EV_AUD_EV_ID,
     [AUD].Metadata_EV_AUD,
-    [AUD].EV_AUD_EQ,
     [AUD].EV_AUD_Event_Audience,
     [REV].EV_REV_EV_ID,
     [REV].Metadata_EV_REV,
@@ -183,7 +177,6 @@ SELECT
     [STA].EV_STA_EV_ID,
     [STA].Metadata_EV_STA,
     [STA].EV_STA_ChangedAt,
-    [STA].EV_STA_EQ,
     [STA].EV_STA_Event_Status,
     [UTL].EV_UTL_EV_ID,
     [UTL].Metadata_EV_UTL,
@@ -194,14 +187,13 @@ SELECT
     [LVL].Metadata_EV_LVL,
     [LVL].EV_LVL_ChangedAt,
     [kLVL].PLV_Checksum AS EV_LVL_PLV_Checksum,
-    [kLVL].PLV_EQ AS EV_LVL_PLV_EQ,
     [kLVL].PLV_ProfessionalLevel AS EV_LVL_PLV_ProfessionalLevel,
     [kLVL].Metadata_PLV AS EV_LVL_Metadata_PLV,
     [LVL].EV_LVL_PLV_ID
 FROM
     [nexuses].[EV_Event] [EV]
 LEFT JOIN
-    [knots].[eETY_EventType](0) [ETY_of]
+    [knots].[ETY_EventType] [ETY_of]
 ON
     [ETY_of].ETY_ID = [EV].ETY_ID_of
 LEFT JOIN
@@ -209,7 +201,7 @@ LEFT JOIN
 ON
     [DAT].EV_DAT_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[eEV_AUD_Event_Audience](0) [AUD]
+    [attributes].[EV_AUD_Event_Audience] [AUD]
 ON
     [AUD].EV_AUD_EV_ID = [EV].EV_ID
 LEFT JOIN
@@ -217,7 +209,7 @@ LEFT JOIN
 ON
     [REV].EV_REV_EV_ID = [EV].EV_ID
 LEFT JOIN
-    [attributes].[rEV_STA_Event_Status](0, @changingTimepoint) [STA]
+    [attributes].[rEV_STA_Event_Status](@changingTimepoint) [STA]
 ON
     [STA].EV_STA_EV_ID = [EV].EV_ID
 AND
@@ -225,7 +217,7 @@ AND
         SELECT
             max(sub.EV_STA_ChangedAt)
         FROM
-            [attributes].[rEV_STA_Event_Status](0, @changingTimepoint) sub 
+            [attributes].[rEV_STA_Event_Status](@changingTimepoint) sub
         WHERE
             sub.EV_STA_EV_ID = [EV].EV_ID
    )
@@ -251,7 +243,7 @@ AND
             sub.EV_LVL_EV_ID = [EV].EV_ID
    )
 LEFT JOIN
-    [knots].[ePLV_ProfessionalLevel](0) [kLVL]
+    [knots].[PLV_ProfessionalLevel] [kLVL]
 ON
     [kLVL].PLV_ID = [LVL].EV_LVL_PLV_ID;
 GO
@@ -284,7 +276,7 @@ FROM (
         EV_STA_ChangedAt AS inspectedTimepoint,
         'STA' AS mnemonic
     FROM
-        [attributes].[eEV_STA_Event_Status](0) 
+        [attributes].[EV_STA_Event_Status]
     WHERE
         (@selection is null OR @selection like '%STA%')
     AND

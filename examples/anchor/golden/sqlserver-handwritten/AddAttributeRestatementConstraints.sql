@@ -22,7 +22,6 @@ BEGIN
     DECLARE @message varchar(max);
     DECLARE @EV_STA_Event_Status TABLE (
         EV_STA_EV_ID numeric(12,0) not null,
-        EV_STA_EQ tinyint not null,
         Metadata_EV_STA int not null,
         EV_STA_ChangedAt datetime2 not null,
         EV_STA_Event_Status nvarchar(20) not null,
@@ -33,14 +32,12 @@ BEGIN
     );
     INSERT INTO @EV_STA_Event_Status (
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
     )
     SELECT
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
@@ -48,20 +45,17 @@ BEGIN
         inserted;
     INSERT INTO @EV_STA_Event_Status (
         EV_STA_EV_ID,
-        EV_STA_EQ,
         Metadata_EV_STA,
         EV_STA_ChangedAt,
         EV_STA_Event_Status
     )
     SELECT
         p.EV_STA_EV_ID,
-        p.EV_STA_EQ,
         p.Metadata_EV_STA,
         p.EV_STA_ChangedAt,
         p.EV_STA_Event_Status
     FROM (
         SELECT DISTINCT
-            EV_STA_EQ,
             EV_STA_EV_ID
         FROM
             @EV_STA_Event_Status
@@ -69,8 +63,6 @@ BEGIN
     JOIN
         [attributes].[EV_STA_Event_Status] p
     ON
-        p.EV_STA_EQ = i.EV_STA_EQ
-    AND
         p.EV_STA_EV_ID = i.EV_STA_EV_ID
     WHERE NOT EXISTS (
         SELECT TOP 1
@@ -78,8 +70,6 @@ BEGIN
         FROM
             @EV_STA_Event_Status x
         WHERE
-            p.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = p.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = p.EV_STA_ChangedAt
@@ -92,15 +82,12 @@ BEGIN
             @EV_STA_Event_Status i
         CROSS APPLY (
             SELECT TOP 1
-                h.EV_STA_EQ,
                 h.EV_STA_EV_ID,
                 h.EV_STA_ChangedAt,
                 h.EV_STA_Event_Status
             FROM
                 @EV_STA_Event_Status h
             WHERE
-                h.EV_STA_EQ = i.EV_STA_EQ
-            AND
                 h.EV_STA_EV_ID = i.EV_STA_EV_ID
             AND
                 h.EV_STA_ChangedAt < i.EV_STA_ChangedAt

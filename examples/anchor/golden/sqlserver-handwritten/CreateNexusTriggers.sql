@@ -32,7 +32,6 @@ BEGIN
         EV_DAT_Event_Date datetime2 null,
         EV_AUD_EV_ID numeric(12,0) null,
         Metadata_EV_AUD int null,
-        EV_AUD_EQ tinyint null,
         EV_AUD_Event_Audience int null,
         EV_REV_EV_ID numeric(12,0) null,
         Metadata_EV_REV int null,
@@ -40,7 +39,6 @@ BEGIN
         EV_STA_EV_ID numeric(12,0) null,
         Metadata_EV_STA int null,
         EV_STA_ChangedAt datetime2 null,
-        EV_STA_EQ tinyint null,
         EV_STA_Event_Status nvarchar(20) null,
         EV_UTL_EV_ID numeric(12,0) null,
         Metadata_EV_UTL int null,
@@ -52,7 +50,6 @@ BEGIN
         EV_LVL_ChangedAt date null,
         EV_LVL_PLV_ProfessionalLevel nvarchar(max) null,
         EV_LVL_PLV_Checksum varbinary(16) null,
-        EV_LVL_PLV_EQ tinyint null,
         EV_LVL_Metadata_PLV int null,
         EV_LVL_PLV_ID tinyint null
     );
@@ -81,7 +78,6 @@ BEGIN
         i.EV_DAT_Event_Date,
         ISNULL(i.EV_AUD_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
-        ISNULL(i.EV_AUD_EQ, 0),
         i.EV_AUD_Event_Audience,
         ISNULL(i.EV_REV_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
@@ -89,7 +85,6 @@ BEGIN
         ISNULL(i.EV_STA_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
-        ISNULL(i.EV_STA_EQ, 0),
         i.EV_STA_Event_Status,
         ISNULL(i.EV_UTL_EV_ID, inserted.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
@@ -101,7 +96,6 @@ BEGIN
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.EV_LVL_PLV_EQ, 0),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
     INTO
@@ -116,7 +110,6 @@ BEGIN
         i.EV_DAT_Event_Date,
         ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_AUD, i.Metadata_EV),
-        ISNULL(i.EV_AUD_EQ, 0),
         i.EV_AUD_Event_Audience,
         ISNULL(i.EV_REV_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_REV, i.Metadata_EV),
@@ -124,7 +117,6 @@ BEGIN
         ISNULL(i.EV_STA_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_STA, i.Metadata_EV),
         ISNULL(i.EV_STA_ChangedAt, @now),
-        ISNULL(i.EV_STA_EQ, 0),
         i.EV_STA_Event_Status,
         ISNULL(i.EV_UTL_EV_ID, i.EV_ID),
         ISNULL(i.Metadata_EV_UTL, i.Metadata_EV),
@@ -136,7 +128,6 @@ BEGIN
         ISNULL(i.EV_LVL_ChangedAt, @now),
         i.EV_LVL_PLV_ProfessionalLevel,
         ISNULL(i.EV_LVL_PLV_Checksum, dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.EV_LVL_PLV_EQ, 0),
         ISNULL(i.EV_LVL_Metadata_PLV, i.Metadata_EV),
         i.EV_LVL_PLV_ID
     FROM
@@ -231,8 +222,6 @@ BEGIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
         [kPLV].PLV_Checksum = i.EV_LVL_PLV_Checksum 
-    AND
-        [kPLV].PLV_EQ = i.EV_LVL_PLV_EQ
     WHERE
         ISNULL(i.EV_LVL_PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -294,7 +283,6 @@ BEGIN
     END
     DECLARE @updated_EV_AUD_Event_Audience bit = CASE WHEN UPDATE(EV_AUD_Event_Audience) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_EV_AUD bit = CASE WHEN UPDATE(Metadata_EV_AUD) THEN 1 ELSE 0 END;
-    DECLARE @updated_EV_AUD_EQ bit = CASE WHEN UPDATE(EV_AUD_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_AUD_EV_ID))
         RAISERROR('The foreign key column EV_AUD_EV_ID is not updatable.', 16, 1);
     IF(@updated_EV_AUD_Event_Audience = 1)
@@ -302,7 +290,6 @@ BEGIN
         INSERT INTO [attributes].[EV_AUD_Event_Audience] (
             Metadata_EV_AUD,
             EV_AUD_EV_ID,
-            EV_AUD_EQ,
             EV_AUD_Event_Audience
         )
         SELECT DISTINCT
@@ -312,7 +299,6 @@ BEGIN
                 ELSE i.Metadata_EV_AUD
             END, i.Metadata_EV),
             ISNULL(i.EV_AUD_EV_ID, i.EV_ID),
-            ISNULL(i.EV_AUD_EQ, 0),
             i.EV_AUD_Event_Audience
         FROM
             inserted i
@@ -323,7 +309,6 @@ BEGIN
         WHERE
             i.EV_AUD_Event_Audience is not null
         AND ( -- a value that is left as it is states nothing
-            @updated_EV_AUD_EQ = 1 OR
             d.EV_AUD_Event_Audience is null OR
             d.EV_AUD_Event_Audience <> i.EV_AUD_Event_Audience
         );
@@ -363,7 +348,6 @@ BEGIN
     DECLARE @updated_EV_STA_Event_Status bit = CASE WHEN UPDATE(EV_STA_Event_Status) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_EV_STA bit = CASE WHEN UPDATE(Metadata_EV_STA) THEN 1 ELSE 0 END;
     DECLARE @updated_EV_STA_ChangedAt bit = CASE WHEN UPDATE(EV_STA_ChangedAt) THEN 1 ELSE 0 END;
-    DECLARE @updated_EV_STA_EQ bit = CASE WHEN UPDATE(EV_STA_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(EV_STA_EV_ID))
         RAISERROR('The foreign key column EV_STA_EV_ID is not updatable.', 16, 1);
     IF(@updated_EV_STA_Event_Status = 1)
@@ -371,7 +355,6 @@ BEGIN
         INSERT INTO [attributes].[EV_STA_Event_Status] (
             Metadata_EV_STA,
             EV_STA_EV_ID,
-            EV_STA_EQ,
             EV_STA_ChangedAt,
             EV_STA_Event_Status
         )
@@ -382,7 +365,6 @@ BEGIN
                 ELSE i.Metadata_EV_STA
             END, i.Metadata_EV),
             ISNULL(i.EV_STA_EV_ID, i.EV_ID),
-            ISNULL(i.EV_STA_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.EV_STA_Event_Status is null THEN i.EV_STA_ChangedAt
                 WHEN @updated_EV_STA_ChangedAt = 1 THEN i.EV_STA_ChangedAt
@@ -398,7 +380,6 @@ BEGIN
             i.EV_STA_Event_Status is not null
         AND ( -- a value that is left as it is states nothing
             @updated_EV_STA_ChangedAt = 1 OR
-            @updated_EV_STA_EQ = 1 OR
             d.EV_STA_Event_Status is null OR
             d.EV_STA_Event_Status <> i.EV_STA_Event_Status
         );
@@ -472,8 +453,6 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.EV_LVL_PLV_ProfessionalLevel as varbinary(max))) 
-        AND
-            [kPLV].PLV_EQ = i.EV_LVL_PLV_EQ
         LEFT JOIN
             deleted d
         ON
@@ -509,8 +488,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.EV_AUD_EQ = [AUD].EV_AUD_EQ
-    AND
         d.EV_AUD_EV_ID = [AUD].EV_AUD_EV_ID;
     DELETE [REV]
     FROM
@@ -525,8 +502,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.EV_STA_EQ = [STA].EV_STA_EQ
-    AND
         d.EV_STA_ChangedAt = [STA].EV_STA_ChangedAt
     AND
         d.EV_STA_EV_ID = [STA].EV_STA_EV_ID;
