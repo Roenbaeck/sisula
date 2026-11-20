@@ -419,8 +419,7 @@
             expect(box.width > 8 && box.height > 8, id + ' has no icon that shows');
         });
         expect(document.getElementById('undo').disabled && document.getElementById('redo').disabled, 'undo and redo are on for a model without history');
-        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]);
-        for (var w = 0; w < 60 && document.getElementById('undo').disabled; w++) await sleep(50); // the change is recorded when the layout has settled
+        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]); Model.recordState(); Model.recordState(); // the first state is the model as it is, so undo is on from the second
         expect(!document.getElementById('undo').disabled, 'undo is off after a change');
         ControlButtons.setPlayState();
         var playing = getComputedStyle(document.querySelector('#playpause .pause')).display, paused = getComputedStyle(document.querySelector('#playpause .play')).display;
@@ -444,6 +443,60 @@
         expect(!menu.collapsed && document.querySelector('#contextMenu .editable'), 'a click on the square did not open the menu for editing');
         anchor.hideContextMenu();
         window.removeEventListener('keydown', EventHandler.keydown, false); // closing the menu puts it back, as the pointer leaving would take it away
+    });
+    test('the model settings are in one dialog that opens, finds, changes settings and closes', async function () {
+        await load(window.__MODELS['example.xml']);
+        var dialog = document.getElementById('modelSettings');
+        // nothing but the search fields is left in the bar, and the Generate menu only generates
+        var left = Array.prototype.map.call(document.querySelectorAll('#header input, #header select'), function (e) { return e.id; });
+        expect(left.join() === 'searchFilter,nodeSelector', 'the bar still has fields: ' + left.join());
+        expect(document.querySelectorAll('#generate li').length === 6 && document.querySelectorAll('#generate li[data-action]').length === 6, 'the Generate menu holds more than commands');
+        // the settings that the menus held
+        var ids = ['database', 'naming', 'temporalization', 'metadataUsage', 'businessViews', 'knotAliases', 'triggers', 'naturalKeyAttributes', 'equivalence', 'decisiveness', 'entityIntegrity', 'partitioning',
+            'changingSuffix', 'encapsulation', 'defaultIdentity', 'defaultNow', 'restatability', 'assertiveness', 'damping', 'stiffness', 'calculations'];
+        ids.forEach(function (id) { expect(document.querySelector('#modelSettings #' + id), 'the setting ' + id + ' is not in the dialog'); });
+        expect(document.querySelectorAll('#modelSettings .fields li').length >= 52, 'only ' + document.querySelectorAll('#modelSettings .fields li').length + ' settings');
+        // every setting says what it is for, in words that show
+        var helpless = Array.prototype.filter.call(document.querySelectorAll('#modelSettings .fields li.setting'), function (li) { return !li.querySelector('.help') || !li.querySelector('.help').textContent.trim() || !li.querySelector('label'); });
+        expect(helpless.length === 0, helpless.length + ' settings have no label or no sentence of help');
+        record('settings.fields', document.querySelectorAll('#modelSettings .fields li').length);
+        // it opens, on a group
+        Actions.openModelSettings('advanced'); await sleep(500);
+        expect(dialog.open, 'the dialog did not open');
+        var box = document.getElementById('settings-advanced').getBoundingClientRect(), dbox = dialog.getBoundingClientRect();
+        expect(box.top < dbox.bottom && box.bottom > dbox.top, 'the group that was asked for is not in view');
+        expect(document.querySelector('#modelSettings nav [aria-current]').textContent === 'Advanced', 'the group is not marked in the list');
+        // it finds
+        var all = document.querySelectorAll('#modelSettings .fields li:not(.filtered)').length;
+        var search = document.getElementById('settingsSearch');
+        search.value = 'naming'; search.dispatchEvent(new Event('input', { bubbles: true }));
+        var found = document.querySelectorAll('#modelSettings .fields li:not(.filtered)');
+        expect(found.length >= 1 && found.length < all, 'the search found ' + found.length + ' of ' + all);
+        expect(Array.prototype.every.call(document.querySelectorAll('#modelSettings section.group'), function (s) { return s.classList.contains('filtered') === !s.querySelector('li:not(.filtered)'); }), 'a group without matches is shown, or one with is not');
+        search.value = 'qqqqzzzz'; search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(!document.getElementById('settingsNone').hidden, 'nothing matched and it does not say so');
+        search.value = ''; search.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(document.querySelectorAll('#modelSettings .fields li:not(.filtered)').length === all, 'clearing the search did not bring everything back');
+        // a setting changed in it is the setting
+        var naming = document.getElementById('naming'), before = Defaults.naming;
+        naming.value = before === 'original' ? 'improved' : 'original'; naming.dispatchEvent(new Event('change', { bubbles: true }));
+        expect(Defaults.naming === naming.value && Defaults.naming !== before, 'the naming setting did not change');
+        naming.value = before; naming.dispatchEvent(new Event('change', { bubbles: true }));
+        // it closes, with the button and with a click beside it
+        document.querySelector('#modelSettings .close').click();
+        expect(!dialog.open, 'the close button did not close it');
+        Actions.openModelSettings(); await sleep(100);
+        dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        expect(!dialog.open, 'a click beside the dialog did not close it');
+    });
+
+    test('the theme button says what it will do and switches', async function () {
+        var button = document.getElementById('themeToggle'), was = document.body.classList.contains('dark');
+        Actions.applyTheme('light');
+        expect(/dark/i.test(button.getAttribute('aria-label')) && getComputedStyle(button.querySelector('.moon')).display !== 'none' && getComputedStyle(button.querySelector('.sun')).display === 'none', 'the button in the light theme');
+        button.click(); await sleep(50);
+        expect(document.body.classList.contains('dark') && /light/i.test(button.getAttribute('aria-label')) && getComputedStyle(button.querySelector('.sun')).display !== 'none', 'the button in the dark theme');
+        Actions.applyTheme(was ? 'dark' : 'light');
     });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
@@ -575,16 +628,16 @@
         });
         restore.push([HTMLInputElement.prototype, 'click', HTMLInputElement.prototype.click]);
         HTMLInputElement.prototype.click = function () { calls.push('input.click(' + this.id + ')'); };
-        var controls = Array.prototype.slice.call(document.querySelectorAll('#header li, #header input, #header select'));
+        var controls = Array.prototype.slice.call(document.querySelectorAll('#header li, #header input, #header select, #header button[data-action], #modelSettings input, #modelSettings select, #modelSettings button[data-action]'));
         var seen = {};
         try {
             controls.forEach(function (el, i) {
-                var menu = el.closest('.menu'), label = el.tagName === 'LI' ? el.textContent.replace(/\s+/g, ' ').trim().slice(0, 40) : (el.id || 'field' + i);
-                var key = 'wiring.' + (el.tagName === 'LI' ? 'item.' : 'field.') + (menu ? menu.id : 'bar') + '.' + label;
+                var clicks = el.tagName === 'LI' || el.tagName === 'BUTTON', menu = el.closest('.menu, #modelSettings'), label = clicks ? (el.getAttribute('aria-label') || el.textContent).replace(/\s+/g, ' ').trim().slice(0, 40) : (el.id || 'field' + i);
+                var key = 'wiring.' + (clicks ? 'item.' : 'field.') + (menu ? menu.id : 'bar') + '.' + label;
                 if (seen[key]) key += '#' + i;
                 seen[key] = true;
                 var before = calls.length;
-                if (el.tagName === 'LI') {
+                if (clicks) {
                     el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
                 } else {
                     var value = el.value, checked = el.checked, index = el.selectedIndex;
