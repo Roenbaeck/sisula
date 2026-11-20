@@ -419,13 +419,31 @@
             expect(box.width > 8 && box.height > 8, id + ' has no icon that shows');
         });
         expect(document.getElementById('undo').disabled && document.getElementById('redo').disabled, 'undo and redo are on for a model without history');
-        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]); await settle();
+        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]);
+        for (var w = 0; w < 60 && document.getElementById('undo').disabled; w++) await sleep(50); // the change is recorded when the layout has settled
         expect(!document.getElementById('undo').disabled, 'undo is off after a change');
         ControlButtons.setPlayState();
         var playing = getComputedStyle(document.querySelector('#playpause .pause')).display, paused = getComputedStyle(document.querySelector('#playpause .play')).display;
         expect(paused === 'block' && playing === 'none', 'the pause button shows the wrong icon when paused (' + paused + ', ' + playing + ')');
         ControlButtons.setPauseState();
         expect(getComputedStyle(document.querySelector('#playpause .play')).display === 'none', 'the pause button shows play when it runs');
+    });
+    test('the square on the context menu is there to click, and opens the menu for editing', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetView(); await sleep(600);
+        var anchor = ofType(NodeType.ANCHOR)[0];
+        anchor.showContextMenu(anchor, [], null);
+        var menu = anchor.contextMenu, square = menu.toggler, box = square.getBoundingClientRect();
+        expect(box.width > 8 && box.height > 8, 'the square has no size');
+        expect(getComputedStyle(menu.contextMenu).overflow === 'visible', 'the menu clips what is across its corner, and the square is across it');
+        if (box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth && box.bottom <= window.innerHeight) {
+            var hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+            expect(hit === square, 'the square cannot be reached, ' + (hit && (hit.id || hit.className || hit.tagName)) + ' is in its place');
+        }
+        square.click(); await sleep(100);
+        expect(!menu.collapsed && document.querySelector('#contextMenu .editable'), 'a click on the square did not open the menu for editing');
+        anchor.hideContextMenu();
+        window.removeEventListener('keydown', EventHandler.keydown, false); // closing the menu puts it back, as the pointer leaving would take it away
     });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
