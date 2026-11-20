@@ -181,10 +181,10 @@
             expect(seen.after >= 1, 'a listener that fails stopped the next one');
             var last = seen.history[seen.history.length - 1].split('/');
             expect(Number(last[0]) === Model.version && last[1] === '0', 'history event ' + seen.history.join(' '));
-            expect(document.getElementById('undo').firstChild.nodeValue === 'Undo (' + Model.version + ')', 'the undo button says ' + document.getElementById('undo').firstChild.nodeValue);
+            expect(document.querySelector('#undo .count').textContent === String(Model.version), 'the undo button says ' + document.querySelector('#undo .count').textContent);
             ControlButtons.undo(); await settle();
             expect(seen.replaced >= 1, 'no replaced event after an undo');
-            expect(document.getElementById('redo').firstChild.nodeValue === 'Redo (1)', 'the redo button says ' + document.getElementById('redo').firstChild.nodeValue);
+            expect(document.querySelector('#redo .count').textContent === '1', 'the redo button says ' + document.querySelector('#redo .count').textContent);
             Model.off('changed', onChanged);
             var count = seen.changed;
             Model.addAttribute([ofType(NodeType.ANCHOR)[0]]);
@@ -392,6 +392,41 @@
         expect(document.body.classList.contains('dark') === dark, 'did not go back');
     });
 
+    test('the colors come from tokens that both themes give a value, and the bar changes with them', async function () {
+        var tokens = ['--bg', '--surface', '--surface-raised', '--border', '--text', '--text-muted', '--accent', '--hover', '--g-ink', '--g-halo', '--g-edge', '--g-card', '--g-anchor', '--g-attribute', '--g-tie', '--g-ring'];
+        function read() { var s = getComputedStyle(document.body); return tokens.map(function (t) { return s.getPropertyValue(t).trim(); }); }
+        var dark = document.body.classList.contains('dark');
+        Actions.applyTheme('light'); var light = read();
+        Actions.applyTheme('dark'); var night = read();
+        var barDark = getComputedStyle(document.getElementById('header')).backgroundColor;
+        Actions.applyTheme('light');
+        var barLight = getComputedStyle(document.getElementById('header')).backgroundColor;
+        Actions.applyTheme(dark ? 'dark' : 'light');
+        tokens.forEach(function (t, i) { expect(light[i] && night[i], 'the token ' + t + ' has no value in the ' + (light[i] ? 'dark' : 'light') + ' theme'); });
+        expect(light[tokens.indexOf('--bg')] !== night[tokens.indexOf('--bg')] && light[tokens.indexOf('--g-card')] !== night[tokens.indexOf('--g-card')], 'the themes do not differ');
+        expect(barLight !== barDark, 'the bar does not change with the theme');
+        // the accent, the one red of the interface, is not what the bar is filled with
+        expect(barLight !== getComputedStyle(document.body).getPropertyValue('--accent').trim(), 'the bar is filled with the accent');
+        record('theme.tokens', tokens.length);
+    });
+
+    test('the controls are buttons that say what they do, with an icon each, and undo and redo are off when there is nothing to undo or redo', async function () {
+        await fresh();
+        ['undo', 'redo', 'playpause', 'zoomin', 'zoomout'].forEach(function (id) {
+            var b = document.getElementById(id), box = b.querySelector('svg').getBoundingClientRect();
+            expect(b.tagName === 'BUTTON', id + ' is not a button');
+            expect(b.getAttribute('aria-label') && b.getAttribute('title'), id + ' has no name for a screen reader, or no tooltip');
+            expect(box.width > 8 && box.height > 8, id + ' has no icon that shows');
+        });
+        expect(document.getElementById('undo').disabled && document.getElementById('redo').disabled, 'undo and redo are on for a model without history');
+        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]); await settle();
+        expect(!document.getElementById('undo').disabled, 'undo is off after a change');
+        ControlButtons.setPlayState();
+        var playing = getComputedStyle(document.querySelector('#playpause .pause')).display, paused = getComputedStyle(document.querySelector('#playpause .play')).display;
+        expect(paused === 'block' && playing === 'none', 'the pause button shows the wrong icon when paused (' + paused + ', ' + playing + ')');
+        ControlButtons.setPauseState();
+        expect(getComputedStyle(document.querySelector('#playpause .play')).display === 'none', 'the pause button shows play when it runs');
+    });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
         function worst() {
