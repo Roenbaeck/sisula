@@ -459,7 +459,17 @@
             });
         }
         replaceAll(Actions, 'Actions'); replaceAll(Settings, 'Settings');
-        ['save', 'URLPopover'].forEach(function (g) { restore.push([window, g, window[g]]); window[g] = recorder(g); });
+        // three menu items used to call save() and URLPopover() from the markup; the page imports them now, where a test cannot
+        // reach them, so the functions that stand for them record what the markup used to call
+        var legacy = {
+            saveSettingsInBrowser: 'save(<object>, true)',
+            openTutorials: 'URLPopover("http://www.anchormodeling.com/?page_id=186")',
+            openAbout: 'URLPopover("about.html")'
+        };
+        Object.keys(legacy).forEach(function (k) {
+            restore.push([Actions, k, Actions[k]]);
+            Actions[k] = function () { calls.push(legacy[k]); };
+        });
         restore.push([HTMLInputElement.prototype, 'click', HTMLInputElement.prototype.click]);
         HTMLInputElement.prototype.click = function () { calls.push('input.click(' + this.id + ')'); };
         var controls = Array.prototype.slice.call(document.querySelectorAll('#header li, #header input, #header select'));
