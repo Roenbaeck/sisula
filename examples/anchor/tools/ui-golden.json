@@ -11,6 +11,8 @@
     "erase.counts":  "Anchor=1,Attribute=1,Edge=1",
     "example.counts":  "Anchor=4,Attribute=12,Edge=42,Identifier=5,Knot=7,Nexus=1,Tie=7",
     "example.xml":  "4a422655:12728:Anchor=4,Attribute=12,Edge=42,Identifier=5,Knot=7,Nexus=1,Tie=7",
+    "headless.asked":  "checks,clearDrawing,clearSelection,layout,restoring,showKeys,viewReset",
+    "headless.counts":  "Anchor=2,Attribute=1,Edge=4,Nexus=1,Tie=1",
     "html.body":  6587,
     "html.written":  149,
     "menus":  "File:8 Layout:10 Generate:17 Help:2 Defaults:30 Settings:14",

@@ -707,6 +707,40 @@
         EventHandler.clearInteraction();
     });
 
+    // The model is its own layer: with the views and the page's hooks switched off, constructs can still be made, changed, saved
+    // as XML and read again. (The page is put back as it was afterwards.)
+    test('the model works without a view: constructs are made, changed, saved and read back', async function () {
+        var createView = Component.createView, surroundings = Model.surroundings, asked = {};
+        var quiet = {};
+        Object.keys(surroundings).forEach(function (k) { quiet[k] = function () { asked[k] = (asked[k] || 0) + 1; return k === 'selectedRoute' ? null : undefined; }; });
+        var drawn = SVGLayer.nodes.childNodes.length + SVGLayer.edges.childNodes.length;
+        try {
+            Component.createView = null; Model.surroundings = quiet;
+            Model.components.forEach(function (c) { c.view = null; });
+            Model.setupMinimal(false);
+            var anchor = ofType(NodeType.ANCHOR)[0];
+            expect(anchor.view === null, 'the anchor has a view');
+            anchor.mnemonic = 'AC'; anchor.descriptor = 'Actor';
+            Model.addAttribute([anchor]);
+            var attribute = ofType(NodeType.ATTRIBUTE)[0];
+            attribute.mnemonic = 'NAM'; attribute.descriptor = 'Name';
+            Model.toggleHistorized([attribute]);
+            Model.addTieAndAnchor([anchor]);
+            Model.addNexus([anchor]);
+            anchor.setFixed(true); anchor.setSelection(true); anchor.setHighlight(true); anchor.hide(); anchor.show();
+            var before = counts(), xml = xmlOf();
+            Model.fromXML(Model.toXML(false));
+            expect(xmlOf() === xml, 'the model changed when it was saved and read again');
+            record('headless.counts', before);
+            record('headless.asked', Object.keys(asked).sort().join(','));
+            expect(Model.components.every(function (c) { return c.view === null; }), 'a construct got a view');
+            expect((SVGLayer.nodes.childNodes.length + SVGLayer.edges.childNodes.length) === drawn, 'something was drawn');
+        } finally {
+            Component.createView = createView; Model.surroundings = surroundings;
+        }
+        await load(window.__MODELS['example.xml']);
+    });
+
     test('the menus offer what they did', async function () {
         var items = Array.prototype.map.call(document.querySelectorAll('#header .menu'), function (m) { return m.firstChild.nodeValue.trim() + ':' + m.querySelectorAll('li').length; });
         record('menus', items.join(' '));
