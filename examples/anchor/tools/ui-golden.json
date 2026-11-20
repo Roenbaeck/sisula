@@ -34,11 +34,11 @@
     "view.fixation":  "on=true off=true key=true",
     "view.hideShow":  "before=true,true,true,true hidden=false,false,false,false,false,false shown=true,true,true,true,true,true",
     "view.highlight":  "on=true off=true",
-    "view.implode":  "before=Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Nexus:#nexus:#nexus imploded=Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Nexus:#nexus:#nexus after=Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Nexus:#nexus:#nexus",
+    "view.implode":  "before=Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Nexus:#nexus:#nav_nexus imploded=Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Anchor:#anchor_imploded:#nav_anchor Nexus:#nexus_imploded:#nav_nexus after=Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Anchor:#anchor:#nav_anchor Nexus:#nexus:#nav_nexus",
     "view.layers":  "nodes=60 edges=42 names=50 nav nodes=36 edges=42",
     "view.names":  "57: Anchor anchor=4; Attribute -=12; Edge role=21; Identifier -=5; Knot -=7; Nexus nexus=1; Tie -=7",
     "view.names.toggle":  "Person | PN_Person | Person | names layer true -\u003e false | and back true",
-    "view.navShapes":  "Anchor #nav_anchor=4; Attribute #nav_attribute=7; Attribute #nav_attribute_historized=5; Edge null=42; Identifier #nav_identifier=3; Identifier #nav_identifier_historized=2; Knot #nav_knot=7; Nexus #nexus=1; Tie #nav_tie=4; Tie #nav_tie_historized=3",
+    "view.navShapes":  "Anchor #nav_anchor=4; Attribute #nav_attribute=7; Attribute #nav_attribute_historized=5; Edge null=42; Identifier #nav_identifier=3; Identifier #nav_identifier_historized=2; Knot #nav_knot=7; Nexus #nav_nexus=1; Tie #nav_tie=4; Tie #nav_tie_historized=3",
     "view.selection":  "on=true off=true",
     "view.shapes":  "Anchor visible #anchor=4; Attribute visible #attribute=7; Attribute visible #attribute_historized=5; Edge visible #bubbleOutline=3; Edge visible #many=10; Edge visible #one=11; Edge visible null=18; Identifier visible #identifier=3; Identifier visible #identifier_historized=2; Knot visible #knot=7; Nexus visible #nexus=1; Tie visible #tie=4; Tie visible #tie_historized=3",
     "view.shapesFollow":  "attribute true #attribute_historized/#nav_attribute_historized; attribute false #attribute/#nav_attribute; tie true #tie_historized/#nav_tie_historized; tie false #tie/#nav_tie; role false #one; role true #many; role false #one; role true #many; role false #one; role true #many; identifier false #identifier/#nav_identifier; identifier true #identifier_historized/#nav_identifier_historized",
@@ -135,5 +135,7 @@
     "wiring.item.modelSettings.Reset names, types and defaults":  "Settings.resetDefaults(true)",
     "wiring.item.modelSettings.Target":  "Actions.showSettingsGroup(\"target\")",
     "wiring.item.modelSettings.Toggle debug":  "Settings.toggleDebug()",
-    "wiring.item.modelSettings.Types and values":  "Actions.showSettingsGroup(\"types\")"
+    "wiring.item.modelSettings.Types and values":  "Actions.showSettingsGroup(\"types\")",
+    "xml.lines":  253,
+    "xml.problem":  "anchor XX: another anchor or nexus has the same mnemonic"
 }

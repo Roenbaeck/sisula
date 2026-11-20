@@ -641,6 +641,67 @@
         expect(panel.hidden && !document.body.classList.contains('panel-open'), 'the panel did not close');
         EventHandler.clearSelection();
     });
+    test('the XML view shows the model, and text that is right becomes the model, and text that is not is left out', async function () {
+        await load(window.__MODELS['example.xml']);
+        // the text that is made of a model is the model
+        var round = XmlText.pretty(Model.toXML(false)), again = new DOMParser().parseFromString(round, 'application/xml');
+        expect(!again.getElementsByTagName('parsererror').length, 'the text made of the model is not XML');
+        expect(canonical(again.documentElement) === xmlOf(), 'the text made of the model is not the model: ' + difference(canonical(again.documentElement), xmlOf()));
+        record('xml.lines', round.split('\n').length);
+        // the view
+        var panel = document.getElementById('panel'), text = document.getElementById('xmlText'), status = document.getElementById('xmlStatus');
+        Outline.setOpen(true, true);
+        document.getElementById('tab-xml').click(); await sleep(100);
+        expect(!document.getElementById('view-xml').hidden && document.getElementById('view-outline').hidden && document.body.classList.contains('panel-wide')
+            && document.getElementById('tab-xml').getAttribute('aria-selected') === 'true' && document.getElementById('tab-outline').getAttribute('aria-selected') === 'false', 'the tab did not show the view');
+        expect(/^<\?xml/.test(text.value) && /<schema /.test(text.value), 'the text is not the XML of the model');
+        // the model changes, the text follows
+        var anchor = ofType(NodeType.ANCHOR)[0], was = anchor.descriptor;
+        anchor.descriptor = 'Performer'; Model.recordState(); await sleep(100);
+        expect(text.value.indexOf('descriptor="Performer"') >= 0, 'the text did not follow a change in the model');
+        // the text changes, the model follows, once it is right
+        var version = Model.version;
+        text.value = text.value.replace('descriptor="Performer"', 'descriptor="Dancer"');
+        text.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(/Checking/.test(status.textContent), 'nothing says that the text is being checked');
+        await sleep(1200);
+        var after = ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; });
+        expect(after.length === 1, 'the model did not follow the text');
+        expect(Model.version === version + 1 && /Applied/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
+        // and it can be undone, and the text follows that too
+        ControlButtons.undo(); await sleep(400);
+        expect(ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; }).length === 0, 'undo did not take the change from the text back');
+        expect(text.value.indexOf('descriptor="Dancer"') < 0, 'the text did not follow the undo');
+        // text that is not XML is not believed, and the problem is said
+        var good = text.value, count = ofType(NodeType.ANCHOR).length, names = ofType(NodeType.ANCHOR).map(function (a) { return a.descriptor; }).join();
+        text.value = good.slice(0, good.length - 40);
+        text.dispatchEvent(new Event('input', { bubbles: true })); await sleep(1200);
+        expect(/not been changed/.test(status.textContent) && document.querySelectorAll('#xmlProblems li').length >= 1 && document.getElementById('xmlView').classList.contains('bad'), 'text that is not XML was not refused: ' + status.textContent);
+        expect(ofType(NodeType.ANCHOR).map(function (a) { return a.descriptor; }).join() === names, 'the model changed although the text was not XML');
+        // text that is XML but not right (two anchors with one mnemonic) is not believed either
+        var first = /<anchor mnemonic="(\w\w)"/.exec(good)[1];
+        text.value = good.replace(/(<anchor mnemonic=")(\w\w)(")/g, function (m, a, mn, c) { return a + first + c; });
+        text.dispatchEvent(new Event('input', { bubbles: true })); await sleep(1200);
+        expect(document.querySelectorAll('#xmlProblems li').length >= 1 && ofType(NodeType.ANCHOR).map(function (a) { return a.descriptor; }).join() === names, 'text with one mnemonic for every anchor was believed: ' + status.textContent);
+        record('xml.problem', document.querySelector('#xmlProblems li').textContent.replace(/\b[A-Z]{2}\b/g, 'XX').slice(0, 60));
+        // what is being typed is not replaced by the model
+        text.focus(); text.value = good + '<!-- a note -->'; text.dispatchEvent(new Event('input', { bubbles: true }));
+        Model.recordState(); await sleep(100);
+        expect(text.value.indexOf('a note') >= 0, 'the text that was being typed was replaced by the model');
+        clearTimeout(XmlView.timer); text.blur(); XmlView.dirty = false;
+        // copy
+        var written = [];
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: function (s) { written.push(s); return Promise.resolve(); } }, configurable: true });
+        try { XmlView.copy(); await sleep(300); } finally { delete navigator.clipboard; }
+        expect(written.length === 1 && written[0] === text.value, 'copy did not give the text to the clipboard');
+        expect(status.textContent === 'Copied.', 'copy did not say that it copied: ' + status.textContent);
+        // the tabs have the keys of tabs
+        var tab = document.getElementById('tab-xml');
+        tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })); await sleep(100);
+        expect(Outline.view === 'outline' && !document.getElementById('view-outline').hidden && !document.body.classList.contains('panel-wide'), 'Left did not show the outline');
+        Outline.setOpen(false, true);
+        anchor.descriptor = was;
+    });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
         function worst() {
@@ -945,6 +1006,7 @@
         Actions.explodeAll(); await sleep(300);
         var after = shapes();
         record('view.implode', 'before=' + before + ' imploded=' + imploded + ' after=' + after);
+        expect(/Nexus:#nexus_imploded/.test(imploded) && /Nexus:#nexus:/.test(after), 'a nexus does not change its shape when it is imploded and exploded: ' + imploded + ' / ' + after);
         expect(before === after && before !== imploded, 'before ' + before + ' / imploded ' + imploded + ' / after ' + after);
     });
 
