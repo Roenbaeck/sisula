@@ -356,6 +356,26 @@
         expect(ofType(NodeType.NEXUS).every(function (n) { return attributesOf(n).every(function (a) { return a.visible; }); }), 'explode all left attributes hidden');
     });
 
+    test('what explodes is drawn where it is put, also if the layout stops it at once', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(500);
+        var wrong = [];
+        [NodeType.NEXUS, NodeType.ANCHOR].forEach(function (type) {
+            var one = ofType(type)[0];
+            Model.explode([one], false); // implode, without the layout that would move and draw them
+            Model.explode([one], false); // explode, in the same way: nothing but the explode has drawn anything yet
+            Model.components.forEach(function (c) {
+                if (c.visible && c.node.type !== NodeType.EDGE && sv(c).control) {
+                    var m = sv(c).control.matrix;
+                    if (Math.hypot(m.e - c.node.xPosition, m.f - c.node.yPosition) > 0.5) wrong.push(c.toString());
+                }
+            });
+        });
+        expect(wrong.length === 0, wrong.length + ' constructs are not drawn where they are: ' + wrong.slice(0, 5).join(', '));
+        DrawingEngine.start(true);
+        await sleep(200);
+    });
+
     test('zoom changes the view and reset view restores it', async function () {
         var w = SVG.viewBox.baseVal.width;
         ControlButtons.zoomIn(); await sleep(50);
