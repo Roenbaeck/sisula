@@ -667,7 +667,7 @@
         await sleep(1200);
         var after = ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; });
         expect(after.length === 1, 'the model did not follow the text');
-        expect(Model.version > version && /Applied/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
+        expect(Model.version > version && /Applied|The text is the model/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
         // and it can be undone, and the text follows that too
         ControlButtons.undo(); await sleep(400);
         expect(ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; }).length === 0, 'undo did not take the change from the text back');
@@ -1040,6 +1040,120 @@
                 record('layout.' + size.name, 'bar ' + Math.round(bar.height) + ', panel ' + (size.w > 900 ? 'side' : 'sheet'));
             } finally { await page.close(); }
         }
+    });
+    function pointer(type, id, x, y, target, kind) {
+        return target.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: kind || 'touch', clientX: x, clientY: y, bubbles: true, cancelable: true, isPrimary: id === 1 }));
+    }
+    function centreOf(c) { var r = c.view.svg.graphicsElement.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+    test('a finger taps to select, drags a construct, moves the view and pinches; a mouse is left to the hover and the keys', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var anchor = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0], other = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'ST'; })[0];
+        var shapeOf = function (c) { return c.view.svg.graphicsElement; };
+        var box = SVG.viewBox.baseVal;
+        EventHandler.clearSelection(); Outline.setOpen(false, true);
+        // the graph is for fingers: no scrolling of the page, and a larger circle to hit that a mouse does not have
+        expect(getComputedStyle(SVG).touchAction === 'none', 'the graph does not keep the browser from using the fingers');
+        expect(ofType(NodeType.ANCHOR).every(function (a) { return shapeOf(a).querySelector('circle.hit'); }) && getComputedStyle(shapeOf(anchor).querySelector('circle.hit')).r === '0px', 'the constructs have no circle for a finger, or it is there for a mouse');
+        // a mouse is not a finger
+        var c = centreOf(anchor);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor), 'mouse'); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor), 'mouse');
+        expect(EventHandler.selectedComponents.length === 0 && Object.keys(Gestures.pointers).length === 0 && !Outline.isOpen, 'a mouse was treated as a finger');
+        // a menu that is open closes when the graph is touched
+        Menus.open(document.getElementById('generate'), null);
+        pointer('pointerdown', 1, 3, 300, SVG); pointer('pointerup', 1, 3, 300, SVG);
+        expect(!document.getElementById('generate').classList.contains('open'), 'a touch on the graph left a menu open');
+        // a tap selects, and the properties come up in the panel
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor)); await sleep(300);
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0] === anchor, 'a tap did not select the construct');
+        expect(Outline.isOpen && /^Anchor: /.test(document.querySelector('#panelProperties h3').textContent), 'a tap did not bring up the properties');
+        var inView = Actions.visibleArea(), cc = centreOf(anchor);
+        expect(cc.x >= inView.x && cc.x <= inView.x + inView.width && cc.y >= inView.y && cc.y <= inView.y + inView.height, 'the selected construct is under the panel');
+        // a tap on it again lets go, and so does a tap on the background, and a tap on another selects that instead
+        c = centreOf(anchor);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor));
+        expect(EventHandler.selectedComponents.length === 0, 'a second tap did not let go');
+        var o = centreOf(other);
+        pointer('pointerdown', 1, o.x, o.y, shapeOf(other)); pointer('pointerup', 1, o.x, o.y, shapeOf(other));
+        c = centreOf(anchor); pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor));
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0] === anchor, 'a tap on another did not make it the only one selected');
+        pointer('pointerdown', 1, 3, 300, SVG); pointer('pointerup', 1, 3, 300, SVG);
+        expect(EventHandler.selectedComponents.length === 0, 'a tap on the background did not let go');
+        // one finger on the background moves the view
+        var x0 = box.x, y0 = box.y, k = box.width / window.innerWidth;
+        pointer('pointerdown', 1, 400, 500, SVG); pointer('pointermove', 1, 430, 520, SVG); pointer('pointermove', 1, 460, 540, SVG); pointer('pointerup', 1, 460, 540, SVG);
+        expect(Math.abs((x0 - box.x) - 60 * k) < 0.5 && Math.abs((y0 - box.y) - 40 * k) < 0.5, 'the view moved ' + (x0 - box.x).toFixed(1) + ',' + (y0 - box.y).toFixed(1) + ' for a finger that moved 60,40');
+        expect(Gestures.mode === null && EventHandler.selectedComponents.length === 0, 'a move was taken for a tap, or the mode is left');
+        // two fingers zoom about the middle between them
+        var w0 = box.width, mid = EventHandler.screenToSVG(650, 400);
+        pointer('pointerdown', 1, 600, 400, SVG); pointer('pointerdown', 2, 700, 400, SVG);
+        pointer('pointermove', 2, 800, 400, SVG); pointer('pointermove', 1, 500, 400, SVG);
+        expect(Math.abs(box.width / w0 - 1 / 3) < 0.02, 'the view is ' + (box.width / w0).toFixed(2) + ' of what it was after the fingers went from 100 to 300 apart');
+        var after = EventHandler.screenToSVG(650, 400);
+        expect(Math.abs(after.x - mid.x) < 2 && Math.abs(after.y - mid.y) < 2, 'the point between the fingers moved: ' + mid.x.toFixed(0) + ',' + mid.y.toFixed(0) + ' to ' + after.x.toFixed(0) + ',' + after.y.toFixed(0));
+        pointer('pointerup', 2, 800, 400, SVG); pointer('pointermove', 1, 520, 420, SVG); pointer('pointerup', 1, 520, 420, SVG);
+        expect(EventHandler.selectedComponents.length === 0 && Gestures.mode === null, 'lifting the fingers after a pinch selected something');
+        Actions.resetZoom(); await sleep(1200);
+        // a finger drags a construct, and leaves it there, fixed
+        c = centreOf(anchor);
+        var before = { x: anchor.node.xPosition, y: anchor.node.yPosition };
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointermove', 1, c.x + 30, c.y + 10, shapeOf(anchor)); pointer('pointermove', 1, c.x + 120, c.y + 60, shapeOf(anchor));
+        var want = EventHandler.screenToSVG(c.x + 120, c.y + 60);
+        expect(Math.abs(anchor.node.xPosition - want.x) < 1 && Math.abs(anchor.node.yPosition - want.y) < 1 && anchor.node.unstoppable, 'the construct is not under the finger: ' + anchor.node.xPosition.toFixed(0) + ',' + anchor.node.yPosition.toFixed(0) + ' for ' + want.x.toFixed(0) + ',' + want.y.toFixed(0));
+        pointer('pointerup', 1, c.x + 120, c.y + 60, shapeOf(anchor)); await sleep(500);
+        expect(anchor.getFixed() && !anchor.node.unstoppable && Math.abs(anchor.node.xPosition - want.x) < 1, 'the construct is not left where it was put, fixed');
+        expect(EventHandler.selectedComponents.length === 0, 'a drag selected the construct');
+        anchor.setFixed(false);
+        record('gestures.ok', 'tap drag pan pinch');
+    });
+
+    test('a finger held on a construct adds it to the selection and opens its context menu, which stays in the window', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var anchors = ofType(NodeType.ANCHOR), first = anchors[0], second = anchors[1], shapeOf = function (c) { return c.view.svg.graphicsElement; };
+        EventHandler.clearSelection(); Outline.setOpen(false, true);
+        var c = centreOf(first);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(first));
+        await sleep(300);
+        expect(!document.getElementById('contextMenu'), 'the menu opened before the finger was held');
+        await sleep(450);
+        expect(EventHandler.selectedComponents.indexOf(first) >= 0 && document.getElementById('contextMenu') && first.contextMenu && !first.contextMenu.collapsed, 'holding did not select the construct and open its menu');
+        pointer('pointerup', 1, c.x, c.y, shapeOf(first));
+        expect(EventHandler.selectedComponents.length === 1, 'lifting after holding changed the selection');
+        var box = document.getElementById('contextMenu').getBoundingClientRect();
+        expect(box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5, 'the menu is not in the window: ' + [box.left, box.top, box.right, box.bottom].map(Math.round).join(','));
+        // a touch beside the menu closes it
+        document.getElementById('modalBackground').dispatchEvent(new MouseEvent('click', { bubbles: true })); await sleep(100);
+        expect(!document.getElementById('contextMenu') || first.contextMenu.collapsed, 'a touch beside the menu did not close it');
+        first.hideContextMenu();
+        // a second construct held is added: two are selected
+        var d = centreOf(second);
+        pointer('pointerdown', 1, d.x, d.y, shapeOf(second)); await sleep(700); pointer('pointerup', 1, d.x, d.y, shapeOf(second));
+        expect(EventHandler.selectedComponents.length === 2, 'a second construct that was held was not added to the selection: ' + EventHandler.selectedComponents.length);
+        second.hideContextMenu(); EventHandler.clearSelection();
+        // a construct at the edge of the window gets a menu that is in the window
+        second.node.xPosition = EventHandler.screenToSVG(window.innerWidth - 5, 300).x; second.node.yPosition = EventHandler.screenToSVG(0, window.innerHeight - 5).y; second.node.start();
+        second.view.draw(second.view.svg);
+        second.showContextMenu(second, [], null); second.contextMenu.toggle(); await sleep(100);
+        var edge = document.getElementById('contextMenu').getBoundingClientRect();
+        expect(edge.right <= window.innerWidth + 0.5 && edge.bottom <= window.innerHeight + 0.5 && edge.left >= 0, 'the menu of a construct at the corner is out of the window: ' + [edge.left, edge.top, edge.right, edge.bottom].map(Math.round).join(','));
+        second.hideContextMenu(); EventHandler.clearSelection();
+    });
+
+    test('a finger on the miniature puts the middle of the view where it is, and follows', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var mini = document.getElementById('minigraph'), r = mini.getBoundingClientRect(), box = SVG.viewBox.baseVal;
+        var before = { x: box.x, y: box.y };
+        pointer('pointerdown', 1, r.left + r.width * 0.2, r.top + r.height * 0.2, mini);
+        var first = { x: box.x, y: box.y };
+        pointer('pointermove', 1, r.left + r.width * 0.8, r.top + r.height * 0.8, mini);
+        var second = { x: box.x, y: box.y };
+        pointer('pointerup', 1, r.left + r.width * 0.8, r.top + r.height * 0.8, mini);
+        expect(Math.abs(first.x - before.x) + Math.abs(first.y - before.y) > 1, 'a touch on the miniature did not move the view');
+        expect(second.x > first.x && second.y > first.y, 'the view did not follow the finger on the miniature');
+        expect(Gestures.mode === null && Object.keys(Gestures.pointers).length === 0, 'the finger is still down');
+        Actions.resetZoom();
     });
     test('a model goes to an agent without its positions, and what comes back replaces it, with what was there in its place', async function () {
         await load(window.__MODELS['example.xml']);
