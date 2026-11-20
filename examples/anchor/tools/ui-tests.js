@@ -326,6 +326,36 @@
         expect(imploded < before && visible() === before, before + ', ' + imploded + ', ' + visible());
     });
 
+    test('a nexus can be imploded and exploded like an anchor, and keeps it when it is saved and read again', async function () {
+        await load(window.__MODELS['example.xml']);
+        var nexus = ofType(NodeType.NEXUS)[0];
+        function attributesOf(n) {
+            return n.node.edges.map(function (e) { return e.node === n.node ? e.otherNode : e.node; })
+                .filter(function (other) { return other.type === NodeType.ATTRIBUTE; })
+                .map(function (other) { return Model.nodeToComponent(other); });
+        }
+        var attributes = attributesOf(nexus);
+        expect(attributes.length > 0 && attributes.every(function (a) { return a.visible; }), 'the nexus has no visible attributes to start with');
+        record('nexus.implode.attributes', attributes.length);
+        Model.explode([nexus]); await sleep(50);
+        expect(nexus.imploded === true, 'the nexus was not imploded');
+        expect(attributes.every(function (a) { return !a.visible; }), 'the attributes of the imploded nexus are still shown');
+        var saved = new XMLSerializer().serializeToString(Model.toXML(false));
+        expect(/<nexus[^>]*>(?:(?!<\/nexus>)[\s\S])*<layout[^>]*imploded="true"/.test(saved), 'the saved model does not say that the nexus is imploded');
+        await load(saved);
+        var again = ofType(NodeType.NEXUS)[0];
+        expect(again.imploded === true, 'the nexus was not imploded after the model was read again');
+        expect(attributesOf(again).every(function (a) { return !a.visible; }), 'the attributes are shown after the model was read again');
+        Model.explode([again]); await sleep(50);
+        expect(again.imploded === false && attributesOf(again).every(function (a) { return a.visible; }), 'the nexus did not explode');
+        Actions.implodeAll(); await sleep(50);
+        expect(ofType(NodeType.NEXUS).every(function (n) { return n.imploded; }), 'implode all left a nexus alone');
+        expect(ofType(NodeType.ANCHOR).every(function (n) { return n.imploded; }), 'implode all left an anchor alone');
+        Actions.explodeAll(); await sleep(50);
+        expect(ofType(NodeType.NEXUS).every(function (n) { return !n.imploded; }), 'explode all left a nexus imploded');
+        expect(ofType(NodeType.NEXUS).every(function (n) { return attributesOf(n).every(function (a) { return a.visible; }); }), 'explode all left attributes hidden');
+    });
+
     test('zoom changes the view and reset view restores it', async function () {
         var w = SVG.viewBox.baseVal.width;
         ControlButtons.zoomIn(); await sleep(50);

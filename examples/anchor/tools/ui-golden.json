@@ -16,6 +16,7 @@
     "html.body":  6587,
     "html.written":  149,
     "menus":  "File:8 Layout:10 Generate:17 Help:2 Defaults:30 Settings:14",
+    "nexus.implode.attributes":  3,
     "roastery.counts":  "Anchor=4,Attribute=17,Edge=35,Knot=5,Nexus=2,Tie=5",
     "roastery.xml":  "ebd2b6d0:11417:Anchor=4,Attribute=17,Edge=35,Knot=5,Nexus=2,Tie=5",
     "search.all":  37,
