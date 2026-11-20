@@ -57,7 +57,7 @@
     }
     function hover(component) {
         EventHandler.clearInteraction(); EventHandler.setInteraction(null);
-        component.svg.graphicsElement.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        sv(component).graphicsElement.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     }
     function closeOverlays() {
         ['codePopover', 'tabularEditor', 'contextMenu', 'urlPopover'].forEach(function (id) {
@@ -347,8 +347,8 @@
         function worst() {
             var max = 0;
             Model.components.forEach(function (c) {
-                if (c.node.type === NodeType.EDGE && (c.tied || c.chronicable) && c.svg.graphicsElement) {
-                    var m = c.svg.graphicsElement.transform.baseVal.getItem(0).matrix, p = c.svg.pathElement, L = p.getTotalLength();
+                if (c.node.type === NodeType.EDGE && (c.tied || c.chronicable) && sv(c).graphicsElement) {
+                    var m = sv(c).graphicsElement.transform.baseVal.getItem(0).matrix, p = sv(c).pathElement, L = p.getTotalLength();
                     for (var i = 0, best = 1e9; i <= 300; i++) { var q = p.getPointAtLength(L * i / 300); best = Math.min(best, Math.hypot(q.x - m.e, q.y - m.f)); }
                     max = Math.max(max, best);
                 }
