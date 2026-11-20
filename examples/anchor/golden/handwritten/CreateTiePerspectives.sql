@@ -218,7 +218,6 @@ CREATE OR REPLACE VIEW ties."lAC_part_PR_in_RAT_got" (
     "PR_ID_in" COMMENT 'The program the actor has a part in.',
     "got_RAT_Checksum",
     "got_RAT_Rating" COMMENT 'The rating the actor got for the part.',
-    "got_RAT_EQ",
     "got_Metadata_RAT",
     "RAT_ID_got" COMMENT 'The rating the actor got for the part.'
 ) COPY GRANTS COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
@@ -230,13 +229,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
@@ -261,7 +259,6 @@ RETURNS TABLE (
     "PR_ID_in" number(10,0),
     "got_RAT_Checksum" numeric(19,0),
     "got_RAT_Rating" varchar(42),
-    "got_RAT_EQ" tinyint,
     "got_Metadata_RAT" int,
     "RAT_ID_got" tinyint
 )
@@ -274,13 +271,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
@@ -317,7 +313,6 @@ RETURNS TABLE (
     "PR_ID_in" number(10,0),
     "got_RAT_Checksum" numeric(19,0),
     "got_RAT_Rating" varchar(42),
-    "got_RAT_EQ" tinyint,
     "got_Metadata_RAT" int,
     "RAT_ID_got" tinyint
 )
@@ -330,13 +325,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
@@ -442,7 +436,6 @@ CREATE OR REPLACE VIEW ties."lAC_parent_AC_child_PAT_having" (
     "AC_ID_parent" COMMENT 'The actor who is the parent.',
     "AC_ID_child" COMMENT 'The actor who is the child.',
     "having_PAT_ParentalType" COMMENT 'The type of parental relationship.',
-    "having_PAT_EQ",
     "having_Metadata_PAT",
     "PAT_ID_having" COMMENT 'The type of parental relationship.'
 ) COPY GRANTS COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
@@ -452,13 +445,12 @@ SELECT
     tie."AC_ID_parent",
     tie."AC_ID_child",
     "PAT_having"."PAT_ParentalType" AS "having_PAT_ParentalType",
-    "PAT_having"."PAT_EQ" AS "having_PAT_EQ",
     "PAT_having"."Metadata_PAT" AS "having_Metadata_PAT",
     tie."PAT_ID_having"
 FROM
     ties."AC_parent_AC_child_PAT_having" tie
 LEFT JOIN
-    TABLE(knots."ePAT_ParentalType"(0)) "PAT_having"
+    knots."PAT_ParentalType" "PAT_having"
 ON
     "PAT_having"."PAT_ID" = tie."PAT_ID_having"
 ;
@@ -473,7 +465,6 @@ RETURNS TABLE (
     "AC_ID_parent" smallint,
     "AC_ID_child" smallint,
     "having_PAT_ParentalType" varchar(42),
-    "having_PAT_EQ" tinyint,
     "having_Metadata_PAT" int,
     "PAT_ID_having" tinyint
 )
@@ -484,13 +475,12 @@ SELECT
     tie."AC_ID_parent",
     tie."AC_ID_child",
     "PAT_having"."PAT_ParentalType" AS "having_PAT_ParentalType",
-    "PAT_having"."PAT_EQ" AS "having_PAT_EQ",
     "PAT_having"."Metadata_PAT" AS "having_Metadata_PAT",
     tie."PAT_ID_having"
 FROM
     ties."AC_parent_AC_child_PAT_having" tie
 LEFT JOIN
-    TABLE(knots."ePAT_ParentalType"(0)) "PAT_having"
+    knots."PAT_ParentalType" "PAT_having"
 ON
     "PAT_having"."PAT_ID" = tie."PAT_ID_having"
 $$

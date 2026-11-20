@@ -26,14 +26,12 @@ GO
 IF Object_ID('attributes.EV_AUD_Event_Audience', 'U') IS NULL
 CREATE TABLE [attributes].[EV_AUD_Event_Audience] (
     EV_AUD_EV_ID numeric(12,0) not null,
-    EV_AUD_EQ tinyint not null,
     EV_AUD_Event_Audience int not null,
     Metadata_EV_AUD int not null,
     constraint fkEV_AUD_Event_Audience foreign key (
         EV_AUD_EV_ID
     ) references [nexuses].[EV_Event](EV_ID),
     constraint pkEV_AUD_Event_Audience primary key (
-        EV_AUD_EQ asc,
         EV_AUD_EV_ID asc
     )
 );
@@ -60,7 +58,6 @@ GO
 IF Object_ID('attributes.EV_STA_Event_Status', 'U') IS NULL
 CREATE TABLE [attributes].[EV_STA_Event_Status] (
     EV_STA_EV_ID numeric(12,0) not null,
-    EV_STA_EQ tinyint not null,
     EV_STA_Event_Status nvarchar(20) not null,
     EV_STA_ChangedAt datetime2 not null,
     Metadata_EV_STA int not null,
@@ -68,7 +65,6 @@ CREATE TABLE [attributes].[EV_STA_Event_Status] (
         EV_STA_EV_ID
     ) references [nexuses].[EV_Event](EV_ID),
     constraint pkEV_STA_Event_Status primary key (
-        EV_STA_EQ asc,
         EV_STA_EV_ID asc,
         EV_STA_ChangedAt desc
     )
@@ -107,7 +103,7 @@ CREATE TABLE [attributes].[EV_LVL_Event_Level] (
     ) references [nexuses].[EV_Event](EV_ID),
     constraint fk_K_EV_LVL_Event_Level foreign key (
         EV_LVL_PLV_ID
-    ) references [knots].[PLV_ProfessionalLevel_ID](PLV_ID),
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
     constraint pkEV_LVL_Event_Level primary key (
         EV_LVL_EV_ID asc,
         EV_LVL_ChangedAt desc
@@ -120,7 +116,6 @@ GO
 IF Object_ID('attributes.ST_NAM_Stage_Name', 'U') IS NULL
 CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
     ST_NAM_ST_ID int not null,
-    ST_NAM_EQ tinyint not null,
     ST_NAM_Stage_Name nvarchar(42) not null,
     ST_NAM_ChangedAt datetime2 not null,
     Metadata_ST_NAM int not null,
@@ -128,7 +123,6 @@ CREATE TABLE [attributes].[ST_NAM_Stage_Name] (
         ST_NAM_ST_ID
     ) references [anchors].[ST_Stage](ST_ID),
     constraint pkST_NAM_Stage_Name primary key (
-        ST_NAM_EQ asc,
         ST_NAM_ST_ID asc,
         ST_NAM_ChangedAt desc
     )
@@ -140,7 +134,6 @@ GO
 IF Object_ID('attributes.ST_LOC_Stage_Location', 'U') IS NULL
 CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
     ST_LOC_ST_ID int not null,
-    ST_LOC_EQ tinyint not null,
     ST_LOC_Stage_Location geography not null,
     ST_LOC_Checksum as cast(dw.MD5(cast(ST_LOC_Stage_Location as varbinary(max))) as varbinary(16)) persisted,
     Metadata_ST_LOC int not null,
@@ -148,7 +141,6 @@ CREATE TABLE [attributes].[ST_LOC_Stage_Location] (
         ST_LOC_ST_ID
     ) references [anchors].[ST_Stage](ST_ID),
     constraint pkST_LOC_Stage_Location primary key (
-        ST_LOC_EQ asc,
         ST_LOC_ST_ID asc
     )
 );
@@ -244,7 +236,7 @@ CREATE TABLE [attributes].[AC_PLV_Actor_ProfessionalLevel] (
     ) references [anchors].[AC_Actor](AC_ID),
     constraint fk_K_AC_PLV_Actor_ProfessionalLevel foreign key (
         AC_PLV_PLV_ID
-    ) references [knots].[PLV_ProfessionalLevel_ID](PLV_ID),
+    ) references [knots].[PLV_ProfessionalLevel](PLV_ID),
     constraint pkAC_PLV_Actor_ProfessionalLevel primary key (
         AC_PLV_AC_ID asc,
         AC_PLV_ChangedAt desc

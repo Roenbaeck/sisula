@@ -20,7 +20,7 @@ CREATE TABLE [nexuses].[EV_Event] (
     ) references [anchors].[PR_Program](PR_ID),
     constraint EV_Event_fkETY_of foreign key (
         ETY_ID_of
-    ) references [knots].[ETY_EventType_ID](ETY_ID),
+    ) references [knots].[ETY_EventType](ETY_ID),
     Metadata_EV int not null,
     constraint pkEV_Event primary key (
         EV_ID asc

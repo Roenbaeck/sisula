@@ -11,14 +11,12 @@
 -- rEV_STA_Event_Status rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION attributes."rEV_STA_Event_Status" (
-    equivalent tinyint,
     changingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
     "Metadata_EV_STA" int,
     "EV_STA_EV_ID" numeric(12,0),
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_STA_ChangedAt" datetime
 )
@@ -27,11 +25,10 @@ $$
     SELECT
         "Metadata_EV_STA",
         "EV_STA_EV_ID",
-        "EV_STA_EQ",
         "EV_STA_Event_Status",
         "EV_STA_ChangedAt"
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) 
+        attributes."EV_STA_Event_Status"
     WHERE
         "EV_STA_ChangedAt" <= changingTimepoint
 $$
@@ -66,14 +63,12 @@ $$
 -- rST_NAM_Stage_Name rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION attributes."rST_NAM_Stage_Name" (
-    equivalent tinyint,
     changingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
     "Metadata_ST_NAM" int,
     "ST_NAM_ST_ID" int,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_NAM_ChangedAt" datetime
 )
@@ -82,11 +77,10 @@ $$
     SELECT
         "Metadata_ST_NAM",
         "ST_NAM_ST_ID",
-        "ST_NAM_EQ",
         "ST_NAM_Stage_Name",
         "ST_NAM_ChangedAt"
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(equivalent)) 
+        attributes."ST_NAM_Stage_Name"
     WHERE
         "ST_NAM_ChangedAt" <= changingTimepoint
 $$

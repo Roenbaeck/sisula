@@ -381,13 +381,13 @@ GROUP BY
 UNION ALL
 SELECT
     'EV_Event',
-    'no row in ETY_EventType_ID for ETY_ID_of',
+    'no row in ETY_EventType for ETY_ID_of',
     OBJECT_CONSTRUCT('ETY_ID_of', c."ETY_ID_of"),
     COUNT(*)
 FROM
     nexuses."EV_Event" c
 LEFT JOIN
-    knots."ETY_EventType_ID" p
+    knots."ETY_EventType" p
 ON
     p."ETY_ID" = c."ETY_ID_of"
 WHERE
@@ -447,14 +447,12 @@ SELECT
     'EV_AUD_Event_Audience',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'EV_AUD_EQ', "EV_AUD_EQ",
         'EV_AUD_EV_ID', "EV_AUD_EV_ID"
     ),
     COUNT(*)
 FROM
     attributes."EV_AUD_Event_Audience"
 GROUP BY
-    "EV_AUD_EQ",
     "EV_AUD_EV_ID"
 HAVING
     COUNT(*) > 1
@@ -527,7 +525,6 @@ SELECT
     'EV_STA_Event_Status',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'EV_STA_EQ', "EV_STA_EQ",
         'EV_STA_EV_ID', "EV_STA_EV_ID",
         'EV_STA_ChangedAt', "EV_STA_ChangedAt"
     ),
@@ -535,7 +532,6 @@ SELECT
 FROM
     attributes."EV_STA_Event_Status"
 GROUP BY
-    "EV_STA_EQ",
     "EV_STA_EV_ID",
     "EV_STA_ChangedAt"
 HAVING
@@ -562,20 +558,17 @@ SELECT
     'restatement',
     OBJECT_CONSTRUCT(
         'EV_STA_EV_ID', "EV_STA_EV_ID",
-        'EV_STA_EQ', "EV_STA_EQ",
         'EV_STA_ChangedAt', "EV_STA_ChangedAt"
     ),
     1
 FROM (
     SELECT
         "EV_STA_EV_ID",
-        "EV_STA_EQ",
         "EV_STA_ChangedAt",
         "EV_STA_Event_Status" AS compared,
         LAG("EV_STA_Event_Status") OVER (
             PARTITION BY
-                "EV_STA_EV_ID",
-                "EV_STA_EQ"
+                "EV_STA_EV_ID"
             ORDER BY
                 "EV_STA_ChangedAt"
         ) AS previous
@@ -683,13 +676,13 @@ GROUP BY
 UNION ALL
 SELECT
     'EV_LVL_Event_Level',
-    'no row in PLV_ProfessionalLevel_ID for EV_LVL_PLV_ID',
+    'no row in PLV_ProfessionalLevel for EV_LVL_PLV_ID',
     OBJECT_CONSTRUCT('EV_LVL_PLV_ID', c."EV_LVL_PLV_ID"),
     COUNT(*)
 FROM
     attributes."EV_LVL_Event_Level" c
 LEFT JOIN
-    knots."PLV_ProfessionalLevel_ID" p
+    knots."PLV_ProfessionalLevel" p
 ON
     p."PLV_ID" = c."EV_LVL_PLV_ID"
 WHERE
@@ -735,7 +728,6 @@ SELECT
     'ST_NAM_Stage_Name',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'ST_NAM_EQ', "ST_NAM_EQ",
         'ST_NAM_ST_ID', "ST_NAM_ST_ID",
         'ST_NAM_ChangedAt', "ST_NAM_ChangedAt"
     ),
@@ -743,7 +735,6 @@ SELECT
 FROM
     attributes."ST_NAM_Stage_Name"
 GROUP BY
-    "ST_NAM_EQ",
     "ST_NAM_ST_ID",
     "ST_NAM_ChangedAt"
 HAVING
@@ -778,14 +769,12 @@ SELECT
     'ST_LOC_Stage_Location',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'ST_LOC_EQ', "ST_LOC_EQ",
         'ST_LOC_ST_ID', "ST_LOC_ST_ID"
     ),
     COUNT(*)
 FROM
     attributes."ST_LOC_Stage_Location"
 GROUP BY
-    "ST_LOC_EQ",
     "ST_LOC_ST_ID"
 HAVING
     COUNT(*) > 1
@@ -1107,13 +1096,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_PLV_Actor_ProfessionalLevel',
-    'no row in PLV_ProfessionalLevel_ID for AC_PLV_PLV_ID',
+    'no row in PLV_ProfessionalLevel for AC_PLV_PLV_ID',
     OBJECT_CONSTRUCT('AC_PLV_PLV_ID', c."AC_PLV_PLV_ID"),
     COUNT(*)
 FROM
     attributes."AC_PLV_Actor_ProfessionalLevel" c
 LEFT JOIN
-    knots."PLV_ProfessionalLevel_ID" p
+    knots."PLV_ProfessionalLevel" p
 ON
     p."PLV_ID" = c."AC_PLV_PLV_ID"
 WHERE
@@ -1513,13 +1502,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_part_PR_in_RAT_got',
-    'no row in RAT_Rating_ID for RAT_ID_got',
+    'no row in RAT_Rating for RAT_ID_got',
     OBJECT_CONSTRUCT('RAT_ID_got', c."RAT_ID_got"),
     COUNT(*)
 FROM
     ties."AC_part_PR_in_RAT_got" c
 LEFT JOIN
-    knots."RAT_Rating_ID" p
+    knots."RAT_Rating" p
 ON
     p."RAT_ID" = c."RAT_ID_got"
 WHERE
@@ -1647,13 +1636,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_parent_AC_child_PAT_having',
-    'no row in PAT_ParentalType_ID for PAT_ID_having',
+    'no row in PAT_ParentalType for PAT_ID_having',
     OBJECT_CONSTRUCT('PAT_ID_having', c."PAT_ID_having"),
     COUNT(*)
 FROM
     ties."AC_parent_AC_child_PAT_having" c
 LEFT JOIN
-    knots."PAT_ParentalType_ID" p
+    knots."PAT_ParentalType" p
 ON
     p."PAT_ID" = c."PAT_ID_having"
 WHERE

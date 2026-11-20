@@ -168,7 +168,7 @@ planted in the templates one at a time. Each was caught by at least one model, a
 |---|---|
 | the capsule of the attribute instead of its anchor in a foreign key | `distinct` and the models derived from it |
 | the schema's default identity type instead of the anchor's | `distinct` and the models derived from it |
-| equivalent knot tables without testing `schema.EQUIVALENCE` | `handwritten` |
+| a template that reads the equivalent flag of a knot or attribute from the file instead of `isEquivalent()`, so that it is not ignored when equivalence is off | `handwritten` |
 | a view `COMMENT` written whether or not there is a description | `undescribed`, `distinct` and the models derived from it |
 | no `UNION` between the selects of a nexus difference perspective | `distinct` and the models derived from it |
 
@@ -250,9 +250,13 @@ Anchor's `HANDOVER-sisula-port.md`. These remain.)
 - `tie.isKnotted()` in `Helpers.js` returns `!!this['knotRole']`, but `knotRole` is set to `{}`
   for every tie, so every tie is knotted. Ties without a knot role get the header comment
   "Knotted static tie table". Only the comment is affected.
-- Several sisulets test `knot.isEquivalent()` without `schema.EQUIVALENCE`, so a knot marked
-  equivalent in a model with equivalence off is referenced through tables and functions that are
-  never created. The modeler never saves such a model; a hand-written file can contain one.
+- Fixed: several sisulets tested `knot.isEquivalent()` without `schema.EQUIVALENCE`, so a knot marked
+  equivalent in a model with equivalence off was referenced through tables and functions that were
+  never created (the modeler never saves such a model; a hand-written file or an agent can write one).
+  `isEquivalent` of knots and attributes in `Helpers.js` now includes `schema.EQUIVALENCE`, which is the
+  model's setting and what the target implements, so a flag in a model with equivalence off is ignored
+  everywhere, as the modeler does when it loads the file. The golden files of `handwritten` and
+  `sqlserver-handwritten` changed accordingly (their output is smaller and consistent).
 - In the key-naming pass of `NamingConvention.js`, `role` leaked from the last stop of one route to the first of
   the next, which gave a column a role prefix that does not belong to it. Fixed in Anchor (no model here changed);
   within a route it is meant, since a role prefixes the stop after it.

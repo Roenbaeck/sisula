@@ -43,11 +43,9 @@ BEGIN
         ST_NAM_ST_ID int null,
         Metadata_ST_NAM int null,
         ST_NAM_ChangedAt datetime2 null,
-        ST_NAM_EQ tinyint null,
         ST_NAM_Stage_Name nvarchar(42) null,
         ST_LOC_ST_ID int null,
         Metadata_ST_LOC int null,
-        ST_LOC_EQ tinyint null,
         ST_LOC_Stage_Location geography null,
         ST_AVG_ST_ID int null,
         Metadata_ST_AVG int null,
@@ -68,11 +66,9 @@ BEGIN
         ISNULL(ISNULL(i.ST_NAM_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_NAM, i.Metadata_ST),
         ISNULL(i.ST_NAM_ChangedAt, @now),
-        ISNULL(i.ST_NAM_EQ, 0),
         i.ST_NAM_Stage_Name,
         ISNULL(ISNULL(i.ST_LOC_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_LOC, i.Metadata_ST),
-        ISNULL(i.ST_LOC_EQ, 0),
         i.ST_LOC_Stage_Location,
         ISNULL(ISNULL(i.ST_AVG_ST_ID, i.ST_ID), a.ST_ID),
         ISNULL(i.Metadata_ST_AVG, i.Metadata_ST),
@@ -92,11 +88,9 @@ BEGIN
             ST_NAM_ST_ID,
             Metadata_ST_NAM,
             ST_NAM_ChangedAt,
-            ST_NAM_EQ,
             ST_NAM_Stage_Name,
             ST_LOC_ST_ID,
             Metadata_ST_LOC,
-            ST_LOC_EQ,
             ST_LOC_Stage_Location,
             ST_AVG_ST_ID,
             Metadata_ST_AVG,
@@ -201,7 +195,6 @@ BEGIN
     DECLARE @updated_ST_NAM_Stage_Name bit = CASE WHEN UPDATE(ST_NAM_Stage_Name) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_ST_NAM bit = CASE WHEN UPDATE(Metadata_ST_NAM) THEN 1 ELSE 0 END;
     DECLARE @updated_ST_NAM_ChangedAt bit = CASE WHEN UPDATE(ST_NAM_ChangedAt) THEN 1 ELSE 0 END;
-    DECLARE @updated_ST_NAM_EQ bit = CASE WHEN UPDATE(ST_NAM_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_NAM_ST_ID))
         RAISERROR('The foreign key column ST_NAM_ST_ID is not updatable.', 16, 1);
     IF(@updated_ST_NAM_Stage_Name = 1)
@@ -209,7 +202,6 @@ BEGIN
         INSERT INTO [attributes].[ST_NAM_Stage_Name] (
             Metadata_ST_NAM,
             ST_NAM_ST_ID,
-            ST_NAM_EQ,
             ST_NAM_ChangedAt,
             ST_NAM_Stage_Name
         )
@@ -220,7 +212,6 @@ BEGIN
                 ELSE i.Metadata_ST_NAM
             END, i.Metadata_ST),
             ISNULL(i.ST_NAM_ST_ID, i.ST_ID),
-            ISNULL(i.ST_NAM_EQ, 0),
             cast(ISNULL(CASE
                 WHEN i.ST_NAM_Stage_Name is null THEN i.ST_NAM_ChangedAt
                 WHEN @updated_ST_NAM_ChangedAt = 1 THEN i.ST_NAM_ChangedAt
@@ -236,14 +227,12 @@ BEGIN
             i.ST_NAM_Stage_Name is not null
         AND ( -- a value that is left as it is states nothing
             @updated_ST_NAM_ChangedAt = 1 OR
-            @updated_ST_NAM_EQ = 1 OR
             d.ST_NAM_Stage_Name is null OR
             d.ST_NAM_Stage_Name <> i.ST_NAM_Stage_Name
         );
     END
     DECLARE @updated_ST_LOC_Stage_Location bit = CASE WHEN UPDATE(ST_LOC_Stage_Location) THEN 1 ELSE 0 END;
     DECLARE @updated_Metadata_ST_LOC bit = CASE WHEN UPDATE(Metadata_ST_LOC) THEN 1 ELSE 0 END;
-    DECLARE @updated_ST_LOC_EQ bit = CASE WHEN UPDATE(ST_LOC_EQ) THEN 1 ELSE 0 END;
     IF(UPDATE(ST_LOC_ST_ID))
         RAISERROR('The foreign key column ST_LOC_ST_ID is not updatable.', 16, 1);
     IF(@updated_ST_LOC_Stage_Location = 1)
@@ -251,7 +240,6 @@ BEGIN
         INSERT INTO [attributes].[ST_LOC_Stage_Location] (
             Metadata_ST_LOC,
             ST_LOC_ST_ID,
-            ST_LOC_EQ,
             ST_LOC_Stage_Location
         )
         SELECT 
@@ -261,7 +249,6 @@ BEGIN
                 ELSE i.Metadata_ST_LOC
             END, i.Metadata_ST),
             ISNULL(i.ST_LOC_ST_ID, i.ST_ID),
-            ISNULL(i.ST_LOC_EQ, 0),
             i.ST_LOC_Stage_Location
         FROM
             inserted i
@@ -272,7 +259,6 @@ BEGIN
         WHERE
             i.ST_LOC_Stage_Location is not null
         AND ( -- a value that is left as it is states nothing
-            @updated_ST_LOC_EQ = 1 OR
             d.ST_LOC_Stage_Location is null OR
             d.ST_LOC_Checksum <> dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
         );
@@ -413,8 +399,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.ST_NAM_EQ = [NAM].ST_NAM_EQ
-    AND
         d.ST_NAM_ChangedAt = [NAM].ST_NAM_ChangedAt
     AND
         d.ST_NAM_ST_ID = [NAM].ST_NAM_ST_ID;
@@ -424,8 +408,6 @@ BEGIN
     JOIN
         deleted d
     ON
-        d.ST_LOC_EQ = [LOC].ST_LOC_EQ
-    AND
         d.ST_LOC_ST_ID = [LOC].ST_LOC_ST_ID;
     DELETE [AVG]
     FROM
@@ -529,7 +511,6 @@ BEGIN
         AC_PLV_ChangedAt datetime2 null,
         AC_PLV_PLV_ProfessionalLevel nvarchar(max) null,
         AC_PLV_PLV_Checksum varbinary(16) null,
-        AC_PLV_PLV_EQ tinyint null,
         AC_PLV_Metadata_PLV int null,
         AC_PLV_PLV_ID tinyint null
     );
@@ -552,7 +533,6 @@ BEGIN
         ISNULL(i.AC_PLV_ChangedAt, @now),
         i.AC_PLV_PLV_ProfessionalLevel,
         ISNULL(i.AC_PLV_PLV_Checksum, dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))),
-        ISNULL(i.AC_PLV_PLV_EQ, 0),
         ISNULL(i.AC_PLV_Metadata_PLV, i.Metadata_AC),
         i.AC_PLV_PLV_ID
     FROM (
@@ -574,7 +554,6 @@ BEGIN
             AC_PLV_ChangedAt,
             AC_PLV_PLV_ProfessionalLevel,
             AC_PLV_PLV_Checksum,
-            AC_PLV_PLV_EQ,
             AC_PLV_Metadata_PLV,
             AC_PLV_PLV_ID,
             ROW_NUMBER() OVER (PARTITION BY AC_ID ORDER BY AC_ID) AS Row
@@ -634,8 +613,6 @@ BEGIN
         [knots].[PLV_ProfessionalLevel] [kPLV]
     ON
         [kPLV].PLV_Checksum = i.AC_PLV_PLV_Checksum
-    AND
-        [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
     WHERE
         ISNULL(i.AC_PLV_PLV_ID, [kPLV].PLV_ID) is not null;
 END
@@ -763,8 +740,6 @@ BEGIN
             [knots].[PLV_ProfessionalLevel] [kPLV]
         ON
             [kPLV].PLV_Checksum = dw.MD5(cast(i.AC_PLV_PLV_ProfessionalLevel as varbinary(max)))
-        AND
-            [kPLV].PLV_EQ = i.AC_PLV_PLV_EQ
         LEFT JOIN
             deleted d
         ON

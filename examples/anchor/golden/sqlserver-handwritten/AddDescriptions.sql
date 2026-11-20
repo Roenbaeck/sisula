@@ -3,7 +3,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -11,7 +11,7 @@ EXEC sp_addextendedproperty
 Kind of parent-child relationship between two actors, such as biological or adoptive parent.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PAT_ParentalType_ID';
+@level1type = N'Table', @level1name = 'PAT_ParentalType';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -31,7 +31,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel_ID';
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -39,7 +39,7 @@ EXEC sp_addextendedproperty
 Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel_ID';
+@level1type = N'Table', @level1name = 'PLV_ProfessionalLevel';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty
@@ -73,7 +73,7 @@ BEGIN TRY
 EXEC sp_dropextendedproperty
 @name = N'MS_Description',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID';
+@level1type = N'Table', @level1name = 'RAT_Rating';
 END TRY BEGIN CATCH BEGIN TRY ROLLBACK END TRY BEGIN CATCH END CATCH END CATCH -- workaround for MS bug 658556
 EXEC sp_addextendedproperty
 @name = N'MS_Description',
@@ -81,7 +81,7 @@ EXEC sp_addextendedproperty
 Rating of how well an actor performs a part in a program, such as good, mediocre or bad.
 ',
 @level0type = N'Schema', @level0name = 'knots',
-@level1type = N'Table', @level1name = 'RAT_Rating_ID';
+@level1type = N'Table', @level1name = 'RAT_Rating';
 GO
 BEGIN TRY
 EXEC sp_dropextendedproperty

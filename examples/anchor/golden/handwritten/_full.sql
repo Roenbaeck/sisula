@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS nexuses."EV_Event" (
     ) references anchors."PR_Program"("PR_ID") RELY, 
     constraint "EV_Event_fkETY_of" foreign key (
         "ETY_ID_of"
-    ) references knots."ETY_EventType_ID"("ETY_ID") RELY,
+    ) references knots."ETY_EventType"("ETY_ID") RELY,
     "Metadata_EV" int not null, 
     constraint "pkEV_Event" primary key (
         "EV_ID"
@@ -208,14 +208,12 @@ CREATE TABLE IF NOT EXISTS attributes."EV_DAT_Event_Date" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."EV_AUD_Event_Audience" (
     "EV_AUD_EV_ID" numeric(12,0) not null,
-    "EV_AUD_EQ" tinyint not null,
     "EV_AUD_Event_Audience" int not null,
     "Metadata_EV_AUD" int not null,
     constraint "fkEV_AUD_Event_Audience" foreign key (
         "EV_AUD_EV_ID"
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "pkEV_AUD_Event_Audience" primary key (
-        "EV_AUD_EQ",
         "EV_AUD_EV_ID"
     ) RELY
 ) CLUSTER BY ("EV_AUD_EV_ID");
@@ -238,7 +236,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_REV_Event_Revenue" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status" (
     "EV_STA_EV_ID" numeric(12,0) not null,
-    "EV_STA_EQ" tinyint not null,
     "EV_STA_Event_Status" varchar(20) not null,
     "EV_STA_ChangedAt" datetime not null,
     "Metadata_EV_STA" int not null,
@@ -246,7 +243,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_STA_Event_Status" (
         "EV_STA_EV_ID"
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "pkEV_STA_Event_Status" primary key (
-        "EV_STA_EQ",
         "EV_STA_EV_ID",
         "EV_STA_ChangedAt"
     ) RELY
@@ -281,7 +277,7 @@ CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level" (
     ) references nexuses."EV_Event"("EV_ID") RELY,
     constraint "fk_K_EV_LVL_Event_Level" foreign key (
         "EV_LVL_PLV_ID"
-    ) references knots."PLV_ProfessionalLevel_ID"("PLV_ID") RELY,
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID") RELY,
     constraint "pkEV_LVL_Event_Level" primary key (
         "EV_LVL_EV_ID",
         "EV_LVL_ChangedAt"
@@ -292,7 +288,6 @@ CREATE TABLE IF NOT EXISTS attributes."EV_LVL_Event_Level" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
     "ST_NAM_ST_ID" int not null,
-    "ST_NAM_EQ" tinyint not null,
     "ST_NAM_Stage_Name" varchar(42) not null,
     "ST_NAM_ChangedAt" datetime not null,
     "Metadata_ST_NAM" int not null,
@@ -300,7 +295,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
         "ST_NAM_ST_ID"
     ) references anchors."ST_Stage"("ST_ID") RELY,
     constraint "pkST_NAM_Stage_Name" primary key (
-        "ST_NAM_EQ",
         "ST_NAM_ST_ID",
         "ST_NAM_ChangedAt"
     ) RELY
@@ -310,7 +304,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_NAM_Stage_Name" (
 -----------------------------------------------------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location" (
     "ST_LOC_ST_ID" int not null,
-    "ST_LOC_EQ" tinyint not null,
     "ST_LOC_Stage_Location" geography not null,
     "ST_LOC_Checksum" numeric(19,0) default hash("ST_LOC_Stage_Location"),
     "Metadata_ST_LOC" int not null,
@@ -318,7 +311,6 @@ CREATE TABLE IF NOT EXISTS attributes."ST_LOC_Stage_Location" (
         "ST_LOC_ST_ID"
     ) references anchors."ST_Stage"("ST_ID") RELY,
     constraint "pkST_LOC_Stage_Location" primary key (
-        "ST_LOC_EQ",
         "ST_LOC_ST_ID"
     ) RELY
 ) CLUSTER BY ("ST_LOC_ST_ID");
@@ -406,7 +398,7 @@ CREATE TABLE IF NOT EXISTS attributes."AC_PLV_Actor_ProfessionalLevel" (
     ) references anchors."AC_Actor"("AC_ID") RELY,
     constraint "fk_K_AC_PLV_Actor_ProfessionalLevel" foreign key (
         "AC_PLV_PLV_ID"
-    ) references knots."PLV_ProfessionalLevel_ID"("PLV_ID") RELY,
+    ) references knots."PLV_ProfessionalLevel"("PLV_ID") RELY,
     constraint "pkAC_PLV_Actor_ProfessionalLevel" primary key (
         "AC_PLV_AC_ID",
         "AC_PLV_ChangedAt"
@@ -550,7 +542,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_part_PR_in_RAT_got" (
     ) references anchors."PR_Program"("PR_ID") RELY, 
     constraint "AC_part_PR_in_RAT_got_fkRAT_got" foreign key (
         "RAT_ID_got"
-    ) references knots."RAT_Rating_ID"("RAT_ID") RELY,
+    ) references knots."RAT_Rating"("RAT_ID") RELY,
     constraint "pkAC_part_PR_in_RAT_got" primary key (
         "AC_ID_part",
         "PR_ID_in",
@@ -599,7 +591,7 @@ CREATE TABLE IF NOT EXISTS ties."AC_parent_AC_child_PAT_having" (
     ) references anchors."AC_Actor"("AC_ID") RELY, 
     constraint "AC_parent_AC_child_PAT_having_fkPAT_having" foreign key (
         "PAT_ID_having"
-    ) references knots."PAT_ParentalType_ID"("PAT_ID") RELY,
+    ) references knots."PAT_ParentalType"("PAT_ID") RELY,
     constraint "pkAC_parent_AC_child_PAT_having" primary key (
         "AC_ID_parent",
         "AC_ID_child",
@@ -672,14 +664,12 @@ CREATE TABLE IF NOT EXISTS ties."PR_content_ST_location_EV_of" (
 -- rEV_STA_Event_Status rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION attributes."rEV_STA_Event_Status" (
-    equivalent tinyint,
     changingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
     "Metadata_EV_STA" int,
     "EV_STA_EV_ID" numeric(12,0),
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_STA_ChangedAt" datetime
 )
@@ -688,11 +678,10 @@ $$
     SELECT
         "Metadata_EV_STA",
         "EV_STA_EV_ID",
-        "EV_STA_EQ",
         "EV_STA_Event_Status",
         "EV_STA_ChangedAt"
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(equivalent)) 
+        attributes."EV_STA_Event_Status"
     WHERE
         "EV_STA_ChangedAt" <= changingTimepoint
 $$
@@ -727,14 +716,12 @@ $$
 -- rST_NAM_Stage_Name rewinding over changing time function
 -----------------------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION attributes."rST_NAM_Stage_Name" (
-    equivalent tinyint,
     changingTimepoint datetime
 )
 COPY GRANTS
 RETURNS TABLE (
     "Metadata_ST_NAM" int,
     "ST_NAM_ST_ID" int,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_NAM_ChangedAt" datetime
 )
@@ -743,11 +730,10 @@ $$
     SELECT
         "Metadata_ST_NAM",
         "ST_NAM_ST_ID",
-        "ST_NAM_EQ",
         "ST_NAM_Stage_Name",
         "ST_NAM_ChangedAt"
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(equivalent)) 
+        attributes."ST_NAM_Stage_Name"
     WHERE
         "ST_NAM_ChangedAt" <= changingTimepoint
 $$
@@ -869,11 +855,9 @@ CREATE OR REPLACE VIEW anchors."lST_Stage" (
     "ST_NAM_ST_ID",
     "Metadata_ST_NAM",
     "ST_NAM_ChangedAt",
-    "ST_NAM_EQ",
     "ST_NAM_Stage_Name" COMMENT 'Name of the stage. Historized, since a stage may be renamed over time.',
     "ST_LOC_ST_ID",
     "Metadata_ST_LOC",
-    "ST_LOC_EQ",
     "ST_LOC_Checksum",
     "ST_LOC_Stage_Location" COMMENT 'Geographic location of the stage as a geography point.',
     "ST_AVG_ST_ID",
@@ -895,11 +879,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -916,7 +898,7 @@ SELECT
 FROM
     anchors."ST_Stage" "ST"
 LEFT JOIN
-    TABLE(attributes."eST_NAM_Stage_Name"(0)) "NAM"
+    attributes."ST_NAM_Stage_Name" "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
 AND
@@ -924,12 +906,12 @@ AND
         SELECT
             max(sub."ST_NAM_ChangedAt")
         FROM
-            TABLE(attributes."eST_NAM_Stage_Name"(0)) sub 
+            attributes."ST_NAM_Stage_Name" sub
         WHERE
             sub."ST_NAM_ST_ID" = "ST"."ST_ID"
    )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
@@ -969,11 +951,9 @@ RETURNS TABLE (
     "ST_NAM_ST_ID" int,
     "Metadata_ST_NAM" int,
     "ST_NAM_ChangedAt" datetime,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_LOC_ST_ID" int,
     "Metadata_ST_LOC" int,
-    "ST_LOC_EQ" tinyint,
     "ST_LOC_Checksum" numeric(19,0),
     "ST_LOC_Stage_Location" geography,
     "ST_AVG_ST_ID" int,
@@ -996,11 +976,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -1017,7 +995,7 @@ SELECT
 FROM
     anchors."ST_Stage" "ST"
 LEFT JOIN
-    TABLE(attributes."rST_NAM_Stage_Name"(0, changingTimepoint::datetime)) "NAM"
+    TABLE(attributes."rST_NAM_Stage_Name"(changingTimepoint::datetime)) "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
 AND
@@ -1025,12 +1003,12 @@ AND
         SELECT
             max(sub."ST_NAM_ChangedAt")
         FROM
-            TABLE(attributes."rST_NAM_Stage_Name"(0, changingTimepoint::datetime)) sub
+            TABLE(attributes."rST_NAM_Stage_Name"(changingTimepoint::datetime)) sub
         WHERE
             sub."ST_NAM_ST_ID" = "ST"."ST_ID"
    )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
@@ -1085,11 +1063,9 @@ RETURNS TABLE (
     "ST_NAM_ST_ID" int,
     "Metadata_ST_NAM" int,
     "ST_NAM_ChangedAt" datetime,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_LOC_ST_ID" int,
     "Metadata_ST_LOC" int,
-    "ST_LOC_EQ" tinyint,
     "ST_LOC_Checksum" numeric(19,0),
     "ST_LOC_Stage_Location" geography,
     "ST_AVG_ST_ID" int,
@@ -1117,11 +1093,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -1141,7 +1115,7 @@ FROM (
         h."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+        attributes."ST_NAM_Stage_Name" h
     WHERE
         (selection IS NULL OR selection LIKE '%NAM%')
     AND
@@ -1170,7 +1144,7 @@ LEFT JOIN (
             ORDER BY h."ST_NAM_ChangedAt"
         ) AS "until"
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+        attributes."ST_NAM_Stage_Name" h
 ) "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
@@ -1182,7 +1156,7 @@ OR
     "NAM"."until" > timepoints.inspectedTimepoint::datetime
 )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN (
@@ -1237,7 +1211,6 @@ CREATE OR REPLACE VIEW anchors."lAC_Actor" (
     "Metadata_AC_PLV",
     "AC_PLV_ChangedAt",
     "AC_PLV_PLV_Checksum",
-    "AC_PLV_PLV_EQ",
     "AC_PLV_PLV_ProfessionalLevel" COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     "AC_PLV_Metadata_PLV",
     "AC_PLV_PLV_ID" COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
@@ -1260,7 +1233,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -1301,7 +1273,7 @@ AND
             sub."AC_PLV_AC_ID" = "AC"."AC_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID";
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -1327,7 +1299,6 @@ RETURNS TABLE (
     "Metadata_AC_PLV" int,
     "AC_PLV_ChangedAt" datetime,
     "AC_PLV_PLV_Checksum" numeric(19,0),
-    "AC_PLV_PLV_EQ" tinyint,
     "AC_PLV_PLV_ProfessionalLevel" string,
     "AC_PLV_Metadata_PLV" int,
     "AC_PLV_PLV_ID" tinyint
@@ -1351,7 +1322,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -1392,7 +1362,7 @@ AND
             sub."AC_PLV_AC_ID" = "AC"."AC_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
@@ -1433,7 +1403,6 @@ RETURNS TABLE (
     "Metadata_AC_PLV" int,
     "AC_PLV_ChangedAt" datetime,
     "AC_PLV_PLV_Checksum" numeric(19,0),
-    "AC_PLV_PLV_EQ" tinyint,
     "AC_PLV_PLV_ProfessionalLevel" string,
     "AC_PLV_Metadata_PLV" int,
     "AC_PLV_PLV_ID" tinyint
@@ -1462,7 +1431,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -1540,7 +1508,7 @@ OR
     "PLV"."until" > timepoints.inspectedTimepoint::datetime
 )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
@@ -1740,7 +1708,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "PR_ID_wasPlayed" COMMENT 'The program that was played at the event.',
     "of_ETY_Checksum",
     "of_ETY_EventType",
-    "of_ETY_EQ",
     "of_Metadata_ETY",
     "ETY_ID_of",
     "EV_DAT_EV_ID",
@@ -1748,7 +1715,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "EV_DAT_Event_Date" COMMENT 'Date and time when the event took place.',
     "EV_AUD_EV_ID",
     "Metadata_EV_AUD",
-    "EV_AUD_EQ",
     "EV_AUD_Event_Audience" COMMENT 'Number of people in the audience at the event.',
     "EV_REV_EV_ID",
     "Metadata_EV_REV",
@@ -1756,7 +1722,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "EV_STA_EV_ID",
     "Metadata_EV_STA",
     "EV_STA_ChangedAt",
-    "EV_STA_EQ",
     "EV_STA_Event_Status" COMMENT 'Status of the event, which may change until it has taken place.',
     "EV_UTL_EV_ID",
     "Metadata_EV_UTL",
@@ -1767,7 +1732,6 @@ CREATE OR REPLACE VIEW nexuses."lEV_Event" (
     "Metadata_EV_LVL",
     "EV_LVL_ChangedAt",
     "EV_LVL_PLV_Checksum",
-    "EV_LVL_PLV_EQ",
     "EV_LVL_PLV_ProfessionalLevel" COMMENT 'Professional level required for the event, over time.',
     "EV_LVL_Metadata_PLV",
     "EV_LVL_PLV_ID" COMMENT 'Professional level required for the event, over time.'
@@ -1780,7 +1744,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -1788,7 +1751,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -1796,7 +1758,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -1807,14 +1768,13 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
 FROM
     nexuses."EV_Event" "EV"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -1822,7 +1782,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -1830,7 +1790,7 @@ LEFT JOIN
 ON
     "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_STA_Event_Status"(0)) "STA"
+    attributes."EV_STA_Event_Status" "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
@@ -1838,7 +1798,7 @@ AND
         SELECT
             max(sub."EV_STA_ChangedAt")
         FROM
-            TABLE(attributes."eEV_STA_Event_Status"(0)) sub 
+            attributes."EV_STA_Event_Status" sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
    )
@@ -1864,7 +1824,7 @@ AND
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID";
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -1880,7 +1840,6 @@ RETURNS TABLE (
     "PR_ID_wasPlayed" number(10,0),
     "of_ETY_Checksum" numeric(19,0),
     "of_ETY_EventType" varchar(42),
-    "of_ETY_EQ" tinyint,
     "of_Metadata_ETY" int,
     "ETY_ID_of" tinyint,
     "EV_DAT_EV_ID" numeric(12,0),
@@ -1888,7 +1847,6 @@ RETURNS TABLE (
     "EV_DAT_Event_Date" datetime,
     "EV_AUD_EV_ID" numeric(12,0),
     "Metadata_EV_AUD" int,
-    "EV_AUD_EQ" tinyint,
     "EV_AUD_Event_Audience" int,
     "EV_REV_EV_ID" numeric(12,0),
     "Metadata_EV_REV" int,
@@ -1896,7 +1854,6 @@ RETURNS TABLE (
     "EV_STA_EV_ID" numeric(12,0),
     "Metadata_EV_STA" int,
     "EV_STA_ChangedAt" datetime,
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_UTL_EV_ID" numeric(12,0),
     "Metadata_EV_UTL" int,
@@ -1907,7 +1864,6 @@ RETURNS TABLE (
     "Metadata_EV_LVL" int,
     "EV_LVL_ChangedAt" date,
     "EV_LVL_PLV_Checksum" numeric(19,0),
-    "EV_LVL_PLV_EQ" tinyint,
     "EV_LVL_PLV_ProfessionalLevel" string,
     "EV_LVL_Metadata_PLV" int,
     "EV_LVL_PLV_ID" tinyint
@@ -1921,7 +1877,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -1929,7 +1884,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -1937,7 +1891,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -1948,14 +1901,13 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
 FROM
     nexuses."EV_Event" "EV"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -1963,7 +1915,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -1971,7 +1923,7 @@ LEFT JOIN
 ON
     "REV"."EV_REV_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."rEV_STA_Event_Status"(0, changingTimepoint::datetime)) "STA"
+    TABLE(attributes."rEV_STA_Event_Status"(changingTimepoint::datetime)) "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
 AND
@@ -1979,7 +1931,7 @@ AND
         SELECT
             max(sub."EV_STA_ChangedAt")
         FROM
-            TABLE(attributes."rEV_STA_Event_Status"(0, changingTimepoint::datetime)) sub
+            TABLE(attributes."rEV_STA_Event_Status"(changingTimepoint::datetime)) sub
         WHERE
             sub."EV_STA_EV_ID" = "EV"."EV_ID"
    )
@@ -2005,7 +1957,7 @@ AND
             sub."EV_LVL_EV_ID" = "EV"."EV_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
@@ -2035,7 +1987,6 @@ RETURNS TABLE (
     "PR_ID_wasPlayed" number(10,0),
     "of_ETY_Checksum" numeric(19,0),
     "of_ETY_EventType" varchar(42),
-    "of_ETY_EQ" tinyint,
     "of_Metadata_ETY" int,
     "ETY_ID_of" tinyint,
     "EV_DAT_EV_ID" numeric(12,0),
@@ -2043,7 +1994,6 @@ RETURNS TABLE (
     "EV_DAT_Event_Date" datetime,
     "EV_AUD_EV_ID" numeric(12,0),
     "Metadata_EV_AUD" int,
-    "EV_AUD_EQ" tinyint,
     "EV_AUD_Event_Audience" int,
     "EV_REV_EV_ID" numeric(12,0),
     "Metadata_EV_REV" int,
@@ -2051,7 +2001,6 @@ RETURNS TABLE (
     "EV_STA_EV_ID" numeric(12,0),
     "Metadata_EV_STA" int,
     "EV_STA_ChangedAt" datetime,
-    "EV_STA_EQ" tinyint,
     "EV_STA_Event_Status" varchar(20),
     "EV_UTL_EV_ID" numeric(12,0),
     "Metadata_EV_UTL" int,
@@ -2062,7 +2011,6 @@ RETURNS TABLE (
     "Metadata_EV_LVL" int,
     "EV_LVL_ChangedAt" date,
     "EV_LVL_PLV_Checksum" numeric(19,0),
-    "EV_LVL_PLV_EQ" tinyint,
     "EV_LVL_PLV_ProfessionalLevel" string,
     "EV_LVL_Metadata_PLV" int,
     "EV_LVL_PLV_ID" tinyint
@@ -2081,7 +2029,6 @@ SELECT
     "EV"."PR_ID_wasPlayed",
     "ETY_of"."ETY_Checksum" AS "of_ETY_Checksum",
     "ETY_of"."ETY_EventType" AS "of_ETY_EventType",
-    "ETY_of"."ETY_EQ" AS "of_ETY_EQ",
     "ETY_of"."Metadata_ETY" AS "of_Metadata_ETY",
     "EV"."ETY_ID_of",
     "DAT"."EV_DAT_EV_ID",
@@ -2089,7 +2036,6 @@ SELECT
     "DAT"."EV_DAT_Event_Date",
     "AUD"."EV_AUD_EV_ID",
     "AUD"."Metadata_EV_AUD",
-    "AUD"."EV_AUD_EQ",
     "AUD"."EV_AUD_Event_Audience",
     "REV"."EV_REV_EV_ID",
     "REV"."Metadata_EV_REV",
@@ -2097,7 +2043,6 @@ SELECT
     "STA"."EV_STA_EV_ID",
     "STA"."Metadata_EV_STA",
     "STA"."EV_STA_ChangedAt",
-    "STA"."EV_STA_EQ",
     "STA"."EV_STA_Event_Status",
     "UTL"."EV_UTL_EV_ID",
     "UTL"."Metadata_EV_UTL",
@@ -2108,7 +2053,6 @@ SELECT
     "LVL"."Metadata_EV_LVL",
     "LVL"."EV_LVL_ChangedAt",
     "kLVL"."PLV_Checksum" AS "EV_LVL_PLV_Checksum",
-    "kLVL"."PLV_EQ" AS "EV_LVL_PLV_EQ",
     "kLVL"."PLV_ProfessionalLevel" AS "EV_LVL_PLV_ProfessionalLevel",
     "kLVL"."Metadata_PLV" AS "EV_LVL_Metadata_PLV",
     "LVL"."EV_LVL_PLV_ID"
@@ -2118,7 +2062,7 @@ FROM (
         h."EV_STA_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'STA' AS mnemonic
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+        attributes."EV_STA_Event_Status" h
     WHERE
         (selection IS NULL OR selection LIKE '%STA%')
     AND
@@ -2140,7 +2084,7 @@ JOIN
 ON
     "EV"."EV_ID" = timepoints."EV_ID"
 LEFT JOIN
-    TABLE(knots."eETY_EventType"(0)) "ETY_of"
+    knots."ETY_EventType" "ETY_of"
 ON
     "ETY_of"."ETY_ID" = "EV"."ETY_ID_of"
 LEFT JOIN
@@ -2148,7 +2092,7 @@ LEFT JOIN
 ON
     "DAT"."EV_DAT_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
-    TABLE(attributes."eEV_AUD_Event_Audience"(0)) "AUD"
+    attributes."EV_AUD_Event_Audience" "AUD"
 ON
     "AUD"."EV_AUD_EV_ID" = "EV"."EV_ID"
 LEFT JOIN
@@ -2163,7 +2107,7 @@ LEFT JOIN (
             ORDER BY h."EV_STA_ChangedAt"
         ) AS "until"
     FROM
-        TABLE(attributes."eEV_STA_Event_Status"(0)) h
+        attributes."EV_STA_Event_Status" h
 ) "STA"
 ON
     "STA"."EV_STA_EV_ID" = "EV"."EV_ID"
@@ -2202,7 +2146,7 @@ OR
     "LVL"."until" > timepoints.inspectedTimepoint::date
 )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kLVL"
+    knots."PLV_ProfessionalLevel" "kLVL"
 ON
     "kLVL"."PLV_ID" = "LVL"."EV_LVL_PLV_ID"
 $$
@@ -2427,7 +2371,6 @@ CREATE OR REPLACE VIEW ties."lAC_part_PR_in_RAT_got" (
     "PR_ID_in" COMMENT 'The program the actor has a part in.',
     "got_RAT_Checksum",
     "got_RAT_Rating" COMMENT 'The rating the actor got for the part.',
-    "got_RAT_EQ",
     "got_Metadata_RAT",
     "RAT_ID_got" COMMENT 'The rating the actor got for the part.'
 ) COPY GRANTS COMMENT = 'Actors having a part in a program, along with a rating of how well they perform the part. Historized, since the rating may change over time.'
@@ -2439,13 +2382,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 QUALIFY -- picked by a window rather than by a subquery that refers to the outer row: for a tie without identifiers that
@@ -2470,7 +2412,6 @@ RETURNS TABLE (
     "PR_ID_in" number(10,0),
     "got_RAT_Checksum" numeric(19,0),
     "got_RAT_Rating" varchar(42),
-    "got_RAT_EQ" tinyint,
     "got_Metadata_RAT" int,
     "RAT_ID_got" tinyint
 )
@@ -2483,13 +2424,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
@@ -2526,7 +2466,6 @@ RETURNS TABLE (
     "PR_ID_in" number(10,0),
     "got_RAT_Checksum" numeric(19,0),
     "got_RAT_Rating" varchar(42),
-    "got_RAT_EQ" tinyint,
     "got_Metadata_RAT" int,
     "RAT_ID_got" tinyint
 )
@@ -2539,13 +2478,12 @@ SELECT
     tie."PR_ID_in",
     "RAT_got"."RAT_Checksum" AS "got_RAT_Checksum",
     "RAT_got"."RAT_Rating" AS "got_RAT_Rating",
-    "RAT_got"."RAT_EQ" AS "got_RAT_EQ",
     "RAT_got"."Metadata_RAT" AS "got_Metadata_RAT",
     tie."RAT_ID_got"
 FROM
     ties."AC_part_PR_in_RAT_got" tie
 LEFT JOIN
-    TABLE(knots."eRAT_Rating"(0)) "RAT_got"
+    knots."RAT_Rating" "RAT_got"
 ON
     "RAT_got"."RAT_ID" = tie."RAT_ID_got"
 WHERE
@@ -2651,7 +2589,6 @@ CREATE OR REPLACE VIEW ties."lAC_parent_AC_child_PAT_having" (
     "AC_ID_parent" COMMENT 'The actor who is the parent.',
     "AC_ID_child" COMMENT 'The actor who is the child.',
     "having_PAT_ParentalType" COMMENT 'The type of parental relationship.',
-    "having_PAT_EQ",
     "having_Metadata_PAT",
     "PAT_ID_having" COMMENT 'The type of parental relationship.'
 ) COPY GRANTS COMMENT = 'Parent-child relationships between actors, along with the type of parental relationship.'
@@ -2661,13 +2598,12 @@ SELECT
     tie."AC_ID_parent",
     tie."AC_ID_child",
     "PAT_having"."PAT_ParentalType" AS "having_PAT_ParentalType",
-    "PAT_having"."PAT_EQ" AS "having_PAT_EQ",
     "PAT_having"."Metadata_PAT" AS "having_Metadata_PAT",
     tie."PAT_ID_having"
 FROM
     ties."AC_parent_AC_child_PAT_having" tie
 LEFT JOIN
-    TABLE(knots."ePAT_ParentalType"(0)) "PAT_having"
+    knots."PAT_ParentalType" "PAT_having"
 ON
     "PAT_having"."PAT_ID" = tie."PAT_ID_having"
 ;
@@ -2682,7 +2618,6 @@ RETURNS TABLE (
     "AC_ID_parent" smallint,
     "AC_ID_child" smallint,
     "having_PAT_ParentalType" varchar(42),
-    "having_PAT_EQ" tinyint,
     "having_Metadata_PAT" int,
     "PAT_ID_having" tinyint
 )
@@ -2693,13 +2628,12 @@ SELECT
     tie."AC_ID_parent",
     tie."AC_ID_child",
     "PAT_having"."PAT_ParentalType" AS "having_PAT_ParentalType",
-    "PAT_having"."PAT_EQ" AS "having_PAT_EQ",
     "PAT_having"."Metadata_PAT" AS "having_Metadata_PAT",
     tie."PAT_ID_having"
 FROM
     ties."AC_parent_AC_child_PAT_having" tie
 LEFT JOIN
-    TABLE(knots."ePAT_ParentalType"(0)) "PAT_having"
+    knots."PAT_ParentalType" "PAT_having"
 ON
     "PAT_having"."PAT_ID" = tie."PAT_ID_having"
 $$
@@ -3540,13 +3474,13 @@ GROUP BY
 UNION ALL
 SELECT
     'EV_Event',
-    'no row in ETY_EventType_ID for ETY_ID_of',
+    'no row in ETY_EventType for ETY_ID_of',
     OBJECT_CONSTRUCT('ETY_ID_of', c."ETY_ID_of"),
     COUNT(*)
 FROM
     nexuses."EV_Event" c
 LEFT JOIN
-    knots."ETY_EventType_ID" p
+    knots."ETY_EventType" p
 ON
     p."ETY_ID" = c."ETY_ID_of"
 WHERE
@@ -3606,14 +3540,12 @@ SELECT
     'EV_AUD_Event_Audience',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'EV_AUD_EQ', "EV_AUD_EQ",
         'EV_AUD_EV_ID', "EV_AUD_EV_ID"
     ),
     COUNT(*)
 FROM
     attributes."EV_AUD_Event_Audience"
 GROUP BY
-    "EV_AUD_EQ",
     "EV_AUD_EV_ID"
 HAVING
     COUNT(*) > 1
@@ -3686,7 +3618,6 @@ SELECT
     'EV_STA_Event_Status',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'EV_STA_EQ', "EV_STA_EQ",
         'EV_STA_EV_ID', "EV_STA_EV_ID",
         'EV_STA_ChangedAt', "EV_STA_ChangedAt"
     ),
@@ -3694,7 +3625,6 @@ SELECT
 FROM
     attributes."EV_STA_Event_Status"
 GROUP BY
-    "EV_STA_EQ",
     "EV_STA_EV_ID",
     "EV_STA_ChangedAt"
 HAVING
@@ -3721,20 +3651,17 @@ SELECT
     'restatement',
     OBJECT_CONSTRUCT(
         'EV_STA_EV_ID', "EV_STA_EV_ID",
-        'EV_STA_EQ', "EV_STA_EQ",
         'EV_STA_ChangedAt', "EV_STA_ChangedAt"
     ),
     1
 FROM (
     SELECT
         "EV_STA_EV_ID",
-        "EV_STA_EQ",
         "EV_STA_ChangedAt",
         "EV_STA_Event_Status" AS compared,
         LAG("EV_STA_Event_Status") OVER (
             PARTITION BY
-                "EV_STA_EV_ID",
-                "EV_STA_EQ"
+                "EV_STA_EV_ID"
             ORDER BY
                 "EV_STA_ChangedAt"
         ) AS previous
@@ -3842,13 +3769,13 @@ GROUP BY
 UNION ALL
 SELECT
     'EV_LVL_Event_Level',
-    'no row in PLV_ProfessionalLevel_ID for EV_LVL_PLV_ID',
+    'no row in PLV_ProfessionalLevel for EV_LVL_PLV_ID',
     OBJECT_CONSTRUCT('EV_LVL_PLV_ID', c."EV_LVL_PLV_ID"),
     COUNT(*)
 FROM
     attributes."EV_LVL_Event_Level" c
 LEFT JOIN
-    knots."PLV_ProfessionalLevel_ID" p
+    knots."PLV_ProfessionalLevel" p
 ON
     p."PLV_ID" = c."EV_LVL_PLV_ID"
 WHERE
@@ -3894,7 +3821,6 @@ SELECT
     'ST_NAM_Stage_Name',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'ST_NAM_EQ', "ST_NAM_EQ",
         'ST_NAM_ST_ID', "ST_NAM_ST_ID",
         'ST_NAM_ChangedAt', "ST_NAM_ChangedAt"
     ),
@@ -3902,7 +3828,6 @@ SELECT
 FROM
     attributes."ST_NAM_Stage_Name"
 GROUP BY
-    "ST_NAM_EQ",
     "ST_NAM_ST_ID",
     "ST_NAM_ChangedAt"
 HAVING
@@ -3937,14 +3862,12 @@ SELECT
     'ST_LOC_Stage_Location',
     'duplicate primary key',
     OBJECT_CONSTRUCT(
-        'ST_LOC_EQ', "ST_LOC_EQ",
         'ST_LOC_ST_ID', "ST_LOC_ST_ID"
     ),
     COUNT(*)
 FROM
     attributes."ST_LOC_Stage_Location"
 GROUP BY
-    "ST_LOC_EQ",
     "ST_LOC_ST_ID"
 HAVING
     COUNT(*) > 1
@@ -4266,13 +4189,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_PLV_Actor_ProfessionalLevel',
-    'no row in PLV_ProfessionalLevel_ID for AC_PLV_PLV_ID',
+    'no row in PLV_ProfessionalLevel for AC_PLV_PLV_ID',
     OBJECT_CONSTRUCT('AC_PLV_PLV_ID', c."AC_PLV_PLV_ID"),
     COUNT(*)
 FROM
     attributes."AC_PLV_Actor_ProfessionalLevel" c
 LEFT JOIN
-    knots."PLV_ProfessionalLevel_ID" p
+    knots."PLV_ProfessionalLevel" p
 ON
     p."PLV_ID" = c."AC_PLV_PLV_ID"
 WHERE
@@ -4672,13 +4595,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_part_PR_in_RAT_got',
-    'no row in RAT_Rating_ID for RAT_ID_got',
+    'no row in RAT_Rating for RAT_ID_got',
     OBJECT_CONSTRUCT('RAT_ID_got', c."RAT_ID_got"),
     COUNT(*)
 FROM
     ties."AC_part_PR_in_RAT_got" c
 LEFT JOIN
-    knots."RAT_Rating_ID" p
+    knots."RAT_Rating" p
 ON
     p."RAT_ID" = c."RAT_ID_got"
 WHERE
@@ -4806,13 +4729,13 @@ GROUP BY
 UNION ALL
 SELECT
     'AC_parent_AC_child_PAT_having',
-    'no row in PAT_ParentalType_ID for PAT_ID_having',
+    'no row in PAT_ParentalType for PAT_ID_having',
     OBJECT_CONSTRUCT('PAT_ID_having', c."PAT_ID_having"),
     COUNT(*)
 FROM
     ties."AC_parent_AC_child_PAT_having" c
 LEFT JOIN
-    knots."PAT_ParentalType_ID" p
+    knots."PAT_ParentalType" p
 ON
     p."PAT_ID" = c."PAT_ID_having"
 WHERE
@@ -4994,15 +4917,18 @@ UNION ALL SELECT * FROM nexuses."ic_key_EV_Event_1st"
 -- created, since Snowflake does not allow comments on view columns to be added afterwards.
 --
 COMMENT ON SCHEMA dw IS 'Example model of a theatre business: stages (venues) where programs (shows) are played by actors, and the individual events (performances) at which a program is played on a stage.';
-COMMENT ON TABLE knots."PAT_ParentalType_ID" IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON TABLE knots."PAT_ParentalType" IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
+COMMENT ON COLUMN knots."PAT_ParentalType"."PAT_ParentalType" IS 'Kind of parent-child relationship between two actors, such as biological or adoptive parent.';
 COMMENT ON TABLE knots."GEN_Gender" IS 'Gender of an actor.';
 COMMENT ON COLUMN knots."GEN_Gender"."GEN_Gender" IS 'Gender of an actor.';
-COMMENT ON TABLE knots."PLV_ProfessionalLevel_ID" IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
+COMMENT ON TABLE knots."PLV_ProfessionalLevel" IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
+COMMENT ON COLUMN knots."PLV_ProfessionalLevel"."PLV_ProfessionalLevel" IS 'Professional level of an actor, describing experience and seniority, such as amateur, trained or professional.';
 COMMENT ON TABLE knots."UTL_Utilization" IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
 COMMENT ON COLUMN knots."UTL_Utilization"."UTL_Utilization" IS 'Utilization expressed as a percentage (0-100) of the capacity of a stage that is in use.';
 COMMENT ON TABLE knots."ONG_Ongoing" IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
 COMMENT ON COLUMN knots."ONG_Ongoing"."ONG_Ongoing" IS 'Yes or No flag indicating whether a relationship is still ongoing or has ended.';
-COMMENT ON TABLE knots."RAT_Rating_ID" IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON TABLE knots."RAT_Rating" IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
+COMMENT ON COLUMN knots."RAT_Rating"."RAT_Rating" IS 'Rating of how well an actor performs a part in a program, such as good, mediocre or bad.';
 COMMENT ON COLUMN attributes."EV_DAT_Event_Date"."EV_DAT_Event_Date" IS 'Date and time when the event took place.';
 COMMENT ON COLUMN attributes."EV_AUD_Event_Audience"."EV_AUD_Event_Audience" IS 'Number of people in the audience at the event.';
 COMMENT ON COLUMN attributes."EV_REV_Event_Revenue"."EV_REV_Event_Revenue" IS 'Revenue from ticket sales for the event.';

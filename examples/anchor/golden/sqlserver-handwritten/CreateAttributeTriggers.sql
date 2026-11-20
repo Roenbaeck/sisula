@@ -86,15 +86,12 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.EV_AUD_EQ,
             i.EV_AUD_EV_ID
         FROM
             inserted i
         JOIN
             [attributes].[EV_AUD_Event_Audience] x
         ON
-            x.EV_AUD_EQ = i.EV_AUD_EQ
-        AND
             x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
         WHERE NOT (
             x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
@@ -111,13 +108,11 @@ BEGIN
     INSERT INTO [attributes].[EV_AUD_Event_Audience] (
         Metadata_EV_AUD,
         EV_AUD_EV_ID,
-        EV_AUD_EQ,
         EV_AUD_Event_Audience
     )
     SELECT
         Metadata_EV_AUD,
         EV_AUD_EV_ID,
-        EV_AUD_EQ,
         EV_AUD_Event_Audience
     FROM
         inserted i
@@ -127,8 +122,6 @@ BEGIN
         FROM
             [attributes].[EV_AUD_Event_Audience] x
         WHERE
-            x.EV_AUD_EQ = i.EV_AUD_EQ
-        AND
             x.EV_AUD_EV_ID = i.EV_AUD_EV_ID
         AND
             x.EV_AUD_Event_Audience = i.EV_AUD_Event_Audience
@@ -209,13 +202,11 @@ BEGIN
     SET @now = sysdatetime();
     DECLARE @EV_STA_Event_Status TABLE (
     EV_STA_EV_ID numeric(12,0) not null,
-        EV_STA_EQ tinyint not null,
         Metadata_EV_STA int not null,
         EV_STA_ChangedAt datetime2 not null,
         EV_STA_Event_Status nvarchar(20) not null,
         EV_STA_StatementType char(1) not null,
         primary key (
-            EV_STA_EQ asc,
             EV_STA_EV_ID asc,
             EV_STA_ChangedAt desc
         )
@@ -223,7 +214,6 @@ BEGIN
     INSERT INTO @EV_STA_Event_Status
     SELECT
         i.EV_STA_EV_ID,
-        i.EV_STA_EQ,
         i.Metadata_EV_STA,
         i.EV_STA_ChangedAt,
         i.EV_STA_Event_Status,
@@ -236,8 +226,6 @@ BEGIN
         FROM
             [attributes].[EV_STA_Event_Status] x
         WHERE
-            x.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = i.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = i.EV_STA_ChangedAt
@@ -248,7 +236,6 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.EV_STA_EQ,
             i.EV_STA_EV_ID,
             i.EV_STA_ChangedAt
         FROM
@@ -256,8 +243,6 @@ BEGIN
         JOIN
             [attributes].[EV_STA_Event_Status] x
         ON
-            x.EV_STA_EQ = i.EV_STA_EQ
-        AND
             x.EV_STA_EV_ID = i.EV_STA_EV_ID
         AND
             x.EV_STA_ChangedAt = i.EV_STA_ChangedAt
@@ -274,14 +259,12 @@ BEGIN
         Metadata_EV_STA,
         EV_STA_EV_ID,
         EV_STA_ChangedAt,
-        EV_STA_EQ,
         EV_STA_Event_Status
     )
     SELECT
         Metadata_EV_STA,
         EV_STA_EV_ID,
         EV_STA_ChangedAt,
-        EV_STA_EQ,
         EV_STA_Event_Status
     FROM
         @EV_STA_Event_Status
@@ -448,13 +431,11 @@ BEGIN
     SET @now = sysdatetime();
     DECLARE @ST_NAM_Stage_Name TABLE (
     ST_NAM_ST_ID int not null,
-        ST_NAM_EQ tinyint not null,
         Metadata_ST_NAM int not null,
         ST_NAM_ChangedAt datetime2 not null,
         ST_NAM_Stage_Name nvarchar(42) not null,
         ST_NAM_StatementType char(1) not null,
         primary key (
-            ST_NAM_EQ asc,
             ST_NAM_ST_ID asc,
             ST_NAM_ChangedAt desc
         )
@@ -462,7 +443,6 @@ BEGIN
     INSERT INTO @ST_NAM_Stage_Name
     SELECT
         i.ST_NAM_ST_ID,
-        i.ST_NAM_EQ,
         i.Metadata_ST_NAM,
         i.ST_NAM_ChangedAt,
         i.ST_NAM_Stage_Name,
@@ -475,8 +455,6 @@ BEGIN
         FROM
             [attributes].[ST_NAM_Stage_Name] x
         WHERE
-            x.ST_NAM_EQ = i.ST_NAM_EQ
-        AND
             x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
@@ -487,7 +465,6 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.ST_NAM_EQ,
             i.ST_NAM_ST_ID,
             i.ST_NAM_ChangedAt
         FROM
@@ -495,8 +472,6 @@ BEGIN
         JOIN
             [attributes].[ST_NAM_Stage_Name] x
         ON
-            x.ST_NAM_EQ = i.ST_NAM_EQ
-        AND
             x.ST_NAM_ST_ID = i.ST_NAM_ST_ID
         AND
             x.ST_NAM_ChangedAt = i.ST_NAM_ChangedAt
@@ -513,14 +488,12 @@ BEGIN
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
         ST_NAM_ChangedAt,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name
     )
     SELECT
         Metadata_ST_NAM,
         ST_NAM_ST_ID,
         ST_NAM_ChangedAt,
-        ST_NAM_EQ,
         ST_NAM_Stage_Name
     FROM
         @ST_NAM_Stage_Name
@@ -545,15 +518,12 @@ BEGIN
     DECLARE @message varchar(max);
     SET @message = (
         SELECT TOP 1
-            i.ST_LOC_EQ,
             i.ST_LOC_ST_ID
         FROM
             inserted i
         JOIN
             [attributes].[ST_LOC_Stage_Location] x
         ON
-            x.ST_LOC_EQ = i.ST_LOC_EQ
-        AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         WHERE NOT (
             x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))
@@ -570,13 +540,11 @@ BEGIN
     INSERT INTO [attributes].[ST_LOC_Stage_Location] (
         Metadata_ST_LOC,
         ST_LOC_ST_ID,
-        ST_LOC_EQ,
         ST_LOC_Stage_Location
     )
     SELECT
         Metadata_ST_LOC,
         ST_LOC_ST_ID,
-        ST_LOC_EQ,
         ST_LOC_Stage_Location
     FROM
         inserted i
@@ -586,8 +554,6 @@ BEGIN
         FROM
             [attributes].[ST_LOC_Stage_Location] x
         WHERE
-            x.ST_LOC_EQ = i.ST_LOC_EQ
-        AND
             x.ST_LOC_ST_ID = i.ST_LOC_ST_ID
         AND
             x.ST_LOC_Checksum = dw.MD5(cast(i.ST_LOC_Stage_Location as varbinary(max)))

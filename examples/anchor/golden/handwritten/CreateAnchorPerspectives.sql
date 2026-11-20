@@ -11,11 +11,9 @@ CREATE OR REPLACE VIEW anchors."lST_Stage" (
     "ST_NAM_ST_ID",
     "Metadata_ST_NAM",
     "ST_NAM_ChangedAt",
-    "ST_NAM_EQ",
     "ST_NAM_Stage_Name" COMMENT 'Name of the stage. Historized, since a stage may be renamed over time.',
     "ST_LOC_ST_ID",
     "Metadata_ST_LOC",
-    "ST_LOC_EQ",
     "ST_LOC_Checksum",
     "ST_LOC_Stage_Location" COMMENT 'Geographic location of the stage as a geography point.',
     "ST_AVG_ST_ID",
@@ -37,11 +35,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -58,7 +54,7 @@ SELECT
 FROM
     anchors."ST_Stage" "ST"
 LEFT JOIN
-    TABLE(attributes."eST_NAM_Stage_Name"(0)) "NAM"
+    attributes."ST_NAM_Stage_Name" "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
 AND
@@ -66,12 +62,12 @@ AND
         SELECT
             max(sub."ST_NAM_ChangedAt")
         FROM
-            TABLE(attributes."eST_NAM_Stage_Name"(0)) sub 
+            attributes."ST_NAM_Stage_Name" sub
         WHERE
             sub."ST_NAM_ST_ID" = "ST"."ST_ID"
    )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
@@ -111,11 +107,9 @@ RETURNS TABLE (
     "ST_NAM_ST_ID" int,
     "Metadata_ST_NAM" int,
     "ST_NAM_ChangedAt" datetime,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_LOC_ST_ID" int,
     "Metadata_ST_LOC" int,
-    "ST_LOC_EQ" tinyint,
     "ST_LOC_Checksum" numeric(19,0),
     "ST_LOC_Stage_Location" geography,
     "ST_AVG_ST_ID" int,
@@ -138,11 +132,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -159,7 +151,7 @@ SELECT
 FROM
     anchors."ST_Stage" "ST"
 LEFT JOIN
-    TABLE(attributes."rST_NAM_Stage_Name"(0, changingTimepoint::datetime)) "NAM"
+    TABLE(attributes."rST_NAM_Stage_Name"(changingTimepoint::datetime)) "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
 AND
@@ -167,12 +159,12 @@ AND
         SELECT
             max(sub."ST_NAM_ChangedAt")
         FROM
-            TABLE(attributes."rST_NAM_Stage_Name"(0, changingTimepoint::datetime)) sub
+            TABLE(attributes."rST_NAM_Stage_Name"(changingTimepoint::datetime)) sub
         WHERE
             sub."ST_NAM_ST_ID" = "ST"."ST_ID"
    )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN
@@ -227,11 +219,9 @@ RETURNS TABLE (
     "ST_NAM_ST_ID" int,
     "Metadata_ST_NAM" int,
     "ST_NAM_ChangedAt" datetime,
-    "ST_NAM_EQ" tinyint,
     "ST_NAM_Stage_Name" varchar(42),
     "ST_LOC_ST_ID" int,
     "Metadata_ST_LOC" int,
-    "ST_LOC_EQ" tinyint,
     "ST_LOC_Checksum" numeric(19,0),
     "ST_LOC_Stage_Location" geography,
     "ST_AVG_ST_ID" int,
@@ -259,11 +249,9 @@ SELECT
     "NAM"."ST_NAM_ST_ID",
     "NAM"."Metadata_ST_NAM",
     "NAM"."ST_NAM_ChangedAt",
-    "NAM"."ST_NAM_EQ",
     "NAM"."ST_NAM_Stage_Name",
     "LOC"."ST_LOC_ST_ID",
     "LOC"."Metadata_ST_LOC",
-    "LOC"."ST_LOC_EQ",
     "LOC"."ST_LOC_Checksum",
     "LOC"."ST_LOC_Stage_Location",
     "AVG"."ST_AVG_ST_ID",
@@ -283,7 +271,7 @@ FROM (
         h."ST_NAM_ChangedAt"::timestamp_ntz(9) AS inspectedTimepoint,
         'NAM' AS mnemonic
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+        attributes."ST_NAM_Stage_Name" h
     WHERE
         (selection IS NULL OR selection LIKE '%NAM%')
     AND
@@ -312,7 +300,7 @@ LEFT JOIN (
             ORDER BY h."ST_NAM_ChangedAt"
         ) AS "until"
     FROM
-        TABLE(attributes."eST_NAM_Stage_Name"(0)) h
+        attributes."ST_NAM_Stage_Name" h
 ) "NAM"
 ON
     "NAM"."ST_NAM_ST_ID" = "ST"."ST_ID"
@@ -324,7 +312,7 @@ OR
     "NAM"."until" > timepoints.inspectedTimepoint::datetime
 )
 LEFT JOIN
-    TABLE(attributes."eST_LOC_Stage_Location"(0)) "LOC"
+    attributes."ST_LOC_Stage_Location" "LOC"
 ON
     "LOC"."ST_LOC_ST_ID" = "ST"."ST_ID"
 LEFT JOIN (
@@ -379,7 +367,6 @@ CREATE OR REPLACE VIEW anchors."lAC_Actor" (
     "Metadata_AC_PLV",
     "AC_PLV_ChangedAt",
     "AC_PLV_PLV_Checksum",
-    "AC_PLV_PLV_EQ",
     "AC_PLV_PLV_ProfessionalLevel" COMMENT 'Professional level of the actor, which may change as the actor gains experience.',
     "AC_PLV_Metadata_PLV",
     "AC_PLV_PLV_ID" COMMENT 'Professional level of the actor, which may change as the actor gains experience.'
@@ -402,7 +389,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -443,7 +429,7 @@ AND
             sub."AC_PLV_AC_ID" = "AC"."AC_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID";
 -- Point-in-time perspective ------------------------------------------------------------------------------------------
@@ -469,7 +455,6 @@ RETURNS TABLE (
     "Metadata_AC_PLV" int,
     "AC_PLV_ChangedAt" datetime,
     "AC_PLV_PLV_Checksum" numeric(19,0),
-    "AC_PLV_PLV_EQ" tinyint,
     "AC_PLV_PLV_ProfessionalLevel" string,
     "AC_PLV_Metadata_PLV" int,
     "AC_PLV_PLV_ID" tinyint
@@ -493,7 +478,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -534,7 +518,7 @@ AND
             sub."AC_PLV_AC_ID" = "AC"."AC_ID"
    )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
@@ -575,7 +559,6 @@ RETURNS TABLE (
     "Metadata_AC_PLV" int,
     "AC_PLV_ChangedAt" datetime,
     "AC_PLV_PLV_Checksum" numeric(19,0),
-    "AC_PLV_PLV_EQ" tinyint,
     "AC_PLV_PLV_ProfessionalLevel" string,
     "AC_PLV_Metadata_PLV" int,
     "AC_PLV_PLV_ID" tinyint
@@ -604,7 +587,6 @@ SELECT
     "PLV"."Metadata_AC_PLV",
     "PLV"."AC_PLV_ChangedAt",
     "kPLV"."PLV_Checksum" AS "AC_PLV_PLV_Checksum",
-    "kPLV"."PLV_EQ" AS "AC_PLV_PLV_EQ",
     "kPLV"."PLV_ProfessionalLevel" AS "AC_PLV_PLV_ProfessionalLevel",
     "kPLV"."Metadata_PLV" AS "AC_PLV_Metadata_PLV",
     "PLV"."AC_PLV_PLV_ID"
@@ -682,7 +664,7 @@ OR
     "PLV"."until" > timepoints.inspectedTimepoint::datetime
 )
 LEFT JOIN
-    TABLE(knots."ePLV_ProfessionalLevel"(0)) "kPLV"
+    knots."PLV_ProfessionalLevel" "kPLV"
 ON
     "kPLV"."PLV_ID" = "PLV"."AC_PLV_PLV_ID"
 $$
