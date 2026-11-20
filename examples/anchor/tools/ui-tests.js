@@ -498,6 +498,82 @@
         expect(document.body.classList.contains('dark') && /light/i.test(button.getAttribute('aria-label')) && getComputedStyle(button.querySelector('.sun')).display !== 'none', 'the button in the dark theme');
         Actions.applyTheme(was ? 'dark' : 'light');
     });
+    test('the menus work from the keyboard: names and items with roles, arrows, letters, Enter, Escape and Tab', async function () {
+        await load(window.__MODELS['example.xml']);
+        function key(el, k) { var e = new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }); el.dispatchEvent(e); return e; }
+        var labels = Array.prototype.slice.call(document.querySelectorAll('#header .menulabel'));
+        expect(labels.length === 4 && labels.every(function (l) { return l.tagName === 'BUTTON' && l.getAttribute('aria-haspopup') === 'menu' && l.hasAttribute('aria-expanded'); }), 'the names are not buttons that say they have a menu');
+        expect(labels.filter(function (l) { return l.getAttribute('tabindex') === '0'; }).length === 1, 'more or fewer than one name can be reached with Tab');
+        expect(Array.prototype.every.call(document.querySelectorAll('#header .submenu'), function (m) { return m.getAttribute('role') === 'menu' && m.getAttribute('aria-label'); }), 'a menu has no role or no name');
+        var items = document.querySelectorAll('#header .submenu li');
+        expect(Array.prototype.every.call(items, function (li) { return li.getAttribute('role') === 'menuitem' && li.getAttribute('tabindex') === '-1'; }), 'an item has no role, or it is in the Tab order');
+        record('menus.items', items.length);
+        var file = document.getElementById('file'), first = file.querySelector('li');
+        labels[0].focus(); key(labels[0], 'ArrowDown');
+        expect(file.classList.contains('open') && labels[0].getAttribute('aria-expanded') === 'true' && document.activeElement === first, 'Down on a name did not open the menu on its first item');
+        var list = Array.prototype.slice.call(file.querySelectorAll('li'));
+        key(document.activeElement, 'ArrowDown'); expect(document.activeElement === list[1], 'Down did not go to the next item');
+        key(document.activeElement, 'End'); expect(document.activeElement === list[list.length - 1], 'End did not go to the last');
+        key(document.activeElement, 'ArrowDown'); expect(document.activeElement === list[0], 'Down on the last did not wrap');
+        key(document.activeElement, 'ArrowUp'); expect(document.activeElement === list[list.length - 1], 'Up on the first did not wrap');
+        key(document.activeElement, 'Home'); expect(document.activeElement === list[0], 'Home did not go to the first');
+        var save = list.filter(function (li) { return /^Save model/i.test(li.textContent.trim()); })[0];
+        key(document.activeElement, 's'); expect(document.activeElement.textContent.trim().toLowerCase().indexOf('s') === 0, 'a letter did not go to an item that starts with it');
+        var other = key(document.activeElement, 'q');
+        expect(!other.defaultPrevented, 'a letter that no item starts with was taken');
+        // sideways, with the menu open: the next opens
+        key(document.activeElement, 'ArrowRight');
+        var layout = document.getElementById('actions');
+        expect(!file.classList.contains('open') && layout.classList.contains('open') && document.activeElement === layout.querySelector('li'), 'Right did not go to the next menu');
+        expect(labels[1].getAttribute('tabindex') === '0' && labels[0].getAttribute('tabindex') === '-1', 'the name that can be reached with Tab did not follow');
+        // Enter does what the item says, and the menu closes with the focus back on its name
+        var before = DrawingEngine.showNames;
+        var toggle = Array.prototype.filter.call(layout.querySelectorAll('li'), function (li) { return li.getAttribute('data-action') === 'Actions.toggleNames'; })[0];
+        toggle.focus(); var enter = key(toggle, 'Enter'); await sleep(50);
+        expect(enter.defaultPrevented && DrawingEngine.showNames !== before, 'Enter did not do what the item says');
+        expect(!layout.classList.contains('open') && document.activeElement === labels[1], 'the menu did not close with the focus on its name');
+        Actions.toggleNames();
+        // Escape closes, Tab leaves, Left and Right move between the names without opening
+        key(labels[1], 'ArrowDown'); expect(layout.classList.contains('open'), 'Down did not open');
+        key(document.activeElement, 'Escape'); expect(!layout.classList.contains('open') && document.activeElement === labels[1], 'Escape did not close the menu and return to its name');
+        key(labels[1], 'ArrowRight'); expect(document.activeElement === labels[2] && !document.getElementById('generate').classList.contains('open'), 'Right on a name did not just move');
+        key(labels[2], 'ArrowRight'); expect(document.activeElement === labels[3], 'Right did not reach the last name');
+        key(labels[3], 'ArrowRight'); expect(document.activeElement === labels[0], 'Right on the last name did not wrap');
+        key(labels[0], 'ArrowUp'); expect(document.activeElement === list[list.length - 1], 'Up on a name did not open the menu on its last item');
+        key(document.activeElement, 'Tab'); expect(!file.classList.contains('open'), 'Tab did not close the menu');
+        // a click opens and closes, as it has to where there is nothing to hover with
+        labels[2].click(); expect(document.getElementById('generate').classList.contains('open'), 'a click did not open the menu');
+        labels[2].click(); expect(!document.getElementById('generate').classList.contains('open'), 'a second click did not close it');
+        labels[2].click(); document.body.click(); expect(!document.getElementById('generate').classList.contains('open'), 'a click elsewhere did not close it');
+        Menus.closeAll();
+    });
+
+    test('the graph can be reached with Tab and moved with the keys, and what happens is announced', async function () {
+        await load(window.__MODELS['example.xml']);
+        var graph = document.getElementById('graph'), box = SVG.viewBox.baseVal;
+        function key(k, shift) { var e = new KeyboardEvent('keydown', { key: k, shiftKey: !!shift, bubbles: true, cancelable: true }); graph.dispatchEvent(e); return e; }
+        expect(graph.tabIndex === 0 && graph.getAttribute('aria-label'), 'the graph cannot be reached, or does not say what it is');
+        Actions.resetZoom(); var x = box.x, y = box.y, w = box.width;
+        key('ArrowRight'); expect(box.x > x, 'Right did not move the view');
+        key('ArrowLeft'); expect(Math.abs(box.x - x) < 0.001, 'Left did not move it back');
+        key('ArrowDown'); expect(box.y > y, 'Down did not move the view');
+        key('ArrowUp'); expect(Math.abs(box.y - y) < 0.001, 'Up did not move it back');
+        key('ArrowRight', true); expect(box.x - x > 0.25 * w, 'shift did not make the step larger');
+        key('+'); expect(box.width < w, 'plus did not zoom in');
+        key('-'); key('-'); expect(box.width > w, 'minus did not zoom out');
+        var zero = key('0'); expect(box.width === window.innerWidth && zero.defaultPrevented, 'zero did not show the model again');
+        expect(!key('a').defaultPrevented, 'a key that the graph does not use was taken');
+        // the live region
+        var region = document.getElementById('announcer');
+        expect(region && region.getAttribute('aria-live') === 'polite', 'there is no polite live region');
+        Actions.announce('Hello'); await sleep(150);
+        expect(region.textContent === 'Hello', 'announce did not say it');
+        Model.addAttribute([ofType(NodeType.ANCHOR)[0]]); Model.recordState(); Model.recordState();
+        ControlButtons.undo(); await sleep(150);
+        expect(/^Undone, \d+ more can be undone$/.test(region.textContent), 'undo was not announced: ' + region.textContent);
+        ControlButtons.redo(); await sleep(150);
+        expect(/^Redone/.test(region.textContent), 'redo was not announced: ' + region.textContent);
+    });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
         function worst() {
@@ -660,7 +736,7 @@
 
     test('the item that loads a model can be opened with Enter and Space on the keyboard', async function () {
         var item = Array.prototype.filter.call(document.querySelectorAll('#file li'), function (li) { return /Load model from local file/.test(li.textContent); })[0];
-        expect(item && item.getAttribute('tabindex') === '0', 'no focusable item');
+        expect(item && item.getAttribute('role') === 'menuitem' && item.hasAttribute('tabindex'), 'no item that the keyboard can reach');
         var clicks = [], click = HTMLInputElement.prototype.click;
         HTMLInputElement.prototype.click = function () { clicks.push(this.id); };
         try {
@@ -898,7 +974,7 @@
     });
 
     test('the menus offer what they did', async function () {
-        var items = Array.prototype.map.call(document.querySelectorAll('#header .menu'), function (m) { return m.firstChild.nodeValue.trim() + ':' + m.querySelectorAll('li').length; });
+        var items = Array.prototype.map.call(document.querySelectorAll('#header .menu'), function (m) { return m.querySelector('.menulabel').textContent.trim() + ':' + m.querySelectorAll('li').length; });
         record('menus', items.join(' '));
     });
 
