@@ -801,6 +801,108 @@
         var mean = lengths.reduce(function (s, l) { return s + l; }, 0) / lengths.length;
         expect(mean < Math.max(width, height) / 2, 'the edges are ' + mean.toFixed(0) + ' long on average in a model that is ' + width.toFixed(0) + ' by ' + height.toFixed(0));
     });
+    test('code that is shown can be copied and downloaded as a file', async function () {
+        await load(window.__MODELS['example.xml']);
+        var written = [], saved = [], realBlob = Actions.downloadBlob;
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: function (s) { written.push(s); return Promise.resolve(); } }, configurable: true });
+        Actions.downloadBlob = function (blob, name) { saved.push({ blob: blob, name: name }); };
+        try {
+            var kinds = [['generateXML', /\.xml$/, 'Download .xml', 'application/xml'], ['generateBindings', /\.json$/, 'Download .json', 'application/json'], ['generateSQL', /\.sql$/, 'Download .sql', 'text/plain']];
+            for (var i = 0; i < kinds.length; i++) {
+                closeOverlays(); written.length = 0; saved.length = 0;
+                Actions[kinds[i][0]]();
+                for (var w = 0; w < 80 && !document.querySelector('#codePopover .codebar'); w++) await sleep(50);
+                var bar = document.querySelector('#codePopover .codebar');
+                expect(bar, kinds[i][0] + ' has no buttons to copy and download');
+                var buttons = bar.querySelectorAll('button');
+                expect(buttons.length === 2 && buttons[0].textContent === 'Copy' && buttons[1].textContent === kinds[i][2], kinds[i][0] + ' has the buttons ' + Array.prototype.map.call(buttons, function (b) { return b.textContent; }).join(', '));
+                var shown = document.querySelector('#codePopover #content').textContent;
+                expect(shown.length > 200, kinds[i][0] + ' shows nothing');
+                buttons[0].click(); await sleep(100);
+                expect(written.length === 1 && written[0] === shown, kinds[i][0] + ': the copy is not what is shown');
+                buttons[1].click(); await sleep(100);
+                expect(saved.length === 1 && kinds[i][1].test(saved[0].name) && saved[0].blob.type.indexOf(kinds[i][3]) === 0, kinds[i][0] + ': the download is ' + (saved[0] && saved[0].name + ' ' + saved[0].blob.type));
+                var text = await new Promise(function (resolve) { var r = new FileReader(); r.onload = function () { resolve(r.result); }; r.readAsText(saved[0].blob); });
+                expect(text === shown, kinds[i][0] + ': the file is not what is shown');
+            }
+        } finally { delete navigator.clipboard; Actions.downloadBlob = realBlob; closeOverlays(); }
+    });
+
+    test('the whole model can be saved as a PNG that is a picture of it, in both themes', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(1500);
+        async function picture(theme) {
+            Actions.applyTheme(theme); await sleep(100);
+            var blob = await Actions.pngBlob(1);
+            expect(blob.type === 'image/png' && blob.size > 2000, 'the ' + theme + ' picture is ' + blob.type + ', ' + blob.size + ' bytes');
+            var image = await new Promise(function (resolve, reject) { var i = new Image(); i.onload = function () { resolve(i); }; i.onerror = reject; i.src = URL.createObjectURL(blob); });
+            var canvas = document.createElement('canvas'); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
+            var ctx = canvas.getContext('2d'); ctx.drawImage(image, 0, 0);
+            var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data, corner = Array.prototype.slice.call(data, 0, 4), different = 0, pixels = data.length / 4;
+            for (var p = 0; p < data.length; p += 4) if (Math.abs(data[p] - corner[0]) + Math.abs(data[p + 1] - corner[1]) + Math.abs(data[p + 2] - corner[2]) > 40) different++;
+            return { w: image.naturalWidth, h: image.naturalHeight, corner: corner, share: different / pixels };
+        }
+        var light = await picture('light'), dark = await picture('dark');
+        Actions.applyTheme('light');
+        expect(light.w > 300 && light.h > 200, 'the picture is ' + light.w + ' by ' + light.h);
+        expect(light.corner[0] > 200 && dark.corner[0] < 80, 'the background is ' + light.corner.join(',') + ' and ' + dark.corner.join(','));
+        expect(light.share > 0.005 && light.share < 0.6 && dark.share > 0.005 && dark.share < 0.6, 'the drawing is ' + (100 * light.share).toFixed(1) + '% and ' + (100 * dark.share).toFixed(1) + '% of the picture');
+        // it is all of the model: the picture has the aspect of the model, with room around it
+        var box = SVGLayer.nodes.getBBox();
+        expect(light.w / light.h > (box.width / box.height) * 0.6 && light.w / light.h < (box.width / box.height) * 1.6, 'the picture is not of the model: ' + (light.w / light.h).toFixed(2) + ' against ' + (box.width / box.height).toFixed(2));
+        // and the menu item saves it as a file
+        var saved = [], realBlob = Actions.downloadBlob;
+        Actions.downloadBlob = function (blob, name) { saved.push(name); };
+        try { Actions.savePNG(); for (var w = 0; w < 60 && !saved.length; w++) await sleep(50); } finally { Actions.downloadBlob = realBlob; }
+        expect(saved.length === 1 && /\.png$/.test(saved[0]), 'the picture was not saved as a file: ' + saved.join());
+        record('png.aspect', (light.w / light.h).toFixed(1));
+    });
+
+    test('models are kept in the browser under names, listed, opened and removed', async function () {
+        await load(window.__MODELS['example.xml']);
+        var key = ModelStore.key, kept = window.localStorage.getItem(key);
+        window.localStorage.removeItem(key);
+        try {
+            expect(ModelStore.names().length === 0, 'there are models kept already');
+            var anchor = ofType(NodeType.ANCHOR)[0], original = anchor.descriptor;
+            expect(ModelStore.save('Theatre') && ModelStore.names().join() === 'Theatre', 'the model was not kept');
+            anchor.descriptor = 'Performer';
+            expect(ModelStore.save('Theatre, changed') && ModelStore.names()[0] === 'Theatre, changed' && ModelStore.names().length === 2, 'a second model was not kept, or is not first');
+            expect(!ModelStore.save('   '), 'a model was kept without a name');
+            // the dialog
+            Actions.openModelStore(); await sleep(100);
+            var dialog = document.getElementById('modelStore'), field = document.getElementById('storeName'), button = document.getElementById('storeSave');
+            expect(dialog.open && document.querySelectorAll('#storeList li').length === 2, 'the dialog does not list the models');
+            expect(document.querySelector('#storeList li strong').textContent === 'Theatre, changed', 'the list is not in the order of the last saved');
+            field.value = 'Theatre'; field.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(button.textContent === 'Replace', 'the button does not say that it replaces: ' + button.textContent);
+            field.value = 'Third'; field.dispatchEvent(new Event('input', { bubbles: true }));
+            expect(button.textContent === 'Keep', 'the button does not say that it keeps');
+            button.click(); await sleep(50);
+            expect(ModelStore.names().length === 3 && /Kept as Third/.test(document.getElementById('storeStatus').textContent), 'the dialog did not keep the model');
+            record('store.row', document.querySelector('#storeList li small').textContent.replace(/ · [^·]*$/, ''));
+            // opening one makes it the model
+            var row = Array.prototype.filter.call(document.querySelectorAll('#storeList li'), function (li) { return li.querySelector('strong').textContent === 'Theatre'; })[0];
+            row.querySelector('button[data-store=open]').click(); await sleep(300);
+            expect(!dialog.open && ofType(NodeType.ANCHOR)[0].descriptor === original, 'opening did not give the model that was kept: ' + ofType(NodeType.ANCHOR)[0].descriptor);
+            expect(/Theatre/.test(document.getElementById('model').textContent), 'the name is not shown as the model');
+            // removing asks first
+            Actions.openModelStore(); await sleep(100);
+            var third = Array.prototype.filter.call(document.querySelectorAll('#storeList li'), function (li) { return li.querySelector('strong').textContent === 'Third'; })[0];
+            third.querySelector('button[data-store=delete]').click();
+            expect(ModelStore.names().length === 3 && third.querySelector('button[data-store=delete]').textContent === 'Sure?', 'a model was removed without asking');
+            third.querySelector('button[data-store=delete]').click();
+            expect(ModelStore.names().length === 2 && ModelStore.names().indexOf('Third') < 0, 'the model was not removed');
+            // a browser that is full says so, and nothing is lost
+            var realSet = Storage.prototype.setItem;
+            Storage.prototype.setItem = function () { throw new Error('QuotaExceededError'); };
+            try { field.value = 'Too much'; button.click(); } finally { Storage.prototype.setItem = realSet; }
+            expect(ModelStore.names().length === 2 && document.getElementById('modelStore').classList.contains('bad') && /full/.test(document.getElementById('storeStatus').textContent), 'a full browser was not told');
+            dialog.close();
+        } finally {
+            if (kept === null) window.localStorage.removeItem(key); else window.localStorage.setItem(key, kept);
+        }
+    });
     test('a model goes to an agent without its positions, and what comes back replaces it, with what was there in its place', async function () {
         await load(window.__MODELS['example.xml']);
         await sleep(300);
