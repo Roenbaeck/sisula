@@ -828,6 +828,53 @@
         } finally { delete navigator.clipboard; Actions.downloadBlob = realBlob; closeOverlays(); }
     });
 
+    test('the documentation is a page that tells the model: every construct, its description, what it is tied to, and links that lead somewhere', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(500);
+        var html = Documentation.html(), page = new DOMParser().parseFromString(html, 'text/html');
+        expect(/^<!DOCTYPE html>/i.test(html) && !/<link\b|<script\b/i.test(html), 'the page is not one file with everything in it');
+        expect(page.querySelector('h1') && page.querySelector('title').textContent.indexOf('documentation') > 0, 'the page has no title');
+        // a section for each construct
+        var counts = { anchor: ofType(NodeType.ANCHOR).length, nexus: ofType(NodeType.NEXUS).length, tie: ofType(NodeType.TIE).length, knot: ofType(NodeType.KNOT).length };
+        Object.keys(counts).forEach(function (k) { expect(page.querySelectorAll('section.entity.' + k).length === counts[k], 'the page has ' + page.querySelectorAll('section.entity.' + k).length + ' ' + k + ' sections, the model ' + counts[k]); });
+        expect(page.querySelectorAll('h2').length === 4, 'the page has ' + page.querySelectorAll('h2').length + ' parts');
+        // the words of the model are in it
+        var anchor = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0];
+        expect(page.querySelector('#anchor-AC') && /An actor, a person who performs parts/.test(page.querySelector('#anchor-AC').textContent), 'the description of the anchor is not on the page');
+        expect(page.querySelectorAll('#anchor-AC table tbody tr').length === Outline.partsOf(anchor).filter(function (p) { return p.node.type === NodeType.ATTRIBUTE; }).length, 'the anchor does not have a row for each attribute');
+        expect(/Gender/.test(page.querySelector('#anchor-AC table').textContent) && /changes over time/.test(page.querySelector('#anchor-AC').textContent) && /never changes/.test(page.querySelector('#anchor-AC').textContent), 'the attributes are not told');
+        expect(/Identified by/.test(page.querySelector('#anchor-AC').textContent), 'what identifies the anchor is not told');
+        var nexus = page.querySelector('section.nexus');
+        expect(nexus && nexus.querySelectorAll('table').length === 2 && /Roles/.test(nexus.textContent) && /chronicle/.test(nexus.textContent), 'the nexus does not have attributes and roles');
+        // a tie has its roles, each with what it is and how many, and a description
+        page.querySelectorAll('section.tie').forEach(function (tie) {
+            expect(tie.querySelectorAll('tbody tr').length >= 2 && tie.querySelector('p') && tie.querySelector('h3').textContent.length > 5, 'a tie does not tell its roles: ' + tie.querySelector('h3').textContent);
+            expect(Array.prototype.every.call(tie.querySelectorAll('tbody tr'), function (r) { return /^(one|many)$/.test(r.children[2].textContent) && r.children[1].textContent.trim() && r.children[3].textContent.trim(); }), 'a role of ' + tie.querySelector('h3').textContent + ' lacks what it is, how many or what it is about');
+        });
+        // a knot says where it is used
+        expect(Array.prototype.every.call(page.querySelectorAll('section.knot'), function (k) { return /Used by/.test(k.textContent); }), 'a knot does not say where it is used');
+        // every link leads to something on the page
+        var links = Array.prototype.slice.call(page.querySelectorAll('a[href^="#"]')), broken = links.filter(function (a) { return !page.getElementById(a.getAttribute('href').slice(1)); });
+        expect(links.length > 40 && broken.length === 0, links.length + ' links, and ' + broken.length + ' lead nowhere: ' + broken.slice(0, 3).map(function (a) { return a.getAttribute('href'); }).join(' '));
+        // the picture is the model, in light colours although the theme is dark
+        Actions.applyTheme('dark'); var dark = Documentation.html(); Actions.applyTheme('light');
+        var picture = new DOMParser().parseFromString(dark, 'text/html').querySelector('figure svg');
+        expect(picture && picture.getAttribute('viewBox') && picture.querySelector(':scope > rect') && parseInt(picture.querySelector(':scope > rect').getAttribute('fill').replace('#', '').slice(0, 2), 16) > 200, 'the picture in the page is not light');
+        expect(Actions.currentTheme === 'light' && !document.body.classList.contains('dark'), 'the theme was left changed');
+        record('doc.sections', page.querySelectorAll('section.entity').length);
+        // the dialog shows it, and the buttons give it away
+        var saved = [], real = Actions.downloadBlob;
+        Actions.downloadBlob = function (blob, name) { saved.push({ blob: blob, name: name }); };
+        try {
+            Actions.generateHTML(); await sleep(300);
+            var dialog = document.getElementById('docView'), frame = document.getElementById('docFrame');
+            expect(dialog.open && frame.srcdoc.indexOf('<h1>') > 0 && frame.contentDocument.querySelector('h1'), 'the documentation is not shown');
+            document.querySelector('#docView [data-action="Documentation.download"]').click(); await sleep(100);
+            expect(saved.length === 1 && /\.html$/.test(saved[0].name) && saved[0].blob.type.indexOf('text/html') === 0, 'the file was not downloaded');
+            document.querySelector('#docView .close').click();
+            expect(!dialog.open, 'the dialog did not close');
+        } finally { Actions.downloadBlob = real; }
+    });
     test('the whole model can be saved as a PNG that is a picture of it, in both themes', async function () {
         await load(window.__MODELS['example.xml']);
         await sleep(1500);
@@ -1018,7 +1065,7 @@
         expect(document.body.classList.contains('temporal-uni') && !document.body.classList.contains('temporal-crt'), 'crt class kept');
     });
 
-    test('SQL, XML and documentation are generated', async function () {
+    test('SQL and XML are generated (the documentation has its own test)', async function () {
         await load(window.__MODELS['example.xml']);
         var sql = await Actions.sql();
         expect(/CREATE TABLE/i.test(sql) && sql.length > 100000, 'the SQL has ' + sql.length + ' characters');
@@ -1027,15 +1074,6 @@
         await sleep(500);
         expect(document.getElementById('codePopover'), 'no XML popover');
         closeOverlays();
-        // the documentation goes into a new window: a document of its own stands in for it
-        var doc = document.implementation.createHTMLDocument('documentation'), written = '', open = window.open;
-        doc.open = function () {}; doc.close = function () {}; doc.write = function (t) { written += t; };
-        window.open = function () { return { document: doc, focus: function () {} }; };
-        Actions.generateHTML();
-        await sleep(800);
-        window.open = open;
-        record('html.written', written.length); record('html.body', doc.body.innerHTML.length);
-        expect(doc.body.innerHTML.length > 1000, 'the documentation has ' + doc.body.innerHTML.length + ' characters');
         closeOverlays();
     });
 
