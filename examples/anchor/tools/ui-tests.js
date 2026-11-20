@@ -978,6 +978,69 @@
             if (kept === null) window.localStorage.removeItem(key); else window.localStorage.setItem(key, kept);
         }
     });
+    // The page is started again in a frame of a given size, since the size of the window of the test cannot be changed (and a
+    // browser window is never narrower than 500 px), and the media queries of a page follow the size of its frame.
+    async function framed(width, height) {
+        var kept = {}; for (var i = 0; i < window.localStorage.length; i++) { var k = window.localStorage.key(i); kept[k] = window.localStorage.getItem(k); }
+        var frame = document.createElement('iframe');
+        frame.src = 'index.html';
+        frame.style.cssText = 'position:fixed;top:0;left:0;width:' + width + 'px;height:' + height + 'px;border:0;background:#fff;z-index:100000';
+        document.body.appendChild(frame);
+        for (var w = 0; w < 200 && !(frame.contentWindow && frame.contentWindow.AnchorStarted && frame.contentWindow.Model && frame.contentWindow.Actions); w++) await sleep(50);
+        var win = frame.contentWindow;
+        expect(win.AnchorStarted, 'the page did not start in a frame of ' + width + ' px');
+        win.Actions._applyLoadedModel(new win.DOMParser().parseFromString(window.__MODELS['example.xml'], 'text/xml'), false);
+        await sleep(700);
+        return {
+            win: win, doc: frame.contentDocument,
+            close: async function () {
+                document.body.removeChild(frame);
+                await sleep(100);
+                window.localStorage.clear(); Object.keys(kept).forEach(function (key) { window.localStorage.setItem(key, kept[key]); });
+            }
+        };
+    }
+    var SIZES = [{ name: 'phone', w: 390, h: 844 }, { name: 'tablet', w: 820, h: 1000 }, { name: 'desktop', w: 1440, h: 900 }];
+    test('the page fits a phone, a tablet and a desktop: the bar, the menus, the panel and what is selected are all in view', async function () {
+        for (var s = 0; s < SIZES.length; s++) {
+            var size = SIZES[s], page = await framed(size.w, size.h), win = page.win, doc = page.doc;
+            try {
+                var at = size.name + ' (' + size.w + ' px)';
+                function inside(el, what) {
+                    var r = el.getBoundingClientRect();
+                    expect(r.width > 4 && r.height > 4 && r.left >= -0.5 && r.right <= size.w + 0.5 && r.top >= -0.5 && r.bottom <= size.h + 0.5, what + ' is not in view at ' + at + ': ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(','));
+                    return r;
+                }
+                expect(doc.documentElement.scrollWidth <= size.w && doc.body.scrollWidth <= size.w, 'the page is wider than the window at ' + at);
+                ['file', 'actions', 'generate', 'about', 'undo', 'redo', 'playpause', 'themeToggle', 'modelSettingsButton', 'panelButton'].forEach(function (id) { inside(doc.getElementById(id), id); });
+                if (size.name !== 'desktop') { /* the zoom buttons stay too */ inside(doc.getElementById('zoomin'), 'zoomin'); }
+                var bar = doc.getElementById('header').getBoundingClientRect();
+                expect(Math.abs(bar.height - (size.w <= 700 ? 80 : 40)) < 1.5, 'the bar is ' + bar.height + ' px high at ' + at);
+                expect((doc.getElementById('search').getBoundingClientRect().width > 0) === (size.w > 900), 'the search is ' + (size.w > 900 ? 'missing' : 'in the way') + ' at ' + at);
+                expect((doc.getElementById('miniature').getBoundingClientRect().width > 0) === (size.w > 700), 'the miniature is ' + (size.w > 700 ? 'missing' : 'in the way') + ' at ' + at);
+                // a menu opens where it can be seen, and the items are in the window
+                win.Menus.open(doc.getElementById('generate'), null); await sleep(100);
+                var menu = doc.querySelector('#generate .submenu'); inside(menu, 'the Generate menu');
+                win.Menus.closeAll();
+                win.Menus.open(doc.getElementById('about'), null); await sleep(100);
+                inside(doc.querySelector('#about .submenu'), 'the Help menu'); win.Menus.closeAll();
+                // the panel: at the side on a desktop, a sheet at the bottom elsewhere
+                win.Outline.setOpen(true, true); await sleep(200);
+                var panel = doc.getElementById('panel').getBoundingClientRect();
+                if (size.w > 900) expect(Math.abs(panel.right - size.w) < 1 && panel.width > 300 && panel.width < 400 && panel.top >= bar.bottom - 1, 'the panel is not at the side at ' + at);
+                else expect(panel.left <= 1 && Math.abs(panel.width - size.w) < 2 && Math.abs(panel.bottom - size.h) < 1 && panel.height < size.h * 0.6 && panel.height > size.h * 0.3, 'the panel is not a sheet at the bottom at ' + at + ': ' + [panel.left, panel.top, panel.width, panel.height].map(Math.round).join(','));
+                // what is selected is brought to where it can be seen (not under the bar, nor under the panel)
+                var owner = win.Model.components.filter(function (c) { return c.node.type === win.NodeType.ANCHOR && win.Outline.partsOf(c).length > 2; })[0];
+                win.Actions.selectNode(win.Outline.idOf(owner)); await sleep(500);
+                var shape = owner.view.svg.graphicsElement.getBoundingClientRect(), area = win.Actions.visibleArea(), cx = shape.left + shape.width / 2, cy = shape.top + shape.height / 2;
+                expect(cx > area.x && cx < area.x + area.width && cy > area.y && cy < area.y + area.height, 'the selected anchor is at ' + Math.round(cx) + ',' + Math.round(cy) + ', outside the part that can be seen (' + [area.x, area.y, area.width, area.height].map(Math.round).join(',') + ') at ' + at);
+                expect(Math.abs(cx - (area.x + area.width / 2)) < 60 && Math.abs(cy - (area.y + area.height / 2)) < 60, 'the selected anchor is not in the middle of what can be seen at ' + at);
+                // a dialog is in the window too
+                win.Actions.openModelSettings(); await sleep(200); inside(doc.getElementById('modelSettings'), 'the settings dialog'); win.Actions.closeModelSettings();
+                record('layout.' + size.name, 'bar ' + Math.round(bar.height) + ', panel ' + (size.w > 900 ? 'side' : 'sheet'));
+            } finally { await page.close(); }
+        }
+    });
     test('a model goes to an agent without its positions, and what comes back replaces it, with what was there in its place', async function () {
         await load(window.__MODELS['example.xml']);
         await sleep(300);
