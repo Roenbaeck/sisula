@@ -519,6 +519,39 @@
         expect(enter.defaultPrevented && space.defaultPrevented && !other.defaultPrevented, 'the keys were not handled as they should');
     });
 
+    // A dialog that cannot be closed traps the user: its close button has to be there to see (it is drawn from an image), and
+    // Escape has to close it too.
+    async function imageLoads(url) {
+        return new Promise(function (resolve) { var i = new Image(); i.onload = function () { resolve(i.naturalWidth > 0); }; i.onerror = function () { resolve(false); }; i.src = url; });
+    }
+    async function checkDialog(name, open, selector) {
+        await load(window.__MODELS['example.xml']);
+        open();
+        await sleep(600);
+        var dialog = document.querySelector(selector);
+        expect(dialog, name + ' did not open');
+        var button = dialog.querySelector('.closebutton');
+        expect(button, name + ' has no close button');
+        var style = getComputedStyle(button), box = button.getBoundingClientRect();
+        expect(style.display !== 'none' && box.width > 10 && box.height > 10, name + ': the close button is ' + Math.round(box.width) + 'x' + Math.round(box.height) + ', display ' + style.display);
+        var url = (style.backgroundImage.match(/url\("?([^")]+)"?\)/) || [])[1];
+        expect(url, name + ': the close button has no image');
+        expect(await imageLoads(url), name + ': the image of the close button (' + url.replace(/.*\//, '') + ') cannot be loaded');
+        press('Escape');
+        await sleep(100);
+        expect(!document.querySelector(selector), name + ' was not closed by Escape');
+        closeOverlays();
+    }
+    test('the SQL and XML dialog has a close button that shows, and Escape closes it', async function () {
+        await checkDialog('the XML dialog', function () { Actions.generateXML(); }, '#codePopover');
+    });
+    test('the mass editor has a close button that shows, and Escape closes it', async function () {
+        await checkDialog('the mass editor', function () { new TabularEditor(''); }, '#tabularEditor');
+    });
+    test('the page dialog (Help, About) has a close button that shows, and Escape closes it', async function () {
+        await checkDialog('the About dialog', function () { Actions.openAbout(); }, '#urlPopover');
+    });
+
     test('the menus offer what they did', async function () {
         var items = Array.prototype.map.call(document.querySelectorAll('#header .menu'), function (m) { return m.firstChild.nodeValue.trim() + ':' + m.querySelectorAll('li').length; });
         record('menus', items.join(' '));
