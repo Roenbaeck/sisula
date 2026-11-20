@@ -450,7 +450,7 @@
         // nothing but the search fields is left in the bar, and the Generate menu only generates
         var left = Array.prototype.map.call(document.querySelectorAll('#header input, #header select'), function (e) { return e.id; });
         expect(left.join() === 'searchFilter,nodeSelector', 'the bar still has fields: ' + left.join());
-        expect(document.querySelectorAll('#generate li').length === 6 && document.querySelectorAll('#generate li[data-action]').length === 6, 'the Generate menu holds more than commands');
+        expect(document.querySelectorAll('#generate li').length === 5 && document.querySelectorAll('#generate li[data-action]').length === 5, 'the Generate menu holds more than commands');
         // the settings that the menus held
         var ids = ['database', 'naming', 'temporalization', 'metadataUsage', 'businessViews', 'knotAliases', 'triggers', 'naturalKeyAttributes', 'equivalence', 'decisiveness', 'entityIntegrity', 'partitioning',
             'changingSuffix', 'encapsulation', 'defaultIdentity', 'defaultNow', 'restatability', 'assertiveness', 'damping', 'stiffness', 'calculations'];
@@ -858,6 +858,34 @@
         record('png.aspect', (light.w / light.h).toFixed(1));
     });
 
+    test('the SVG file is the whole model, in the colours of the theme and on its background', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(800);
+        function drawing(theme) {
+            Actions.applyTheme(theme);
+            var d = Actions.modelSVG(), doc = new DOMParser().parseFromString(d.source, 'image/svg+xml'), root = doc.documentElement;
+            expect(root.nodeName === 'svg' && !doc.getElementsByTagName('parsererror').length, 'the ' + theme + ' picture is not SVG');
+            var rect = Array.prototype.filter.call(root.children, function (e) { return e.nodeName === 'rect'; })[0];
+            return { d: d, root: root, background: rect && rect.getAttribute('fill'), text: root.getElementsByTagName('text').length, uses: root.getElementsByTagName('use').length };
+        }
+        var light = drawing('light'), dark = drawing('dark');
+        Actions.applyTheme('light');
+        expect(light.background && dark.background && light.background !== dark.background, 'the background is the same in both themes: ' + light.background + ' ' + dark.background);
+        expect(/^#?[0-9a-f]{3,8}$/i.test(light.background.trim()) && parseInt(light.background.replace('#', '').slice(0, 2), 16) > 200, 'the light background is ' + light.background);
+        expect(parseInt(dark.background.replace('#', '').slice(0, 2), 16) < 80, 'the dark background is ' + dark.background);
+        expect(light.text > 20 && light.uses === 0, 'the picture has ' + light.text + ' texts and ' + light.uses + ' uses that point out of it');
+        // the names are in the colour of the theme, not the other one
+        var fills = function (r) { return Array.prototype.map.call(r.root.getElementsByTagName('text'), function (t) { return (t.getAttribute('style') || '').match(/fill:([^;]+)/); }).filter(Boolean).map(function (m) { return m[1].trim(); }); };
+        expect(fills(light).join() !== fills(dark).join(), 'the names have the same colours in both themes');
+        var vb = light.root.getAttribute('viewBox').split(' ').map(Number), box = SVGLayer.nodes.getBBox();
+        expect(vb[0] < box.x && vb[1] < box.y && vb[0] + vb[2] > box.x + box.width && vb[1] + vb[3] > box.y + box.height, 'the picture does not hold all of the model');
+        // the menu item saves it as a file
+        var saved = [], real = Actions.downloadBlob;
+        Actions.downloadBlob = function (blob, name) { saved.push({ blob: blob, name: name }); };
+        try { Actions.saveSVGToDisk(); } finally { Actions.downloadBlob = real; }
+        expect(saved.length === 1 && /\.svg$/.test(saved[0].name) && saved[0].blob.type.indexOf('image/svg+xml') === 0, 'the SVG was not saved as a file');
+        expect(!document.querySelector('#generate [data-action*="creenshot"]'), 'the SVG screenshot is still in the Generate menu');
+    });
     test('models are kept in the browser under names, listed, opened and removed', async function () {
         await load(window.__MODELS['example.xml']);
         var key = ModelStore.key, kept = window.localStorage.getItem(key);
@@ -1057,7 +1085,7 @@
         function recorder(name) { return function () { calls.push(name + '(' + Array.prototype.map.call(arguments, show).join(', ') + ')'); }; }
         // a few menu items call a function of Actions that only makes the calls the markup used to make itself (see Wiring.js);
         // it is left as it is, so that what is recorded for the item is those calls, as it was
-        var wrappers = ['chooseModelFile', 'saveSettingsInBrowser', 'saveModelToDisk', 'saveSVGToDisk', 'mailModel', 'resetView', 'screenshotSVG', 'screenshotPNG', 'openTutorials', 'openAbout'];
+        var wrappers = ['chooseModelFile', 'saveSettingsInBrowser', 'saveModelToDisk', 'saveSVGToDisk', 'mailModel', 'resetView', 'openTutorials', 'openAbout'];
         function replaceAll(owner, ownerName) {
             Object.keys(owner).forEach(function (k) {
                 if (typeof owner[k] === 'function' && wrappers.indexOf(k) < 0) { restore.push([owner, k, owner[k]]); owner[k] = recorder(ownerName + '.' + k); }
