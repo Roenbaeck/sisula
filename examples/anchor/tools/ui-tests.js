@@ -552,6 +552,161 @@
         await checkDialog('the About dialog', function () { Actions.openAbout(); }, '#urlPopover');
     });
 
+    // --- what is drawn for the constructs: the graph, the names, the miniature --------------------------------------------------
+    // These pin down the drawing of every construct before it is moved from the construct classes into views. They reach the SVG
+    // elements of a component the way the page does, whichever object holds them.
+    function sv(c) { return c.svg || (c.view && c.view.svg); }
+    function nv(c) { return c.nav || (c.view && c.view.nav); }
+    function href(el) { return el && el.getAttributeNS('http://www.w3.org/1999/xlink', 'href'); }
+    function kind(c) { return NodeType[c.node.type]; }
+
+    test('every construct is drawn in the graph and in the miniature, with the shape of its kind', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(300);
+        var shapes = {}, navShapes = {}, missing = [];
+        Model.components.forEach(function (c) {
+            var s = sv(c), n = nv(c);
+            if (!s || !n) { missing.push(kind(c)); return; }
+            var key = kind(c) + ' ' + (c.visible ? 'visible' : 'hidden') + ' ' + href(s.useElement || s.graphicsElement && s.graphicsElement.firstChild);
+            shapes[key] = (shapes[key] || 0) + 1;
+            var nkey = kind(c) + ' ' + href(n.useElement);
+            navShapes[nkey] = (navShapes[nkey] || 0) + 1;
+        });
+        expect(missing.length === 0, 'no drawing for ' + missing.join());
+        function list(o) { return Object.keys(o).sort().map(function (k) { return k + '=' + o[k]; }).join('; '); }
+        record('view.shapes', list(shapes));
+        record('view.navShapes', list(navShapes));
+        record('view.layers', ['nodes', 'edges', 'names'].map(function (l) { return l + '=' + SVGLayer[l].childNodes.length; }).join(' ') + ' nav ' + ['nodes', 'edges'].map(function (l) { return l + '=' + NAVLayer[l].childNodes.length; }).join(' '));
+    });
+
+    test('every construct that has a name shows it, with the class of its kind', async function () {
+        var classes = {}, count = 0;
+        Model.components.forEach(function (c) {
+            var s = sv(c);
+            if (s.nameElement) { count++; var k = kind(c) + ' ' + ((s.nameElement.getAttribute('class') || '').replace(/(^| )(end|bad)(?= |$)/g, '').trim() || '-'); classes[k] = (classes[k] || 0) + 1; }
+        });
+        record('view.names', count + ': ' + Object.keys(classes).sort().map(function (k) { return k + '=' + classes[k]; }).join('; '));
+        var anchor = ofType(NodeType.ANCHOR)[0];
+        record('view.anchorName', sv(anchor).nameText.nodeValue);
+    });
+
+    test('the pointer over a construct highlights it, and leaving removes it', async function () {
+        await fresh();
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor);
+        hover(anchor);
+        var on = anchor.highlighted && s.graphicsElement.contains(s.highlightElement) && s.graphicsElement.firstChild === s.highlightElement;
+        EventHandler.clearInteraction();
+        var off = !anchor.highlighted && !s.graphicsElement.contains(s.highlightElement);
+        record('view.highlight', 'on=' + on + ' off=' + off);
+        expect(on && off, 'highlight on ' + on + ', off ' + off);
+    });
+
+    test('a selected construct has a selection mark that goes when it is deselected', async function () {
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor);
+        EventHandler.addComponentToSelection(anchor);
+        var on = anchor.selected && s.graphicsElement.firstChild === s.selectionElement;
+        EventHandler.removeComponentFromSelection(anchor);
+        var off = !anchor.selected && !s.graphicsElement.contains(s.selectionElement);
+        record('view.selection', 'on=' + on + ' off=' + off);
+        expect(on && off, 'selection on ' + on + ', off ' + off);
+    });
+
+    test('a fixed construct shows a fixation mark, and releasing it removes the mark', async function () {
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor);
+        anchor.setFixed(true);
+        var on = anchor.getFixed() === true && s.graphicsElement.contains(s.fixationElement);
+        anchor.setFixed(false);
+        var off = anchor.getFixed() === false && !s.graphicsElement.contains(s.fixationElement);
+        hover(anchor); press('p');
+        var byKey = anchor.getFixed() === true && s.graphicsElement.contains(s.fixationElement);
+        anchor.setFixed(false);
+        record('view.fixation', 'on=' + on + ' off=' + off + ' key=' + byKey);
+        expect(on && off && byKey, 'fixation on ' + on + ', off ' + off + ', by key ' + byKey);
+    });
+
+    test('hiding a construct takes its drawing out of the layers, and showing puts it back', async function () {
+        await load(window.__MODELS['example.xml']);
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor), n = nv(anchor);
+        var role = ofType(NodeType.EDGE)[0], rs = sv(role);
+        var before = [SVGLayer.nodes.contains(s.graphicsElement), NAVLayer.nodes.contains(n.graphicsElement), SVGLayer.names.contains(s.nameElement), SVGLayer.edges.contains(rs.pathElement)];
+        anchor.hide(); role.hide();
+        var hidden = [anchor.visible, SVGLayer.nodes.contains(s.graphicsElement), NAVLayer.nodes.contains(n.graphicsElement), SVGLayer.names.contains(s.nameElement), SVGLayer.edges.contains(rs.pathElement), NAVLayer.edges.contains(nv(role).pathElement)];
+        anchor.show(); role.show();
+        var shown = [anchor.visible, SVGLayer.nodes.contains(s.graphicsElement), NAVLayer.nodes.contains(n.graphicsElement), SVGLayer.names.contains(s.nameElement), SVGLayer.edges.contains(rs.pathElement), NAVLayer.edges.contains(nv(role).pathElement)];
+        record('view.hideShow', 'before=' + before.join() + ' hidden=' + hidden.join() + ' shown=' + shown.join());
+        expect(before.join() === 'true,true,true,true' && hidden.join() === 'false,false,false,false,false,false' && shown.join() === 'true,true,true,true,true,true', before.join() + ' / ' + hidden.join() + ' / ' + shown.join());
+    });
+
+    test('imploding anchors and nexuses changes their shape, and exploding restores it', async function () {
+        await load(window.__MODELS['example.xml']);
+        function shapes() { return ofType(NodeType.ANCHOR).concat(ofType(NodeType.NEXUS)).map(function (c) { return kind(c) + ':' + href(sv(c).useElement) + ':' + href(nv(c).useElement); }).sort().join(' '); }
+        var before = shapes();
+        Actions.implodeAll(); await sleep(300);
+        var imploded = shapes();
+        Actions.explodeAll(); await sleep(300);
+        var after = shapes();
+        record('view.implode', 'before=' + before + ' imploded=' + imploded + ' after=' + after);
+        expect(before === after && before !== imploded, 'before ' + before + ' / imploded ' + imploded + ' / after ' + after);
+    });
+
+    test('the shape of an attribute, an identifier, a tie and a role follows what it is', async function () {
+        await load(window.__MODELS['example.xml']);
+        var attribute = ofType(NodeType.ATTRIBUTE).filter(function (a) { return a.operations.indexOf('toggleHistorized') >= 0; })[0], tie = ofType(NodeType.TIE)[0];
+        var out = [];
+        function shape(c) { return href(sv(c).useElement) + '/' + href(nv(c).useElement); }
+        out.push('attribute ' + attribute.historized + ' ' + shape(attribute));
+        attribute.setHistorized(!attribute.historized);
+        out.push('attribute ' + attribute.historized + ' ' + shape(attribute));
+        out.push('tie ' + tie.historized + ' ' + shape(tie));
+        tie.setHistorized(!tie.historized);
+        out.push('tie ' + tie.historized + ' ' + shape(tie));
+        var roles = ofType(NodeType.EDGE).filter(function (r) { return r.tied; });
+        roles.slice(0, 3).forEach(function (r) {
+            out.push('role ' + r.identifier + ' ' + href(sv(r).useElement));
+            r.setIdentifier(!r.identifier);
+            out.push('role ' + r.identifier + ' ' + href(sv(r).useElement));
+        });
+        var identifiers = ofType(NodeType.IDENTIFIER);
+        if (identifiers.length) { var i = identifiers[0]; out.push('identifier ' + i.historized + ' ' + shape(i)); i.setHistorized(!i.historized); out.push('identifier ' + i.historized + ' ' + shape(i)); }
+        record('view.shapesFollow', out.join('; '));
+    });
+
+    test('the names show mnemonics or descriptors and can be hidden', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(300);
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor), out = [];
+        out.push(s.nameText.nodeValue);
+        Actions.toggleMnemonics(); DrawingEngine.draw(); await sleep(100);
+        out.push(s.nameText.nodeValue);
+        Actions.toggleMnemonics(); DrawingEngine.draw(); await sleep(100);
+        out.push(s.nameText.nodeValue);
+        var shown = SVGLayer.isShowing('names');
+        Actions.toggleNames(); await sleep(100);
+        out.push('names layer ' + shown + ' -> ' + SVGLayer.isShowing('names'));
+        Actions.toggleNames(); await sleep(100);
+        out.push('and back ' + SVGLayer.isShowing('names'));
+        record('view.names.toggle', out.join(' | '));
+    });
+
+    test('a node can be dragged with the mouse, and then stays where it was put', async function () {
+        await load(window.__MODELS['example.xml']);
+        await settle();
+        var anchor = ofType(NodeType.ANCHOR)[0], s = sv(anchor), svg = document.getElementById('graph');
+        var box = s.graphicsElement.getBoundingClientRect(), x = box.left + box.width / 2, y = box.top + box.height / 2;
+        var startX = anchor.node.xPosition, startY = anchor.node.yPosition;
+        hover(anchor);
+        s.graphicsElement.dispatchEvent(new MouseEvent('mousedown', { clientX: x, clientY: y, button: 0, bubbles: true, cancelable: true }));
+        svg.dispatchEvent(new MouseEvent('mousemove', { clientX: x + 20, clientY: y + 20, bubbles: true, cancelable: true }));
+        svg.dispatchEvent(new MouseEvent('mousemove', { clientX: x + 120, clientY: y + 60, bubbles: true, cancelable: true }));
+        var dragging = EventHandler.getInteraction();
+        window.dispatchEvent(new MouseEvent('mouseup', { clientX: x + 120, clientY: y + 60, bubbles: true }));
+        var moved = Math.abs(anchor.node.xPosition - startX) > 50 || Math.abs(anchor.node.yPosition - startY) > 30;
+        record('view.drag', 'interaction=' + dragging + ' moved=' + moved + ' fixed=' + anchor.getFixed() + ' fixationMark=' + s.graphicsElement.contains(s.fixationElement));
+        expect(moved, 'the node did not move with the mouse');
+        anchor.setFixed(false);
+        EventHandler.clearInteraction();
+    });
+
     test('the menus offer what they did', async function () {
         var items = Array.prototype.map.call(document.querySelectorAll('#header .menu'), function (m) { return m.firstChild.nodeValue.trim() + ':' + m.querySelectorAll('li').length; });
         record('menus', items.join(' '));
