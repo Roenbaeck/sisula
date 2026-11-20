@@ -574,6 +574,73 @@
         ControlButtons.redo(); await sleep(150);
         expect(/^Redone/.test(region.textContent), 'redo was not announced: ' + region.textContent);
     });
+    test('the outline panel shows the model as a tree, follows the selection, edits and operates', async function () {
+        await load(window.__MODELS['example.xml']);
+        var panel = document.getElementById('panel'), tree = document.getElementById('outlineTree');
+        expect(panel.hidden && !document.body.classList.contains('panel-open'), 'the panel is open before it was asked for');
+        document.getElementById('panelButton').click(); await sleep(150);
+        expect(!panel.hidden && document.body.classList.contains('panel-open') && document.getElementById('panelButton').getAttribute('aria-expanded') === 'true', 'the button did not open the panel');
+        function rowOf(component) { return tree.querySelector('[data-id="' + Outline.idOf(component) + '"]'); }
+        // every anchor, nexus, tie and knot is a row, and says how many there are
+        var counts = {};
+        ['ANCHOR', 'NEXUS', 'TIE', 'KNOT'].forEach(function (k) {
+            var of = ofType(NodeType[k]);
+            counts[k] = of.length;
+            of.forEach(function (c) { expect(rowOf(c), 'no row for ' + k + ' ' + c); expect(rowOf(c).textContent.trim(), 'a ' + k + ' row has no name'); });
+        });
+        var titles = Array.prototype.map.call(tree.querySelectorAll('li.group'), function (li) { return li.textContent.trim(); }).join(' ');
+        expect(titles === 'Anchors (' + counts.ANCHOR + ') Nexuses (' + counts.NEXUS + ') Ties (' + counts.TIE + ') Knots (' + counts.KNOT + ')', 'the groups say ' + titles);
+        record('outline.groups', titles);
+        // one row can be reached with Tab, and the tree is a tree
+        expect(tree.getAttribute('role') === 'tree' && tree.querySelectorAll('[role=treeitem][tabindex="0"]').length === 1, 'the tree has no roles, or more than one row in the Tab order');
+        // the owner of an attribute opens when the attribute is selected in the graph, and the row is selected
+        var owner = ofType(NodeType.ANCHOR).filter(function (a) { return Outline.partsOf(a).length > 2; })[0], part = Outline.partsOf(owner)[0];
+        expect(!rowOf(part), 'the attributes of a closed anchor are shown');
+        EventHandler.clearSelection(); EventHandler.addComponentToSelection(part); await sleep(150);
+        expect(rowOf(part) && rowOf(part).getAttribute('aria-selected') === 'true', 'the selection in the graph is not selected in the tree');
+        expect(/^Attribute: /.test(document.querySelector('#panelProperties h3').textContent) && document.querySelector('#panelProperties input.editable'), 'the properties are not those of the attribute');
+        // and the other way: a row selects in the graph
+        EventHandler.clearSelection(); await sleep(100);
+        rowOf(owner).querySelector('.line').dispatchEvent(new MouseEvent('click', { bubbles: true })); await sleep(150);
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0] === owner, 'a click on a row did not select in the graph');
+        expect(/^Anchor: /.test(document.querySelector('#panelProperties h3').textContent), 'the properties are not those of the anchor');
+        // a field is a field: changing it changes the construct, the history, and the row
+        var version = Model.version, field = document.querySelector('#panelProperties input.editable');
+        expect(field && field.value === owner.descriptor, 'the first field is not the descriptor');
+        field.value = 'Performer'; field.dispatchEvent(new Event('change', { bubbles: true })); field.dispatchEvent(new Event('blur')); await sleep(150);
+        expect(owner.descriptor === 'Performer', 'the descriptor did not change');
+        expect(Model.version === version + 1, 'the change was not recorded in the history');
+        expect(rowOf(owner).textContent.indexOf('Performer') >= 0, 'the row has the old name');
+        // the operations of the selection are buttons, and they work
+        var before = Outline.partsOf(owner).length;
+        var add = Array.prototype.filter.call(document.querySelectorAll('#panelProperties .operations button'), function (b) { return /attribute/i.test(b.textContent); })[0];
+        expect(add, 'there is no operation to add an attribute');
+        add.click(); await sleep(200);
+        expect(Outline.partsOf(owner).length === before + 1, 'adding an attribute from the panel added none');
+        expect(rowOf(owner).getAttribute('aria-expanded') === 'true' && tree.querySelectorAll('li[aria-level="3"]').length >= before, 'the new attribute is not in the tree');
+        // the keys of a tree
+        var row = rowOf(owner); row.focus();
+        row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+        expect(document.activeElement === row.nextElementSibling, 'Down did not go to the next row');
+        row = rowOf(owner); row.focus();
+        row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })); await sleep(50);
+        expect(rowOf(owner).getAttribute('aria-expanded') === 'false', 'Left did not close the row');
+        rowOf(owner).dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true })); await sleep(50);
+        expect(rowOf(owner).getAttribute('aria-expanded') === 'true', 'Right did not open the row');
+        EventHandler.clearSelection(); await sleep(100);
+        rowOf(owner).dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })); await sleep(150);
+        expect(EventHandler.selectedComponents[0] === owner, 'Enter did not select the row');
+        // the filter
+        var filter = document.getElementById('outlineFilter');
+        filter.value = 'performer'; filter.dispatchEvent(new Event('input', { bubbles: true }));
+        var shown = tree.querySelectorAll('li[data-id]');
+        expect(shown.length >= 1 && Array.prototype.every.call(shown, function (li) { return li.getAttribute('data-id') === Outline.idOf(owner) || /performer/i.test(li.textContent) || li.getAttribute('aria-level') === '3'; }), 'the filter shows rows that do not match');
+        filter.value = ''; filter.dispatchEvent(new Event('input', { bubbles: true }));
+        // closed, it is gone and the miniature has its place again
+        document.querySelector('#panel .close').click(); await sleep(50);
+        expect(panel.hidden && !document.body.classList.contains('panel-open'), 'the panel did not close');
+        EventHandler.clearSelection();
+    });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
         function worst() {
