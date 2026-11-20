@@ -60,7 +60,7 @@
         sv(component).graphicsElement.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
     }
     function closeOverlays() {
-        ['codePopover', 'tabularEditor', 'contextMenu', 'urlPopover'].forEach(function (id) {
+        ['codePopover', 'contextMenu', 'urlPopover'].forEach(function (id) {
             var e;
             while ((e = document.getElementById(id))) e.parentNode.removeChild(e);
         });
@@ -238,8 +238,8 @@
         var a = press('a');
         expect(a.defaultPrevented && ofType(NodeType.ATTRIBUTE).length === attributes + 1, 'key a did not add an attribute (attributes ' + attributes + ' to ' + ofType(NodeType.ATTRIBUTE).length + ', prevented ' + a.defaultPrevented + ')');
         hover(anchor);
-        press('E', { shiftKey: true });
-        expect(document.getElementById('tabularEditor'), 'Shift+E did not open the mass editor');
+        press('E', { shiftKey: true }); // the mass editor that this used to open is gone (the outline and the XML view do what it did)
+        expect(!document.getElementById('tabularEditor') && typeof TabularEditor === 'undefined', 'the mass editor is still there');
         closeOverlays();
     });
 
@@ -292,15 +292,6 @@
         expect(anchor.descriptor === 'Renamed', 'the descriptor is ' + anchor.descriptor);
         anchor.contextMenu.close();
         expect(Model.version === before + 1, 'the edit was not recorded (version ' + before + ' to ' + Model.version + ')');
-        closeOverlays();
-    });
-
-    test('the tabular editor lists the constructs', async function () {
-        await load(window.__MODELS['example.xml']);
-        new TabularEditor('');
-        var e = document.getElementById('tabularEditor');
-        expect(e, 'not opened');
-        record('tabular.rows', e.querySelectorAll('tr').length);
         closeOverlays();
     });
 
@@ -1297,7 +1288,8 @@
             if (a && typeof a === 'object') return '<object>';
             return String(a);
         }
-        function recorder(name) { return function () { calls.push(name + '(' + Array.prototype.map.call(arguments, show).join(', ') + ')'); }; }
+        // the number of a construct depends on how many were made before it, so it is not recorded
+        function recorder(name) { return function () { calls.push(name + '(' + (name === 'Actions.selectNode' ? '<id>' : Array.prototype.map.call(arguments, show).join(', ')) + ')'); }; }
         // a few menu items call a function of Actions that only makes the calls the markup used to make itself (see Wiring.js);
         // it is left as it is, so that what is recorded for the item is those calls, as it was
         var wrappers = ['chooseModelFile', 'saveSettingsInBrowser', 'saveModelToDisk', 'saveSVGToDisk', 'mailModel', 'resetView', 'openTutorials', 'openAbout'];
@@ -1392,9 +1384,6 @@
     }
     test('the SQL and XML dialog has a close button that shows, and Escape closes it', async function () {
         await checkDialog('the XML dialog', function () { Actions.generateXML(); }, '#codePopover');
-    });
-    test('the mass editor has a close button that shows, and Escape closes it', async function () {
-        await checkDialog('the mass editor', function () { new TabularEditor(''); }, '#tabularEditor');
     });
     test('the page dialog (Help, About) has a close button that shows, and Escape closes it', async function () {
         await checkDialog('the About dialog', function () { Actions.openAbout(); }, '#urlPopover');
