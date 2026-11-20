@@ -698,9 +698,57 @@
         // the tabs have the keys of tabs
         var tab = document.getElementById('tab-xml');
         tab.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })); await sleep(100);
-        expect(Outline.view === 'outline' && !document.getElementById('view-outline').hidden && !document.body.classList.contains('panel-wide'), 'Left did not show the outline');
+        expect(Outline.view === 'problems' && !document.getElementById('view-problems').hidden && !document.body.classList.contains('panel-wide'), 'Left did not show the view before it');
+        document.getElementById('tab-problems').dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true })); await sleep(100);
+        expect(Outline.view === 'outline' && !document.getElementById('view-outline').hidden, 'Home did not show the first view');
         Outline.setOpen(false, true);
         anchor.descriptor = was;
+    });
+    test('the problems panel lists what ModelCheck finds and some hints, and each line selects what it is about', async function () {
+        await load(window.__MODELS['example.xml']);
+        var tabCount = document.querySelector('#tab-problems .count'), buttonCount = document.querySelector('#panelButton .count');
+        Outline.setOpen(true, true);
+        document.getElementById('tab-problems').click(); await sleep(300);
+        var view = document.getElementById('view-problems'), status = document.getElementById('problemStatus');
+        expect(!view.hidden && document.getElementById('tab-problems').getAttribute('aria-selected') === 'true', 'the tab did not show the view');
+        expect(Problems.problems.length === 0 && tabCount.textContent === '' && buttonCount.textContent === '', 'a model that the modeler writes has problems: ' + Problems.problems.map(function (p) { return p.text; }).join(' | '));
+        expect(/^No problems/.test(status.textContent), 'the status does not say that there are none: ' + status.textContent);
+        // two anchors with one mnemonic
+        var anchors = ofType(NodeType.ANCHOR), second = anchors[1], mnemonic = second.mnemonic;
+        second.mnemonic = anchors[0].mnemonic; Model.recordState(); await sleep(500);
+        var errors = document.querySelectorAll('#problemList li.error button.problem');
+        var direct = ''; if (!errors.length) { try { Problems.update(); direct = ' (direct update: ' + Problems.problems.length + ' problems, shown ' + Problems.isShown + ')'; } catch (e) { direct = ' (update fails: ' + e + ')'; } }
+        expect(errors.length >= 1 && tabCount.textContent === String(Problems.problems.length) && buttonCount.textContent === tabCount.textContent, 'the problem was not found, or not counted: ' + status.textContent + direct);
+        expect(/^\d+ problems?/.test(status.textContent) && document.getElementById('problemView').classList.contains('bad'), 'the status does not say how many: ' + status.textContent);
+        var duplicate = Array.prototype.filter.call(errors, function (b) { return /same mnemonic/.test(b.textContent); })[0];
+        expect(duplicate && !duplicate.disabled, 'there is no line for the duplicate mnemonic that can be clicked');
+        EventHandler.clearSelection();
+        duplicate.click(); await sleep(300);
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0].node.type === NodeType.ANCHOR && EventHandler.selectedComponents[0].mnemonic === anchors[0].mnemonic, 'the line did not select the anchor');
+        expect(/^Anchor: /.test(document.querySelector('#problemProperties h3').textContent) && document.querySelector('#problemProperties input.editable'), 'the properties are not shown under the problems');
+        record('problems.line', duplicate.textContent.replace(/\b[A-Z]{2}\b/g, 'XX'));
+        // putting it right takes the problem away
+        second.mnemonic = mnemonic; Model.recordState(); await sleep(500);
+        expect(Problems.problems.length === 0 && tabCount.textContent === '' && buttonCount.textContent === '', 'the problem is still there after it was put right');
+        // hints
+        var third = anchors[2], description = third.description;
+        third.description = ''; Model.recordState(); await sleep(500);
+        var hint = Array.prototype.filter.call(document.querySelectorAll('#problemList li.hint button.problem'), function (b) { return /has no description/.test(b.textContent) && b.getAttribute('data-id') === Outline.idOf(third); })[0];
+        expect(hint, 'there is no hint that an anchor has no description');
+        expect(tabCount.textContent === '', 'a hint was counted as a problem');
+        third.description = description;
+        // a setting that the model needs is missing: the line opens the settings
+        var keep = Defaults.changingSuffix; Defaults.changingSuffix = '';
+        Model.recordState(); await sleep(500);
+        var setting = document.querySelector('#problemList button.problem[data-settings]');
+        expect(setting && /metadata/i.test(setting.textContent), 'a missing setting was not found');
+        setting.click(); await sleep(100);
+        expect(document.getElementById('modelSettings').open, 'the line did not open the settings');
+        Actions.closeModelSettings();
+        Defaults.changingSuffix = keep; Model.recordState(); await sleep(400);
+        expect(Problems.problems.length === 0, 'the setting is back and there are still problems');
+        Outline.setOpen(false, true);
+        EventHandler.clearSelection();
     });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);

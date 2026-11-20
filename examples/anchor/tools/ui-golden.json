@@ -19,6 +19,7 @@
     "menus.items":  26,
     "nexus.implode.attributes":  3,
     "outline.groups":  "Anchors (4) Nexuses (1) Ties (7) Knots (7)",
+    "problems.line":  "Anchor XX: another anchor or nexus has the same mnemonic",
     "roastery.counts":  "Anchor=4,Attribute=17,Edge=35,Knot=5,Nexus=2,Tie=5",
     "roastery.xml":  "ebd2b6d0:11417:Anchor=4,Attribute=17,Edge=35,Knot=5,Nexus=2,Tie=5",
     "search.all":  37,
