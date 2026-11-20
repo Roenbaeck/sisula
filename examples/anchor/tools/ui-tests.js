@@ -667,7 +667,7 @@
         await sleep(1200);
         var after = ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; });
         expect(after.length === 1, 'the model did not follow the text');
-        expect(Model.version > version && /Applied/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
+        expect(Model.version > version && /Applied|The text is the model/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
         // and it can be undone, and the text follows that too
         ControlButtons.undo(); await sleep(400);
         expect(ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; }).length === 0, 'undo did not take the change from the text back');
@@ -977,6 +977,183 @@
         } finally {
             if (kept === null) window.localStorage.removeItem(key); else window.localStorage.setItem(key, kept);
         }
+    });
+    // The page is started again in a frame of a given size, since the size of the window of the test cannot be changed (and a
+    // browser window is never narrower than 500 px), and the media queries of a page follow the size of its frame.
+    async function framed(width, height) {
+        var kept = {}; for (var i = 0; i < window.localStorage.length; i++) { var k = window.localStorage.key(i); kept[k] = window.localStorage.getItem(k); }
+        var frame = document.createElement('iframe');
+        frame.src = 'index.html';
+        frame.style.cssText = 'position:fixed;top:0;left:0;width:' + width + 'px;height:' + height + 'px;border:0;background:#fff;z-index:100000';
+        document.body.appendChild(frame);
+        for (var w = 0; w < 200 && !(frame.contentWindow && frame.contentWindow.AnchorStarted && frame.contentWindow.Model && frame.contentWindow.Actions); w++) await sleep(50);
+        var win = frame.contentWindow;
+        expect(win.AnchorStarted, 'the page did not start in a frame of ' + width + ' px');
+        win.Actions._applyLoadedModel(new win.DOMParser().parseFromString(window.__MODELS['example.xml'], 'text/xml'), false);
+        await sleep(700);
+        return {
+            win: win, doc: frame.contentDocument,
+            close: async function () {
+                document.body.removeChild(frame);
+                await sleep(100);
+                window.localStorage.clear(); Object.keys(kept).forEach(function (key) { window.localStorage.setItem(key, kept[key]); });
+            }
+        };
+    }
+    var SIZES = [{ name: 'phone', w: 390, h: 844 }, { name: 'tablet', w: 820, h: 1000 }, { name: 'desktop', w: 1440, h: 900 }];
+    test('the page fits a phone, a tablet and a desktop: the bar, the menus, the panel and what is selected are all in view', async function () {
+        for (var s = 0; s < SIZES.length; s++) {
+            var size = SIZES[s], page = await framed(size.w, size.h), win = page.win, doc = page.doc;
+            try {
+                var at = size.name + ' (' + size.w + ' px)';
+                function inside(el, what) {
+                    var r = el.getBoundingClientRect();
+                    expect(r.width > 4 && r.height > 4 && r.left >= -0.5 && r.right <= size.w + 0.5 && r.top >= -0.5 && r.bottom <= size.h + 0.5, what + ' is not in view at ' + at + ': ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(','));
+                    return r;
+                }
+                expect(doc.documentElement.scrollWidth <= size.w && doc.body.scrollWidth <= size.w, 'the page is wider than the window at ' + at);
+                ['file', 'actions', 'generate', 'about', 'undo', 'redo', 'playpause', 'themeToggle', 'modelSettingsButton', 'panelButton'].forEach(function (id) { inside(doc.getElementById(id), id); });
+                if (size.name !== 'desktop') { /* the zoom buttons stay too */ inside(doc.getElementById('zoomin'), 'zoomin'); }
+                var bar = doc.getElementById('header').getBoundingClientRect();
+                expect(Math.abs(bar.height - (size.w <= 700 ? 80 : 40)) < 1.5, 'the bar is ' + bar.height + ' px high at ' + at);
+                expect((doc.getElementById('search').getBoundingClientRect().width > 0) === (size.w > 900), 'the search is ' + (size.w > 900 ? 'missing' : 'in the way') + ' at ' + at);
+                expect((doc.getElementById('miniature').getBoundingClientRect().width > 0) === (size.w > 700), 'the miniature is ' + (size.w > 700 ? 'missing' : 'in the way') + ' at ' + at);
+                // a menu opens where it can be seen, and the items are in the window
+                win.Menus.open(doc.getElementById('generate'), null); await sleep(100);
+                var menu = doc.querySelector('#generate .submenu'); inside(menu, 'the Generate menu');
+                win.Menus.closeAll();
+                win.Menus.open(doc.getElementById('about'), null); await sleep(100);
+                inside(doc.querySelector('#about .submenu'), 'the Help menu'); win.Menus.closeAll();
+                // the panel: at the side on a desktop, a sheet at the bottom elsewhere
+                win.Outline.setOpen(true, true); await sleep(200);
+                var panel = doc.getElementById('panel').getBoundingClientRect();
+                if (size.w > 900) expect(Math.abs(panel.right - size.w) < 1 && panel.width > 300 && panel.width < 400 && panel.top >= bar.bottom - 1, 'the panel is not at the side at ' + at);
+                else expect(panel.left <= 1 && Math.abs(panel.width - size.w) < 2 && Math.abs(panel.bottom - size.h) < 1 && panel.height < size.h * 0.6 && panel.height > size.h * 0.3, 'the panel is not a sheet at the bottom at ' + at + ': ' + [panel.left, panel.top, panel.width, panel.height].map(Math.round).join(','));
+                // what is selected is brought to where it can be seen (not under the bar, nor under the panel)
+                var owner = win.Model.components.filter(function (c) { return c.node.type === win.NodeType.ANCHOR && win.Outline.partsOf(c).length > 2; })[0];
+                win.Actions.selectNode(win.Outline.idOf(owner)); await sleep(500);
+                var shape = owner.view.svg.graphicsElement.getBoundingClientRect(), area = win.Actions.visibleArea(), cx = shape.left + shape.width / 2, cy = shape.top + shape.height / 2;
+                expect(cx > area.x && cx < area.x + area.width && cy > area.y && cy < area.y + area.height, 'the selected anchor is at ' + Math.round(cx) + ',' + Math.round(cy) + ', outside the part that can be seen (' + [area.x, area.y, area.width, area.height].map(Math.round).join(',') + ') at ' + at);
+                expect(Math.abs(cx - (area.x + area.width / 2)) < 60 && Math.abs(cy - (area.y + area.height / 2)) < 60, 'the selected anchor is not in the middle of what can be seen at ' + at);
+                // a dialog is in the window too
+                win.Actions.openModelSettings(); await sleep(200); inside(doc.getElementById('modelSettings'), 'the settings dialog'); win.Actions.closeModelSettings();
+                record('layout.' + size.name, 'bar ' + Math.round(bar.height) + ', panel ' + (size.w > 900 ? 'side' : 'sheet'));
+            } finally { await page.close(); }
+        }
+    });
+    function pointer(type, id, x, y, target, kind) {
+        return target.dispatchEvent(new PointerEvent(type, { pointerId: id, pointerType: kind || 'touch', clientX: x, clientY: y, bubbles: true, cancelable: true, isPrimary: id === 1 }));
+    }
+    function centreOf(c) { var r = c.view.svg.graphicsElement.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+    test('a finger taps to select, drags a construct, moves the view and pinches; a mouse is left to the hover and the keys', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var anchor = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0], other = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'ST'; })[0];
+        var shapeOf = function (c) { return c.view.svg.graphicsElement; };
+        var box = SVG.viewBox.baseVal;
+        EventHandler.clearSelection(); Outline.setOpen(false, true);
+        // the graph is for fingers: no scrolling of the page, and a larger circle to hit that a mouse does not have
+        expect(getComputedStyle(SVG).touchAction === 'none', 'the graph does not keep the browser from using the fingers');
+        expect(ofType(NodeType.ANCHOR).every(function (a) { return shapeOf(a).querySelector('circle.hit'); }) && getComputedStyle(shapeOf(anchor).querySelector('circle.hit')).r === '0px', 'the constructs have no circle for a finger, or it is there for a mouse');
+        // a mouse is not a finger
+        var c = centreOf(anchor);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor), 'mouse'); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor), 'mouse');
+        expect(EventHandler.selectedComponents.length === 0 && Object.keys(Gestures.pointers).length === 0 && !Outline.isOpen, 'a mouse was treated as a finger');
+        // a menu that is open closes when the graph is touched
+        Menus.open(document.getElementById('generate'), null);
+        pointer('pointerdown', 1, 3, 300, SVG); pointer('pointerup', 1, 3, 300, SVG);
+        expect(!document.getElementById('generate').classList.contains('open'), 'a touch on the graph left a menu open');
+        // a tap selects, and the properties come up in the panel
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor)); await sleep(300);
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0] === anchor, 'a tap did not select the construct');
+        expect(Outline.isOpen && /^Anchor: /.test(document.querySelector('#panelProperties h3').textContent), 'a tap did not bring up the properties');
+        var inView = Actions.visibleArea(), cc = centreOf(anchor);
+        expect(cc.x >= inView.x && cc.x <= inView.x + inView.width && cc.y >= inView.y && cc.y <= inView.y + inView.height, 'the selected construct is under the panel');
+        // a tap on it again lets go, and so does a tap on the background, and a tap on another selects that instead
+        c = centreOf(anchor);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor));
+        expect(EventHandler.selectedComponents.length === 0, 'a second tap did not let go');
+        var o = centreOf(other);
+        pointer('pointerdown', 1, o.x, o.y, shapeOf(other)); pointer('pointerup', 1, o.x, o.y, shapeOf(other));
+        c = centreOf(anchor); pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointerup', 1, c.x, c.y, shapeOf(anchor));
+        expect(EventHandler.selectedComponents.length === 1 && EventHandler.selectedComponents[0] === anchor, 'a tap on another did not make it the only one selected');
+        pointer('pointerdown', 1, 3, 300, SVG); pointer('pointerup', 1, 3, 300, SVG);
+        expect(EventHandler.selectedComponents.length === 0, 'a tap on the background did not let go');
+        // one finger on the background moves the view
+        var x0 = box.x, y0 = box.y, k = box.width / window.innerWidth;
+        pointer('pointerdown', 1, 400, 500, SVG); pointer('pointermove', 1, 430, 520, SVG); pointer('pointermove', 1, 460, 540, SVG); pointer('pointerup', 1, 460, 540, SVG);
+        expect(Math.abs((x0 - box.x) - 60 * k) < 0.5 && Math.abs((y0 - box.y) - 40 * k) < 0.5, 'the view moved ' + (x0 - box.x).toFixed(1) + ',' + (y0 - box.y).toFixed(1) + ' for a finger that moved 60,40');
+        expect(Gestures.mode === null && EventHandler.selectedComponents.length === 0, 'a move was taken for a tap, or the mode is left');
+        // two fingers zoom about the middle between them
+        var w0 = box.width, mid = EventHandler.screenToSVG(650, 400);
+        pointer('pointerdown', 1, 600, 400, SVG); pointer('pointerdown', 2, 700, 400, SVG);
+        pointer('pointermove', 2, 800, 400, SVG); pointer('pointermove', 1, 500, 400, SVG);
+        expect(Math.abs(box.width / w0 - 1 / 3) < 0.02, 'the view is ' + (box.width / w0).toFixed(2) + ' of what it was after the fingers went from 100 to 300 apart');
+        var after = EventHandler.screenToSVG(650, 400);
+        expect(Math.abs(after.x - mid.x) < 2 && Math.abs(after.y - mid.y) < 2, 'the point between the fingers moved: ' + mid.x.toFixed(0) + ',' + mid.y.toFixed(0) + ' to ' + after.x.toFixed(0) + ',' + after.y.toFixed(0));
+        pointer('pointerup', 2, 800, 400, SVG); pointer('pointermove', 1, 520, 420, SVG); pointer('pointerup', 1, 520, 420, SVG);
+        expect(EventHandler.selectedComponents.length === 0 && Gestures.mode === null, 'lifting the fingers after a pinch selected something');
+        Actions.resetZoom(); await sleep(1200);
+        // a finger drags a construct, and leaves it there, fixed
+        c = centreOf(anchor);
+        var before = { x: anchor.node.xPosition, y: anchor.node.yPosition };
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(anchor)); pointer('pointermove', 1, c.x + 30, c.y + 10, shapeOf(anchor)); pointer('pointermove', 1, c.x + 120, c.y + 60, shapeOf(anchor));
+        var want = EventHandler.screenToSVG(c.x + 120, c.y + 60);
+        expect(Math.abs(anchor.node.xPosition - want.x) < 1 && Math.abs(anchor.node.yPosition - want.y) < 1 && anchor.node.unstoppable, 'the construct is not under the finger: ' + anchor.node.xPosition.toFixed(0) + ',' + anchor.node.yPosition.toFixed(0) + ' for ' + want.x.toFixed(0) + ',' + want.y.toFixed(0));
+        pointer('pointerup', 1, c.x + 120, c.y + 60, shapeOf(anchor)); await sleep(500);
+        expect(anchor.getFixed() && !anchor.node.unstoppable && Math.abs(anchor.node.xPosition - want.x) < 1, 'the construct is not left where it was put, fixed');
+        expect(EventHandler.selectedComponents.length === 0, 'a drag selected the construct');
+        anchor.setFixed(false);
+        record('gestures.ok', 'tap drag pan pinch');
+    });
+
+    test('a finger held on a construct adds it to the selection and opens its context menu, which stays in the window', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var anchors = ofType(NodeType.ANCHOR), first = anchors[0], second = anchors[1], shapeOf = function (c) { return c.view.svg.graphicsElement; };
+        EventHandler.clearSelection(); Outline.setOpen(false, true);
+        var c = centreOf(first);
+        pointer('pointerdown', 1, c.x, c.y, shapeOf(first));
+        await sleep(300);
+        expect(!document.getElementById('contextMenu'), 'the menu opened before the finger was held');
+        await sleep(450);
+        expect(EventHandler.selectedComponents.indexOf(first) >= 0 && document.getElementById('contextMenu') && first.contextMenu && !first.contextMenu.collapsed, 'holding did not select the construct and open its menu');
+        pointer('pointerup', 1, c.x, c.y, shapeOf(first));
+        expect(EventHandler.selectedComponents.length === 1, 'lifting after holding changed the selection');
+        var box = document.getElementById('contextMenu').getBoundingClientRect();
+        expect(box.left >= 0 && box.top >= 0 && box.right <= window.innerWidth + 0.5 && box.bottom <= window.innerHeight + 0.5, 'the menu is not in the window: ' + [box.left, box.top, box.right, box.bottom].map(Math.round).join(','));
+        // a touch beside the menu closes it
+        document.getElementById('modalBackground').dispatchEvent(new MouseEvent('click', { bubbles: true })); await sleep(100);
+        expect(!document.getElementById('contextMenu') || first.contextMenu.collapsed, 'a touch beside the menu did not close it');
+        first.hideContextMenu();
+        // a second construct held is added: two are selected
+        var d = centreOf(second);
+        pointer('pointerdown', 1, d.x, d.y, shapeOf(second)); await sleep(700); pointer('pointerup', 1, d.x, d.y, shapeOf(second));
+        expect(EventHandler.selectedComponents.length === 2, 'a second construct that was held was not added to the selection: ' + EventHandler.selectedComponents.length);
+        second.hideContextMenu(); EventHandler.clearSelection();
+        // a construct at the edge of the window gets a menu that is in the window
+        second.node.xPosition = EventHandler.screenToSVG(window.innerWidth - 5, 300).x; second.node.yPosition = EventHandler.screenToSVG(0, window.innerHeight - 5).y; second.node.start();
+        second.view.draw(second.view.svg);
+        second.showContextMenu(second, [], null); second.contextMenu.toggle(); await sleep(100);
+        var edge = document.getElementById('contextMenu').getBoundingClientRect();
+        expect(edge.right <= window.innerWidth + 0.5 && edge.bottom <= window.innerHeight + 0.5 && edge.left >= 0, 'the menu of a construct at the corner is out of the window: ' + [edge.left, edge.top, edge.right, edge.bottom].map(Math.round).join(','));
+        second.hideContextMenu(); EventHandler.clearSelection();
+    });
+
+    test('a finger on the miniature puts the middle of the view where it is, and follows', async function () {
+        await load(window.__MODELS['example.xml']);
+        Actions.resetZoom(); await sleep(1500);
+        var mini = document.getElementById('minigraph'), r = mini.getBoundingClientRect(), box = SVG.viewBox.baseVal;
+        var before = { x: box.x, y: box.y };
+        pointer('pointerdown', 1, r.left + r.width * 0.2, r.top + r.height * 0.2, mini);
+        var first = { x: box.x, y: box.y };
+        pointer('pointermove', 1, r.left + r.width * 0.8, r.top + r.height * 0.8, mini);
+        var second = { x: box.x, y: box.y };
+        pointer('pointerup', 1, r.left + r.width * 0.8, r.top + r.height * 0.8, mini);
+        expect(Math.abs(first.x - before.x) + Math.abs(first.y - before.y) > 1, 'a touch on the miniature did not move the view');
+        expect(second.x > first.x && second.y > first.y, 'the view did not follow the finger on the miniature');
+        expect(Gestures.mode === null && Object.keys(Gestures.pointers).length === 0, 'the finger is still down');
+        Actions.resetZoom();
     });
     test('a model goes to an agent without its positions, and what comes back replaces it, with what was there in its place', async function () {
         await load(window.__MODELS['example.xml']);
