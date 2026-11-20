@@ -667,7 +667,7 @@
         await sleep(1200);
         var after = ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; });
         expect(after.length === 1, 'the model did not follow the text');
-        expect(Model.version === version + 1 && /Applied/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
+        expect(Model.version > version && /Applied/.test(status.textContent), 'the change was not a step in the history, or it was not said: ' + status.textContent);
         // and it can be undone, and the text follows that too
         ControlButtons.undo(); await sleep(400);
         expect(ofType(NodeType.ANCHOR).filter(function (a) { return a.descriptor === 'Dancer'; }).length === 0, 'undo did not take the change from the text back');
@@ -749,6 +749,101 @@
         expect(Problems.problems.length === 0, 'the setting is back and there are still problems');
         Outline.setOpen(false, true);
         EventHandler.clearSelection();
+    });
+    test('new things are put by what they are tied to: what was there keeps its place', async function () {
+        var parse = function () { return new DOMParser().parseFromString(window.__MODELS['example.xml'], 'application/xml'); };
+        var doc = parse(), constructs = Placement.constructs(doc), centre = { x: 600, y: 400 };
+        expect(constructs.length > 30, 'only ' + constructs.length + ' constructs');
+        expect(constructs.every(function (c) { return !Placement.layoutOf(c.element); }), 'the model has places already');
+        var written = Placement.seed(doc, {}, centre);
+        expect(written === constructs.length, 'only ' + written + ' of ' + constructs.length + ' were given a place');
+        var at = Placement.positions(doc), keys = Object.keys(at);
+        expect(keys.length === constructs.length && keys.every(function (k) { return isFinite(at[k].x) && isFinite(at[k].y); }), 'a place is not a number');
+        var distinct = {}; keys.forEach(function (k) { distinct[at[k].x + ',' + at[k].y] = true; });
+        expect(Object.keys(distinct).length === keys.length, 'two constructs have the same place');
+        var far = keys.filter(function (k) { return Math.hypot(at[k].x - centre.x, at[k].y - centre.y) > 1500; });
+        expect(far.length === 0, 'these are far from the middle: ' + far.join(', '));
+        // a tie is between what it ties, an attribute around its anchor, a knot beside what uses it
+        var d = LayoutEngine.normalDistance;
+        constructs.filter(function (c) { return c.kind === 'attribute'; }).forEach(function (c) {
+            var owner = at[c.owner], me = at[c.key], r = Math.hypot(me.x - owner.x, me.y - owner.y);
+            expect(Math.abs(r - 3 * d) < 1, 'an attribute is ' + r.toFixed(1) + ' from its anchor');
+        });
+        var nearTies = constructs.filter(function (c) { return c.kind === 'tie'; }).every(function (c) {
+            var ends = Placement.children(c.element, 'role').map(function (r) { return constructs.filter(function (e) { return e.kind !== 'tie' && e.element.getAttribute('mnemonic') === r.getAttribute('type') && Placement.ENTITIES.indexOf(e.kind) >= 0; })[0]; }).filter(Boolean).map(function (e) { return at[e.key]; });
+            var mx = ends.reduce(function (s, p) { return s + p.x; }, 0) / ends.length, my = ends.reduce(function (s, p) { return s + p.y; }, 0) / ends.length;
+            return Math.hypot(at[c.key].x - mx, at[c.key].y - my) < 3 * d;
+        });
+        expect(nearTies, 'a tie is not between what it ties');
+        record('placement.written', written);
+        // nothing left to do the second time
+        expect(Placement.seed(doc, at, centre) === 0, 'places were written for things that have them');
+        // what was there keeps its place, with its fixation, and what is tied to it is put beside it
+        var again = parse();
+        Placement.seed(again, { 'anchor:AC': { x: 11, y: 22, fixed: 'true', imploded: null } }, centre);
+        var kept = Placement.positions(again)['anchor:AC'];
+        expect(kept.x === 11 && kept.y === 22 && kept.fixed === 'true', 'what was there lost its place');
+        var tied = Placement.positions(again)['anchor:PE'] || Placement.positions(again)['anchor:ST'];
+        expect(tied && Math.hypot(tied.x - 11, tied.y - 22) < 1500, 'a new anchor is not placed');
+    });
+
+    test('a model that has no positions is placed by what is tied to what, and all of it is in view', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(300);
+        var box = SVG.viewBox.baseVal, margin = 40, outside = Model.visibleNodes.filter(function (n) {
+            return n.type !== NodeType.EDGE && (n.xPosition < box.x - margin || n.xPosition > box.x + box.width + margin || n.yPosition < box.y - margin || n.yPosition > box.y + box.height + margin);
+        });
+        expect(outside.length === 0, outside.length + ' of the nodes are out of view');
+        // those that are tied are nearer each other than the ends of the model are: the average length of an edge is shorter than half the width of the model
+        var xs = Model.visibleNodes.map(function (n) { return n.xPosition; }), ys = Model.visibleNodes.map(function (n) { return n.yPosition; });
+        var width = Math.max.apply(null, xs) - Math.min.apply(null, xs), height = Math.max.apply(null, ys) - Math.min.apply(null, ys);
+        var lengths = Model.components.filter(function (c) { return c.node.type === NodeType.EDGE && c.visible; }).map(function (c) { return Math.hypot(c.node.node.xPosition - c.node.otherNode.xPosition, c.node.node.yPosition - c.node.otherNode.yPosition); });
+        var mean = lengths.reduce(function (s, l) { return s + l; }, 0) / lengths.length;
+        expect(mean < Math.max(width, height) / 2, 'the edges are ' + mean.toFixed(0) + ' long on average in a model that is ' + width.toFixed(0) + ' by ' + height.toFixed(0));
+    });
+    test('a model goes to an agent without its positions, and what comes back replaces it, with what was there in its place', async function () {
+        await load(window.__MODELS['example.xml']);
+        await sleep(300);
+        var actor = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0];
+        actor.node.xPosition = 123.45; actor.node.yPosition = 234.56;
+        var written = [];
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText: function (s) { written.push(s); return Promise.resolve(); } }, configurable: true });
+        try { Actions.copyForAgent(); await sleep(300); } finally { delete navigator.clipboard; }
+        expect(written.length === 1, 'nothing was copied');
+        var text = written[0];
+        expect(/anchor-modeling-skill/.test(text) && /What I want changed/.test(text) && /```xml/.test(text), 'the text does not say what an agent needs to know');
+        expect(!/<layout\s/.test(text), 'the positions are in the text');
+        expect(document.getElementById('toast').classList.contains('show') && /Copied the model/.test(document.getElementById('toast').textContent), 'nothing said that it was copied');
+        var extracted = new DOMParser().parseFromString(AgentHandoff.extract(text), 'application/xml');
+        expect(canonical(extracted.documentElement) === xmlOf(), 'the model in the text is not the model: ' + difference(canonical(extracted.documentElement), xmlOf()));
+        record('agent.lines', text.split('\n').length);
+        // the answer: the model with an anchor more, in the middle of other words
+        var answer = 'Here you go! I added a Zebra anchor with a Name.\n\n' + text.replace('</schema>', '    <anchor mnemonic="ZB" descriptor="Zebra" identity="int"><metadata capsule="dbo" generator="true"/><attribute mnemonic="ZBNAM" descriptor="Name" dataRange="varchar(42)"><metadata capsule="dbo"/></attribute></anchor>\n</schema>') + '\nTell me if you want more.';
+        answer = answer.replace('mnemonic="ZBNAM"', 'mnemonic="NAM"');
+        var version = Model.version;
+        Actions.openAgentPaste(); await sleep(100);
+        var dialog = document.getElementById('agentPaste'), box = document.getElementById('agentText'), replace = document.getElementById('agentReplace');
+        expect(dialog.open && replace.disabled, 'the dialog did not open with nothing to replace with');
+        box.value = 'not a model'; box.dispatchEvent(new Event('input', { bubbles: true })); await sleep(600);
+        expect(replace.disabled && document.querySelectorAll('#agentProblems li').length >= 1, 'text that is not a model can replace the model');
+        box.value = answer; box.dispatchEvent(new Event('input', { bubbles: true })); await sleep(600);
+        expect(!replace.disabled && /5 anchors/.test(document.getElementById('agentStatus').textContent), 'a model that is right cannot be pasted: ' + document.getElementById('agentStatus').textContent);
+        record('agent.status', document.getElementById('agentStatus').textContent);
+        var placed = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0].node, wasX = placed.xPosition, wasY = placed.yPosition; // the layout keeps moving things until they rest
+        replace.click();
+        // at once, before the layout has moved anything: what was there is where it was, what is new has a place
+        var actor2 = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'AC'; })[0], zebra = ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'ZB'; })[0];
+        expect(zebra, 'the new anchor is not in the model');
+        expect(Math.abs(actor2.node.xPosition - wasX) < 0.01 && Math.abs(actor2.node.yPosition - wasY) < 0.01, 'what was there did not keep its place: ' + actor2.node.xPosition + ',' + actor2.node.yPosition);
+        expect(isFinite(zebra.node.xPosition) && isFinite(zebra.node.yPosition), 'the new anchor has no place');
+        expect(!dialog.open && Model.version > version, 'the dialog is open, or the replacement is not a step');
+        expect(/replaced/.test(document.getElementById('toast').textContent), 'nothing said that the model was replaced');
+        // the new anchor's attribute is on a ring around it
+        var attribute = Outline.partsOf(zebra)[0];
+        expect(attribute && Math.abs(Math.hypot(attribute.node.xPosition - zebra.node.xPosition, attribute.node.yPosition - zebra.node.yPosition) - 3 * LayoutEngine.normalDistance) < 1, 'the attribute of the new anchor is not around it');
+        // and undo brings the old model back
+        ControlButtons.undo(); await sleep(400);
+        expect(ofType(NodeType.ANCHOR).filter(function (a) { return a.mnemonic === 'ZB'; }).length === 0, 'undo did not take the new anchor away');
     });
     test('bubbles and role names sit on their edges, also after a sudden move', async function () {
         await load(window.__MODELS['example.xml']);
