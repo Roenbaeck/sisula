@@ -1,7 +1,7 @@
 # Checking Anchor's generators: the models, the golden files and the tools
 
 The Anchor Modeler generates SQL for SQL Server, Snowflake, PostgreSQL, Vertica, BigQuery and Oracle (uni-, bi- and
-concurrent-reliance-temporal; Oracle has no bi) from declarative Sisula templates over JSON bindings. This folder was called
+concurrent-reliance-temporal) from declarative Sisula templates over JSON bindings. This folder was called
 `anchor-snowflake` until it held SQL Server too, so older commits name it that way.
 
 **The templates live in the Anchor repository**, as `SQL/<Database>/{uni,bi,crt}/*.sisula`, listed by Anchor's
